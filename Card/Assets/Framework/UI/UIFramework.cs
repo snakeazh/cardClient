@@ -110,17 +110,25 @@ namespace Framework.UI
         }
 
         /// <summary>
-        /// Register a screen by reading view type's public static const string `ResourcesPath`.
+        /// Register a screen by reading <see cref="AutoScreenAttribute"/> on the view type.
         /// </summary>
         public UIFrameworkContext RegisterScreen<TView, TVm>(
-            ScreenId id,
-            UILayer layer,
             Func<TVm> viewModelFactory = null)
             where TView : ViewBase<TVm>
             where TVm : ViewModelBase
         {
-            var assetKey = ResolveResourcesPath(typeof(TView));
-            return RegisterScreen<TView, TVm>(id, layer, assetKey, viewModelFactory);
+            var attr = typeof(TView).GetCustomAttribute<AutoScreenAttribute>(inherit: false);
+            if (attr == null)
+            {
+                throw new InvalidOperationException(
+                    $"View type '{typeof(TView).Name}' must be marked with [AutoScreen].");
+            }
+
+            return RegisterScreen<TView, TVm>(
+                new ScreenId(attr.ScreenId),
+                attr.Layer,
+                attr.AssetKey,
+                viewModelFactory);
         }
 
         public UIFrameworkContext RegisterScreen<TView, TVm>(
@@ -133,30 +141,6 @@ namespace Framework.UI
         {
             UI.RegisterScreen<TView, TVm>(id, layer, assetKey, viewModelFactory);
             return this;
-        }
-
-        private static string ResolveResourcesPath(Type viewType)
-        {
-            // Expect pattern:
-            // public const string ResourcesPath = "UI/Home";
-            var field = viewType.GetField(
-                "ResourcesPath",
-                BindingFlags.Public | BindingFlags.Static);
-
-            if (field == null || field.FieldType != typeof(string))
-            {
-                throw new InvalidOperationException(
-                    $"View type '{viewType.Name}' must declare public static const string ResourcesPath.");
-            }
-
-            var value = field.GetValue(null) as string;
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new InvalidOperationException(
-                    $"View type '{viewType.Name}' has empty ResourcesPath.");
-            }
-
-            return value;
         }
     }
 }

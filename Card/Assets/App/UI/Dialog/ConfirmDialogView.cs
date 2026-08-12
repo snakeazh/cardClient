@@ -1,8 +1,9 @@
+using App.Resources;
+using App.UI;
 using Framework.UI.Dialog;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
 
 namespace App.UI.Dialog
@@ -10,11 +11,9 @@ namespace App.UI.Dialog
     /// <summary>
     /// Confirm dialog view. Nodes are resolved via UIReference / UIBind.
     /// </summary>
-    [AutoScreen(AppScreenIds.ConfirmDialog, UILayer.Popup)]
+    [AutoScreen(AppScreenIds.ConfirmDialog, UILayer.Popup, ResResourcePaths.ConfirmDialog)]
     public sealed class ConfirmDialogView : ViewBase<ConfirmDialogViewModel>
     {
-        public const string ResourcesPath = "UI/ConfirmDialog";
-
         protected override void OnBind()
         {
             Binding.BindText(UI.Get<TMP_Text>("Title"), ViewModel.Title);
@@ -40,4 +39,3 @@ namespace App.UI.Dialog
         }
     }
 }
-

@@ -49,15 +49,13 @@ namespace Framework.UI.Navigation
 
             var screenId = new ScreenId(attr.ScreenId);
 
-            var assetKey = ResolveResourcesPath(viewType);
-
             EnsureViewModelRegistered(container, viewModelType);
 
             registry.Register(
                 new ScreenRegistration(
                     screenId,
                     attr.Layer,
-                    assetKey,
+                    attr.AssetKey,
                     viewModelType,
                     viewModelFactory: null));
         }
@@ -72,27 +70,6 @@ namespace Framework.UI.Navigation
             container.AddTransient(viewModelType, viewModelType);
         }
 
-        private static string ResolveResourcesPath(Type viewType)
-        {
-            var field = viewType.GetField(
-                "ResourcesPath",
-                BindingFlags.Public | BindingFlags.Static);
-
-            if (field == null || field.FieldType != typeof(string))
-            {
-                throw new InvalidOperationException(
-                    $"View type '{viewType.Name}' must declare public static const string ResourcesPath.");
-            }
-
-            var value = field.GetValue(null) as string;
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new InvalidOperationException(
-                    $"View type '{viewType.Name}' has empty ResourcesPath.");
-            }
-
-            return value;
-        }
 
         private static Type ResolveViewModelType(Type viewType)
         {

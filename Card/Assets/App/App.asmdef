@@ -1,0 +1,19 @@
+{
+    "name": "App",
+    "rootNamespace": "App",
+    "references": [
+        "Framework.UI",
+        "Framework.Assets",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,21 @@
+{
+    "name": "Framework.UI.Editor",
+    "rootNamespace": "Framework.UI.Editor",
+    "references": [
+        "Framework.UI",
+        "Framework.Assets.Editor",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

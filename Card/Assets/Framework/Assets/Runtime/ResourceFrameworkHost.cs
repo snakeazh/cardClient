@@ -11,7 +11,18 @@ namespace Framework.Assets
 
         public ResourceFrameworkContext CreateContext(string bundleRoot)
         {
+#if UNITY_EDITOR
+            if (ResourceLoadMode.UseEditorRes)
+            {
+                _service = new EditorResResourceService();
+            }
+            else
+            {
+                _service = new AssetBundleResourceService(bundleRoot);
+            }
+#else
             _service = new AssetBundleResourceService(bundleRoot);
+#endif
             return new ResourceFrameworkContext(_service);
         }
 

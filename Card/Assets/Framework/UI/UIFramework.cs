@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Framework.Assets;
 using Framework.UI.Dialog;
 using Framework.UI.DI;
@@ -46,6 +47,10 @@ namespace Framework.UI
             var root = UIRoot.Instantiate(rootPrefab, parent);
             var registry = new ScreenRegistry();
             registry.BindContainer(container);
+
+            // Auto-register all screens marked with [AutoScreen] via reflection.
+            ScreenAutoRegistrar.AutoRegisterScreens(container, registry);
+
             var navigator = new UINavigator(root, registry, resources);
 
             container.RegisterInstance(root);
@@ -66,11 +71,6 @@ namespace Framework.UI
             {
                 container.AddTransient<ConfirmDialogViewModel>();
             }
-
-            registry.Register<ConfirmDialogView, ConfirmDialogViewModel>(
-                DialogService.ConfirmScreenId,
-                UILayer.Popup,
-                ConfirmDialogView.ResourcesPath);
 
             var dialogs = container.Resolve<IDialogService>();
             var manager = new UIManager(container, root, registry, navigator, dialogs, resources);
@@ -109,6 +109,20 @@ namespace Framework.UI
             return this;
         }
 
+        /// <summary>
+        /// Register a screen by reading view type's public static const string `ResourcesPath`.
+        /// </summary>
+        public UIFrameworkContext RegisterScreen<TView, TVm>(
+            ScreenId id,
+            UILayer layer,
+            Func<TVm> viewModelFactory = null)
+            where TView : ViewBase<TVm>
+            where TVm : ViewModelBase
+        {
+            var assetKey = ResolveResourcesPath(typeof(TView));
+            return RegisterScreen<TView, TVm>(id, layer, assetKey, viewModelFactory);
+        }
+
         public UIFrameworkContext RegisterScreen<TView, TVm>(
             ScreenId id,
             UILayer layer,
@@ -119,6 +133,30 @@ namespace Framework.UI
         {
             UI.RegisterScreen<TView, TVm>(id, layer, assetKey, viewModelFactory);
             return this;
+        }
+
+        private static string ResolveResourcesPath(Type viewType)
+        {
+            // Expect pattern:
+            // public const string ResourcesPath = "UI/Home";
+            var field = viewType.GetField(
+                "ResourcesPath",
+                BindingFlags.Public | BindingFlags.Static);
+
+            if (field == null || field.FieldType != typeof(string))
+            {
+                throw new InvalidOperationException(
+                    $"View type '{viewType.Name}' must declare public static const string ResourcesPath.");
+            }
+
+            var value = field.GetValue(null) as string;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException(
+                    $"View type '{viewType.Name}' has empty ResourcesPath.");
+            }
+
+            return value;
         }
     }
 }

@@ -1,13 +1,16 @@
+using Framework.UI.Dialog;
+using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Framework.UI.Dialog
+namespace App.UI.Dialog
 {
     /// <summary>
     /// Confirm dialog view. Nodes are resolved via UIReference / UIBind.
     /// </summary>
+    [AutoScreen(AppScreenIds.ConfirmDialog, UILayer.Popup)]
     public sealed class ConfirmDialogView : ViewBase<ConfirmDialogViewModel>
     {
         public const string ResourcesPath = "UI/ConfirmDialog";
@@ -37,3 +40,4 @@ namespace Framework.UI.Dialog
         }
     }
 }
+

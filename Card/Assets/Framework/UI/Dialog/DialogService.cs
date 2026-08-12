@@ -46,8 +46,6 @@ namespace Framework.UI.Dialog
 
     public sealed class DialogService : IDialogService
     {
-        public static readonly ScreenId ConfirmScreenId = new ScreenId("Framework.ConfirmDialog");
-
         private readonly IUINavigator _navigator;
         private readonly ServiceContainer _container;
         private TaskCompletionSource<DialogResult> _confirmTcs;
@@ -74,7 +72,6 @@ namespace Framework.UI.Dialog
             var viewModel = _container.Resolve<ConfirmDialogViewModel>();
             _activeDialogViewModel = viewModel;
             await _navigator.Open(
-                ConfirmScreenId,
                 viewModel,
                 new ConfirmDialogArgs(title, message, buttons));
             var result = await _confirmTcs.Task;

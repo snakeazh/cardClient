@@ -1,40 +1,32 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Framework.Assets
 {
     /// <summary>
-    /// Loads assets from AssetBundles under StreamingAssets/Bundles.
-    /// Key format: "UI/Home" -> bundle "ui", asset name "Home".
+    /// Editor play mode: resolves keys like "UI/Home" to Assets/Res/UI/Home.prefab via AssetDatabase.
+    /// No AssetBundle build required while iterating on UI.
     /// </summary>
-    public sealed class AssetBundleResourceService : IResourceService
+    public sealed class EditorResResourceService : IResourceService
     {
-        private const string ManifestBundleName = "Bundles";
+        private static readonly string[] TryExtensions = { ".prefab", ".asset", ".mat", ".sprite", ".png", ".jpg", ".wav", ".mp3" };
 
-        private readonly string _bundleRoot;
-        private readonly Dictionary<string, AssetBundle> _bundles =
-            new Dictionary<string, AssetBundle>(StringComparer.Ordinal);
         private readonly Dictionary<string, CacheEntry> _cache =
             new Dictionary<string, CacheEntry>(StringComparer.Ordinal);
         private readonly object _gate = new object();
-
-        private AssetBundleManifest _manifest;
         private bool _initialized;
-
-        public AssetBundleResourceService(string bundleRoot = null)
-        {
-            _bundleRoot = bundleRoot ?? Path.Combine(Application.streamingAssetsPath, "Bundles");
-        }
 
         public bool IsInitialized => _initialized;
 
         public string BundleVersion { get; private set; }
 
-        public string BundleRoot => _bundleRoot;
+        public string BundleRoot => ResPaths.AssetRoot;
 
         public Task InitializeAsync()
         {
@@ -45,14 +37,7 @@ namespace Framework.Assets
                     return Task.CompletedTask;
                 }
 
-                if (!Directory.Exists(_bundleRoot))
-                {
-                    throw new DirectoryNotFoundException(
-                        $"Bundle root not found: {_bundleRoot}. Run menu Res/Build AssetBundles.");
-                }
-
-                BundleVersion = ReadBundleVersion();
-                LoadManifestBundle();
+                BundleVersion = ReadBundleVersionHint();
                 _initialized = true;
             }
 
@@ -120,17 +105,6 @@ namespace Framework.Assets
             lock (_gate)
             {
                 _cache.Clear();
-                _manifest = null;
-
-                foreach (var pair in _bundles)
-                {
-                    if (pair.Value != null)
-                    {
-                        pair.Value.Unload(true);
-                    }
-                }
-
-                _bundles.Clear();
                 _initialized = false;
                 BundleVersion = null;
             }
@@ -159,19 +133,60 @@ namespace Framework.Assets
                     return typedExisting;
                 }
 
-                var bundleName = ResourceKeyResolver.ResolveBundleName(key);
-                var assetName = ResourceKeyResolver.ResolveAssetName(key);
-                var bundle = LoadBundle(bundleName);
-                var loaded = bundle.LoadAsset<T>(assetName);
+                var path = ResolveAssetPath<T>(key);
+                var loaded = AssetDatabase.LoadAssetAtPath<T>(path);
                 if (loaded == null)
                 {
                     throw new InvalidOperationException(
-                        $"Failed to load '{assetName}' as {typeof(T).Name} from bundle '{bundleName}' (key '{key}').");
+                        $"Failed to load '{path}' as {typeof(T).Name} (key '{key}').");
                 }
 
                 _cache[key] = new CacheEntry(loaded, 1);
                 return loaded;
             }
+        }
+
+        private static string ResolveAssetPath<T>(string key) where T : Object
+        {
+            var basePath = ResPaths.KeyToAssetBasePath(key);
+            foreach (var ext in TryExtensions)
+            {
+                var path = basePath + ext;
+                if (AssetDatabase.LoadAssetAtPath<T>(path) != null)
+                {
+                    return path;
+                }
+            }
+
+            foreach (var ext in TryExtensions)
+            {
+                var path = basePath + ext;
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            throw new FileNotFoundException(
+                $"No asset for key '{key}' under {ResPaths.AssetRoot}. Expected e.g. {basePath}.prefab");
+        }
+
+        private static string ReadBundleVersionHint()
+        {
+            var streamingVersion = Path.Combine(Application.streamingAssetsPath, "Bundles", "version.txt");
+            if (File.Exists(streamingVersion))
+            {
+                return File.ReadAllText(streamingVersion).Trim();
+            }
+
+            var projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            var savedVersion = Path.Combine(projectRoot, "Bundles", "version.txt");
+            if (File.Exists(savedVersion))
+            {
+                return File.ReadAllText(savedVersion).Trim();
+            }
+
+            return "editor";
         }
 
         private void EnsureInitialized()
@@ -181,68 +196,6 @@ namespace Framework.Assets
                 throw new InvalidOperationException(
                     "Resource system is not initialized. Call ResourceFramework.InitializeAsync() first.");
             }
-        }
-
-        private string ReadBundleVersion()
-        {
-            var path = Path.Combine(_bundleRoot, "version.txt");
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return File.ReadAllText(path).Trim();
-        }
-
-        private void LoadManifestBundle()
-        {
-            var manifestPath = Path.Combine(_bundleRoot, ManifestBundleName);
-            if (!File.Exists(manifestPath))
-            {
-                return;
-            }
-
-            var manifestBundle = AssetBundle.LoadFromFile(manifestPath);
-            if (manifestBundle == null)
-            {
-                return;
-            }
-
-            _bundles[ManifestBundleName] = manifestBundle;
-            _manifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
-        }
-
-        private AssetBundle LoadBundle(string bundleName)
-        {
-            if (_bundles.TryGetValue(bundleName, out var loaded) && loaded != null)
-            {
-                return loaded;
-            }
-
-            if (_manifest != null)
-            {
-                var dependencies = _manifest.GetAllDependencies(bundleName);
-                for (var i = 0; i < dependencies.Length; i++)
-                {
-                    LoadBundle(dependencies[i]);
-                }
-            }
-
-            var bundlePath = Path.Combine(_bundleRoot, bundleName);
-            if (!File.Exists(bundlePath))
-            {
-                throw new FileNotFoundException(
-                    $"AssetBundle not found: {bundlePath}. Run menu Res/Build AssetBundles.");
-            }
-
-            var bundle = AssetBundle.LoadFromFile(bundlePath);
-            if (bundle == null)
-            {
-                throw new InvalidOperationException($"Failed to load AssetBundle from {bundlePath}.");
-            }
-
-            _bundles[bundleName] = bundle;
-            return bundle;
         }
 
         private sealed class CacheEntry
@@ -258,3 +211,4 @@ namespace Framework.Assets
         }
     }
 }
+#endif

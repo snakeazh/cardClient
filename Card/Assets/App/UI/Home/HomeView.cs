@@ -1,4 +1,5 @@
 using Framework.UI.View;
+using Framework.UI.Navigation;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ namespace App.UI
     /// <summary>
     /// Home page view. Nodes are resolved via UIReference / UIBind.
     /// </summary>
+    [AutoScreen(AppScreenIds.Home, UILayer.Page)]
     public sealed class HomeView : ViewBase<HomeViewModel>
     {
         public const string ResourcesPath = App.Resources.ResResourcePaths.Home;

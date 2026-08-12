@@ -167,7 +167,7 @@ namespace Framework.UI.Navigation
 
             var parent = _root.GetLayer(registration.Layer);
             var go = UnityEngine.Object.Instantiate(prefab, parent, false);
-            go.name = registration.Id.Value;
+            go.name = prefab.name;
             go.SetActive(true);
 
             var view = go.GetComponent<IView>();
@@ -196,6 +196,11 @@ namespace Framework.UI.Navigation
             if (_stacks[UILayer.TopMost].Count > 0)
             {
                 return UILayer.TopMost;
+            }
+
+            if (_stacks[UILayer.Loading].Count > 0)
+            {
+                return UILayer.Loading;
             }
 
             if (_stacks[UILayer.Popup].Count > 0)

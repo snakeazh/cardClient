@@ -10,7 +10,7 @@ namespace Framework.Assets.Editor
     /// </summary>
     public static class ResAssetBundleBuilder
     {
-        public const string ResRoot = "Assets/Res";
+        public const string ResRoot = ResPaths.AssetRoot;
         public const string StreamingBundlesRelative = "StreamingAssets/Bundles";
 
         public static string GetStreamingBundlesAssetPath()
@@ -73,25 +73,6 @@ namespace Framework.Assets.Editor
             Debug.Log(
                 $"AssetBundles v{version} built to {versionOutput} and copied to {GetStreamingBundlesAssetPath()} " +
                 $"({EditorUserBuildSettings.activeBuildTarget})");
-        }
-
-        private static bool TryCopyLatestVersionToStreaming()
-        {
-            if (!BundleVersionManager.TryGetLatestBuiltVersion(out var version))
-            {
-                return false;
-            }
-
-            var source = BundleVersionManager.GetVersionOutputPath(version);
-            if (!Directory.Exists(source) || !File.Exists(Path.Combine(source, "ui")))
-            {
-                return false;
-            }
-
-            CopyToStreamingAssets(source);
-            WriteStreamingVersion(version);
-            Debug.Log($"Copied AssetBundles v{version} to {GetStreamingBundlesAssetPath()}");
-            return true;
         }
 
         private static void WriteStreamingVersion(string version)

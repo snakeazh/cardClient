@@ -1,4 +1,5 @@
 using App.Game;
+using Framework.Assets;
 using Framework.UI.Core;
 using Framework.UI.View;
 
@@ -6,9 +7,10 @@ namespace App.UI
 {
     public sealed class GameTableViewModel : ViewModelBase
     {
-        public GameTableViewModel(GameSession session)
+        public GameTableViewModel(GameSession session, IResourceService resources)
         {
             Session = session;
+            Resources = resources;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(() => Session.BlindBet(), () => Session.Phase == GamePhase.Betting);
             RaiseCommand = new RelayCommand(() => Session.RaiseBet(), () => Session.Phase == GamePhase.Betting);
@@ -28,6 +30,7 @@ namespace App.UI
         }
 
         public GameSession Session { get; }
+        public IResourceService Resources { get; }
 
         public ObservableProperty<string> Title { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> Hint { get; } = new ObservableProperty<string>();

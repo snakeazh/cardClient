@@ -30,7 +30,6 @@ namespace App.Bootstrap
             RegisterResources(_container, _resources);
 
             _ui = UIFramework.Create(_container);
-            RegisterBoardController(_container);
 
             await _ui.UI.Open(_container.Resolve<HomeViewModel>());
         }
@@ -47,31 +46,6 @@ namespace App.Bootstrap
             var service = resources.Resources;
             container.RegisterInstance(service);
             container.RegisterInstance<IResourceService>(service);
-        }
-
-        private static void RegisterBoardController(ServiceContainer container)
-        {
-            var hud = GameObject.Find("GameHud");
-            if (hud == null)
-            {
-                hud = new GameObject("GameHud");
-            }
-
-            // 场景若仍挂着旧脚本名，替换为牌桌控制器
-            var legacy = hud.GetComponent("GameTableController");
-            if (legacy != null)
-            {
-                Object.Destroy(legacy);
-            }
-
-            var board = hud.GetComponent<GameBoardController>();
-            if (board == null)
-            {
-                board = hud.AddComponent<GameBoardController>();
-            }
-
-            board.enabled = false;
-            container.RegisterInstance(board);
         }
     }
 }

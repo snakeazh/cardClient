@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using App.Game;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,24 +5,13 @@ using UnityEngine.EventSystems;
 namespace App.UI
 {
     /// <summary>
-    /// 牌桌世界表现（GameHud 上的 Sprite 牌面、搓牌/放大镜输入）。
-    /// 不含任何 Canvas HUD 文本/按钮——那些已拆到 <see cref="GameUIView"/>。
+    /// 牌桌世界表现（GameHud 发牌/翻牌、搓牌/放大镜输入）。
+    /// Canvas HUD 在 <see cref="GameUIView"/>。
     /// </summary>
     public sealed class GameBoardController : MonoBehaviour
     {
-        private const int CardsPerHand = 3;
-        private const float PlayerCardScale = 1f;
-        private const float AiCardScale = 0.6f;
-        private const float PlayerCardSpacing = 1.2f;
-        private const float AiCardSpacing = 0.8f;
-        private const string CardIconResourcePath = "Game/icon/CardIcon";
-        private static GameObject _cardIconPrefab;
-
         private GameTableViewModel _vm;
-        private SpriteRenderer[] _playerCards;
-        private TextMesh[] _playerRankLabels;
-        private readonly SpriteRenderer[][] _enemyCards = new SpriteRenderer[3][];
-        private readonly Transform[] _enemyNodes = new Transform[3];
+        private readonly CardTableAnimator _cards = new CardTableAnimator();
         private Camera _camera;
         private int _dragCard = -1;
         private float _rubAcc;
@@ -61,7 +49,7 @@ namespace App.UI
 
         private void Update()
         {
-            if (_vm == null)
+            if (_vm == null || _cards.IsBusy)
             {
                 return;
             }
@@ -76,12 +64,34 @@ namespace App.UI
                 !_vm.Session.Run.PeekSuitUsed &&
                 Input.GetMouseButtonDown(0))
             {
-                var peek = HitPlayerCard();
+                var peek = _cards.HitPlayerCard(_camera);
                 if (peek >= 0)
                 {
                     _vm.Session.PeekMagnifier(peek);
                     return;
                 }
+            }
+
+            if (_vm.Session.Phase == GamePhase.WaitingAttack && Input.GetMouseButtonDown(0))
+            {
+                var slot = _cards.HitEnemySlot(_camera);
+                if (slot >= 0)
+                {
+                    _vm.Session.AttackEnemyAtSlot(slot);
+                }
+
+                return;
+            }
+
+            if (_vm.Session.SelectingOpenTarget && Input.GetMouseButtonDown(0))
+            {
+                var slot = _cards.HitEnemySlot(_camera);
+                if (slot >= 0)
+                {
+                    _vm.Session.AttackEnemyAtSlot(slot);
+                }
+
+                return;
             }
 
             if (_vm.Session.Phase != GamePhase.WaitingRub)
@@ -91,7 +101,7 @@ namespace App.UI
 
             if (Input.GetMouseButtonDown(0))
             {
-                var index = HitPlayerCard();
+                var index = _cards.HitPlayerCard(_camera);
                 if (index >= 0)
                 {
                     _dragCard = index;
@@ -103,12 +113,8 @@ namespace App.UI
             if (_dragCard >= 0 && Input.GetMouseButton(0))
             {
                 _rubAcc += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")).magnitude;
-                if (_playerCards != null && _dragCard < _playerCards.Length && _playerCards[_dragCard] != null)
-                {
-                    var glow = Mathf.PingPong(Time.time * 6f, 1f);
-                    _playerCards[_dragCard].color = Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), glow);
-                }
-
+                var glow = Mathf.PingPong(Time.time * 6f, 1f);
+                _cards.TintPlayerCard(_dragCard, Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), glow));
                 if (_rubAcc > 2.2f)
                 {
                     var index = _dragCard;
@@ -126,6 +132,7 @@ namespace App.UI
         private void OnDestroy()
         {
             Detach();
+            _cards.Dispose();
         }
 
         private void OnSessionChanged()
@@ -135,7 +142,7 @@ namespace App.UI
                 return;
             }
 
-            RefreshBoard();
+            _cards.Sync(_vm.Session);
         }
 
         private void BindScene()
@@ -146,438 +153,7 @@ namespace App.UI
                 _camera = FindObjectOfType<Camera>();
             }
 
-            var hud = gameObject;
-
-            var mine = FindChild(hud.transform, "mineNode");
-            if (mine != null)
-            {
-                _playerCards = FindCardRenderers(mine, PlayerCardScale, PlayerCardSpacing);
-                _playerRankLabels = EnsureRankLabels(_playerCards);
-                for (var i = 0; i < _playerCards.Length; i++)
-                {
-                    EnsureCollider(_playerCards[i]);
-                }
-            }
-
-            BindEnemySlots(hud.transform);
-        }
-
-        private void BindEnemySlots(Transform hud)
-        {
-            var slots = new List<Transform>();
-            for (var i = 0; i < hud.childCount; i++)
-            {
-                var child = hud.GetChild(i);
-                if (child.name == "bg" || child.name == "mineNode")
-                {
-                    continue;
-                }
-
-                if (FindChild(child, "cardNode") != null || child.GetComponentInChildren<SpriteRenderer>() != null)
-                {
-                    slots.Add(child);
-                }
-            }
-
-            slots.Sort((a, b) =>
-            {
-                var ax = a.position.x;
-                var bx = b.position.x;
-                var ay = a.position.y;
-                var by = b.position.y;
-                if (Mathf.Abs(ay - by) > 1.5f)
-                {
-                    return by.CompareTo(ay);
-                }
-
-                return ax.CompareTo(bx);
-            });
-
-            Transform left = null, top = null, right = null;
-            if (slots.Count == 1)
-            {
-                top = slots[0];
-            }
-            else if (slots.Count == 2)
-            {
-                left = slots[0].position.x < slots[1].position.x ? slots[0] : slots[1];
-                right = left == slots[0] ? slots[1] : slots[0];
-            }
-            else if (slots.Count >= 3)
-            {
-                top = slots[0];
-                var rest = new List<Transform> { slots[1], slots[2] };
-                rest.Sort((a, b) => a.position.x.CompareTo(b.position.x));
-                left = rest[0];
-                right = rest[1];
-            }
-
-            _enemyNodes[0] = left;
-            _enemyNodes[1] = top;
-            _enemyNodes[2] = right;
-            _enemyCards[0] = FindCardRenderers(left, AiCardScale, AiCardSpacing);
-            _enemyCards[1] = FindCardRenderers(top, AiCardScale, AiCardSpacing);
-            _enemyCards[2] = FindCardRenderers(right, AiCardScale, AiCardSpacing);
-        }
-
-        private void RefreshBoard()
-        {
-            var session = _vm.Session;
-            RefreshSeatCards(_playerCards, _playerRankLabels, session.Player, true);
-
-            var activeCount = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
-            {
-                if (session.Enemies[i].ActiveInStage)
-                {
-                    activeCount++;
-                }
-            }
-
-            for (var slot = 0; slot < 3; slot++)
-            {
-                if (_enemyNodes[slot] != null)
-                {
-                    _enemyNodes[slot].gameObject.SetActive(false);
-                }
-
-                SetActiveCards(_enemyCards[slot], false);
-            }
-
-            var placed = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
-            {
-                var enemy = session.Enemies[i];
-                if (!enemy.ActiveInStage)
-                {
-                    continue;
-                }
-
-                var slot = VisualSlot(placed, activeCount);
-                placed++;
-                SetActiveCards(_enemyCards[slot], true);
-                RefreshSeatCards(_enemyCards[slot], null, enemy, false);
-                if (_enemyNodes[slot] != null)
-                {
-                    _enemyNodes[slot].gameObject.SetActive(true);
-                }
-            }
-        }
-
-        private static int VisualSlot(int enemyIndex, int activeCount)
-        {
-            if (activeCount <= 1)
-            {
-                return 1;
-            }
-
-            if (activeCount == 2)
-            {
-                return enemyIndex == 0 ? 0 : 2;
-            }
-
-            return enemyIndex;
-        }
-
-        private void RefreshSeatCards(SpriteRenderer[] renders, TextMesh[] labels, SeatState seat, bool player)
-        {
-            if (renders == null)
-            {
-                return;
-            }
-
-            var reveal = _vm.Session.CardsRevealed || (player && seat.Looked);
-            for (var i = 0; i < renders.Length; i++)
-            {
-                var sr = renders[i];
-                if (sr == null)
-                {
-                    continue;
-                }
-
-                var card = seat.Hand != null && i < seat.Hand.Length ? seat.Hand[i] : default;
-                var revealThis = reveal || (player && i < _vm.Session.Run.RubbedReveal.Length &&
-                                           _vm.Session.Run.RubbedReveal[i]);
-                if (revealThis)
-                {
-                    sr.sprite = CardSpriteLibrary.GetFace(card);
-                    sr.color = Color.white;
-                    sr.sortingOrder = 2;
-                }
-                else
-                {
-                    sr.sprite = CardSpriteLibrary.Back;
-                    sr.color = Color.white;
-                    sr.sortingOrder = 1;
-                    if (player && _vm.Session.Run.MagnifierThisRound && _vm.Session.Run.PeekSuitUsed &&
-                        _vm.Session.Run.PeekSuitIndex == i)
-                    {
-                        sr.color = SuitTint(card.Suit);
-                    }
-                }
-
-                if (player && _vm.Session.Phase == GamePhase.WaitingRub)
-                {
-                    sr.color = Color.Lerp(sr.color, new Color(1f, 0.92f, 0.65f), 0.25f);
-                }
-
-                if (labels != null && i < labels.Length && labels[i] != null)
-                {
-                    labels[i].gameObject.SetActive(false);
-                }
-            }
-        }
-
-        private int HitPlayerCard()
-        {
-            if (_camera == null || _playerCards == null)
-            {
-                return -1;
-            }
-
-            var mouse = Input.mousePosition;
-            mouse.z = Mathf.Abs(_camera.transform.position.z);
-            var world = _camera.ScreenToWorldPoint(mouse);
-            var hit = Physics2D.Raycast(world, Vector2.zero);
-            if (hit.collider == null)
-            {
-                return -1;
-            }
-
-            for (var i = 0; i < _playerCards.Length; i++)
-            {
-                if (_playerCards[i] != null && hit.collider.gameObject == _playerCards[i].gameObject)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private static SpriteRenderer[] FindCardRenderers(Transform root, float scale, float spacing)
-        {
-            if (root == null)
-            {
-                return new SpriteRenderer[0];
-            }
-
-            var cardNode = FindChild(root, "cardNode") ?? root;
-            EnsureCardIcons(cardNode, scale, spacing);
-
-            var list = new List<SpriteRenderer>();
-            for (var n = 1; n <= CardsPerHand; n++)
-            {
-                var named = FindChild(cardNode, "CardIcon" + n) ?? FindChild(cardNode, "Square" + n);
-                if (named != null)
-                {
-                    var sr = named.GetComponent<SpriteRenderer>();
-                    if (sr != null)
-                    {
-                        list.Add(sr);
-                    }
-                }
-            }
-
-            if (list.Count == 0)
-            {
-                list.AddRange(cardNode.GetComponentsInChildren<SpriteRenderer>(true));
-                if (list.Count > CardsPerHand)
-                {
-                    list.RemoveRange(CardsPerHand, list.Count - CardsPerHand);
-                }
-            }
-
-            return list.ToArray();
-        }
-
-        private static void EnsureCardIcons(Transform cardNode, float scale, float spacing)
-        {
-            if (cardNode == null)
-            {
-                return;
-            }
-
-            var existing = CountCardSprites(cardNode);
-            if (existing >= CardsPerHand)
-            {
-                ApplyCardLayout(cardNode, scale, spacing);
-                return;
-            }
-
-            var prefab = LoadCardIconPrefab();
-            if (prefab == null)
-            {
-                Debug.LogWarning("CardIcon prefab not found at Resources/" + CardIconResourcePath);
-                return;
-            }
-
-            for (var i = existing; i < CardsPerHand; i++)
-            {
-                var go = UnityEngine.Object.Instantiate(prefab, cardNode, false);
-                go.name = "CardIcon" + (i + 1);
-            }
-
-            ApplyCardLayout(cardNode, scale, spacing);
-        }
-
-        private static void ApplyCardLayout(Transform cardNode, float scale, float spacing)
-        {
-            var prefab = LoadCardIconPrefab();
-            var baseScale = prefab != null ? prefab.transform.localScale : new Vector3(1f, 1.5f, 1f);
-            var baseRotation = prefab != null ? prefab.transform.localRotation : Quaternion.identity;
-            var index = 0;
-            for (var i = 0; i < cardNode.childCount; i++)
-            {
-                var child = cardNode.GetChild(i);
-                if (child.GetComponent<SpriteRenderer>() == null)
-                {
-                    continue;
-                }
-
-                child.localRotation = baseRotation;
-                child.localScale = baseScale * scale;
-                child.localPosition = new Vector3((index - 1) * spacing, 0f, 0f);
-                index++;
-                if (index >= CardsPerHand)
-                {
-                    break;
-                }
-            }
-        }
-
-        private static int CountCardSprites(Transform cardNode)
-        {
-            var count = 0;
-            for (var i = 0; i < cardNode.childCount; i++)
-            {
-                if (cardNode.GetChild(i).GetComponent<SpriteRenderer>() != null)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static GameObject LoadCardIconPrefab()
-        {
-            if (_cardIconPrefab == null)
-            {
-                _cardIconPrefab = UnityEngine.Resources.Load<GameObject>(CardIconResourcePath);
-            }
-
-            return _cardIconPrefab;
-        }
-
-        private TextMesh[] EnsureRankLabels(SpriteRenderer[] cards)
-        {
-            if (cards == null)
-            {
-                return new TextMesh[0];
-            }
-
-            var labels = new TextMesh[cards.Length];
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (cards[i] == null)
-                {
-                    continue;
-                }
-
-                var child = cards[i].transform.Find("RankLabel");
-                if (child == null)
-                {
-                    var go = new GameObject("RankLabel");
-                    go.transform.SetParent(cards[i].transform, false);
-                    go.transform.localPosition = new Vector3(0f, 0.55f, -0.1f);
-                    go.transform.localScale = new Vector3(0.12f, 0.08f, 1f);
-                    child = go.transform;
-                }
-
-                var tm = child.GetComponent<TextMesh>();
-                if (tm == null)
-                {
-                    tm = child.gameObject.AddComponent<TextMesh>();
-                    tm.anchor = TextAnchor.MiddleCenter;
-                    tm.alignment = TextAlignment.Center;
-                    tm.fontSize = 64;
-                    tm.characterSize = 0.5f;
-                    tm.color = Color.black;
-                }
-
-                tm.gameObject.SetActive(false);
-                labels[i] = tm;
-            }
-
-            return labels;
-        }
-
-        private static void EnsureCollider(SpriteRenderer sr)
-        {
-            if (sr == null)
-            {
-                return;
-            }
-
-            var col = sr.GetComponent<BoxCollider2D>();
-            if (col == null)
-            {
-                col = sr.gameObject.AddComponent<BoxCollider2D>();
-            }
-
-            col.size = sr.sprite != null ? sr.sprite.bounds.size : new Vector2(1f, 1.5f);
-        }
-
-        private static void SetActiveCards(SpriteRenderer[] renders, bool active)
-        {
-            if (renders == null)
-            {
-                return;
-            }
-
-            for (var i = 0; i < renders.Length; i++)
-            {
-                if (renders[i] != null)
-                {
-                    renders[i].gameObject.SetActive(active);
-                }
-            }
-        }
-
-        private static Transform FindChild(Transform root, string name)
-        {
-            if (root == null)
-            {
-                return null;
-            }
-
-            if (root.name == name)
-            {
-                return root;
-            }
-
-            for (var i = 0; i < root.childCount; i++)
-            {
-                var found = FindChild(root.GetChild(i), name);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-
-            return null;
-        }
-
-        private static Color SuitTint(Suit suit)
-        {
-            switch (suit)
-            {
-                case Suit.Heart: return new Color(0.85f, 0.25f, 0.25f);
-                case Suit.Diamond: return new Color(0.9f, 0.45f, 0.2f);
-                case Suit.Club: return new Color(0.2f, 0.45f, 0.25f);
-                default: return new Color(0.2f, 0.25f, 0.55f);
-            }
+            _cards.Bind(transform);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace App.UI
     {
         public const string Home = "App.Home";
         public const string ConfirmDialog = "App.ConfirmDialog";
+        public const string GameUI = "App.GameUI";
     }
 }
 

@@ -11,6 +11,14 @@ namespace App.UI
     /// </summary>
     public sealed class GameBoardController : MonoBehaviour
     {
+        private const int CardsPerHand = 3;
+        private const float PlayerCardScale = 1f;
+        private const float AiCardScale = 0.6f;
+        private const float PlayerCardSpacing = 1.2f;
+        private const float AiCardSpacing = 0.8f;
+        private const string CardIconResourcePath = "Game/icon/CardIcon";
+        private static GameObject _cardIconPrefab;
+
         private GameTableViewModel _vm;
         private SpriteRenderer[] _playerCards;
         private TextMesh[] _playerRankLabels;
@@ -138,16 +146,12 @@ namespace App.UI
                 _camera = FindObjectOfType<Camera>();
             }
 
-            var hud = GameObject.Find("GameHud");
-            if (hud == null)
-            {
-                hud = gameObject;
-            }
+            var hud = gameObject;
 
             var mine = FindChild(hud.transform, "mineNode");
             if (mine != null)
             {
-                _playerCards = FindCardRenderers(mine);
+                _playerCards = FindCardRenderers(mine, PlayerCardScale, PlayerCardSpacing);
                 _playerRankLabels = EnsureRankLabels(_playerCards);
                 for (var i = 0; i < _playerCards.Length; i++)
                 {
@@ -211,9 +215,9 @@ namespace App.UI
             _enemyNodes[0] = left;
             _enemyNodes[1] = top;
             _enemyNodes[2] = right;
-            _enemyCards[0] = FindCardRenderers(left);
-            _enemyCards[1] = FindCardRenderers(top);
-            _enemyCards[2] = FindCardRenderers(right);
+            _enemyCards[0] = FindCardRenderers(left, AiCardScale, AiCardSpacing);
+            _enemyCards[1] = FindCardRenderers(top, AiCardScale, AiCardSpacing);
+            _enemyCards[2] = FindCardRenderers(right, AiCardScale, AiCardSpacing);
         }
 
         private void RefreshBoard()
@@ -351,7 +355,7 @@ namespace App.UI
             return -1;
         }
 
-        private static SpriteRenderer[] FindCardRenderers(Transform root)
+        private static SpriteRenderer[] FindCardRenderers(Transform root, float scale, float spacing)
         {
             if (root == null)
             {
@@ -359,13 +363,15 @@ namespace App.UI
             }
 
             var cardNode = FindChild(root, "cardNode") ?? root;
+            EnsureCardIcons(cardNode, scale, spacing);
+
             var list = new List<SpriteRenderer>();
-            for (var n = 1; n <= 3; n++)
+            for (var n = 1; n <= CardsPerHand; n++)
             {
-                var square = FindChild(cardNode, "Square" + n);
-                if (square != null)
+                var named = FindChild(cardNode, "CardIcon" + n) ?? FindChild(cardNode, "Square" + n);
+                if (named != null)
                 {
-                    var sr = square.GetComponent<SpriteRenderer>();
+                    var sr = named.GetComponent<SpriteRenderer>();
                     if (sr != null)
                     {
                         list.Add(sr);
@@ -376,9 +382,92 @@ namespace App.UI
             if (list.Count == 0)
             {
                 list.AddRange(cardNode.GetComponentsInChildren<SpriteRenderer>(true));
+                if (list.Count > CardsPerHand)
+                {
+                    list.RemoveRange(CardsPerHand, list.Count - CardsPerHand);
+                }
             }
 
             return list.ToArray();
+        }
+
+        private static void EnsureCardIcons(Transform cardNode, float scale, float spacing)
+        {
+            if (cardNode == null)
+            {
+                return;
+            }
+
+            var existing = CountCardSprites(cardNode);
+            if (existing >= CardsPerHand)
+            {
+                ApplyCardLayout(cardNode, scale, spacing);
+                return;
+            }
+
+            var prefab = LoadCardIconPrefab();
+            if (prefab == null)
+            {
+                Debug.LogWarning("CardIcon prefab not found at Resources/" + CardIconResourcePath);
+                return;
+            }
+
+            for (var i = existing; i < CardsPerHand; i++)
+            {
+                var go = UnityEngine.Object.Instantiate(prefab, cardNode, false);
+                go.name = "CardIcon" + (i + 1);
+            }
+
+            ApplyCardLayout(cardNode, scale, spacing);
+        }
+
+        private static void ApplyCardLayout(Transform cardNode, float scale, float spacing)
+        {
+            var prefab = LoadCardIconPrefab();
+            var baseScale = prefab != null ? prefab.transform.localScale : new Vector3(1f, 1.5f, 1f);
+            var baseRotation = prefab != null ? prefab.transform.localRotation : Quaternion.identity;
+            var index = 0;
+            for (var i = 0; i < cardNode.childCount; i++)
+            {
+                var child = cardNode.GetChild(i);
+                if (child.GetComponent<SpriteRenderer>() == null)
+                {
+                    continue;
+                }
+
+                child.localRotation = baseRotation;
+                child.localScale = baseScale * scale;
+                child.localPosition = new Vector3((index - 1) * spacing, 0f, 0f);
+                index++;
+                if (index >= CardsPerHand)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static int CountCardSprites(Transform cardNode)
+        {
+            var count = 0;
+            for (var i = 0; i < cardNode.childCount; i++)
+            {
+                if (cardNode.GetChild(i).GetComponent<SpriteRenderer>() != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static GameObject LoadCardIconPrefab()
+        {
+            if (_cardIconPrefab == null)
+            {
+                _cardIconPrefab = UnityEngine.Resources.Load<GameObject>(CardIconResourcePath);
+            }
+
+            return _cardIconPrefab;
         }
 
         private TextMesh[] EnsureRankLabels(SpriteRenderer[] cards)

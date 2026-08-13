@@ -1,8 +1,8 @@
+using App.Game;
 using App.UI;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.DI;
-using Framework.UI.Dialog;
 using UnityEngine;
 
 namespace App.Bootstrap
@@ -22,12 +22,15 @@ namespace App.Bootstrap
             DontDestroyOnLoad(gameObject);
 
             _container = CreateContainer();
+            _container.RegisterInstance(new GameSession());
+            _container.AddSingleton<GameTableViewModel>();
+
             _resources = ResourceFramework.Create();
             await _resources.InitializeAsync();
             RegisterResources(_container, _resources);
 
             _ui = UIFramework.Create(_container);
-            RegisterAppServices(_container);
+            RegisterTableController(_container);
 
             await _ui.UI.Open(_container.Resolve<HomeViewModel>());
         }
@@ -46,11 +49,22 @@ namespace App.Bootstrap
             container.RegisterInstance<IResourceService>(service);
         }
 
-        private static void RegisterAppServices(ServiceContainer container)
+        private static void RegisterTableController(ServiceContainer container)
         {
-            // Register app-level services here, e.g.:
-            // container.AddSingleton<IDeckService, DeckService>();
-        }
+            var hud = GameObject.Find("GameHud");
+            if (hud == null)
+            {
+                hud = new GameObject("GameHud");
+            }
 
+            var table = hud.GetComponent<GameTableController>();
+            if (table == null)
+            {
+                table = hud.AddComponent<GameTableController>();
+            }
+
+            table.enabled = false;
+            container.RegisterInstance(table);
+        }
     }
 }

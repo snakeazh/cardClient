@@ -24,6 +24,17 @@ namespace Framework.UI.Binding
             Add(source.Subscribe(value => text.text = value ?? string.Empty));
         }
 
+        public void BindText(Text text, ObservableProperty<string> source)
+        {
+            EnsureAlive();
+            if (text == null || source == null)
+            {
+                return;
+            }
+
+            Add(source.Subscribe(value => text.text = value ?? string.Empty));
+        }
+
         public void BindText<T>(TMP_Text text, ObservableProperty<T> source, Func<T, string> formatter)
         {
             EnsureAlive();

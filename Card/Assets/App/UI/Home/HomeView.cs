@@ -16,7 +16,13 @@ namespace App.UI
         {
             Binding.BindText(UI.Get<TMP_Text>("Title"), ViewModel.Title);
             Binding.BindText(UI.Get<TMP_Text>("Status"), ViewModel.Status);
-            Binding.BindCommand(UI.Get<Button>("DialogButton"), ViewModel.ShowDialogCommand);
+            var button = UI.Get<Button>("DialogButton");
+            Binding.BindCommand(button, ViewModel.ShowDialogCommand);
+            var label = button.GetComponentInChildren<TMP_Text>();
+            if (label != null)
+            {
+                label.text = "开始闯关";
+            }
         }
     }
 }

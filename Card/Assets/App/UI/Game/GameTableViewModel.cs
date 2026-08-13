@@ -14,6 +14,7 @@ namespace App.UI
             RaiseCommand = new RelayCommand(() => Session.RaiseBet(), () => Session.Phase == GamePhase.Betting);
             LookCommand = new RelayCommand(() => Session.LookCards(), () => Session.PlayerMayLookCards);
             FoldCommand = new RelayCommand(() => Session.Fold(), () => Session.Phase == GamePhase.Betting);
+            OpenCommand = new RelayCommand(() => Session.OpenCompare(), () => Session.Phase == GamePhase.Betting);
             MinusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(-GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
             PlusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
             ContinueCommand = new RelayCommand(() => Session.Continue(), () => Session.Phase == GamePhase.RoundSettle);
@@ -46,6 +47,7 @@ namespace App.UI
         public IRelayCommand RaiseCommand { get; }
         public IRelayCommand LookCommand { get; }
         public IRelayCommand FoldCommand { get; }
+        public IRelayCommand OpenCommand { get; }
         public IRelayCommand MinusBetCommand { get; }
         public IRelayCommand PlusBetCommand { get; }
         public IRelayCommand ContinueCommand { get; }
@@ -95,6 +97,7 @@ namespace App.UI
             RaiseCommand.RaiseCanExecuteChanged();
             LookCommand.RaiseCanExecuteChanged();
             FoldCommand.RaiseCanExecuteChanged();
+            OpenCommand.RaiseCanExecuteChanged();
             ContinueCommand.RaiseCanExecuteChanged();
             LeaveShopCommand.RaiseCanExecuteChanged();
             LoanCommand.RaiseCanExecuteChanged();

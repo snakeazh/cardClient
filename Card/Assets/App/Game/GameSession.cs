@@ -12,9 +12,11 @@ namespace App.Game
         private Deck _deck;
         private int _maxStreetUnits;
         private int _streetsWithoutRaise;
+        private int _bettingRound = 1;
         private bool _streetHadRaise;
         private bool _playerActedThisStreet;
         private int _pendingRubIndex = -1;
+        public readonly PlayerHistory History = new PlayerHistory();
 
         public GameSession() : this(new Random())
         {
@@ -161,6 +163,7 @@ namespace App.Game
 
             Player.Looked = true;
             Player.Status = "已看牌";
+            History.NoteLook();
             Hint = "已看牌，后续下注筹码翻倍。牌面仍对他人隐藏，直到比牌。";
             Notify();
         }
@@ -200,10 +203,46 @@ namespace App.Game
                 return;
             }
 
-            Player.Folded = true;
-            Player.Status = "弃牌";
-            Log("你弃牌");
+            if (_streetHadRaise)
+            {
+                History.FacedRaiseChances++;
+            }
+
+            History.NoteFold();
+            FoldAndReveal(Player, "弃牌");
+            LastResult = $"你弃牌 {EvaluateSeat(Player).Label}";
+            Log(LastResult);
+            RevealAllHands();
             ResolveAfterPlayerFold();
+        }
+
+        public void OpenCompare()
+        {
+            if (Phase != GamePhase.Betting || Player.Folded)
+            {
+                return;
+            }
+
+            var target = BestRemainingAi();
+            if (target == null)
+            {
+                Showdown();
+                return;
+            }
+
+            if (!CanAffordOpen(Player))
+            {
+                Hint = "筹码不足，无法开牌";
+                Notify();
+                return;
+            }
+
+            History.NoteOpen();
+            ForceOpen(Player, target);
+            if (Phase == GamePhase.Betting && !Player.Folded)
+            {
+                ResolveAiStreet();
+            }
         }
 
         public void Buy(string itemId)
@@ -482,6 +521,10 @@ namespace App.Game
                 var seat = Enemies[i];
                 seat.ActiveInStage = i < count;
                 seat.IsBoss = boss && i == 0;
+                if (seat.IsBoss)
+                {
+                    seat.Profile = AiProfile.Expert;
+                }
                 seat.Name = i < count ? names[i] : $"敌人{i + 1}";
                 seat.MaxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
                 seat.Hp = seat.ActiveInStage ? seat.MaxHp : 0;
@@ -508,6 +551,7 @@ namespace App.Game
             Pot = 0;
             _maxStreetUnits = GameBalance.MinBet;
             _streetsWithoutRaise = 0;
+            _bettingRound = 1;
             _streetHadRaise = false;
             _playerActedThisStreet = false;
             _pendingRubIndex = -1;
@@ -603,6 +647,7 @@ namespace App.Game
         private void EnterBetting()
         {
             Phase = GamePhase.Betting;
+            History.BeginHand(Player.Chips);
             Player.Status = "待下注";
             Hint = string.IsNullOrEmpty(Run.LastRubMessage)
                 ? string.Empty
@@ -636,6 +681,8 @@ namespace App.Game
                 units = Math.Min(MaxBetUnits(), _maxStreetUnits + GameBalance.MinBet);
             }
 
+            var facingRaise = !raise && Player.StreetUnits < _maxStreetUnits;
+            var chipsBefore = Player.Chips;
             if (!TryCommitUnits(Player, units, out var paid))
             {
                 Hint = "筹码不足";
@@ -650,6 +697,7 @@ namespace App.Game
             }
 
             _playerActedThisStreet = true;
+            History.NotePlayerBet(raise, Player.Looked, paid, chipsBefore, facingRaise);
             Player.Status = Player.Looked ? $"看牌下注 {paid}" : $"闷注 {paid}";
             Log($"{Player.Status}，奖池 {Pot}");
             if (Player.StreetUnits < _maxStreetUnits)
@@ -665,80 +713,95 @@ namespace App.Game
         private void ResolveAiStreet()
         {
             var scare = HasRelic(RelicId.ScareMask);
-            for (var i = 0; i < Enemies.Length; i++)
+            for (var pass = 0; pass < 6; pass++)
             {
-                var ai = Enemies[i];
-                if (!ai.Alive || ai.Folded)
+                if (CountInHand() <= 1)
                 {
-                    continue;
+                    Showdown();
+                    return;
                 }
 
-                DecideAi(ai, scare);
+                var acted = false;
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    var ai = Enemies[i];
+                    if (!ai.Alive || ai.Folded)
+                    {
+                        continue;
+                    }
+
+                    if (ai.StreetUnits >= _maxStreetUnits)
+                    {
+                        var hold = BuildAiDecision(ai, scare, false, false);
+                        if (hold.Action == AiAction.Open && CanAffordOpen(ai))
+                        {
+                            acted = true;
+                            if (ForceOpen(ai, Player))
+                            {
+                                return;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    acted = true;
+                    if (DecideAi(ai, scare))
+                    {
+                        return;
+                    }
+                }
+
+                if (!acted || AllNonPlayerMatched())
+                {
+                    break;
+                }
             }
 
             FinishStreetOrShowdown();
         }
 
-        private void DecideAi(SeatState ai, bool scare)
+        private bool DecideAi(SeatState ai, bool scare)
         {
-            var score = EvaluateSeat(ai);
-            var strength = (int)score.Type;
-            var callRate = 0.55f;
-            var raiseRate = 0.12f;
-            var foldRate = 0.20f;
+            var decision = BuildAiDecision(ai, scare, true, true);
+            switch (decision.Action)
+            {
+                case AiAction.Fold:
+                    FoldAndReveal(ai, "弃牌");
+                    Log($"{ai.Name} 弃牌 {EvaluateSeat(ai).Label}（{decision.Reason}）");
+                    return FinishIfOneLeft();
 
-            if (strength >= (int)HandType.Flush)
-            {
-                raiseRate = 0.62f;
-                callRate = 0.30f;
-                foldRate = 0.02f;
-            }
-            else if (strength == (int)HandType.HighCard)
-            {
-                foldRate = 0.62f;
-                raiseRate = 0.08f;
-                callRate = 0.18f;
-            }
-            else if (strength == (int)HandType.Pair)
-            {
-                raiseRate = 0.22f;
-                callRate = 0.55f;
-                foldRate = 0.12f;
+                case AiAction.Open:
+                    if (CanAffordOpen(ai))
+                    {
+                        return ForceOpen(ai, Player);
+                    }
+
+                    break;
             }
 
-            if (scare)
+            if (ai.Chips < CallCost(ai))
             {
-                callRate *= 0.9f;
-                raiseRate *= 0.9f;
-                foldRate = Math.Min(0.9f, foldRate + 0.08f);
-            }
-
-            if (ai.Chips < CostFor(ai, _maxStreetUnits))
-            {
-                ai.Folded = true;
-                ai.Status = "弃牌";
-                Log($"{ai.Name} 筹码不足，弃牌");
-                return;
-            }
-
-            var roll = _rng.NextDouble();
-            if (roll < foldRate && strength <= (int)HandType.Pair)
-            {
-                ai.Folded = true;
-                ai.Status = "弃牌";
-                Log($"{ai.Name} 弃牌");
-                return;
+                FoldAndReveal(ai, "筹码不足，弃牌");
+                Log($"{ai.Name} 筹码不足，弃牌 {EvaluateSeat(ai).Label}");
+                return FinishIfOneLeft();
             }
 
             var target = _maxStreetUnits;
-            if (roll < foldRate + raiseRate)
+            if (decision.Action == AiAction.AllIn)
             {
-                var percent = strength >= (int)HandType.Flush
-                    ? 0.20 + _rng.NextDouble() * 0.30
-                    : 0.05 + _rng.NextDouble() * 0.05;
-                var raiseUnits = AlignBet((int)(ai.Chips * percent) / (ai.Looked ? 2 : 1));
-                target = Math.Max(_maxStreetUnits + GameBalance.MinBet, raiseUnits);
-                target = Math.Min(target, UnitsAffordable(ai));
+                target = Math.Max(_maxStreetUnits, UnitsAffordable(ai));
+            }
+            else if (decision.Action == AiAction.Raise)
+            {
+                target = SizeAiRaise(ai, decision.WinRate);
+            }
+
+            if (target < _maxStreetUnits)
+            {
+                FoldAndReveal(ai, "无法跟注，弃牌");
+                Log($"{ai.Name} 无法跟注，弃牌 {EvaluateSeat(ai).Label}");
+                return FinishIfOneLeft();
             }
 
             if (TryCommitUnits(ai, target, out var paid))
@@ -747,21 +810,191 @@ namespace App.Game
                 {
                     _maxStreetUnits = target;
                     _streetHadRaise = true;
-                    ai.Status = $"加注 {paid}";
+                    ai.Status = paid > 0 ? $"加注 {paid}" : "加注";
                 }
                 else
                 {
-                    ai.Status = $"跟注 {paid}";
+                    ai.Status = paid > 0 ? $"跟注 {paid}" : "跟注";
                 }
 
-                Log($"{ai.Name} {ai.Status}");
+                Log($"{ai.Name} {ai.Status}（{decision.Reason}）");
+                return false;
+            }
+
+            FoldAndReveal(ai, "弃牌");
+            Log($"{ai.Name} 弃牌 {EvaluateSeat(ai).Label}");
+            return FinishIfOneLeft();
+        }
+
+        private int SizeAiRaise(SeatState ai, float winRate)
+        {
+            var minRaise = _maxStreetUnits + GameBalance.MinBet;
+            var affordable = UnitsAffordable(ai);
+            var effective = ComputeEffectiveStack(ai);
+            var spr = Pot <= 0 ? 99f : effective / (float)Pot;
+            var bb = GameBalance.MinBet <= 0 ? 0f : effective / (float)GameBalance.MinBet;
+            var profile = ai.Profile ?? AiProfile.BalancedAggressive;
+
+            float potFrac;
+            if (bb < 10f || spr < 3f)
+            {
+                return Math.Max(minRaise, affordable);
+            }
+
+            if (bb > 40f || spr > 6f)
+            {
+                potFrac = 0.32f + winRate * 0.18f + profile.Aggression * 0.08f;
             }
             else
             {
-                ai.Folded = true;
-                ai.Status = "弃牌";
-                Log($"{ai.Name} 弃牌");
+                potFrac = 0.48f + winRate * 0.22f + profile.Aggression * 0.10f;
             }
+
+            var extra = AlignBet(Math.Max(GameBalance.MinBet, (int)(Pot * potFrac)));
+            var target = Math.Max(minRaise, _maxStreetUnits + extra);
+            if (bb > 40f)
+            {
+                var cap = AlignBet(Math.Max(minRaise, _maxStreetUnits + effective / 3));
+                target = Math.Min(target, cap);
+            }
+
+            target = Math.Min(target, affordable);
+            if (target < minRaise)
+            {
+                return _maxStreetUnits;
+            }
+
+            return target;
+        }
+
+        private int ComputeEffectiveStack(SeatState ai)
+        {
+            var minOpp = int.MaxValue;
+            foreach (var seat in AllSeats())
+            {
+                if (seat == ai || !Participates(seat) || seat.Folded)
+                {
+                    continue;
+                }
+
+                if (seat.Chips < minOpp)
+                {
+                    minOpp = seat.Chips;
+                }
+            }
+
+            if (minOpp == int.MaxValue)
+            {
+                return Math.Max(0, ai.Chips);
+            }
+
+            return Math.Max(0, Math.Min(ai.Chips, minOpp));
+        }
+
+        private AiDecision BuildAiDecision(SeatState ai, bool scare, bool canRaise, bool canAllIn)
+        {
+            var score = EvaluateSeat(ai);
+            var visible = CollectVisibleDeadCards(ai);
+            var opponents = Math.Max(1, CountInHand() - 1);
+            var winRate = ZhaJinHuaOdds.EstimateWinRate(ai.Hand, visible, opponents, _rng);
+            var callCost = CallCost(ai);
+            var shortest = int.MaxValue;
+            var remainingAi = 0;
+            var position = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var seat = Enemies[i];
+                if (!seat.Alive || seat.Folded)
+                {
+                    continue;
+                }
+
+                if (seat == ai)
+                {
+                    position = remainingAi;
+                }
+
+                remainingAi++;
+            }
+
+            foreach (var seat in AllSeats())
+            {
+                if (seat == ai || !Participates(seat) || seat.Folded)
+                {
+                    continue;
+                }
+
+                if (seat.Chips < shortest)
+                {
+                    shortest = seat.Chips;
+                }
+            }
+
+            if (shortest == int.MaxValue)
+            {
+                shortest = ai.Chips;
+            }
+
+            var effective = Math.Min(ai.Chips, shortest);
+            var playerBb = Player.Chips / (float)Math.Max(1, GameBalance.MinBet);
+            var playerStrength = Player.Folded ? 0.30f : History.EstimateStrength(Player.Chips, GameBalance.MinBet);
+            return AiBrain.Decide(new AiContext
+            {
+                Ai = ai,
+                Score = score,
+                WinRate = winRate,
+                StraightFlushDraw = ZhaJinHuaOdds.IsStraightFlushDraw(ai.Hand),
+                Pot = Pot,
+                CallCost = callCost,
+                AiChips = ai.Chips,
+                EffectiveStack = Math.Max(0, effective),
+                ShortestOpponent = Math.Max(0, shortest),
+                PlayerChips = Player.Chips,
+                BigBlind = GameBalance.MinBet,
+                BettingRound = _bettingRound,
+                RemainingPlayers = opponents + 1,
+                PositionAmongAi = position,
+                RemainingAiCount = remainingAi,
+                Scare = scare,
+                CanOpen = CanAffordOpen(ai),
+                CanRaise = canRaise && UnitsAffordable(ai) >= _maxStreetUnits + GameBalance.MinBet,
+                CanAllIn = canAllIn,
+                History = History,
+                Rng = _rng,
+                PlayerFolded = Player.Folded,
+                PlayerLooked = Player.Looked,
+                PlayerStreetCalls = History.StreetCalls,
+                PlayerLookedCalls = History.LookedCalls,
+                PlayerBlindCalls = History.BlindCalls,
+                PlayerConsecutiveCalls = History.ConsecutiveCalls,
+                PlayerConsecutiveBlindCalls = History.ConsecutiveBlindCalls,
+                PlayerHandRaises = History.HandRaises,
+                PlayerCalledFacingRaise = History.CalledFacingRaise,
+                PlayerOnlyCalled = History.OnlyCalledThisHand,
+                PlayerDeep = playerBb > 40f,
+                PlayerShort = playerBb < 10f,
+                PlayerMaxCallStackFrac = History.MaxCallStackFrac,
+                PlayerStrength = playerStrength
+            });
+        }
+
+        private List<Card> CollectVisibleDeadCards(SeatState hero)
+        {
+            var list = new List<Card>();
+            foreach (var seat in AllSeats())
+            {
+                if (seat == hero || !seat.ShowCards || seat.Hand == null)
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < seat.Hand.Length; i++)
+                {
+                    list.Add(seat.Hand[i]);
+                }
+            }
+
+            return list;
         }
 
         private void FinishStreetOrShowdown()
@@ -775,7 +1008,36 @@ namespace App.Game
 
             if (!Player.Folded && Player.StreetUnits < _maxStreetUnits)
             {
-                Hint = "有人加注，请跟注、再加注或弃牌";
+                Hint = "有人加注，请跟注、加注、开牌或弃牌";
+                Notify();
+                return;
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var ai = Enemies[i];
+                if (!ai.Alive || ai.Folded)
+                {
+                    continue;
+                }
+
+                if (ai.StreetUnits < _maxStreetUnits)
+                {
+                    FoldAndReveal(ai, "未跟注，弃牌");
+                    Log($"{ai.Name} 未跟上注额，弃牌 {EvaluateSeat(ai).Label}");
+                }
+            }
+
+            alive = CountInHand();
+            if (alive <= 1)
+            {
+                Showdown();
+                return;
+            }
+
+            if (!AllNonPlayerMatched())
+            {
+                Hint = "等待跟注";
                 Notify();
                 return;
             }
@@ -803,8 +1065,180 @@ namespace App.Game
             }
 
             _maxStreetUnits = GameBalance.MinBet;
-            Hint = $"第 {_streetsWithoutRaise + 1} 轮下注。连续两轮无人加注将强制比牌。";
+            _bettingRound++;
+            Hint = $"第 {_bettingRound} 轮下注。大牌会先拉注，筹码不足再开牌保收益。";
             Notify();
+        }
+
+        private int OpenUnits() => Math.Max(_maxStreetUnits, GameBalance.MinBet) * 2;
+
+        private bool CanAffordOpen(SeatState seat)
+        {
+            return CallCost(seat, OpenUnits()) <= seat.Chips;
+        }
+
+        private int CallCost(SeatState seat, int units = -1)
+        {
+            if (units < 0)
+            {
+                units = _maxStreetUnits;
+            }
+
+            units = Math.Max(units, seat.StreetUnits);
+            var cost = CostFor(seat, units) - CostFor(seat, seat.StreetUnits);
+            if (Run.Affix == BossAffix.AntiRaise && seat.IsPlayer)
+            {
+                cost = (int)Math.Ceiling(cost * 1.5f);
+            }
+
+            return cost;
+        }
+
+        private bool ForceOpen(SeatState opener, SeatState target)
+        {
+            if (opener == null || target == null || opener.Folded || target.Folded)
+            {
+                return false;
+            }
+
+            if (!TryCommitUnits(opener, OpenUnits(), out var paid))
+            {
+                Hint = $"{opener.Name} 开牌失败：筹码不足";
+                Notify();
+                return false;
+            }
+
+            RevealHand(opener);
+            RevealHand(target);
+            opener.Status = $"开牌 {paid}";
+            Log($"{opener.Name} 强制开牌（{paid}）vs {target.Name}");
+
+            var openScore = EvaluateSeat(opener);
+            var targetScore = EvaluateSeat(target);
+            var openerWins = openScore.CompareTo(targetScore) > 0;
+            Log($"{opener.Name} {openScore.Label} vs {target.Name} {targetScore.Label}");
+
+            if (openerWins)
+            {
+                target.Folded = true;
+                target.Status = "开牌失败";
+                target.Banner = targetScore.Label;
+                LastResult = $"{opener.Name} 开牌胜出 {openScore.Label} > {targetScore.Label}";
+                if (target.IsPlayer)
+                {
+                    RevealAllHands();
+                    SettleAfterPlayerOut();
+                    return true;
+                }
+            }
+            else
+            {
+                opener.Folded = true;
+                opener.Status = "开牌失败";
+                opener.Banner = openScore.Label;
+                LastResult = $"{target.Name} 开牌胜出 {targetScore.Label} > {openScore.Label}";
+                if (opener.IsPlayer)
+                {
+                    RevealAllHands();
+                    SettleAfterPlayerOut();
+                    return true;
+                }
+            }
+
+            if (CountInHand() <= 1)
+            {
+                Showdown();
+                return true;
+            }
+
+            Hint = LastResult + "。继续下注";
+            Notify();
+            return false;
+        }
+
+        private void SettleAfterPlayerOut()
+        {
+            Run.ConsecutiveLosses++;
+            if (Run.ConsecutiveLosses >= 2)
+            {
+                Run.Tilted = true;
+                Log("心态崩了：下一局最大下注限制为当前筹码 50%");
+            }
+
+            var winner = BestRemainingAi();
+            if (winner != null)
+            {
+                winner.Chips += Pot;
+                Log($"{winner.Name} 吃下奖池 {Pot}");
+                ApplyBankruptcy(false, winner);
+            }
+
+            Pot = 0;
+            AfterRound();
+        }
+
+        private void RevealHand(SeatState seat)
+        {
+            if (seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            seat.ShowCards = true;
+            var score = EvaluateSeat(seat);
+            if (!string.IsNullOrEmpty(score.Label))
+            {
+                seat.Banner = score.Label;
+            }
+        }
+
+        private void RevealAllHands()
+        {
+            CardsRevealed = true;
+            foreach (var seat in AllSeats())
+            {
+                if (!Participates(seat) || seat.Hand == null)
+                {
+                    continue;
+                }
+
+                RevealHand(seat);
+            }
+        }
+
+        private void FoldAndReveal(SeatState seat, string status)
+        {
+            seat.Folded = true;
+            RevealHand(seat);
+            var label = EvaluateSeat(seat).Label;
+            seat.Status = string.IsNullOrEmpty(label) ? status : $"{status} {label}";
+        }
+
+        private bool FinishIfOneLeft()
+        {
+            if (CountInHand() <= 1)
+            {
+                RevealAllHands();
+                Showdown();
+                return true;
+            }
+
+            Notify();
+            return false;
+        }
+
+        private bool AllNonPlayerMatched()
+        {
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var ai = Enemies[i];
+                if (ai.Alive && !ai.Folded && ai.StreetUnits < _maxStreetUnits)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void ResolveAfterPlayerFold()
@@ -831,7 +1265,7 @@ namespace App.Game
         private void Showdown()
         {
             Phase = GamePhase.Showdown;
-            CardsRevealed = true;
+            RevealAllHands();
 
             if (Run.Affix == BossAffix.XRay)
             {
@@ -1195,8 +1629,10 @@ namespace App.Game
         {
             seat.StreetUnits = 0;
             seat.TotalBet = 0;
+            seat.RoundStartChips = seat.Chips;
             seat.Folded = false;
             seat.Looked = false;
+            seat.ShowCards = false;
             seat.Status = seat.Alive || seat.IsPlayer ? string.Empty : "未上场";
             if (!seat.IsPlayer && !seat.Alive)
             {
@@ -1277,12 +1713,30 @@ namespace App.Game
 
         private SeatState CreateSeat(int id, string name, bool player)
         {
+            AiProfile profile = null;
+            if (!player)
+            {
+                switch (id)
+                {
+                    case 1:
+                        profile = AiProfile.Conservative;
+                        break;
+                    case 3:
+                        profile = AiProfile.Aggressive;
+                        break;
+                    default:
+                        profile = AiProfile.BalancedAggressive;
+                        break;
+                }
+            }
+
             return new SeatState
             {
                 Id = id,
                 Name = name,
                 IsPlayer = player,
-                Chips = player ? GameBalance.PlayerStartChips : 0
+                Chips = player ? GameBalance.PlayerStartChips : 0,
+                Profile = profile
             };
         }
 

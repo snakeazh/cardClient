@@ -89,23 +89,12 @@ namespace App.Game
 
         public static int EnemyCountForStage(int stage)
         {
-            var local = ((stage - 1) % 10) + 1;
-            if (local <= 3)
+            if (IsBossStage(stage))
             {
                 return 1;
             }
 
-            if (local <= 6)
-            {
-                return 2;
-            }
-
-            if (local <= 9)
-            {
-                return 3;
-            }
-
-            return 1;
+            return 3;
         }
 
         public static bool IsBossStage(int stage) => ((stage - 1) % 10) + 1 == 10;
@@ -235,12 +224,15 @@ namespace App.Game
         public int Chips;
         public int StreetUnits;
         public int TotalBet;
+        public int RoundStartChips;
         public bool Folded;
         public bool Looked;
+        public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
         public Card[] Hand = new Card[3];
         public string Status = string.Empty;
         public string Banner = string.Empty;
+        public AiProfile Profile;
     }
 
     public sealed class RunState

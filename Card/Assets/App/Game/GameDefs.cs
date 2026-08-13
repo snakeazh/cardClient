@@ -12,7 +12,8 @@ namespace App.Game
         RoundSettle = 4,
         Shop = 5,
         StageFail = 6,
-        RunComplete = 7
+        RunComplete = 7,
+        WaitingAttack = 8
     }
 
     public enum RelicId
@@ -79,6 +80,7 @@ namespace App.Game
     public static class GameBalance
     {
         public const int PlayerStartChips = 800;
+        public const int PlayerStartHp = 4000;
         public const int MinBet = 50;
         public const int MaxRelics = 4;
         public const float RescueRatio = 0.15f;

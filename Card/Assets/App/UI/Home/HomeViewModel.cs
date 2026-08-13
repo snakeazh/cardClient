@@ -10,18 +10,15 @@ namespace App.UI
         private readonly IUIManager _ui;
         private readonly GameSession _session;
         private readonly GameTableViewModel _tableVm;
-        private readonly GameTableController _table;
 
         public HomeViewModel(
             IUIManager ui,
             GameSession session,
-            GameTableViewModel tableVm,
-            GameTableController table)
+            GameTableViewModel tableVm)
         {
             _ui = ui;
             _session = session;
             _tableVm = tableVm;
-            _table = table;
             Title = new ObservableProperty<string>("炸金花：搓牌对决");
             Status = new ObservableProperty<string>("心理博弈 · 盲搓改命 · 关卡闯关");
             ShowDialogCommand = new RelayCommand(StartGame);
@@ -34,8 +31,8 @@ namespace App.UI
         private async void StartGame()
         {
             _session.StartNewRun();
-            _table.Attach(_tableVm);
             await _ui.Close(this);
+            await _ui.Open(_tableVm);
         }
     }
 }

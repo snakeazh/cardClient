@@ -30,7 +30,6 @@ namespace App.Bootstrap
             RegisterResources(_container, _resources);
 
             _ui = UIFramework.Create(_container);
-            RegisterTableController(_container);
 
             await _ui.UI.Open(_container.Resolve<HomeViewModel>());
         }
@@ -47,24 +46,6 @@ namespace App.Bootstrap
             var service = resources.Resources;
             container.RegisterInstance(service);
             container.RegisterInstance<IResourceService>(service);
-        }
-
-        private static void RegisterTableController(ServiceContainer container)
-        {
-            var hud = GameObject.Find("GameHud");
-            if (hud == null)
-            {
-                hud = new GameObject("GameHud");
-            }
-
-            var table = hud.GetComponent<GameTableController>();
-            if (table == null)
-            {
-                table = hud.AddComponent<GameTableController>();
-            }
-
-            table.enabled = false;
-            container.RegisterInstance(table);
         }
     }
 }

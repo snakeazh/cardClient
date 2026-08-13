@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace App.Game
 {
@@ -16,6 +15,12 @@ namespace App.Game
         private bool _streetHadRaise;
         private bool _playerActedThisStreet;
         private int _pendingRubIndex = -1;
+        private RevealKind _revealKind;
+        private SeatState _pendingWinner;
+        private HandScore _pendingBest;
+        private SeatState _pendingOpener;
+        private SeatState _pendingOpenTarget;
+        private bool _pendingOpenerWins;
         public readonly PlayerHistory History = new PlayerHistory();
 
         public GameSession() : this(new Random())
@@ -46,7 +51,15 @@ namespace App.Game
         public string Hint { get; private set; } = "点击开始闯关";
         public string LastResult { get; private set; } = string.Empty;
         public bool CardsRevealed { get; private set; }
-        public bool PlayerMayLookCards => Phase == GamePhase.Betting && !Player.Looked;
+        public int DealSerial { get; private set; }
+        public int BettingRound => _bettingRound;
+        public int PendingAttackDamage { get; private set; }
+        public int RevealPlaySerial { get; private set; }
+        public int RevealWinnerId { get; private set; } = -1;
+        public readonly List<int> RevealSeatIds = new List<int>();
+        public bool SelectingOpenTarget { get; private set; }
+        public bool PlayerMayLookCards => Phase == GamePhase.Betting && !Player.Looked && !Player.Folded;
+        public bool PlayerCanOpen => Phase == GamePhase.Betting && !Player.Folded && CanAffordOpen(Player);
 
         public IEnumerable<SeatState> AllSeats()
         {
@@ -121,18 +134,33 @@ namespace App.Game
             Player.Hand[index] = next;
             Run.RubsLeft--;
             _pendingRubIndex = -1;
-            Run.RubbedReveal[index] = true;
-            Run.LastRubMessage = $"第 {index + 1} 张搓成 {next.DisplayName}";
+            Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
 
             if (Run.RubsLeft > 0)
             {
-                Hint = $"{Run.LastRubMessage}。还可再搓 {Run.RubsLeft} 次，点选一张牌滑动搓开";
+                Hint = $"{Run.LastRubMessage}。还可再搓 {Run.RubsLeft} 次，或点取消跳过";
                 Notify();
                 return;
             }
 
-            EnterBetting();
+            Phase = GamePhase.Betting;
+            Hint = $"{Run.LastRubMessage}。看牌下注筹码翻倍，请下注";
+            Notify();
+        }
+
+        public void SkipRub()
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            _pendingRubIndex = -1;
+            Run.RubsLeft = 0;
+            Phase = GamePhase.Betting;
+            Hint = "已取消搓牌。看牌下注筹码翻倍，请下注";
+            Notify();
         }
 
         public void PeekMagnifier(int index)
@@ -156,7 +184,7 @@ namespace App.Game
 
         public void LookCards()
         {
-            if (Phase != GamePhase.Betting || Player.Looked)
+            if (!PlayerMayLookCards)
             {
                 return;
             }
@@ -164,7 +192,13 @@ namespace App.Game
             Player.Looked = true;
             Player.Status = "已看牌";
             History.NoteLook();
-            Hint = "已看牌，后续下注筹码翻倍。牌面仍对他人隐藏，直到比牌。";
+            Run.RubsLeft = 1 + Run.ExtraRubCharges;
+            Run.ExtraRubCharges = 0;
+            _pendingRubIndex = -1;
+            Phase = GamePhase.WaitingRub;
+            Hint = Run.RubsLeft > 1
+                ? $"看牌后可搓牌（可搓 {Run.RubsLeft} 次），或点取消跳过"
+                : "看牌后可搓一张牌，或点取消跳过";
             Notify();
         }
 
@@ -209,40 +243,205 @@ namespace App.Game
             }
 
             History.NoteFold();
-            FoldAndReveal(Player, "弃牌");
-            LastResult = $"你弃牌 {EvaluateSeat(Player).Label}";
-            Log(LastResult);
-            RevealAllHands();
+            SelectingOpenTarget = false;
+            FoldSeat(Player, "弃牌");
+            Log("你弃牌");
+            LastResult = "你弃牌";
             ResolveAfterPlayerFold();
         }
 
         public void OpenCompare()
+        {
+            RequestShowdown();
+        }
+
+        public void RequestShowdown()
         {
             if (Phase != GamePhase.Betting || Player.Folded)
             {
                 return;
             }
 
-            var target = BestRemainingAi();
-            if (target == null)
+            SelectingOpenTarget = false;
+            if (Player.StreetUnits < _maxStreetUnits)
             {
-                Showdown();
+                if (!TryCommitUnits(Player, _maxStreetUnits, out var paid))
+                {
+                    Hint = "筹码不足，无法比牌";
+                    Notify();
+                    return;
+                }
+
+                _playerActedThisStreet = true;
+                Player.Status = Player.Looked ? $"看牌比牌 {paid}" : $"比牌 {paid}";
+                Log($"{Player.Status}，奖池 {Pot}");
+            }
+
+            Showdown();
+        }
+
+        public void AttackEnemyAtSlot(int visualSlot)
+        {
+            if (Phase == GamePhase.Betting && SelectingOpenTarget)
+            {
+                var duel = EnemyAtVisualSlot(visualSlot);
+                if (duel == null || !duel.Alive || duel.Folded)
+                {
+                    Hint = "请点选一名未弃牌的敌人开牌";
+                    Notify();
+                    return;
+                }
+
+                SelectingOpenTarget = false;
+                ForceOpen(Player, duel);
                 return;
             }
 
-            if (!CanAffordOpen(Player))
+            if (Phase != GamePhase.WaitingAttack)
             {
-                Hint = "筹码不足，无法开牌";
+                return;
+            }
+
+            var target = EnemyAtVisualSlot(visualSlot);
+            if (target == null || !target.Alive)
+            {
+                Hint = "请选择一名存活敌人攻击";
                 Notify();
                 return;
             }
 
-            History.NoteOpen();
-            ForceOpen(Player, target);
-            if (Phase == GamePhase.Betting && !Player.Folded)
+            FinishPlayerAttack(target);
+        }
+
+        public bool CanAttackSlot(int visualSlot)
+        {
+            var target = EnemyAtVisualSlot(visualSlot);
+            if (target == null || !target.Alive)
             {
-                ResolveAiStreet();
+                return false;
             }
+
+            if (Phase == GamePhase.WaitingAttack)
+            {
+                return true;
+            }
+
+            return Phase == GamePhase.Betting && SelectingOpenTarget && !target.Folded;
+        }
+
+        public void AnnounceSeatRevealed(int seatId)
+        {
+            if (_revealKind == RevealKind.None)
+            {
+                return;
+            }
+
+            var seat = SeatById(seatId);
+            if (seat == null)
+            {
+                return;
+            }
+
+            RevealHand(seat);
+            var score = EvaluateSeat(seat);
+            Hint = seat.Folded
+                ? $"{seat.Name} 弃牌，亮出 {score.Label}"
+                : $"{seat.Name} 亮出 {score.Label}！";
+            Notify();
+        }
+
+        public void FinishRevealPlay()
+        {
+            var kind = _revealKind;
+            _revealKind = RevealKind.None;
+            if (kind == RevealKind.Showdown)
+            {
+                ApplyShowdownSettlement();
+                return;
+            }
+
+            if (kind == RevealKind.OpenDuel)
+            {
+                ApplyOpenDuelSettlement();
+            }
+        }
+
+        private void FinishPlayerAttack(SeatState target)
+        {
+            var damage = Math.Max(1, PendingAttackDamage);
+            PendingAttackDamage = 0;
+            ApplyDamage(target, damage, true);
+            if (Run.SplashThisRound)
+            {
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    if (Enemies[i] != target && Enemies[i].Alive)
+                    {
+                        ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
+                    }
+                }
+
+                Run.SplashThisRound = false;
+            }
+
+            AfterRound();
+        }
+
+        private void DealPlayerLossDamage(SeatState winner)
+        {
+            if (winner == null || winner.IsPlayer)
+            {
+                return;
+            }
+
+            var score = EvaluateSeat(winner);
+            var damage = HandEvaluator.ComputeDamage(score, Math.Max(Pot, GameBalance.MinBet), 1f);
+            ApplyDamage(Player, damage, true);
+        }
+
+        private SeatState EnemyAtVisualSlot(int visualSlot)
+        {
+            var activeCount = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].ActiveInStage)
+                {
+                    activeCount++;
+                }
+            }
+
+            var placed = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (!Enemies[i].ActiveInStage)
+                {
+                    continue;
+                }
+
+                if (TableVisualSlot(placed, activeCount) == visualSlot)
+                {
+                    return Enemies[i];
+                }
+
+                placed++;
+            }
+
+            return null;
+        }
+
+        private static int TableVisualSlot(int enemyIndex, int activeCount)
+        {
+            if (activeCount <= 1)
+            {
+                return 1;
+            }
+
+            if (activeCount == 2)
+            {
+                return enemyIndex == 0 ? 0 : 2;
+            }
+
+            return enemyIndex;
         }
 
         public void Buy(string itemId)
@@ -364,8 +563,10 @@ namespace App.Game
             }
 
             Run.AdsReviveThisStage++;
+            Player.MaxHp = Math.Max(Player.MaxHp, GameBalance.PlayerStartHp);
+            Player.Hp = Player.MaxHp;
             GrantChips(Math.Max(GameBalance.MinBet, GameBalance.PlayerStartChips / 2));
-            Log("观看广告复活，恢复 50% 初始筹码");
+            Log("观看广告复活，恢复生命与 50% 初始筹码");
             ContinueAfterLoan();
         }
 
@@ -505,6 +706,9 @@ namespace App.Game
             Run.ExtraRubCharges = 0;
             Run.Affix = BossAffix.None;
             GrantChips(GameBalance.PlayerStartChips, reset: true);
+            Player.ActiveInStage = true;
+            Player.MaxHp = GameBalance.PlayerStartHp;
+            Player.Hp = GameBalance.PlayerStartHp;
 
             var count = GameBalance.EnemyCountForStage(Run.Stage);
             var boss = GameBalance.IsBossStage(Run.Stage);
@@ -557,12 +761,16 @@ namespace App.Game
             _pendingRubIndex = -1;
             BetUnits = GameBalance.MinBet;
             LastResult = string.Empty;
-            Run.RubsLeft = 1 + Run.ExtraRubCharges;
-            Run.ExtraRubCharges = 0;
+            Run.RubsLeft = 0;
+            SelectingOpenTarget = false;
+            RevealWinnerId = -1;
+            RevealSeatIds.Clear();
+            _revealKind = RevealKind.None;
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
             Run.LastRubMessage = string.Empty;
+            PendingAttackDamage = 0;
             for (var i = 0; i < Run.RubbedReveal.Length; i++)
             {
                 Run.RubbedReveal[i] = false;
@@ -584,15 +792,12 @@ namespace App.Game
 
             _deck = new Deck(_rng);
             DealAll();
-            Phase = GamePhase.WaitingRub;
-            Hint = Run.RubsLeft > 1
-                ? $"强制盲搓：点选一张牌并滑动搓开（本局可搓 {Run.RubsLeft} 次）"
-                : "强制盲搓：点选一张牌，在牌面上滑动搓开";
-            Notify();
+            EnterBetting();
         }
 
         private void DealAll()
         {
+            DealSerial++;
             foreach (var seat in AllSeats())
             {
                 if (!seat.Alive && !seat.IsPlayer)
@@ -668,6 +873,8 @@ namespace App.Game
             {
                 return;
             }
+
+            SelectingOpenTarget = false;
 
             var units = BetUnits;
             if (!raise)
@@ -767,8 +974,8 @@ namespace App.Game
             switch (decision.Action)
             {
                 case AiAction.Fold:
-                    FoldAndReveal(ai, "弃牌");
-                    Log($"{ai.Name} 弃牌 {EvaluateSeat(ai).Label}（{decision.Reason}）");
+                    FoldSeat(ai, "弃牌");
+                    Log($"{ai.Name} 弃牌（{decision.Reason}）");
                     return FinishIfOneLeft();
 
                 case AiAction.Open:
@@ -782,8 +989,8 @@ namespace App.Game
 
             if (ai.Chips < CallCost(ai))
             {
-                FoldAndReveal(ai, "筹码不足，弃牌");
-                Log($"{ai.Name} 筹码不足，弃牌 {EvaluateSeat(ai).Label}");
+                FoldSeat(ai, "筹码不足，弃牌");
+                Log($"{ai.Name} 筹码不足，弃牌");
                 return FinishIfOneLeft();
             }
 
@@ -799,8 +1006,8 @@ namespace App.Game
 
             if (target < _maxStreetUnits)
             {
-                FoldAndReveal(ai, "无法跟注，弃牌");
-                Log($"{ai.Name} 无法跟注，弃牌 {EvaluateSeat(ai).Label}");
+                FoldSeat(ai, "无法跟注，弃牌");
+                Log($"{ai.Name} 无法跟注，弃牌");
                 return FinishIfOneLeft();
             }
 
@@ -821,8 +1028,8 @@ namespace App.Game
                 return false;
             }
 
-            FoldAndReveal(ai, "弃牌");
-            Log($"{ai.Name} 弃牌 {EvaluateSeat(ai).Label}");
+            FoldSeat(ai, "弃牌");
+            Log($"{ai.Name} 弃牌");
             return FinishIfOneLeft();
         }
 
@@ -1023,8 +1230,8 @@ namespace App.Game
 
                 if (ai.StreetUnits < _maxStreetUnits)
                 {
-                    FoldAndReveal(ai, "未跟注，弃牌");
-                    Log($"{ai.Name} 未跟上注额，弃牌 {EvaluateSeat(ai).Label}");
+                    FoldSeat(ai, "未跟注，弃牌");
+                    Log($"{ai.Name} 未跟上注额，弃牌");
                 }
             }
 
@@ -1108,52 +1315,21 @@ namespace App.Game
                 return false;
             }
 
-            RevealHand(opener);
-            RevealHand(target);
-            opener.Status = $"开牌 {paid}";
-            Log($"{opener.Name} 强制开牌（{paid}）vs {target.Name}");
-
             var openScore = EvaluateSeat(opener);
             var targetScore = EvaluateSeat(target);
-            var openerWins = openScore.CompareTo(targetScore) > 0;
-            Log($"{opener.Name} {openScore.Label} vs {target.Name} {targetScore.Label}");
+            _pendingOpenerWins = openScore.CompareTo(targetScore) > 0;
+            _pendingOpener = opener;
+            _pendingOpenTarget = target;
+            _pendingWinner = _pendingOpenerWins ? opener : target;
+            _pendingBest = _pendingOpenerWins ? openScore : targetScore;
+            opener.Status = $"开牌 {paid}";
+            Log($"{opener.Name} 开牌单挑 {target.Name}（{paid}）");
 
-            if (openerWins)
-            {
-                target.Folded = true;
-                target.Status = "开牌失败";
-                target.Banner = targetScore.Label;
-                LastResult = $"{opener.Name} 开牌胜出 {openScore.Label} > {targetScore.Label}";
-                if (target.IsPlayer)
-                {
-                    RevealAllHands();
-                    SettleAfterPlayerOut();
-                    return true;
-                }
-            }
-            else
-            {
-                opener.Folded = true;
-                opener.Status = "开牌失败";
-                opener.Banner = openScore.Label;
-                LastResult = $"{target.Name} 开牌胜出 {targetScore.Label} > {openScore.Label}";
-                if (opener.IsPlayer)
-                {
-                    RevealAllHands();
-                    SettleAfterPlayerOut();
-                    return true;
-                }
-            }
-
-            if (CountInHand() <= 1)
-            {
-                Showdown();
-                return true;
-            }
-
-            Hint = LastResult + "。继续下注";
+            BeginRevealPlay(RevealKind.OpenDuel, BuildDuelRevealOrder(opener, target), _pendingWinner);
+            Hint = $"{opener.Name} 开牌单挑 {target.Name}！";
+            LastResult = $"{opener.Name} vs {target.Name}";
             Notify();
-            return false;
+            return true;
         }
 
         private void SettleAfterPlayerOut()
@@ -1188,7 +1364,7 @@ namespace App.Game
             var score = EvaluateSeat(seat);
             if (!string.IsNullOrEmpty(score.Label))
             {
-                seat.Banner = score.Label;
+                seat.Banner = seat.Folded ? $"弃牌 {score.Label}" : score.Label;
             }
         }
 
@@ -1206,19 +1382,22 @@ namespace App.Game
             }
         }
 
-        private void FoldAndReveal(SeatState seat, string status)
+        private void FoldSeat(SeatState seat, string status)
         {
             seat.Folded = true;
+            seat.Status = status;
             RevealHand(seat);
-            var label = EvaluateSeat(seat).Label;
-            seat.Status = string.IsNullOrEmpty(label) ? status : $"{status} {label}";
+            if (!seat.IsPlayer)
+            {
+                var score = EvaluateSeat(seat);
+                Hint = $"{seat.Name} 弃牌，亮出 {score.Label}";
+            }
         }
 
         private bool FinishIfOneLeft()
         {
             if (CountInHand() <= 1)
             {
-                RevealAllHands();
                 Showdown();
                 return true;
             }
@@ -1264,8 +1443,13 @@ namespace App.Game
 
         private void Showdown()
         {
+            if (_revealKind != RevealKind.None)
+            {
+                return;
+            }
+
             Phase = GamePhase.Showdown;
-            RevealAllHands();
+            SelectingOpenTarget = false;
 
             if (Run.Affix == BossAffix.XRay)
             {
@@ -1276,8 +1460,6 @@ namespace App.Game
             SeatState winner = null;
             HandScore best = default;
             var first = true;
-            var sb = new StringBuilder();
-
             foreach (var seat in AllSeats())
             {
                 if (!Participates(seat) || seat.Folded)
@@ -1286,7 +1468,6 @@ namespace App.Game
                 }
 
                 var score = EvaluateSeat(seat);
-                sb.Append(seat.Name).Append(' ').Append(score.Label).Append("  ");
                 if (first || score.CompareTo(best) > 0)
                 {
                     best = score;
@@ -1302,9 +1483,28 @@ namespace App.Game
                 return;
             }
 
+            _pendingWinner = winner;
+            _pendingBest = best;
+            BeginRevealPlay(RevealKind.Showdown, BuildShowdownRevealOrder(), winner);
+            Hint = "全员亮牌，比大小！";
+            Notify();
+        }
+
+        private void ApplyShowdownSettlement()
+        {
+            var winner = _pendingWinner;
+            var best = _pendingBest;
+            RevealAllHands();
+            if (winner == null)
+            {
+                AfterRound();
+                return;
+            }
+
             winner.Chips += Pot;
+            var playerScore = EvaluateSeat(Player);
             var playerWin = winner.IsPlayer;
-            LastResult = $"{sb}｜胜者 {winner.Name}（{best.Label}） 奖池 {Pot}";
+            LastResult = FormatShowdownLine(winner, best, playerScore, playerWin);
             Log(LastResult);
 
             if (playerWin)
@@ -1312,59 +1512,269 @@ namespace App.Game
                 Run.ConsecutiveLosses = 0;
                 Run.Tilted = false;
                 var relicMult = RelicMultiplier(best);
-                var damage = HandEvaluator.ComputeDamage(best, Pot, relicMult);
-                var target = LowestHpPercentEnemy();
+                PendingAttackDamage = HandEvaluator.ComputeDamage(best, Pot, relicMult);
+                ApplyBankruptcy(true, winner);
+                Pot = 0;
+                if (!AnyEnemyAlive())
+                {
+                    AfterRound();
+                    return;
+                }
+
+                Phase = GamePhase.WaitingAttack;
+                Hint = $"{HandDrama(best.Type)}！你赢了，造成 {PendingAttackDamage} 伤害，点选敌人攻击";
+                Notify();
+                return;
+            }
+
+            Run.ConsecutiveLosses++;
+            if (Run.ConsecutiveLosses >= 2)
+            {
+                Run.Tilted = true;
+                Log("心态崩了：下一局最大下注限制为当前筹码 50%");
+            }
+
+            DealPlayerLossDamage(winner);
+            ApplyBankruptcy(false, winner);
+            Pot = 0;
+            Hint = LastResult;
+            AfterRound();
+        }
+
+        private void ApplyOpenDuelSettlement()
+        {
+            var opener = _pendingOpener;
+            var target = _pendingOpenTarget;
+            if (opener != null)
+            {
+                RevealHand(opener);
+            }
+
+            if (target != null)
+            {
+                RevealHand(target);
+            }
+
+            var openScore = opener != null ? EvaluateSeat(opener) : default;
+            var targetScore = target != null ? EvaluateSeat(target) : default;
+            if (_pendingOpenerWins)
+            {
                 if (target != null)
                 {
-                    ApplyDamage(target, damage, true);
-                    if (Run.SplashThisRound)
-                    {
-                        for (var i = 0; i < Enemies.Length; i++)
-                        {
-                            if (Enemies[i] != target && Enemies[i].Alive)
-                            {
-                                ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
-                            }
-                        }
+                    target.Folded = true;
+                    target.Status = "开牌失败";
+                    target.Banner = targetScore.Label;
+                }
 
-                        Run.SplashThisRound = false;
-                    }
+                LastResult = $"{opener?.Name} 开牌胜出！{openScore.Label} 压过 {targetScore.Label}";
+                Log(LastResult);
+                if (target != null && target.IsPlayer)
+                {
+                    DealPlayerLossDamage(opener);
+                    SettleAfterPlayerOut();
+                    return;
                 }
             }
             else
             {
-                Run.ConsecutiveLosses++;
-                if (Run.ConsecutiveLosses >= 2)
+                if (opener != null)
                 {
-                    Run.Tilted = true;
-                    Log("心态崩了：下一局最大下注限制为当前筹码 50%");
+                    opener.Folded = true;
+                    opener.Status = "开牌失败";
+                    opener.Banner = openScore.Label;
+                }
+
+                LastResult = $"{target?.Name} 扛住开牌！{targetScore.Label} 压过 {openScore.Label}";
+                Log(LastResult);
+                if (opener != null && opener.IsPlayer)
+                {
+                    DealPlayerLossDamage(target);
+                    SettleAfterPlayerOut();
+                    return;
                 }
             }
 
-            ApplyBankruptcy(playerWin, winner);
-            Pot = 0;
-            AfterRound();
+            if (CountInHand() <= 1)
+            {
+                Showdown();
+                return;
+            }
+
+            Phase = GamePhase.Betting;
+            Hint = LastResult + "。继续下注";
+            FinishStreetOrShowdown();
+        }
+
+        private void BeginRevealPlay(RevealKind kind, List<int> order, SeatState winner)
+        {
+            _revealKind = kind;
+            RevealSeatIds.Clear();
+            if (order != null)
+            {
+                for (var i = 0; i < order.Count; i++)
+                {
+                    RevealSeatIds.Add(order[i]);
+                }
+            }
+
+            RevealWinnerId = winner != null ? winner.Id : -1;
+            RevealPlaySerial++;
+            Phase = GamePhase.Showdown;
+        }
+
+        private List<int> BuildShowdownRevealOrder()
+        {
+            var ids = new List<int>();
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var ai = Enemies[i];
+                if (Participates(ai) && ai.Folded && HasHand(ai))
+                {
+                    ids.Add(ai.Id);
+                }
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var ai = Enemies[i];
+                if (Participates(ai) && !ai.Folded && HasHand(ai))
+                {
+                    ids.Add(ai.Id);
+                }
+            }
+
+            if (HasHand(Player))
+            {
+                ids.Add(Player.Id);
+            }
+
+            return ids;
+        }
+
+        private static bool HasHand(SeatState seat)
+        {
+            return seat != null && seat.Hand != null && seat.Hand.Length > 0;
+        }
+
+        private List<int> BuildDuelRevealOrder(SeatState opener, SeatState target)
+        {
+            var ids = new List<int>();
+            if (opener != null && !opener.IsPlayer)
+            {
+                ids.Add(opener.Id);
+            }
+
+            if (target != null && !target.IsPlayer && (opener == null || target.Id != opener.Id))
+            {
+                ids.Add(target.Id);
+            }
+
+            if (opener != null && opener.IsPlayer)
+            {
+                ids.Add(opener.Id);
+            }
+            else if (target != null && target.IsPlayer)
+            {
+                ids.Add(target.Id);
+            }
+
+            return ids;
+        }
+
+        private SeatState SeatById(int id)
+        {
+            if (Player.Id == id)
+            {
+                return Player;
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].Id == id)
+                {
+                    return Enemies[i];
+                }
+            }
+
+            return null;
+        }
+
+        private int CountRemainingAi()
+        {
+            var n = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].Alive && !Enemies[i].Folded)
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+
+        private string FormatShowdownLine(SeatState winner, HandScore best, HandScore playerScore, bool playerWin)
+        {
+            if (playerWin)
+            {
+                return $"{HandDrama(best.Type)}！你的{best.Label}赢下奖池 {Pot}";
+            }
+
+            if (Player.Folded)
+            {
+                return $"{winner.Name} 的{best.Label}收走奖池 {Pot}";
+            }
+
+            return $"{winner.Name} 的{best.Label}压过你的{playerScore.Label}";
+        }
+
+        private static string HandDrama(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.ThreeOfAKind: return "豹子炸场";
+                case HandType.StraightFlush: return "顺金通杀";
+                case HandType.Flush: return "金花亮出";
+                case HandType.Straight: return "顺子连上";
+                case HandType.Pair: return "对子对撞";
+                default: return "散牌拼点";
+            }
         }
 
         public void Continue()
         {
-            if (Phase == GamePhase.RoundSettle)
+            if (Phase == GamePhase.WaitingAttack)
             {
-                if (!AnyEnemyAlive())
+                var target = FirstAliveEnemy();
+                if (target != null)
                 {
-                    EnterShop();
-                    return;
+                    FinishPlayerAttack(target);
                 }
-
-                if (Player.Chips < GameBalance.MinBet)
+                else
                 {
-                    TryAutoLoanOrFail();
-                    return;
+                    AfterRound();
                 }
-
-                Run.MagnifierThisRound = false;
-                StartRound();
             }
+
+            if (Phase != GamePhase.RoundSettle)
+            {
+                return;
+            }
+
+            if (!AnyEnemyAlive())
+            {
+                EnterShop();
+                return;
+            }
+
+            if (Player.Chips < GameBalance.MinBet)
+            {
+                TryAutoLoanOrFail();
+                return;
+            }
+
+            Run.MagnifierThisRound = false;
+            StartRound();
         }
 
         private void ApplyDamage(SeatState target, int damage, bool main)
@@ -1420,6 +1830,15 @@ namespace App.Game
         private void AfterRound()
         {
             SyncPlayerChips();
+            PendingAttackDamage = 0;
+            if (Player.Hp <= 0)
+            {
+                Phase = GamePhase.StageFail;
+                Hint = LastResult + "\n生命耗尽。可看广告复活，或重开本关。";
+                Notify();
+                return;
+            }
+
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
             {
@@ -1474,6 +1893,14 @@ namespace App.Game
 
         private void ContinueAfterLoan()
         {
+            if (Player.Hp <= 0)
+            {
+                Phase = GamePhase.StageFail;
+                Hint = "生命仍未恢复，请先复活";
+                Notify();
+                return;
+            }
+
             if (Player.Chips < GameBalance.MinBet)
             {
                 Phase = GamePhase.StageFail;
@@ -1540,27 +1967,17 @@ namespace App.Game
             return Math.Max(GameBalance.MinBet, cap);
         }
 
-        private SeatState LowestHpPercentEnemy()
+        private SeatState FirstAliveEnemy()
         {
-            SeatState best = null;
-            var bestPct = 2f;
             for (var i = 0; i < Enemies.Length; i++)
             {
-                var e = Enemies[i];
-                if (!e.Alive)
+                if (Enemies[i].Alive)
                 {
-                    continue;
-                }
-
-                var pct = e.MaxHp <= 0 ? 1f : (float)e.Hp / e.MaxHp;
-                if (pct < bestPct)
-                {
-                    bestPct = pct;
-                    best = e;
+                    return Enemies[i];
                 }
             }
 
-            return best;
+            return null;
         }
 
         private SeatState BestRemainingAi()
@@ -1735,6 +2152,9 @@ namespace App.Game
                 Id = id,
                 Name = name,
                 IsPlayer = player,
+                ActiveInStage = player,
+                MaxHp = player ? GameBalance.PlayerStartHp : 0,
+                Hp = player ? GameBalance.PlayerStartHp : 0,
                 Chips = player ? GameBalance.PlayerStartChips : 0,
                 Profile = profile
             };
@@ -1782,6 +2202,13 @@ namespace App.Game
             }
 
             return false;
+        }
+
+        private enum RevealKind
+        {
+            None = 0,
+            Showdown = 1,
+            OpenDuel = 2
         }
     }
 }

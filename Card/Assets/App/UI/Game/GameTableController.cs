@@ -22,10 +22,7 @@ namespace App.UI
         private static GameObject _cardIconPrefab;
 
         private GameTableViewModel _vm;
-        private SpriteRenderer[] _playerCards;
-        private TextMesh[] _playerRankLabels;
-        private readonly SpriteRenderer[][] _enemyCards = new SpriteRenderer[3][];
-        private readonly Transform[] _enemyNodes = new Transform[3];
+        private readonly CardTableAnimator _cards = new CardTableAnimator();
         private readonly Text[] _enemyInfos = new Text[3];
         private Text _chipText;
         private Text _betText;
@@ -78,7 +75,7 @@ namespace App.UI
 
         private void Update()
         {
-            if (_vm == null)
+            if (_vm == null || _cards.IsDealing)
             {
                 return;
             }
@@ -93,7 +90,7 @@ namespace App.UI
                 !_vm.Session.Run.PeekSuitUsed &&
                 Input.GetMouseButtonDown(0))
             {
-                var peek = HitPlayerCard();
+                var peek = _cards.HitPlayerCard(_camera);
                 if (peek >= 0)
                 {
                     _vm.Session.PeekMagnifier(peek);
@@ -108,7 +105,7 @@ namespace App.UI
 
             if (Input.GetMouseButtonDown(0))
             {
-                var index = HitPlayerCard();
+                var index = _cards.HitPlayerCard(_camera);
                 if (index >= 0)
                 {
                     _dragCard = index;
@@ -120,12 +117,8 @@ namespace App.UI
             if (_dragCard >= 0 && Input.GetMouseButton(0))
             {
                 _rubAcc += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")).magnitude;
-                if (_playerCards != null && _dragCard < _playerCards.Length && _playerCards[_dragCard] != null)
-                {
-                    var glow = Mathf.PingPong(Time.time * 6f, 1f);
-                    _playerCards[_dragCard].color = Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), glow);
-                }
-
+                var glow = Mathf.PingPong(Time.time * 6f, 1f);
+                _cards.TintPlayerCard(_dragCard, Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), glow));
                 if (_rubAcc > 2.2f)
                 {
                     var index = _dragCard;
@@ -143,6 +136,7 @@ namespace App.UI
         private void OnDestroy()
         {
             Detach();
+            _cards.Dispose();
         }
 
         private void OnSessionChanged()
@@ -172,18 +166,7 @@ namespace App.UI
                 hud = gameObject;
             }
 
-            var mine = FindChild(hud.transform, "mineNode");
-            if (mine != null)
-            {
-                _playerCards = FindCardRenderers(mine, PlayerCardScale, PlayerCardSpacing);
-                _playerRankLabels = EnsureRankLabels(_playerCards);
-                for (var i = 0; i < _playerCards.Length; i++)
-                {
-                    EnsureCollider(_playerCards[i]);
-                }
-            }
-
-            BindEnemySlots(hud.transform);
+            _cards.Bind(hud.transform);
 
             var playerInfo = GameObject.Find("PlayerInfo");
             if (playerInfo != null)
@@ -205,65 +188,6 @@ namespace App.UI
             WireEnemyInfo("player2", 0, new Vector2(-360f, 80f));
             WireEnemyInfo("player3", 1, new Vector2(0f, 760f));
             WireEnemyInfo("player1", 2, new Vector2(360f, 80f));
-        }
-
-        private void BindEnemySlots(Transform hud)
-        {
-            var slots = new List<Transform>();
-            for (var i = 0; i < hud.childCount; i++)
-            {
-                var child = hud.GetChild(i);
-                if (child.name == "bg" || child.name == "mineNode")
-                {
-                    continue;
-                }
-
-                if (FindChild(child, "cardNode") != null || child.GetComponentInChildren<SpriteRenderer>() != null)
-                {
-                    slots.Add(child);
-                }
-            }
-
-            slots.Sort((a, b) =>
-            {
-                var ax = a.position.x;
-                var bx = b.position.x;
-                var ay = a.position.y;
-                var by = b.position.y;
-                if (Mathf.Abs(ay - by) > 1.5f)
-                {
-                    return by.CompareTo(ay);
-                }
-
-                return ax.CompareTo(bx);
-            });
-
-            // After sort: top first, then left-to-right. Remap to left/top/right.
-            Transform left = null, top = null, right = null;
-            if (slots.Count == 1)
-            {
-                top = slots[0];
-            }
-            else if (slots.Count == 2)
-            {
-                left = slots[0].position.x < slots[1].position.x ? slots[0] : slots[1];
-                right = left == slots[0] ? slots[1] : slots[0];
-            }
-            else if (slots.Count >= 3)
-            {
-                top = slots[0];
-                var rest = new List<Transform> { slots[1], slots[2] };
-                rest.Sort((a, b) => a.position.x.CompareTo(b.position.x));
-                left = rest[0];
-                right = rest[1];
-            }
-
-            _enemyNodes[0] = left;
-            _enemyNodes[1] = top;
-            _enemyNodes[2] = right;
-            _enemyCards[0] = FindCardRenderers(left, AiCardScale, AiCardSpacing);
-            _enemyCards[1] = FindCardRenderers(top, AiCardScale, AiCardSpacing);
-            _enemyCards[2] = FindCardRenderers(right, AiCardScale, AiCardSpacing);
         }
 
         private void BuildHud()
@@ -344,10 +268,10 @@ namespace App.UI
 
             if (_stateText != null)
             {
-                _stateText.text = _vm.PlayerState.Value;
+                _stateText.gameObject.SetActive(false);
             }
 
-            RefreshSeatCards(_playerCards, _playerRankLabels, session.Player, true);
+            _cards.Sync(session);
 
             var activeCount = 0;
             for (var i = 0; i < session.Enemies.Length; i++)
@@ -360,17 +284,10 @@ namespace App.UI
 
             for (var slot = 0; slot < 3; slot++)
             {
-                if (_enemyNodes[slot] != null)
-                {
-                    _enemyNodes[slot].gameObject.SetActive(false);
-                }
-
                 if (_enemyInfos[slot] != null)
                 {
                     _enemyInfos[slot].gameObject.SetActive(false);
                 }
-
-                SetActiveCards(_enemyCards[slot], false);
             }
 
             var placed = 0;
@@ -384,13 +301,6 @@ namespace App.UI
 
                 var slot = VisualSlot(placed, activeCount);
                 placed++;
-                SetActiveCards(_enemyCards[slot], true);
-                RefreshSeatCards(_enemyCards[slot], null, enemy, false);
-                if (_enemyNodes[slot] != null)
-                {
-                    _enemyNodes[slot].gameObject.SetActive(true);
-                }
-
                 if (_enemyInfos[slot] != null)
                 {
                     _enemyInfos[slot].gameObject.SetActive(true);
@@ -423,7 +333,9 @@ namespace App.UI
                 return;
             }
 
-            var reveal = _vm.Session.CardsRevealed || seat.ShowCards || seat.Folded || (player && seat.Looked);
+            var reveal = seat.ShowCards ||
+                         _vm.Session.CardsRevealed ||
+                         (player && seat.Looked);
             for (var i = 0; i < renders.Length; i++)
             {
                 var sr = renders[i];
@@ -433,8 +345,7 @@ namespace App.UI
                 }
 
                 var card = seat.Hand != null && i < seat.Hand.Length ? seat.Hand[i] : default;
-                var revealThis = reveal || (player && i < _vm.Session.Run.RubbedReveal.Length &&
-                                           _vm.Session.Run.RubbedReveal[i]);
+                var revealThis = reveal;
                 if (revealThis)
                 {
                     sr.sprite = CardSpriteLibrary.GetFace(card);
@@ -493,33 +404,6 @@ namespace App.UI
 
                 btn.onClick.AddListener(() => _vm.Session.Buy(id));
             }
-        }
-
-        private int HitPlayerCard()
-        {
-            if (_camera == null || _playerCards == null)
-            {
-                return -1;
-            }
-
-            var mouse = Input.mousePosition;
-            mouse.z = Mathf.Abs(_camera.transform.position.z);
-            var world = _camera.ScreenToWorldPoint(mouse);
-            var hit = Physics2D.Raycast(world, Vector2.zero);
-            if (hit.collider == null)
-            {
-                return -1;
-            }
-
-            for (var i = 0; i < _playerCards.Length; i++)
-            {
-                if (_playerCards[i] != null && hit.collider.gameObject == _playerCards[i].gameObject)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private void WireEnemyInfo(string objectName, int index, Vector2 pos)

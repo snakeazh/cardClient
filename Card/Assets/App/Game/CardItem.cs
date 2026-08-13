@@ -18,6 +18,7 @@ namespace App.Game
 
         private Tween _moveTween;
         private Tween _flipTween;
+        private Tween _punchTween;
 
         /// <param name="card">牌面数据。</param>
         /// <param name="faceState">正面或背面。</param>
@@ -45,6 +46,12 @@ namespace App.Game
         public void SetFace(CardFaceState faceState)
         {
             FaceState = faceState;
+            ApplySprite();
+        }
+
+        public void SetCard(Card card)
+        {
+            Card = card;
             ApplySprite();
         }
 
@@ -79,10 +86,18 @@ namespace App.Game
             return seq;
         }
 
+        public Tween PunchScale(float punch = 0.22f, float duration = 0.32f)
+        {
+            _punchTween?.Kill();
+            _punchTween = transform.DOPunchScale(Vector3.one * punch, duration, 10, 0.6f);
+            return _punchTween;
+        }
+
         private void OnDestroy()
         {
             _moveTween?.Kill();
             _flipTween?.Kill();
+            _punchTween?.Kill();
         }
 
         private void ApplySprite()

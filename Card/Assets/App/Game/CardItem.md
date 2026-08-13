@@ -116,6 +116,21 @@ item.MoveTo(target.position, 0.5f, Ease.InOutCubic).OnComplete(() => { });
 
 ---
 
+## 换牌数据 / 缩放抖动
+
+```csharp
+item.SetCard(new Card(Suit.Spade, Rank.King)); // 只换数据与贴图，不改位置/旋转
+item.PunchScale(0.22f, 0.32f);                 // DOTween 缩放抖动
+```
+
+---
+
+## 发牌点
+
+叠牌、52 张牌堆、X/Y 偏移见 [CardDealPoint.md](CardDealPoint.md)。在场景 `dealpoint` 节点上挂 `CardDealPoint` 即可，不需要 PrefabBuilder。
+
+---
+
 ## 组合示例
 
 发牌：背面落到桌面，再翻开。

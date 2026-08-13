@@ -1,15 +1,16 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace App.Game
 {
     /// <summary>
     /// 牌面资源命名：101 红心A、201 方片A、301 草花A、401 黑桃A；
-    /// 同花色 01→13 对应 A→K（如 111=红心J，113=红心K）。
+    /// 同花色 01→13 对应 A→K。背面为 CardBack。
     /// </summary>
     public static class CardSpriteLibrary
     {
         private static Sprite _back;
-        private static Sprite _fallback;
+        private static readonly Dictionary<int, Sprite> _faces = new Dictionary<int, Sprite>();
 
         public static Sprite Back
         {
@@ -17,9 +18,7 @@ namespace App.Game
             {
                 if (_back == null)
                 {
-                    _back = UnityEngine.Resources.Load<Sprite>("back")
-                            ?? UnityEngine.Resources.Load<Sprite>("000")
-                            ?? FallbackFace;
+                    _back = UnityEngine.Resources.Load<Sprite>("CardBack");
                 }
 
                 return _back;
@@ -28,26 +27,19 @@ namespace App.Game
 
         public static Sprite GetFace(Card card)
         {
-            var sprite = UnityEngine.Resources.Load<Sprite>(card.ResourceId.ToString());
+            var id = card.ResourceId;
+            if (_faces.TryGetValue(id, out var cached) && cached != null)
+            {
+                return cached;
+            }
+
+            var sprite = UnityEngine.Resources.Load<Sprite>(id.ToString());
             if (sprite != null)
             {
-                return sprite;
+                _faces[id] = sprite;
             }
 
-            return FallbackFace;
-        }
-
-        private static Sprite FallbackFace
-        {
-            get
-            {
-                if (_fallback == null)
-                {
-                    _fallback = UnityEngine.Resources.Load<Sprite>("101");
-                }
-
-                return _fallback;
-            }
+            return sprite != null ? sprite : Back;
         }
     }
 }

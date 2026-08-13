@@ -258,6 +258,8 @@ namespace App.Game
         public bool PeekSuitUsed;
         public int PeekSuitIndex = -1;
         public Suit? PeekedSuit;
+        public readonly bool[] RubbedReveal = new bool[3];
+        public string LastRubMessage = string.Empty;
         public int AdsLoanThisStage;
         public int AdsReviveThisStage;
         public int AdsExtraRubThisStage;

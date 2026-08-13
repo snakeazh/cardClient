@@ -424,7 +424,9 @@ namespace App.UI
                 }
 
                 var card = seat.Hand != null && i < seat.Hand.Length ? seat.Hand[i] : default;
-                if (reveal)
+                var revealThis = reveal || (player && i < _vm.Session.Run.RubbedReveal.Length &&
+                                           _vm.Session.Run.RubbedReveal[i]);
+                if (revealThis)
                 {
                     sr.sprite = CardSpriteLibrary.GetFace(card);
                     sr.color = Color.white;
@@ -433,7 +435,7 @@ namespace App.UI
                 else
                 {
                     sr.sprite = CardSpriteLibrary.Back;
-                    sr.color = new Color(0.55f, 0.18f, 0.18f, 1f);
+                    sr.color = Color.white;
                     sr.sortingOrder = 1;
                     if (player && _vm.Session.Run.MagnifierThisRound && _vm.Session.Run.PeekSuitUsed &&
                         _vm.Session.Run.PeekSuitIndex == i)

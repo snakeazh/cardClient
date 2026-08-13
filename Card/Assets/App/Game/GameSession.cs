@@ -119,11 +119,13 @@ namespace App.Game
             Player.Hand[index] = next;
             Run.RubsLeft--;
             _pendingRubIndex = -1;
-            Log($"盲搓第 {index + 1} 张牌");
+            Run.RubbedReveal[index] = true;
+            Run.LastRubMessage = $"第 {index + 1} 张搓成 {next.DisplayName}";
+            Log(Run.LastRubMessage);
 
             if (Run.RubsLeft > 0)
             {
-                Hint = $"还可再搓 {Run.RubsLeft} 次，点选一张牌滑动搓开";
+                Hint = $"{Run.LastRubMessage}。还可再搓 {Run.RubsLeft} 次，点选一张牌滑动搓开";
                 Notify();
                 return;
             }
@@ -516,6 +518,11 @@ namespace App.Game
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
+            Run.LastRubMessage = string.Empty;
+            for (var i = 0; i < Run.RubbedReveal.Length; i++)
+            {
+                Run.RubbedReveal[i] = false;
+            }
 
             Player.Chips = Run.Chips;
             ClearRound(Player);
@@ -597,7 +604,10 @@ namespace App.Game
         {
             Phase = GamePhase.Betting;
             Player.Status = "待下注";
-            Hint = Run.Tilted
+            Hint = string.IsNullOrEmpty(Run.LastRubMessage)
+                ? string.Empty
+                : Run.LastRubMessage + "。";
+            Hint += Run.Tilted
                 ? "心态崩了：本局最大下注为当前筹码 50%。请选择不看牌下注或看牌加注"
                 : "请选择：不看牌下注（低成本）或看牌加注（筹码翻倍）";
             if (Run.MagnifierThisRound && !Run.PeekSuitUsed)

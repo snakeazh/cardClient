@@ -95,7 +95,9 @@ namespace App.Game
 
     public sealed class Deck
     {
-        private readonly List<Card> _cards = new List<Card>(52);
+        public const int Size = 52;
+
+        private readonly List<Card> _cards = new List<Card>(Size);
         private readonly Random _rng;
 
         public Deck(Random rng)

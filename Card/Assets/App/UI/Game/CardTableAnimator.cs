@@ -24,6 +24,7 @@ namespace App.UI
 
         private Transform _hud;
         private Transform _dealPoint;
+        private CardDealPoint _dealPile;
         private SeatView _player;
         private readonly SeatView[] _enemies = new SeatView[3];
         private Sequence _dealSeq;
@@ -51,7 +52,21 @@ namespace App.UI
         public void Bind(Transform hud)
         {
             _hud = hud;
-            _dealPoint = FindChild(hud, "dealpoint") ?? FindChild(hud, "DealPoint") ?? hud;
+            _dealPoint = FindChild(hud, "dealpoint") ?? FindChild(hud, "DealPoint");
+            if (_dealPoint != null)
+            {
+                _dealPile = _dealPoint.GetComponent<CardDealPoint>();
+                if (_dealPile == null)
+                {
+                    _dealPile = _dealPoint.gameObject.AddComponent<CardDealPoint>();
+                }
+            }
+            else
+            {
+                _dealPoint = hud;
+                _dealPile = null;
+            }
+
             var mine = FindChild(hud, "mineNode");
             _player = BuildSeat(mine, true);
             BindEnemySlots(hud);
@@ -208,6 +223,7 @@ namespace App.UI
             ClearAllItems();
 
             var seats = CollectDealSeats(session);
+            BuildDealStack(Deck.Size);
             var seq = DOTween.Sequence();
             var delay = 0f;
             var order = 0;
@@ -449,9 +465,10 @@ namespace App.UI
             return null;
         }
 
-        private void SpawnAndFly(SeatView view, SeatState seat, int cardIndex, int order, int token)
+        private void BuildDealStack(int count)
         {
-            if (view == null || view.Points[cardIndex] == null || seat == null || seat.Hand == null)
+            _dealPile?.Clear();
+            if (_dealPile == null || count <= 0)
             {
                 return;
             }
@@ -463,29 +480,43 @@ namespace App.UI
                 return;
             }
 
-            var point = view.Points[cardIndex];
-            var start = _dealPoint != null ? _dealPoint.position : _hud.position;
-            var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
-            var go = Object.Instantiate(prefab);
-            go.name = view.IsPlayer ? "PlayerCard" + (cardIndex + 1) : point.parent.name + "_Card" + (cardIndex + 1);
-            HideBackChild(go.transform);
+            var startRot = _dealPoint.rotation;
+            var startScale = _dealPoint.lossyScale;
+            for (var i = 0; i < count; i++)
+            {
+                var go = Object.Instantiate(prefab);
+                go.name = "DealCard" + (i + 1);
+                HideBackChild(go.transform);
 
-            var item = go.GetComponent<CardItem>();
+                var item = go.GetComponent<CardItem>();
+                if (item == null)
+                {
+                    item = go.AddComponent<CardItem>();
+                }
+
+                item.Initialize(default, CardFaceState.Back, _dealPile.GetWorldPosition(i), startRot, startScale);
+                _dealPile.Attach(item);
+            }
+        }
+
+        private void SpawnAndFly(SeatView view, SeatState seat, int cardIndex, int order, int token)
+        {
+            if (view == null || view.Points[cardIndex] == null || seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            var point = view.Points[cardIndex];
+            var card = cardIndex < seat.Hand.Length ? seat.Hand[cardIndex] : default;
+            var item = TakeDealCard(card, order);
             if (item == null)
             {
-                item = go.AddComponent<CardItem>();
+                return;
             }
 
-            var card = cardIndex < seat.Hand.Length ? seat.Hand[cardIndex] : default;
-            item.Initialize(card, CardFaceState.Back, start, startRot, Vector3.one);
-            var sr = item.CurrentRenderer;
-            if (sr != null)
-            {
-                sr.sortingOrder = 20 + order;
-                sr.color = Color.white;
-            }
-
-            EnsureCollider(item);
+            item.gameObject.name = view.IsPlayer
+                ? "PlayerCard" + (cardIndex + 1)
+                : point.parent.name + "_Card" + (cardIndex + 1);
 
             view.Items[cardIndex] = item;
             view.Landed[cardIndex] = false;
@@ -503,6 +534,62 @@ namespace App.UI
                 view.Landed[cardIndex] = true;
                 ApplyFace(item, DesiredFace(_session, seat, view.IsPlayer, cardIndex), false);
             });
+        }
+
+        private CardItem TakeDealCard(Card card, int order)
+        {
+            var item = _dealPile != null ? _dealPile.Pop() : null;
+            if (item == null)
+            {
+                item = SpawnLooseDealCard(card);
+            }
+
+            if (item == null)
+            {
+                return null;
+            }
+
+            item.SetCard(card);
+            item.SetFace(CardFaceState.Back);
+            var sr = item.CurrentRenderer;
+            if (sr != null)
+            {
+                sr.sortingOrder = FlySortingOrder(order);
+                sr.color = Color.white;
+            }
+
+            EnsureCollider(item);
+            return item;
+        }
+
+        private int FlySortingOrder(int order)
+        {
+            var pileTop = _dealPile != null ? _dealPile.GetSortingOrder(_dealPile.Count) : 20;
+            return pileTop + 10 + order;
+        }
+
+        private CardItem SpawnLooseDealCard(Card card)
+        {
+            var prefab = LoadPrefab();
+            if (prefab == null)
+            {
+                Debug.LogWarning("CardIcon prefab not found at Resources/" + PrefabPath);
+                return null;
+            }
+
+            var start = _dealPoint != null ? _dealPoint.position : _hud.position;
+            var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
+            var go = Object.Instantiate(prefab);
+            HideBackChild(go.transform);
+
+            var item = go.GetComponent<CardItem>();
+            if (item == null)
+            {
+                item = go.AddComponent<CardItem>();
+            }
+
+            item.Initialize(card, CardFaceState.Back, start, startRot, Vector3.one);
+            return item;
         }
 
         private void SyncAllFaces(GameSession session)
@@ -787,6 +874,7 @@ namespace App.UI
 
         private void ClearAllItems()
         {
+            _dealPile?.Clear();
             ClearSeatItems(_player);
             for (var i = 0; i < _enemies.Length; i++)
             {

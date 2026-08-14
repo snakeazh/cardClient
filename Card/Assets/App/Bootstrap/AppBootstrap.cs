@@ -24,14 +24,13 @@ namespace App.Bootstrap
         {
             _services = AppServices.Create();
 
-            _services.Register(new GameSession());
-            _services.Container.AddSingleton<GameTableViewModel>();
-
-            _services.Register(SaveFramework.Create());
-
             _resources = ResourceFramework.Create();
             await _resources.InitializeAsync();
             _services.Register(_resources.Resources);
+
+            _services.Register(SaveFramework.Create());
+            _services.Register(new GameSession());
+            _services.Container.AddSingleton<GameTableViewModel>();
 
             await ConfigTables.LoadAsync(_resources.Resources);
             RegisterBag(_services);

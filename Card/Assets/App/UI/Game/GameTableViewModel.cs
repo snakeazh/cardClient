@@ -5,6 +5,7 @@ using Framework.UI.View;
 
 namespace App.UI
 {
+    /// <summary>把 <see cref="GameSession"/> 的状态绑到桌面 HUD：下注、看牌、商店、攻击。</summary>
     public sealed class GameTableViewModel : ViewModelBase
     {
         public GameTableViewModel(GameSession session, IResourceService resources)

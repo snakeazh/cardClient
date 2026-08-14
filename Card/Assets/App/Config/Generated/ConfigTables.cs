@@ -23,9 +23,15 @@ namespace App.Config
 
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
             var itemConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.ItemConfig);
+            var levelConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.LevelConfig);
+            var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
+            var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
 
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
             ItemConfig.Load(ConfigJson.FromArrayJson<ItemConfig>(itemConfigAsset.text));
+            LevelConfig.Load(ConfigJson.FromArrayJson<LevelConfig>(levelConfigAsset.text));
+            MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
+            MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
         }
     }
 }

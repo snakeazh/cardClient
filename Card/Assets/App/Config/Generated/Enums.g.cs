@@ -25,5 +25,22 @@ namespace App.Config
 
     }
 
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 MonsterType 枚举。
+    /// </summary>
+    public enum MonsterType
+    {
+        /// <summary>
+        /// 普通敌人
+        /// </summary>
+        Normal = 1,
+
+        /// <summary>
+        /// Boss
+        /// </summary>
+        Boss = 2,
+
+    }
+
 }
 

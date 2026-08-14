@@ -3,14 +3,21 @@ using System.Collections.Generic;
 
 namespace App.Game
 {
+    /// <summary>
+    /// 炸金花闯关对局状态机：发牌 → 看牌/搓牌 → 下注街（玩家先手，AI 后手）→ 摊牌/开牌 → 攻击结算。
+    /// 敌人座位固定 3 个，人格在 <see cref="CreateSeat"/> 绑定，BOSS 关覆盖成 Expert。
+    /// </summary>
     public sealed class GameSession
     {
         public const int MaxEnemies = 3;
 
         private readonly Random _rng;
         private Deck _deck;
+        /// <summary>本街已出现的最高下注档位。</summary>
         private int _maxStreetUnits;
+        /// <summary>当轮基础单注。无人加注的街结束后会抬到上一街的最高档。</summary>
         private int _betStep = GameBalance.MinBet;
+        /// <summary>连续无加注的街数，满 2 街强制摊牌。</summary>
         private int _streetsWithoutRaise;
         private int _bettingRound = 1;
         private bool _streetHadRaise;
@@ -23,6 +30,7 @@ namespace App.Game
         private SeatState _pendingOpenTarget;
         private bool _pendingOpenerWins;
         private SeatState _pendingAttackTarget;
+        /// <summary>跨手记录玩家弃/加/看/闷，供 AI 读线。</summary>
         public readonly PlayerHistory History = new PlayerHistory();
 
         public GameSession() : this(new Random())
@@ -34,6 +42,7 @@ namespace App.Game
             _rng = rng ?? new Random();
             Run = new RunState();
             Player = CreateSeat(0, "你", true);
+            // 座位写死 3 个：A 保守 / B 平衡偏激进 / C 激进。每关再按 EnemyCountForStage 决定谁上场。
             Enemies = new[]
             {
                 CreateSeat(1, "敌人A", false),
@@ -199,6 +208,7 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>看牌后进入搓牌；搓完或跳过才下注。看牌后下注血量翻倍。</summary>
         public void LookCards()
         {
             if (!PlayerMayLookCards)
@@ -225,6 +235,7 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>闷注：不看牌跟注。未看牌时对手跟注要付双倍。</summary>
         public void BlindBet()
         {
             if (Phase != GamePhase.Betting && Phase != GamePhase.WaitingLookChoice)
@@ -240,6 +251,7 @@ namespace App.Game
             PlacePlayerBet(false);
         }
 
+        /// <summary>加注一档后轮到 AI 街。</summary>
         public void RaiseBet()
         {
             if (Phase != GamePhase.Betting)
@@ -273,6 +285,7 @@ namespace App.Game
             Run.TiHuanGoodCharges > 0 &&
             _deck != null;
 
+        /// <summary>把剩余血量推进底池。全下后若还有人能下注，对手继续打边池。</summary>
         public void AllIn()
         {
             if (!PlayerMayAllIn)
@@ -393,6 +406,7 @@ namespace App.Game
             return key >= 0 && key < Run.SpyReveal.Length && Run.SpyReveal[key];
         }
 
+        /// <summary>玩家弃牌。若桌上还剩多人，AI 继续打边池。</summary>
         public void Fold()
         {
             if (Phase != GamePhase.Betting || Player.Folded)
@@ -413,6 +427,7 @@ namespace App.Game
             ResolveAfterPlayerFold();
         }
 
+        /// <summary>玩家付双倍注额，强制与一名未弃牌敌人比牌。</summary>
         public void OpenCompare()
         {
             RequestShowdown();
@@ -444,6 +459,7 @@ namespace App.Game
             Showdown();
         }
 
+        /// <summary>赢牌后点选敌人造成伤害。溅射斩会额外打其他存活敌人 30%。</summary>
         public void AttackEnemyAtSlot(int visualSlot)
         {
             if (Phase == GamePhase.Betting && SelectingOpenTarget)
@@ -809,6 +825,7 @@ namespace App.Game
 
         public bool HasRelic(RelicId id) => Run.Relics.Contains(id) && Run.DisabledRelic != id;
 
+        /// <summary>牌型倍率 + 花色/牌型遗物；燧石词缀再打五折。</summary>
         public float RelicMultiplier(HandScore score)
         {
             var extra = 0f;
@@ -856,6 +873,7 @@ namespace App.Game
             return (1f + extra) * flint;
         }
 
+        /// <summary>评估座位牌型。BOSS 禁用花色/人头会先过滤，燧石减半筹码和倍率。</summary>
         public HandScore EvaluateSeat(SeatState seat)
         {
             Suit? banned = null;
@@ -883,6 +901,7 @@ namespace App.Game
             return score;
         }
 
+        /// <summary>开新关：按关卡决定 3 敌或 1 BOSS，BOSS 人格改为 Expert 并随机词缀。</summary>
         private void StartStage()
         {
             Run.AdsLoanThisStage = 0;
@@ -920,6 +939,7 @@ namespace App.Game
                 seat.IsBoss = boss && i == 0;
                 if (seat.IsBoss)
                 {
+                    // BOSS 关只留 Enemies[0]，人格从 CreateSeat 的保守型覆盖成高手。
                     seat.Profile = AiProfile.Expert;
                 }
                 seat.Name = i < count ? names[i] : $"敌人{i + 1}";
@@ -941,6 +961,7 @@ namespace App.Game
             StartRound();
         }
 
+        /// <summary>重置本手下注状态并发牌，然后进入看牌/闷注选择。</summary>
         private void StartRound()
         {
             CardsRevealed = false;
@@ -990,6 +1011,7 @@ namespace App.Game
             EnterLookChoice();
         }
 
+        /// <summary>每人发 3 张。未上场的敌人不发。</summary>
         private void DealAll()
         {
             DealSerial++;
@@ -1010,6 +1032,7 @@ namespace App.Game
             }
         }
 
+        /// <summary>搓牌换一张。禁搓词缀过滤花色/人头；磁力手套有概率保留原花色。</summary>
         private Card DrawRubCard(Card original)
         {
             Suit? bannedSuit = null;
@@ -1044,6 +1067,7 @@ namespace App.Game
             });
         }
 
+        /// <summary>发牌后先让玩家选看牌或闷注，并开始记录本手 History。</summary>
         private void EnterLookChoice()
         {
             Phase = GamePhase.WaitingLookChoice;
@@ -1081,6 +1105,7 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>玩家跟注或加注。跟满后调用 <see cref="ResolveAiStreet"/>。</summary>
         private void PlacePlayerBet(bool raise)
         {
             if (Player.Folded)
@@ -1137,6 +1162,10 @@ namespace App.Game
             ResolveAiStreet();
         }
 
+        /// <summary>
+        /// AI 行动街。已跟满的座位仍可能主动开牌；未跟满则 <see cref="DecideAi"/>。
+        /// 最多扫 6 轮，避免加注来回打转。
+        /// </summary>
         private void ResolveAiStreet()
         {
             var scare = HasRelic(RelicId.ScareMask);
@@ -1188,6 +1217,7 @@ namespace App.Game
             FinishStreetOrShowdown();
         }
 
+        /// <summary>执行一次 AI 决策。开牌会立刻进入单挑亮牌；否则跟/加/全下/弃。</summary>
         private bool DecideAi(SeatState ai, bool scare)
         {
             var decision = BuildAiDecision(ai, scare, true, true);
@@ -1278,6 +1308,7 @@ namespace App.Game
             return FinishIfOneLeft();
         }
 
+        /// <summary>加注尺寸很粗：能加就加固定一档（当前最高档 + 单注），加不起则跟。</summary>
         private int SizeAiRaise(SeatState ai, float winRate)
         {
             var target = RaiseUnits();
@@ -1290,6 +1321,7 @@ namespace App.Game
             return target;
         }
 
+        /// <summary>有效筹码 = min(自己, 最短仍在手对手)，一手最多能赢这么多。</summary>
         private int ComputeEffectiveStack(SeatState ai)
         {
             var minOpp = int.MaxValue;
@@ -1314,6 +1346,7 @@ namespace App.Game
             return Math.Max(0, Math.Min(ai.Hp, minOpp));
         }
 
+        /// <summary>组装 <see cref="AiContext"/>：蒙特卡洛胜率、跟注成本、读玩家线，再交给 AiBrain。</summary>
         private AiDecision BuildAiDecision(SeatState ai, bool scare, bool canRaise, bool canAllIn)
         {
             var score = EvaluateSeat(ai);
@@ -1401,6 +1434,7 @@ namespace App.Game
             });
         }
 
+        /// <summary>已亮出的手牌当作死牌，从 AI 胜率抽样里剔除。</summary>
         private List<Card> CollectVisibleDeadCards(SeatState hero)
         {
             var list = new List<Card>();
@@ -1420,6 +1454,10 @@ namespace App.Game
             return list;
         }
 
+        /// <summary>
+        /// 一街结束：未跟满的 AI 弃牌；连续两街无人加注则摊牌；否则抬单注进入下一街。
+        /// 玩家已全下/弃牌时，未全下的对手继续打边池。
+        /// </summary>
         private void FinishStreetOrShowdown()
         {
             var alive = CountInHand();
@@ -1520,10 +1558,13 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>加注目标档 = 本街最高档 + 当轮单注。</summary>
         private int RaiseUnits() => _maxStreetUnits + Math.Max(_betStep, GameBalance.MinBet);
 
+        /// <summary>开牌要付当前注额的双倍。</summary>
         private int OpenUnits() => Math.Max(CurrentRoundUnits(), _betStep) * 2;
 
+        /// <summary>本街需要跟上的档位 = max(单注, 各未弃牌座位的 StreetUnits)。</summary>
         private int CurrentRoundUnits()
         {
             var max = Math.Max(_betStep, GameBalance.MinBet);
@@ -1567,6 +1608,7 @@ namespace App.Game
             return cost;
         }
 
+        /// <summary>开牌单挑：扣开牌费后立刻亮双方牌，输家出局。</summary>
         private bool ForceOpen(SeatState opener, SeatState target)
         {
             if (opener == null || target == null || opener.Folded || target.Folded)
@@ -1598,6 +1640,7 @@ namespace App.Game
             return true;
         }
 
+        /// <summary>玩家弃牌或全下后，若桌上还剩多人则 AI 继续打边池。</summary>
         private void SettleAfterPlayerOut()
         {
             Run.ConsecutiveLosses++;
@@ -1715,6 +1758,7 @@ namespace App.Game
             ResolveAiStreet();
         }
 
+        /// <summary>比牌：按牌型决胜负，赢家收池，玩家赢则进入点选攻击。</summary>
         private void Showdown()
         {
             if (_revealKind != RevealKind.None)
@@ -2231,6 +2275,7 @@ namespace App.Game
             StartRound();
         }
 
+        /// <summary>从血量扣下注。看牌后玩家付双倍；反加注词缀再让玩家 ×1.5。</summary>
         private bool TryCommitUnits(SeatState seat, int units, out int paid)
         {
             units = Math.Max(units, seat.StreetUnits);
@@ -2270,6 +2315,7 @@ namespace App.Game
             return PaysDouble(seat) ? units * 2 : units;
         }
 
+        /// <summary>看牌的一方跟注付双倍：玩家看了自己付双倍；玩家闷着则 AI 付双倍。</summary>
         private bool PaysDouble(SeatState seat)
         {
             if (seat.IsPlayer)
@@ -2291,6 +2337,7 @@ namespace App.Game
             return AlignBet(seat.Hp / denom);
         }
 
+        /// <summary>连输触发心态崩了时，把玩家最大下注压到当前血量一半。</summary>
         private int MaxBetUnits()
         {
             var cap = UnitsAffordable(Player);
@@ -2491,6 +2538,10 @@ namespace App.Game
             return values[_rng.Next(1, values.Length)];
         }
 
+        /// <summary>
+        /// 创建座位并绑定 AI 人格：id1 保守、id2 平衡偏激进、id3 激进。
+        /// BOSS 关会在 <see cref="StartStage"/> 把 id1 改成 Expert。
+        /// </summary>
         private SeatState CreateSeat(int id, string name, bool player)
         {
             AiProfile profile = null;
@@ -2499,13 +2550,13 @@ namespace App.Game
                 switch (id)
                 {
                     case 1:
-                        profile = AiProfile.Conservative;
+                        profile = AiProfile.Conservative; // 敌人A
                         break;
                     case 3:
-                        profile = AiProfile.Aggressive;
+                        profile = AiProfile.Aggressive; // 敌人C
                         break;
                     default:
-                        profile = AiProfile.BalancedAggressive;
+                        profile = AiProfile.BalancedAggressive; // 敌人B
                         break;
                 }
             }
@@ -2620,6 +2671,7 @@ namespace App.Game
             return true;
         }
 
+        /// <summary>连续两街无人加注，或只剩一人还能下注时，立刻摊牌。</summary>
         private bool ShouldImmediateShowdown()
         {
             if (CountInHand() <= 1)
@@ -2672,6 +2724,7 @@ namespace App.Game
             AfterRound();
         }
 
+        /// <summary>主池 + 边池：按投入分层，每层只在该层有份的人里比牌。</summary>
         private void AwardPots()
         {
             var layers = BuildPotLayers();

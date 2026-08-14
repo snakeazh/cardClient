@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace App.Game
 {
+    /// <summary>AI 风格标签。真正调参看 <see cref="AiProfile"/> 四个浮点。</summary>
     public enum AiStyle
     {
         Conservative = 0,
@@ -11,16 +12,24 @@ namespace App.Game
         Recreational = 3
     }
 
+    /// <summary>
+    /// 敌人人格。决策树共用，只靠这四个参数拉开风格：
+    /// 诈唬率、随机扰动、激进度、开牌耐心。
+    /// </summary>
     public sealed class AiProfile
     {
         public AiStyle Style;
         public string Label;
+        /// <summary>弱牌诈唬上限，实际还会被读线、短筹、恐吓面具压低，封顶 12%。</summary>
         public float BluffRate;
+        /// <summary>胜率扰动幅度。越大越不像「算得太准」。</summary>
         public float Randomness;
+        /// <summary>0~1。越高越爱加注、全下、开牌，强/中档阈值也越低。</summary>
         public float Aggression;
+        /// <summary>开牌意愿乘数。中牌开牌极严，强/超强才明显生效。</summary>
         public float OpenPatience;
 
-        /// <summary>平衡偏激进 · 诈唬 12% · 扰动 15% · 中高级。</summary>
+        /// <summary>敌人B 默认人格。</summary>
         public static AiProfile BalancedAggressive => new AiProfile
         {
             Style = AiStyle.Balanced,
@@ -31,6 +40,7 @@ namespace App.Game
             OpenPatience = 0.46f
         };
 
+        /// <summary>敌人A。</summary>
         public static AiProfile Conservative => new AiProfile
         {
             Style = AiStyle.Conservative,
@@ -41,6 +51,7 @@ namespace App.Game
             OpenPatience = 0.40f
         };
 
+        /// <summary>敌人C。</summary>
         public static AiProfile Aggressive => new AiProfile
         {
             Style = AiStyle.Aggressive,
@@ -51,6 +62,7 @@ namespace App.Game
             OpenPatience = 0.58f
         };
 
+        /// <summary>已定义未使用。</summary>
         public static AiProfile Recreational => new AiProfile
         {
             Style = AiStyle.Recreational,
@@ -61,6 +73,7 @@ namespace App.Game
             OpenPatience = 0.40f
         };
 
+        /// <summary>BOSS 关覆盖敌人A。</summary>
         public static AiProfile Expert => new AiProfile
         {
             Style = AiStyle.Balanced,
@@ -72,15 +85,18 @@ namespace App.Game
         };
     }
 
+    /// <summary>AI 本手动作。Call 在无人下注时等于过牌。</summary>
     public enum AiAction
     {
         Fold = 0,
         Call = 1,
         Raise = 2,
         AllIn = 3,
+        /// <summary>付双倍注额，强制与玩家比牌。</summary>
         Open = 4
     }
 
+    /// <summary>按胜率+成牌把牌力分成四档，再走不同决策。</summary>
     public enum HandBand
     {
         Weak = 0,
@@ -89,6 +105,7 @@ namespace App.Game
         Super = 3
     }
 
+    /// <summary>一次决策结果。Reason 会写进对局日志。</summary>
     public readonly struct AiDecision
     {
         public AiDecision(AiAction action, float winRate, string reason)
@@ -104,6 +121,7 @@ namespace App.Game
     }
 
     /// <summary>
+    /// AI 单次决策上下文。
     /// 一手最多只能从对手那里赢到 min(自己, 对手) 的血量。
     /// SPR = 有效剩余血量 / 当前底池，决定愿不愿意打大底池。
     /// </summary>
@@ -112,18 +130,23 @@ namespace App.Game
         public SeatState Ai;
         public HandScore Score;
         public float WinRate;
+        /// <summary>未成同花/顺金，但两张同花且点数接近，弱牌可便宜跟注。</summary>
         public bool StraightFlushDraw;
         public int Pot;
         public int CallCost;
         public int AiChips;
+        /// <summary>min(自己血量, 最短对手血量)，一手能赢的上限。</summary>
         public int EffectiveStack;
         public int ShortestOpponent;
         public int PlayerChips;
+        /// <summary>用 MinBet 当大盲，换算 BB 数。</summary>
         public int BigBlind;
         public int BettingRound;
         public int RemainingPlayers;
+        /// <summary>在仍存活的 AI 里的行动顺序，越大越后位。</summary>
         public int PositionAmongAi;
         public int RemainingAiCount;
+        /// <summary>玩家持有恐吓面具。</summary>
         public bool Scare;
         public bool CanOpen;
         public bool CanRaise;
@@ -153,9 +176,13 @@ namespace App.Game
         public bool PlayerDeep;
         public bool PlayerShort;
         public float PlayerMaxCallStackFrac;
+        /// <summary>根据本手线 + 历史估算的玩家牌力，0~1。</summary>
         public float PlayerStrength;
     }
 
+    /// <summary>
+    /// 玩家行为档案。跨手累计弃/加/看/闷，本手再细记跟注线，用来估牌力。
+    /// </summary>
     public sealed class PlayerHistory
     {
         public int Hands;
@@ -186,6 +213,7 @@ namespace App.Game
         public float ContinueVsRaiseRate => FacedRaiseChances <= 0 ? 0.40f : (float)FacedRaiseContinues / FacedRaiseChances;
         public bool OnlyCalledThisHand => StreetCalls > 0 && HandRaises <= 0;
 
+        /// <summary>新手开始：累计手数 +1，清空本手看牌/跟注线。</summary>
         public void BeginHand(int chips)
         {
             Hands++;
@@ -255,6 +283,10 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 根据本手看牌/闷跟/跟加注/投入比例，估一个 0~1 的玩家牌力。
+        /// 看牌后持续跟、跟加注、大额投入都当强；深筹只跟小注会往回调。
+        /// </summary>
         public float EstimateStrength(int playerChips, int bigBlind)
         {
             var strength = 0.30f;
@@ -334,10 +366,15 @@ namespace App.Game
         }
     }
 
+    /// <summary>
+    /// 炸金花胜率估计：已知自己三张，随机补对手手牌做蒙特卡洛。
+    /// 牌不够抽时退回按牌型的经验胜率。
+    /// </summary>
     public static class ZhaJinHuaOdds
     {
         private static readonly Card[] FullDeck = BuildFullDeck();
 
+        /// <param name="samples">默认 220 次，局内实时决策用。</param>
         public static float EstimateWinRate(
             IReadOnlyList<Card> hero,
             IReadOnlyList<Card> visibleDead,
@@ -405,6 +442,7 @@ namespace App.Game
             return Clamp01(wins / samples);
         }
 
+        /// <summary>两张同花且点数差 1~2（含 A-2），未成金花/顺金时视为听牌。</summary>
         public static bool IsStraightFlushDraw(IReadOnlyList<Card> cards)
         {
             if (cards == null || cards.Count < 3)
@@ -517,8 +555,13 @@ namespace App.Game
         }
     }
 
+    /// <summary>
+    /// 敌人下注决策。流程：扰动胜率 → 分档 → 短筹走 shove，否则按弱/中/强/超强出招。
+    /// AI 始终知道自己的牌，没有「闷牌看不见」这一层。
+    /// </summary>
     public static class AiBrain
     {
+        /// <summary>根据当前桌面状态选出 Fold / Call / Raise / AllIn / Open。</summary>
         public static AiDecision Decide(AiContext ctx)
         {
             var ai = ctx.Ai;
@@ -538,6 +581,7 @@ namespace App.Game
             var sprHigh = ctx.Spr > 6f;
             var shortStack = ctx.BbCount < 10f;
 
+            // 恐吓面具 / 前位 / 自己短筹 / 读你偏强 → 下调有效胜率。
             if (ctx.Scare)
             {
                 wr = Clamp01(wr - 0.04f);
@@ -558,6 +602,7 @@ namespace App.Game
                 wr = Clamp01(wr - (read - 0.32f) * 0.28f);
             }
 
+            // 激进人格把强/中档门槛压低；SPR 低更容易打大，SPR 高更谨慎。
             var high = 0.58f - (profile.Aggression - 0.5f) * 0.12f;
             var mid = 0.32f - (profile.Aggression - 0.5f) * 0.08f;
             if (sprLow)
@@ -589,6 +634,7 @@ namespace App.Game
                 bluff *= 0.7f;
             }
 
+            // 你爱弃就多诈；短筹对局几乎不诈。
             bluff += (foldPressure - 0.28f) * 0.18f;
             if (ctx.IsLate)
             {
@@ -605,8 +651,10 @@ namespace App.Game
             bluff = Clamp01(Math.Min(bluff, 0.12f));
 
             var band = ClassifyHand(score, wr, high, mid);
+            // 看牌后连续跟 ≥2：粘着，关掉诈唬、开牌更谨慎。
             var lookedSticky = !ctx.PlayerFolded && ctx.PlayerLooked && ctx.PlayerConsecutiveCalls >= 2;
             var playerStrong = !ctx.PlayerFolded && (read >= 0.55f || lookedSticky);
+            // 闷着且没连跟 3 次：当弱，中牌会压你。
             var playerWeak = !ctx.PlayerFolded && !ctx.PlayerLooked && ctx.PlayerConsecutiveBlindCalls < 3 && read < 0.48f;
             var canBluff = !blockAirBluff && !ctx.OpponentShort && !ctx.PlayerShort && playerAggro < 0.45f && foldPressure >= 0.22f;
             if (lookedSticky || playerStrong)
@@ -632,6 +680,7 @@ namespace App.Game
             }
         }
 
+        /// <summary>同花顺/高胜率→超强；金花→强；对子→中；其余弱。门槛随激进和 SPR 浮动。</summary>
         private static HandBand ClassifyHand(HandScore score, float wr, float high, float mid)
         {
             if (score.Type >= HandType.StraightFlush || wr >= 0.78f)
@@ -652,6 +701,7 @@ namespace App.Game
             return HandBand.Weak;
         }
 
+        /// <summary>弱牌：过牌或便宜跟，默认弃；仅在你看起来虚时偶发诈唬。</summary>
         private static AiDecision DecideWeak(
             AiContext ctx,
             float wr,
@@ -684,6 +734,7 @@ namespace App.Game
             return new AiDecision(AiAction.Fold, wr, "弱牌弃牌");
         }
 
+        /// <summary>中牌：遇强则控池或弃，遇弱则小注；默认跟注控池，开牌极严。</summary>
         private static AiDecision DecideMedium(
             AiContext ctx,
             float wr,
@@ -735,6 +786,7 @@ namespace App.Game
             return new AiDecision(AiAction.Fold, wr, "中牌停手");
         }
 
+        /// <summary>强牌：优先考虑开牌；你短筹或 SPR 低可全下；否则价值加注或控池。</summary>
         private static AiDecision DecideStrong(AiContext ctx, float wr, bool lookedSticky, AiProfile profile, Random rng)
         {
             if (ctx.CanOpen && ShouldOpen(ctx, HandBand.Strong, wr, profile, rng))
@@ -766,6 +818,7 @@ namespace App.Game
             return new AiDecision(AiAction.Call, wr, "强牌停手控池");
         }
 
+        /// <summary>超强牌：更爱开牌；短筹全下；前两轮可能故意跟注诱导。</summary>
         private static AiDecision DecideSuper(AiContext ctx, float wr, bool lookedSticky, AiProfile profile, Random rng)
         {
             var potBig = IsPotLarge(ctx);
@@ -794,6 +847,7 @@ namespace App.Game
             return new AiDecision(AiAction.Call, wr, "超强牌停手诱导");
         }
 
+        /// <summary>按你本手线改诈唬：闷跟少则加诈，看牌大额跟则禁止空气诈唬。</summary>
         private static void ApplyPlayerLineToBluff(AiContext ctx, float read, ref float bluff, ref bool blockAirBluff)
         {
             if (ctx.PlayerFolded)
@@ -849,6 +903,7 @@ namespace App.Game
             }
         }
 
+        /// <summary>有效筹码 &lt; 10BB：弱牌弃，中牌以上倾向全下或开牌拼一手。</summary>
         private static AiDecision DecideShort(
             AiContext ctx,
             float wr,
@@ -890,6 +945,7 @@ namespace App.Game
             return ShoveOrRaise(ctx, wr, "短筹中牌拼一手");
         }
 
+        /// <summary>能全下就全下，否则加注，再不行跟注。</summary>
         private static AiDecision ShoveOrRaise(AiContext ctx, float wr, string reason)
         {
             if (ctx.CanAllIn)
@@ -905,6 +961,10 @@ namespace App.Game
             return new AiDecision(AiAction.Call, wr, reason);
         }
 
+        /// <summary>
+        /// 是否主动开牌单挑玩家。弱牌永不；中牌仅短筹+大底池；
+        /// 强/超强要底池够大、自己短筹、或你持续看牌跟。
+        /// </summary>
         private static bool ShouldOpen(AiContext ctx, HandBand band, float wr, AiProfile profile, Random rng)
         {
             if (!ctx.CanOpen || band == HandBand.Weak)
@@ -988,6 +1048,7 @@ namespace App.Game
             return rng.NextDouble() < chance * profile.OpenPatience;
         }
 
+        /// <summary>加注意愿。短筹对局概率打 55 折，且不超过 58%。</summary>
         private static bool WantBet(float chance, AiContext ctx, Random rng)
         {
             if (!ctx.CanRaise)
@@ -1004,6 +1065,7 @@ namespace App.Game
             return rng.NextDouble() < chance;
         }
 
+        /// <summary>SPR &lt; 2.5 或底池已接近有效筹码 / 8BB，视为大底池。</summary>
         private static bool IsPotLarge(AiContext ctx)
         {
             if (ctx.Pot <= 0)

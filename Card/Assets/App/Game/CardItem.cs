@@ -9,6 +9,7 @@ namespace App.Game
         Back = 1
     }
 
+    /// <summary>桌上单张牌的显示与翻转动画。逻辑牌面见 <see cref="Card"/>。</summary>
     public class CardItem : MonoBehaviour
     {
         public SpriteRenderer CurrentRenderer;

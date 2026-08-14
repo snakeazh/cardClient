@@ -3,20 +3,26 @@ using System.Collections.Generic;
 
 namespace App.Game
 {
+    /// <summary>单局流程阶段。看牌/搓牌/下注/摊牌/攻击/商店都走这里。</summary>
     public enum GamePhase
     {
         Idle = 0,
+        /// <summary>看牌后搓牌，必须选一张或跳过。</summary>
         WaitingRub = 1,
+        /// <summary>下注街：跟/加/弃/开牌。</summary>
         Betting = 2,
         Showdown = 3,
         RoundSettle = 4,
         Shop = 5,
         StageFail = 6,
         RunComplete = 7,
+        /// <summary>玩家赢牌后点选敌人造成伤害。</summary>
         WaitingAttack = 8,
+        /// <summary>发牌后选择看牌或闷注。</summary>
         WaitingLookChoice = 9
     }
 
+    /// <summary>遗物。战斗类改结算倍率；恐吓面具压 AI；磁力手套改搓牌。</summary>
     public enum RelicId
     {
         CrudeSword = 0,
@@ -27,6 +33,7 @@ namespace App.Game
         WoodenSword = 5,
         IronSword = 6,
         JadeSword = 7,
+        /// <summary>AI 决策时胜率下调、诈唬减少。</summary>
         ScareMask = 8,
         MagnetGloves = 9
     }
@@ -46,6 +53,7 @@ namespace App.Game
         Special = 3
     }
 
+    /// <summary>BOSS 关随机词缀。禁搓/禁计分改牌面，其余改经济或对局规则。</summary>
     public enum BossAffix
     {
         None = 0,
@@ -59,13 +67,19 @@ namespace App.Game
         BanScoreDiamond = 8,
         BanScoreClub = 9,
         BanScoreFace = 10,
+        /// <summary>结算倍率和血量收益减半。</summary>
         Flint = 11,
+        /// <summary>本局随机禁用一件道具或遗物。</summary>
         Edge = 12,
+        /// <summary>比牌前偷看玩家最终牌型。</summary>
         XRay = 13,
+        /// <summary>玩家下注消耗 ×1.5。</summary>
         AntiRaise = 14,
+        /// <summary>破产救助比例降为 5%。</summary>
         Stingy = 15
     }
 
+    /// <summary>商店条目。Relic=true 为永久遗物，否则为本局消耗品。</summary>
     public sealed class ShopItemDef
     {
         public string Id;
@@ -78,10 +92,12 @@ namespace App.Game
         public RelicCategory Category;
     }
 
+    /// <summary>闯关数值：开局血量、敌人数量/血量、下注下限、商店与救助。</summary>
     public static class GameBalance
     {
         public const int PlayerStartChips = 800;
         public const int PlayerStartHp = 4000;
+        /// <summary>最小下注单位，也当作 AI 的「大盲」口径。</summary>
         public const int MinBet = 50;
         public const int MaxRelics = 4;
         public const float RescueRatio = 0.15f;
@@ -90,6 +106,7 @@ namespace App.Game
         public const float MagnetKeepSuitChance = 0.3f;
         public const int DailyDoubleGoldAds = 3;
 
+        /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
         public static int EnemyCountForStage(int stage)
         {
             if (IsBossStage(stage))
@@ -100,14 +117,17 @@ namespace App.Game
             return 3;
         }
 
+        /// <summary>第 10 / 20 / 30 … 关为 BOSS。</summary>
         public static bool IsBossStage(int stage) => ((stage - 1) % 10) + 1 == 10;
 
+        /// <summary>敌人血量 = 2200 + 关卡×700；BOSS 再 ×2.4。</summary>
         public static int EnemyHp(int stage, bool boss)
         {
             var hp = 2200 + stage * 700;
             return boss ? (int)(hp * 2.4f) : hp;
         }
 
+        /// <summary>血量折成金币：先按开局筹码/血量比例换筹码，再分段递减汇率。</summary>
         public static int ConvertHpToGold(int hp)
         {
             if (hp <= 0)
@@ -220,34 +240,41 @@ namespace App.Game
         }
     }
 
+    /// <summary>桌上一个座位：玩家或敌人。血量同时充当筹码。</summary>
     public sealed class SeatState
     {
         public int Id;
         public string Name;
         public bool IsPlayer;
         public bool IsBoss;
+        /// <summary>本关是否上场。敌人座位固定 3 个，未上场的 Hp=0。</summary>
         public bool ActiveInStage;
         public int Hp;
         public int MaxHp;
+        /// <summary>本街已承诺的下注档位（未看牌按单倍计）。</summary>
         public int StreetUnits;
         public int StreetPaid;
         public int TotalBet;
         public int RoundStartChips;
         public bool Folded;
+        /// <summary>玩家看牌后下注翻倍；AI 始终按已看牌决策。</summary>
         public bool Looked;
         public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
         public Card[] Hand = new Card[3];
         public string Status = string.Empty;
         public string Banner = string.Empty;
+        /// <summary>敌人人格。玩家为 null。BOSS 关会覆盖成 Expert。</summary>
         public AiProfile Profile;
     }
 
+    /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 词缀。</summary>
     public sealed class RunState
     {
         public int Gold;
         public int Stage = 1;
         public int ConsecutiveLosses;
+        /// <summary>连输 2 局后触发，本局最大下注限制为当前血量 50%。</summary>
         public bool Tilted;
         public int RubsLeft;
         public int ExtraRubCharges;
@@ -257,6 +284,7 @@ namespace App.Game
         public int PeekGoodCharges;
         public int ChaKanGoodCharges;
         public int TiHuanGoodCharges;
+        /// <summary>透视揭示标记，下标 = seatId*3 + cardIndex。</summary>
         public readonly bool[] SpyReveal = new bool[12];
         public bool PeekSuitUsed;
         public int PeekSuitIndex = -1;

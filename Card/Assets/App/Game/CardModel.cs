@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace App.Game
 {
+    /// <summary>花色。ResourceId 用 1~4 对应红桃/方片/梅花/黑桃。</summary>
     public enum Suit
     {
         Heart = 1,
@@ -28,6 +29,7 @@ namespace App.Game
         King = 13
     }
 
+    /// <summary>炸金花牌型，数值越大越强。豹子 > 顺金 > 金花 > 顺子 > 对子 > 散牌。</summary>
     public enum HandType
     {
         HighCard = 0,
@@ -93,6 +95,7 @@ namespace App.Game
         }
     }
 
+    /// <summary>52 张标准扑克。抽空会自动重置。</summary>
     public sealed class Deck
     {
         public const int Size = 52;
@@ -186,6 +189,9 @@ namespace App.Game
         }
     }
 
+    /// <summary>
+    /// 牌型评估结果。Type 决定大小，Keys 拆同分，BaseChips×Multiplier 用于伤害。
+    /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
         public HandScore(HandType type, int baseChips, float multiplier, int[] keys, Card[] usedCards, string label)
@@ -228,6 +234,9 @@ namespace App.Game
         }
     }
 
+    /// <summary>
+    /// 三张牌炸金花评估。BOSS「禁用花色/人头」通过 bannedSuit / banFaces 过滤后再比牌。
+    /// </summary>
     public static class HandEvaluator
     {
         public static string TypeName(HandType type)
@@ -384,6 +393,7 @@ namespace App.Game
             return HighCard(filtered);
         }
 
+        /// <summary>伤害 ≈ 牌面筹码 × 底池 × 牌型倍率 × 遗物倍率。</summary>
         public static int ComputeDamage(HandScore score, int pot, float relicMultiplier)
         {
             var value = score.BaseChips * pot * score.Multiplier * relicMultiplier;

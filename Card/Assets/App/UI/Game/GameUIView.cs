@@ -1,6 +1,8 @@
+using System;
 using System.Threading.Tasks;
 using App.Game;
 using App.Resources;
+using DG.Tweening;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -10,17 +12,22 @@ using UnityEngine.UI;
 namespace App.UI
 {
     /// <summary>
-    /// 对局 HUD。player1/2/3 放置生成的 PlayerInfo；horBtns 按阶段显示按钮。
+    /// 对局 HUD。player1/2/3 对应 GameHud 的 PlayerNode1/2/3。
     /// </summary>
     [AutoScreen(AppScreenIds.GameUI, UILayer.Page, ResResourcePaths.GameUI)]
     public sealed class GameUIView : ViewBase<GameTableViewModel>
     {
-        private static readonly string[] EnemySlotKeys = { "player2", "player3", "player1" };
+        private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
 
         private GameObject _gameHud;
         private GameBoardController _board;
         private Transform _btns;
         private Transform _shopContent;
+        private readonly GameObject[] _enemyInfos = new GameObject[3];
+        private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private int _playedAttack;
+        private RectTransform _hpTextRt;
+        private Vector2 _hpTextHome;
 
         protected override void OnBind()
         {
@@ -28,6 +35,8 @@ namespace App.UI
             SpawnEnemyInfos();
             BindPhaseButtons();
             EnsureHint();
+            BindAttackHud();
+            BindAttackFx();
             ViewModel.Refresh();
         }
 
@@ -60,6 +69,14 @@ namespace App.UI
                 _board = null;
             }
 
+            _attackFx.Dispose();
+            RestoreHpText();
+            if (ViewModel != null)
+            {
+                ViewModel.ShowMask.Value = false;
+                ViewModel.ShowHpText.Value = false;
+            }
+
             if (_gameHud != null)
             {
                 Destroy(_gameHud);
@@ -72,6 +89,116 @@ namespace App.UI
         private void OnSessionChanged()
         {
             RefreshShop();
+            TryPlayAttack();
+        }
+
+        private void BindAttackHud()
+        {
+            var mask = ResolveSlot("mask");
+            if (mask != null)
+            {
+                Binding.BindActive(mask.gameObject, ViewModel.ShowMask);
+            }
+
+            var hp = ResolveSlot("hptext");
+            if (hp == null)
+            {
+                return;
+            }
+
+            _hpTextRt = hp as RectTransform ?? hp.GetComponent<RectTransform>();
+            if (_hpTextRt != null)
+            {
+                _hpTextHome = _hpTextRt.anchoredPosition;
+            }
+
+            var hpText = hp.GetComponent<Text>();
+            if (hpText != null)
+            {
+                Binding.BindText(hpText, ViewModel.HpText);
+            }
+
+            Binding.BindActive(hp.gameObject, ViewModel.ShowHpText);
+        }
+
+        private void BindAttackFx()
+        {
+            var playerInfo = transform.Find("PlayerInfo");
+            _attackFx.Bind(transform, playerInfo, _enemyInfos);
+            _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
+        }
+
+        private void TryPlayAttack()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var session = ViewModel.Session;
+            if (session.AttackPlaySerial <= 0 || session.AttackPlaySerial == _playedAttack)
+            {
+                return;
+            }
+
+            _playedAttack = session.AttackPlaySerial;
+            var mask = ResolveSlot("mask");
+            if (mask != null)
+            {
+                mask.SetAsLastSibling();
+            }
+
+            ViewModel.ShowMask.Value = true;
+            ViewModel.ShowHpText.Value = false;
+            _attackFx.Play(session.AttackVisualSlot,
+                () =>
+                {
+                    ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
+                    ViewModel.ShowHpText.Value = true;
+                    PlaceHpAtTarget(session.AttackVisualSlot);
+                },
+                () => { ViewModel.ShowMask.Value = false; },
+                () =>
+                {
+                    ViewModel.ShowHpText.Value = false;
+                    RestoreHpText();
+                    if (ViewModel != null)
+                    {
+                        ViewModel.Session.CompletePlayerAttack();
+                    }
+                });
+        }
+
+        private void PlaceHpAtTarget(int slot)
+        {
+            if (_hpTextRt == null)
+            {
+                return;
+            }
+
+            var hit = _attackFx.HitPosition(slot);
+            if (hit == Vector3.zero)
+            {
+                return;
+            }
+
+            _hpTextRt.SetAsLastSibling();
+            _hpTextRt.position = hit;
+            _hpTextRt.DOKill();
+            _hpTextRt.localScale = Vector3.one * 0.6f;
+            _hpTextRt.DOScale(1f, 0.18f).SetEase(Ease.OutBack);
+        }
+
+        private void RestoreHpText()
+        {
+            if (_hpTextRt == null)
+            {
+                return;
+            }
+
+            _hpTextRt.DOKill();
+            _hpTextRt.anchoredPosition = _hpTextHome;
+            _hpTextRt.localScale = Vector3.one;
         }
 
         private void BindPlayerInfo()
@@ -133,6 +260,7 @@ namespace App.UI
                 Binding.BindText(FindUiText(clone.transform, "Text (2)"), ViewModel.EnemyBet[i]);
                 Binding.BindText(FindUiText(clone.transform, "state"), ViewModel.EnemyState[i]);
                 BindEnemyAttack(clone, i);
+                _enemyInfos[i] = clone;
             }
         }
 
@@ -164,18 +292,24 @@ namespace App.UI
                 return;
             }
 
-            BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowActions);
+            BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
             BindBtn("RaiseBtn", ViewModel.RaiseCommand, ViewModel.ShowActions);
             BindBtn("FoldBtn", ViewModel.FoldCommand, ViewModel.ShowActions);
             BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowActions);
+            BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
+            BindBtn("PeekGood", ViewModel.PeekGoodCommand);
+            BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
+            BindBtn("TiHuanGood", ViewModel.TiHuanGoodCommand);
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
-            BindBtn("CancelBtn", ViewModel.SkipRubCommand, ViewModel.ShowRub);
+            BindBtn("CancelBtn", ViewModel.SkipRubCommand, ViewModel.ShowCancel);
             BindBtn("NextRoundBtn", ViewModel.ContinueCommand, ViewModel.ShowContinue);
             SetBtnLabel("CompareBtn", "比牌");
             SetBtnLabel("PeekBtn", "搓牌");
+            SetBtnLabel("LookBtn", "看牌");
             SetBtnLabel("CancelBtn", "取消");
             SetBtnLabel("NextRoundBtn", "下一局");
+            BindBlindLabel();
 
             var template = FindBtn("BlindBtn");
             if (template == null)
@@ -189,6 +323,18 @@ namespace App.UI
             EnsureBtn(template, "LoanBtn", "看广告借贷", ViewModel.LoanCommand, ViewModel.ShowFail);
             EnsureBtn(template, "ReviveBtn", "看广告复活", ViewModel.ReviveCommand, ViewModel.ShowFail);
             EnsureBtn(template, "RestartBtn", "重开本关", ViewModel.RestartCommand, ViewModel.ShowFail);
+        }
+
+        private void BindBtn(string name, IRelayCommand command)
+        {
+            var button = FindBtn(name);
+            if (button == null)
+            {
+                return;
+            }
+
+            button.gameObject.SetActive(true);
+            Binding.BindCommand(button, command);
         }
 
         private void BindBtn(string name, IRelayCommand command, ObservableProperty<bool> visible)
@@ -354,6 +500,21 @@ namespace App.UI
             if (text != null)
             {
                 Binding.BindText(text, ViewModel.Hint);
+            }
+        }
+
+        private void BindBlindLabel()
+        {
+            var button = FindBtn("BlindBtn");
+            if (button == null)
+            {
+                return;
+            }
+
+            var text = button.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.BlindLabel);
             }
         }
 

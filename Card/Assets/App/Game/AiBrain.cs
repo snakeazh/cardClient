@@ -104,8 +104,8 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 一手最多只能从对手那里赢到 min(自己, 对手) 的筹码。
-    /// SPR = 有效剩余筹码 / 当前底池，决定愿不愿意打大底池。
+    /// 一手最多只能从对手那里赢到 min(自己, 对手) 的血量。
+    /// SPR = 有效剩余血量 / 当前底池，决定愿不愿意打大底池。
     /// </summary>
     public sealed class AiContext
     {

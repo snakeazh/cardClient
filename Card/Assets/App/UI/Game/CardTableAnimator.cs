@@ -6,8 +6,8 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 从 GameHud.dealpoint 发牌到各 PlayerNode/mineNode 的 carpoint，
-    /// 开牌/弃牌/看牌时用 CardItem 播翻面。
+    /// 从 GameHud.dealpoint 发牌到 mineNode / PlayerNode1–3。
+    /// PlayerNode1/2/3 对应 GameUI 的 player1/2/3。
     /// </summary>
     public sealed class CardTableAnimator
     {
@@ -19,6 +19,7 @@ namespace App.UI
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
         private const float RevealSeatGap = 0.38f;
+        private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private static GameObject _prefab;
 
@@ -667,7 +668,7 @@ namespace App.UI
             }
         }
 
-        private static CardFaceState DesiredFace(GameSession session, SeatState seat, bool player, int _)
+        private static CardFaceState DesiredFace(GameSession session, SeatState seat, bool player, int cardIndex)
         {
             if (session == null || seat == null)
             {
@@ -685,6 +686,11 @@ namespace App.UI
             }
 
             if (player && seat.Looked)
+            {
+                return CardFaceState.Front;
+            }
+
+            if (session.IsSpyRevealed(seat.Id, cardIndex))
             {
                 return CardFaceState.Front;
             }
@@ -775,54 +781,10 @@ namespace App.UI
 
         private void BindEnemySlots(Transform hud)
         {
-            var slots = new List<Transform>();
-            for (var i = 0; i < hud.childCount; i++)
+            for (var i = 0; i < EnemyNodeNames.Length && i < _enemies.Length; i++)
             {
-                var child = hud.GetChild(i);
-                if (child.name == "bg" || child.name == "mineNode" || child.name == "dealpoint" ||
-                    child.name == "DealPoint")
-                {
-                    continue;
-                }
-
-                if (FindChild(child, "cardNode") != null || FindCardPoint(child, 1) != null)
-                {
-                    slots.Add(child);
-                }
+                _enemies[i] = BuildSeat(FindChild(hud, EnemyNodeNames[i]), false);
             }
-
-            slots.Sort((a, b) =>
-            {
-                if (Mathf.Abs(a.position.y - b.position.y) > 1.5f)
-                {
-                    return b.position.y.CompareTo(a.position.y);
-                }
-
-                return a.position.x.CompareTo(b.position.x);
-            });
-
-            Transform left = null, top = null, right = null;
-            if (slots.Count == 1)
-            {
-                top = slots[0];
-            }
-            else if (slots.Count == 2)
-            {
-                left = slots[0].position.x < slots[1].position.x ? slots[0] : slots[1];
-                right = left == slots[0] ? slots[1] : slots[0];
-            }
-            else if (slots.Count >= 3)
-            {
-                top = slots[0];
-                var rest = new List<Transform> { slots[1], slots[2] };
-                rest.Sort((a, b) => a.position.x.CompareTo(b.position.x));
-                left = rest[0];
-                right = rest[1];
-            }
-
-            _enemies[0] = BuildSeat(left, false);
-            _enemies[1] = BuildSeat(top, false);
-            _enemies[2] = BuildSeat(right, false);
         }
 
         private static SeatView BuildSeat(Transform node, bool player)

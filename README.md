@@ -1,0 +1,151 @@
+# Card Client
+
+Unity 卡牌客户端。
+
+| 文档 | 内容 |
+|------|------|
+| [`Card/Assets/Framework/框架使用文档.md`](Card/Assets/Framework/框架使用文档.md) | DI、资源、UI、绑定、对话框、列表 |
+| [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
+| 本文 | **AppServicesHost**、**存档**、**背包** |
+
+---
+
+## 1. AppServicesHost
+
+所有需要跨场景存活的服务，都挂在一个 `DontDestroyOnLoad` 节点上，**不要绑在 `AppBootstrap` 上**。
+
+```
+AppBootstrap（启动场景，可销毁）
+  └─ AppServices.Create()
+       └─ AppServicesHost（常驻节点）
+            └─ ServiceContainer
+                 ├─ ISaveService
+                 ├─ IBagService
+                 ├─ IResourceService
+                 └─ ...
+```
+
+| 类型 | 路径 | 职责 |
+|------|------|------|
+| `AppBootstrap` | `Card/Assets/App/Bootstrap/AppBootstrap.cs` | 启动装配：建 Host、初始化资源/配置/UI |
+| `AppServices` | `Card/Assets/App/Bootstrap/AppServices.cs` | 静态入口：`Create()` / `Resolve<T>()` / `Container` |
+| `AppServicesHost` | `Card/Assets/App/Bootstrap/AppServicesHost.cs` | 常驻节点：持有容器、注册服务、切后台/退出时自动落盘 |
+
+### 解析服务
+
+任意场景、任意脚本（Host 创建之后）：
+
+```csharp
+var bag = AppServices.Resolve<IBagService>();
+var save = AppServices.Resolve<ISaveService>();
+```
+
+或构造函数注入：DI 会从 `ServiceContainer` 解析依赖。
+
+启动前请先判断 `AppServices.IsReady`。
+
+### 注册新服务
+
+在 `AppBootstrap` 里用 Host 注册，不要把服务字段挂到 Bootstrap 上：
+
+```csharp
+_services.Register(new FooService());
+_services.Register<IFooService>(foo);
+```
+
+实现了 `ISaveFlushable` 的实例会被自动跟踪，切后台 / 失焦 / 退出 / 销毁时调用 `Save()`。
+
+---
+
+## 2. 存档（ISaveService）
+
+平台无关的键值存档。业务只依赖接口；复杂对象自行 `JsonUtility` 序列化后 `SetString`。
+
+| 文件 | 职责 |
+|------|------|
+| `Card/Assets/Framework/Save/Runtime/ISaveService.cs` | 统一 KV 接口 |
+| `Card/Assets/Framework/Save/Runtime/ISaveFlushable.cs` | 可落盘服务：`Save()` |
+| `Card/Assets/Framework/Save/Runtime/PlayerPrefsSaveService.cs` | 单机实现（`PlayerPrefs`） |
+| `Card/Assets/Framework/Save/Runtime/WeChatSaveService.cs` | 微信小游戏桩（暂未实现） |
+| `Card/Assets/Framework/Save/Runtime/SaveFramework.cs` | 工厂：`Create()` 选实现 |
+
+### 接口
+
+```csharp
+bool HasKey(string key);
+string GetString(string key, string defaultValue = "");
+void SetString(string key, string value);
+int GetInt(string key, int defaultValue = 0);
+void SetInt(string key, int value);
+float GetFloat(string key, float defaultValue = 0f);
+void SetFloat(string key, float value);
+void DeleteKey(string key);
+void DeleteAll();
+void Save(); // 真正刷盘
+```
+
+`SetXxx` 只改内存缓存；`Save()` 才写磁盘。`PlayerPrefsSaveService` 对应 `PlayerPrefs.Save()`。
+
+### 平台切换
+
+`SaveFramework.Create()`：
+
+- 默认：`PlayerPrefsSaveService`
+- 定义 `WECHAT_MINIGAME`：`WeChatSaveService`（当前调用会抛 `NotImplementedException`）
+
+### 新增可落盘服务
+
+1. 实现 `ISaveFlushable`（内部用脏标记，无改动则 `Save()` 直接返回）
+2. `AppServicesHost.Register(...)` 注册
+3. 切后台 / 退出会自动 `FlushAll()`；关键节点也可主动 `Save()`
+
+---
+
+## 3. 背包（IBagService）
+
+按 `ItemConfig.Id` 存数量，内存改动 + 脏标记落盘。
+
+| 文件 | 职责 |
+|------|------|
+| `Card/Assets/App/Bag/IBagService.cs` | 背包接口（继承 `ISaveFlushable`） |
+| `Card/Assets/App/Bag/BagService.cs` | 实现 |
+| `Card/Assets/App/Bag/BagModels.cs` | `BagEntry` / `BagSaveData` |
+
+存档 key：`bag.v1`（整包 JSON 一条写入 `ISaveService`）。
+
+启动时在配置表加载之后 `Load()`，再 `Register` 到 Host。
+
+### 接口
+
+```csharp
+bool IsDirty { get; }
+int GetCount(int itemId);
+bool Has(int itemId, int amount = 1);
+void Add(int itemId, int amount);          // amount > 0
+bool TryRemove(int itemId, int amount);    // 不足返回 false
+IReadOnlyList<BagEntry> GetAll();
+void Clear();
+void Load();
+void Save(); // 仅 dirty 时刷盘
+```
+
+### 用法
+
+```csharp
+var bag = AppServices.Resolve<IBagService>();
+bag.Add(1010001, 100);
+if (bag.TryRemove(1010001, 10))
+{
+    // ...
+}
+bag.Save(); // 结算等关键点可主动落盘
+```
+
+`Add` / `TryRemove` / `Clear` 只改内存并标脏，**不立即 IO**。落盘时机：
+
+1. 业务主动 `Save()`（推荐：结算、购买完成）
+2. `AppServicesHost` 自动：暂停、失焦、退出、销毁
+
+`Save()` 无脏数据会直接返回，可频繁调用。
+
+未知 `ItemConfig` Id 会打 Warning，仍会写入背包。

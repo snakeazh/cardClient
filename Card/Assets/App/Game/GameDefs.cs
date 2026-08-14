@@ -13,7 +13,8 @@ namespace App.Game
         Shop = 5,
         StageFail = 6,
         RunComplete = 7,
-        WaitingAttack = 8
+        WaitingAttack = 8,
+        WaitingLookChoice = 9
     }
 
     public enum RelicId
@@ -107,21 +108,26 @@ namespace App.Game
             return boss ? (int)(hp * 2.4f) : hp;
         }
 
-        public static int EnemyChips(int stage, bool boss)
+        public static int ConvertHpToGold(int hp)
         {
-            var chips = 320 + stage * 40;
-            return boss ? (int)(chips * 1.6f) : chips;
+            if (hp <= 0)
+            {
+                return 0;
+            }
+
+            var equivalent = (int)Math.Floor(hp * (PlayerStartChips / (float)PlayerStartHp));
+            return ConvertStackToGold(equivalent);
         }
 
-        public static int ConvertChipsToGold(int chips)
+        private static int ConvertStackToGold(int stack)
         {
-            if (chips <= 0)
+            if (stack <= 0)
             {
                 return 0;
             }
 
             var gold = 0;
-            var remain = chips;
+            var remain = stack;
             gold += Take(ref remain, 500, 0.05f);
             gold += Take(ref remain, 500, 0.10f);
             gold += Take(ref remain, 1000, 0.15f);
@@ -170,7 +176,7 @@ namespace App.Game
                 case BossAffix.BanScoreDiamond: return "比牌时方片不计入牌型";
                 case BossAffix.BanScoreClub: return "比牌时梅花不计入牌型";
                 case BossAffix.BanScoreFace: return "比牌时人头牌不计入牌型";
-                case BossAffix.Flint: return "结算时牌型倍率和筹码减半";
+                case BossAffix.Flint: return "结算时牌型倍率和血量收益减半";
                 case BossAffix.Edge: return "本局随机禁用一件道具/遗物";
                 case BossAffix.XRay: return "比牌前偷看你的最终牌型";
                 case BossAffix.AntiRaise: return "你的下注消耗变为 1.5 倍";
@@ -193,7 +199,7 @@ namespace App.Game
         {
             new ShopItemDef { Id = "splash", Name = "瞬劈斩", Effect = "本局胜利攻击溅射其他敌人 30%", Price = 80, ConsumableId = ConsumableId.SplashSlash },
             new ShopItemDef { Id = "magnifier", Name = "放大镜", Effect = "下注前偷看 1 张牌的花色", Price = 50, ConsumableId = ConsumableId.Magnifier },
-            new ShopItemDef { Id = "loan", Name = "借贷券", Effect = "筹码归零时自动获得最低下注额", Price = 30, ConsumableId = ConsumableId.LoanTicket },
+            new ShopItemDef { Id = "loan", Name = "借贷券", Effect = "血量不足以继续下注时自动获得最低下注血量", Price = 30, ConsumableId = ConsumableId.LoanTicket },
             new ShopItemDef { Id = "crude", Name = "粗制长剑", Effect = "结算倍率 +4", Price = 120, Relic = true, RelicId = RelicId.CrudeSword, Category = RelicCategory.Combat },
             new ShopItemDef { Id = "neck", Name = "贪婪项链", Effect = "方片结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyNecklace, Category = RelicCategory.Combat },
             new ShopItemDef { Id = "bracelet", Name = "贪婪手镯", Effect = "红桃结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyBracelet, Category = RelicCategory.Combat },
@@ -223,8 +229,8 @@ namespace App.Game
         public bool ActiveInStage;
         public int Hp;
         public int MaxHp;
-        public int Chips;
         public int StreetUnits;
+        public int StreetPaid;
         public int TotalBet;
         public int RoundStartChips;
         public bool Folded;
@@ -241,7 +247,6 @@ namespace App.Game
     {
         public int Gold;
         public int Stage = 1;
-        public int Chips = GameBalance.PlayerStartChips;
         public int ConsecutiveLosses;
         public bool Tilted;
         public int RubsLeft;
@@ -249,6 +254,10 @@ namespace App.Game
         public bool SplashThisRound;
         public bool MagnifierThisRound;
         public bool LoanTicket;
+        public int PeekGoodCharges;
+        public int ChaKanGoodCharges;
+        public int TiHuanGoodCharges;
+        public readonly bool[] SpyReveal = new bool[12];
         public bool PeekSuitUsed;
         public int PeekSuitIndex = -1;
         public Suit? PeekedSuit;

@@ -19,13 +19,18 @@ namespace App.UI
             OpenCommand = new RelayCommand(
                 () => Session.RequestShowdown(),
                 () => Session.Phase == GamePhase.Betting && !Session.Player.Folded);
+            AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
+            PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
+            ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
+            TiHuanGoodCommand = new RelayCommand(() => Session.UseTiHuanGood(), () => Session.PlayerMayUseTiHuanGood);
             RubCommand = new RelayCommand(() => Session.TryRubSelected(), () => Session.Phase == GamePhase.WaitingRub);
-            SkipRubCommand = new RelayCommand(() => Session.SkipRub(), () => Session.Phase == GamePhase.WaitingRub);
+            SkipRubCommand = new RelayCommand(() => Session.CancelLookOrRub(), () => Session.PlayerMayCancelLookOrRub);
             MinusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(-GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
             PlusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
             ContinueCommand = new RelayCommand(
                 () => Session.Continue(),
-                () => Session.Phase == GamePhase.RoundSettle || Session.Phase == GamePhase.WaitingAttack);
+                () => Session.Phase == GamePhase.RoundSettle ||
+                      (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying));
             LeaveShopCommand = new RelayCommand(() => Session.LeaveShop(), () => Session.Phase == GamePhase.Shop);
             LoanCommand = new RelayCommand(() => Session.WatchAdLoan(), () => Session.Phase == GamePhase.StageFail);
             ReviveCommand = new RelayCommand(() => Session.WatchAdRevive(), () => Session.Phase == GamePhase.StageFail);
@@ -60,10 +65,17 @@ namespace App.UI
         public ObservableProperty<bool> ShowActions { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowLook { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowRub { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowCancel { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowBlind { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<string> BlindLabel { get; } = new ObservableProperty<string>("闷注");
+        public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowContinue { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowShop { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowFail { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowAttack { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowMask { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowHpText { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<string> HpText { get; } = new ObservableProperty<string>(string.Empty);
         public readonly ObservableProperty<bool>[] ShowEnemy =
         {
             new ObservableProperty<bool>(),
@@ -94,6 +106,10 @@ namespace App.UI
         public IRelayCommand LookCommand { get; }
         public IRelayCommand FoldCommand { get; }
         public IRelayCommand OpenCommand { get; }
+        public IRelayCommand AllInCommand { get; }
+        public IRelayCommand PeekGoodCommand { get; }
+        public IRelayCommand ChaKanGoodCommand { get; }
+        public IRelayCommand TiHuanGoodCommand { get; }
         public IRelayCommand RubCommand { get; }
         public IRelayCommand SkipRubCommand { get; }
         public IRelayCommand MinusBetCommand { get; }
@@ -117,19 +133,28 @@ namespace App.UI
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = $"金币 {run.Gold}";
             PotText.Value = $"奖池 {Session.Pot}";
-            PlayerChips.Value = $"筹码({Session.Player.Chips})";
+            PlayerChips.Value = $"HP {Session.Player.Hp}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
             RoundInfo.Value = RoundLabel();
-            BetAmount.Value = Session.BetUnits.ToString();
+            BetAmount.Value = $"+{Session.BetUnits}";
+            BlindLabel.Value = Session.Player.Looked ? "跟注" : "闷注";
             ShowActions.Value = Session.Phase == GamePhase.Betting;
+            ShowBlind.Value = Session.Phase == GamePhase.Betting;
             ShowLook.Value = Session.PlayerMayLookCards;
             ShowRub.Value = Session.Phase == GamePhase.WaitingRub;
+            ShowCancel.Value = Session.PlayerMayCancelLookOrRub;
+            ShowAllIn.Value = Session.PlayerMayAllIn;
             ShowContinue.Value = Session.Phase == GamePhase.RoundSettle ||
-                                 Session.Phase == GamePhase.WaitingAttack;
+                                 (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying);
             ShowShop.Value = Session.Phase == GamePhase.Shop;
             ShowFail.Value = Session.Phase == GamePhase.StageFail;
             ShowAttack.Value = Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget;
+            if (!Session.AttackPlaying)
+            {
+                ShowMask.Value = false;
+                ShowHpText.Value = false;
+            }
             RefreshEnemies();
 
             var start = run.Log.Count > 8 ? run.Log.Count - 8 : 0;
@@ -151,6 +176,10 @@ namespace App.UI
             LookCommand.RaiseCanExecuteChanged();
             FoldCommand.RaiseCanExecuteChanged();
             OpenCommand.RaiseCanExecuteChanged();
+            AllInCommand.RaiseCanExecuteChanged();
+            PeekGoodCommand.RaiseCanExecuteChanged();
+            ChaKanGoodCommand.RaiseCanExecuteChanged();
+            TiHuanGoodCommand.RaiseCanExecuteChanged();
             RubCommand.RaiseCanExecuteChanged();
             SkipRubCommand.RaiseCanExecuteChanged();
             ContinueCommand.RaiseCanExecuteChanged();
@@ -206,7 +235,7 @@ namespace App.UI
                 }
 
                 ShowEnemy[slot].Value = true;
-                EnemyChips[slot].Value = $"筹码({enemy.Chips})";
+                EnemyChips[slot].Value = $"HP {enemy.Hp}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
             }
@@ -216,7 +245,7 @@ namespace App.UI
         {
             var stage = Session.Run.Stage;
             var round = Session.BettingRound;
-            var hp = $"{Session.Player.Hp}/{Session.Player.MaxHp}";
+            var hp = Session.Player.Hp.ToString();
             switch (Session.Phase)
             {
                 case GamePhase.Shop:
@@ -259,7 +288,7 @@ namespace App.UI
                 return "下注(0)";
             }
 
-            return $"下注({seat.TotalBet})";
+            return $"下注({seat.StreetPaid})";
         }
 
         private static int VisualSlot(int enemyIndex, int activeCount)

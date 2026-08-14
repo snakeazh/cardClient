@@ -185,9 +185,9 @@ namespace App.UI
                 if (_stateText != null) { _stateText.raycastTarget = false; }
             }
 
-            WireEnemyInfo("player2", 0, new Vector2(-360f, 80f));
-            WireEnemyInfo("player3", 1, new Vector2(0f, 760f));
-            WireEnemyInfo("player1", 2, new Vector2(360f, 80f));
+            WireEnemyInfo("player1", 0, new Vector2(-360f, 80f));
+            WireEnemyInfo("player2", 1, new Vector2(0f, 760f));
+            WireEnemyInfo("player3", 2, new Vector2(360f, 80f));
         }
 
         private void BuildHud()
@@ -304,9 +304,8 @@ namespace App.UI
                 if (_enemyInfos[slot] != null)
                 {
                     _enemyInfos[slot].gameObject.SetActive(true);
-                    var hp = enemy.MaxHp <= 0 ? 0 : Mathf.RoundToInt(100f * enemy.Hp / enemy.MaxHp);
                     var banner = string.IsNullOrEmpty(enemy.Banner) ? enemy.Status : enemy.Banner;
-                    _enemyInfos[slot].text = $"{enemy.Name}\nHP {enemy.Hp}/{enemy.MaxHp} ({hp}%)\n筹码 {enemy.Chips}\n{banner}";
+                    _enemyInfos[slot].text = $"{enemy.Name}\nHP {enemy.Hp}\n{banner}";
                 }
             }
         }

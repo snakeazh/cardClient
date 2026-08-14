@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using App.Atlas;
 using App.Bag;
 using App.Config;
 using App.Game;
@@ -28,6 +30,8 @@ namespace App.Bootstrap
             await _resources.InitializeAsync();
             _services.Register(_resources.Resources);
 
+            await RegisterAtlas(_services, _resources.Resources);
+
             _services.Register(SaveFramework.Create());
             _services.Register(new GameSession());
             _services.Container.AddSingleton<GameTableViewModel>();
@@ -39,6 +43,17 @@ namespace App.Bootstrap
             _ui = UIFramework.Create(_services.Container);
 
             await _ui.UI.Open(_services.Resolve<HomeViewModel>());
+        }
+
+        private static async Task RegisterAtlas(
+            AppServicesHost services,
+            IResourceService resources)
+        {
+            var atlas = new AtlasService(resources);
+            await atlas.PreloadAsync();
+            services.Register(atlas);
+            services.Register<IAtlasService>(atlas);
+            CardSpriteLibrary.Bind(atlas);
         }
 
         private static void RegisterBag(AppServicesHost services)

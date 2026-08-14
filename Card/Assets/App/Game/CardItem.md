@@ -11,7 +11,7 @@
 
 1. 节点上挂 `CardItem`。
 2. 自身或子节点需要有 `SpriteRenderer`。可在 Inspector 指定 `CurrentRenderer`；留空则运行时自动查找。
-3. 正面贴图按 `Card.ResourceId` 从 `Resources` 加载（如 `101` = 红心 A）；背面为 `Resources/CardBack`。见 `CardSpriteLibrary`。
+3. 正面贴图按 `Card.ResourceId` 从图集 `Altas/Card` 取（如 `101` = 红心 A）；背面为 `CardBack`。启动时由 `IAtlasService` 预加载。见 `CardSpriteLibrary`。
 
 ```csharp
 using App.Game;

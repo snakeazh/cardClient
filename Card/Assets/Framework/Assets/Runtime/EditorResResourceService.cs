@@ -15,7 +15,11 @@ namespace Framework.Assets
     /// </summary>
     public sealed class EditorResResourceService : IResourceService
     {
-        private static readonly string[] TryExtensions = { ".prefab", ".asset", ".mat", ".sprite", ".png", ".jpg", ".wav", ".mp3", ".json", ".txt" };
+        private static readonly string[] TryExtensions =
+        {
+            ".prefab", ".asset", ".mat", ".sprite", ".png", ".jpg", ".wav", ".mp3", ".json", ".txt",
+            ".spriteatlas", ".spriteatlasv2"
+        };
 
         private readonly Dictionary<string, CacheEntry> _cache =
             new Dictionary<string, CacheEntry>(StringComparer.Ordinal);
@@ -134,7 +138,7 @@ namespace Framework.Assets
                 }
 
                 var path = ResolveAssetPath<T>(key);
-                var loaded = AssetDatabase.LoadAssetAtPath<T>(path);
+                var loaded = AssetDatabase.LoadAssetAtPath<T>(path) ?? LoadFirstSubAsset<T>(path);
                 if (loaded == null)
                 {
                     throw new InvalidOperationException(
@@ -156,6 +160,11 @@ namespace Framework.Assets
                 {
                     return path;
                 }
+
+                if (IsAtlasExtension(ext) && LoadFirstSubAsset<T>(path) != null)
+                {
+                    return path;
+                }
             }
 
             foreach (var ext in TryExtensions)
@@ -169,6 +178,30 @@ namespace Framework.Assets
 
             throw new FileNotFoundException(
                 $"No asset for key '{key}' under {ResPaths.AssetRoot}. Expected e.g. {basePath}.prefab");
+        }
+
+        private static T LoadFirstSubAsset<T>(string path) where T : Object
+        {
+            var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+            if (assets == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < assets.Length; i++)
+            {
+                if (assets[i] is T typed)
+                {
+                    return typed;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsAtlasExtension(string ext)
+        {
+            return ext == ".spriteatlas" || ext == ".spriteatlasv2";
         }
 
         private static string ReadBundleVersionHint()

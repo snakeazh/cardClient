@@ -10,6 +10,8 @@ namespace App.Resources
         public const string Home = "UI/Home";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
-        public const string GameHud = "Resources/Game/GameHud";
+        public const string GameHud = "Game/GameHud";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
+        public const string CardAtlas = "Altas/Card";
     }
 }

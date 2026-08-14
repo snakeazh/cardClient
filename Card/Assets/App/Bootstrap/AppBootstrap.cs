@@ -1,3 +1,4 @@
+using App.Config;
 using App.Game;
 using App.UI;
 using Framework.Assets;
@@ -29,6 +30,9 @@ namespace App.Bootstrap
             await _resources.InitializeAsync();
             RegisterResources(_container, _resources);
 
+            await ConfigTables.LoadAsync(_resources.Resources);
+            LogConfigSmoke();
+
             _ui = UIFramework.Create(_container);
 
             await _ui.UI.Open(_container.Resolve<HomeViewModel>());
@@ -46,6 +50,15 @@ namespace App.Bootstrap
             var service = resources.Resources;
             container.RegisterInstance(service);
             container.RegisterInstance<IResourceService>(service);
+        }
+
+        private static void LogConfigSmoke()
+        {
+            var sample = ItemConfig.Get(1010001);
+            Debug.Log(
+                $"[Config] loaded: GameFps={GameConst.Instance.GameFps}, " +
+                $"ItemCount={ItemConfig.Count}, " +
+                $"Item(1010001)={sample?.Desc ?? "(missing)"}");
         }
     }
 }

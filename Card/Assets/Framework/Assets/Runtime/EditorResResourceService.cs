@@ -15,7 +15,7 @@ namespace Framework.Assets
     /// </summary>
     public sealed class EditorResResourceService : IResourceService
     {
-        private static readonly string[] TryExtensions = { ".prefab", ".asset", ".mat", ".sprite", ".png", ".jpg", ".wav", ".mp3" };
+        private static readonly string[] TryExtensions = { ".prefab", ".asset", ".mat", ".sprite", ".png", ".jpg", ".wav", ".mp3", ".json", ".txt" };
 
         private readonly Dictionary<string, CacheEntry> _cache =
             new Dictionary<string, CacheEntry>(StringComparer.Ordinal);

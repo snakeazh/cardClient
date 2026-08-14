@@ -54,7 +54,7 @@ namespace App.Game
         public bool IsFace => Rank == Rank.Jack || Rank == Rank.Queen || Rank == Rank.King;
 
         /// <summary>
-        /// Resources 贴图名：1红心 2方片 3草花 4黑桃，个位点数 01=A … 13=K。
+        /// 图集精灵名：1红心 2方片 3草花 4黑桃，个位点数 01=A … 13=K。
         /// 例：101=红心A，113=红心K，201=方片A，301=草花A，401=黑桃A。
         /// </summary>
         public int ResourceId => (int)Suit * 100 + (int)Rank;

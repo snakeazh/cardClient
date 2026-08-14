@@ -6,7 +6,7 @@ Unity 卡牌客户端。
 |------|------|
 | [`Card/Assets/Framework/框架使用文档.md`](Card/Assets/Framework/框架使用文档.md) | DI、资源、UI、绑定、对话框、列表 |
 | [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
-| 本文 | **AppServicesHost**、**存档**、**背包** |
+| 本文 | **AppServicesHost**、**存档**、**背包**、**图集** |
 
 ---
 
@@ -22,6 +22,7 @@ AppBootstrap（启动场景，可销毁）
                  ├─ ISaveService
                  ├─ IBagService
                  ├─ IResourceService
+                 ├─ IAtlasService
                  └─ ...
 ```
 
@@ -37,7 +38,7 @@ AppBootstrap（启动场景，可销毁）
 
 ```csharp
 var bag = AppServices.Resolve<IBagService>();
-var save = AppServices.Resolve<ISaveService>();
+var atlas = AppServices.Resolve<IAtlasService>();
 ```
 
 或构造函数注入：DI 会从 `ServiceContainer` 解析依赖。
@@ -149,3 +150,31 @@ bag.Save(); // 结算等关键点可主动落盘
 `Save()` 无脏数据会直接返回，可频繁调用。
 
 未知 `ItemConfig` Id 会打 Warning，仍会写入背包。
+
+---
+
+## 4. 图集（IAtlasService）
+
+启动时预加载 `SpriteAtlas`，运行时按图集 key + 精灵名取图，避免首次抽卡卡顿。
+
+| 文件 | 职责 |
+|------|------|
+| `Card/Assets/App/Atlas/IAtlasService.cs` | 图集接口 |
+| `Card/Assets/App/Atlas/AtlasService.cs` | 实现：预加载、缓存 `GetSprite` |
+| `Card/Assets/Res/Altas/Card.spriteatlasv2` | 扑克牌图集（含 `101`…`413`、`CardBack`） |
+
+资源 key：`ResResourcePaths.CardAtlas` = `"Altas/Card"`（相对 `Assets/Res/`）。
+
+启动时在 `ResourceFramework.InitializeAsync` 之后 `PreloadAsync()`，再 `Register` 到 Host，并 `CardSpriteLibrary.Bind`。
+
+### 接口
+
+```csharp
+await atlas.PreloadAsync();
+var sprite = atlas.GetSprite(ResResourcePaths.CardAtlas, "101");
+atlas.TryGetSprite(ResResourcePaths.CardAtlas, "CardBack", out var back);
+```
+
+新增启动预加载图集：把资源放到 `Assets/Res/Altas/`，在 `ResResourcePaths` 加 key，再写入 `AtlasService.StartupAtlasKeys`。
+
+牌面读取：`CardSpriteLibrary.GetFace(card)` / `CardSpriteLibrary.Back`。

@@ -7,6 +7,9 @@ namespace App.Resources
     {
         public const string GameConst = "Config/GameConst";
         public const string ItemConfig = "Config/ItemConfig";
+        public const string LevelConfig = "Config/LevelConfig";
+        public const string MonsterConfig = "Config/MonsterConfig";
+        public const string MonsterGroupConfig = "Config/MonsterGroupConfig";
     }
 }
 

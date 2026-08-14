@@ -2,5 +2,4 @@
 Tools/**/bin/
 Tools/**/obj/
 Config/~$*
-Config/csv/
-Config/json/
+TempConfig/

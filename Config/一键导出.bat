@@ -27,8 +27,8 @@ echo.
 if %EXIT_CODE% neq 0 (
     echo [失败] 导出未完成，错误码: %EXIT_CODE%
 ) else (
-    echo [成功] CSV   -^> Config\csv
-    echo [成功] JSON  -^> Config\json
+    echo [成功] CSV   -^> TempConfig\csv
+    echo [成功] JSON  -^> TempConfig\json
     echo [成功] C#    -^> Card\Assets\App\Config\Generated
     echo [成功] Unity -^> Card\Assets\Res\Config
 )

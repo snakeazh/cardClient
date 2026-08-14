@@ -67,8 +67,9 @@ internal static class Program
     {
         var repoRoot = FindRepoRoot();
         var configDir = Path.Combine(repoRoot, "Config");
-        var csvDir = Path.Combine(configDir, "csv");
-        var jsonDir = Path.Combine(configDir, "json");
+        var tempConfigDir = Path.Combine(repoRoot, "TempConfig");
+        var csvDir = Path.Combine(tempConfigDir, "csv");
+        var jsonDir = Path.Combine(tempConfigDir, "json");
         var csharpDir = Path.Combine(repoRoot, "Card", "Assets", "App", "Config", "Generated");
         var unityJsonDir = Path.Combine(repoRoot, "Card", "Assets", "Res", "Config");
 
@@ -86,9 +87,8 @@ internal static class Program
             {
                 case "--config":
                 case "-c":
+                    // 只改 Excel 源目录；中间产物仍默认落在 TempConfig
                     configDir = Path.GetFullPath(Next());
-                    csvDir = Path.Combine(configDir, "csv");
-                    jsonDir = Path.Combine(configDir, "json");
                     break;
                 case "--csv":
                     csvDir = Path.GetFullPath(Next());
@@ -154,9 +154,9 @@ internal static class Program
               dotnet run --project Tools/ConfigExporter -- --config <目录>
 
             参数:
-              -c, --config        配置目录（默认: 仓库/Config）
-                  --csv           CSV 输出目录（默认: Config/csv）
-                  --json          JSON 输出目录（默认: Config/json）
+              -c, --config        配置目录（默认: 仓库/Config，Excel 源）
+                  --csv           CSV 输出目录（默认: TempConfig/csv）
+                  --json          JSON 输出目录（默认: TempConfig/json）
                   --csharp        C# 输出目录（默认: Card/Assets/App/Config/Generated）
                   --no-csharp     不生成 C#
                   --unity-json    Unity JSON 目录（默认: Card/Assets/Res/Config）

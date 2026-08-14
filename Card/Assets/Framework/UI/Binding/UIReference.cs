@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace Framework.UI.Binding
 {
@@ -15,30 +16,30 @@ namespace Framework.UI.Binding
         public sealed class Entry
         {
             public string Key;
-            public Component Component;
+            public UnityObject Component;
             public UIBind Bind;
         }
 
         [SerializeField] private List<Entry> _entries = new List<Entry>();
 
-        private Dictionary<string, Component> _map;
+        private Dictionary<string, UnityObject> _map;
         private bool _built;
 
         public IReadOnlyList<Entry> Entries => _entries;
 
-        public T Get<T>(string key) where T : Component
+        public T Get<T>(string key) where T : UnityObject
         {
-            var component = Get(key);
-            if (component is T typed)
+            var target = Get(key);
+            if (target is T typed)
             {
                 return typed;
             }
 
             throw new InvalidOperationException(
-                $"UIReference '{name}' key '{key}' is {component?.GetType().Name ?? "null"}, requested {typeof(T).Name}.");
+                $"UIReference '{name}' key '{key}' is {target?.GetType().Name ?? "null"}, requested {typeof(T).Name}.");
         }
 
-        public Component Get(string key)
+        public UnityObject Get(string key)
         {
             EnsureMap();
             if (string.IsNullOrWhiteSpace(key))
@@ -46,15 +47,15 @@ namespace Framework.UI.Binding
                 throw new ArgumentException("Bind key cannot be empty.", nameof(key));
             }
 
-            if (!_map.TryGetValue(key, out var component) || component == null)
+            if (!_map.TryGetValue(key, out var target) || target == null)
             {
                 throw new KeyNotFoundException($"UIReference '{name}' missing bind key '{key}'.");
             }
 
-            return component;
+            return target;
         }
 
-        public bool TryGet<T>(string key, out T component) where T : Component
+        public bool TryGet<T>(string key, out T component) where T : UnityObject
         {
             EnsureMap();
             component = null;
@@ -69,17 +70,30 @@ namespace Framework.UI.Binding
 
         public GameObject GetGameObject(string key)
         {
-            return Get(key).gameObject;
+            var target = Get(key);
+            if (target is GameObject go)
+            {
+                return go;
+            }
+
+            if (target is Component component)
+            {
+                return component.gameObject;
+            }
+
+            throw new InvalidOperationException(
+                $"UIReference '{name}' key '{key}' cannot resolve GameObject from {target?.GetType().Name ?? "null"}.");
         }
 
         [ContextMenu("Collect UIBinds")]
         public void Collect()
         {
             _entries.Clear();
-            var binds = GetComponentsInChildren<UIBind>(true);
+            var binds = new List<UIBind>();
+            CollectBinds(transform, binds);
             var usedKeys = new HashSet<string>(StringComparer.Ordinal);
 
-            for (var i = 0; i < binds.Length; i++)
+            for (var i = 0; i < binds.Count; i++)
             {
                 var bind = binds[i];
                 if (bind == null)
@@ -112,6 +126,25 @@ namespace Framework.UI.Binding
             _built = false;
         }
 
+        private static void CollectBinds(Transform root, List<UIBind> binds)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var bind = root.GetComponent<UIBind>();
+            if (bind != null)
+            {
+                binds.Add(bind);
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                CollectBinds(root.GetChild(i), binds);
+            }
+        }
+
         private void Awake()
         {
             EnsureMap();
@@ -124,7 +157,7 @@ namespace Framework.UI.Binding
                 return;
             }
 
-            _map = new Dictionary<string, Component>(StringComparer.Ordinal);
+            _map = new Dictionary<string, UnityObject>(StringComparer.Ordinal);
             for (var i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];

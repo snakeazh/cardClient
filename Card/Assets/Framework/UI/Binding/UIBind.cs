@@ -1,16 +1,17 @@
 using System;
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace Framework.UI.Binding
 {
     /// <summary>
-    /// Marks a UI node for lookup. Pick which component on this GameObject is exposed.
+    /// Marks a UI node for lookup. Pick which component or GameObject on this node is exposed.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class UIBind : MonoBehaviour
     {
         [SerializeField] private string _key;
-        [SerializeField] private Component _target;
+        [SerializeField] private UnityObject _target;
 
         public string Key
         {
@@ -25,7 +26,7 @@ namespace Framework.UI.Binding
             }
         }
 
-        public Component Target
+        public UnityObject Target
         {
             get
             {
@@ -38,7 +39,7 @@ namespace Framework.UI.Binding
             }
         }
 
-        public T Get<T>() where T : Component
+        public T Get<T>() where T : UnityObject
         {
             var target = Target;
             if (target is T typed)
@@ -66,27 +67,60 @@ namespace Framework.UI.Binding
 
         private void OnValidate()
         {
-            if (_target != null && _target.gameObject != gameObject)
+            if (_target == null)
+            {
+                return;
+            }
+
+            var owner = ResolveGameObject(_target);
+            if (owner != gameObject)
             {
                 _target = null;
             }
         }
 
-        private Component PreferDefaultTarget()
+        private UnityObject PreferDefaultTarget()
         {
             var components = GetComponents<Component>();
+            Component transform = null;
             for (var i = 0; i < components.Length; i++)
             {
                 var component = components[i];
-                if (component == null || component is Transform || component is UIBind)
+                if (component == null || component is UIBind)
                 {
+                    continue;
+                }
+
+                if (component is Transform)
+                {
+                    transform = component;
                     continue;
                 }
 
                 return component;
             }
 
-            return this;
+            if (transform != null)
+            {
+                return transform;
+            }
+
+            return gameObject;
+        }
+
+        private static GameObject ResolveGameObject(UnityObject target)
+        {
+            if (target is GameObject go)
+            {
+                return go;
+            }
+
+            if (target is Component component)
+            {
+                return component.gameObject;
+            }
+
+            return null;
         }
 #endif
     }

@@ -6,7 +6,8 @@ Unity 卡牌客户端。
 |------|------|
 | [`Card/Assets/Framework/框架使用文档.md`](Card/Assets/Framework/框架使用文档.md) | DI、资源、UI、绑定、对话框、列表 |
 | [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
-| 本文 | **AppServicesHost**、**存档**、**背包**、**图集** |
+| [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md) | 关卡查询、通关进度 |
+| 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡** |
 
 ---
 
@@ -23,6 +24,8 @@ AppBootstrap（启动场景，可销毁）
                  ├─ IBagService
                  ├─ IResourceService
                  ├─ IAtlasService
+                 ├─ ILevelService
+                 ├─ ILevelProgressService
                  └─ ...
 ```
 
@@ -39,6 +42,8 @@ AppBootstrap（启动场景，可销毁）
 ```csharp
 var bag = AppServices.Resolve<IBagService>();
 var atlas = AppServices.Resolve<IAtlasService>();
+var level = AppServices.Resolve<ILevelService>();
+var progress = AppServices.Resolve<ILevelProgressService>();
 ```
 
 或构造函数注入：DI 会从 `ServiceContainer` 解析依赖。
@@ -178,3 +183,32 @@ atlas.TryGetSprite(ResResourcePaths.CardAtlas, "CardBack", out var back);
 新增启动预加载图集：把资源放到 `Assets/Res/Altas/`，在 `ResResourcePaths` 加 key，再写入 `AtlasService.StartupAtlasKeys`。
 
 牌面读取：`CardSpriteLibrary.GetFace(card)` / `CardSpriteLibrary.Back`。
+
+---
+
+## 5. 关卡（ILevelService / ILevelProgressService）
+
+详见 [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md)。
+
+把 `LevelConfig` / `MonsterGroupConfig` / `MonsterConfig` 解析成关卡快照，并按关卡 Id 记录已通关难度。启动时在配置表加载之后注册。
+
+**尚未接入 `GameSession`**：对局仍用 `GameBalance` 硬编码关卡人数与血量。
+
+```
+LevelConfig.MonsterGroup[]  →  MonsterGroupConfig
+MonsterGroupConfig.MonsterId + MonsterLevel  →  MonsterConfig
+```
+
+索引：`_levels[难度][关卡]`、`_monsters[怪物Id][等级]`、`_levelsById[LevelConfig.Id]`。  
+单局只打当前难度；`TryGetNext` 为 false 表示该难度打完。
+
+```csharp
+var level = AppServices.Resolve<ILevelService>();
+var snapshot = level.Get(level.DefaultDifficulty, 1);
+var byId = level.GetById(1010);
+
+var progress = AppServices.Resolve<ILevelProgressService>();
+progress.MarkCleared(1010); // 最后一关才写入该难度
+if (progress.IsCleared(1)) { /* 难度 1 已通关 */ }
+progress.Save();
+```

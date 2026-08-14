@@ -149,6 +149,57 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: Status
   _target: {fileID: 6188473695883303265}
+--- !u!1 &1598341131542544378
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9034393155983087737}
+  - component: {fileID: 6811079778715483015}
+  m_Layer: 0
+  m_Name: DifficultyList
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &9034393155983087737
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598341131542544378}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 984909569796075377}
+  m_Father: {fileID: 8875899370957399706}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -160}
+  m_SizeDelta: {x: 240, y: 320}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6811079778715483015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598341131542544378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: DifficultyList
+  _target: {fileID: 1598341131542544378}
 --- !u!1 &2811407856424766731
 GameObject:
   m_ObjectHideFlags: 0
@@ -466,7 +517,7 @@ RectTransform:
   m_Children:
   - {fileID: 8334022603919198684}
   - {fileID: 2362237942172284594}
-  - {fileID: 984909569796075377}
+  - {fileID: 9034393155983087737}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -544,9 +595,12 @@ MonoBehaviour:
   - Key: Status
     Component: {fileID: 6188473695883303265}
     Bind: {fileID: 8980883323047258655}
-  - Key: DialogButton
+  - Key: DifficultyList
+    Component: {fileID: 1598341131542544378}
+    Bind: {fileID: 6811079778715483015}
+  - Key: DifficultyBtn
     Component: {fileID: 6151331541819279877}
-    Bind: {fileID: 8146777373660433954}
+    Bind: {fileID: 6421054915714042409}
 --- !u!1 &8488570962490379161
 GameObject:
   m_ObjectHideFlags: 0
@@ -559,14 +613,14 @@ GameObject:
   - component: {fileID: 968947529978627345}
   - component: {fileID: 5147735328065645049}
   - component: {fileID: 6151331541819279877}
-  - component: {fileID: 8146777373660433954}
+  - component: {fileID: 6421054915714042409}
   m_Layer: 0
-  m_Name: DialogButton
+  m_Name: DifficultyBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &984909569796075377
 RectTransform:
   m_ObjectHideFlags: 0
@@ -574,13 +628,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8488570962490379161}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4621114588857327684}
-  m_Father: {fileID: 8875899370957399706}
+  m_Father: {fileID: 9034393155983087737}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -669,7 +723,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &8146777373660433954
+--- !u!114 &6421054915714042409
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -681,5 +735,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _key: DialogButton
+  _key: DifficultyBtn
   _target: {fileID: 6151331541819279877}

@@ -1,7 +1,8 @@
 # 炸金花闯关 · 对局逻辑
 
 本文描述当前客户端已落地的规则，供后续改玩法、调数值、接 UI 时对照。  
-实现入口：`GameSession.cs`，数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。
+实现入口：`GameSession.cs`，数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。  
+关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)（**尚未接入本对局**）。
 
 没有独立筹码。下注、奖池、全下、主池/边池全部走 **HP**。
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Framework.UI.Binding;
 using UnityEditor;
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace Framework.UI.Editor
 {
@@ -24,42 +25,89 @@ namespace Framework.UI.Editor
             EditorGUILayout.PropertyField(_key, new GUIContent("Key"));
 
             var bind = (UIBind)target;
-            var components = bind.GetComponents<Component>();
             var labels = new List<string>();
-            var options = new List<Component>();
-            var selected = 0;
+            var options = new List<UnityObject>();
 
+            labels.Add("GameObject");
+            options.Add(bind.gameObject);
+
+            var components = bind.GetComponents<Component>();
             for (var i = 0; i < components.Length; i++)
             {
                 var component = components[i];
-                if (component == null || component is Transform || component is UIBind)
+                if (component == null || component is UIBind)
                 {
                     continue;
                 }
 
                 labels.Add(component.GetType().Name);
                 options.Add(component);
-                if (_target.objectReferenceValue == component)
-                {
-                    selected = options.Count - 1;
-                }
             }
 
-            if (options.Count == 0)
+            var current = _target.objectReferenceValue;
+            var selected = IndexOf(options, current);
+            if (selected < 0)
             {
-                EditorGUILayout.HelpBox("No selectable components on this GameObject.", MessageType.Warning);
+                selected = PreferDefaultIndex(options);
+                _target.objectReferenceValue = options[selected];
             }
-            else
+
+            EditorGUI.BeginChangeCheck();
+            var next = EditorGUILayout.Popup("Target", selected, labels.ToArray());
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUI.BeginChangeCheck();
-                var next = EditorGUILayout.Popup("Target Component", selected, labels.ToArray());
-                if (EditorGUI.EndChangeCheck() || _target.objectReferenceValue == null)
-                {
-                    _target.objectReferenceValue = options[Mathf.Clamp(next, 0, options.Count - 1)];
-                }
+                _target.objectReferenceValue = options[Mathf.Clamp(next, 0, options.Count - 1)];
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private static int IndexOf(List<UnityObject> options, UnityObject current)
+        {
+            if (current == null)
+            {
+                return -1;
+            }
+
+            for (var i = 0; i < options.Count; i++)
+            {
+                if (options[i] == current)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int PreferDefaultIndex(List<UnityObject> options)
+        {
+            var transformIndex = -1;
+            var gameObjectIndex = -1;
+            for (var i = 0; i < options.Count; i++)
+            {
+                var option = options[i];
+                if (option is GameObject)
+                {
+                    gameObjectIndex = i;
+                    continue;
+                }
+
+                if (option is Transform)
+                {
+                    transformIndex = i;
+                    continue;
+                }
+
+                return i;
+            }
+
+            if (transformIndex >= 0)
+            {
+                return transformIndex;
+            }
+
+            return gameObjectIndex >= 0 ? gameObjectIndex : 0;
         }
     }
 

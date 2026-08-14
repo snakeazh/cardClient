@@ -166,7 +166,7 @@ namespace App.UI
                 hud = gameObject;
             }
 
-            _cards.Bind(hud.transform);
+            _cards.Bind(hud.transform, _vm.Resources);
 
             var playerInfo = GameObject.Find("PlayerInfo");
             if (playerInfo != null)

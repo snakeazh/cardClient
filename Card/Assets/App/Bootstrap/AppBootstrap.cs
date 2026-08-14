@@ -56,6 +56,7 @@ namespace App.Bootstrap
             Debug.Log(
                 $"[Config] loaded: GameFps={GameConst.Instance.GameFps}, " +
                 $"ItemCount={ItemConfig.Count}, " +
+                $"ItemType={sample.Type}, " +
                 $"Item(1010001)={sample?.Desc ?? "(missing)"}");
         }
     }

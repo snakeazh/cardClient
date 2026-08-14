@@ -7,6 +7,9 @@ namespace ConfigExporter;
 
 public static class CsvToJsonConverter
 {
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> _enumValues =
+        new Dictionary<string, IReadOnlyDictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -16,9 +19,13 @@ public static class CsvToJsonConverter
     /// <summary>
     /// 将目录下所有 CSV 转为 JSON。
     /// </summary>
-    public static IReadOnlyList<string> ConvertDirectory(string csvDir, string jsonDir)
+    public static IReadOnlyList<string> ConvertDirectory(
+        string csvDir,
+        string jsonDir,
+        IReadOnlyList<EnumDefinition>? enums = null)
     {
         Directory.CreateDirectory(jsonDir);
+        _enumValues = BuildEnumLookup(enums ?? Array.Empty<EnumDefinition>());
 
         var csvFiles = Directory.GetFiles(csvDir, "*.csv")
             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
@@ -31,10 +38,19 @@ public static class CsvToJsonConverter
         foreach (var csvPath in csvFiles)
         {
             var table = ReadCsv(csvPath);
+            if (table.Kind == ConfigTableKind.Enum)
+            {
+                var staleJsonPath = Path.Combine(jsonDir, $"{table.Name}.json");
+                if (File.Exists(staleJsonPath))
+                    File.Delete(staleJsonPath);
+                Console.WriteLine($"[CSV→JSON][Enum] {Path.GetFileName(csvPath)} → 仅生成 C#，不生成 JSON");
+                continue;
+            }
+
             var jsonPath = Path.Combine(jsonDir, $"{table.Name}.json");
             WriteJson(table, jsonPath);
             outputs.Add(jsonPath);
-            var kindTag = table.Kind == ConfigTableKind.Const ? "Const" : "Data";
+            var kindTag = table.Kind.ToString();
             Console.WriteLine($"[CSV→JSON][{kindTag}] {Path.GetFileName(csvPath)} → {jsonPath}");
         }
 
@@ -48,10 +64,39 @@ public static class CsvToJsonConverter
             .Where(l => !string.IsNullOrWhiteSpace(l))
             .ToList();
 
+        if (ConfigTable.IsEnumName(name))
+            return ReadEnumCsv(name, lines, csvPath);
+
         if (ConfigTable.IsConstName(name))
             return ReadConstCsv(name, lines, csvPath);
 
         return ReadDataCsv(name, lines, csvPath);
+    }
+
+    private static ConfigTable ReadEnumCsv(string name, List<string> lines, string csvPath)
+    {
+        if (lines.Count < 2)
+            throw new InvalidOperationException($"枚举表 CSV 无有效数据: {csvPath}");
+
+        var rows = new List<IReadOnlyList<string>>();
+        for (var i = 1; i < lines.Count; i++)
+        {
+            var values = ParseCsvLine(lines[i]);
+            while (values.Count < 4) values.Add(string.Empty);
+            if (values.Take(4).All(string.IsNullOrWhiteSpace))
+                continue;
+            rows.Add(values.Take(4).ToList());
+        }
+
+        return new ConfigTable
+        {
+            Name = name,
+            Kind = ConfigTableKind.Enum,
+            FieldNames = new[] { "Enum", "Name", "Value", "Desc" },
+            FieldTypes = new[] { "string", "string", "int", "string" },
+            FieldComments = new[] { "枚举类型", "枚举成员", "枚举数值", "备注" },
+            Rows = rows
+        };
     }
 
     private static ConfigTable ReadDataCsv(string name, List<string> lines, string csvPath)
@@ -140,6 +185,9 @@ public static class CsvToJsonConverter
 
     public static void WriteJson(ConfigTable table, string jsonPath)
     {
+        if (table.Kind == ConfigTableKind.Enum)
+            throw new InvalidOperationException("EnumConfig 仅用于生成 C# 枚举，不生成运行时 JSON。");
+
         Directory.CreateDirectory(Path.GetDirectoryName(jsonPath)!);
 
         var json = table.Kind == ConfigTableKind.Const
@@ -198,7 +246,7 @@ public static class CsvToJsonConverter
 
     private static JsonNode? ConvertValue(string raw, string type)
     {
-        var t = type.Trim().ToLowerInvariant();
+        var t = type.Trim();
 
         // 基础类型数组：int[] / string[] / bool[] ...，单元格用 | 分隔
         if (t.EndsWith("[]", StringComparison.Ordinal))
@@ -233,20 +281,26 @@ public static class CsvToJsonConverter
 
     private static JsonNode? ConvertScalar(string raw, string type, bool allowEmptyAsDefault)
     {
+        var normalizedType = type.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(raw))
         {
             if (!allowEmptyAsDefault)
                 throw new FormatException("数组元素不能为空");
 
-            return type switch
+            return normalizedType switch
             {
                 "int" or "int32" or "long" or "int64" or "float" or "single" or "double" or "number" => 0,
                 "bool" or "boolean" => false,
+                "string" => string.Empty,
+                _ when _enumValues.TryGetValue(type, out var enumMembers) &&
+                       enumMembers.Values.Contains(0) => 0,
+                _ when _enumValues.ContainsKey(type) =>
+                    throw new FormatException($"枚举 {type} 不能为空（未定义数值 0）"),
                 _ => string.Empty
             };
         }
 
-        return type switch
+        return normalizedType switch
         {
             "int" or "int32" => int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)
                 ? i
@@ -262,8 +316,44 @@ public static class CsvToJsonConverter
                 : throw new FormatException($"无法解析 double: {raw}"),
             "bool" or "boolean" => ParseBool(raw),
             "string" => raw,
-            _ => raw
+            _ => ParseEnum(raw, type)
         };
+    }
+
+    private static int ParseEnum(string raw, string type)
+    {
+        if (!_enumValues.TryGetValue(type, out var members))
+            throw new FormatException($"不支持的类型: {type}，请在 EnumConfig.xlsx 中定义该枚举");
+
+        if (members.TryGetValue(raw, out var value))
+            return value;
+
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value) &&
+            members.Values.Contains(value))
+            return value;
+
+        throw new FormatException($"枚举 {type} 不存在成员或数值: {raw}");
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> BuildEnumLookup(
+        IReadOnlyList<EnumDefinition> enums)
+    {
+        var result = new Dictionary<string, IReadOnlyDictionary<string, int>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var definition in enums)
+        {
+            var members = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var member in definition.Members)
+            {
+                if (!members.TryAdd(member.Name, member.Value))
+                    throw new FormatException($"枚举 {definition.Name} 成员重复: {member.Name}");
+            }
+
+            if (!result.TryAdd(definition.Name, members))
+                throw new FormatException($"枚举类型重复: {definition.Name}");
+        }
+
+        return result;
     }
 
     private static bool ParseBool(string raw)

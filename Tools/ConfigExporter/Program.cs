@@ -17,13 +17,15 @@ internal static class Program
             Console.WriteLine();
 
             var tables = ExcelToCsvConverter.ConvertDirectory(options.ConfigDir, options.CsvDir);
+            var enumTable = tables.SingleOrDefault(table => table.Kind == ConfigTableKind.Enum);
+            var enums = EnumDefinitions.FromTable(enumTable);
             Console.WriteLine();
-            CsvToJsonConverter.ConvertDirectory(options.CsvDir, options.JsonDir);
+            CsvToJsonConverter.ConvertDirectory(options.CsvDir, options.JsonDir, enums);
 
             if (!string.IsNullOrEmpty(options.CsharpDir))
             {
                 Console.WriteLine();
-                CsharpGenerator.Generate(tables, options.CsharpDir);
+                CsharpGenerator.Generate(tables, enums, options.CsharpDir);
             }
 
             if (!string.IsNullOrEmpty(options.UnityJsonDir))
@@ -52,6 +54,9 @@ internal static class Program
 
         foreach (var file in files)
         {
+            if (ConfigTable.IsEnumName(Path.GetFileNameWithoutExtension(file)))
+                continue;
+
             var dest = Path.Combine(unityJsonDir, Path.GetFileName(file));
             File.Copy(file, dest, overwrite: true);
             Console.WriteLine($"[JSON→Unity] {Path.GetFileName(file)} → {dest}");
@@ -173,6 +178,13 @@ internal static class Program
                 第4列 数据
                 可有表头行；以 # 开头的行会跳过
                 JSON 导出为 { "字段名": 值, ... }
+
+              [枚举表] 文件名必须为 EnumConfig.xlsx
+                第1列 Enum：枚举类型名
+                第2列 Name：枚举成员名
+                第3列 Value：int 数值
+                第4列 Desc：成员备注（生成 C# XML 注释）
+                配置字段类型可写 ItemType 或 ItemType[]
 
               [类型]
                 标量: int/long/float/double/bool/string

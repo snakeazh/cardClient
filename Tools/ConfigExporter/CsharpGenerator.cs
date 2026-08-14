@@ -13,40 +13,54 @@ public static class CsharpGenerator
         // </auto-generated>
         """;
 
-    public static void Generate(IReadOnlyList<ConfigTable> tables, string outputDir)
+    public static void Generate(
+        IReadOnlyList<ConfigTable> tables,
+        IReadOnlyList<EnumDefinition> enums,
+        string outputDir)
     {
         if (tables.Count == 0)
             throw new InvalidOperationException("没有可生成的配置表。");
 
+        var runtimeTables = tables
+            .Where(table => table.Kind != ConfigTableKind.Enum)
+            .ToList();
+        var enumNames = enums.ToDictionary(
+            definition => definition.Name,
+            definition => definition.Name,
+            StringComparer.OrdinalIgnoreCase);
+
         Directory.CreateDirectory(outputDir);
 
-        // 清理旧的生成表文件，但保留目录；固定文件名会覆盖
+        // 生成目录全部归工具管理，删表或删枚举后不保留旧代码。
         foreach (var old in Directory.GetFiles(outputDir, "*.cs"))
-        {
-            var name = Path.GetFileName(old);
-            if (name is "ConfigTables.cs" or "ResResourcePaths.Config.g.cs")
-                continue;
-            // 只删看起来是表 DTO 的：与当前导出集无关的也删，避免删表后残留
             File.Delete(old);
-        }
 
-        foreach (var table in tables.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
+        foreach (var table in runtimeTables.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
         {
             var path = Path.Combine(outputDir, $"{table.Name}.cs");
-            File.WriteAllText(path, GenerateTableClass(table), new UTF8Encoding(false));
+            File.WriteAllText(path, GenerateTableClass(table, enumNames), new UTF8Encoding(false));
             Console.WriteLine($"[CSV→C#][{table.Kind}] {table.Name}.cs → {path}");
         }
 
+        if (enums.Count > 0)
+        {
+            var enumPath = Path.Combine(outputDir, "Enums.g.cs");
+            File.WriteAllText(enumPath, GenerateEnums(enums), new UTF8Encoding(false));
+            Console.WriteLine($"[CSV→C#][Enum] Enums.g.cs → {enumPath}");
+        }
+
         var tablesPath = Path.Combine(outputDir, "ConfigTables.cs");
-        File.WriteAllText(tablesPath, GenerateConfigTables(tables), new UTF8Encoding(false));
+        File.WriteAllText(tablesPath, GenerateConfigTables(runtimeTables), new UTF8Encoding(false));
         Console.WriteLine($"[CSV→C#] ConfigTables.cs → {tablesPath}");
 
         var pathsFile = Path.Combine(outputDir, "ResResourcePaths.Config.g.cs");
-        File.WriteAllText(pathsFile, GenerateResourcePaths(tables), new UTF8Encoding(false));
+        File.WriteAllText(pathsFile, GenerateResourcePaths(runtimeTables), new UTF8Encoding(false));
         Console.WriteLine($"[CSV→C#] ResResourcePaths.Config.g.cs → {pathsFile}");
     }
 
-    private static string GenerateTableClass(ConfigTable table)
+    private static string GenerateTableClass(
+        ConfigTable table,
+        IReadOnlyDictionary<string, string> enumNames)
     {
         var sb = new StringBuilder();
         sb.AppendLine(AutoHeader);
@@ -63,7 +77,7 @@ public static class CsharpGenerator
             sb.AppendLine("    [Serializable]");
             sb.AppendLine($"    public sealed class {table.Name} : ConfigConstBase<{table.Name}>");
             sb.AppendLine("    {");
-            AppendFields(sb, table, skipId: false);
+            AppendFields(sb, table, enumNames, skipId: false);
             sb.AppendLine("    }");
         }
         else
@@ -74,7 +88,7 @@ public static class CsharpGenerator
             sb.AppendLine("    [Serializable]");
             sb.AppendLine($"    public sealed class {table.Name} : ConfigRowBase<{table.Name}>");
             sb.AppendLine("    {");
-            AppendFields(sb, table, skipId: true);
+            AppendFields(sb, table, enumNames, skipId: true);
             sb.AppendLine("    }");
         }
 
@@ -83,7 +97,11 @@ public static class CsharpGenerator
         return sb.ToString();
     }
 
-    private static void AppendFields(StringBuilder sb, ConfigTable table, bool skipId)
+    private static void AppendFields(
+        StringBuilder sb,
+        ConfigTable table,
+        IReadOnlyDictionary<string, string> enumNames,
+        bool skipId)
     {
         for (var i = 0; i < table.FieldNames.Count; i++)
         {
@@ -94,7 +112,7 @@ public static class CsharpGenerator
             ValidateIdentifier(name, table.Name);
 
             var excelType = i < table.FieldTypes.Count ? table.FieldTypes[i] : "string";
-            var csharpType = MapType(excelType, table.Name, name);
+            var csharpType = MapType(excelType, table.Name, name, enumNames);
             var comment = i < table.FieldComments.Count ? table.FieldComments[i] : string.Empty;
 
             if (!string.IsNullOrWhiteSpace(comment))
@@ -185,10 +203,61 @@ public static class CsharpGenerator
         return sb.ToString();
     }
 
-    public static string MapType(string excelType, string tableName, string fieldName)
+    private static string GenerateEnums(IReadOnlyList<EnumDefinition> enums)
     {
-        var t = (excelType ?? "string").Trim().ToLowerInvariant();
-        return t switch
+        var sb = new StringBuilder();
+        sb.AppendLine(AutoHeader);
+        sb.AppendLine("namespace App.Config");
+        sb.AppendLine("{");
+
+        foreach (var definition in enums.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            ValidateIdentifier(definition.Name, "EnumConfig");
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine($"    /// 由 EnumConfig.xlsx 生成的 {definition.Name} 枚举。");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine($"    public enum {definition.Name}");
+            sb.AppendLine("    {");
+
+            var memberNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var member in definition.Members)
+            {
+                ValidateIdentifier(member.Name, definition.Name);
+                if (!memberNames.Add(member.Name))
+                    throw new FormatException($"枚举 {definition.Name} 成员重复: {member.Name}");
+
+                if (!string.IsNullOrWhiteSpace(member.Description))
+                {
+                    sb.AppendLine("        /// <summary>");
+                    sb.AppendLine($"        /// {EscapeXml(member.Description)}");
+                    sb.AppendLine("        /// </summary>");
+                }
+
+                sb.AppendLine($"        {member.Name} = {member.Value},");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("}");
+        sb.AppendLine();
+        return sb.ToString();
+    }
+
+    public static string MapType(
+        string excelType,
+        string tableName,
+        string fieldName,
+        IReadOnlyDictionary<string, string> enumNames)
+    {
+        var original = (excelType ?? "string").Trim();
+        var isArray = original.EndsWith("[]", StringComparison.Ordinal);
+        var elementType = isArray ? original[..^2].Trim() : original;
+        var normalized = elementType.ToLowerInvariant();
+
+        var primitive = normalized switch
         {
             "int" or "int32" => "int",
             "long" or "int64" => "long",
@@ -196,14 +265,17 @@ public static class CsharpGenerator
             "double" or "number" => "double",
             "bool" or "boolean" => "bool",
             "string" or "" => "string",
-            "int[]" or "int32[]" => "int[]",
-            "long[]" or "int64[]" => "long[]",
-            "float[]" or "single[]" => "float[]",
-            "double[]" or "number[]" => "double[]",
-            "bool[]" or "boolean[]" => "bool[]",
-            "string[]" => "string[]",
-            _ => throw new FormatException($"[{tableName}.{fieldName}] 不支持的类型: {excelType}")
+            _ => null
         };
+
+        if (primitive is not null)
+            return primitive + (isArray ? "[]" : string.Empty);
+
+        if (enumNames.TryGetValue(elementType, out var enumName))
+            return enumName + (isArray ? "[]" : string.Empty);
+
+        throw new FormatException(
+            $"[{tableName}.{fieldName}] 不支持的类型: {excelType}，自定义枚举需在 EnumConfig.xlsx 中定义");
     }
 
     private static void ValidateIdentifier(string name, string tableName)

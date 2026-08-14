@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using App.Game;
+using App.Resources;
 using DG.Tweening;
+using Framework.Assets;
 using UnityEngine;
 
 namespace App.UI
@@ -12,7 +14,6 @@ namespace App.UI
     public sealed class CardTableAnimator
     {
         private const int CardsPerHand = 3;
-        private const string PrefabPath = "Game/icon/CardIcon";
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
         private const float FlipDuration = 0.35f;
@@ -21,7 +22,8 @@ namespace App.UI
         private const float RevealSeatGap = 0.38f;
         private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
-        private static GameObject _prefab;
+        private IResourceService _resources;
+        private GameObject _prefab;
 
         private Transform _hud;
         private Transform _dealPoint;
@@ -50,8 +52,9 @@ namespace App.UI
             public bool IsPlayer;
         }
 
-        public void Bind(Transform hud)
+        public void Bind(Transform hud, IResourceService resources)
         {
+            _resources = resources;
             _hud = hud;
             _dealPoint = FindChild(hud, "dealpoint") ?? FindChild(hud, "DealPoint");
             if (_dealPoint != null)
@@ -210,6 +213,13 @@ namespace App.UI
             _dealToken++;
             _revealToken++;
             ClearAllItems();
+            if (_resources != null && _prefab != null)
+            {
+                _resources.Release(ResResourcePaths.CardIcon);
+            }
+
+            _prefab = null;
+            _resources = null;
         }
 
         private void PlayDeal(GameSession session)
@@ -477,7 +487,7 @@ namespace App.UI
             var prefab = LoadPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Resources/" + PrefabPath);
+                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
                 return;
             }
 
@@ -574,7 +584,7 @@ namespace App.UI
             var prefab = LoadPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Resources/" + PrefabPath);
+                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
                 return null;
             }
 
@@ -938,11 +948,27 @@ namespace App.UI
             return enemyIndex;
         }
 
-        private static GameObject LoadPrefab()
+        private GameObject LoadPrefab()
         {
-            if (_prefab == null)
+            if (_prefab != null)
             {
-                _prefab = UnityEngine.Resources.Load<GameObject>(PrefabPath);
+                return _prefab;
+            }
+
+            if (_resources == null)
+            {
+                Debug.LogWarning("CardIcon prefab not loaded: IResourceService is missing.");
+                return null;
+            }
+
+            try
+            {
+                _prefab = _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon).GetAwaiter().GetResult();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
+                return null;
             }
 
             return _prefab;

@@ -4,9 +4,10 @@
 
 脚本：`Assets/App/Game/CardDealPoint.cs`  
 动画：`Assets/App/UI/Game/CardTableAnimator.cs`  
+牌预制体：`Assets/Res/Game/CardIcon.prefab`  
 命名空间：`App.Game`
 
-在场景节点上挂脚本即可，**不需要 PrefabBuilder**。
+在场景节点上挂脚本即可，**不需要 PrefabBuilder**。牌节点约定见 [CardItem.md](CardItem.md)。
 
 ---
 
@@ -14,8 +15,8 @@
 
 1. `GameHud` 下要有名为 `dealpoint`（或 `DealPoint`）的节点。
 2. 在该节点上挂 `CardDealPoint`。没挂的话，运行时 `CardTableAnimator.Bind` 会自动补上（偏移用默认值）。
-3. 各座位节点（`mineNode` / 敌人节点）的 `cardNode` 下要有 `carpoint1`、`carpoint2`、`carpoint3`（也认 `cardpoint` / `CardPoint`）。
-4. 单张牌外观用现有资源 `Resources/Game/icon/CardIcon`，运行时实例化，不用再生成预制体。
+3. 各座位节点（`mineNode` / `PlayerNode1–3`）下要有发牌落点 `carpoint1`、`carpoint2`、`carpoint3`（也认 `cardpoint` / `CardPoint`）。
+4. 单张牌用 `ResResourcePaths.CardIcon`（`Game/CardIcon`）运行时实例化。
 
 ---
 
@@ -23,8 +24,8 @@
 
 | 字段 | 默认 | 说明 |
 |------|------|------|
-| Offset X | `0.04` | 每张牌相对下一张的水平偏移 |
-| Offset Y | `-0.03` | 每张牌相对下一张的垂直偏移 |
+| Offset X | `0.002` | 每张牌相对下一张的水平偏移 |
+| Offset Y | `0.005` | 每张牌相对下一张的垂直偏移 |
 | Sorting Order Start | `1` | 最底下那张的 sortingOrder |
 | Sorting Order Step | `1` | 往上每张加多少 |
 
@@ -47,9 +48,9 @@ dealPoint.OffsetY = -0.02f;
 由 `CardTableAnimator` 在 `DealSerial` 变化时播放：
 
 1. 清掉上一局的牌。
-2. 在发牌点叠 **52** 张背面牌（`Deck.Size`），先全部隐藏。
-3. 洗牌动画：每张间隔 **0.05s** 依次显示；前 51 张播 `aini_card_appear01`（0.1s），堆顶最后一张播 `aini_card_appear02`（0.2s）。最后一张播完再发牌。
-4. 按座位轮发：每个还在局中的座位 3 张，从牌堆**最上面**抽出，飞到对应 `carpoint`。
+2. 在发牌点叠 **52** 张 `CardIcon`（`Deck.Size`），先全部隐藏。`Back` 子节点保持激活，供洗牌动画使用。
+3. 洗牌动画：每张间隔 **0.03s** 依次 `PlayShuffleAppear`；普通张播 `aini_card_appear01`，堆顶最后一张播 `aini_card_appear02`（0.2s）。最后一张播完再发牌。
+4. 按座位轮发：每个还在局中的座位 3 张，从牌堆**最上面** `Pop` 抽出。抽出后停掉该张的洗牌 Animator、复位 `TweenTarget`，保证 `Front` 可用，然后飞到对应 `carpoint`。
 5. 发够本局所需张数后停止。剩下的牌留在 `dealpoint`，不再飞出。
 
 例如 1 名玩家 + 3 名敌人 = 飞出 12 张，牌堆留 40 张。敌人减少则飞出更少。
@@ -57,6 +58,8 @@ dealPoint.OffsetY = -0.02f;
 下一局开始会清空牌堆，重新叠 52 张。
 
 逻辑层 `GameSession` 每局 `new Deck()`（52 张洗牌），给座位发 3 张；表现层这 52 张是牌堆外观，飞出的那几张再 `SetCard` 成该座位手里的牌。
+
+看牌、摊牌：落到座位后的牌用 `CardItem.FlipTo`，只换 `CurrentRenderer`（Front）贴图并绕 Y 轴翻转，**不要关 `Back`**。
 
 ---
 
@@ -80,6 +83,7 @@ dealPoint.GetSortingOrder(i);    // 第 i 张的 sortingOrder
 
 ## 注意
 
+- **不要隐藏 `CardIcon` 的 `Back` 子节点。** dealpoint 洗牌出现动画需要它。
 - 牌堆上的牌不挂点击碰撞；飞到座位后才加 `BoxCollider2D`（搓牌/点敌人用）。
 - 飞出中的牌 sortingOrder 会高于剩余牌堆，避免钻到堆下面。
 - `_deck` 目前仍是 `GameSession` 私有字段，搓牌续抽不会自动减少牌堆上的剩余张数。

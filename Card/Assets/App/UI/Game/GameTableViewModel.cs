@@ -13,13 +13,16 @@ namespace App.UI
             Session = session;
             Resources = resources;
             Session.Changed += Refresh;
-            BlindBetCommand = new RelayCommand(() => Session.BlindBet(), () => Session.Phase == GamePhase.Betting);
+            BlindBetCommand = new RelayCommand(
+                () => Session.BlindBet(),
+                () => Session.Phase == GamePhase.Betting || Session.Phase == GamePhase.WaitingLookChoice);
             RaiseCommand = new RelayCommand(() => Session.RaiseBet(), () => Session.Phase == GamePhase.Betting);
+            RaiseHighCommand = new RelayCommand(() => Session.RaiseBetHigh(), () => Session.Phase == GamePhase.Betting);
             LookCommand = new RelayCommand(() => Session.LookCards(), () => Session.PlayerMayLookCards);
             FoldCommand = new RelayCommand(() => Session.Fold(), () => Session.Phase == GamePhase.Betting);
             OpenCommand = new RelayCommand(
                 () => Session.RequestShowdown(),
-                () => Session.Phase == GamePhase.Betting && !Session.Player.Folded);
+                () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
             PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
             ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
@@ -64,12 +67,16 @@ namespace App.UI
         public ObservableProperty<string> BetAmount { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> LogText { get; } = new ObservableProperty<string>();
         public ObservableProperty<bool> ShowActions { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowActionBar { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowLook { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowRub { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCancel { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowBlind { get; } = new ObservableProperty<bool>();
         public ObservableProperty<string> BlindLabel { get; } = new ObservableProperty<string>("闷注");
+        public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("加注");
+        public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("加注×3");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowCompare { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowContinue { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowShop { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowFail { get; } = new ObservableProperty<bool>();
@@ -104,6 +111,7 @@ namespace App.UI
 
         public IRelayCommand BlindBetCommand { get; }
         public IRelayCommand RaiseCommand { get; }
+        public IRelayCommand RaiseHighCommand { get; }
         public IRelayCommand LookCommand { get; }
         public IRelayCommand FoldCommand { get; }
         public IRelayCommand OpenCommand { get; }
@@ -137,15 +145,24 @@ namespace App.UI
             PlayerChips.Value = $"HP {Session.Player.Hp}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            RoundInfo.Value = $"已下注:{Session.Player.TotalBet}";
-            BetAmount.Value = $"+{Session.BetUnits}";
-            BlindLabel.Value = Session.Player.Looked ? "跟注" : "闷注";
-            ShowActions.Value = Session.Phase == GamePhase.Betting;
-            ShowBlind.Value = Session.Phase == GamePhase.Betting;
-            ShowLook.Value = Session.PlayerMayLookCards;
+            RoundInfo.Value = $"已下注:{Session.Pot}";
+            BetAmount.Value = string.Empty;
+            var choosing = Session.Phase == GamePhase.WaitingLookChoice && !Session.Player.Folded;
+            var betting = Session.Phase == GamePhase.Betting && !Session.Player.Folded;
+            var callCost = Session.PlayerCallCost;
+            BlindLabel.Value = choosing
+                ? "闷注"
+                : $"跟注{(callCost > 0 ? callCost : Session.CurrentCallUnits)}";
+            RaiseLabel.Value = "加注";
+            RaiseHighLabel.Value = "加注×3";
+            ShowLook.Value = choosing && Session.PlayerMayLookCards;
+            ShowBlind.Value = choosing || betting;
+            ShowActions.Value = betting;
             ShowRub.Value = Session.Phase == GamePhase.WaitingRub;
             ShowCancel.Value = Session.PlayerMayCancelLookOrRub;
-            ShowAllIn.Value = Session.PlayerMayAllIn;
+            ShowAllIn.Value = betting;
+            ShowCompare.Value = betting && Session.PlayerMayCompare;
+            ShowActionBar.Value = choosing || betting || ShowRub.Value;
             ShowContinue.Value = Session.Phase == GamePhase.RoundSettle ||
                                  (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying);
             ShowShop.Value = Session.Phase == GamePhase.Shop;
@@ -174,6 +191,7 @@ namespace App.UI
 
             BlindBetCommand.RaiseCanExecuteChanged();
             RaiseCommand.RaiseCanExecuteChanged();
+            RaiseHighCommand.RaiseCanExecuteChanged();
             LookCommand.RaiseCanExecuteChanged();
             FoldCommand.RaiseCanExecuteChanged();
             OpenCommand.RaiseCanExecuteChanged();

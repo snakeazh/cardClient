@@ -537,7 +537,6 @@ namespace App.UI
             {
                 var go = Object.Instantiate(prefab);
                 go.name = "DealCard" + (i + 1);
-                HideBackChild(go.transform);
 
                 var item = go.GetComponent<CardItem>();
                 if (item == null)
@@ -602,6 +601,7 @@ namespace App.UI
 
             item.SetCard(card);
             item.SetFace(CardFaceState.Back);
+            StopShuffleAnimator(item.transform);
             var sr = item.CurrentRenderer;
             if (sr != null)
             {
@@ -631,7 +631,6 @@ namespace App.UI
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
             var go = Object.Instantiate(prefab);
-            HideBackChild(go.transform);
 
             var item = go.GetComponent<CardItem>();
             if (item == null)
@@ -922,12 +921,28 @@ namespace App.UI
             t.localScale = Vector3.one;
         }
 
-        private static void HideBackChild(Transform root)
+        private static void StopShuffleAnimator(Transform root)
         {
-            var back = root.Find("Back");
-            if (back != null)
+            var tweenTarget = root != null ? root.Find("TweenTarget") : null;
+            if (tweenTarget == null)
             {
-                back.gameObject.SetActive(false);
+                return;
+            }
+
+            var animator = tweenTarget.GetComponent<Animator>();
+            if (animator != null)
+            {
+                animator.enabled = false;
+            }
+
+            tweenTarget.localPosition = Vector3.zero;
+            tweenTarget.localRotation = Quaternion.identity;
+            tweenTarget.localScale = Vector3.one;
+
+            var front = tweenTarget.Find("Front");
+            if (front != null)
+            {
+                front.gameObject.SetActive(true);
             }
         }
 

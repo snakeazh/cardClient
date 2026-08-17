@@ -424,7 +424,7 @@ namespace App.UI
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
             BindBtn("RaiseBtn", ViewModel.RaiseCommand, ViewModel.ShowActions);
             BindBtn("FoldBtn", ViewModel.FoldCommand, ViewModel.ShowActions);
-            BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowActions);
+            BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowCompare);
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
@@ -437,7 +437,9 @@ namespace App.UI
             SetBtnLabel("LookBtn", "看牌");
             SetBtnLabel("CancelBtn", "取消");
             SetBtnLabel("NextRoundBtn", "下一局");
+            SetBtnLabel("AllInBtn", "全下");
             BindBlindLabel();
+            BindBtnLabel("RaiseBtn", ViewModel.RaiseLabel);
 
             var template = FindBtn("BlindBtn");
             if (template == null)
@@ -445,6 +447,8 @@ namespace App.UI
                 return;
             }
 
+            EnsureBtn(template, "RaiseHighBtn", "加注×3", ViewModel.RaiseHighCommand, ViewModel.ShowActions);
+            BindBtnLabel("RaiseHighBtn", ViewModel.RaiseHighLabel);
             EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
@@ -496,7 +500,7 @@ namespace App.UI
                     Destroy(bind);
                 }
 
-                var text = go.GetComponentInChildren<TMP_Text>();
+                var text = go.GetComponentInChildren<TMP_Text>(true);
                 if (text != null)
                 {
                     text.text = label;
@@ -636,16 +640,21 @@ namespace App.UI
 
         private void BindBlindLabel()
         {
-            var button = FindBtn("BlindBtn");
+            BindBtnLabel("BlindBtn", ViewModel.BlindLabel);
+        }
+
+        private void BindBtnLabel(string name, ObservableProperty<string> source)
+        {
+            var button = FindBtn(name);
             if (button == null)
             {
                 return;
             }
 
-            var text = button.GetComponentInChildren<TMP_Text>();
+            var text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
-                Binding.BindText(text, ViewModel.BlindLabel);
+                Binding.BindText(text, source);
             }
         }
 
@@ -657,7 +666,7 @@ namespace App.UI
                 return;
             }
 
-            var text = button.GetComponentInChildren<TMP_Text>();
+            var text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
                 text.text = label;
@@ -676,7 +685,16 @@ namespace App.UI
 
         private Button FindBtn(string name)
         {
-            var node = _btns != null ? _btns.Find(name) : null;
+            Transform node = null;
+            if (_btns != null)
+            {
+                node = _btns.Find(name);
+                if (node == null)
+                {
+                    node = FindDeep(_btns, name);
+                }
+            }
+
             if (node == null)
             {
                 node = FindDeep(transform, name);

@@ -20,6 +20,11 @@ namespace App.Game
         private Tween _moveTween;
         private Tween _flipTween;
         private Tween _punchTween;
+        private Animator _tweenAnimator;
+        private bool _tweenAnimatorResolved;
+
+        private const string ShuffleAppear01 = "aini_card_appear01";
+        private const string ShuffleAppear02 = "aini_card_appear02";
 
         /// <param name="card">牌面数据。</param>
         /// <param name="faceState">正面或背面。</param>
@@ -36,6 +41,7 @@ namespace App.Game
             t.rotation = worldRotation;
             t.localScale = scale;
 
+            DisableShuffleAnimator();
             ApplySprite();
         }
 
@@ -94,6 +100,22 @@ namespace App.Game
             return _punchTween;
         }
 
+        /// <summary>
+        /// 洗牌出现：普通张播 aini_card_appear01，最后一张播 aini_card_appear02。
+        /// </summary>
+        public void PlayShuffleAppear(bool lastCard)
+        {
+            gameObject.SetActive(true);
+            var animator = ResolveTweenAnimator();
+            if (animator == null)
+            {
+                return;
+            }
+
+            animator.enabled = true;
+            animator.Play(lastCard ? ShuffleAppear02 : ShuffleAppear01, 0, 0f);
+        }
+
         private void OnDestroy()
         {
             _moveTween?.Kill();
@@ -128,6 +150,37 @@ namespace App.Game
             }
 
             return CurrentRenderer;
+        }
+
+        private Animator ResolveTweenAnimator()
+        {
+            if (_tweenAnimatorResolved)
+            {
+                return _tweenAnimator;
+            }
+
+            _tweenAnimatorResolved = true;
+            var tweenTarget = transform.Find("TweenTarget");
+            if (tweenTarget != null)
+            {
+                _tweenAnimator = tweenTarget.GetComponent<Animator>();
+            }
+
+            if (_tweenAnimator == null)
+            {
+                _tweenAnimator = GetComponentInChildren<Animator>(true);
+            }
+
+            return _tweenAnimator;
+        }
+
+        private void DisableShuffleAnimator()
+        {
+            var animator = ResolveTweenAnimator();
+            if (animator != null)
+            {
+                animator.enabled = false;
+            }
         }
     }
 }

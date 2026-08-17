@@ -47,9 +47,10 @@ dealPoint.OffsetY = -0.02f;
 由 `CardTableAnimator` 在 `DealSerial` 变化时播放：
 
 1. 清掉上一局的牌。
-2. 在发牌点叠 **52** 张背面牌（`Deck.Size`）。
-3. 按座位轮发：每个还在局中的座位 3 张，从牌堆**最上面**抽出，飞到对应 `carpoint`。
-4. 发够本局所需张数后停止。剩下的牌留在 `dealpoint`，不再飞出。
+2. 在发牌点叠 **52** 张背面牌（`Deck.Size`），先全部隐藏。
+3. 洗牌动画：每张间隔 **0.05s** 依次显示；前 51 张播 `aini_card_appear01`（0.1s），堆顶最后一张播 `aini_card_appear02`（0.2s）。最后一张播完再发牌。
+4. 按座位轮发：每个还在局中的座位 3 张，从牌堆**最上面**抽出，飞到对应 `carpoint`。
+5. 发够本局所需张数后停止。剩下的牌留在 `dealpoint`，不再飞出。
 
 例如 1 名玩家 + 3 名敌人 = 飞出 12 张，牌堆留 40 张。敌人减少则飞出更少。
 
@@ -64,6 +65,7 @@ dealPoint.OffsetY = -0.02f;
 ```csharp
 dealPoint.Attach(item);          // 放到堆顶并按偏移排列
 var top = dealPoint.Peek();      // 看堆顶，不取出
+var item = dealPoint.GetCard(i); // 按叠放顺序取牌，0 在底
 var item = dealPoint.Pop();      // 取出堆顶（解除父节点，保留世界坐标）
 dealPoint.Relayout();            // 按当前偏移重排
 dealPoint.Clear();               // 销毁堆里所有牌

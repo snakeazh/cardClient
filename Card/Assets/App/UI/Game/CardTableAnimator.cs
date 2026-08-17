@@ -16,6 +16,8 @@ namespace App.UI
         private const int CardsPerHand = 3;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
+        private const float ShuffleStagger = 0.03f;
+        private const float ShuffleAppear02 = 0.2f;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
@@ -236,7 +238,7 @@ namespace App.UI
             var seats = CollectDealSeats(session);
             BuildDealStack(Deck.Size);
             var seq = DOTween.Sequence();
-            var delay = 0f;
+            var delay = AppendShuffle(seq, token);
             var order = 0;
             for (var round = 0; round < CardsPerHand; round++)
             {
@@ -271,6 +273,44 @@ namespace App.UI
                 SyncAllFaces(session);
             });
             _dealSeq = seq;
+        }
+
+        private float AppendShuffle(Sequence seq, int token)
+        {
+            if (_dealPile == null || _dealPile.Count <= 0)
+            {
+                return 0f;
+            }
+
+            var count = _dealPile.Count;
+            for (var i = 0; i < count; i++)
+            {
+                var item = _dealPile.GetCard(i);
+                if (item != null)
+                {
+                    item.gameObject.SetActive(false);
+                }
+            }
+
+            var delay = 0f;
+            for (var i = 0; i < count; i++)
+            {
+                var index = i;
+                var last = i == count - 1;
+                seq.InsertCallback(delay, () =>
+                {
+                    if (token != _dealToken)
+                    {
+                        return;
+                    }
+
+                    var item = _dealPile.GetCard(index);
+                    item?.PlayShuffleAppear(last);
+                });
+                delay += ShuffleStagger;
+            }
+
+            return delay + ShuffleAppear02 - ShuffleStagger;
         }
 
         private void PlayReveal(GameSession session)

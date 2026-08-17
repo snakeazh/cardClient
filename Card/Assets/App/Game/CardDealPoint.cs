@@ -77,6 +77,16 @@ namespace App.Game
             return _stack.Count > 0 ? _stack[_stack.Count - 1] : null;
         }
 
+        public CardItem GetCard(int index)
+        {
+            if (index < 0 || index >= _stack.Count)
+            {
+                return null;
+            }
+
+            return _stack[index];
+        }
+
         public CardItem Pop()
         {
             if (_stack.Count == 0)

@@ -1,3 +1,6 @@
 {
-  "GameFps": 120
+  "GameFps": 120,
+  "DefaultHeroId": 1,
+  "ChipsForPoints": 1,
+  "ExchangePointsForGoldCoins": 10
 }

@@ -13,10 +13,14 @@ namespace App.Game
 
         private readonly Random _rng;
         private Deck _deck;
-        /// <summary>本街已出现的最高下注档位。</summary>
+        /// <summary>本街已出现的最高下注档位（闷注单位）。</summary>
         private int _maxStreetUnits;
-        /// <summary>当轮基础单注。无人加注的街结束后会抬到上一街的最高档。</summary>
-        private int _betStep = GameBalance.MinBet;
+        /// <summary>当前关卡回合基础注。第一回合 10，之后每回合 +10。</summary>
+        private int _roundBaseBet = GameBalance.BaseBetStart;
+        /// <summary>当轮基础单注，等于 <see cref="_roundBaseBet"/>。</summary>
+        private int _betStep = GameBalance.BaseBetStart;
+        /// <summary>本关已开始的手数。第一手基础注 10，之后每手 +10。</summary>
+        private int _stageBetRound;
         /// <summary>连续无加注的街数，满 2 街强制摊牌。</summary>
         private int _streetsWithoutRaise;
         private int _bettingRound = 1;
@@ -64,6 +68,11 @@ namespace App.Game
         public bool CardsRevealed { get; private set; }
         public int DealSerial { get; private set; }
         public int BettingRound => _bettingRound;
+        public int RoundBaseBet => _roundBaseBet;
+        public int CurrentCallUnits => CurrentRoundUnits();
+        public int PlayerCallCost => CostToReach(CurrentRoundUnits());
+        public int RaiseLowUnits => RaiseUnits(GameBalance.RaiseLowMult);
+        public int RaiseHighUnits => RaiseUnits(GameBalance.RaiseHighMult);
         public int PendingAttackDamage { get; private set; }
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
@@ -74,12 +83,16 @@ namespace App.Game
         public readonly List<int> RevealSeatIds = new List<int>();
         public bool SelectingOpenTarget { get; private set; }
         public bool PlayerMayLookCards =>
-            (Phase == GamePhase.WaitingLookChoice || Phase == GamePhase.Betting) &&
+            Phase == GamePhase.WaitingLookChoice &&
             !Player.Looked &&
             !Player.Folded;
         public bool PlayerMayCancelLookOrRub =>
-            Phase == GamePhase.WaitingLookChoice || Phase == GamePhase.WaitingRub;
+            Phase == GamePhase.WaitingRub;
         public bool PlayerCanOpen => Phase == GamePhase.Betting && !Player.Folded && CanAffordOpen(Player);
+        public bool PlayerMayCompare =>
+            Phase == GamePhase.Betting &&
+            !Player.Folded &&
+            CountOpponentsInHand() == 1;
 
         public IEnumerable<SeatState> AllSeats()
         {
@@ -208,7 +221,7 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>看牌后进入搓牌；搓完或跳过才下注。看牌后下注血量翻倍。</summary>
+        /// <summary>看牌后进入搓牌；搓完或跳过才下注。看牌后跟注按最大注的看牌倍率走。</summary>
         public void LookCards()
         {
             if (!PlayerMayLookCards)
@@ -224,18 +237,17 @@ namespace App.Game
             _pendingRubIndex = -1;
             Phase = GamePhase.WaitingRub;
             Hint = Run.RubsLeft > 1
-                ? $"看牌后可搓牌（可搓 {Run.RubsLeft} 次），或点取消跳过"
-                : "看牌后可搓一张牌，或点取消跳过";
+                ? $"看牌后可搓牌（可搓 {Run.RubsLeft} 次），或点取消跳过。跟注需对齐当前最大注"
+                : "看牌后可搓一张牌，或点取消跳过。跟注需对齐当前最大注";
             Notify();
         }
 
         public void AdjustBetUnits(int delta)
         {
-            BetUnits = Math.Max(_betStep, GameBalance.MinBet);
             Notify();
         }
 
-        /// <summary>闷注：不看牌跟注。未看牌时对手跟注要付双倍。</summary>
+        /// <summary>闷注：不看牌跟注。看牌座位跟同一档要付双倍。</summary>
         public void BlindBet()
         {
             if (Phase != GamePhase.Betting && Phase != GamePhase.WaitingLookChoice)
@@ -251,15 +263,26 @@ namespace App.Game
             PlacePlayerBet(false);
         }
 
-        /// <summary>加注一档后轮到 AI 街。</summary>
+        /// <summary>加注到 当前跟注 + 基础注×2。</summary>
         public void RaiseBet()
+        {
+            RaiseBet(GameBalance.RaiseLowMult);
+        }
+
+        /// <summary>加注到 当前跟注 + 基础注×3。</summary>
+        public void RaiseBetHigh()
+        {
+            RaiseBet(GameBalance.RaiseHighMult);
+        }
+
+        public void RaiseBet(int multiplier)
         {
             if (Phase != GamePhase.Betting)
             {
                 return;
             }
 
-            PlacePlayerBet(true);
+            PlacePlayerBet(true, multiplier);
         }
 
         public bool PlayerMayAllIn =>
@@ -406,7 +429,7 @@ namespace App.Game
             return key >= 0 && key < Run.SpyReveal.Length && Run.SpyReveal[key];
         }
 
-        /// <summary>玩家弃牌。若桌上还剩多人，AI 继续打边池。</summary>
+        /// <summary>玩家弃牌。剩余对手立刻亮牌，牌型最高者获胜并攻击玩家。</summary>
         public void Fold()
         {
             if (Phase != GamePhase.Betting || Player.Folded)
@@ -435,7 +458,7 @@ namespace App.Game
 
         public void RequestShowdown()
         {
-            if (Phase != GamePhase.Betting || Player.Folded)
+            if (!PlayerMayCompare)
             {
                 return;
             }
@@ -758,8 +781,8 @@ namespace App.Game
             }
 
             Run.AdsLoanThisStage++;
-            Heal(Player, GameBalance.MinBet);
-            Log("观看广告，借贷获得最低下注血量");
+            Heal(Player, Math.Max(_roundBaseBet, GameBalance.MinBet));
+            Log("观看广告，借贷获得本回合基础注血量");
             ContinueAfterLoan();
         }
 
@@ -918,6 +941,7 @@ namespace App.Game
             Run.ChaKanGoodCharges = 1;
             Run.TiHuanGoodCharges = 1;
             Run.Affix = BossAffix.None;
+            _stageBetRound = 0;
             Player.ActiveInStage = true;
             Player.MaxHp = GameBalance.PlayerStartHp;
             Player.Hp = GameBalance.PlayerStartHp;
@@ -966,14 +990,12 @@ namespace App.Game
         {
             CardsRevealed = false;
             Pot = 0;
-            _maxStreetUnits = GameBalance.MinBet;
-            _betStep = GameBalance.MinBet;
+            AdvanceStageBetRound();
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
             _playerActedThisStreet = false;
             _pendingRubIndex = -1;
-            BetUnits = _betStep;
             LastResult = string.Empty;
             Run.RubsLeft = 0;
             SelectingOpenTarget = false;
@@ -1000,7 +1022,7 @@ namespace App.Game
                 Enemies[i].Banner = string.Empty;
             }
 
-            if (Player.Hp < GameBalance.MinBet)
+            if (Player.Hp < _roundBaseBet)
             {
                 TryAutoLoanOrFail();
                 return;
@@ -1073,7 +1095,7 @@ namespace App.Game
             Phase = GamePhase.WaitingLookChoice;
             History.BeginHand(Player.Hp);
             Player.Status = "待选择";
-            Hint = "请选择看牌，或取消（闷注）";
+            Hint = $"请选择闷注或看牌。本回合基础注 {_roundBaseBet}，所有人均需下注";
             Notify();
         }
 
@@ -1088,13 +1110,13 @@ namespace App.Game
             {
                 Hint += Run.Tilted
                     ? "心态崩了：本局最大下注为当前血量 50%。请跟注或加注"
-                    : "看牌下注血量翻倍，请跟注、加注、弃牌或比牌";
+                    : "看牌后跟注按当前最大注的看牌倍率支付，请跟注、加注、弃牌或比牌";
             }
             else
             {
                 Hint += Run.Tilted
                     ? "心态崩了：本局最大下注为当前血量 50%。请闷注或看牌"
-                    : "请跟注或加注。你闷着时对手跟注双倍";
+                    : "请闷注或加注。你闷着时只需付看牌玩家的一半";
             }
 
             if (Run.MagnifierThisRound && !Run.PeekSuitUsed)
@@ -1106,7 +1128,7 @@ namespace App.Game
         }
 
         /// <summary>玩家跟注或加注。跟满后调用 <see cref="ResolveAiStreet"/>。</summary>
-        private void PlacePlayerBet(bool raise)
+        private void PlacePlayerBet(bool raise, int raiseMult = GameBalance.RaiseLowMult)
         {
             if (Player.Folded)
             {
@@ -1115,11 +1137,11 @@ namespace App.Game
 
             SelectingOpenTarget = false;
 
-            var units = raise ? RaiseUnits() : Math.Max(CurrentRoundUnits(), _betStep);
-            units = Clamp(units, _betStep, MaxBetUnits());
+            var units = raise ? RaiseUnits(raiseMult) : CurrentRoundUnits();
+            units = Clamp(units, _roundBaseBet, MaxBetUnits());
             if (raise && units <= _maxStreetUnits)
             {
-                units = Math.Min(MaxBetUnits(), RaiseUnits());
+                units = Math.Min(MaxBetUnits(), RaiseUnits(raiseMult));
             }
 
             var facingRaise = !raise && Player.StreetUnits < CurrentRoundUnits();
@@ -1131,13 +1153,10 @@ namespace App.Game
                 return;
             }
 
-            if (units > _maxStreetUnits)
+            if (raise && Player.StreetUnits >= units)
             {
-                _maxStreetUnits = units;
-                _streetHadRaise = true;
+                ApplyRaisedCall(units);
             }
-
-            BetUnits = _betStep;
 
             _playerActedThisStreet = true;
             History.NotePlayerBet(raise, Player.Looked, paid, hpBefore, facingRaise);
@@ -1217,10 +1236,15 @@ namespace App.Game
             FinishStreetOrShowdown();
         }
 
-        /// <summary>执行一次 AI 决策。开牌会立刻进入单挑亮牌；否则跟/加/全下/弃。</summary>
+        /// <summary>执行一次 AI 决策。开牌会立刻进入单挑亮牌；否则跟/加/全下/弃。第一轮禁止弃牌。</summary>
         private bool DecideAi(SeatState ai, bool scare)
         {
             var decision = BuildAiDecision(ai, scare, true, true);
+            if (_bettingRound <= 1 && decision.Action == AiAction.Fold)
+            {
+                decision = new AiDecision(AiAction.Call, decision.WinRate, "第一轮不能弃牌");
+            }
+
             switch (decision.Action)
             {
                 case AiAction.Fold:
@@ -1249,6 +1273,11 @@ namespace App.Game
 
                 if (!TryCommitUnits(ai, roundUnits, out var shortPaid))
                 {
+                    if (_bettingRound <= 1)
+                    {
+                        return false;
+                    }
+
                     FoldSeat(ai, "血量不足，弃牌");
                     return FinishIfOneLeft();
                 }
@@ -1266,22 +1295,30 @@ namespace App.Game
             }
             else if (decision.Action == AiAction.Raise)
             {
+                TryAiLookForRaise(ai);
                 target = SizeAiRaise(ai, decision.WinRate);
             }
 
             if (target < roundUnits)
             {
-                FoldSeat(ai, "无法跟注，弃牌");
-                Log($"{ai.Name} 无法跟注，弃牌");
-                return FinishIfOneLeft();
+                if (_bettingRound <= 1)
+                {
+                    target = roundUnits;
+                }
+                else
+                {
+                    FoldSeat(ai, "无法跟注，弃牌");
+                    Log($"{ai.Name} 无法跟注，弃牌");
+                    return FinishIfOneLeft();
+                }
             }
 
             if (TryCommitUnits(ai, target, out var paid))
             {
-                if (!allIn && target > _maxStreetUnits && ai.Hp > 0)
+                var raised = !allIn && target > _maxStreetUnits && ai.StreetUnits >= target;
+                if (raised)
                 {
-                    _maxStreetUnits = target;
-                    _streetHadRaise = true;
+                    ApplyRaisedCall(target);
                     ai.Status = paid > 0 ? $"加注 {paid}" : "加注";
                 }
                 else
@@ -1308,10 +1345,29 @@ namespace App.Game
             return FinishIfOneLeft();
         }
 
-        /// <summary>加注尺寸很粗：能加就加固定一档（当前最高档 + 单注），加不起则跟。</summary>
+        /// <summary>加注时尽量看牌（看牌价是闷注的两倍），加不起则保持闷加。</summary>
+        private void TryAiLookForRaise(SeatState ai)
+        {
+            if (ai == null || ai.Looked)
+            {
+                return;
+            }
+
+            ai.Looked = true;
+            if (UnitsAffordable(ai) >= RaiseUnits())
+            {
+                Log($"{ai.Name} 看牌加注");
+                return;
+            }
+
+            ai.Looked = false;
+        }
+
+        /// <summary>加注尺寸：基础注×2 或 ×3；牌力高走 ×3。</summary>
         private int SizeAiRaise(SeatState ai, float winRate)
         {
-            var target = RaiseUnits();
+            var mult = winRate >= 0.62f ? GameBalance.RaiseHighMult : GameBalance.RaiseLowMult;
+            var target = RaiseUnits(mult);
             var affordable = UnitsAffordable(ai);
             if (affordable < target)
             {
@@ -1455,8 +1511,8 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 一街结束：未跟满的 AI 弃牌；连续两街无人加注则摊牌；否则抬单注进入下一街。
-        /// 玩家已全下/弃牌时，未全下的对手继续打边池。
+        /// 一街结束：未跟满的 AI 弃牌；连续两街同注且无人加注则亮牌；
+        /// 否则进入下一街。玩家已全下时，未全下的对手可继续边池。
         /// </summary>
         private void FinishStreetOrShowdown()
         {
@@ -1485,8 +1541,19 @@ namespace App.Game
 
                 if (ai.StreetUnits < roundUnits)
                 {
-                    FoldSeat(ai, "未跟注，弃牌");
-                    Log($"{ai.Name} 未跟上当轮注额，弃牌");
+                    if (_bettingRound <= 1)
+                    {
+                        if (TryCommitUnits(ai, roundUnits, out var paid))
+                        {
+                            ai.Status = paid > 0 ? $"跟注 {paid}" : "跟注";
+                            Log($"{ai.Name} {ai.Status}（第一轮不能弃牌）");
+                        }
+                    }
+                    else
+                    {
+                        FoldSeat(ai, "未跟注，弃牌");
+                        Log($"{ai.Name} 未跟上当轮注额，弃牌");
+                    }
                 }
             }
 
@@ -1520,7 +1587,7 @@ namespace App.Game
                 return;
             }
 
-            if (!_streetHadRaise)
+            if (!_streetHadRaise && AllActiveBetsEqual())
             {
                 _streetsWithoutRaise++;
             }
@@ -1531,6 +1598,7 @@ namespace App.Game
 
             if (_streetsWithoutRaise >= 2)
             {
+                Hint = "连续两轮下注相同且无人加注，进入亮牌";
                 Showdown();
                 return;
             }
@@ -1543,34 +1611,56 @@ namespace App.Game
                 seat.StreetPaid = 0;
             }
 
-            _betStep = Math.Max(_betStep, _maxStreetUnits);
-            _maxStreetUnits = _betStep;
-            BetUnits = _betStep;
+            _betStep = _roundBaseBet;
+            _maxStreetUnits = _roundBaseBet;
+            BetUnits = _roundBaseBet;
             _bettingRound++;
             if (IsAllIn(Player) || Player.Folded)
             {
-                Hint = $"第 {_bettingRound} 轮边池下注，当轮单注 {_betStep}。你已{(Player.Folded ? "弃牌" : "全下")}，对手继续。";
+                Hint = $"第 {_bettingRound} 轮边池下注，基础注 {_roundBaseBet}。你已{(Player.Folded ? "弃牌" : "全下")}，对手继续。";
                 ResolveAiStreet();
                 return;
             }
 
-            Hint = $"第 {_bettingRound} 轮下注，当轮单注 {_betStep}。仍有玩家可下注，形成边池。";
+            Hint = $"第 {_bettingRound} 轮下注，基础注 {_roundBaseBet}。仍有玩家可下注，形成边池。";
             Notify();
         }
 
-        /// <summary>加注目标档 = 本街最高档 + 当轮单注。</summary>
-        private int RaiseUnits() => _maxStreetUnits + Math.Max(_betStep, GameBalance.MinBet);
+        private void AdvanceStageBetRound()
+        {
+            _stageBetRound++;
+            _roundBaseBet = GameBalance.BaseBetForRound(_stageBetRound);
+            _betStep = _roundBaseBet;
+            _maxStreetUnits = _roundBaseBet;
+            BetUnits = _roundBaseBet;
+        }
+
+        /// <summary>加注成功后，本街基础跟注抬到加注额，后续跟注都按这个档。</summary>
+        private void ApplyRaisedCall(int units)
+        {
+            _maxStreetUnits = Math.Max(_maxStreetUnits, units);
+            _betStep = Math.Max(_betStep, units);
+            BetUnits = _betStep;
+            _streetHadRaise = true;
+        }
+
+        /// <summary>加注目标 = 当前跟注档 + 本回合基础注 ×2 或 ×3。</summary>
+        private int RaiseUnits(int multiplier = GameBalance.RaiseLowMult)
+        {
+            var mult = multiplier < GameBalance.RaiseLowMult ? GameBalance.RaiseLowMult : multiplier;
+            return CurrentRoundUnits() + _roundBaseBet * mult;
+        }
 
         /// <summary>开牌要付当前注额的双倍。</summary>
         private int OpenUnits() => Math.Max(CurrentRoundUnits(), _betStep) * 2;
 
-        /// <summary>本街需要跟上的档位 = max(单注, 各未弃牌座位的 StreetUnits)。</summary>
+        /// <summary>本街需要跟上的档位 = 加注后的基础跟注，以及各未弃牌座位的 StreetUnits。</summary>
         private int CurrentRoundUnits()
         {
-            var max = Math.Max(_betStep, GameBalance.MinBet);
+            var max = Math.Max(_betStep, _maxStreetUnits);
             foreach (var seat in AllSeats())
             {
-                if (!Participates(seat) || seat.Folded || seat.Hp <= 0)
+                if (!Participates(seat) || seat.Folded)
                 {
                     continue;
                 }
@@ -1703,7 +1793,10 @@ namespace App.Game
             if (!seat.IsPlayer)
             {
                 var score = EvaluateSeat(seat);
-                Hint = $"{seat.Name} 弃牌，亮出 {score.Label}";
+                Hint = CountOpponentsInHand() > 0
+                    ? $"{seat.Name} 弃牌亮牌（{score.Label}），其余对手继续"
+                    : $"{seat.Name} 弃牌，亮出 {score.Label}";
+                Notify();
             }
         }
 
@@ -1735,27 +1828,16 @@ namespace App.Game
 
         private void ResolveAfterPlayerFold()
         {
-            Run.ConsecutiveLosses++;
-            if (Run.ConsecutiveLosses >= 2)
+            foreach (var seat in AllSeats())
             {
-                Run.Tilted = true;
-                Log("心态崩了：下一局最大下注限制为当前血量 50%");
+                if (!seat.IsPlayer && Participates(seat) && HasHand(seat))
+                {
+                    RevealHand(seat);
+                }
             }
 
-            if (CountInHand() <= 1)
-            {
-                AwardUncontestedAndSettle();
-                return;
-            }
-
-            if (ShouldImmediateShowdown())
-            {
-                Showdown();
-                return;
-            }
-
-            Hint = "你已弃牌，未全下的对手继续下注，形成边池";
-            ResolveAiStreet();
+            Hint = "你已弃牌，对手亮牌，由牌型最高者发动攻击";
+            Showdown();
         }
 
         /// <summary>比牌：按牌型决胜负，赢家收池，玩家赢则进入点选攻击。</summary>
@@ -1806,7 +1888,7 @@ namespace App.Game
             BeginRevealPlay(RevealKind.Showdown, BuildShowdownRevealOrder(), winner);
             Hint = CountPlayersWhoCanBet() <= 1
                 ? "全下后投注结束，立刻亮牌摊牌！"
-                : "全员亮牌，比大小！";
+                : "全员亮牌，按炸金花规则比大小！";
             Notify();
         }
 
@@ -1836,15 +1918,7 @@ namespace App.Game
                 PendingAttackDamage = HandEvaluator.ComputeDamage(best, ShowdownStake(), relicMult);
                 ApplyBankruptcy(true, winner);
                 Pot = 0;
-                if (!AnyEnemyAlive())
-                {
-                    AfterRound();
-                    return;
-                }
-
-                Phase = GamePhase.WaitingAttack;
-                Hint = $"{HandDrama(best.Type)}！你赢了，造成 {PendingAttackDamage} 伤害，点选敌人攻击";
-                Notify();
+                EnterPlayerAttack($"{HandDrama(best.Type)}！你赢了，造成 {PendingAttackDamage} 伤害");
                 return;
             }
 
@@ -2275,7 +2349,7 @@ namespace App.Game
             StartRound();
         }
 
-        /// <summary>从血量扣下注。看牌后玩家付双倍；反加注词缀再让玩家 ×1.5。</summary>
+        /// <summary>从血量扣下注。看过牌的座位付双倍；反加注词缀再让玩家 ×1.5。</summary>
         private bool TryCommitUnits(SeatState seat, int units, out int paid)
         {
             units = Math.Max(units, seat.StreetUnits);
@@ -2286,6 +2360,12 @@ namespace App.Game
             }
 
             paid = cost;
+            if (cost <= 0)
+            {
+                seat.StreetUnits = Math.Max(seat.StreetUnits, units);
+                return true;
+            }
+
             if (cost > seat.Hp)
             {
                 if (seat.Hp <= 0)
@@ -2294,18 +2374,18 @@ namespace App.Game
                     return false;
                 }
 
-                cost = seat.Hp;
-                paid = cost;
+                paid = seat.Hp;
+                seat.TotalBet += paid;
+                seat.StreetPaid += paid;
+                Pot += paid;
+                seat.Hp = 0;
+                return true;
             }
 
             seat.Hp -= cost;
             seat.TotalBet += cost;
             seat.StreetPaid += cost;
-            if (seat.Hp > 0)
-            {
-                seat.StreetUnits = units;
-            }
-
+            seat.StreetUnits = units;
             Pot += cost;
             return true;
         }
@@ -2315,15 +2395,18 @@ namespace App.Game
             return PaysDouble(seat) ? units * 2 : units;
         }
 
-        /// <summary>看牌的一方跟注付双倍：玩家看了自己付双倍；玩家闷着则 AI 付双倍。</summary>
+        /// <summary>
+        /// 未看牌跟同一档（1×）。玩家闷牌时，已看牌的怪物付双倍；
+        /// 怪物自己未看牌则跟玩家同样的跟注数。
+        /// </summary>
         private bool PaysDouble(SeatState seat)
         {
-            if (seat.IsPlayer)
-            {
-                return seat.Looked;
-            }
+            return seat != null && seat.Looked;
+        }
 
-            return !Player.Looked;
+        public int CostToReach(int units)
+        {
+            return Math.Max(0, CostFor(Player, units) - CostFor(Player, Player.StreetUnits));
         }
 
         private int UnitsAffordable(SeatState seat)
@@ -2437,6 +2520,21 @@ namespace App.Game
             return n;
         }
 
+        private int CountOpponentsInHand()
+        {
+            var n = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (Participates(enemy) && !enemy.Folded)
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+
         private bool Participates(SeatState seat)
         {
             if (seat.IsPlayer)
@@ -2458,6 +2556,72 @@ namespace App.Game
             }
 
             return false;
+        }
+
+        private int CountAliveEnemies()
+        {
+            var n = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].Alive)
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+
+        /// <summary>玩家胜：只剩 1 名敌人则直接攻击，否则点选目标。</summary>
+        private void EnterPlayerAttack(string hint)
+        {
+            if (!AnyEnemyAlive())
+            {
+                AfterRound();
+                return;
+            }
+
+            Phase = GamePhase.WaitingAttack;
+            if (CountAliveEnemies() == 1)
+            {
+                var only = FirstAliveEnemy();
+                if (only != null)
+                {
+                    Hint = string.IsNullOrEmpty(hint)
+                        ? $"场上仅剩 {only.Name}，直接攻击"
+                        : $"{hint}。场上仅剩一名敌人，直接攻击";
+                    BeginPlayerAttack(only);
+                    return;
+                }
+            }
+
+            Hint = string.IsNullOrEmpty(hint) ? "点选一名敌人攻击" : $"{hint}，点选敌人攻击";
+            Notify();
+        }
+
+        private bool AllActiveBetsEqual()
+        {
+            int? units = null;
+            foreach (var seat in AllSeats())
+            {
+                if (!Participates(seat) || seat.Folded || IsAllIn(seat))
+                {
+                    continue;
+                }
+
+                if (units == null)
+                {
+                    units = seat.StreetUnits;
+                    continue;
+                }
+
+                if (seat.StreetUnits != units.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void ClearRound(SeatState seat)
@@ -2707,16 +2871,8 @@ namespace App.Game
             {
                 Run.ConsecutiveLosses = 0;
                 Run.Tilted = false;
-                if (!AnyEnemyAlive())
-                {
-                    AfterRound();
-                    return;
-                }
-
-                Phase = GamePhase.WaitingAttack;
                 PendingAttackDamage = Math.Max(1, ShowdownStake());
-                Hint = $"对手弃牌，你收走奖池 {amount}。点选敌人攻击";
-                Notify();
+                EnterPlayerAttack($"对手弃牌，你收走奖池 {amount}");
                 return;
             }
 

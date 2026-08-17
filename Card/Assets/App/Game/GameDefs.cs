@@ -97,8 +97,14 @@ namespace App.Game
     {
         public const int PlayerStartChips = 800;
         public const int PlayerStartHp = 4000;
-        /// <summary>最小下注单位，也当作 AI 的「大盲」口径。</summary>
-        public const int MinBet = 50;
+        /// <summary>最小下注单位，也是每关第一回合基础注。</summary>
+        public const int MinBet = 10;
+        /// <summary>每关第一回合基础下注。</summary>
+        public const int BaseBetStart = 10;
+        /// <summary>同一关内每过一回合，基础注 +10。</summary>
+        public const int BaseBetStep = 10;
+        public const int RaiseLowMult = 2;
+        public const int RaiseHighMult = 3;
         public const int MaxRelics = 4;
         public const float RescueRatio = 0.15f;
         public const float StingyRescueRatio = 0.05f;
@@ -119,6 +125,17 @@ namespace App.Game
 
         /// <summary>第 10 / 20 / 30 … 关为 BOSS。</summary>
         public static bool IsBossStage(int stage) => ((stage - 1) % 10) + 1 == 10;
+
+        /// <summary>关卡内第 N 个下注回合的基础注：10、20、30…</summary>
+        public static int BaseBetForRound(int stageBetRound)
+        {
+            if (stageBetRound <= 1)
+            {
+                return BaseBetStart;
+            }
+
+            return BaseBetStart + (stageBetRound - 1) * BaseBetStep;
+        }
 
         /// <summary>敌人血量 = 2200 + 关卡×700；BOSS 再 ×2.4。</summary>
         public static int EnemyHp(int stage, bool boss)

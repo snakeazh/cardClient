@@ -16,10 +16,13 @@ namespace App.UI
         private const int CardsPerHand = 3;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
+        private const float ShuffleStagger = 0.03f;
+        private const float ShuffleAppear02 = 0.2f;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
         private const float RevealSeatGap = 0.38f;
+        private const float SettleClipDuration = 0.3f;
         private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private IResourceService _resources;
@@ -236,7 +239,7 @@ namespace App.UI
             var seats = CollectDealSeats(session);
             BuildDealStack(Deck.Size);
             var seq = DOTween.Sequence();
-            var delay = 0f;
+            var delay = AppendShuffle(seq, token);
             var order = 0;
             for (var round = 0; round < CardsPerHand; round++)
             {
@@ -271,6 +274,44 @@ namespace App.UI
                 SyncAllFaces(session);
             });
             _dealSeq = seq;
+        }
+
+        private float AppendShuffle(Sequence seq, int token)
+        {
+            if (_dealPile == null || _dealPile.Count <= 0)
+            {
+                return 0f;
+            }
+
+            var count = _dealPile.Count;
+            for (var i = 0; i < count; i++)
+            {
+                var item = _dealPile.GetCard(i);
+                if (item != null)
+                {
+                    item.gameObject.SetActive(false);
+                }
+            }
+
+            var delay = 0f;
+            for (var i = 0; i < count; i++)
+            {
+                var index = i;
+                var last = i == count - 1;
+                seq.InsertCallback(delay, () =>
+                {
+                    if (token != _dealToken)
+                    {
+                        return;
+                    }
+
+                    var item = _dealPile.GetCard(index);
+                    item?.PlayShuffleAppear(last);
+                });
+                delay += ShuffleStagger;
+            }
+
+            return delay + ShuffleAppear02 - ShuffleStagger;
         }
 
         private void PlayReveal(GameSession session)
@@ -315,7 +356,6 @@ namespace App.UI
                         return;
                     }
 
-                    PunchSeat(capturedView, 0.16f);
                     session.AnnounceSeatRevealed(capturedId);
                 });
                 delay += RevealSeatGap;
@@ -330,7 +370,25 @@ namespace App.UI
 
                 HighlightWinner(session);
             });
-            delay += 0.42f;
+            delay += 0.08f;
+
+            var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
+            for (var i = 0; i < CardsPerHand; i++)
+            {
+                var cardIndex = i;
+                seq.InsertCallback(delay, () =>
+                {
+                    if (token != _revealToken)
+                    {
+                        return;
+                    }
+
+                    PlaySettleCard(winnerView, cardIndex);
+                });
+                delay += SettleClipDuration;
+            }
+
+            delay += SettleClipDuration;
             seq.InsertCallback(delay, () =>
             {
                 if (token != _revealToken)
@@ -364,23 +422,19 @@ namespace App.UI
             }
 
             ApplyFace(item, CardFaceState.Front, true);
-            item.PunchScale(0.12f, 0.22f);
         }
 
-        private void PunchSeat(SeatView view, float punch)
+        private static void PlaySettleCard(SeatView view, int cardIndex)
         {
-            if (view == null)
+            if (view == null || cardIndex < 0 || cardIndex >= view.Items.Length)
             {
                 return;
             }
 
-            for (var i = 0; i < view.Items.Length; i++)
+            var item = view.Items[cardIndex];
+            if (item != null && view.Landed[cardIndex])
             {
-                var item = view.Items[i];
-                if (item != null && view.Landed[i])
-                {
-                    item.PunchScale(punch, 0.3f);
-                }
+                item.PlaySettle();
             }
         }
 
@@ -393,7 +447,6 @@ namespace App.UI
 
             var winner = SeatById(session, session.RevealWinnerId);
             var view = ViewOf(session, winner);
-            PunchSeat(view, 0.28f);
             TintSeat(view, new Color(1f, 0.9f, 0.45f));
         }
 
@@ -497,7 +550,6 @@ namespace App.UI
             {
                 var go = Object.Instantiate(prefab);
                 go.name = "DealCard" + (i + 1);
-                HideBackChild(go.transform);
 
                 var item = go.GetComponent<CardItem>();
                 if (item == null)
@@ -534,6 +586,7 @@ namespace App.UI
 
             var duration = DealMoveDuration;
             item.transform.DOScale(point.lossyScale, duration).SetEase(Ease.OutQuad);
+            item.RotateTo(point.rotation * CardItem.FaceYaw(CardFaceState.Back), duration, Ease.OutCubic);
             item.MoveTo(point.position, duration, Ease.OutCubic).OnComplete(() =>
             {
                 if (token != _dealToken || item == null)
@@ -559,6 +612,9 @@ namespace App.UI
             {
                 return null;
             }
+
+            item.PlayDeal();
+            _dealPile?.Peek()?.PlayDealHighlight();
 
             item.SetCard(card);
             item.SetFace(CardFaceState.Back);
@@ -591,7 +647,6 @@ namespace App.UI
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
             var go = Object.Instantiate(prefab);
-            HideBackChild(go.transform);
 
             var item = go.GetComponent<CardItem>();
             if (item == null)
@@ -878,17 +933,8 @@ namespace App.UI
             var t = item.transform;
             t.SetParent(point, true);
             t.localPosition = Vector3.zero;
-            t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
-        }
-
-        private static void HideBackChild(Transform root)
-        {
-            var back = root.Find("Back");
-            if (back != null)
-            {
-                back.gameObject.SetActive(false);
-            }
+            item.SetFace(item.FaceState);
         }
 
         private static void EnsureCollider(CardItem item)

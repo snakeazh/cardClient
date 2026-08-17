@@ -12,7 +12,12 @@ namespace App.Resources
         public const string GameUI = "UI/GameUI";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";
+        public const string PlayerItem = "UI/Icon/PlayerItem";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
+
+        public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
+
+        public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
     }
 }

@@ -4,6 +4,7 @@ using App.Bag;
 using App.Config;
 using App.Game;
 using App.Level;
+using App.Score;
 using App.UI;
 using Framework.Assets;
 using Framework.Save;
@@ -40,6 +41,7 @@ namespace App.Bootstrap
             await ConfigTables.LoadAsync(_resources.Resources);
             RegisterBag(_services);
             RegisterLevel(_services);
+            RegisterScore(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -76,6 +78,24 @@ namespace App.Bootstrap
             progress.Load();
             services.Register(progress);
             services.Register<ILevelProgressService>(progress);
+        }
+
+        private static void RegisterScore(AppServicesHost services)
+        {
+            var save = services.Resolve<ISaveService>();
+
+            var score = new ScoreService(save);
+            score.Load();
+            services.Register(score);
+            services.Register<IScoreService>(score);
+
+            var hp = new HpService();
+            services.Register(hp);
+            services.Register<IHpService>(hp);
+
+            var courage = new CourageService();
+            services.Register(courage);
+            services.Register<ICourageService>(courage);
         }
 
         private static void LogConfigSmoke()

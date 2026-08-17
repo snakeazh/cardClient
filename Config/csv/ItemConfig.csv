@@ -1,5 +1,0 @@
-﻿Id,Type,Desc
-int,ItemType,string
-Id,道具类型,描述
-1010001,Currency,"卡德大陆的常用货币,可以用来购买日常所需材料"
-1010002,Material,"珍贵而又精美的钻石,可以用来购买日常所需材料"

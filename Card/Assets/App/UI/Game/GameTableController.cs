@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using App.Game;
 using Framework.UI.Binding;
 using Framework.UI.Core;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -23,10 +24,10 @@ namespace App.UI
 
         private GameTableViewModel _vm;
         private readonly CardTableAnimator _cards = new CardTableAnimator();
-        private readonly Text[] _enemyInfos = new Text[3];
-        private Text _chipText;
-        private Text _betText;
-        private Text _stateText;
+        private readonly TMP_Text[] _enemyInfos = new TMP_Text[3];
+        private TMP_Text _chipText;
+        private TMP_Text _betText;
+        private TMP_Text _stateText;
         private Text _hint;
         private Text _title;
         private Text _gold;
@@ -215,9 +216,10 @@ namespace App.UI
             _actionBar = CreatePanel(root, "ActionBar", new Vector2(0f, -820f), new Vector2(1000f, 220f));
             CreateButton(_actionBar.transform, "闷注", new Vector2(-380f, 50f), _vm.BlindBetCommand, 170f);
             CreateButton(_actionBar.transform, "看牌", new Vector2(-190f, 50f), _vm.LookCommand, 170f);
-            CreateButton(_actionBar.transform, "加注", new Vector2(0f, 50f), _vm.RaiseCommand, 170f);
-            CreateButton(_actionBar.transform, "开牌", new Vector2(190f, 50f), _vm.OpenCommand, 170f);
-            CreateButton(_actionBar.transform, "弃牌", new Vector2(380f, 50f), _vm.FoldCommand, 170f);
+            CreateButton(_actionBar.transform, "加注×2", new Vector2(0f, 50f), _vm.RaiseCommand, 170f);
+            CreateButton(_actionBar.transform, "加注×3", new Vector2(190f, 50f), _vm.RaiseHighCommand, 170f);
+            CreateButton(_actionBar.transform, "开牌", new Vector2(380f, 50f), _vm.OpenCommand, 160f);
+            CreateButton(_actionBar.transform, "弃牌", new Vector2(380f, -50f), _vm.FoldCommand, 160f);
             CreateButton(_actionBar.transform, "-", new Vector2(-120f, -50f), _vm.MinusBetCommand, 90f);
             CreateButton(_actionBar.transform, "+", new Vector2(120f, -50f), _vm.PlusBetCommand, 90f);
 
@@ -247,7 +249,7 @@ namespace App.UI
             binding.BindText(_pot, _vm.PotText);
             binding.BindText(_hint, _vm.Hint);
             binding.BindText(_log, _vm.LogText);
-            binding.BindActive(_actionBar, _vm.ShowActions);
+            binding.BindActive(_actionBar, _vm.ShowActionBar);
             binding.BindActive(_continueBar, _vm.ShowContinue);
             binding.BindActive(_shopPanel, _vm.ShowShop);
             binding.BindActive(_failPanel, _vm.ShowFail);
@@ -420,11 +422,7 @@ namespace App.UI
                 rt.sizeDelta = new Vector2(280f, 160f);
             }
 
-            _enemyInfos[index] = go.GetComponent<Text>();
-            if (_enemyInfos[index] == null)
-            {
-                _enemyInfos[index] = CreateText(go.transform, "Info", Vector2.zero, new Vector2(280f, 160f), 24, TextAnchor.MiddleCenter);
-            }
+            _enemyInfos[index] = go.GetComponent<TMP_Text>() ?? go.GetComponentInChildren<TMP_Text>(true);
         }
 
         private static SpriteRenderer[] FindCardRenderers(Transform root, float scale, float spacing)
@@ -645,10 +643,10 @@ namespace App.UI
             return null;
         }
 
-        private static Text FindUiText(Transform root, string name)
+        private static TMP_Text FindUiText(Transform root, string name)
         {
             var child = FindChild(root, name);
-            return child != null ? child.GetComponent<Text>() : null;
+            return child != null ? child.GetComponent<TMP_Text>() : null;
         }
 
         private Text CreateText(Transform parent, string name, Vector2 pos, Vector2 size, int fontSize, TextAnchor anchor)

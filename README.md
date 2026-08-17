@@ -7,7 +7,8 @@ Unity 卡牌客户端。
 | [`Card/Assets/Framework/框架使用文档.md`](Card/Assets/Framework/框架使用文档.md) | DI、资源、UI、绑定、对话框、列表 |
 | [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
 | [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md) | 关卡查询、通关进度 |
-| 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡** |
+| [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md) | 章节积分、玩家血量、金币换算 |
+| 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡**、**积分** |
 
 ---
 
@@ -26,6 +27,9 @@ AppBootstrap（启动场景，可销毁）
                  ├─ IAtlasService
                  ├─ ILevelService
                  ├─ ILevelProgressService
+                 ├─ IScoreService
+                 ├─ IHpService
+                 ├─ ICourageService
                  └─ ...
 ```
 
@@ -44,6 +48,9 @@ var bag = AppServices.Resolve<IBagService>();
 var atlas = AppServices.Resolve<IAtlasService>();
 var level = AppServices.Resolve<ILevelService>();
 var progress = AppServices.Resolve<ILevelProgressService>();
+var score = AppServices.Resolve<IScoreService>();
+var hp = AppServices.Resolve<IHpService>();
+var courage = AppServices.Resolve<ICourageService>();
 ```
 
 或构造函数注入：DI 会从 `ServiceContainer` 解析依赖。
@@ -211,4 +218,27 @@ var progress = AppServices.Resolve<ILevelProgressService>();
 progress.MarkCleared(1010); // 最后一关才写入该难度
 if (progress.IsCleared(1)) { /* 难度 1 已通关 */ }
 progress.Save();
+```
+
+---
+
+## 6. 积分与血量（IScoreService / IHpService）
+
+详见 [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md)。
+
+章节内三种积分（总 / 关卡 / 本轮）、玩家血量与勇气值。进关用当前 HP 换勇气值；下注扣勇气值不扣血。回合成功：获筹码并按 `GameConst.ChipsForPoints` 记积分；失败：失去已下注并扣血。关卡胜利按 `ExchangePointsForGoldCoins` 换金币。积分落盘 `score.v1`；血量与勇气值不存档。
+
+**尚未接入 `GameSession`**：商店仍按剩余 HP 折金币；对局血量仍在 `SeatState`。
+
+```csharp
+var score = AppServices.Resolve<IScoreService>();
+score.BeginChapter();
+score.BeginRound();
+score.AwardRoundScore(100);
+var gold = score.CollectGoldDelta(); // floor(Total / 10) 的差额
+
+var hp = AppServices.Resolve<IHpService>();
+hp.BeginStage();
+var courage = AppServices.Resolve<ICourageService>();
+courage.BeginStage(hp.Hp);
 ```

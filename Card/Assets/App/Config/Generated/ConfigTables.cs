@@ -22,16 +22,22 @@ namespace App.Config
             }
 
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
+            var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
             var itemConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.ItemConfig);
             var levelConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.LevelConfig);
             var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
             var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
+            var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
+            var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
 
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
+            HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));
             ItemConfig.Load(ConfigJson.FromArrayJson<ItemConfig>(itemConfigAsset.text));
             LevelConfig.Load(ConfigJson.FromArrayJson<LevelConfig>(levelConfigAsset.text));
             MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
             MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
+            MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
+            RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
         }
     }
 }

@@ -1,6 +1,0 @@
-﻿Enum,Name,Value,Desc
-ItemType,None,0,无
-ItemType,Currency,1,货币
-ItemType,Material,2,材料
-MonsterType,Normal,1,普通敌人
-MonsterType,Boss,2,Boss

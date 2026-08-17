@@ -6,6 +6,7 @@ using DG.Tweening;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +25,11 @@ namespace App.UI
         private Transform _btns;
         private Transform _shopContent;
         private readonly GameObject[] _enemyInfos = new GameObject[3];
+        private readonly PlayerItem[] _enemyItems = new PlayerItem[3];
+        private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private PlayerItem _playerItem;
+        private Sprite _playerPortrait;
         private int _playedAttack;
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
@@ -38,6 +43,7 @@ namespace App.UI
             BindAttackHud();
             BindAttackFx();
             ViewModel.Refresh();
+            RefreshPlayerItems();
         }
 
         protected override async Task OnViewOpen()
@@ -53,6 +59,7 @@ namespace App.UI
             }
 
             _board.Attach(ViewModel);
+            await LoadPortraits();
             ViewModel.Session.Changed += OnSessionChanged;
         }
 
@@ -89,6 +96,7 @@ namespace App.UI
         private void OnSessionChanged()
         {
             RefreshShop();
+            RefreshPlayerItems();
             TryPlayAttack();
         }
 
@@ -112,7 +120,7 @@ namespace App.UI
                 _hpTextHome = _hpTextRt.anchoredPosition;
             }
 
-            var hpText = hp.GetComponent<Text>();
+            var hpText = hp.GetComponent<TMP_Text>();
             if (hpText != null)
             {
                 Binding.BindText(hpText, ViewModel.HpText);
@@ -123,8 +131,8 @@ namespace App.UI
 
         private void BindAttackFx()
         {
-            var playerInfo = transform.Find("PlayerInfo");
-            _attackFx.Bind(transform, playerInfo, _enemyInfos);
+            var playerRoot = _playerItem != null ? _playerItem.transform : ResolveSlot("PlayerItem");
+            _attackFx.Bind(transform, playerRoot, _enemyInfos);
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
         }
 
@@ -203,31 +211,49 @@ namespace App.UI
 
         private void BindPlayerInfo()
         {
-            var playerInfo = transform.Find("PlayerInfo");
-            if (playerInfo == null)
+            _playerItem = ResolvePlayerItem();
+            BindRoundInfo();
+            RefreshPlayerItems();
+        }
+
+        private void BindRoundInfo()
+        {
+            var roundInfo = transform.Find("roundInfo");
+            if (roundInfo == null)
             {
                 return;
             }
 
-            Binding.BindText(FindUiText(playerInfo, "chip"), ViewModel.PlayerChips);
-            Binding.BindText(FindUiText(playerInfo, "Text (2)"), ViewModel.PlayerBet);
-            Binding.BindText(FindUiText(playerInfo, "state"), ViewModel.PlayerState);
+            var text = roundInfo.GetComponentInChildren<TMP_Text>(true);
+            Binding.BindText(text, ViewModel.RoundInfo);
+        }
 
-            var roundInfo = transform.Find("roundInfo");
-            if (roundInfo != null)
+        private PlayerItem ResolvePlayerItem()
+        {
+            var slot = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
+            if (slot == null)
             {
-                Binding.BindText(roundInfo.GetComponent<Text>(), ViewModel.RoundInfo);
+                return null;
             }
+
+            var item = slot.GetComponent<PlayerItem>();
+            if (item == null)
+            {
+                item = slot.gameObject.AddComponent<PlayerItem>();
+            }
+
+            return item;
         }
 
         private void SpawnEnemyInfos()
         {
-            var template = transform.Find("PlayerInfo");
+            var template = _playerItem != null ? _playerItem.transform : ResolveSlot("PlayerItem");
             if (template == null)
             {
                 return;
             }
 
+            var templateScale = template.localScale;
             for (var i = 0; i < EnemySlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EnemySlotKeys[i]);
@@ -237,7 +263,7 @@ namespace App.UI
                 }
 
                 var clone = Instantiate(template.gameObject, slot);
-                clone.name = "PlayerInfo";
+                clone.name = "PlayerItem";
                 clone.SetActive(true);
                 var bind = clone.GetComponent<Framework.UI.Binding.UIBind>();
                 if (bind != null)
@@ -252,15 +278,117 @@ namespace App.UI
                     rt.anchorMax = new Vector2(0.5f, 0.5f);
                     rt.pivot = new Vector2(0.5f, 0.5f);
                     rt.anchoredPosition = Vector2.zero;
-                    rt.localScale = Vector3.one;
+                    rt.localScale = templateScale;
                 }
 
+                var item = clone.GetComponent<PlayerItem>() ?? clone.AddComponent<PlayerItem>();
+                item.ApplyTheme(true);
+                item.SetAttack(0);
                 Binding.BindActive(clone, ViewModel.ShowEnemy[i]);
-                Binding.BindText(FindUiText(clone.transform, "chip"), ViewModel.EnemyChips[i]);
-                Binding.BindText(FindUiText(clone.transform, "Text (2)"), ViewModel.EnemyBet[i]);
-                Binding.BindText(FindUiText(clone.transform, "state"), ViewModel.EnemyState[i]);
                 BindEnemyAttack(clone, i);
+                _enemyItems[i] = item;
                 _enemyInfos[i] = clone;
+            }
+        }
+
+        private void RefreshPlayerItems()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var session = ViewModel.Session;
+            if (_playerItem != null)
+            {
+                _playerItem.Bind(session.Player, _playerPortrait, PlayerAttackValue(session));
+            }
+
+            var activeCount = 0;
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                if (session.Enemies[i].ActiveInStage)
+                {
+                    activeCount++;
+                }
+            }
+
+            var placed = 0;
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                var enemy = session.Enemies[i];
+                if (!enemy.ActiveInStage)
+                {
+                    continue;
+                }
+
+                var slot = VisualSlot(placed, activeCount);
+                placed++;
+                if (slot < 0 || slot >= _enemyItems.Length || _enemyItems[slot] == null)
+                {
+                    continue;
+                }
+
+                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], 0);
+            }
+        }
+
+        private static int PlayerAttackValue(GameSession session)
+        {
+            if (session == null)
+            {
+                return 0;
+            }
+
+            if (session.Phase == GamePhase.WaitingAttack || session.AttackPlaying)
+            {
+                return Math.Max(0, session.PendingAttackDamage > 0
+                    ? session.PendingAttackDamage
+                    : session.AttackDamage);
+            }
+
+            return 0;
+        }
+
+        private static int VisualSlot(int enemyIndex, int activeCount)
+        {
+            if (activeCount <= 1)
+            {
+                return 1;
+            }
+
+            if (activeCount == 2)
+            {
+                return enemyIndex == 0 ? 0 : 2;
+            }
+
+            return enemyIndex;
+        }
+
+        private async Task LoadPortraits()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            _playerPortrait = await LoadSprite(ResResourcePaths.RoleAttack(1));
+            for (var i = 0; i < _enemyPortraits.Length; i++)
+            {
+                _enemyPortraits[i] = await LoadSprite(ResResourcePaths.EnemyAttack(i + 1));
+            }
+        }
+
+        private async Task<Sprite> LoadSprite(string key)
+        {
+            try
+            {
+                return await ViewModel.Resources.LoadAsync<Sprite>(key);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to load portrait '{key}': {ex.Message}");
+                return null;
             }
         }
 
@@ -296,7 +424,7 @@ namespace App.UI
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
             BindBtn("RaiseBtn", ViewModel.RaiseCommand, ViewModel.ShowActions);
             BindBtn("FoldBtn", ViewModel.FoldCommand, ViewModel.ShowActions);
-            BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowActions);
+            BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowCompare);
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
@@ -309,7 +437,9 @@ namespace App.UI
             SetBtnLabel("LookBtn", "看牌");
             SetBtnLabel("CancelBtn", "取消");
             SetBtnLabel("NextRoundBtn", "下一局");
+            SetBtnLabel("AllInBtn", "全下");
             BindBlindLabel();
+            BindBtnLabel("RaiseBtn", ViewModel.RaiseLabel);
 
             var template = FindBtn("BlindBtn");
             if (template == null)
@@ -317,6 +447,8 @@ namespace App.UI
                 return;
             }
 
+            EnsureBtn(template, "RaiseHighBtn", "加注×3", ViewModel.RaiseHighCommand, ViewModel.ShowActions);
+            BindBtnLabel("RaiseHighBtn", ViewModel.RaiseHighLabel);
             EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
@@ -368,7 +500,7 @@ namespace App.UI
                     Destroy(bind);
                 }
 
-                var text = go.GetComponentInChildren<Text>();
+                var text = go.GetComponentInChildren<TMP_Text>(true);
                 if (text != null)
                 {
                     text.text = label;
@@ -447,7 +579,7 @@ namespace App.UI
                     rt.sizeDelta = new Vector2(860f, 64f);
                 }
 
-                var label = go.GetComponentInChildren<Text>();
+                var label = go.GetComponentInChildren<TMP_Text>();
                 if (label != null)
                 {
                     label.text = $"{item.Name}  {item.Price}金  {item.Effect}";
@@ -468,14 +600,15 @@ namespace App.UI
         private void EnsureHint()
         {
             var existing = transform.Find("duelHint");
-            Text text;
+            TMP_Text text;
             if (existing != null)
             {
-                text = existing.GetComponent<Text>();
+                text = existing.GetComponent<TMP_Text>();
             }
             else
             {
-                var go = new GameObject("duelHint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+                var go = new GameObject("duelHint", typeof(RectTransform), typeof(CanvasRenderer),
+                    typeof(TextMeshProUGUI));
                 go.transform.SetParent(transform, false);
                 var rt = go.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 0.5f);
@@ -483,17 +616,19 @@ namespace App.UI
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.anchoredPosition = new Vector2(0f, 210f);
                 rt.sizeDelta = new Vector2(980f, 120f);
-                text = go.GetComponent<Text>();
-                var sample = transform.Find("roundInfo")?.GetComponent<Text>() ??
-                             GetComponentInChildren<Text>(true);
-                text.font = sample != null
-                    ? sample.font
-                    : UnityEngine.Resources.GetBuiltinResource<Font>("Arial.ttf");
+                text = go.GetComponent<TextMeshProUGUI>();
+                var sample = transform.Find("roundInfo")?.GetComponent<TMP_Text>() ??
+                             GetComponentInChildren<TMP_Text>(true);
+                if (sample != null)
+                {
+                    text.font = sample.font;
+                }
+
                 text.fontSize = 36;
-                text.alignment = TextAnchor.MiddleCenter;
+                text.alignment = TextAlignmentOptions.Center;
                 text.color = new Color(1f, 0.93f, 0.55f, 1f);
-                text.horizontalOverflow = HorizontalWrapMode.Wrap;
-                text.verticalOverflow = VerticalWrapMode.Overflow;
+                text.enableWordWrapping = true;
+                text.overflowMode = TextOverflowModes.Overflow;
                 text.raycastTarget = false;
             }
 
@@ -505,16 +640,21 @@ namespace App.UI
 
         private void BindBlindLabel()
         {
-            var button = FindBtn("BlindBtn");
+            BindBtnLabel("BlindBtn", ViewModel.BlindLabel);
+        }
+
+        private void BindBtnLabel(string name, ObservableProperty<string> source)
+        {
+            var button = FindBtn(name);
             if (button == null)
             {
                 return;
             }
 
-            var text = button.GetComponentInChildren<Text>();
+            var text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
-                Binding.BindText(text, ViewModel.BlindLabel);
+                Binding.BindText(text, source);
             }
         }
 
@@ -526,7 +666,7 @@ namespace App.UI
                 return;
             }
 
-            var text = button.GetComponentInChildren<Text>();
+            var text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
                 text.text = label;
@@ -545,7 +685,16 @@ namespace App.UI
 
         private Button FindBtn(string name)
         {
-            var node = _btns != null ? _btns.Find(name) : null;
+            Transform node = null;
+            if (_btns != null)
+            {
+                node = _btns.Find(name);
+                if (node == null)
+                {
+                    node = FindDeep(_btns, name);
+                }
+            }
+
             if (node == null)
             {
                 node = FindDeep(transform, name);
@@ -563,7 +712,7 @@ namespace App.UI
             }
         }
 
-        private static Text FindUiText(Transform root, string name)
+        private static TMP_Text FindUiText(Transform root, string name)
         {
             var child = root.Find(name);
             if (child == null)
@@ -571,7 +720,7 @@ namespace App.UI
                 child = FindDeep(root, name);
             }
 
-            return child != null ? child.GetComponent<Text>() : null;
+            return child != null ? child.GetComponent<TMP_Text>() : null;
         }
 
         private static Transform FindDeep(Transform root, string name)

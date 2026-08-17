@@ -1,0 +1,155 @@
+using System;
+using Framework.Save;
+using UnityEngine;
+
+namespace App.Score
+{
+    /// <summary>
+    /// In-memory chapter score with dirty-flag persistence via ISaveService.
+    /// </summary>
+    public sealed class ScoreService : IScoreService
+    {
+        public const string SaveKey = "score.v1";
+
+        private readonly ISaveService _save;
+        private int _total;
+        private int _stage;
+        private int _round;
+        private int _grantedGold;
+        private bool _dirty;
+
+        public ScoreService(ISaveService save)
+        {
+            _save = save ?? throw new ArgumentNullException(nameof(save));
+        }
+
+        public bool IsDirty => _dirty;
+
+        public ScoreSnapshot Current => new ScoreSnapshot(_total, _stage, _round);
+
+        public int CollectableGold => ScoreBalance.PointsToGold(_total);
+
+        public int GrantedGold => _grantedGold;
+
+        public void BeginChapter()
+        {
+            if (_total == 0 && _stage == 0 && _round == 0 && _grantedGold == 0)
+            {
+                return;
+            }
+
+            _total = 0;
+            _stage = 0;
+            _round = 0;
+            _grantedGold = 0;
+            _dirty = true;
+        }
+
+        public void BeginStage()
+        {
+            if (_stage == 0 && _round == 0)
+            {
+                return;
+            }
+
+            _stage = 0;
+            _round = 0;
+            _dirty = true;
+        }
+
+        public void BeginRound()
+        {
+            if (_round == 0)
+            {
+                return;
+            }
+
+            _round = 0;
+            _dirty = true;
+        }
+
+        public void AwardRoundScore(int chipsWon)
+        {
+            var points = ScoreBalance.ChipsToPoints(chipsWon);
+            if (points <= 0)
+            {
+                BeginRound();
+                return;
+            }
+
+            _round = points;
+            _stage += points;
+            _total += points;
+            _dirty = true;
+        }
+
+        public int CollectGoldDelta()
+        {
+            var collectable = CollectableGold;
+            var delta = collectable - _grantedGold;
+            if (delta <= 0)
+            {
+                return 0;
+            }
+
+            _grantedGold += delta;
+            _dirty = true;
+            return delta;
+        }
+
+        public void Load()
+        {
+            _total = 0;
+            _stage = 0;
+            _round = 0;
+            _grantedGold = 0;
+            _dirty = false;
+            if (!_save.HasKey(SaveKey))
+            {
+                return;
+            }
+
+            var json = _save.GetString(SaveKey, string.Empty);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            var data = JsonUtility.FromJson<ScoreSaveData>(json);
+            if (data == null)
+            {
+                Debug.LogWarning("[Score] Failed to parse save data.");
+                return;
+            }
+
+            _total = ClampNonNegative(data.Total);
+            _stage = ClampNonNegative(data.Stage);
+            _round = ClampNonNegative(data.Round);
+            _grantedGold = ClampNonNegative(data.GrantedGold);
+        }
+
+        public void Save()
+        {
+            if (!_dirty)
+            {
+                return;
+            }
+
+            var data = new ScoreSaveData
+            {
+                Total = _total,
+                Stage = _stage,
+                Round = _round,
+                GrantedGold = _grantedGold
+            };
+            _save.SetString(SaveKey, JsonUtility.ToJson(data));
+            _save.Save();
+            _dirty = false;
+        }
+
+        private static int ClampNonNegative(int value)
+        {
+            return value < 0 ? 0 : value;
+        }
+    }
+}

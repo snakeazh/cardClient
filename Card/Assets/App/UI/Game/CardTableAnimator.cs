@@ -356,7 +356,6 @@ namespace App.UI
                         return;
                     }
 
-                    PunchSeat(capturedView, 0.16f);
                     session.AnnounceSeatRevealed(capturedId);
                 });
                 delay += RevealSeatGap;
@@ -423,24 +422,6 @@ namespace App.UI
             }
 
             ApplyFace(item, CardFaceState.Front, true);
-            item.PunchScale(0.12f, 0.22f);
-        }
-
-        private void PunchSeat(SeatView view, float punch)
-        {
-            if (view == null)
-            {
-                return;
-            }
-
-            for (var i = 0; i < view.Items.Length; i++)
-            {
-                var item = view.Items[i];
-                if (item != null && view.Landed[i])
-                {
-                    item.PunchScale(punch, 0.3f);
-                }
-            }
         }
 
         private static void PlaySettleCard(SeatView view, int cardIndex)
@@ -466,7 +447,6 @@ namespace App.UI
 
             var winner = SeatById(session, session.RevealWinnerId);
             var view = ViewOf(session, winner);
-            PunchSeat(view, 0.28f);
             TintSeat(view, new Color(1f, 0.9f, 0.45f));
         }
 

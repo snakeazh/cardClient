@@ -26,6 +26,11 @@ namespace App.Game
         private int _bettingRound = 1;
         private bool _streetHadRaise;
         private bool _playerActedThisStreet;
+        private bool _aiStreetActive;
+        private int _aiPass;
+        private int _aiCursor;
+        private bool _aiPendingOpen;
+        private bool _needAiRescan;
         private int _pendingRubIndex = -1;
         private RevealKind _revealKind;
         private SeatState _pendingWinner;
@@ -82,7 +87,12 @@ namespace App.Game
         public int RevealWinnerId { get; private set; } = -1;
         public readonly List<int> RevealSeatIds = new List<int>();
         public bool SelectingOpenTarget { get; private set; }
+        public bool SelectingXRayTarget { get; private set; }
+        public bool AiActing { get; private set; }
+        public int ActingAiId { get; private set; } = -1;
+        public const float AiActionDelay = 1f;
         public bool PlayerMayLookCards =>
+            !AiActing &&
             Phase == GamePhase.WaitingLookChoice &&
             !Player.Looked &&
             !Player.Folded;
@@ -90,6 +100,7 @@ namespace App.Game
             Phase == GamePhase.WaitingRub;
         public bool PlayerCanOpen => Phase == GamePhase.Betting && !Player.Folded && CanAffordOpen(Player);
         public bool PlayerMayCompare =>
+            !AiActing &&
             Phase == GamePhase.Betting &&
             !Player.Folded &&
             CountOpponentsInHand() == 1;
@@ -114,6 +125,9 @@ namespace App.Game
             Run.SplashThisRound = false;
             Run.MagnifierThisRound = false;
             Run.AdsDoubleGoldToday = 0;
+            Run.BonusRubCharges = 0;
+            Run.BonusXRayCharges = 0;
+            Run.BonusReplaceCharges = 0;
             Run.Log.Clear();
             StartStage();
         }
@@ -131,7 +145,7 @@ namespace App.Game
             }
 
             _pendingRubIndex = index;
-            Hint = $"已选中第 {index + 1} 张牌，滑动搓开（必须搓 1 张）";
+            Hint = $"已选中第 {index + 1} 张牌，点选即随机替换花色和点数";
             Notify();
         }
 
@@ -165,6 +179,10 @@ namespace App.Game
             var next = DrawRubCard(old);
             Player.Hand[index] = next;
             Run.RubsLeft--;
+            if (Run.PeekGoodCharges > 0)
+            {
+                Run.PeekGoodCharges--;
+            }
             _pendingRubIndex = -1;
             Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
@@ -221,7 +239,7 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>看牌后进入搓牌；搓完或跳过才下注。看牌后跟注按最大注的看牌倍率走。</summary>
+        /// <summary>看牌后进入下注栏。搓牌改为技能，不再强制进入搓牌。</summary>
         public void LookCards()
         {
             if (!PlayerMayLookCards)
@@ -232,14 +250,7 @@ namespace App.Game
             Player.Looked = true;
             Player.Status = "已看牌";
             History.NoteLook();
-            Run.RubsLeft = 1 + Run.ExtraRubCharges;
-            Run.ExtraRubCharges = 0;
-            _pendingRubIndex = -1;
-            Phase = GamePhase.WaitingRub;
-            Hint = Run.RubsLeft > 1
-                ? $"看牌后可搓牌（可搓 {Run.RubsLeft} 次），或点取消跳过。跟注需对齐当前最大注"
-                : "看牌后可搓一张牌，或点取消跳过。跟注需对齐当前最大注";
-            Notify();
+            EnterBetting();
         }
 
         public void AdjustBetUnits(int delta)
@@ -247,19 +258,26 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>闷注：不看牌跟注。看牌座位跟同一档要付双倍。</summary>
+        /// <summary>闷注只是选择不看牌，进入下注栏；真正扣血要再点跟注 / 加注 / 全下。</summary>
         public void BlindBet()
         {
-            if (Phase != GamePhase.Betting && Phase != GamePhase.WaitingLookChoice)
+            if (AiActing || Player.Folded)
             {
                 return;
             }
 
             if (Phase == GamePhase.WaitingLookChoice)
             {
-                Phase = GamePhase.Betting;
+                EnterBetting();
+                return;
             }
 
+            if (Phase != GamePhase.Betting && Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            LeaveRubIfNeeded();
             PlacePlayerBet(false);
         }
 
@@ -269,7 +287,7 @@ namespace App.Game
             RaiseBet(GameBalance.RaiseLowMult);
         }
 
-        /// <summary>加注到 当前跟注 + 基础注×3。</summary>
+        /// <summary>加注到 当前跟注 + 基础注×4。</summary>
         public void RaiseBetHigh()
         {
             RaiseBet(GameBalance.RaiseHighMult);
@@ -277,7 +295,8 @@ namespace App.Game
 
         public void RaiseBet(int multiplier)
         {
-            if (Phase != GamePhase.Betting)
+            LeaveRubIfNeeded();
+            if (!PlayerMayRaise)
             {
                 return;
             }
@@ -286,22 +305,38 @@ namespace App.Game
         }
 
         public bool PlayerMayAllIn =>
-            Phase == GamePhase.Betting && !Player.Folded && Player.Hp > 0;
+            !AiActing &&
+            !Player.Folded &&
+            Player.Hp > 0 &&
+            (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
+
+        public bool PlayerMayRaise =>
+            !AiActing &&
+            !Player.Folded &&
+            (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
+
+        public bool PlayerMayFold =>
+            !AiActing &&
+            !Player.Folded &&
+            (Phase == GamePhase.WaitingLookChoice ||
+             Phase == GamePhase.WaitingRub ||
+             Phase == GamePhase.Betting);
 
         private bool PlayerMayUseItems =>
+            !Player.Folded &&
             (Phase == GamePhase.WaitingLookChoice ||
              Phase == GamePhase.Betting ||
-             Phase == GamePhase.WaitingRub) &&
-            !Player.Folded;
+             Phase == GamePhase.WaitingRub);
 
         public bool PlayerMayUsePeekGood =>
             PlayerMayUseItems &&
-            Run.PeekGoodCharges > 0;
+            Player.Looked &&
+            Run.PeekGoodCharges > 0 &&
+            Phase != GamePhase.WaitingRub;
 
         public bool PlayerMayUseChaKanGood =>
             PlayerMayUseItems &&
-            Run.ChaKanGoodCharges > 0 &&
-            AnyLivingEnemyInHand();
+            Run.ChaKanGoodCharges > 0;
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
@@ -311,6 +346,7 @@ namespace App.Game
         /// <summary>把剩余血量推进底池。全下后若还有人能下注，对手继续打边池。</summary>
         public void AllIn()
         {
+            LeaveRubIfNeeded();
             if (!PlayerMayAllIn)
             {
                 return;
@@ -342,19 +378,12 @@ namespace App.Game
                 return;
             }
 
-            Run.PeekGoodCharges--;
-            if (!Player.Looked)
-            {
-                Player.Looked = true;
-                History.NoteLook();
-            }
-
             Player.Status = "已看牌";
-            Run.RubsLeft = Math.Max(1, Run.RubsLeft + 1);
+            Run.RubsLeft = 1;
             _pendingRubIndex = -1;
             Phase = GamePhase.WaitingRub;
-            Hint = $"使用搓牌道具（剩余 {Run.PeekGoodCharges}）。点选一张手牌再搓";
-            Log("使用道具：再次搓牌");
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌，随机替换花色和点数";
+            Log("使用技能：搓牌");
             Notify();
         }
 
@@ -365,31 +394,31 @@ namespace App.Game
                 return;
             }
 
-            var targets = new List<SeatState>();
-            for (var i = 0; i < Enemies.Length; i++)
-            {
-                var enemy = Enemies[i];
-                if (enemy.Alive && !enemy.Folded && HasHand(enemy))
-                {
-                    targets.Add(enemy);
-                }
-            }
+            SelectingXRayTarget = !SelectingXRayTarget;
+            Hint = SelectingXRayTarget
+                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名角色翻开其手牌"
+                : "已取消透视";
+            Notify();
+        }
 
-            if (targets.Count == 0)
+        public void TryXRayPlayer()
+        {
+            if (!SelectingXRayTarget)
             {
-                Hint = "没有可透视的存活敌人";
-                Notify();
                 return;
             }
 
-            var seat = targets[_rng.Next(targets.Count)];
-            var index = _rng.Next(0, 3);
-            SetSpyReveal(seat.Id, index, true);
-            Run.ChaKanGoodCharges--;
-            var card = seat.Hand[index];
-            Hint = $"透视：{seat.Name} 第 {index + 1} 张是 {card.DisplayName}（剩余 {Run.ChaKanGoodCharges}）";
-            Log($"透视 {seat.Name} 第 {index + 1} 张 {card.DisplayName}");
-            Notify();
+            TryXRaySeat(Player);
+        }
+
+        public void TryXRayEnemySlot(int visualSlot)
+        {
+            if (!SelectingXRayTarget)
+            {
+                return;
+            }
+
+            TryXRaySeat(EnemyAtVisualSlot(visualSlot));
         }
 
         public void UseTiHuanGood()
@@ -404,22 +433,53 @@ namespace App.Game
                 Player.Hand[i] = _deck.Draw();
             }
 
-            if (!Player.Looked)
+            Player.PeekedType = string.Empty;
+            Run.TiHuanGoodCharges--;
+            if (Player.Looked)
             {
-                History.NoteLook();
+                Hint =
+                    $"替换：{Player.Hand[0].DisplayName} / {Player.Hand[1].DisplayName} / {Player.Hand[2].DisplayName}（剩余 {Run.TiHuanGoodCharges}）";
+                Log($"替换手牌为 {Player.Hand[0].DisplayName} {Player.Hand[1].DisplayName} {Player.Hand[2].DisplayName}");
+            }
+            else
+            {
+                Hint = $"已替换 3 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
+                Log("替换手牌（未看牌）");
             }
 
-            Player.Looked = true;
-            Run.TiHuanGoodCharges--;
-            Hint =
-                $"替换：{Player.Hand[0].DisplayName} / {Player.Hand[1].DisplayName} / {Player.Hand[2].DisplayName}（剩余 {Run.TiHuanGoodCharges}）";
-            Log($"替换手牌为 {Player.Hand[0].DisplayName} {Player.Hand[1].DisplayName} {Player.Hand[2].DisplayName}");
-            if (Phase == GamePhase.WaitingLookChoice)
+            Notify();
+        }
+
+        private void TryXRaySeat(SeatState seat)
+        {
+            if (!PlayerMayUseChaKanGood || seat == null || !HasHand(seat))
             {
-                EnterBetting();
                 return;
             }
 
+            if (!seat.IsPlayer && (!seat.Alive || seat.Folded))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(seat.PeekedType))
+            {
+                Hint = $"{seat.Name} 已经透视过";
+                Notify();
+                return;
+            }
+
+            for (var i = 0; i < 3; i++)
+            {
+                SetSpyReveal(seat.Id, i, true);
+            }
+
+            var score = EvaluateSeat(seat);
+            seat.PeekedType = score.Label;
+            Run.ChaKanGoodCharges--;
+            SelectingXRayTarget = false;
+            Hint = $"透视 {seat.Name}：{score.Label}（剩余 {Run.ChaKanGoodCharges}）";
+            Log($"透视 {seat.Name} 翻牌 {score.Label}");
             Notify();
         }
 
@@ -432,9 +492,15 @@ namespace App.Game
         /// <summary>玩家弃牌。剩余对手立刻亮牌，牌型最高者获胜并攻击玩家。</summary>
         public void Fold()
         {
-            if (Phase != GamePhase.Betting || Player.Folded)
+            if (!PlayerMayFold)
             {
                 return;
+            }
+
+            LeaveRubIfNeeded();
+            if (Phase == GamePhase.WaitingLookChoice)
+            {
+                Phase = GamePhase.Betting;
             }
 
             if (_streetHadRaise)
@@ -485,6 +551,12 @@ namespace App.Game
         /// <summary>赢牌后点选敌人造成伤害。溅射斩会额外打其他存活敌人 30%。</summary>
         public void AttackEnemyAtSlot(int visualSlot)
         {
+            if (SelectingXRayTarget)
+            {
+                TryXRayEnemySlot(visualSlot);
+                return;
+            }
+
             if (Phase == GamePhase.Betting && SelectingOpenTarget)
             {
                 var duel = EnemyAtVisualSlot(visualSlot);
@@ -550,6 +622,11 @@ namespace App.Game
             if (target == null || !target.Alive)
             {
                 return false;
+            }
+
+            if (SelectingXRayTarget)
+            {
+                return HasHand(target) && !target.Folded;
             }
 
             if (Phase == GamePhase.WaitingAttack)
@@ -745,6 +822,15 @@ namespace App.Game
                     case ConsumableId.LoanTicket:
                         Run.LoanTicket = true;
                         break;
+                    case ConsumableId.RubCharge:
+                        Run.BonusRubCharges++;
+                        break;
+                    case ConsumableId.XRayCharge:
+                        Run.BonusXRayCharges++;
+                        break;
+                    case ConsumableId.ReplaceCharge:
+                        Run.BonusReplaceCharges++;
+                        break;
                 }
 
                 Log($"购入道具 {item.Name}");
@@ -810,9 +896,9 @@ namespace App.Game
             }
 
             Run.AdsExtraRubThisStage++;
-            Run.ExtraRubCharges++;
+            Run.PeekGoodCharges++;
             Log("观看广告，本关额外获得 1 次搓牌");
-            Hint = $"额外搓牌 +1（本关还可广告 {2 - Run.AdsExtraRubThisStage} 次）";
+            Hint = $"搓牌次数 +1（剩余 {Run.PeekGoodCharges}，本关还可广告 {2 - Run.AdsExtraRubThisStage} 次）";
             Notify();
         }
 
@@ -924,6 +1010,13 @@ namespace App.Game
             return score;
         }
 
+        private void ResetSkillCharges()
+        {
+            Run.PeekGoodCharges = GameBalance.SkillRubUses + Run.BonusRubCharges;
+            Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges;
+            Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
+        }
+
         /// <summary>开新关：按关卡决定 3 敌或 1 BOSS，BOSS 人格改为 Expert 并随机词缀。</summary>
         private void StartStage()
         {
@@ -937,9 +1030,7 @@ namespace App.Game
             Run.DisabledRelic = null;
             Run.DisabledConsumable = null;
             Run.ExtraRubCharges = 0;
-            Run.PeekGoodCharges = 1;
-            Run.ChaKanGoodCharges = 1;
-            Run.TiHuanGoodCharges = 1;
+            ResetSkillCharges();
             Run.Affix = BossAffix.None;
             _stageBetRound = 0;
             Player.ActiveInStage = true;
@@ -999,6 +1090,7 @@ namespace App.Game
             LastResult = string.Empty;
             Run.RubsLeft = 0;
             SelectingOpenTarget = false;
+            SelectingXRayTarget = false;
             RevealWinnerId = -1;
             RevealSeatIds.Clear();
             _revealKind = RevealKind.None;
@@ -1092,11 +1184,43 @@ namespace App.Game
         /// <summary>发牌后先让玩家选看牌或闷注，并开始记录本手 History。</summary>
         private void EnterLookChoice()
         {
-            Phase = GamePhase.WaitingLookChoice;
             History.BeginHand(Player.Hp);
+            OfferLookOrBlind($"请选择闷注或看牌。本回合基础注 {_roundBaseBet}，所有人均需下注");
+        }
+
+        /// <summary>每轮所有人下完后，未看牌则再次选择闷注或看牌；已看牌则进入跟注/加注。</summary>
+        private void OfferLookOrBlindForStreet()
+        {
+            if (Player.Looked || Player.Folded || IsAllIn(Player))
+            {
+                Phase = GamePhase.Betting;
+                Player.Status = "待下注";
+                Hint = $"第 {_bettingRound} 轮下注，基础注 {_roundBaseBet}。请跟注、加注或弃牌";
+                Notify();
+                return;
+            }
+
+            OfferLookOrBlind($"第 {_bettingRound} 轮：你尚未看牌，请选择闷注或看牌。基础注 {_roundBaseBet}");
+        }
+
+        private void OfferLookOrBlind(string hint)
+        {
+            Phase = GamePhase.WaitingLookChoice;
             Player.Status = "待选择";
-            Hint = $"请选择闷注或看牌。本回合基础注 {_roundBaseBet}，所有人均需下注";
+            Hint = hint;
             Notify();
+        }
+
+        private void LeaveRubIfNeeded()
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            _pendingRubIndex = -1;
+            Run.RubsLeft = 0;
+            Phase = GamePhase.Betting;
         }
 
         private void EnterBetting()
@@ -1106,18 +1230,11 @@ namespace App.Game
             Hint = string.IsNullOrEmpty(Run.LastRubMessage)
                 ? string.Empty
                 : Run.LastRubMessage + "。";
-            if (Player.Looked)
-            {
-                Hint += Run.Tilted
-                    ? "心态崩了：本局最大下注为当前血量 50%。请跟注或加注"
-                    : "看牌后跟注按当前最大注的看牌倍率支付，请跟注、加注、弃牌或比牌";
-            }
-            else
-            {
-                Hint += Run.Tilted
-                    ? "心态崩了：本局最大下注为当前血量 50%。请闷注或看牌"
-                    : "请闷注或加注。你闷着时只需付看牌玩家的一半";
-            }
+            Hint += Run.Tilted
+                ? "心态崩了：本局最大下注为当前血量 50%。请跟注或加注"
+                : Player.Looked
+                    ? "看牌后请跟注、x2/x4下注、全下或弃牌。可用搓牌技能替换一张牌"
+                    : "请跟注、x2/x4下注、全下或弃牌。你闷着时只需付看牌玩家的一半";
 
             if (Run.MagnifierThisRound && !Run.PeekSuitUsed)
             {
@@ -1136,6 +1253,7 @@ namespace App.Game
             }
 
             SelectingOpenTarget = false;
+            SelectingXRayTarget = false;
 
             var units = raise ? RaiseUnits(raiseMult) : CurrentRoundUnits();
             units = Clamp(units, _roundBaseBet, MaxBetUnits());
@@ -1182,67 +1300,151 @@ namespace App.Game
         }
 
         /// <summary>
-        /// AI 行动街。已跟满的座位仍可能主动开牌；未跟满则 <see cref="DecideAi"/>。
-        /// 最多扫 6 轮，避免加注来回打转。
+        /// AI 行动街。每位敌人先显示「操作中」，1 秒后再跟/加/弃，形成思考间隔。
         /// </summary>
         private void ResolveAiStreet()
         {
+            _aiStreetActive = true;
+            _aiPass = 0;
+            _aiCursor = 0;
+            _aiPendingOpen = false;
+            BeginNextAiStep();
+        }
+
+        /// <summary>UI 在思考延迟结束后调用，执行当前敌人的实际操作。</summary>
+        public void AdvanceAiAction()
+        {
+            if (!AiActing)
+            {
+                return;
+            }
+
+            var ai = FindEnemyById(ActingAiId);
+            AiActing = false;
+            ActingAiId = -1;
+            if (ai == null || !ai.Alive || ai.Folded)
+            {
+                _aiCursor++;
+                BeginNextAiStep();
+                return;
+            }
+
             var scare = HasRelic(RelicId.ScareMask);
-            for (var pass = 0; pass < 6; pass++)
+            if (_aiPendingOpen)
+            {
+                _aiPendingOpen = false;
+                if (CanAffordOpen(ai) && ForceOpen(ai, Player))
+                {
+                    StopAiStreet();
+                    return;
+                }
+
+                _aiCursor++;
+                BeginNextAiStep();
+                return;
+            }
+
+            if (DecideAi(ai, scare))
+            {
+                StopAiStreet();
+                return;
+            }
+
+            if (_needAiRescan)
+            {
+                _needAiRescan = false;
+                _aiCursor = 0;
+                _aiPass = 0;
+            }
+            else
+            {
+                _aiCursor++;
+            }
+
+            BeginNextAiStep();
+        }
+
+        private void BeginNextAiStep()
+        {
+            while (_aiPass < 6)
             {
                 if (CountInHand() <= 1)
                 {
+                    StopAiStreet();
                     AwardUncontestedAndSettle();
                     return;
                 }
 
-                var acted = false;
-                for (var i = 0; i < Enemies.Length; i++)
+                for (; _aiCursor < Enemies.Length; _aiCursor++)
                 {
-                    var ai = Enemies[i];
-                    if (!ai.Alive || ai.Folded)
+                    var ai = Enemies[_aiCursor];
+                    if (!ai.Alive || ai.Folded || IsAllIn(ai))
                     {
                         continue;
                     }
 
-                    if (ai.StreetUnits >= CurrentRoundUnits())
+                    if (ai.StreetUnits < CurrentRoundUnits())
                     {
-                        var hold = BuildAiDecision(ai, scare, false, false);
-                        if (hold.Action == AiAction.Open && CanAffordOpen(ai))
-                        {
-                            acted = true;
-                            if (ForceOpen(ai, Player))
-                            {
-                                return;
-                            }
-                        }
-
-                        continue;
-                    }
-
-                    acted = true;
-                    if (DecideAi(ai, scare))
-                    {
+                        QueueAiThink(ai, false);
                         return;
                     }
                 }
 
-                if (!acted || AllNonPlayerMatched())
+                _aiCursor = 0;
+                _aiPass++;
+                if (AllNonPlayerMatched())
                 {
                     break;
                 }
             }
 
+            StopAiStreet();
             FinishStreetOrShowdown();
+        }
+
+        private void QueueAiThink(SeatState ai, bool pendingOpen)
+        {
+            _aiPendingOpen = pendingOpen;
+            ActingAiId = ai.Id;
+            AiActing = true;
+            ai.Status = "操作中";
+            Hint = $"{ai.Name} 操作中…";
+            Notify();
+        }
+
+        private void StopAiStreet()
+        {
+            _aiStreetActive = false;
+            AiActing = false;
+            ActingAiId = -1;
+            _aiPendingOpen = false;
+            _needAiRescan = false;
+        }
+
+        private SeatState FindEnemyById(int id)
+        {
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].Id == id)
+                {
+                    return Enemies[i];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>执行一次 AI 决策。开牌会立刻进入单挑亮牌；否则跟/加/全下/弃。第一轮禁止弃牌。</summary>
         private bool DecideAi(SeatState ai, bool scare)
         {
             var decision = BuildAiDecision(ai, scare, true, true);
-            if (_bettingRound <= 1 && decision.Action == AiAction.Fold)
+            if (decision.Action == AiAction.Fold &&
+                (_bettingRound <= 1 || ai.StreetUnits < CurrentRoundUnits()))
             {
-                decision = new AiDecision(AiAction.Call, decision.WinRate, "第一轮不能弃牌");
+                decision = new AiDecision(
+                    AiAction.Call,
+                    decision.WinRate,
+                    _bettingRound <= 1 ? "第一轮不能弃牌" : "跟上加注");
             }
 
             switch (decision.Action)
@@ -1541,15 +1743,12 @@ namespace App.Game
 
                 if (ai.StreetUnits < roundUnits)
                 {
-                    if (_bettingRound <= 1)
+                    if (TryCommitUnits(ai, roundUnits, out var paid))
                     {
-                        if (TryCommitUnits(ai, roundUnits, out var paid))
-                        {
-                            ai.Status = paid > 0 ? $"跟注 {paid}" : "跟注";
-                            Log($"{ai.Name} {ai.Status}（第一轮不能弃牌）");
-                        }
+                        ai.Status = paid > 0 ? $"跟注 {paid}" : "跟注";
+                        Log($"{ai.Name} {ai.Status}（跟上加注）");
                     }
-                    else
+                    else if (ai.Hp <= 0)
                     {
                         FoldSeat(ai, "未跟注，弃牌");
                         Log($"{ai.Name} 未跟上当轮注额，弃牌");
@@ -1605,12 +1804,14 @@ namespace App.Game
 
             _streetHadRaise = false;
             _playerActedThisStreet = false;
+            var lastUnits = Math.Max(CurrentRoundUnits(), _roundBaseBet);
             foreach (var seat in AllSeats())
             {
                 seat.StreetUnits = 0;
                 seat.StreetPaid = 0;
             }
 
+            _roundBaseBet = lastUnits + GameBalance.BaseBetStep;
             _betStep = _roundBaseBet;
             _maxStreetUnits = _roundBaseBet;
             BetUnits = _roundBaseBet;
@@ -1622,8 +1823,7 @@ namespace App.Game
                 return;
             }
 
-            Hint = $"第 {_bettingRound} 轮下注，基础注 {_roundBaseBet}。仍有玩家可下注，形成边池。";
-            Notify();
+            OfferLookOrBlindForStreet();
         }
 
         private void AdvanceStageBetRound()
@@ -1642,6 +1842,7 @@ namespace App.Game
             _betStep = Math.Max(_betStep, units);
             BetUnits = _betStep;
             _streetHadRaise = true;
+            _needAiRescan = true;
         }
 
         /// <summary>加注目标 = 当前跟注档 + 本回合基础注 ×2 或 ×3。</summary>
@@ -2051,20 +2252,6 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
-        private bool AnyLivingEnemyInHand()
-        {
-            for (var i = 0; i < Enemies.Length; i++)
-            {
-                var enemy = Enemies[i];
-                if (enemy.Alive && !enemy.Folded && HasHand(enemy))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static int SpyKey(int seatId, int cardIndex)
         {
             if (seatId < 0 || cardIndex < 0 || cardIndex > 2)
@@ -2396,12 +2583,16 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 未看牌跟同一档（1×）。玩家闷牌时，已看牌的怪物付双倍；
-        /// 怪物自己未看牌则跟玩家同样的跟注数。
+        /// 未看牌跟同一档（1×）。玩家闷注时，敌人始终按看牌价付双倍。
         /// </summary>
         private bool PaysDouble(SeatState seat)
         {
-            return seat != null && seat.Looked;
+            if (seat == null)
+            {
+                return false;
+            }
+
+            return !seat.IsPlayer || seat.Looked;
         }
 
         public int CostToReach(int units)
@@ -2631,8 +2822,9 @@ namespace App.Game
             seat.TotalBet = 0;
             seat.RoundStartChips = seat.Hp;
             seat.Folded = false;
-            seat.Looked = false;
+            seat.Looked = !seat.IsPlayer;
             seat.ShowCards = false;
+            seat.PeekedType = string.Empty;
             seat.Status = seat.Alive || seat.IsPlayer ? string.Empty : "未上场";
             if (!seat.IsPlayer && !seat.Alive)
             {

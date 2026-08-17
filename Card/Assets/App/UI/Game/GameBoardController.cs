@@ -13,8 +13,6 @@ namespace App.UI
         private GameTableViewModel _vm;
         private readonly CardTableAnimator _cards = new CardTableAnimator();
         private Camera _camera;
-        private int _dragCard = -1;
-        private float _rubAcc;
         private bool _bound;
 
         public void Attach(GameTableViewModel viewModel)
@@ -33,11 +31,13 @@ namespace App.UI
             }
 
             _vm.Session.Changed += OnSessionChanged;
+            _cards.DealFinished += OnDealFinished;
             OnSessionChanged();
         }
 
         public void Detach()
         {
+            _cards.DealFinished -= OnDealFinished;
             if (_vm != null)
             {
                 _vm.Session.Changed -= OnSessionChanged;
@@ -57,6 +57,22 @@ namespace App.UI
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
                 return;
+            }
+
+            if (_vm.Session.SelectingXRayTarget && Input.GetMouseButtonDown(0))
+            {
+                if (_cards.HitPlayerCard(_camera) >= 0)
+                {
+                    _vm.Session.TryXRayPlayer();
+                    return;
+                }
+
+                var xraySlot = _cards.HitEnemySlot(_camera);
+                if (xraySlot >= 0)
+                {
+                    _vm.Session.TryXRayEnemySlot(xraySlot);
+                    return;
+                }
             }
 
             if (_vm.Session.Phase == GamePhase.Betting &&
@@ -104,28 +120,8 @@ namespace App.UI
                 var index = _cards.HitPlayerCard(_camera);
                 if (index >= 0)
                 {
-                    _dragCard = index;
-                    _rubAcc = 0f;
-                    _vm.Session.SelectRubCard(index);
-                }
-            }
-
-            if (_dragCard >= 0 && Input.GetMouseButton(0))
-            {
-                _rubAcc += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")).magnitude;
-                var glow = Mathf.PingPong(Time.time * 6f, 1f);
-                _cards.TintPlayerCard(_dragCard, Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), glow));
-                if (_rubAcc > 2.2f)
-                {
-                    var index = _dragCard;
-                    _dragCard = -1;
                     _vm.Session.RubCard(index);
                 }
-            }
-
-            if (Input.GetMouseButtonUp(0))
-            {
-                _dragCard = -1;
             }
         }
 
@@ -143,6 +139,14 @@ namespace App.UI
             }
 
             _cards.Sync(_vm.Session);
+        }
+
+        private void OnDealFinished()
+        {
+            if (_vm != null)
+            {
+                _vm.NotifyDealReady();
+            }
         }
 
         private void BindScene()

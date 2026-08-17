@@ -22,6 +22,7 @@ namespace App.UI
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
         private const float RevealSeatGap = 0.38f;
+        private const float SettleClipDuration = 0.3f;
         private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private IResourceService _resources;
@@ -370,7 +371,25 @@ namespace App.UI
 
                 HighlightWinner(session);
             });
-            delay += 0.42f;
+            delay += 0.08f;
+
+            var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
+            for (var i = 0; i < CardsPerHand; i++)
+            {
+                var cardIndex = i;
+                seq.InsertCallback(delay, () =>
+                {
+                    if (token != _revealToken)
+                    {
+                        return;
+                    }
+
+                    PlaySettleCard(winnerView, cardIndex);
+                });
+                delay += SettleClipDuration;
+            }
+
+            delay += SettleClipDuration;
             seq.InsertCallback(delay, () =>
             {
                 if (token != _revealToken)
@@ -421,6 +440,20 @@ namespace App.UI
                 {
                     item.PunchScale(punch, 0.3f);
                 }
+            }
+        }
+
+        private static void PlaySettleCard(SeatView view, int cardIndex)
+        {
+            if (view == null || cardIndex < 0 || cardIndex >= view.Items.Length)
+            {
+                return;
+            }
+
+            var item = view.Items[cardIndex];
+            if (item != null && view.Landed[cardIndex])
+            {
+                item.PlaySettle();
             }
         }
 

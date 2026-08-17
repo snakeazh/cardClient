@@ -31,6 +31,7 @@ namespace App.Game
         private const string ShuffleAppear02 = "aini_card_appear02";
         private const string DealClip = "aini_card_deal";
         private const string DealHighlightClip = "aini_card_back";
+        private const string SettleClip = "aini_card_settle";
 
         /// <param name="card">牌面数据。</param>
         /// <param name="faceState">正面或背面。</param>
@@ -145,6 +146,12 @@ namespace App.Game
         {
             SetFace(CardFaceState.Back);
             PlayTweenClip(DealHighlightClip);
+        }
+
+        /// <summary>亮牌结算牌型：播 aini_card_settle。</summary>
+        public void PlaySettle()
+        {
+            PlayTweenClip(SettleClip);
         }
 
         private void OnDestroy()

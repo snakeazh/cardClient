@@ -5,7 +5,7 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 攻击演出只负责 roleicon 位移；mask / hptext 由 GameUI 绑定驱动。
+        /// 攻击演出只负责 card_icon 位移；mask / hptext 由 GameUI 绑定驱动。
     /// </summary>
     public sealed class AttackCutscene
     {
@@ -26,7 +26,7 @@ namespace App.UI
         public void Bind(Transform root, Transform playerInfo, GameObject[] enemyInfos)
         {
             _root = root;
-            _playerIcon = FindChild(playerInfo, "roleicon") as RectTransform;
+            _playerIcon = FindChild(playerInfo, "card_icon") as RectTransform;
             if (_playerIcon != null)
             {
                 _playerIconHome = _playerIcon.parent;
@@ -38,7 +38,7 @@ namespace App.UI
             for (var i = 0; i < count; i++)
             {
                 var info = enemyInfos[i] != null ? enemyInfos[i].transform : null;
-                _enemyIcons[i] = FindChild(info, "roleicon") as RectTransform;
+                _enemyIcons[i] = FindChild(info, "card_icon") as RectTransform;
             }
         }
 

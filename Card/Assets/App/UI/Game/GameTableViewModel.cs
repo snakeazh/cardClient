@@ -137,7 +137,7 @@ namespace App.UI
             PlayerChips.Value = $"HP {Session.Player.Hp}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            RoundInfo.Value = RoundLabel();
+            RoundInfo.Value = $"已下注:{Session.Player.TotalBet}";
             BetAmount.Value = $"+{Session.BetUnits}";
             BlindLabel.Value = Session.Player.Looked ? "跟注" : "闷注";
             ShowActions.Value = Session.Phase == GamePhase.Betting;
@@ -239,26 +239,6 @@ namespace App.UI
                 EnemyChips[slot].Value = $"HP {enemy.Hp}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
-            }
-        }
-
-        private string RoundLabel()
-        {
-            var stage = Session.Run.Stage;
-            var round = Session.BettingRound;
-            var hp = Session.Player.Hp.ToString();
-            switch (Session.Phase)
-            {
-                case GamePhase.Shop:
-                    return $"第{stage}关 商店  HP {hp}";
-                case GamePhase.StageFail:
-                    return $"第{stage}关 失败  HP {hp}";
-                case GamePhase.RunComplete:
-                    return "通关";
-                case GamePhase.WaitingAttack:
-                    return $"第{stage}关 选择攻击  HP {hp}";
-                default:
-                    return $"第{stage}关 第{round}轮  HP {hp}";
             }
         }
 

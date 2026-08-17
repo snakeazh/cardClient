@@ -136,8 +136,8 @@ namespace App.Game
             var t = item.transform;
             t.SetParent(transform, false);
             t.localPosition = GetLocalPosition(index);
-            t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
+            item.SetFace(item.FaceState);
 
             var sr = item.CurrentRenderer;
             if (sr != null)

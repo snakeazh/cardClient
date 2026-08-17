@@ -573,6 +573,7 @@ namespace App.UI
 
             var duration = DealMoveDuration;
             item.transform.DOScale(point.lossyScale, duration).SetEase(Ease.OutQuad);
+            item.RotateTo(point.rotation * CardItem.FaceYaw(CardFaceState.Back), duration, Ease.OutCubic);
             item.MoveTo(point.position, duration, Ease.OutCubic).OnComplete(() =>
             {
                 if (token != _dealToken || item == null)
@@ -599,9 +600,11 @@ namespace App.UI
                 return null;
             }
 
+            item.PlayDeal();
+            _dealPile?.Peek()?.PlayDealHighlight();
+
             item.SetCard(card);
             item.SetFace(CardFaceState.Back);
-            StopShuffleAnimator(item.transform);
             var sr = item.CurrentRenderer;
             if (sr != null)
             {
@@ -917,33 +920,8 @@ namespace App.UI
             var t = item.transform;
             t.SetParent(point, true);
             t.localPosition = Vector3.zero;
-            t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
-        }
-
-        private static void StopShuffleAnimator(Transform root)
-        {
-            var tweenTarget = root != null ? root.Find("TweenTarget") : null;
-            if (tweenTarget == null)
-            {
-                return;
-            }
-
-            var animator = tweenTarget.GetComponent<Animator>();
-            if (animator != null)
-            {
-                animator.enabled = false;
-            }
-
-            tweenTarget.localPosition = Vector3.zero;
-            tweenTarget.localRotation = Quaternion.identity;
-            tweenTarget.localScale = Vector3.one;
-
-            var front = tweenTarget.Find("Front");
-            if (front != null)
-            {
-                front.gameObject.SetActive(true);
-            }
+            item.SetFace(item.FaceState);
         }
 
         private static void EnsureCollider(CardItem item)

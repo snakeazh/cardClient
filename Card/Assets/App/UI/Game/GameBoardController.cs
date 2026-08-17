@@ -153,7 +153,7 @@ namespace App.UI
                 _camera = FindObjectOfType<Camera>();
             }
 
-            _cards.Bind(transform);
+            _cards.Bind(transform, _vm.Resources);
         }
     }
 }

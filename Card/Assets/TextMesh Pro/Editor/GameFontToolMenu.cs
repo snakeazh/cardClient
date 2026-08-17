@@ -28,7 +28,7 @@ namespace TMPro.EditorUtilities
 
                 Debug.Log(
                     $"[GameFont] 字符收集完成。Prefab={result.PrefabCount}, JSON={result.JsonFileCount}, " +
-                    $"C#={result.ScriptFileCount}, 字符数={result.CharacterCount}, 输出={result.OutputPath}");
+                    $"源码={result.ScriptFileCount}, 字符数={result.CharacterCount}, 输出={result.OutputPath}");
             }
             finally
             {
@@ -84,7 +84,7 @@ namespace TMPro.EditorUtilities
 
                 var message =
                     $"收集: Prefab={collectResult.PrefabCount}, JSON={collectResult.JsonFileCount}, " +
-                    $"C#={collectResult.ScriptFileCount}, 字符数={collectResult.CharacterCount}\n" +
+                    $"源码={collectResult.ScriptFileCount}, 字符数={collectResult.CharacterCount}\n" +
                     $"生成: {buildResult.IncludedCharacterCount}/{buildResult.RequestedCharacterCount}，" +
                     $"未写入={buildResult.MissingCharacterCount}，图集数={buildResult.AtlasTextureCount}";
 

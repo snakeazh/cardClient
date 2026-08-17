@@ -3,6 +3,7 @@ using App.Atlas;
 using App.Bag;
 using App.Config;
 using App.Game;
+using App.Level;
 using App.UI;
 using Framework.Assets;
 using Framework.Save;
@@ -38,6 +39,7 @@ namespace App.Bootstrap
 
             await ConfigTables.LoadAsync(_resources.Resources);
             RegisterBag(_services);
+            RegisterLevel(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -62,6 +64,18 @@ namespace App.Bootstrap
             bag.Load();
             services.Register(bag);
             services.Register<IBagService>(bag);
+        }
+
+        private static void RegisterLevel(AppServicesHost services)
+        {
+            var level = new LevelService();
+            services.Register(level);
+            services.Register<ILevelService>(level);
+
+            var progress = new LevelProgressService(services.Resolve<ISaveService>(), level);
+            progress.Load();
+            services.Register(progress);
+            services.Register<ILevelProgressService>(progress);
         }
 
         private static void LogConfigSmoke()

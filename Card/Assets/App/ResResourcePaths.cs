@@ -11,6 +11,7 @@ namespace App.Resources
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string GameHud = "Game/GameHud";
+        public const string CardIcon = "Game/CardIcon";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
     }

@@ -4,6 +4,43 @@
 namespace App.Config
 {
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 HandType 枚举。
+    /// </summary>
+    public enum HandType
+    {
+        /// <summary>
+        /// 高牌
+        /// </summary>
+        HighCard = 1,
+
+        /// <summary>
+        /// 对子
+        /// </summary>
+        Couplet = 2,
+
+        /// <summary>
+        /// 顺子
+        /// </summary>
+        Straight = 3,
+
+        /// <summary>
+        /// 同花
+        /// </summary>
+        Flush = 4,
+
+        /// <summary>
+        /// 同花顺
+        /// </summary>
+        StraightFlush = 5,
+
+        /// <summary>
+        /// 三条
+        /// </summary>
+        Leopard = 6,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 ItemType 枚举。
     /// </summary>
     public enum ItemType
@@ -39,6 +76,23 @@ namespace App.Config
         /// Boss
         /// </summary>
         Boss = 2,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 PointType 枚举。
+    /// </summary>
+    public enum PointType
+    {
+        /// <summary>
+        /// 数字牌
+        /// </summary>
+        Number = 1,
+
+        /// <summary>
+        /// 字母牌
+        /// </summary>
+        Letter = 2,
 
     }
 

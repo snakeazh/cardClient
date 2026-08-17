@@ -1,0 +1,122 @@
+[
+  {
+    "Id": 101,
+    "Type1": 1,
+    "Type2": 1,
+    "FoldPro": 30,
+    "FollowPro": 60,
+    "RaisePro": 40,
+    "PlaceFoldPro": 15,
+    "ExcessPlacePro": 100
+  },
+  {
+    "Id": 102,
+    "Type1": 1,
+    "Type2": 2,
+    "FoldPro": 20,
+    "FollowPro": 60,
+    "RaisePro": 40,
+    "PlaceFoldPro": 10,
+    "ExcessPlacePro": 100
+  },
+  {
+    "Id": 201,
+    "Type1": 2,
+    "Type2": 1,
+    "FoldPro": 10,
+    "FollowPro": 60,
+    "RaisePro": 40,
+    "PlaceFoldPro": 35,
+    "ExcessPlacePro": 80
+  },
+  {
+    "Id": 202,
+    "Type1": 2,
+    "Type2": 2,
+    "FoldPro": 5,
+    "FollowPro": 55,
+    "RaisePro": 45,
+    "PlaceFoldPro": 25,
+    "ExcessPlacePro": 80
+  },
+  {
+    "Id": 301,
+    "Type1": 3,
+    "Type2": 1,
+    "FoldPro": 0,
+    "FollowPro": 40,
+    "RaisePro": 60,
+    "PlaceFoldPro": 30,
+    "ExcessPlacePro": 60
+  },
+  {
+    "Id": 302,
+    "Type1": 3,
+    "Type2": 2,
+    "FoldPro": 0,
+    "FollowPro": 45,
+    "RaisePro": 55,
+    "PlaceFoldPro": 20,
+    "ExcessPlacePro": 60
+  },
+  {
+    "Id": 401,
+    "Type1": 4,
+    "Type2": 1,
+    "FoldPro": 0,
+    "FollowPro": 30,
+    "RaisePro": 70,
+    "PlaceFoldPro": 25,
+    "ExcessPlacePro": 40
+  },
+  {
+    "Id": 402,
+    "Type1": 4,
+    "Type2": 2,
+    "FoldPro": 0,
+    "FollowPro": 20,
+    "RaisePro": 80,
+    "PlaceFoldPro": 15,
+    "ExcessPlacePro": 40
+  },
+  {
+    "Id": 501,
+    "Type1": 5,
+    "Type2": 1,
+    "FoldPro": 0,
+    "FollowPro": 20,
+    "RaisePro": 80,
+    "PlaceFoldPro": 10,
+    "ExcessPlacePro": 20
+  },
+  {
+    "Id": 502,
+    "Type1": 5,
+    "Type2": 2,
+    "FoldPro": 0,
+    "FollowPro": 10,
+    "RaisePro": 90,
+    "PlaceFoldPro": 5,
+    "ExcessPlacePro": 20
+  },
+  {
+    "Id": 601,
+    "Type1": 6,
+    "Type2": 1,
+    "FoldPro": 0,
+    "FollowPro": 10,
+    "RaisePro": 90,
+    "PlaceFoldPro": 0,
+    "ExcessPlacePro": 0
+  },
+  {
+    "Id": 602,
+    "Type1": 6,
+    "Type2": 2,
+    "FoldPro": 0,
+    "FollowPro": 5,
+    "RaisePro": 95,
+    "PlaceFoldPro": 0,
+    "ExcessPlacePro": 0
+  }
+]

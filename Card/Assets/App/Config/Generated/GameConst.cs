@@ -16,6 +16,21 @@ namespace App.Config
         /// </summary>
         public int GameFps;
 
+        /// <summary>
+        /// 默认英雄ID
+        /// </summary>
+        public int DefaultHeroId;
+
+        /// <summary>
+        /// 多少筹码换1积分
+        /// </summary>
+        public int ChipsForPoints;
+
+        /// <summary>
+        /// 多少积分换1金币
+        /// </summary>
+        public int ExchangePointsForGoldCoins;
+
     }
 }
 

@@ -1,4 +1,5 @@
 using System;
+using App.Config;
 
 namespace App.Score
 {
@@ -25,7 +26,7 @@ namespace App.Score
         public int Round { get; }
     }
 
-    /// <summary>Score / HP / courage constants. Independent of GameBalance.</summary>
+    /// <summary>HP / courage constants. Chip and gold rates come from GameConst.</summary>
     public static class ScoreBalance
     {
         public const int PlayerStartHp = 4000;
@@ -33,8 +34,33 @@ namespace App.Score
         /// <summary>满血进关时的勇气值。4000 HP → 800。</summary>
         public const int PlayerStartCourage = 800;
 
-        /// <summary>10 score = 1 gold. Conversion always floors.</summary>
-        public const int ScorePerGold = 10;
+        /// <summary>多少筹码换 1 积分。读 GameConst.ChipsForPoints，未加载或 &lt;= 0 时按 1。</summary>
+        public static int ChipsForPoints
+        {
+            get
+            {
+                if (!GameConst.IsLoaded || GameConst.Instance.ChipsForPoints <= 0)
+                {
+                    return 1;
+                }
+
+                return GameConst.Instance.ChipsForPoints;
+            }
+        }
+
+        /// <summary>多少积分换 1 金币。读 GameConst.ExchangePointsForGoldCoins，未加载或 &lt;= 0 时按 10。</summary>
+        public static int ExchangePointsForGoldCoins
+        {
+            get
+            {
+                if (!GameConst.IsLoaded || GameConst.Instance.ExchangePointsForGoldCoins <= 0)
+                {
+                    return 10;
+                }
+
+                return GameConst.Instance.ExchangePointsForGoldCoins;
+            }
+        }
 
         /// <summary>进关时血量 → 勇气值，向下取整。hp &lt;= 0 为 0。</summary>
         public static int HpToCourage(int hp)
@@ -45,6 +71,28 @@ namespace App.Score
             }
 
             return hp * PlayerStartCourage / PlayerStartHp;
+        }
+
+        /// <summary>筹码 → 积分，向下取整。chips / ChipsForPoints。</summary>
+        public static int ChipsToPoints(int chips)
+        {
+            if (chips <= 0)
+            {
+                return 0;
+            }
+
+            return chips / ChipsForPoints;
+        }
+
+        /// <summary>积分 → 金币，向下取整。points / ExchangePointsForGoldCoins。</summary>
+        public static int PointsToGold(int points)
+        {
+            if (points <= 0)
+            {
+                return 0;
+            }
+
+            return points / ExchangePointsForGoldCoins;
         }
     }
 

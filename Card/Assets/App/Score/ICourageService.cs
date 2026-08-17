@@ -2,7 +2,7 @@ namespace App.Score
 {
     /// <summary>
     /// 勇气值（筹码）。进关时由当前血量换算，下注扣勇气值，不扣血。
-    /// 回合成功获得筹码再转积分；失败失去本回合已下注，并另扣血。不落盘。
+    /// 回合成功获得筹码，再按 GameConst.ChipsForPoints 转积分；失败失去本回合已下注，并另扣血。不落盘。
     /// </summary>
     public interface ICourageService
     {

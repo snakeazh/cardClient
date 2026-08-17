@@ -226,7 +226,7 @@ progress.Save();
 
 详见 [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md)。
 
-章节内三种积分（总 / 关卡 / 本轮）、玩家血量与勇气值。进关用当前 HP 换勇气值；下注扣勇气值不扣血。回合成功：获筹码并 1:1 记积分；失败：失去已下注并扣血。积分落盘 `score.v1`；血量与勇气值不存档。
+章节内三种积分（总 / 关卡 / 本轮）、玩家血量与勇气值。进关用当前 HP 换勇气值；下注扣勇气值不扣血。回合成功：获筹码并按 `GameConst.ChipsForPoints` 记积分；失败：失去已下注并扣血。关卡胜利按 `ExchangePointsForGoldCoins` 换金币。积分落盘 `score.v1`；血量与勇气值不存档。
 
 **尚未接入 `GameSession`**：商店仍按剩余 HP 折金币；对局血量仍在 `SeatState`。
 

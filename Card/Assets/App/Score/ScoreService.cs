@@ -27,7 +27,7 @@ namespace App.Score
 
         public ScoreSnapshot Current => new ScoreSnapshot(_total, _stage, _round);
 
-        public int CollectableGold => _total / ScoreBalance.ScorePerGold;
+        public int CollectableGold => ScoreBalance.PointsToGold(_total);
 
         public int GrantedGold => _grantedGold;
 
@@ -70,15 +70,16 @@ namespace App.Score
 
         public void AwardRoundScore(int chipsWon)
         {
-            if (chipsWon <= 0)
+            var points = ScoreBalance.ChipsToPoints(chipsWon);
+            if (points <= 0)
             {
                 BeginRound();
                 return;
             }
 
-            _round = chipsWon;
-            _stage += chipsWon;
-            _total += chipsWon;
+            _round = points;
+            _stage += points;
+            _total += points;
             _dirty = true;
         }
 

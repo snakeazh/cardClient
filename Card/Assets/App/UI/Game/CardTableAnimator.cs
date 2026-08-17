@@ -537,7 +537,6 @@ namespace App.UI
             {
                 var go = Object.Instantiate(prefab);
                 go.name = "DealCard" + (i + 1);
-                HideBackChild(go.transform);
 
                 var item = go.GetComponent<CardItem>();
                 if (item == null)
@@ -574,6 +573,7 @@ namespace App.UI
 
             var duration = DealMoveDuration;
             item.transform.DOScale(point.lossyScale, duration).SetEase(Ease.OutQuad);
+            item.RotateTo(point.rotation * CardItem.FaceYaw(CardFaceState.Back), duration, Ease.OutCubic);
             item.MoveTo(point.position, duration, Ease.OutCubic).OnComplete(() =>
             {
                 if (token != _dealToken || item == null)
@@ -599,6 +599,9 @@ namespace App.UI
             {
                 return null;
             }
+
+            item.PlayDeal();
+            _dealPile?.Peek()?.PlayDealHighlight();
 
             item.SetCard(card);
             item.SetFace(CardFaceState.Back);
@@ -631,7 +634,6 @@ namespace App.UI
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
             var go = Object.Instantiate(prefab);
-            HideBackChild(go.transform);
 
             var item = go.GetComponent<CardItem>();
             if (item == null)
@@ -918,17 +920,8 @@ namespace App.UI
             var t = item.transform;
             t.SetParent(point, true);
             t.localPosition = Vector3.zero;
-            t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
-        }
-
-        private static void HideBackChild(Transform root)
-        {
-            var back = root.Find("Back");
-            if (back != null)
-            {
-                back.gameObject.SetActive(false);
-            }
+            item.SetFace(item.FaceState);
         }
 
         private static void EnsureCollider(CardItem item)

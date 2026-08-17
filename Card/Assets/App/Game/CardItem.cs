@@ -20,7 +20,6 @@ namespace App.Game
         private Tween _moveTween;
         private Tween _rotateTween;
         private Tween _flipTween;
-        private Tween _punchTween;
         private Animator _tweenAnimator;
         private Transform _tweenTarget;
         private Transform _backNode;
@@ -31,6 +30,7 @@ namespace App.Game
         private const string ShuffleAppear02 = "aini_card_appear02";
         private const string DealClip = "aini_card_deal";
         private const string DealHighlightClip = "aini_card_back";
+        private const string SettleClip = "aini_card_settle";
 
         /// <param name="card">牌面数据。</param>
         /// <param name="faceState">正面或背面。</param>
@@ -117,13 +117,6 @@ namespace App.Game
             return seq;
         }
 
-        public Tween PunchScale(float punch = 0.22f, float duration = 0.32f)
-        {
-            _punchTween?.Kill();
-            _punchTween = transform.DOPunchScale(Vector3.one * punch, duration, 10, 0.6f);
-            return _punchTween;
-        }
-
         /// <summary>
         /// 洗牌出现：普通张播 aini_card_appear01，最后一张播 aini_card_appear02。
         /// </summary>
@@ -147,12 +140,17 @@ namespace App.Game
             PlayTweenClip(DealHighlightClip);
         }
 
+        /// <summary>亮牌结算牌型：播 aini_card_settle。</summary>
+        public void PlaySettle()
+        {
+            PlayTweenClip(SettleClip);
+        }
+
         private void OnDestroy()
         {
             _moveTween?.Kill();
             _rotateTween?.Kill();
             _flipTween?.Kill();
-            _punchTween?.Kill();
         }
 
         private void ApplySprite()

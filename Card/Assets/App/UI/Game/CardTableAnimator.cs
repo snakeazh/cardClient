@@ -22,6 +22,7 @@ namespace App.UI
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
         private const float RevealSeatGap = 0.38f;
+        private const float SettleClipDuration = 0.3f;
         private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private IResourceService _resources;
@@ -355,7 +356,6 @@ namespace App.UI
                         return;
                     }
 
-                    PunchSeat(capturedView, 0.16f);
                     session.AnnounceSeatRevealed(capturedId);
                 });
                 delay += RevealSeatGap;
@@ -370,7 +370,25 @@ namespace App.UI
 
                 HighlightWinner(session);
             });
-            delay += 0.42f;
+            delay += 0.08f;
+
+            var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
+            for (var i = 0; i < CardsPerHand; i++)
+            {
+                var cardIndex = i;
+                seq.InsertCallback(delay, () =>
+                {
+                    if (token != _revealToken)
+                    {
+                        return;
+                    }
+
+                    PlaySettleCard(winnerView, cardIndex);
+                });
+                delay += SettleClipDuration;
+            }
+
+            delay += SettleClipDuration;
             seq.InsertCallback(delay, () =>
             {
                 if (token != _revealToken)
@@ -404,23 +422,19 @@ namespace App.UI
             }
 
             ApplyFace(item, CardFaceState.Front, true);
-            item.PunchScale(0.12f, 0.22f);
         }
 
-        private void PunchSeat(SeatView view, float punch)
+        private static void PlaySettleCard(SeatView view, int cardIndex)
         {
-            if (view == null)
+            if (view == null || cardIndex < 0 || cardIndex >= view.Items.Length)
             {
                 return;
             }
 
-            for (var i = 0; i < view.Items.Length; i++)
+            var item = view.Items[cardIndex];
+            if (item != null && view.Landed[cardIndex])
             {
-                var item = view.Items[i];
-                if (item != null && view.Landed[i])
-                {
-                    item.PunchScale(punch, 0.3f);
-                }
+                item.PlaySettle();
             }
         }
 
@@ -433,7 +447,6 @@ namespace App.UI
 
             var winner = SeatById(session, session.RevealWinnerId);
             var view = ViewOf(session, winner);
-            PunchSeat(view, 0.28f);
             TintSeat(view, new Color(1f, 0.9f, 0.45f));
         }
 

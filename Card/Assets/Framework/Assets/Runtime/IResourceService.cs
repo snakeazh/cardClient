@@ -10,6 +10,9 @@ namespace Framework.Assets
     {
         Task<T> LoadAsync<T>(string key) where T : Object;
 
+        /// <summary>Loads every asset of type T from a bundle folder (e.g. "Altas" -> bundle "altas").</summary>
+        Task<T[]> LoadAllAsync<T>(string bundleName) where T : Object;
+
         Task<ResourceHandle<T>> LoadHandleAsync<T>(string key) where T : Object;
 
         bool TryGetCached<T>(string key, out T asset) where T : Object;

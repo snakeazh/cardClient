@@ -26,6 +26,7 @@ namespace App.Bootstrap
 
         private async void Start()
         {
+            Application.targetFrameRate = 120;
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();

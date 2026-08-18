@@ -39,6 +39,20 @@ namespace Framework.Assets
             return Task.FromResult(LoadInternal<T>(key));
         }
 
+        public Task<T[]> LoadAllAsync<T>(string bundleName) where T : Object
+        {
+            if (string.IsNullOrWhiteSpace(bundleName))
+            {
+                throw new ArgumentException("Bundle name cannot be empty.", nameof(bundleName));
+            }
+
+            lock (_gate)
+            {
+                EnsureInitialized();
+                return Task.FromResult(Resources.LoadAll<T>(bundleName));
+            }
+        }
+
         public Task<ResourceHandle<T>> LoadHandleAsync<T>(string key) where T : Object
         {
             var asset = LoadInternal<T>(key);

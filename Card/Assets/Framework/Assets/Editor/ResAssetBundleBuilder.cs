@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -65,8 +67,9 @@ namespace Framework.Assets.Editor
                 return;
             }
 
-            CopyToStreamingAssets(versionOutput);
+            CopyToStreamingAssets(versionOutput, version);
             WriteStreamingVersion(version);
+            WriteStreamingCatalog();
 
             AssetDatabase.Refresh();
 
@@ -82,7 +85,7 @@ namespace Framework.Assets.Editor
             File.WriteAllText(Path.Combine(dest, "version.txt"), version);
         }
 
-        private static void CopyToStreamingAssets(string versionOutput)
+        private static void CopyToStreamingAssets(string versionOutput, string version)
         {
             var dest = GetStreamingBundlesFullPath();
             Directory.CreateDirectory(dest);
@@ -97,6 +100,38 @@ namespace Framework.Assets.Editor
 
                 File.Copy(file, Path.Combine(dest, name), overwrite: true);
             }
+
+            // The manifest bundle is named after the version folder (e.g. "1.0.4");
+            // also copy it under the fixed name the runtime looks for.
+            var manifestBundle = Path.Combine(versionOutput, version);
+            if (File.Exists(manifestBundle))
+            {
+                File.Copy(manifestBundle, Path.Combine(dest, "Bundles"), overwrite: true);
+            }
+        }
+
+        private static void WriteStreamingCatalog()
+        {
+            var dest = GetStreamingBundlesFullPath();
+            Directory.CreateDirectory(dest);
+
+            var names = new List<string>();
+            foreach (var file in Directory.GetFiles(dest))
+            {
+                var name = Path.GetFileName(file);
+                if (string.IsNullOrEmpty(name) ||
+                    name == "catalog.txt" ||
+                    name.EndsWith(".meta", StringComparison.OrdinalIgnoreCase) ||
+                    name.EndsWith(".manifest", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                names.Add(name);
+            }
+
+            names.Sort(StringComparer.Ordinal);
+            File.WriteAllLines(Path.Combine(dest, "catalog.txt"), names);
         }
 
         private static void AssignBundleNames()

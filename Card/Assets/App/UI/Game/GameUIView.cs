@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Threading.Tasks;
 using App.Game;
 using App.Resources;
@@ -33,6 +34,7 @@ namespace App.UI
         private int _playedAttack;
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
+        private Coroutine _aiDelay;
 
         protected override void OnBind()
         {
@@ -70,6 +72,8 @@ namespace App.UI
                 ViewModel.Session.Changed -= OnSessionChanged;
             }
 
+            StopAiDelay();
+
             if (_board != null)
             {
                 _board.Detach();
@@ -98,6 +102,37 @@ namespace App.UI
             RefreshShop();
             RefreshPlayerItems();
             TryPlayAttack();
+            TryScheduleAiDelay();
+        }
+
+        private void TryScheduleAiDelay()
+        {
+            StopAiDelay();
+            if (ViewModel == null || !ViewModel.Session.AiActing)
+            {
+                return;
+            }
+
+            _aiDelay = StartCoroutine(CoAdvanceAi());
+        }
+
+        private IEnumerator CoAdvanceAi()
+        {
+            yield return new WaitForSeconds(GameSession.AiActionDelay);
+            _aiDelay = null;
+            if (ViewModel != null && ViewModel.Session.AiActing)
+            {
+                ViewModel.Session.AdvanceAiAction();
+            }
+        }
+
+        private void StopAiDelay()
+        {
+            if (_aiDelay != null)
+            {
+                StopCoroutine(_aiDelay);
+                _aiDelay = null;
+            }
         }
 
         private void BindAttackHud()
@@ -212,13 +247,18 @@ namespace App.UI
         private void BindPlayerInfo()
         {
             _playerItem = ResolvePlayerItem();
+            if (_playerItem != null)
+            {
+                BindSeatClick(_playerItem.gameObject, ViewModel.XRayPlayerCommand);
+            }
+
             BindRoundInfo();
             RefreshPlayerItems();
         }
 
         private void BindRoundInfo()
         {
-            var roundInfo = transform.Find("roundInfo");
+            var roundInfo = ResolveSlot("roundInfo") ?? transform.Find("roundInfo");
             if (roundInfo == null)
             {
                 return;
@@ -226,6 +266,7 @@ namespace App.UI
 
             var text = roundInfo.GetComponentInChildren<TMP_Text>(true);
             Binding.BindText(text, ViewModel.RoundInfo);
+            Binding.BindActive(roundInfo.gameObject, ViewModel.ShowTableButtons);
         }
 
         private PlayerItem ResolvePlayerItem()
@@ -285,7 +326,7 @@ namespace App.UI
                 item.ApplyTheme(true);
                 item.SetAttack(0);
                 Binding.BindActive(clone, ViewModel.ShowEnemy[i]);
-                BindEnemyAttack(clone, i);
+                BindSeatClick(clone, ViewModel.AttackCommands[i]);
                 _enemyItems[i] = item;
                 _enemyInfos[i] = clone;
             }
@@ -329,7 +370,7 @@ namespace App.UI
                     continue;
                 }
 
-                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], 0);
+                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], 0, session.ActingAiId);
             }
         }
 
@@ -392,24 +433,29 @@ namespace App.UI
             }
         }
 
-        private void BindEnemyAttack(GameObject clone, int slot)
+        private void BindSeatClick(GameObject target, IRelayCommand command)
         {
-            var image = clone.GetComponent<Image>();
+            if (target == null || command == null)
+            {
+                return;
+            }
+
+            var image = target.GetComponent<Image>();
             if (image == null)
             {
-                image = clone.AddComponent<Image>();
+                image = target.AddComponent<Image>();
                 image.color = new Color(1f, 1f, 1f, 0.01f);
             }
 
-            var button = clone.GetComponent<Button>();
+            var button = target.GetComponent<Button>();
             if (button == null)
             {
-                button = clone.AddComponent<Button>();
+                button = target.AddComponent<Button>();
             }
 
             button.targetGraphic = image;
             button.transition = Selectable.Transition.None;
-            Binding.BindCommand(button, ViewModel.AttackCommands[slot]);
+            Binding.BindCommand(button, command);
         }
 
         private void BindPhaseButtons()
@@ -420,10 +466,15 @@ namespace App.UI
                 return;
             }
 
+            Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
+            BindDealHidden("horBtns2");
+            BindDealHidden("horEquipBtns2");
+            BindDealHidden("roundInfo");
+
             BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
             BindBtn("RaiseBtn", ViewModel.RaiseCommand, ViewModel.ShowActions);
-            BindBtn("FoldBtn", ViewModel.FoldCommand, ViewModel.ShowActions);
+            BindBtn("FoldBtn", ViewModel.FoldCommand, ViewModel.ShowFold);
             BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowCompare);
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
@@ -437,9 +488,10 @@ namespace App.UI
             SetBtnLabel("LookBtn", "看牌");
             SetBtnLabel("CancelBtn", "取消");
             SetBtnLabel("NextRoundBtn", "下一局");
-            SetBtnLabel("AllInBtn", "全下");
+            SetBtnLabel("FoldBtn", "弃牌");
             BindBlindLabel();
             BindBtnLabel("RaiseBtn", ViewModel.RaiseLabel);
+            BindBtnLabel("AllInBtn", ViewModel.AllInLabel);
 
             var template = FindBtn("BlindBtn");
             if (template == null)
@@ -447,14 +499,24 @@ namespace App.UI
                 return;
             }
 
-            EnsureBtn(template, "RaiseHighBtn", "加注×3", ViewModel.RaiseHighCommand, ViewModel.ShowActions);
+            EnsureBtn(template, "RaiseHighBtn", "x4下注", ViewModel.RaiseHighCommand, ViewModel.ShowActions);
             BindBtnLabel("RaiseHighBtn", ViewModel.RaiseHighLabel);
+            BindBtnLabel("PeekGood", ViewModel.PeekGoodLabel);
+            BindBtnLabel("ChaKanGood", ViewModel.ChaKanGoodLabel);
+            BindBtnLabel("TiHuanGood", ViewModel.TiHuanGoodLabel);
+            OrderActionButtons();
             EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
-            EnsureBtn(template, "LoanBtn", "看广告借贷", ViewModel.LoanCommand, ViewModel.ShowFail);
-            EnsureBtn(template, "ReviveBtn", "看广告复活", ViewModel.ReviveCommand, ViewModel.ShowFail);
-            EnsureBtn(template, "RestartBtn", "重开本关", ViewModel.RestartCommand, ViewModel.ShowFail);
+        }
+
+        private void BindDealHidden(string name)
+        {
+            var node = ResolveSlot(name) ?? transform.Find(name);
+            if (node != null)
+            {
+                Binding.BindActive(node.gameObject, ViewModel.ShowTableButtons);
+            }
         }
 
         private void BindBtn(string name, IRelayCommand command)
@@ -516,6 +578,28 @@ namespace App.UI
 
             Binding.BindCommand(button, command);
             Binding.BindActive(button.gameObject, visible);
+        }
+
+        private void OrderActionButtons()
+        {
+            if (_btns == null)
+            {
+                return;
+            }
+
+            var names = new[]
+            {
+                "BlindBtn", "LookBtn", "RaiseBtn", "RaiseHighBtn", "AllInBtn",
+                "FoldBtn", "CompareBtn", "PeekBtn", "CancelBtn", "NextRoundBtn"
+            };
+            for (var i = 0; i < names.Length; i++)
+            {
+                var node = _btns.Find(names[i]);
+                if (node != null)
+                {
+                    node.SetSiblingIndex(i);
+                }
+            }
         }
 
         private void RefreshShop()

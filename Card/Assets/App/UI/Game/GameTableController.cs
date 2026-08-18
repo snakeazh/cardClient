@@ -216,8 +216,8 @@ namespace App.UI
             _actionBar = CreatePanel(root, "ActionBar", new Vector2(0f, -820f), new Vector2(1000f, 220f));
             CreateButton(_actionBar.transform, "闷注", new Vector2(-380f, 50f), _vm.BlindBetCommand, 170f);
             CreateButton(_actionBar.transform, "看牌", new Vector2(-190f, 50f), _vm.LookCommand, 170f);
-            CreateButton(_actionBar.transform, "加注×2", new Vector2(0f, 50f), _vm.RaiseCommand, 170f);
-            CreateButton(_actionBar.transform, "加注×3", new Vector2(190f, 50f), _vm.RaiseHighCommand, 170f);
+            CreateButton(_actionBar.transform, "x2下注", new Vector2(0f, 50f), _vm.RaiseCommand, 170f);
+            CreateButton(_actionBar.transform, "x4下注", new Vector2(190f, 50f), _vm.RaiseHighCommand, 170f);
             CreateButton(_actionBar.transform, "开牌", new Vector2(380f, 50f), _vm.OpenCommand, 160f);
             CreateButton(_actionBar.transform, "弃牌", new Vector2(380f, -50f), _vm.FoldCommand, 160f);
             CreateButton(_actionBar.transform, "-", new Vector2(-120f, -50f), _vm.MinusBetCommand, 90f);

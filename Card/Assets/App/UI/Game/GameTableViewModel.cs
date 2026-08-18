@@ -1,5 +1,9 @@
+using System;
+using System.Threading.Tasks;
 using App.Game;
+using App.UI.Popup;
 using Framework.Assets;
+using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
 
@@ -8,24 +12,35 @@ namespace App.UI
     /// <summary>把 <see cref="GameSession"/> 的状态绑到桌面 HUD：下注、看牌、商店、攻击。</summary>
     public sealed class GameTableViewModel : ViewModelBase
     {
-        public GameTableViewModel(GameSession session, IResourceService resources)
+        private readonly IUIManager _ui;
+        private bool _failPopupOpen;
+
+        public GameTableViewModel(GameSession session, IResourceService resources, IUIManager ui)
         {
             Session = session;
             Resources = resources;
+            _ui = ui;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
-                () => Session.Phase == GamePhase.Betting || Session.Phase == GamePhase.WaitingLookChoice);
-            RaiseCommand = new RelayCommand(() => Session.RaiseBet(), () => Session.Phase == GamePhase.Betting);
-            RaiseHighCommand = new RelayCommand(() => Session.RaiseBetHigh(), () => Session.Phase == GamePhase.Betting);
+                () => !Session.AiActing &&
+                      !Session.Player.Folded &&
+                      (Session.Phase == GamePhase.Betting ||
+                       Session.Phase == GamePhase.WaitingLookChoice ||
+                       (Session.Phase == GamePhase.WaitingRub && Session.Player.Looked)));
+            RaiseCommand = new RelayCommand(() => Session.RaiseBet(), () => Session.PlayerMayRaise);
+            RaiseHighCommand = new RelayCommand(() => Session.RaiseBetHigh(), () => Session.PlayerMayRaise);
             LookCommand = new RelayCommand(() => Session.LookCards(), () => Session.PlayerMayLookCards);
-            FoldCommand = new RelayCommand(() => Session.Fold(), () => Session.Phase == GamePhase.Betting);
+            FoldCommand = new RelayCommand(() => Session.Fold(), () => Session.PlayerMayFold);
             OpenCommand = new RelayCommand(
                 () => Session.RequestShowdown(),
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
             PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
             ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
+            XRayPlayerCommand = new RelayCommand(
+                () => Session.TryXRayPlayer(),
+                () => Session.SelectingXRayTarget && Session.PlayerMayUseChaKanGood);
             TiHuanGoodCommand = new RelayCommand(() => Session.UseTiHuanGood(), () => Session.PlayerMayUseTiHuanGood);
             RubCommand = new RelayCommand(() => Session.TryRubSelected(), () => Session.Phase == GamePhase.WaitingRub);
             SkipRubCommand = new RelayCommand(() => Session.CancelLookOrRub(), () => Session.PlayerMayCancelLookOrRub);
@@ -67,15 +82,21 @@ namespace App.UI
         public ObservableProperty<string> BetAmount { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> LogText { get; } = new ObservableProperty<string>();
         public ObservableProperty<bool> ShowActions { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowTableButtons { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<bool> ShowActionBar { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowLook { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowRub { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCancel { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowBlind { get; } = new ObservableProperty<bool>();
         public ObservableProperty<string> BlindLabel { get; } = new ObservableProperty<string>("闷注");
-        public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("加注");
-        public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("加注×3");
+        public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("x2下注");
+        public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
+        public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
+        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("搓牌 3");
+        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("透视 1");
+        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("替换 1");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
+        public ObservableProperty<bool> ShowFold { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCompare { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowContinue { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowShop { get; } = new ObservableProperty<bool>();
@@ -118,6 +139,7 @@ namespace App.UI
         public IRelayCommand AllInCommand { get; }
         public IRelayCommand PeekGoodCommand { get; }
         public IRelayCommand ChaKanGoodCommand { get; }
+        public IRelayCommand XRayPlayerCommand { get; }
         public IRelayCommand TiHuanGoodCommand { get; }
         public IRelayCommand RubCommand { get; }
         public IRelayCommand SkipRubCommand { get; }
@@ -131,9 +153,25 @@ namespace App.UI
         public IRelayCommand ExtraRubAdCommand { get; }
         public IRelayCommand DoubleGoldAdCommand { get; }
         public IRelayCommand[] AttackCommands { get; }
+        private int _seenDealSerial = -1;
+
+        public void NotifyDealReady()
+        {
+            ShowTableButtons.Value = true;
+            Refresh();
+        }
 
         public void Refresh()
         {
+            if (Session.DealSerial != _seenDealSerial)
+            {
+                _seenDealSerial = Session.DealSerial;
+                if (Session.DealSerial > 0)
+                {
+                    ShowTableButtons.Value = false;
+                }
+            }
+
             var run = Session.Run;
             var boss = GameBalance.IsBossStage(run.Stage);
             Title.Value = boss
@@ -147,26 +185,42 @@ namespace App.UI
             PlayerState.Value = SeatLine(Session.Player);
             RoundInfo.Value = $"已下注:{Session.Pot}";
             BetAmount.Value = string.Empty;
-            var choosing = Session.Phase == GamePhase.WaitingLookChoice && !Session.Player.Folded;
-            var betting = Session.Phase == GamePhase.Betting && !Session.Player.Folded;
+            var canAct = !Session.Player.Folded && !Session.AiActing;
+            var choosing = Session.Phase == GamePhase.WaitingLookChoice && canAct;
+            var betting = Session.Phase == GamePhase.Betting && canAct;
+            var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
+            var looked = Session.Player.Looked;
+            var streetBet = betting || rubbing;
             var callCost = Session.PlayerCallCost;
-            BlindLabel.Value = choosing
+            var raiseLowCost = Session.CostToReach(Session.RaiseLowUnits);
+            var raiseHighCost = Session.CostToReach(Session.RaiseHighUnits);
+            BlindLabel.Value = choosing && !looked
                 ? "闷注"
-                : $"跟注{(callCost > 0 ? callCost : Session.CurrentCallUnits)}";
-            RaiseLabel.Value = "加注";
-            RaiseHighLabel.Value = "加注×3";
-            ShowLook.Value = choosing && Session.PlayerMayLookCards;
-            ShowBlind.Value = choosing || betting;
-            ShowActions.Value = betting;
-            ShowRub.Value = Session.Phase == GamePhase.WaitingRub;
+                : AmountLabel("跟注", callCost);
+            RaiseLabel.Value = AmountLabel("x2下注", raiseLowCost);
+            RaiseHighLabel.Value = AmountLabel("x4下注", raiseHighCost);
+            AllInLabel.Value = AmountLabel("全部下注", Session.Player.Hp);
+            PeekGoodLabel.Value = $"搓牌 {Session.Run.PeekGoodCharges}";
+            ChaKanGoodLabel.Value = $"透视 {Session.Run.ChaKanGoodCharges}";
+            TiHuanGoodLabel.Value = $"替换 {Session.Run.TiHuanGoodCharges}";
+            ShowLook.Value = Session.PlayerMayLookCards;
+            ShowBlind.Value = choosing || streetBet;
+            ShowActions.Value = streetBet;
+            ShowRub.Value = false;
             ShowCancel.Value = Session.PlayerMayCancelLookOrRub;
-            ShowAllIn.Value = betting;
+            ShowAllIn.Value = streetBet;
+            ShowFold.Value = ShowTableButtons.Value &&
+                             !Session.Player.Folded &&
+                             (Session.Phase == GamePhase.WaitingLookChoice ||
+                              Session.Phase == GamePhase.WaitingRub ||
+                              Session.Phase == GamePhase.Betting);
             ShowCompare.Value = betting && Session.PlayerMayCompare;
-            ShowActionBar.Value = choosing || betting || ShowRub.Value;
+            ShowActionBar.Value = choosing || betting || rubbing || ShowFold.Value;
             ShowContinue.Value = Session.Phase == GamePhase.RoundSettle ||
                                  (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying);
             ShowShop.Value = Session.Phase == GamePhase.Shop;
             ShowFail.Value = Session.Phase == GamePhase.StageFail;
+            TryPresentFailPopup();
             ShowAttack.Value = Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget;
             if (!Session.AttackPlaying)
             {
@@ -198,6 +252,7 @@ namespace App.UI
             AllInCommand.RaiseCanExecuteChanged();
             PeekGoodCommand.RaiseCanExecuteChanged();
             ChaKanGoodCommand.RaiseCanExecuteChanged();
+            XRayPlayerCommand.RaiseCanExecuteChanged();
             TiHuanGoodCommand.RaiseCanExecuteChanged();
             RubCommand.RaiseCanExecuteChanged();
             SkipRubCommand.RaiseCanExecuteChanged();
@@ -213,9 +268,57 @@ namespace App.UI
             }
         }
 
+        protected override Task OnOpen(object args)
+        {
+            Session.Changed -= Refresh;
+            Session.Changed += Refresh;
+            Refresh();
+            return Task.CompletedTask;
+        }
+
         protected override void OnDispose()
         {
             Session.Changed -= Refresh;
+        }
+
+        private async void TryPresentFailPopup()
+        {
+            if (!IsOpen || Session.Phase != GamePhase.StageFail || _failPopupOpen || _ui == null)
+            {
+                return;
+            }
+
+            _failPopupOpen = true;
+            try
+            {
+                while (IsOpen && Session.Phase == GamePhase.StageFail)
+                {
+                    var registration = _ui.Registry.GetByViewModelType(typeof(BattleFailPopupViewModel));
+                    var popup = (BattleFailPopupViewModel)_ui.Registry.CreateViewModel(registration);
+                    var result = await _ui.Dialogs.ShowCustomAsync<BattleFailPopupViewModel, BattleFailResult>(popup);
+                    if (result == BattleFailResult.Abandon)
+                    {
+                        await LeaveToHome();
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+            finally
+            {
+                _failPopupOpen = false;
+            }
+        }
+
+        private async Task LeaveToHome()
+        {
+            await _ui.Close(this);
+            var home = (HomeViewModel)_ui.Registry.CreateViewModel(
+                _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
+            await _ui.Open(home);
         }
 
         private void RefreshEnemies()
@@ -267,6 +370,11 @@ namespace App.UI
                 return string.Empty;
             }
 
+            if (!string.IsNullOrEmpty(seat.PeekedType))
+            {
+                return seat.Folded ? $"弃牌 {seat.PeekedType}" : $"透视 {seat.PeekedType}";
+            }
+
             if (!string.IsNullOrEmpty(seat.Banner))
             {
                 return seat.Banner;
@@ -278,6 +386,11 @@ namespace App.UI
             }
 
             return seat.Status ?? string.Empty;
+        }
+
+        private static string AmountLabel(string name, int amount)
+        {
+            return amount > 0 ? $"{name}{amount}" : name;
         }
 
         private static string BetLabel(SeatState seat)

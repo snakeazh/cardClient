@@ -42,7 +42,10 @@ namespace App.Game
     {
         SplashSlash = 0,
         Magnifier = 1,
-        LoanTicket = 2
+        LoanTicket = 2,
+        RubCharge = 3,
+        XRayCharge = 4,
+        ReplaceCharge = 5
     }
 
     public enum RelicCategory
@@ -104,13 +107,19 @@ namespace App.Game
         /// <summary>同一关内每过一回合，基础注 +10。</summary>
         public const int BaseBetStep = 10;
         public const int RaiseLowMult = 2;
-        public const int RaiseHighMult = 3;
+        public const int RaiseHighMult = 4;
         public const int MaxRelics = 4;
         public const float RescueRatio = 0.15f;
         public const float StingyRescueRatio = 0.05f;
         public const float SplashRatio = 0.3f;
         public const float MagnetKeepSuitChance = 0.3f;
         public const int DailyDoubleGoldAds = 3;
+        /// <summary>每关搓牌技能基础次数。</summary>
+        public const int SkillRubUses = 3;
+        /// <summary>每关透视技能基础次数。</summary>
+        public const int SkillXRayUses = 1;
+        /// <summary>每关替换技能基础次数。</summary>
+        public const int SkillReplaceUses = 1;
 
         /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
         public static int EnemyCountForStage(int stage)
@@ -246,7 +255,10 @@ namespace App.Game
             new ShopItemDef { Id = "iron", Name = "铁质长剑", Effect = "顺子结算倍率 +8", Price = 140, Relic = true, RelicId = RelicId.IronSword, Category = RelicCategory.Combat },
             new ShopItemDef { Id = "jade", Name = "翡翠长剑", Effect = "金花结算倍率 +8", Price = 160, Relic = true, RelicId = RelicId.JadeSword, Category = RelicCategory.Combat },
             new ShopItemDef { Id = "mask", Name = "恐吓面具", Effect = "AI 跟注率降低 10%", Price = 180, Relic = true, RelicId = RelicId.ScareMask, Category = RelicCategory.Bet },
-            new ShopItemDef { Id = "magnet", Name = "磁力手套", Effect = "搓牌保留原花色概率 +30%", Price = 150, Relic = true, RelicId = RelicId.MagnetGloves, Category = RelicCategory.Rub }
+            new ShopItemDef { Id = "magnet", Name = "磁力手套", Effect = "搓牌保留原花色概率 +30%", Price = 150, Relic = true, RelicId = RelicId.MagnetGloves, Category = RelicCategory.Rub },
+            new ShopItemDef { Id = "rubCharge", Name = "搓牌秘籍", Effect = "每关搓牌次数 +1", Price = 80, ConsumableId = ConsumableId.RubCharge },
+            new ShopItemDef { Id = "xrayCharge", Name = "透视秘籍", Effect = "每关透视次数 +1", Price = 80, ConsumableId = ConsumableId.XRayCharge },
+            new ShopItemDef { Id = "replaceCharge", Name = "替换秘籍", Effect = "每关替换次数 +1", Price = 80, ConsumableId = ConsumableId.ReplaceCharge }
         };
 
         private static int Take(ref int remain, int slice, float rate)
@@ -286,6 +298,8 @@ namespace App.Game
         public Card[] Hand = new Card[3];
         public string Status = string.Empty;
         public string Banner = string.Empty;
+        /// <summary>透视技能看到的牌型，本手有效。</summary>
+        public string PeekedType = string.Empty;
         /// <summary>敌人人格。玩家为 null。BOSS 关会覆盖成 Expert。</summary>
         public AiProfile Profile;
     }
@@ -306,6 +320,12 @@ namespace App.Game
         public int PeekGoodCharges;
         public int ChaKanGoodCharges;
         public int TiHuanGoodCharges;
+        /// <summary>商店提供的每关额外搓牌次数，整次闯关保留。</summary>
+        public int BonusRubCharges;
+        /// <summary>商店提供的每关额外透视次数，整次闯关保留。</summary>
+        public int BonusXRayCharges;
+        /// <summary>商店提供的每关额外替换次数，整次闯关保留。</summary>
+        public int BonusReplaceCharges;
         /// <summary>透视揭示标记，下标 = seatId*3 + cardIndex。</summary>
         public readonly bool[] SpyReveal = new bool[12];
         public bool PeekSuitUsed;

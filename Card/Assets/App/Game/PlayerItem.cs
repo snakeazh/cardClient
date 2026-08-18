@@ -20,6 +20,7 @@ namespace App.Game
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private TMP_Text cardAttackHeart;
+        [SerializeField] private TMP_Text cardState;
 
         public RectTransform CardIconRect
         {
@@ -30,7 +31,7 @@ namespace App.Game
             }
         }
 
-        public void Bind(SeatState seat, Sprite portrait, int attack = 0)
+        public void Bind(SeatState seat, Sprite portrait, int attack = 0, int actingAiId = -1)
         {
             EnsureRefs();
             var enemy = seat != null && !seat.IsPlayer;
@@ -39,6 +40,57 @@ namespace App.Game
             SetAttack(attack);
             SetHp(seat != null ? seat.Hp : 0);
             SetPortrait(portrait);
+            if (enemy)
+            {
+                SetState(FormatAiState(seat, actingAiId));
+            }
+            else if (seat != null && !string.IsNullOrEmpty(seat.PeekedType))
+            {
+                SetState($"透视 {seat.PeekedType}");
+            }
+            else
+            {
+                SetState(string.Empty);
+            }
+        }
+
+        public static string FormatAiState(SeatState seat, int actingAiId)
+        {
+            if (seat == null || seat.IsPlayer)
+            {
+                return string.Empty;
+            }
+
+            if (seat.Folded)
+            {
+                return "弃牌";
+            }
+
+            if (seat.Id == actingAiId)
+            {
+                return "操作中";
+            }
+
+            if (!string.IsNullOrEmpty(seat.PeekedType))
+            {
+                return $"透视 {seat.PeekedType}";
+            }
+
+            if (!string.IsNullOrEmpty(seat.Status))
+            {
+                return seat.Status;
+            }
+
+            return seat.StreetPaid > 0 ? "已下注" : string.Empty;
+        }
+
+        public void SetState(string text)
+        {
+            EnsureRefs();
+            if (cardState != null)
+            {
+                cardState.text = text ?? string.Empty;
+            }
         }
 
         public void ApplyTheme(bool enemy)
@@ -129,6 +181,11 @@ namespace App.Game
             if (cardAttackHeart == null)
             {
                 cardAttackHeart = FindText("card_attackHeart");
+            }
+
+            if (cardState == null)
+            {
+                cardState = FindText("state");
             }
         }
 

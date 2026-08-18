@@ -16,7 +16,7 @@ namespace App.UI
         private const int CardsPerHand = 3;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
-        private const float ShuffleStagger = 0.03f;
+        private const float ShuffleStagger = 0.05f;
         private const float ShuffleAppear02 = 0.2f;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
@@ -238,7 +238,6 @@ namespace App.UI
             ClearAllItems();
 
             var seats = CollectDealSeats(session);
-            BuildDealStack(Deck.Size);
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
@@ -281,26 +280,22 @@ namespace App.UI
 
         private float AppendShuffle(Sequence seq, int token)
         {
-            if (_dealPile == null || _dealPile.Count <= 0)
+            if (_dealPile == null)
             {
                 return 0f;
             }
 
-            var count = _dealPile.Count;
-            for (var i = 0; i < count; i++)
+            var prefab = LoadPrefab();
+            if (prefab == null)
             {
-                var item = _dealPile.GetCard(i);
-                if (item != null)
-                {
-                    item.gameObject.SetActive(false);
-                }
+                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
+                return 0f;
             }
 
             var delay = 0f;
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < Deck.Size; i++)
             {
-                var index = i;
-                var last = i == count - 1;
+                var last = i == Deck.Size - 1;
                 seq.InsertCallback(delay, () =>
                 {
                     if (token != _dealToken)
@@ -308,8 +303,15 @@ namespace App.UI
                         return;
                     }
 
-                    var item = _dealPile.GetCard(index);
-                    item?.PlayShuffleAppear(last);
+                    var item = SpawnPileCard(prefab);
+                    if (item == null)
+                    {
+                        return;
+                    }
+
+                    item.SetSpritesVisible(false);
+                    _dealPile.Attach(item);
+                    item.PlayShuffleAppear(last);
                 });
                 delay += ShuffleStagger;
             }
@@ -532,37 +534,29 @@ namespace App.UI
             return null;
         }
 
-        private void BuildDealStack(int count)
+        private CardItem SpawnPileCard(GameObject prefab)
         {
-            _dealPile?.Clear();
-            if (_dealPile == null || count <= 0)
+            if (prefab == null || _dealPile == null || _dealPoint == null)
             {
-                return;
+                return null;
             }
 
-            var prefab = LoadPrefab();
-            if (prefab == null)
+            var go = Object.Instantiate(prefab);
+            go.name = "DealCard" + (_dealPile.Count + 1);
+
+            var item = go.GetComponent<CardItem>();
+            if (item == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
-                return;
+                item = go.AddComponent<CardItem>();
             }
 
-            var startRot = _dealPoint.rotation;
-            var startScale = _dealPoint.lossyScale;
-            for (var i = 0; i < count; i++)
-            {
-                var go = Object.Instantiate(prefab);
-                go.name = "DealCard" + (i + 1);
-
-                var item = go.GetComponent<CardItem>();
-                if (item == null)
-                {
-                    item = go.AddComponent<CardItem>();
-                }
-
-                item.Initialize(default, CardFaceState.Back, _dealPile.GetWorldPosition(i), startRot, startScale);
-                _dealPile.Attach(item);
-            }
+            item.Initialize(
+                default,
+                CardFaceState.Back,
+                _dealPile.GetWorldPosition(_dealPile.Count),
+                _dealPoint.rotation,
+                Vector3.one);
+            return item;
         }
 
         private void SpawnAndFly(SeatView view, SeatState seat, int cardIndex, int order, int token)
@@ -621,10 +615,11 @@ namespace App.UI
 
             item.SetCard(card);
             item.SetFace(CardFaceState.Back);
+            item.SetSortingOrder(FlySortingOrder(order));
+            item.SetSpritesVisible(true);
             var sr = item.CurrentRenderer;
             if (sr != null)
             {
-                sr.sortingOrder = FlySortingOrder(order);
                 sr.color = Color.white;
             }
 

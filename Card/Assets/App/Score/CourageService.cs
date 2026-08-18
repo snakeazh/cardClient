@@ -1,54 +1,109 @@
+using System.Collections.Generic;
+
 namespace App.Score
 {
     /// <summary>
-    /// In-memory courage (chips). Recalculated from HP at stage start. Not persisted.
+    /// In-memory per-seat courage (chips). Recalculated from that seat's HP at stage start.
     /// </summary>
     public sealed class CourageService : ICourageService
     {
-        public int Amount { get; private set; }
-
-        public int Stake { get; private set; }
-
-        public void BeginStage(int hp)
+        private sealed class SeatCourage
         {
-            Amount = ScoreBalance.HpToCourage(hp);
-            Stake = 0;
+            public int Amount;
+            public int Stake;
         }
 
-        public void BeginRound()
+        private readonly Dictionary<int, SeatCourage> _seats = new Dictionary<int, SeatCourage>();
+
+        public int GetAmount(int seatId)
         {
-            Stake = 0;
+            return TryGet(seatId, out var seat) ? seat.Amount : 0;
         }
 
-        public bool TryBet(int amount)
+        public int GetStake(int seatId)
         {
-            if (amount <= 0 || Amount < amount)
+            return TryGet(seatId, out var seat) ? seat.Stake : 0;
+        }
+
+        public void BeginStage(int seatId, int hp)
+        {
+            _seats[seatId] = new SeatCourage
+            {
+                Amount = ScoreBalance.HpToCourage(hp),
+                Stake = 0
+            };
+        }
+
+        public void BeginRound(int seatId)
+        {
+            if (TryGet(seatId, out var seat))
+            {
+                seat.Stake = 0;
+            }
+        }
+
+        public bool TryBet(int seatId, int amount)
+        {
+            if (amount <= 0 || !TryGet(seatId, out var seat) || seat.Amount < amount)
             {
                 return false;
             }
 
-            Amount -= amount;
-            Stake += amount;
+            seat.Amount -= amount;
+            seat.Stake += amount;
             return true;
         }
 
-        public int Win(int chipsWon)
+        public void Add(int seatId, int amount)
         {
-            Stake = 0;
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            Ensure(seatId).Amount += amount;
+        }
+
+        public int Win(int seatId, int chipsWon)
+        {
+            var seat = Ensure(seatId);
+            seat.Stake = 0;
             if (chipsWon <= 0)
             {
                 return 0;
             }
 
-            Amount += chipsWon;
+            seat.Amount += chipsWon;
             return chipsWon;
         }
 
-        public int Lose()
+        public int Lose(int seatId)
         {
-            var lost = Stake;
-            Stake = 0;
+            if (!TryGet(seatId, out var seat))
+            {
+                return 0;
+            }
+
+            var lost = seat.Stake;
+            seat.Stake = 0;
             return lost;
+        }
+
+        private SeatCourage Ensure(int seatId)
+        {
+            if (_seats.TryGetValue(seatId, out var seat))
+            {
+                return seat;
+            }
+
+            seat = new SeatCourage();
+            _seats[seatId] = seat;
+            return seat;
+        }
+
+        private bool TryGet(int seatId, out SeatCourage seat)
+        {
+            return _seats.TryGetValue(seatId, out seat);
         }
     }
 }

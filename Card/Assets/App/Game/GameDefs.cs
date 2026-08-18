@@ -257,7 +257,7 @@ namespace App.Game
         }
     }
 
-    /// <summary>桌上一个座位：玩家或敌人。血量同时充当筹码。</summary>
+    /// <summary>桌上一个座位：玩家或敌人。血量按座位独立，进关时换算成该座位的勇气值（筹码）。</summary>
     public sealed class SeatState
     {
         public int Id;
@@ -266,8 +266,13 @@ namespace App.Game
         public bool IsBoss;
         /// <summary>本关是否上场。敌人座位固定 3 个，未上场的 Hp=0。</summary>
         public bool ActiveInStage;
+        /// <summary>当前血量。攻击结算才扣除；下注不扣血。</summary>
         public int Hp;
         public int MaxHp;
+        /// <summary>勇气值（筹码）。由本座位血量换算，下注从这里扣。</summary>
+        public int Courage;
+        /// <summary>本回合已下注、尚未结算的勇气值。</summary>
+        public int CourageStake;
         /// <summary>本街已承诺的下注档位（未看牌按单倍计）。</summary>
         public int StreetUnits;
         public int StreetPaid;
@@ -291,7 +296,7 @@ namespace App.Game
         public int Gold;
         public int Stage = 1;
         public int ConsecutiveLosses;
-        /// <summary>连输 2 局后触发，本局最大下注限制为当前血量 50%。</summary>
+        /// <summary>连输 2 局后触发，本局最大下注限制为当前勇气值 50%。</summary>
         public bool Tilted;
         public int RubsLeft;
         public int ExtraRubCharges;

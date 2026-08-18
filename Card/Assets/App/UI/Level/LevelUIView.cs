@@ -172,24 +172,20 @@ namespace App.UI
             var hero = App.Config.HeroConfig.Get(ViewModel.SelectedHeroId.Value);
             var unlocked = ViewModel.IsHeroUnlocked(hero);
             _playerItem.ApplyTheme(false);
+            _playerItem.SetAttack(0);
+            _playerItem.SetState(string.Empty);
+            _portraits.TryGetValue(hero != null ? hero.Id : 0, out var portrait);
             if (unlocked && hero != null)
             {
                 _playerItem.SetName(hero.Name);
                 _playerItem.SetHp(hero.Hp);
-                _playerItem.SetAttack(0);
-                _playerItem.SetState(string.Empty);
-                if (_portraits.TryGetValue(hero.Id, out var portrait))
-                {
-                    _playerItem.SetPortrait(portrait);
-                }
+                _playerItem.SetPortrait(portrait);
             }
             else
             {
                 _playerItem.SetName(LevelUIViewModel.LockedText);
                 _playerItem.SetHp(0);
-                _playerItem.SetAttack(0);
-                _playerItem.SetState(string.Empty);
-                _playerItem.SetPortrait(null);
+                _playerItem.SetPortrait(portrait, locked: true);
             }
         }
 
@@ -219,20 +215,18 @@ namespace App.UI
             for (var i = 0; i < heroes.Count; i++)
             {
                 var hero = heroes[i];
-                var key = !string.IsNullOrEmpty(hero.Icon) ? hero.Icon : ResResourcePaths.RoleAttack(hero.Id);
+                var key = ResResourcePaths.RoleIcon(hero.Icon);
+                if (string.IsNullOrEmpty(key))
+                {
+                    continue;
+                }
+
                 try
                 {
                     _portraits[hero.Id] = await ViewModel.Resources.LoadAsync<Sprite>(key);
                 }
                 catch (System.Exception)
                 {
-                    try
-                    {
-                        _portraits[hero.Id] = await ViewModel.Resources.LoadAsync<Sprite>(ResResourcePaths.RoleAttack(1));
-                    }
-                    catch (System.Exception)
-                    {
-                    }
                 }
             }
         }

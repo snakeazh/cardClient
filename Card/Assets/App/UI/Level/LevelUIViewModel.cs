@@ -16,7 +16,7 @@ namespace App.UI
     }
 
     /// <summary>
-    /// 选角 → 选关。默认上次选择，没有则第一个角色 / 第一关。
+    /// 选角 → 选关。默认上次选择，没有则 GameConst.DefaultHeroId / 第一关。
     /// </summary>
     public sealed class LevelUIViewModel : ViewModelBase
     {
@@ -55,8 +55,9 @@ namespace App.UI
             UnlockHeroCommand = new RelayCommand(UnlockSelectedHero, () => !IsSelectedHeroUnlocked());
             StartGameCommand = new RelayCommand(StartGame, () =>
                 Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
-            UnlockLevelCommand = new RelayCommand(() => { }, () =>
-                Phase.Value == LevelUiPhase.Stage && !IsSelectedLevelUnlocked());
+            UnlockLevelCommand = new RelayCommand(
+                () => { },
+                () => false);
         }
 
         public IResourceService Resources { get; }
@@ -111,6 +112,15 @@ namespace App.UI
 
         public static int GetDefaultHeroId()
         {
+            if (GameConst.IsLoaded)
+            {
+                var id = GameConst.Instance.DefaultHeroId;
+                if (id > 0 && HeroConfig.Get(id) != null)
+                {
+                    return id;
+                }
+            }
+
             var min = int.MaxValue;
             foreach (var pair in HeroConfig.All)
             {
@@ -151,6 +161,16 @@ namespace App.UI
         public bool IsLevelUnlocked(LevelSnapshot snapshot)
         {
             return snapshot != null && _progress.IsLevelUnlocked(snapshot.Id);
+        }
+
+        public string GetLevelUnlockCondition(LevelSnapshot snapshot)
+        {
+            if (snapshot == null || snapshot.Level <= 1)
+            {
+                return string.Empty;
+            }
+
+            return $"通关第{snapshot.Level - 1}关可解锁";
         }
 
         public void SelectHero(int heroId)
@@ -314,7 +334,7 @@ namespace App.UI
             else
             {
                 StageNum.Value = LockedText;
-                StageInfoText.Value = LockedText;
+                StageInfoText.Value = GetLevelUnlockCondition(snapshot);
             }
 
             var inStagePhase = Phase.Value == LevelUiPhase.Stage;

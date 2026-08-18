@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Threading.Tasks;
+using App.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
@@ -413,15 +414,32 @@ namespace App.UI
                 return;
             }
 
-            _playerPortrait = await LoadSprite(ResResourcePaths.RoleAttack(1));
+            _playerPortrait = await LoadSprite(ResolvePlayerPortraitKey());
             for (var i = 0; i < _enemyPortraits.Length; i++)
             {
                 _enemyPortraits[i] = await LoadSprite(ResResourcePaths.EnemyAttack(i + 1));
             }
         }
 
+        private string ResolvePlayerPortraitKey()
+        {
+            var heroId = ViewModel.Progress != null ? ViewModel.Progress.LastHeroId : 0;
+            var hero = HeroConfig.Get(heroId);
+            if (hero == null)
+            {
+                hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
+            }
+
+            return ResResourcePaths.RoleIcon(hero != null ? hero.Icon : null);
+        }
+
         private async Task<Sprite> LoadSprite(string key)
         {
+            if (string.IsNullOrEmpty(key))
+            {
+                return null;
+            }
+
             try
             {
                 return await ViewModel.Resources.LoadAsync<Sprite>(key);

@@ -14,6 +14,9 @@ namespace App.Game
         private static readonly Color EnemyIconBg = ParseHex("F6393C");
         private static readonly Color EnemyCircle = ParseHex("B20003");
 
+        private static readonly Color UnlockedPortraitColor = Color.white;
+        private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
+
         [SerializeField] private Image iconBg;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
@@ -134,7 +137,7 @@ namespace App.Game
             }
         }
 
-        public void SetPortrait(Sprite portrait)
+        public void SetPortrait(Sprite portrait, bool locked = false)
         {
             EnsureRefs();
             if (cardIcon == null)
@@ -145,10 +148,12 @@ namespace App.Game
             if (portrait == null)
             {
                 cardIcon.enabled = false;
+                cardIcon.color = UnlockedPortraitColor;
                 return;
             }
 
             cardIcon.sprite = portrait;
+            cardIcon.color = locked ? LockedPortraitColor : UnlockedPortraitColor;
             cardIcon.enabled = true;
         }
 

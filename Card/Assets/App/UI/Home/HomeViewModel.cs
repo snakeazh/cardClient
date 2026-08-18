@@ -1,4 +1,6 @@
+using App.Config;
 using App.Level;
+using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -14,14 +16,21 @@ namespace App.UI
         public HomeViewModel(
             IUIManager ui,
             ILevelService levels,
-            ILevelProgressService progress)
+            ILevelProgressService progress,
+            IResourceService resources)
         {
             _ui = ui;
             _levels = levels;
             _progress = progress;
+            Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
+            Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
+
+        public IResourceService Resources { get; }
+
+        public HeroConfig Hero { get; }
 
         public ObservableProperty<string> LastStageInfo { get; }
 

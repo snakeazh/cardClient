@@ -21,6 +21,19 @@ namespace App.Resources
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 
+        /// <summary>
+        /// <see cref="App.Config.HeroConfig.Icon"/> 对应 Assets/Res/Textures/role 下的文件名（无扩展名）。
+        /// </summary>
+        public static string RoleIcon(string icon)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+
+            return $"Textures/role/{icon.Trim()}";
+        }
+
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
     }
 }

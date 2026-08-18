@@ -30,25 +30,11 @@ namespace App.Item
             }
 
             playerItem.ApplyTheme(false);
-            if (unlocked && hero != null)
-            {
-                playerItem.SetName(hero.Name);
-                playerItem.SetHp(hero.Hp);
-                playerItem.SetAttack(0);
-                playerItem.SetPortrait(portrait);
-                playerItem.SetState(string.Empty);
-            }
-            else
-            {
-                playerItem.SetName("???");
-                playerItem.SetHp(0);
-                playerItem.SetAttack(0);
-                playerItem.SetState(string.Empty);
-                if (portrait != null)
-                {
-                    playerItem.SetPortrait(portrait);
-                }
-            }
+            playerItem.SetName(unlocked && hero != null ? hero.Name : "???");
+            playerItem.SetHp(unlocked && hero != null ? hero.Hp : 0);
+            playerItem.SetAttack(0);
+            playerItem.SetState(string.Empty);
+            playerItem.SetPortrait(portrait, locked: !unlocked);
         }
 
         public void SetSelected(bool selected)

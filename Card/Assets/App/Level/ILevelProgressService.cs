@@ -35,6 +35,9 @@ namespace App.Level
 
         bool TryUnlockHero(int heroId);
 
+        /// <summary>
+        /// 第 1 关默认解锁；之后必须先通关上一关。
+        /// </summary>
         bool IsLevelUnlocked(int levelId);
 
         IReadOnlyList<int> GetClearedDifficulties();

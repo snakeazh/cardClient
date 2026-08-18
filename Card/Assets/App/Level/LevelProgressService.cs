@@ -109,7 +109,13 @@ namespace App.Level
                 return false;
             }
 
-            return snapshot.Level <= HighestClearedLevel + 1;
+            // 第 1 关默认解锁；之后永远要求先通关上一关。
+            if (snapshot.Level <= 1)
+            {
+                return true;
+            }
+
+            return HighestClearedLevel >= snapshot.Level - 1;
         }
 
         public IReadOnlyList<int> GetClearedDifficulties()

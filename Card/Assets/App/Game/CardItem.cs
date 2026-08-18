@@ -126,6 +126,36 @@ namespace App.Game
             PlayTweenClip(lastCard ? ShuffleAppear02 : ShuffleAppear01);
         }
 
+        public void SetSpritesVisible(bool visible)
+        {
+            var front = ResolveRenderer();
+            if (front != null)
+            {
+                front.enabled = visible;
+            }
+
+            var back = ResolveBackRenderer();
+            if (back != null)
+            {
+                back.enabled = visible;
+            }
+        }
+
+        public void SetSortingOrder(int order)
+        {
+            var front = ResolveRenderer();
+            if (front != null)
+            {
+                front.sortingOrder = order;
+            }
+
+            var back = ResolveBackRenderer();
+            if (back != null)
+            {
+                back.sortingOrder = order;
+            }
+        }
+
         /// <summary>发牌：堆顶飞出播 aini_card_deal。</summary>
         public void PlayDeal()
         {
@@ -244,8 +274,25 @@ namespace App.Game
                 return;
             }
 
+            if (animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning(
+                    $"[Card] '{animator.name}' has no AnimatorController — " +
+                    "bundle dependency 'animations' not loaded. Cannot play " + clipName);
+                return;
+            }
+
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.enabled = true;
+            if (!animator.isInitialized)
+            {
+                animator.Rebind();
+                animator.Update(0f);
+            }
+
             animator.Play(clipName, 0, 0f);
+            animator.Update(0f);
+            SetSpritesVisible(true);
         }
 
 

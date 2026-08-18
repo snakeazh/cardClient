@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using App.Resources;
 using Framework.Assets;
 using UnityEngine;
 using UnityEngine.U2D;
@@ -9,14 +8,12 @@ using UnityEngine.U2D;
 namespace App.Atlas
 {
     /// <summary>
-    /// Loads SpriteAtlas assets via IResourceService at boot and caches GetSprite clones.
+    /// Loads all SpriteAtlas assets in the atlas bundle via IResourceService at boot and caches GetSprite clones.
     /// </summary>
     public sealed class AtlasService : IAtlasService
     {
-        public static readonly IReadOnlyList<string> StartupAtlasKeys = new[]
-        {
-            ResResourcePaths.CardAtlas
-        };
+        /// <summary>Bundle folder (Assets/Res/Altas) whose SpriteAtlas assets are all preloaded at startup.</summary>
+        public const string AtlasBundleName = "Altas";
 
         private const string CloneSuffix = "(Clone)";
 
@@ -42,10 +39,13 @@ namespace App.Atlas
         {
             EnsureAtlasRequestedListener();
 
-            for (var i = 0; i < StartupAtlasKeys.Count; i++)
+            var atlases = await _resources.LoadAllAsync<SpriteAtlas>(AtlasBundleName);
+            for (var i = 0; i < atlases.Length; i++)
             {
-                await LoadAtlasAsync(StartupAtlasKeys[i]);
+                RegisterAtlas(atlases[i]);
             }
+
+            Debug.Log($"[Atlas] preloaded {_atlases.Count} atlas(es) from bundle '{AtlasBundleName}'.");
         }
 
         public SpriteAtlas GetAtlas(string atlasKey)
@@ -61,7 +61,8 @@ namespace App.Atlas
             }
 
             throw new InvalidOperationException(
-                $"Atlas '{atlasKey}' is not loaded. Call PreloadAsync at startup, or add it to AtlasService.StartupAtlasKeys.");
+                $"Atlas '{atlasKey}' is not loaded. PreloadAsync loads every SpriteAtlas under " +
+                $"Assets/Res/{AtlasService.AtlasBundleName}; make sure the atlas asset is in that folder.");
         }
 
         public Sprite GetSprite(string atlasKey, string spriteName)
@@ -104,17 +105,17 @@ namespace App.Atlas
             return true;
         }
 
-        private async Task LoadAtlasAsync(string atlasKey)
+        private void RegisterAtlas(SpriteAtlas atlas)
         {
-            if (_atlases.ContainsKey(atlasKey))
+            if (atlas == null)
             {
                 return;
             }
 
-            var atlas = await _resources.LoadAsync<SpriteAtlas>(atlasKey);
-            if (atlas == null)
+            var atlasKey = AtlasBundleName + "/" + atlas.name;
+            if (_atlases.ContainsKey(atlasKey))
             {
-                throw new InvalidOperationException($"Failed to load SpriteAtlas '{atlasKey}'.");
+                return;
             }
 
             _atlases[atlasKey] = atlas;

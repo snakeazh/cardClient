@@ -26,6 +26,7 @@ namespace App.Bootstrap
 
         private async void Start()
         {
+            Application.targetFrameRate = 120;
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();
@@ -100,12 +101,12 @@ namespace App.Bootstrap
 
         private static void LogConfigSmoke()
         {
-            var sample = ItemConfig.Get(1010001);
+            var sample = ItemConfig.Get(101);
             Debug.Log(
                 $"[Config] loaded: GameFps={GameConst.Instance.GameFps}, " +
                 $"ItemCount={ItemConfig.Count}, " +
-                $"ItemType={sample.Type}, " +
-                $"Item(1010001)={sample?.Desc ?? "(missing)"}");
+                $"ItemName={sample?.Name ?? "(missing)"}, " +
+                $"Item(101)={sample?.Desc ?? "(missing)"}");
         }
     }
 }

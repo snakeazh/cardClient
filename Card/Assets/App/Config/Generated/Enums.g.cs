@@ -41,24 +41,79 @@ namespace App.Config
     }
 
     /// <summary>
-    /// 由 EnumConfig.xlsx 生成的 ItemType 枚举。
+    /// 由 EnumConfig.xlsx 生成的 MechanismType 枚举。
     /// </summary>
-    public enum ItemType
+    public enum MechanismType
     {
         /// <summary>
-        /// 无
+        /// 所有牌型倍率提高
         /// </summary>
-        None = 0,
+        CardMagnification = 1,
 
         /// <summary>
-        /// 货币
+        /// 方片花色牌倍率提高
         /// </summary>
-        Currency = 1,
+        SquarePlate = 2,
 
         /// <summary>
-        /// 材料
+        /// 黑桃花色牌倍率提高
         /// </summary>
-        Material = 2,
+        Spades = 3,
+
+        /// <summary>
+        /// 红心花色牌倍率提高
+        /// </summary>
+        RedHeart = 4,
+
+        /// <summary>
+        /// 梅花花色牌倍率提高
+        /// </summary>
+        PlumBlossom = 5,
+
+        /// <summary>
+        /// 对子倍率提高
+        /// </summary>
+        Couplet = 6,
+
+        /// <summary>
+        /// 同花倍率提高
+        /// </summary>
+        Flush = 7,
+
+        /// <summary>
+        /// 顺子倍率提高
+        /// </summary>
+        Straight = 8,
+
+        /// <summary>
+        /// 立即获得300生命值
+        /// </summary>
+        MaxHp = 9,
+
+        /// <summary>
+        /// 每次结算生命值+20
+        /// </summary>
+        EveryRoundHpUp = 10,
+
+        /// <summary>
+        /// 同花顺倍率提高
+        /// </summary>
+        StraightFlush = 11,
+
+        /// <summary>
+        /// 每次攻击时,获得生命窃取
+        /// </summary>
+        BloodSucking = 12,
+
+        /// <summary>
+        /// 豹子倍率提高
+        /// </summary>
+        Leopard = 13,
+
+        /// <summary>
+        /// 235牌型
+        /// </summary>
+        TwoThreeFive = 14,
 
     }
 
@@ -93,6 +148,33 @@ namespace App.Config
         /// 字母牌
         /// </summary>
         Letter = 2,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 QualityType 枚举。
+    /// </summary>
+    public enum QualityType
+    {
+        /// <summary>
+        /// 普通
+        /// </summary>
+        Ordinary = 1,
+
+        /// <summary>
+        /// 稀有
+        /// </summary>
+        Rare = 2,
+
+        /// <summary>
+        /// 史诗
+        /// </summary>
+        Epic = 3,
+
+        /// <summary>
+        /// 传说
+        /// </summary>
+        Legend = 4,
 
     }
 

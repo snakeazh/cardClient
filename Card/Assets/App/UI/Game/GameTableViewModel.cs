@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using App.Game;
+using App.Level;
 using App.UI.Popup;
 using Framework.Assets;
 using Framework.UI;
@@ -15,10 +16,15 @@ namespace App.UI
         private readonly IUIManager _ui;
         private bool _failPopupOpen;
 
-        public GameTableViewModel(GameSession session, IResourceService resources, IUIManager ui)
+        public GameTableViewModel(
+            GameSession session,
+            IResourceService resources,
+            IUIManager ui,
+            ILevelProgressService progress)
         {
             Session = session;
             Resources = resources;
+            Progress = progress;
             _ui = ui;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
@@ -70,6 +76,7 @@ namespace App.UI
 
         public GameSession Session { get; }
         public IResourceService Resources { get; }
+        public ILevelProgressService Progress { get; }
 
         public ObservableProperty<string> Title { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> Hint { get; } = new ObservableProperty<string>();

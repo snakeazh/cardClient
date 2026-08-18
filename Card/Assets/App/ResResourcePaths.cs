@@ -8,16 +8,31 @@ namespace App.Resources
     {
         public const string UIRoot = "UI/UIRoot";
         public const string Home = "UI/Home";
+        public const string LevelUI = "UI/LevelUI";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";
         public const string PlayerItem = "UI/Icon/PlayerItem";
+        public const string ShopItem = "UI/Icon/ShopItem";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
+
+        /// <summary>
+        /// <see cref="App.Config.HeroConfig.Icon"/> 对应 Assets/Res/Textures/role 下的文件名（无扩展名）。
+        /// </summary>
+        public static string RoleIcon(string icon)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+
+            return $"Textures/role/{icon.Trim()}";
+        }
 
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
     }

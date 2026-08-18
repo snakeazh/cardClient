@@ -1,5 +1,6 @@
+using System.Threading.Tasks;
+using App.Game;
 using App.Resources;
-using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
@@ -14,69 +15,65 @@ namespace App.UI
     [AutoScreen(AppScreenIds.Home, UILayer.Page, ResResourcePaths.Home)]
     public sealed class HomeView : ViewBase<HomeViewModel>
     {
+        private PlayerItem _playerItem;
+        private Sprite _portrait;
+
         protected override void OnBind()
         {
-            Binding.BindText(UI.Get<TMP_Text>("Title"), ViewModel.Title);
-            Binding.BindText(UI.Get<TMP_Text>("Status"), ViewModel.Status);
-            BindDifficultyList();
+            _playerItem = GetComponentInChildren<PlayerItem>(true);
+            Binding.BindText(UI.GetGameObject("LastStageInfo").GetComponent<TMP_Text>(), ViewModel.LastStageInfo);
+            Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
+            BindHero();
         }
 
-        private void BindDifficultyList()
+        protected override async Task OnViewOpen()
         {
-            var listGo = UI.GetGameObject("DifficultyList");
-            EnsureListLayout(listGo);
+            await LoadPortrait();
+            BindHero();
+        }
 
-            var template = UI.Get<Button>("DifficultyBtn");
-            template.gameObject.SetActive(false);
-
-            var items = ViewModel.Difficulties;
-            for (var i = 0; i < items.Count; i++)
+        private async Task LoadPortrait()
+        {
+            var hero = ViewModel.Hero;
+            var key = ResResourcePaths.RoleIcon(hero != null ? hero.Icon : null);
+            if (string.IsNullOrEmpty(key) || ViewModel.Resources == null)
             {
-                var item = items[i];
-                var go = Instantiate(template.gameObject, listGo.transform, false);
-                go.name = $"DifficultyBtn_{item.Difficulty}";
-                go.SetActive(true);
+                return;
+            }
 
-                var bind = go.GetComponent<UIBind>();
-                if (bind != null)
-                {
-                    Destroy(bind);
-                }
-
-                Binding.BindCommand(go.GetComponent<Button>(), item.SelectCommand);
-
-                var label = go.GetComponentInChildren<TMP_Text>();
-                if (label != null)
-                {
-                    Binding.BindText(label, item.Label);
-                }
+            try
+            {
+                _portrait = await ViewModel.Resources.LoadAsync<Sprite>(key);
+            }
+            catch (System.Exception)
+            {
             }
         }
 
-        private static void EnsureListLayout(GameObject listGo)
+        private void BindHero()
         {
-            var layout = listGo.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
+            if (_playerItem == null)
             {
-                layout = listGo.AddComponent<VerticalLayoutGroup>();
+                return;
             }
 
-            layout.spacing = 12f;
-            layout.padding = new RectOffset(0, 0, 8, 8);
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-
-            var fitter = listGo.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
+            var hero = ViewModel.Hero;
+            _playerItem.ApplyTheme(false);
+            if (hero == null)
             {
-                fitter = listGo.AddComponent<ContentSizeFitter>();
+                _playerItem.SetName(string.Empty);
+                _playerItem.SetHp(0);
+                _playerItem.SetAttack(0);
+                _playerItem.SetState(string.Empty);
+                _playerItem.SetPortrait(null);
+                return;
             }
 
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            _playerItem.SetName(hero.Name);
+            _playerItem.SetHp(hero.Hp);
+            _playerItem.SetAttack(0);
+            _playerItem.SetState(string.Empty);
+            _playerItem.SetPortrait(_portrait);
         }
     }
 }

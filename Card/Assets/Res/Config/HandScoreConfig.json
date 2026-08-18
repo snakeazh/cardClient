@@ -1,0 +1,38 @@
+[
+  {
+    "Id": 1,
+    "Name": "散牌",
+    "Type": 1,
+    "BasicMagnification": 1
+  },
+  {
+    "Id": 2,
+    "Name": "对子",
+    "Type": 2,
+    "BasicMagnification": 2
+  },
+  {
+    "Id": 3,
+    "Name": "顺子",
+    "Type": 3,
+    "BasicMagnification": 3
+  },
+  {
+    "Id": 4,
+    "Name": "金花",
+    "Type": 4,
+    "BasicMagnification": 3.5
+  },
+  {
+    "Id": 5,
+    "Name": "顺金",
+    "Type": 5,
+    "BasicMagnification": 5
+  },
+  {
+    "Id": 6,
+    "Name": "豹子",
+    "Type": 6,
+    "BasicMagnification": 6
+  }
+]

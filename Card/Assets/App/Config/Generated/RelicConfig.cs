@@ -12,9 +12,39 @@ namespace App.Config
     public sealed class RelicConfig : ConfigRowBase<RelicConfig>
     {
         /// <summary>
-        /// 道具类型
+        /// 品质
         /// </summary>
-        public ItemType Type;
+        public QualityType Type;
+
+        /// <summary>
+        /// 出现概率
+        /// </summary>
+        public float RefreshProbability;
+
+        /// <summary>
+        /// 名字
+        /// </summary>
+        public string Name;
+
+        /// <summary>
+        /// 图标
+        /// </summary>
+        public string Icon;
+
+        /// <summary>
+        /// 价格
+        /// </summary>
+        public int Price;
+
+        /// <summary>
+        /// 出售价格
+        /// </summary>
+        public int SellingPrice;
+
+        /// <summary>
+        /// 机制ID
+        /// </summary>
+        public int[] MechanismId;
 
         /// <summary>
         /// 描述

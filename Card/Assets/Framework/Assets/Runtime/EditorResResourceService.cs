@@ -53,6 +53,15 @@ namespace Framework.Assets
             return Task.FromResult(LoadInternal<T>(key));
         }
 
+        public Task<T[]> LoadAllAsync<T>(string bundleName) where T : Object
+        {
+            lock (_gate)
+            {
+                EnsureInitialized();
+                return Task.FromResult(LoadAllFromFolder<T>(bundleName));
+            }
+        }
+
         public Task<ResourceHandle<T>> LoadHandleAsync<T>(string key) where T : Object
         {
             var asset = LoadInternal<T>(key);
@@ -197,6 +206,45 @@ namespace Framework.Assets
             }
 
             return null;
+        }
+
+        private static T[] LoadAllFromFolder<T>(string bundleName) where T : Object
+        {
+            if (string.IsNullOrWhiteSpace(bundleName))
+            {
+                throw new ArgumentException("Bundle name cannot be empty.", nameof(bundleName));
+            }
+
+            var folder = ResolveBundleFolder(bundleName);
+            var guids = AssetDatabase.FindAssets("t:" + typeof(T).Name, new[] { folder });
+            var results = new List<T>();
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var asset = AssetDatabase.LoadAssetAtPath<T>(path) ?? LoadFirstSubAsset<T>(path);
+                if (asset != null)
+                {
+                    results.Add(asset);
+                }
+            }
+
+            return results.ToArray();
+        }
+
+        private static string ResolveBundleFolder(string bundleName)
+        {
+            var subFolders = AssetDatabase.GetSubFolders(ResPaths.AssetRoot);
+            for (var i = 0; i < subFolders.Length; i++)
+            {
+                var name = subFolders[i].Substring(ResPaths.AssetRoot.Length + 1);
+                if (string.Equals(name, bundleName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return subFolders[i];
+                }
+            }
+
+            throw new DirectoryNotFoundException(
+                $"Bundle folder '{bundleName}' not found under {ResPaths.AssetRoot}.");
         }
 
         private static bool IsAtlasExtension(string ext)

@@ -3,7 +3,7 @@
     "Id": 1,
     "Name": "平凡之人",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "平平无奇之人"
   },
@@ -11,7 +11,7 @@
     "Id": 2,
     "Name": "大壮",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Warrior1",
     "HeroEntry": 0,
     "Desc": "受到的伤害-25%"
   },
@@ -19,23 +19,23 @@
     "Id": 3,
     "Name": "狠人",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "造成的伤害+25%"
   },
   {
-    "Id": 9,
+    "Id": 4,
     "Name": "多面手",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "攻击时,对其他敌人造成30%的伤害"
   },
   {
     "Id": 5,
-    "Name": "老师傅",
+    "Name": "射手",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Ranger1",
     "HeroEntry": 0,
     "Desc": "攻击时,有50%概率额外进行一次攻击"
   },
@@ -43,31 +43,31 @@
     "Id": 6,
     "Name": "大嗓门",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Mage1",
     "HeroEntry": 0,
     "Desc": "攻击时,对所有人造成1次原伤害50%的群体伤害"
   },
   {
-    "Id": 10,
+    "Id": 7,
     "Name": "暴发户",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "初始拥有一定资金"
   },
   {
-    "Id": 11,
+    "Id": 8,
     "Name": "流浪汉",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "在闷注获胜后,获得的积分数量翻倍"
   },
   {
-    "Id": 12,
+    "Id": 9,
     "Name": "赌神",
     "Hp": 1000,
-    "Icon": "",
+    "Icon": "Adventurer1",
     "HeroEntry": 0,
     "Desc": "拿到非散牌的概率提高"
   }

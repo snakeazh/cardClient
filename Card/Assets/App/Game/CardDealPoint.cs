@@ -138,12 +138,7 @@ namespace App.Game
             t.localPosition = GetLocalPosition(index);
             t.localScale = Vector3.one;
             item.SetFace(item.FaceState);
-
-            var sr = item.CurrentRenderer;
-            if (sr != null)
-            {
-                sr.sortingOrder = GetSortingOrder(index);
-            }
+            item.SetSortingOrder(GetSortingOrder(index));
         }
 
         private void OnDestroy()

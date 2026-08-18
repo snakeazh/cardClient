@@ -2,5 +2,9 @@
   "GameFps": 120,
   "DefaultHeroId": 1,
   "ChipsForPoints": 1,
-  "ExchangePointsForGoldCoins": 10
+  "ExchangePointsForGoldCoins": 10,
+  "BasicBettingAmount": 10,
+  "AfterBettingAmount": 10,
+  "ShopRefreshFirst": 5,
+  "ShopRefreshAfter": 3
 }

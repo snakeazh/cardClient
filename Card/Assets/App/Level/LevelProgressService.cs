@@ -15,6 +15,7 @@ namespace App.Level
         private readonly ISaveService _save;
         private readonly ILevelService _levels;
         private readonly HashSet<int> _cleared = new HashSet<int>();
+        private readonly HashSet<int> _unlockedHeroes = new HashSet<int>();
         private bool _dirty;
 
         public LevelProgressService(ISaveService save, ILevelService levels)
@@ -24,6 +25,12 @@ namespace App.Level
         }
 
         public bool IsDirty => _dirty;
+
+        public int LastHeroId { get; private set; }
+
+        public int LastLevelId { get; private set; }
+
+        public int HighestClearedLevel { get; private set; }
 
         public bool IsCleared(int difficulty)
         {
@@ -36,6 +43,12 @@ namespace App.Level
             {
                 Debug.LogWarning($"[LevelProgress] Unknown level Id={levelId}.");
                 return;
+            }
+
+            if (snapshot.Level > HighestClearedLevel)
+            {
+                HighestClearedLevel = snapshot.Level;
+                _dirty = true;
             }
 
             if (_levels.TryGetNext(snapshot.Difficulty, snapshot.Level, out _))
@@ -51,6 +64,60 @@ namespace App.Level
             _dirty = true;
         }
 
+        public void SetLastHero(int heroId)
+        {
+            if (LastHeroId == heroId)
+            {
+                return;
+            }
+
+            LastHeroId = heroId;
+            _dirty = true;
+        }
+
+        public void SetLastLevel(int levelId)
+        {
+            if (LastLevelId == levelId)
+            {
+                return;
+            }
+
+            LastLevelId = levelId;
+            _dirty = true;
+        }
+
+        public bool IsHeroUnlocked(int heroId)
+        {
+            return _unlockedHeroes.Contains(heroId);
+        }
+
+        public bool TryUnlockHero(int heroId)
+        {
+            if (heroId <= 0 || !_unlockedHeroes.Add(heroId))
+            {
+                return false;
+            }
+
+            _dirty = true;
+            return true;
+        }
+
+        public bool IsLevelUnlocked(int levelId)
+        {
+            if (!_levels.TryGetById(levelId, out var snapshot) || snapshot == null)
+            {
+                return false;
+            }
+
+            // 第 1 关默认解锁；之后永远要求先通关上一关。
+            if (snapshot.Level <= 1)
+            {
+                return true;
+            }
+
+            return HighestClearedLevel >= snapshot.Level - 1;
+        }
+
         public IReadOnlyList<int> GetClearedDifficulties()
         {
             var list = new List<int>(_cleared);
@@ -60,18 +127,29 @@ namespace App.Level
 
         public void Clear()
         {
-            if (_cleared.Count == 0)
-            {
-                return;
-            }
-
+            var hadData = _cleared.Count > 0 ||
+                          _unlockedHeroes.Count > 0 ||
+                          LastHeroId != 0 ||
+                          LastLevelId != 0 ||
+                          HighestClearedLevel != 0;
             _cleared.Clear();
-            _dirty = true;
+            _unlockedHeroes.Clear();
+            LastHeroId = 0;
+            LastLevelId = 0;
+            HighestClearedLevel = 0;
+            if (hadData)
+            {
+                _dirty = true;
+            }
         }
 
         public void Load()
         {
             _cleared.Clear();
+            _unlockedHeroes.Clear();
+            LastHeroId = 0;
+            LastLevelId = 0;
+            HighestClearedLevel = 0;
             _dirty = false;
             if (!_save.HasKey(SaveKey))
             {
@@ -85,22 +163,42 @@ namespace App.Level
             }
 
             var data = JsonUtility.FromJson<LevelProgressSaveData>(json);
-            if (data?.ClearedDifficulties == null)
+            if (data == null)
             {
                 Debug.LogWarning("[LevelProgress] Failed to parse save data.");
                 return;
             }
 
-            for (var i = 0; i < data.ClearedDifficulties.Length; i++)
+            if (data.ClearedDifficulties != null)
             {
-                var difficulty = data.ClearedDifficulties[i];
-                if (difficulty <= 0)
+                for (var i = 0; i < data.ClearedDifficulties.Length; i++)
                 {
-                    continue;
-                }
+                    var difficulty = data.ClearedDifficulties[i];
+                    if (difficulty <= 0)
+                    {
+                        continue;
+                    }
 
-                WarnIfUnknownDifficulty(difficulty);
-                _cleared.Add(difficulty);
+                    WarnIfUnknownDifficulty(difficulty);
+                    _cleared.Add(difficulty);
+                }
+            }
+
+            LastHeroId = data.LastHeroId;
+            LastLevelId = data.LastLevelId;
+            HighestClearedLevel = Math.Max(0, data.HighestClearedLevel);
+            if (data.UnlockedHeroIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < data.UnlockedHeroIds.Length; i++)
+            {
+                var heroId = data.UnlockedHeroIds[i];
+                if (heroId > 0)
+                {
+                    _unlockedHeroes.Add(heroId);
+                }
             }
         }
 
@@ -112,9 +210,20 @@ namespace App.Level
             }
 
             var cleared = GetClearedDifficulties();
+            var unlocked = new int[_unlockedHeroes.Count];
+            var u = 0;
+            foreach (var heroId in _unlockedHeroes)
+            {
+                unlocked[u++] = heroId;
+            }
+
             var data = new LevelProgressSaveData
             {
-                ClearedDifficulties = new int[cleared.Count]
+                ClearedDifficulties = new int[cleared.Count],
+                LastHeroId = LastHeroId,
+                LastLevelId = LastLevelId,
+                UnlockedHeroIds = unlocked,
+                HighestClearedLevel = HighestClearedLevel
             };
             for (var i = 0; i < cleared.Count; i++)
             {

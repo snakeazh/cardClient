@@ -12,9 +12,19 @@ namespace App.Config
     public sealed class ItemConfig : ConfigRowBase<ItemConfig>
     {
         /// <summary>
-        /// 道具类型
+        /// 名字
         /// </summary>
-        public ItemType Type;
+        public string Name;
+
+        /// <summary>
+        /// 技能图标
+        /// </summary>
+        public string Icon;
+
+        /// <summary>
+        /// 每回合可使用次数
+        /// </summary>
+        public int NumOfUsesPerRound;
 
         /// <summary>
         /// 描述

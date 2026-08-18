@@ -84,6 +84,8 @@ namespace App.Game
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
         public int AttackDamage { get; private set; }
+        /// <summary>攻击演出强度：1 低 / 2 中 / 3 高。</summary>
+        public int AttackLevel { get; private set; } = 1;
         public bool AttackPlaying => _pendingAttackTarget != null;
         public int RevealPlaySerial { get; private set; }
         public int RevealWinnerId { get; private set; } = -1;
@@ -605,6 +607,7 @@ namespace App.Game
             var target = _pendingAttackTarget;
             _pendingAttackTarget = null;
             AttackVisualSlot = -1;
+            AttackLevel = 1;
             FinishPlayerAttack(target);
         }
 
@@ -618,6 +621,11 @@ namespace App.Game
             _pendingAttackTarget = target;
             AttackVisualSlot = FindVisualSlot(target);
             AttackDamage = Math.Max(1, PendingAttackDamage);
+            if (AttackLevel < 1 || AttackLevel > 3)
+            {
+                AttackLevel = 1;
+            }
+
             AttackPlaySerial++;
             Hint = $"攻击 {target.Name}！";
             Notify();
@@ -1108,6 +1116,7 @@ namespace App.Game
             _revealKind = RevealKind.None;
             _pendingAttackTarget = null;
             AttackVisualSlot = -1;
+            AttackLevel = 1;
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
@@ -2130,6 +2139,7 @@ namespace App.Game
                 Run.Tilted = false;
                 var relicMult = RelicMultiplier(best);
                 PendingAttackDamage = HandEvaluator.ComputeDamage(best, ShowdownStake(), relicMult);
+                AttackLevel = MapAttackLevel(best.Type);
                 ApplyBankruptcy(true, winner);
                 Pot = 0;
                 EnterPlayerAttack($"{HandDrama(best.Type)}！你赢了，造成 {PendingAttackDamage} 伤害");
@@ -2377,6 +2387,22 @@ namespace App.Game
             }
         }
 
+        /// <summary>散牌/对子为低，顺子/金花为中，顺金/豹子为高。</summary>
+        private static int MapAttackLevel(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.StraightFlush:
+                case HandType.ThreeOfAKind:
+                    return 3;
+                case HandType.Straight:
+                case HandType.Flush:
+                    return 2;
+                default:
+                    return 1;
+            }
+        }
+
         public void Continue()
         {
             if (Phase == GamePhase.WaitingAttack)
@@ -2479,6 +2505,7 @@ namespace App.Game
         private void AfterRound()
         {
             PendingAttackDamage = 0;
+            AttackLevel = 1;
             if (Player.Hp <= 0)
             {
                 Phase = GamePhase.StageFail;
@@ -3145,6 +3172,7 @@ namespace App.Game
                 Run.ConsecutiveLosses = 0;
                 Run.Tilted = false;
                 PendingAttackDamage = Math.Max(1, ShowdownStake());
+                AttackLevel = 1;
                 EnterPlayerAttack($"对手弃牌，你收走奖池 {amount}");
                 return;
             }

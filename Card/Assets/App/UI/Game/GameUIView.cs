@@ -167,8 +167,7 @@ namespace App.UI
 
         private void BindAttackFx()
         {
-            var playerRoot = _playerItem != null ? _playerItem.transform : ResolveSlot("PlayerItem");
-            _attackFx.Bind(transform, playerRoot, _enemyInfos);
+            _attackFx.Bind(transform, _playerItem, _enemyItems);
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
         }
 
@@ -195,6 +194,7 @@ namespace App.UI
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
             _attackFx.Play(session.AttackVisualSlot,
+                session.AttackLevel,
                 () =>
                 {
                     ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";

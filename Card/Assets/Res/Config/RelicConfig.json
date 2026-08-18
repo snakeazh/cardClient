@@ -1,12 +1,315 @@
 [
   {
-    "Id": 1010001,
+    "Id": 101,
     "Type": 1,
-    "Desc": "卡德大陆的常用货币,可以用来购买日常所需材料"
+    "RefreshProbability": 0.6,
+    "Name": "粗制长剑",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10001
+    ],
+    "Desc": "结算时倍率+1"
   },
   {
-    "Id": 1010002,
+    "Id": 102,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "青铜项链",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10002
+    ],
+    "Desc": "结算时方片花色牌可使倍率+1"
+  },
+  {
+    "Id": 103,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "青铜手镯",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10003
+    ],
+    "Desc": "结算时黑桃花色牌可使倍率+1"
+  },
+  {
+    "Id": 104,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "青铜耳环",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10004
+    ],
+    "Desc": "结算时红心花色牌可使倍率+1"
+  },
+  {
+    "Id": 105,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "青铜戒指",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10005
+    ],
+    "Desc": "结算时梅花花色牌可使倍率+1"
+  },
+  {
+    "Id": 106,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "木制长剑",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10006
+    ],
+    "Desc": "对子在攻击时提供的倍率+1"
+  },
+  {
+    "Id": 107,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "青铜法杖",
+    "Icon": "",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10007
+    ],
+    "Desc": "同花在攻击时提供的倍率+1"
+  },
+  {
+    "Id": 201,
     "Type": 2,
-    "Desc": "珍贵而又精美的钻石,可以用来购买日常所需材料"
+    "RefreshProbability": 0.4,
+    "Name": "铁质长剑",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10008
+    ],
+    "Desc": "对子在攻击时提供的倍率+2"
+  },
+  {
+    "Id": 202,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银法杖",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10009
+    ],
+    "Desc": "同花在攻击时提供的倍率+2"
+  },
+  {
+    "Id": 203,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "翡翠诗篇",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10010
+    ],
+    "Desc": "顺子在攻击时提供的倍率+2"
+  },
+  {
+    "Id": 204,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银项链",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10011
+    ],
+    "Desc": "结算时方片花色牌可使倍率+2"
+  },
+  {
+    "Id": 205,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银手镯",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10012
+    ],
+    "Desc": "结算时黑桃花色牌可使倍率+2"
+  },
+  {
+    "Id": 206,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银耳环",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10013
+    ],
+    "Desc": "结算时红心花色牌可使倍率+2"
+  },
+  {
+    "Id": 207,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银戒指",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10014
+    ],
+    "Desc": "结算时梅花花色牌可使倍率+2"
+  },
+  {
+    "Id": 208,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "小精灵",
+    "Icon": "",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10015,
+      10016
+    ],
+    "Desc": "立即获得300生命值,每次结算生命值+20"
+  },
+  {
+    "Id": 301,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "翡翠长剑",
+    "Icon": "",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      10017
+    ],
+    "Desc": "对子在攻击时提供的倍率+3"
+  },
+  {
+    "Id": 302,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "黄金法杖",
+    "Icon": "",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      10018
+    ],
+    "Desc": "同花在攻击时提供的倍率+3"
+  },
+  {
+    "Id": 303,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "黄金头冠",
+    "Icon": "",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      10019
+    ],
+    "Desc": "同花顺在攻击时提供的倍率+6"
+  },
+  {
+    "Id": 304,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "黄金诗篇",
+    "Icon": "",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      10020
+    ],
+    "Desc": "顺子在攻击时提供的倍率+3"
+  },
+  {
+    "Id": 305,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "疯狂面具",
+    "Icon": "",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      10021
+    ],
+    "Desc": "每次攻击时,可获得1%的生命窃取"
+  },
+  {
+    "Id": 401,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "钻石头冠",
+    "Icon": "",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      10022
+    ],
+    "Desc": "同花顺在攻击时提供的倍率+12"
+  },
+  {
+    "Id": 402,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "国王权杖",
+    "Icon": "",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      10023
+    ],
+    "Desc": "豹子在攻击时提供的倍率+50"
+  },
+  {
+    "Id": 403,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "235",
+    "Icon": "",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      10024
+    ],
+    "Desc": "散排235牌型等同于豹子牌型,并且可以战胜所有牌型"
+  },
+  {
+    "Id": 404,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "奢华沙发",
+    "Icon": "",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      10025
+    ],
+    "Desc": "立即获得5000生命值"
   }
 ]

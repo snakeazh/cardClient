@@ -9,6 +9,7 @@ namespace App.UI
         public const string ConfirmDialog = "App.ConfirmDialog";
         public const string GameUI = "App.GameUI";
         public const string BattleFailPopup = "App.BattleFailPopup";
+        public const string LevelUI = "App.LevelUI";
     }
 }
 

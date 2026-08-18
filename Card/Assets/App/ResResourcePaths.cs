@@ -8,12 +8,14 @@ namespace App.Resources
     {
         public const string UIRoot = "UI/UIRoot";
         public const string Home = "UI/Home";
+        public const string LevelUI = "UI/LevelUI";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";
         public const string PlayerItem = "UI/Icon/PlayerItem";
+        public const string ShopItem = "UI/Icon/ShopItem";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
 

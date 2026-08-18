@@ -10,6 +10,12 @@ namespace App.Level
     {
         bool IsDirty { get; }
 
+        int LastHeroId { get; }
+
+        int LastLevelId { get; }
+
+        int HighestClearedLevel { get; }
+
         /// <summary>
         /// Whether this difficulty has been fully cleared (last stage of that difficulty was beaten).
         /// </summary>
@@ -20,6 +26,16 @@ namespace App.Level
         /// Writes difficulty progress only when that stage is the last of its difficulty.
         /// </summary>
         void MarkCleared(int levelId);
+
+        void SetLastHero(int heroId);
+
+        void SetLastLevel(int levelId);
+
+        bool IsHeroUnlocked(int heroId);
+
+        bool TryUnlockHero(int heroId);
+
+        bool IsLevelUnlocked(int levelId);
 
         IReadOnlyList<int> GetClearedDifficulties();
 

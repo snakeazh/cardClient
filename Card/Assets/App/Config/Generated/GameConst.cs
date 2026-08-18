@@ -31,6 +31,26 @@ namespace App.Config
         /// </summary>
         public int ExchangePointsForGoldCoins;
 
+        /// <summary>
+        /// 每关第1回合基础下注金额
+        /// </summary>
+        public int BasicBettingAmount;
+
+        /// <summary>
+        /// 后续每回合下注金额
+        /// </summary>
+        public int AfterBettingAmount;
+
+        /// <summary>
+        /// 商店首次刷新费用
+        /// </summary>
+        public int ShopRefreshFirst;
+
+        /// <summary>
+        /// 商店后续刷新费用增长
+        /// </summary>
+        public int ShopRefreshAfter;
+
     }
 }
 

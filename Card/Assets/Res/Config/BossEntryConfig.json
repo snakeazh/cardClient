@@ -1,0 +1,67 @@
+[
+  {
+    "Id": 101,
+    "Name": "禁搓红心",
+    "EntryId": 0
+  },
+  {
+    "Id": 102,
+    "Name": "禁搓黑桃",
+    "EntryId": 0
+  },
+  {
+    "Id": 103,
+    "Name": "禁搓方片",
+    "EntryId": 0
+  },
+  {
+    "Id": 104,
+    "Name": "禁搓梅花",
+    "EntryId": 0
+  },
+  {
+    "Id": 105,
+    "Name": "禁搓人头",
+    "EntryId": 0
+  },
+  {
+    "Id": 106,
+    "Name": "燧石",
+    "EntryId": 0
+  },
+  {
+    "Id": 107,
+    "Name": "锋芒",
+    "EntryId": 0
+  },
+  {
+    "Id": 108,
+    "Name": "孤注一掷",
+    "EntryId": 0
+  },
+  {
+    "Id": 109,
+    "Name": "孤注一掷",
+    "EntryId": 0
+  },
+  {
+    "Id": 110,
+    "Name": "偷天换日",
+    "EntryId": 0
+  },
+  {
+    "Id": 111,
+    "Name": "同花",
+    "EntryId": 0
+  },
+  {
+    "Id": 112,
+    "Name": "同花顺",
+    "EntryId": 0
+  },
+  {
+    "Id": 113,
+    "Name": "顺子",
+    "EntryId": 0
+  }
+]

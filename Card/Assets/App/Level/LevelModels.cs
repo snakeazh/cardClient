@@ -83,5 +83,10 @@ namespace App.Level
     public sealed class LevelProgressSaveData
     {
         public int[] ClearedDifficulties = Array.Empty<int>();
+        public int LastHeroId;
+        public int LastLevelId;
+        public int[] UnlockedHeroIds = Array.Empty<int>();
+        /// <summary>当前默认难度下已通关的最高关卡号。未通关任何关为 0，因此第 1 关默认解锁。</summary>
+        public int HighestClearedLevel;
     }
 }

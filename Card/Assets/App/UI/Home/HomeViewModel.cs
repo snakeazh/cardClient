@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using App.Game;
 using App.Level;
 using Framework.UI;
 using Framework.UI.Core;
@@ -11,62 +8,48 @@ namespace App.UI
     public sealed class HomeViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly GameSession _session;
-        private readonly GameTableViewModel _tableVm;
         private readonly ILevelService _levels;
+        private readonly ILevelProgressService _progress;
 
         public HomeViewModel(
             IUIManager ui,
-            GameSession session,
-            GameTableViewModel tableVm,
-            ILevelService levels)
+            ILevelService levels,
+            ILevelProgressService progress)
         {
             _ui = ui;
-            _session = session;
-            _tableVm = tableVm;
             _levels = levels;
-            Title = new ObservableProperty<string>("炸金花：搓牌对决");
-            Status = new ObservableProperty<string>("心理博弈 · 盲搓改命 · 关卡闯关");
-
-            var difficulties = _levels.GetDifficulties();
-            var items = new DifficultyItemViewModel[difficulties.Count];
-            for (var i = 0; i < difficulties.Count; i++)
-            {
-                var difficulty = difficulties[i];
-                items[i] = new DifficultyItemViewModel(difficulty, () => StartGame(difficulty));
-            }
-
-            Difficulties = items;
+            _progress = progress;
+            LastStageInfo = new ObservableProperty<string>();
+            StartCommand = new RelayCommand(OpenLevelUI);
         }
 
-        public ObservableProperty<string> Title { get; }
-        public ObservableProperty<string> Status { get; }
-        public IReadOnlyList<DifficultyItemViewModel> Difficulties { get; }
+        public ObservableProperty<string> LastStageInfo { get; }
 
-        private async void StartGame(int difficulty)
+        public IRelayCommand StartCommand { get; }
+
+        protected override System.Threading.Tasks.Task OnOpen(object args)
         {
-            if (!_levels.TrySelect(difficulty, 1))
+            RefreshLastStage();
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        private void RefreshLastStage()
+        {
+            if (_progress.LastLevelId > 0 && _levels.TryGetById(_progress.LastLevelId, out var snapshot) &&
+                snapshot != null)
             {
+                LastStageInfo.Value = $"第{snapshot.Level}关";
                 return;
             }
 
-            _session.StartNewRun();
-            await _ui.Close(this);
-            await _ui.Open(_tableVm);
+            LastStageInfo.Value = "尚未闯关";
         }
-    }
 
-    public sealed class DifficultyItemViewModel
-    {
-        public DifficultyItemViewModel(int difficulty, Action onSelect)
+        private async void OpenLevelUI()
         {
-            Difficulty = difficulty;
-            Label = new ObservableProperty<string>($"难度 {difficulty}");
-            SelectCommand = new RelayCommand(onSelect);
+            var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
+            var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
+            await _ui.Open(vm);
         }
-
-        public int Difficulty { get; }
-        public ObservableProperty<string> Label { get; }
-        public IRelayCommand SelectCommand { get; }
     }
 }

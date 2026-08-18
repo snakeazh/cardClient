@@ -45,6 +45,7 @@ namespace App.UI
 
         public bool IsDealing => _dealing;
         public bool IsBusy => _dealing || _revealing;
+        public event System.Action DealFinished;
 
         private sealed class SeatView
         {
@@ -263,6 +264,7 @@ namespace App.UI
                 }
             }
 
+            seq.AppendInterval(DealMoveDuration);
             seq.OnComplete(() =>
             {
                 if (token != _dealToken)
@@ -272,6 +274,7 @@ namespace App.UI
 
                 _dealing = false;
                 SyncAllFaces(session);
+                DealFinished?.Invoke();
             });
             _dealSeq = seq;
         }

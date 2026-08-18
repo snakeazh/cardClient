@@ -1,48 +1,87 @@
+using System.Collections.Generic;
+
 namespace App.Score
 {
     /// <summary>
-    /// In-memory player HP. Not persisted. Betting does not change HP.
+    /// In-memory per-seat HP. Not persisted. Betting does not change HP.
     /// </summary>
     public sealed class HpService : IHpService
     {
-        public int Hp { get; private set; } = ScoreBalance.PlayerStartHp;
-
-        public int MaxHp { get; private set; } = ScoreBalance.PlayerStartHp;
-
-        public bool IsDead => Hp <= 0;
-
-        public void BeginStage()
+        private sealed class SeatHp
         {
-            Hp = MaxHp;
+            public int Hp;
+            public int MaxHp;
         }
 
-        public void Heal(int amount)
+        private readonly Dictionary<int, SeatHp> _seats = new Dictionary<int, SeatHp>();
+
+        public int GetHp(int seatId)
         {
-            if (amount <= 0)
+            return TryGet(seatId, out var seat) ? seat.Hp : 0;
+        }
+
+        public int GetMaxHp(int seatId)
+        {
+            return TryGet(seatId, out var seat) ? seat.MaxHp : 0;
+        }
+
+        public bool IsDead(int seatId)
+        {
+            return GetHp(seatId) <= 0;
+        }
+
+        public void BeginStage(int seatId, int maxHp, int hp = -1)
+        {
+            maxHp = maxHp < 0 ? 0 : maxHp;
+            if (hp < 0)
+            {
+                hp = maxHp;
+            }
+
+            _seats[seatId] = new SeatHp
+            {
+                MaxHp = maxHp,
+                Hp = hp < 0 ? 0 : hp
+            };
+        }
+
+        public void Heal(int seatId, int amount)
+        {
+            if (amount <= 0 || !TryGet(seatId, out var seat))
             {
                 return;
             }
 
-            Hp += amount;
+            seat.Hp += amount;
         }
 
-        public void Damage(int amount)
+        public void Damage(int seatId, int amount)
         {
-            if (amount <= 0)
+            if (amount <= 0 || !TryGet(seatId, out var seat))
             {
                 return;
             }
 
-            Hp -= amount;
-            if (Hp < 0)
+            seat.Hp -= amount;
+            if (seat.Hp < 0)
             {
-                Hp = 0;
+                seat.Hp = 0;
             }
         }
 
-        public void Revive()
+        public void Revive(int seatId)
         {
-            Hp = MaxHp;
+            if (!TryGet(seatId, out var seat))
+            {
+                return;
+            }
+
+            seat.Hp = seat.MaxHp;
+        }
+
+        private bool TryGet(int seatId, out SeatHp seat)
+        {
+            return _seats.TryGetValue(seatId, out seat);
         }
     }
 }

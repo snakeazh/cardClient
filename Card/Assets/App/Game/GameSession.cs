@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using App.Bootstrap;
+using App.Score;
 
 namespace App.Game
 {
@@ -129,6 +131,11 @@ namespace App.Game
             Run.BonusXRayCharges = 0;
             Run.BonusReplaceCharges = 0;
             Run.Log.Clear();
+            if (AppServices.IsReady)
+            {
+                AppServices.Resolve<IScoreService>().BeginChapter();
+            }
+
             StartStage();
         }
 
@@ -343,7 +350,7 @@ namespace App.Game
             Run.TiHuanGoodCharges > 0 &&
             _deck != null;
 
-        /// <summary>把剩余血量推进底池。全下后若还有人能下注，对手继续打边池。</summary>
+        /// <summary>把剩余勇气值推进底池。全下后若还有人能下注，对手继续打边池。</summary>
         public void AllIn()
         {
             LeaveRubIfNeeded();
@@ -355,10 +362,10 @@ namespace App.Game
             SelectingOpenTarget = false;
             var roundUnits = CurrentRoundUnits();
             TryCommitUnits(Player, roundUnits, out var paid);
-            if (Player.Hp > 0)
+            if (Player.Courage > 0)
             {
-                var rest = Player.Hp;
-                Player.Hp = 0;
+                var rest = Player.Courage;
+                SpendCourage(Player, rest);
                 Player.TotalBet += rest;
                 Player.StreetPaid += rest;
                 Pot += rest;
@@ -535,7 +542,7 @@ namespace App.Game
             {
                 if (!TryCommitUnits(Player, roundUnits, out var paid))
                 {
-                    Hint = "血量不足，无法比牌";
+                    Hint = "勇气值不足，无法比牌";
                     Notify();
                     return;
                 }
@@ -867,8 +874,8 @@ namespace App.Game
             }
 
             Run.AdsLoanThisStage++;
-            Heal(Player, Math.Max(_roundBaseBet, GameBalance.MinBet));
-            Log("观看广告，借贷获得本回合基础注血量");
+            AddCourage(Player, Math.Max(_roundBaseBet, GameBalance.MinBet));
+            Log("观看广告，借贷获得本回合基础注勇气值");
             ContinueAfterLoan();
         }
 
@@ -882,6 +889,7 @@ namespace App.Game
             Run.AdsReviveThisStage++;
             Player.MaxHp = Math.Max(Player.MaxHp, GameBalance.PlayerStartHp);
             Player.Hp = Player.MaxHp;
+            HpSvc()?.Revive(Player.Id);
             Log("观看广告复活，生命已回满");
             ContinueAfterLoan();
         }
@@ -1033,9 +1041,13 @@ namespace App.Game
             ResetSkillCharges();
             Run.Affix = BossAffix.None;
             _stageBetRound = 0;
+            if (AppServices.IsReady)
+            {
+                AppServices.Resolve<IScoreService>().BeginStage();
+            }
+
             Player.ActiveInStage = true;
-            Player.MaxHp = GameBalance.PlayerStartHp;
-            Player.Hp = GameBalance.PlayerStartHp;
+            ApplySeatHp(Player, GameBalance.PlayerStartHp, GameBalance.PlayerStartHp);
 
             var count = GameBalance.EnemyCountForStage(Run.Stage);
             var boss = GameBalance.IsBossStage(Run.Stage);
@@ -1058,8 +1070,8 @@ namespace App.Game
                     seat.Profile = AiProfile.Expert;
                 }
                 seat.Name = i < count ? names[i] : $"敌人{i + 1}";
-                seat.MaxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
-                seat.Hp = seat.ActiveInStage ? seat.MaxHp : 0;
+                var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
+                ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
                 seat.Banner = string.Empty;
                 ClearRound(seat);
             }
@@ -1114,7 +1126,8 @@ namespace App.Game
                 Enemies[i].Banner = string.Empty;
             }
 
-            if (Player.Hp < _roundBaseBet)
+            BeginRoundCourage();
+            if (Player.Courage < _roundBaseBet)
             {
                 TryAutoLoanOrFail();
                 return;
@@ -1263,10 +1276,10 @@ namespace App.Game
             }
 
             var facingRaise = !raise && Player.StreetUnits < CurrentRoundUnits();
-            var hpBefore = Player.Hp;
+            var stackBefore = Player.Courage;
             if (!TryCommitUnits(Player, units, out var paid))
             {
-                Hint = "血量不足";
+                Hint = "勇气值不足";
                 Notify();
                 return;
             }
@@ -1277,8 +1290,8 @@ namespace App.Game
             }
 
             _playerActedThisStreet = true;
-            History.NotePlayerBet(raise, Player.Looked, paid, hpBefore, facingRaise);
-            if (Player.Hp == 0 && paid > 0)
+            History.NotePlayerBet(raise, Player.Looked, paid, stackBefore, facingRaise);
+            if (Player.Courage == 0 && paid > 0)
             {
                 Player.Status = raise ? $"全下加注 {paid}" : $"全下 {paid}";
             }
@@ -1464,12 +1477,12 @@ namespace App.Game
             }
 
             var roundUnits = CurrentRoundUnits();
-            if (ai.Hp < CallCost(ai))
+            if (ai.Courage < CallCost(ai))
             {
-                if (ai.Hp <= 0)
+                if (ai.Courage <= 0)
                 {
-                    FoldSeat(ai, "血量不足，弃牌");
-                    Log($"{ai.Name} 血量不足，弃牌");
+                    FoldSeat(ai, "勇气值不足，弃牌");
+                    Log($"{ai.Name} 勇气值不足，弃牌");
                     return FinishIfOneLeft();
                 }
 
@@ -1480,7 +1493,7 @@ namespace App.Game
                         return false;
                     }
 
-                    FoldSeat(ai, "血量不足，弃牌");
+                    FoldSeat(ai, "勇气值不足，弃牌");
                     return FinishIfOneLeft();
                 }
 
@@ -1528,10 +1541,10 @@ namespace App.Game
                     ai.Status = paid > 0 ? $"跟注 {paid}" : "跟注";
                 }
 
-                if (allIn && ai.Hp > 0)
+                if (allIn && ai.Courage > 0)
                 {
-                    var rest = ai.Hp;
-                    ai.Hp = 0;
+                    var rest = ai.Courage;
+                    SpendCourage(ai, rest);
                     ai.TotalBet += rest;
                     ai.StreetPaid += rest;
                     Pot += rest;
@@ -1590,18 +1603,18 @@ namespace App.Game
                     continue;
                 }
 
-                if (seat.Hp < minOpp)
+                if (seat.Courage < minOpp)
                 {
-                    minOpp = seat.Hp;
+                    minOpp = seat.Courage;
                 }
             }
 
             if (minOpp == int.MaxValue)
             {
-                return Math.Max(0, ai.Hp);
+                return Math.Max(0, ai.Courage);
             }
 
-            return Math.Max(0, Math.Min(ai.Hp, minOpp));
+            return Math.Max(0, Math.Min(ai.Courage, minOpp));
         }
 
         /// <summary>组装 <see cref="AiContext"/>：蒙特卡洛胜率、跟注成本、读玩家线，再交给 AiBrain。</summary>
@@ -1638,20 +1651,20 @@ namespace App.Game
                     continue;
                 }
 
-                if (seat.Hp < shortest)
+                if (seat.Courage < shortest)
                 {
-                    shortest = seat.Hp;
+                    shortest = seat.Courage;
                 }
             }
 
             if (shortest == int.MaxValue)
             {
-                shortest = ai.Hp;
+                shortest = ai.Courage;
             }
 
-            var effective = Math.Min(ai.Hp, shortest);
-            var playerBb = Player.Hp / (float)Math.Max(1, GameBalance.MinBet);
-            var playerStrength = Player.Folded ? 0.30f : History.EstimateStrength(Player.Hp, GameBalance.MinBet);
+            var effective = Math.Min(ai.Courage, shortest);
+            var playerBb = Player.Courage / (float)Math.Max(1, GameBalance.MinBet);
+            var playerStrength = Player.Folded ? 0.30f : History.EstimateStrength(Player.Courage, GameBalance.MinBet);
             return AiBrain.Decide(new AiContext
             {
                 Ai = ai,
@@ -1660,10 +1673,10 @@ namespace App.Game
                 StraightFlushDraw = ZhaJinHuaOdds.IsStraightFlushDraw(ai.Hand),
                 Pot = Pot,
                 CallCost = callCost,
-                AiChips = ai.Hp,
+                AiChips = ai.Courage,
                 EffectiveStack = Math.Max(0, effective),
                 ShortestOpponent = Math.Max(0, shortest),
-                PlayerChips = Player.Hp,
+                PlayerChips = Player.Courage,
                 BigBlind = GameBalance.MinBet,
                 BettingRound = _bettingRound,
                 RemainingPlayers = opponents + 1,
@@ -1879,7 +1892,7 @@ namespace App.Game
 
         private bool CanAffordOpen(SeatState seat)
         {
-            return CallCost(seat, OpenUnits()) <= seat.Hp;
+            return CallCost(seat, OpenUnits()) <= seat.Courage;
         }
 
         private int CallCost(SeatState seat, int units = -1)
@@ -1909,7 +1922,7 @@ namespace App.Game
 
             if (!TryCommitUnits(opener, OpenUnits(), out var paid))
             {
-                Hint = $"{opener.Name} 开牌失败：血量不足";
+                Hint = $"{opener.Name} 开牌失败：勇气值不足";
                 Notify();
                 return false;
             }
@@ -1938,7 +1951,7 @@ namespace App.Game
             if (Run.ConsecutiveLosses >= 2)
             {
                 Run.Tilted = true;
-                Log("心态崩了：下一局最大下注限制为当前血量 50%");
+                Log("心态崩了：下一局最大下注限制为当前勇气值 50%");
             }
 
             if (CountInHand() <= 1)
@@ -2127,7 +2140,7 @@ namespace App.Game
             if (Run.ConsecutiveLosses >= 2)
             {
                 Run.Tilted = true;
-                Log("心态崩了：下一局最大下注限制为当前血量 50%");
+                Log("心态崩了：下一局最大下注限制为当前勇气值 50%");
             }
 
             DealPlayerLossDamage(winner);
@@ -2392,7 +2405,7 @@ namespace App.Game
                 return;
             }
 
-            if (Player.Hp < GameBalance.MinBet)
+            if (Player.Courage < GameBalance.MinBet)
             {
                 TryAutoLoanOrFail();
                 return;
@@ -2406,6 +2419,7 @@ namespace App.Game
         {
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
             target.Hp -= dealt;
+            HpSvc()?.Damage(target.Id, dealt);
             target.Banner = main ? $"-{dealt}" : $"溅射 -{dealt}";
             Log($"攻击 {target.Name} {dealt}，剩余 HP {target.Hp}");
             if (target.Hp <= 0)
@@ -2427,27 +2441,37 @@ namespace App.Game
                     continue;
                 }
 
-                if (ai.Hp >= GameBalance.MinBet)
+                if (ai.Courage >= GameBalance.MinBet)
                 {
                     continue;
                 }
 
                 if (playerWon)
                 {
+                    var remainHp = ai.Hp;
                     ai.Hp = 0;
+                    ai.Courage = 0;
+                    ai.CourageStake = 0;
+                    var hp = HpSvc();
+                    if (hp != null)
+                    {
+                        hp.Damage(ai.Id, remainHp);
+                    }
+
+                    CourageSvc()?.Lose(ai.Id);
                     ai.Status = "斩杀";
                     ai.Banner = "濒死斩杀";
-                    Log($"互助斩杀：{ai.Name} 血量耗尽，被你斩杀");
+                    Log($"互助斩杀：{ai.Name} 勇气值耗尽，被你斩杀");
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
                 {
                     var help = Math.Max(GameBalance.MinBet, (int)Math.Floor(Pot * ratio));
-                    help = Math.Min(help, Math.Max(0, winner.Hp));
-                    winner.Hp -= help;
-                    Heal(ai, help);
+                    help = Math.Min(help, Math.Max(0, winner.Courage));
+                    SpendCourage(winner, help);
+                    AddCourage(ai, help);
                     ai.Banner = "获得援助";
                     ai.Status = "获救";
-                    Log($"{winner.Name} 抽出 {help} 血量救助 {ai.Name}");
+                    Log($"{winner.Name} 抽出 {help} 勇气值救助 {ai.Name}");
                 }
             }
         }
@@ -2468,7 +2492,7 @@ namespace App.Game
             {
                 Hint = LastResult + "\n已击杀全部敌人，点击进入商店";
             }
-            else if (Player.Hp < GameBalance.MinBet)
+            else if (Player.Courage < GameBalance.MinBet)
             {
                 TryAutoLoanOrFail();
                 return;
@@ -2504,14 +2528,14 @@ namespace App.Game
             if (Run.LoanTicket && !magnifierDisabled)
             {
                 Run.LoanTicket = false;
-                Heal(Player, GameBalance.MinBet);
-                Log("借贷券生效，获得最低下注血量");
+                AddCourage(Player, GameBalance.MinBet);
+                Log("借贷券生效，获得最低下注勇气值");
                 StartRound();
                 return;
             }
 
             Phase = GamePhase.StageFail;
-            Hint = "血量不足。可看广告借贷继续，或重开本关。";
+            Hint = "勇气值不足。可看广告借贷继续，或重开本关。";
             Notify();
         }
 
@@ -2525,7 +2549,7 @@ namespace App.Game
                 return;
             }
 
-            if (Player.Hp < GameBalance.MinBet)
+            if (Player.Courage < GameBalance.MinBet)
             {
                 Phase = GamePhase.StageFail;
                 Hint = "仍不足以继续";
@@ -2536,7 +2560,7 @@ namespace App.Game
             StartRound();
         }
 
-        /// <summary>从血量扣下注。看过牌的座位付双倍；反加注词缀再让玩家 ×1.5。</summary>
+        /// <summary>从勇气值扣下注。看过牌的座位付双倍；反加注词缀再让玩家 ×1.5。</summary>
         private bool TryCommitUnits(SeatState seat, int units, out int paid)
         {
             units = Math.Max(units, seat.StreetUnits);
@@ -2553,23 +2577,23 @@ namespace App.Game
                 return true;
             }
 
-            if (cost > seat.Hp)
+            if (cost > seat.Courage)
             {
-                if (seat.Hp <= 0)
+                if (seat.Courage <= 0)
                 {
                     paid = 0;
                     return false;
                 }
 
-                paid = seat.Hp;
+                paid = seat.Courage;
+                SpendCourage(seat, paid);
                 seat.TotalBet += paid;
                 seat.StreetPaid += paid;
                 Pot += paid;
-                seat.Hp = 0;
                 return true;
             }
 
-            seat.Hp -= cost;
+            SpendCourage(seat, cost);
             seat.TotalBet += cost;
             seat.StreetPaid += cost;
             seat.StreetUnits = units;
@@ -2608,16 +2632,16 @@ namespace App.Game
                 denom = Math.Max(1, (int)Math.Ceiling(denom * 1.5f));
             }
 
-            return AlignBet(seat.Hp / denom);
+            return AlignBet(seat.Courage / denom);
         }
 
-        /// <summary>连输触发心态崩了时，把玩家最大下注压到当前血量一半。</summary>
+        /// <summary>连输触发心态崩了时，把玩家最大下注压到当前勇气值一半。</summary>
         private int MaxBetUnits()
         {
             var cap = UnitsAffordable(Player);
             if (Run.Tilted)
             {
-                cap = Math.Min(cap, AlignBet(Player.Hp / 2 / (Player.Looked ? 2 : 1)));
+                cap = Math.Min(cap, AlignBet(Player.Courage / 2 / (Player.Looked ? 2 : 1)));
             }
 
             return Math.Max(_betStep, cap);
@@ -2820,7 +2844,7 @@ namespace App.Game
             seat.StreetUnits = 0;
             seat.StreetPaid = 0;
             seat.TotalBet = 0;
-            seat.RoundStartChips = seat.Hp;
+            seat.RoundStartChips = seat.Courage;
             seat.Folded = false;
             seat.Looked = !seat.IsPlayer;
             seat.ShowCards = false;
@@ -2832,14 +2856,71 @@ namespace App.Game
             }
         }
 
-        private void Heal(SeatState seat, int amount)
+        private void ApplySeatHp(SeatState seat, int hp, int maxHp)
+        {
+            if (seat == null)
+            {
+                return;
+            }
+
+            seat.MaxHp = Math.Max(0, maxHp);
+            seat.Hp = Math.Max(0, hp);
+            seat.Courage = ScoreBalance.HpToCourage(seat.Hp);
+            seat.CourageStake = 0;
+            HpSvc()?.BeginStage(seat.Id, seat.MaxHp, seat.Hp);
+            CourageSvc()?.BeginStage(seat.Id, seat.Hp);
+        }
+
+        private void BeginRoundCourage()
+        {
+            foreach (var seat in AllSeats())
+            {
+                seat.CourageStake = 0;
+                CourageSvc()?.BeginRound(seat.Id);
+            }
+
+            if (AppServices.IsReady)
+            {
+                AppServices.Resolve<IScoreService>().BeginRound();
+            }
+        }
+
+        private void AddCourage(SeatState seat, int amount)
         {
             if (seat == null || amount <= 0)
             {
                 return;
             }
 
-            seat.Hp += amount;
+            seat.Courage += amount;
+            CourageSvc()?.Add(seat.Id, amount);
+        }
+
+        private void SpendCourage(SeatState seat, int amount)
+        {
+            if (seat == null || amount <= 0)
+            {
+                return;
+            }
+
+            if (amount > seat.Courage)
+            {
+                amount = seat.Courage;
+            }
+
+            seat.Courage -= amount;
+            seat.CourageStake += amount;
+            CourageSvc()?.TryBet(seat.Id, amount);
+        }
+
+        private static IHpService HpSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<IHpService>() : null;
+        }
+
+        private static ICourageService CourageSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<ICourageService>() : null;
         }
 
         private void ApplyEdgeAffix()
@@ -2975,7 +3056,7 @@ namespace App.Game
 
         private bool IsAllIn(SeatState seat)
         {
-            return seat != null && !seat.Folded && seat.Hp <= 0 && seat.TotalBet > 0;
+            return seat != null && !seat.Folded && seat.Courage <= 0 && seat.TotalBet > 0;
         }
 
         private int CountPlayersWhoCanBet()
@@ -2983,7 +3064,7 @@ namespace App.Game
             var n = 0;
             foreach (var seat in AllSeats())
             {
-                if (Participates(seat) && !seat.Folded && seat.Hp > 0)
+                if (Participates(seat) && !seat.Folded && seat.Courage > 0)
                 {
                     n++;
                 }
@@ -3054,7 +3135,7 @@ namespace App.Game
             }
 
             var amount = Pot;
-            Heal(last, amount);
+            AddCourage(last, amount);
             LastResult = $"{last.Name} 无人争夺，收走奖池 {amount}";
             Log(LastResult);
             ApplyBankruptcy(last.IsPlayer, last);
@@ -3104,7 +3185,7 @@ namespace App.Game
                 for (var w = 0; w < winners.Count; w++)
                 {
                     var gain = share + (w == 0 ? remain : 0);
-                    Heal(winners[w], gain);
+                    AddCourage(winners[w], gain);
                     Log($"{layer.Name} {layer.Amount} → {winners[w].Name} +{gain}");
                 }
             }

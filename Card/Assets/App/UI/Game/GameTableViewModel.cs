@@ -180,7 +180,7 @@ namespace App.UI
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = $"金币 {run.Gold}";
             PotText.Value = $"奖池 {Session.Pot}";
-            PlayerChips.Value = $"HP {Session.Player.Hp}";
+            PlayerChips.Value = $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
             RoundInfo.Value = $"已下注:{Session.Pot}";
@@ -357,7 +357,7 @@ namespace App.UI
                 }
 
                 ShowEnemy[slot].Value = true;
-                EnemyChips[slot].Value = $"HP {enemy.Hp}";
+                EnemyChips[slot].Value = $"勇气 {enemy.Courage}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
             }

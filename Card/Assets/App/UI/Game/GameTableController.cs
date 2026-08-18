@@ -307,7 +307,7 @@ namespace App.UI
                 {
                     _enemyInfos[slot].gameObject.SetActive(true);
                     var banner = string.IsNullOrEmpty(enemy.Banner) ? enemy.Status : enemy.Banner;
-                    _enemyInfos[slot].text = $"{enemy.Name}\nHP {enemy.Hp}\n{banner}";
+                    _enemyInfos[slot].text = $"{enemy.Name}\nHP {enemy.Hp}  勇气 {enemy.Courage}\n{banner}";
                 }
             }
         }

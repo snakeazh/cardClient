@@ -71,7 +71,7 @@ namespace App.UI
 
             _playerItem.SetName(hero.Name);
             _playerItem.SetHp(hero.Hp);
-            _playerItem.SetAttack(0);
+            _playerItem.SetAttack(hero.HeroDamage);
             _playerItem.SetState(string.Empty);
             _playerItem.SetPortrait(_portrait);
         }

@@ -56,7 +56,9 @@ namespace App.UI
             ContinueCommand = new RelayCommand(
                 () => Session.Continue(),
                 () => Session.Phase == GamePhase.RoundSettle ||
-                      (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying));
+                      (Session.Phase == GamePhase.WaitingAttack &&
+                       !Session.AttackPlaying &&
+                       !Session.SequentialCompare));
             LeaveShopCommand = new RelayCommand(() => Session.LeaveShop(), () => Session.Phase == GamePhase.Shop);
             LoanCommand = new RelayCommand(() => Session.WatchAdLoan(), () => Session.Phase == GamePhase.StageFail);
             ReviveCommand = new RelayCommand(() => Session.WatchAdRevive(), () => Session.Phase == GamePhase.StageFail);
@@ -181,56 +183,43 @@ namespace App.UI
             }
 
             var run = Session.Run;
-            var boss = GameBalance.IsBossStage(run.Stage);
-            Title.Value = boss
+            Title.Value = run.HasBoss
                 ? $"第{run.Stage}关 BOSS {GameBalance.AffixName(run.Affix)}"
                 : $"第{run.Stage}关";
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = $"金币 {run.Gold}";
-            PotText.Value = $"奖池 {Session.Pot}";
+            PotText.Value = string.Empty;
             PlayerChips.Value = $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            RoundInfo.Value = $"已下注:{Session.Pot}";
+            var score = Session.Score;
+            RoundInfo.Value = $"本轮{score.Round} 关卡{score.Stage} 总{score.Total}";
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
-            var choosing = Session.Phase == GamePhase.WaitingLookChoice && canAct;
-            var betting = Session.Phase == GamePhase.Betting && canAct;
+            var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
-            var looked = Session.Player.Looked;
-            var streetBet = betting || rubbing;
-            var callCost = Session.PlayerCallCost;
-            var raiseLowCost = Session.CostToReach(Session.RaiseLowUnits);
-            var raiseHighCost = Session.CostToReach(Session.RaiseHighUnits);
-            BlindLabel.Value = choosing && !looked
-                ? "闷注"
-                : AmountLabel("跟注", callCost);
-            RaiseLabel.Value = AmountLabel("x2下注", raiseLowCost);
-            RaiseHighLabel.Value = AmountLabel("x4下注", raiseHighCost);
-            AllInLabel.Value = AmountLabel("全部下注", Session.Player.Hp);
             PeekGoodLabel.Value = $"搓牌 {Session.Run.PeekGoodCharges}";
             ChaKanGoodLabel.Value = $"透视 {Session.Run.ChaKanGoodCharges}";
             TiHuanGoodLabel.Value = $"替换 {Session.Run.TiHuanGoodCharges}";
-            ShowLook.Value = Session.PlayerMayLookCards;
-            ShowBlind.Value = choosing || streetBet;
-            ShowActions.Value = streetBet;
+            ShowLook.Value = false;
+            ShowBlind.Value = false;
+            ShowActions.Value = false;
             ShowRub.Value = false;
             ShowCancel.Value = Session.PlayerMayCancelLookOrRub;
-            ShowAllIn.Value = streetBet;
-            ShowFold.Value = ShowTableButtons.Value &&
-                             !Session.Player.Folded &&
-                             (Session.Phase == GamePhase.WaitingLookChoice ||
-                              Session.Phase == GamePhase.WaitingRub ||
-                              Session.Phase == GamePhase.Betting);
-            ShowCompare.Value = betting && Session.PlayerMayCompare;
-            ShowActionBar.Value = choosing || betting || rubbing || ShowFold.Value;
+            ShowAllIn.Value = false;
+            ShowFold.Value = false;
+            ShowCompare.Value = ShowTableButtons.Value && opening && Session.PlayerMayCompare;
+            ShowActionBar.Value = opening || rubbing || ShowCompare.Value;
             ShowContinue.Value = Session.Phase == GamePhase.RoundSettle ||
-                                 (Session.Phase == GamePhase.WaitingAttack && !Session.AttackPlaying);
+                                 (Session.Phase == GamePhase.WaitingAttack &&
+                                  !Session.AttackPlaying &&
+                                  !Session.SequentialCompare);
             ShowShop.Value = Session.Phase == GamePhase.Shop;
             ShowFail.Value = Session.Phase == GamePhase.StageFail;
             TryPresentFailPopup();
             TryPresentShopPopup();
-            ShowAttack.Value = Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget;
+            ShowAttack.Value = !Session.SequentialCompare &&
+                               (Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget);
             if (!Session.AttackPlaying)
             {
                 ShowMask.Value = false;

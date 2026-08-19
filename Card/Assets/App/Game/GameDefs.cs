@@ -9,17 +9,19 @@ namespace App.Game
         Idle = 0,
         /// <summary>看牌后搓牌，必须选一张或跳过。</summary>
         WaitingRub = 1,
-        /// <summary>下注街：跟/加/弃/开牌。</summary>
+        /// <summary>下注街：跟/加/弃/开牌（旧流程保留）。</summary>
         Betting = 2,
         Showdown = 3,
         RoundSettle = 4,
         Shop = 5,
         StageFail = 6,
         RunComplete = 7,
-        /// <summary>玩家赢牌后点选敌人造成伤害。</summary>
+        /// <summary>比牌后播放攻击演出。</summary>
         WaitingAttack = 8,
-        /// <summary>发牌后选择看牌或闷注。</summary>
-        WaitingLookChoice = 9
+        /// <summary>发牌后选择看牌或闷注（旧流程保留）。</summary>
+        WaitingLookChoice = 9,
+        /// <summary>发牌并看牌后：只能开牌或使用技能。</summary>
+        WaitingOpen = 10
     }
 
     /// <summary>遗物。战斗类改结算倍率；恐吓面具压 AI；磁力手套改搓牌。</summary>
@@ -117,11 +119,11 @@ namespace App.Game
         public const float SplashRatio = 0.3f;
         public const float MagnetKeepSuitChance = 0.3f;
         public const int DailyDoubleGoldAds = 3;
-        /// <summary>每关搓牌技能基础次数。</summary>
+        /// <summary>每手搓牌技能基础次数。</summary>
         public const int SkillRubUses = 3;
-        /// <summary>每关透视技能基础次数。</summary>
+        /// <summary>每手透视技能基础次数。</summary>
         public const int SkillXRayUses = 1;
-        /// <summary>每关替换技能基础次数。</summary>
+        /// <summary>每手替换技能基础次数。</summary>
         public const int SkillReplaceUses = 1;
 
         /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
@@ -284,6 +286,8 @@ namespace App.Game
         /// <summary>当前血量。攻击结算才扣除；下注不扣血。</summary>
         public int Hp;
         public int MaxHp;
+        /// <summary>攻击力。玩家读 HeroConfig.HeroDamage，怪物读 MonsterConfig.MonsterDamage。</summary>
+        public int Attack;
         /// <summary>勇气值（筹码）。由本座位血量换算，下注从这里扣。</summary>
         public int Courage;
         /// <summary>本回合已下注、尚未结算的勇气值。</summary>
@@ -351,6 +355,12 @@ namespace App.Game
         public readonly List<int> ShopOfferIds = new List<int>();
         /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + 次数 × ShopRefreshAfter。</summary>
         public int ShopRefreshCount;
+        /// <summary>当前关卡 <see cref="App.Level.LevelSnapshot.Id"/>。</summary>
+        public int LevelId;
+        /// <summary>当前上场英雄 <see cref="App.Config.HeroConfig.Id"/>。</summary>
+        public int HeroId;
+        /// <summary>本关是否含 BOSS，来自关卡配置。</summary>
+        public bool HasBoss;
         public readonly List<string> Log = new List<string>();
     }
 }

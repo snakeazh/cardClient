@@ -400,6 +400,13 @@ namespace App.Game
             return Math.Max(1, (int)Math.Round(value));
         }
 
+        /// <summary>伤害 = 攻击力 × 牌型倍率 × 遗物倍率。</summary>
+        public static int ComputeAttackDamage(int attack, float handMagnification, float relicMultiplier)
+        {
+            var value = Math.Max(0, attack) * Math.Max(0f, handMagnification) * Math.Max(0f, relicMultiplier);
+            return Math.Max(1, (int)Math.Round(value));
+        }
+
         private static HandScore HighCard(List<Card> filtered)
         {
             var keys = new int[filtered.Count];

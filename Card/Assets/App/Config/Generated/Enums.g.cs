@@ -4,6 +4,68 @@
 namespace App.Config
 {
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 BossEntryType 枚举。
+    /// </summary>
+    public enum BossEntryType
+    {
+        /// <summary>
+        /// 本局搓牌时,无法出现红心花色
+        /// </summary>
+        DisableHeart = 1,
+
+        /// <summary>
+        /// 本局搓牌时,无法出现黑桃花色
+        /// </summary>
+        DisableSpade = 2,
+
+        /// <summary>
+        /// 本局搓牌时,无法出现方片花色
+        /// </summary>
+        DisableDiamond = 3,
+
+        /// <summary>
+        /// 本局搓牌时,无法出现梅花花色
+        /// </summary>
+        DisablePlumBlossom = 4,
+
+        /// <summary>
+        /// 本局搓牌时,无法出现人头牌
+        /// </summary>
+        DisableHead = 5,
+
+        /// <summary>
+        /// 本局结算时,牌型的倍率降低
+        /// </summary>
+        Flint = 6,
+
+        /// <summary>
+        /// 本局内你的随机一种遗物将失效
+        /// </summary>
+        Edge = 7,
+
+        /// <summary>
+        /// 领主每次都会投注你当前血量的部分筹码
+        /// </summary>
+        AllIn = 8,
+
+        /// <summary>
+        /// 同花牌型在攻击时,伤害降低
+        /// </summary>
+        FlushDamage = 9,
+
+        /// <summary>
+        /// 同花顺牌型在攻击时,伤害降低
+        /// </summary>
+        FlushStraightDamage = 10,
+
+        /// <summary>
+        /// 顺子牌型在攻击时,伤害降低
+        /// </summary>
+        StraightDamage = 11,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 HandType 枚举。
     /// </summary>
     public enum HandType
@@ -37,6 +99,53 @@ namespace App.Config
         /// 三条
         /// </summary>
         Leopard = 6,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 HeroEntryType 枚举。
+    /// </summary>
+    public enum HeroEntryType
+    {
+        /// <summary>
+        /// 大壮
+        /// </summary>
+        AStrongPerson = 1,
+
+        /// <summary>
+        /// 狠人
+        /// </summary>
+        Badass = 2,
+
+        /// <summary>
+        /// 多面手
+        /// </summary>
+        VersatilePerson = 3,
+
+        /// <summary>
+        /// 射手
+        /// </summary>
+        Archer = 4,
+
+        /// <summary>
+        /// 大嗓门
+        /// </summary>
+        LoudVoice = 5,
+
+        /// <summary>
+        /// 暴发户
+        /// </summary>
+        NouveauRiche = 6,
+
+        /// <summary>
+        /// 流浪汉
+        /// </summary>
+        HomelessPerson = 7,
+
+        /// <summary>
+        /// 赌神
+        /// </summary>
+        GodOfGamblers = 8,
 
     }
 
@@ -86,12 +195,12 @@ namespace App.Config
         Straight = 8,
 
         /// <summary>
-        /// 立即获得300生命值
+        /// 立即获得生命值
         /// </summary>
         MaxHp = 9,
 
         /// <summary>
-        /// 每次结算生命值+20
+        /// 每次结算生命值提高
         /// </summary>
         EveryRoundHpUp = 10,
 

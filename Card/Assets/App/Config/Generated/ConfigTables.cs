@@ -25,25 +25,27 @@ namespace App.Config
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
             var handScoreConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HandScoreConfig);
             var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
+            var heroEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEntryConfig);
             var itemConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.ItemConfig);
             var levelConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.LevelConfig);
-            var mechanismConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MechanismConfig);
             var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
             var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
             var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
             var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
+            var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
 
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
             HandScoreConfig.Load(ConfigJson.FromArrayJson<HandScoreConfig>(handScoreConfigAsset.text));
             HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));
+            HeroEntryConfig.Load(ConfigJson.FromArrayJson<HeroEntryConfig>(heroEntryConfigAsset.text));
             ItemConfig.Load(ConfigJson.FromArrayJson<ItemConfig>(itemConfigAsset.text));
             LevelConfig.Load(ConfigJson.FromArrayJson<LevelConfig>(levelConfigAsset.text));
-            MechanismConfig.Load(ConfigJson.FromArrayJson<MechanismConfig>(mechanismConfigAsset.text));
             MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
             MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
             MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
             RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
+            RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
         }
     }
 }

@@ -9,13 +9,14 @@ namespace App.Resources
         public const string GameConst = "Config/GameConst";
         public const string HandScoreConfig = "Config/HandScoreConfig";
         public const string HeroConfig = "Config/HeroConfig";
+        public const string HeroEntryConfig = "Config/HeroEntryConfig";
         public const string ItemConfig = "Config/ItemConfig";
         public const string LevelConfig = "Config/LevelConfig";
-        public const string MechanismConfig = "Config/MechanismConfig";
         public const string MonsterConfig = "Config/MonsterConfig";
         public const string MonsterGroupConfig = "Config/MonsterGroupConfig";
         public const string MonsterLogicConfig = "Config/MonsterLogicConfig";
         public const string RelicConfig = "Config/RelicConfig";
+        public const string RelicEntryConfig = "Config/RelicEntryConfig";
     }
 }
 

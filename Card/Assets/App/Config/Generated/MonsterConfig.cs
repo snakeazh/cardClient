@@ -17,11 +17,6 @@ namespace App.Config
         public int MonsterId;
 
         /// <summary>
-        /// 怪物机制
-        /// </summary>
-        public int MonsterEntry;
-
-        /// <summary>
         /// 怪物类型
         /// </summary>
         public MonsterType Type;

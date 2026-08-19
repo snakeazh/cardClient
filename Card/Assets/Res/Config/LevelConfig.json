@@ -453,5 +453,369 @@
       10102,
       10103
     ]
+  },
+  {
+    "Id": 6001,
+    "Difficulty": 6,
+    "Level": 1,
+    "MonsterGroup": [
+      10011
+    ]
+  },
+  {
+    "Id": 6002,
+    "Difficulty": 6,
+    "Level": 2,
+    "MonsterGroup": [
+      10021
+    ]
+  },
+  {
+    "Id": 6003,
+    "Difficulty": 6,
+    "Level": 3,
+    "MonsterGroup": [
+      10031
+    ]
+  },
+  {
+    "Id": 6004,
+    "Difficulty": 6,
+    "Level": 4,
+    "MonsterGroup": [
+      10041,
+      10042
+    ]
+  },
+  {
+    "Id": 6005,
+    "Difficulty": 6,
+    "Level": 5,
+    "MonsterGroup": [
+      10051,
+      10052
+    ]
+  },
+  {
+    "Id": 6006,
+    "Difficulty": 6,
+    "Level": 6,
+    "MonsterGroup": [
+      10061,
+      10062
+    ]
+  },
+  {
+    "Id": 6007,
+    "Difficulty": 6,
+    "Level": 7,
+    "MonsterGroup": [
+      10071,
+      10072,
+      10073
+    ]
+  },
+  {
+    "Id": 6008,
+    "Difficulty": 6,
+    "Level": 8,
+    "MonsterGroup": [
+      10081,
+      10082,
+      10083
+    ]
+  },
+  {
+    "Id": 6009,
+    "Difficulty": 6,
+    "Level": 9,
+    "MonsterGroup": [
+      10091,
+      10092,
+      10093
+    ]
+  },
+  {
+    "Id": 6010,
+    "Difficulty": 6,
+    "Level": 10,
+    "MonsterGroup": [
+      10101,
+      10102,
+      10103
+    ]
+  },
+  {
+    "Id": 7001,
+    "Difficulty": 7,
+    "Level": 1,
+    "MonsterGroup": [
+      10011
+    ]
+  },
+  {
+    "Id": 7002,
+    "Difficulty": 7,
+    "Level": 2,
+    "MonsterGroup": [
+      10021
+    ]
+  },
+  {
+    "Id": 7003,
+    "Difficulty": 7,
+    "Level": 3,
+    "MonsterGroup": [
+      10031
+    ]
+  },
+  {
+    "Id": 7004,
+    "Difficulty": 7,
+    "Level": 4,
+    "MonsterGroup": [
+      10041,
+      10042
+    ]
+  },
+  {
+    "Id": 7005,
+    "Difficulty": 7,
+    "Level": 5,
+    "MonsterGroup": [
+      10051,
+      10052
+    ]
+  },
+  {
+    "Id": 7006,
+    "Difficulty": 7,
+    "Level": 6,
+    "MonsterGroup": [
+      10061,
+      10062
+    ]
+  },
+  {
+    "Id": 7007,
+    "Difficulty": 7,
+    "Level": 7,
+    "MonsterGroup": [
+      10071,
+      10072,
+      10073
+    ]
+  },
+  {
+    "Id": 7008,
+    "Difficulty": 7,
+    "Level": 8,
+    "MonsterGroup": [
+      10081,
+      10082,
+      10083
+    ]
+  },
+  {
+    "Id": 7009,
+    "Difficulty": 7,
+    "Level": 9,
+    "MonsterGroup": [
+      10091,
+      10092,
+      10093
+    ]
+  },
+  {
+    "Id": 7010,
+    "Difficulty": 7,
+    "Level": 10,
+    "MonsterGroup": [
+      10101,
+      10102,
+      10103
+    ]
+  },
+  {
+    "Id": 8001,
+    "Difficulty": 8,
+    "Level": 1,
+    "MonsterGroup": [
+      10011
+    ]
+  },
+  {
+    "Id": 8002,
+    "Difficulty": 8,
+    "Level": 2,
+    "MonsterGroup": [
+      10021
+    ]
+  },
+  {
+    "Id": 8003,
+    "Difficulty": 8,
+    "Level": 3,
+    "MonsterGroup": [
+      10031
+    ]
+  },
+  {
+    "Id": 8004,
+    "Difficulty": 8,
+    "Level": 4,
+    "MonsterGroup": [
+      10041,
+      10042
+    ]
+  },
+  {
+    "Id": 8005,
+    "Difficulty": 8,
+    "Level": 5,
+    "MonsterGroup": [
+      10051,
+      10052
+    ]
+  },
+  {
+    "Id": 8006,
+    "Difficulty": 8,
+    "Level": 6,
+    "MonsterGroup": [
+      10061,
+      10062
+    ]
+  },
+  {
+    "Id": 8007,
+    "Difficulty": 8,
+    "Level": 7,
+    "MonsterGroup": [
+      10071,
+      10072,
+      10073
+    ]
+  },
+  {
+    "Id": 8008,
+    "Difficulty": 8,
+    "Level": 8,
+    "MonsterGroup": [
+      10081,
+      10082,
+      10083
+    ]
+  },
+  {
+    "Id": 8009,
+    "Difficulty": 8,
+    "Level": 9,
+    "MonsterGroup": [
+      10091,
+      10092,
+      10093
+    ]
+  },
+  {
+    "Id": 8010,
+    "Difficulty": 8,
+    "Level": 10,
+    "MonsterGroup": [
+      10101,
+      10102,
+      10103
+    ]
+  },
+  {
+    "Id": 9001,
+    "Difficulty": 9,
+    "Level": 1,
+    "MonsterGroup": [
+      10011
+    ]
+  },
+  {
+    "Id": 9002,
+    "Difficulty": 9,
+    "Level": 2,
+    "MonsterGroup": [
+      10021
+    ]
+  },
+  {
+    "Id": 9003,
+    "Difficulty": 9,
+    "Level": 3,
+    "MonsterGroup": [
+      10031
+    ]
+  },
+  {
+    "Id": 9004,
+    "Difficulty": 9,
+    "Level": 4,
+    "MonsterGroup": [
+      10041,
+      10042
+    ]
+  },
+  {
+    "Id": 9005,
+    "Difficulty": 9,
+    "Level": 5,
+    "MonsterGroup": [
+      10051,
+      10052
+    ]
+  },
+  {
+    "Id": 9006,
+    "Difficulty": 9,
+    "Level": 6,
+    "MonsterGroup": [
+      10061,
+      10062
+    ]
+  },
+  {
+    "Id": 9007,
+    "Difficulty": 9,
+    "Level": 7,
+    "MonsterGroup": [
+      10071,
+      10072,
+      10073
+    ]
+  },
+  {
+    "Id": 9008,
+    "Difficulty": 9,
+    "Level": 8,
+    "MonsterGroup": [
+      10081,
+      10082,
+      10083
+    ]
+  },
+  {
+    "Id": 9009,
+    "Difficulty": 9,
+    "Level": 9,
+    "MonsterGroup": [
+      10091,
+      10092,
+      10093
+    ]
+  },
+  {
+    "Id": 9010,
+    "Difficulty": 9,
+    "Level": 10,
+    "MonsterGroup": [
+      10101,
+      10102,
+      10103
+    ]
   }
 ]

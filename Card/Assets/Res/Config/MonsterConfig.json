@@ -2,7 +2,6 @@
   {
     "Id": 1001001,
     "MonsterId": 1001,
-    "MonsterEntry": 0,
     "Type": 1,
     "MonsterLevel": 1,
     "MonsterHp": 1000
@@ -10,7 +9,6 @@
   {
     "Id": 1001002,
     "MonsterId": 1001,
-    "MonsterEntry": 0,
     "Type": 1,
     "MonsterLevel": 2,
     "MonsterHp": 1500
@@ -18,7 +16,6 @@
   {
     "Id": 1001003,
     "MonsterId": 1001,
-    "MonsterEntry": 0,
     "Type": 1,
     "MonsterLevel": 3,
     "MonsterHp": 2000
@@ -26,7 +23,6 @@
   {
     "Id": 1001004,
     "MonsterId": 1001,
-    "MonsterEntry": 0,
     "Type": 1,
     "MonsterLevel": 4,
     "MonsterHp": 2500
@@ -34,7 +30,6 @@
   {
     "Id": 1001005,
     "MonsterId": 1001,
-    "MonsterEntry": 0,
     "Type": 1,
     "MonsterLevel": 5,
     "MonsterHp": 3000
@@ -42,7 +37,6 @@
   {
     "Id": 1002001,
     "MonsterId": 1002,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 1,
     "MonsterHp": 1000
@@ -50,7 +44,6 @@
   {
     "Id": 1002002,
     "MonsterId": 1002,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 2,
     "MonsterHp": 1500
@@ -58,7 +51,6 @@
   {
     "Id": 1002003,
     "MonsterId": 1002,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 3,
     "MonsterHp": 2000
@@ -66,7 +58,6 @@
   {
     "Id": 1002004,
     "MonsterId": 1002,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 4,
     "MonsterHp": 2500
@@ -74,7 +65,6 @@
   {
     "Id": 1002005,
     "MonsterId": 1002,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 5,
     "MonsterHp": 3000
@@ -82,7 +72,6 @@
   {
     "Id": 1003001,
     "MonsterId": 1003,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 1,
     "MonsterHp": 1000
@@ -90,7 +79,6 @@
   {
     "Id": 1003002,
     "MonsterId": 1003,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 2,
     "MonsterHp": 1500
@@ -98,7 +86,6 @@
   {
     "Id": 1003003,
     "MonsterId": 1003,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 3,
     "MonsterHp": 2000
@@ -106,7 +93,6 @@
   {
     "Id": 1003004,
     "MonsterId": 1003,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 4,
     "MonsterHp": 2500
@@ -114,7 +100,6 @@
   {
     "Id": 1003005,
     "MonsterId": 1003,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 5,
     "MonsterHp": 3000
@@ -122,7 +107,6 @@
   {
     "Id": 1004001,
     "MonsterId": 1004,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 1,
     "MonsterHp": 1000
@@ -130,7 +114,6 @@
   {
     "Id": 1004002,
     "MonsterId": 1004,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 2,
     "MonsterHp": 1500
@@ -138,7 +121,6 @@
   {
     "Id": 1004003,
     "MonsterId": 1004,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 3,
     "MonsterHp": 2000
@@ -146,7 +128,6 @@
   {
     "Id": 1004004,
     "MonsterId": 1004,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 4,
     "MonsterHp": 2500
@@ -154,7 +135,6 @@
   {
     "Id": 1004005,
     "MonsterId": 1004,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 5,
     "MonsterHp": 3000
@@ -162,7 +142,6 @@
   {
     "Id": 1005001,
     "MonsterId": 1005,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 1,
     "MonsterHp": 1000
@@ -170,7 +149,6 @@
   {
     "Id": 1005002,
     "MonsterId": 1006,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 2,
     "MonsterHp": 1500
@@ -178,7 +156,6 @@
   {
     "Id": 1005003,
     "MonsterId": 1007,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 3,
     "MonsterHp": 2000
@@ -186,7 +163,6 @@
   {
     "Id": 1005004,
     "MonsterId": 1008,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 4,
     "MonsterHp": 2500
@@ -194,7 +170,6 @@
   {
     "Id": 1005005,
     "MonsterId": 1009,
-    "MonsterEntry": 1,
     "Type": 1,
     "MonsterLevel": 5,
     "MonsterHp": 3000
@@ -202,7 +177,6 @@
   {
     "Id": 2001001,
     "MonsterId": 2001,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 1,
     "MonsterHp": 10000
@@ -210,7 +184,6 @@
   {
     "Id": 2001002,
     "MonsterId": 2001,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 2,
     "MonsterHp": 15000
@@ -218,7 +191,6 @@
   {
     "Id": 2001003,
     "MonsterId": 2001,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 3,
     "MonsterHp": 20000
@@ -226,7 +198,6 @@
   {
     "Id": 2001004,
     "MonsterId": 2001,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 4,
     "MonsterHp": 25000
@@ -234,7 +205,6 @@
   {
     "Id": 2001005,
     "MonsterId": 2001,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 5,
     "MonsterHp": 30000
@@ -242,7 +212,6 @@
   {
     "Id": 2002001,
     "MonsterId": 2002,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 1,
     "MonsterHp": 10000
@@ -250,7 +219,6 @@
   {
     "Id": 2002002,
     "MonsterId": 2002,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 2,
     "MonsterHp": 15000
@@ -258,7 +226,6 @@
   {
     "Id": 2002003,
     "MonsterId": 2002,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 3,
     "MonsterHp": 20000
@@ -266,7 +233,6 @@
   {
     "Id": 2002004,
     "MonsterId": 2002,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 4,
     "MonsterHp": 25000
@@ -274,7 +240,6 @@
   {
     "Id": 2002005,
     "MonsterId": 2002,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 5,
     "MonsterHp": 30000
@@ -282,7 +247,6 @@
   {
     "Id": 2003001,
     "MonsterId": 2003,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 1,
     "MonsterHp": 10000
@@ -290,7 +254,6 @@
   {
     "Id": 2003002,
     "MonsterId": 2003,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 2,
     "MonsterHp": 15000
@@ -298,7 +261,6 @@
   {
     "Id": 2003003,
     "MonsterId": 2003,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 3,
     "MonsterHp": 20000
@@ -306,7 +268,6 @@
   {
     "Id": 2003004,
     "MonsterId": 2003,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 4,
     "MonsterHp": 25000
@@ -314,7 +275,6 @@
   {
     "Id": 2003005,
     "MonsterId": 2003,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 5,
     "MonsterHp": 30000
@@ -322,7 +282,6 @@
   {
     "Id": 2004001,
     "MonsterId": 2004,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 1,
     "MonsterHp": 10000
@@ -330,7 +289,6 @@
   {
     "Id": 2004002,
     "MonsterId": 2004,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 2,
     "MonsterHp": 15000
@@ -338,7 +296,6 @@
   {
     "Id": 2004003,
     "MonsterId": 2004,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 3,
     "MonsterHp": 20000
@@ -346,7 +303,6 @@
   {
     "Id": 2004004,
     "MonsterId": 2004,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 4,
     "MonsterHp": 25000
@@ -354,7 +310,6 @@
   {
     "Id": 2004005,
     "MonsterId": 2004,
-    "MonsterEntry": 1,
     "Type": 2,
     "MonsterLevel": 5,
     "MonsterHp": 30000

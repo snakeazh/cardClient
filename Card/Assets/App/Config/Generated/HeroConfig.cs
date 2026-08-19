@@ -27,9 +27,14 @@ namespace App.Config
         public string Icon;
 
         /// <summary>
-        /// 英雄机制
+        /// 英雄机制id
         /// </summary>
-        public int HeroEntry;
+        public int HeroEntryId;
+
+        /// <summary>
+        /// 解锁难度条件
+        /// </summary>
+        public int UnlockCondition;
 
         /// <summary>
         /// 描述

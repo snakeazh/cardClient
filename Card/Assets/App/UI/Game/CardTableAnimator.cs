@@ -13,7 +13,7 @@ namespace App.UI
     /// </summary>
     public sealed class CardTableAnimator
     {
-        private const int CardsPerHand = 3;
+        private const int CardsPerHand = GameBalance.MaxCardsPerSeat;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
         private const float ShuffleStagger = 0.05f;
@@ -23,6 +23,8 @@ namespace App.UI
         private const float RevealCardGap = 0.12f;
         private const float RevealSeatGap = 0.38f;
         private const float SettleClipDuration = 0.3f;
+        private const float SelectLift = 0.28f;
+        private const float SelectLiftDuration = 0.12f;
         private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private IResourceService _resources;
@@ -122,6 +124,7 @@ namespace App.UI
             }
 
             SyncAllFaces(session);
+            SyncPlayerSelectLift(session);
         }
 
         public int HitPlayerCard(Camera camera)
@@ -241,12 +244,23 @@ namespace App.UI
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
-            for (var round = 0; round < CardsPerHand; round++)
+            var maxRound = GameBalance.PlayerCardsDealt;
+            for (var round = 0; round < maxRound; round++)
             {
                 for (var s = 0; s < seats.Count; s++)
                 {
                     var view = seats[s].View;
                     var seat = seats[s].Seat;
+                    if (round >= GameBalance.CardsDealt(seat.IsPlayer))
+                    {
+                        continue;
+                    }
+
+                    if (view == null || round >= view.Points.Length || view.Points[round] == null)
+                    {
+                        continue;
+                    }
+
                     var cardIndex = round;
                     var capturedOrder = order;
                     seq.InsertCallback(delay, () =>
@@ -337,7 +351,8 @@ namespace App.UI
                     continue;
                 }
 
-                for (var i = 0; i < CardsPerHand; i++)
+                var count = CardCount(view, seat);
+                for (var i = 0; i < count; i++)
                 {
                     var cardIndex = i;
                     seq.InsertCallback(delay, () =>
@@ -378,8 +393,15 @@ namespace App.UI
             delay += 0.08f;
 
             var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
-            for (var i = 0; i < CardsPerHand; i++)
+            var winnerSeat = SeatById(session, session.RevealWinnerId);
+            var settleCount = CardCount(winnerView, winnerSeat);
+            for (var i = 0; i < settleCount; i++)
             {
+                if (winnerSeat != null && winnerSeat.IsPlayer && !winnerSeat.IsCardSelected(i))
+                {
+                    continue;
+                }
+
                 var cardIndex = i;
                 seq.InsertCallback(delay, () =>
                 {
@@ -729,6 +751,42 @@ namespace App.UI
                     sr.color = SuitTint(seat.Hand[i].Suit);
                 }
             }
+        }
+
+        private void SyncPlayerSelectLift(GameSession session)
+        {
+            if (_dealing || _player == null || session == null || session.Player == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _player.Items.Length; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null || !_player.Landed[i] || _player.Points[i] == null)
+                {
+                    continue;
+                }
+
+                var dest = _player.Points[i].position +
+                           (session.Player.IsCardSelected(i) ? Vector3.up * SelectLift : Vector3.zero);
+                if ((item.transform.position - dest).sqrMagnitude < 0.0004f)
+                {
+                    continue;
+                }
+
+                item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad);
+            }
+        }
+
+        private static int CardCount(SeatView view, SeatState seat)
+        {
+            if (view == null)
+            {
+                return 0;
+            }
+
+            return GameBalance.CardsDealt(seat != null && seat.IsPlayer);
         }
 
         private static CardFaceState DesiredFace(GameSession session, SeatState seat, bool player, int cardIndex)

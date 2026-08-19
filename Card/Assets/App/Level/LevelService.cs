@@ -114,6 +114,21 @@ namespace App.Level
             return true;
         }
 
+        public bool TryGetNextDifficulty(int difficulty, out int next)
+        {
+            for (var i = 0; i < _difficulties.Length; i++)
+            {
+                if (_difficulties[i] == difficulty && i + 1 < _difficulties.Length)
+                {
+                    next = _difficulties[i + 1];
+                    return true;
+                }
+            }
+
+            next = 0;
+            return false;
+        }
+
         public bool TryGetMonster(int monsterId, int monsterLevel, out LevelMonster monster)
         {
             if (_monsters.TryGetValue(monsterId, out var byLevel) &&
@@ -154,6 +169,7 @@ namespace App.Level
                     monsterLevel: row.MonsterLevel,
                     type: row.Type,
                     hp: row.MonsterHp,
+                    damage: row.MonsterDamage,
                     monsterEntry: row.MonsterEntry);
             }
         }
@@ -229,6 +245,7 @@ namespace App.Level
                     monster.MonsterLevel,
                     monster.Type,
                     monster.Hp,
+                    monster.Damage,
                     monster.MonsterEntry));
             }
 

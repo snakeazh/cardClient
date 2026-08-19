@@ -9,17 +9,19 @@ namespace App.Game
         Idle = 0,
         /// <summary>看牌后搓牌，必须选一张或跳过。</summary>
         WaitingRub = 1,
-        /// <summary>下注街：跟/加/弃/开牌。</summary>
+        /// <summary>下注街：跟/加/弃/开牌（旧流程保留）。</summary>
         Betting = 2,
         Showdown = 3,
         RoundSettle = 4,
         Shop = 5,
         StageFail = 6,
         RunComplete = 7,
-        /// <summary>玩家赢牌后点选敌人造成伤害。</summary>
+        /// <summary>比牌后播放攻击演出。</summary>
         WaitingAttack = 8,
-        /// <summary>发牌后选择看牌或闷注。</summary>
-        WaitingLookChoice = 9
+        /// <summary>发牌后选择看牌或闷注（旧流程保留）。</summary>
+        WaitingLookChoice = 9,
+        /// <summary>发牌并看牌后：只能开牌或使用技能。</summary>
+        WaitingOpen = 10
     }
 
     /// <summary>遗物。战斗类改结算倍率；恐吓面具压 AI；磁力手套改搓牌。</summary>
@@ -117,12 +119,25 @@ namespace App.Game
         public const float SplashRatio = 0.3f;
         public const float MagnetKeepSuitChance = 0.3f;
         public const int DailyDoubleGoldAds = 3;
-        /// <summary>每关搓牌技能基础次数。</summary>
+        /// <summary>每手搓牌技能基础次数。</summary>
         public const int SkillRubUses = 3;
-        /// <summary>每关透视技能基础次数。</summary>
+        /// <summary>每手透视技能基础次数。</summary>
         public const int SkillXRayUses = 1;
-        /// <summary>每关替换技能基础次数。</summary>
+        /// <summary>每手替换技能基础次数。</summary>
         public const int SkillReplaceUses = 1;
+        /// <summary>座位手牌数组容量。玩家发 5 张，敌人发 3 张。</summary>
+        public const int MaxCardsPerSeat = 5;
+        /// <summary>玩家每手发牌张数。</summary>
+        public const int PlayerCardsDealt = 5;
+        /// <summary>敌人每手发牌张数。</summary>
+        public const int EnemyCardsDealt = 3;
+        /// <summary>开牌使用的张数。</summary>
+        public const int OpenHandSize = 3;
+
+        public static int CardsDealt(bool player)
+        {
+            return player ? PlayerCardsDealt : EnemyCardsDealt;
+        }
 
         /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
         public static int EnemyCountForStage(int stage)
@@ -284,6 +299,8 @@ namespace App.Game
         /// <summary>当前血量。攻击结算才扣除；下注不扣血。</summary>
         public int Hp;
         public int MaxHp;
+        /// <summary>攻击力。玩家读 HeroConfig.HeroDamage，怪物读 MonsterConfig.MonsterDamage。</summary>
+        public int Attack;
         /// <summary>勇气值（筹码）。由本座位血量换算，下注从这里扣。</summary>
         public int Courage;
         /// <summary>本回合已下注、尚未结算的勇气值。</summary>
@@ -298,13 +315,43 @@ namespace App.Game
         public bool Looked;
         public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
-        public Card[] Hand = new Card[3];
+        public Card[] Hand = new Card[GameBalance.MaxCardsPerSeat];
+        /// <summary>玩家点选用于开牌的牌。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
+        public readonly bool[] CardSelected = new bool[GameBalance.MaxCardsPerSeat];
         public string Status = string.Empty;
         public string Banner = string.Empty;
         /// <summary>透视技能看到的牌型，本手有效。</summary>
         public string PeekedType = string.Empty;
         /// <summary>敌人人格。玩家为 null。BOSS 关会覆盖成 Expert。</summary>
         public AiProfile Profile;
+
+        public int CountSelectedCards()
+        {
+            var n = 0;
+            var limit = Math.Min(CardSelected.Length, Hand != null ? Hand.Length : 0);
+            for (var i = 0; i < limit; i++)
+            {
+                if (CardSelected[i])
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+
+        public bool IsCardSelected(int index)
+        {
+            return index >= 0 && index < CardSelected.Length && CardSelected[index];
+        }
+
+        public void ClearCardSelected()
+        {
+            for (var i = 0; i < CardSelected.Length; i++)
+            {
+                CardSelected[i] = false;
+            }
+        }
     }
 
     /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 词缀。</summary>
@@ -329,12 +376,12 @@ namespace App.Game
         public int BonusXRayCharges;
         /// <summary>商店提供的每关额外替换次数，整次闯关保留。</summary>
         public int BonusReplaceCharges;
-        /// <summary>透视揭示标记，下标 = seatId*3 + cardIndex。</summary>
-        public readonly bool[] SpyReveal = new bool[12];
+        /// <summary>透视揭示标记，下标 = seatId * MaxCardsPerSeat + cardIndex。</summary>
+        public readonly bool[] SpyReveal = new bool[20];
         public bool PeekSuitUsed;
         public int PeekSuitIndex = -1;
         public Suit? PeekedSuit;
-        public readonly bool[] RubbedReveal = new bool[3];
+        public readonly bool[] RubbedReveal = new bool[GameBalance.MaxCardsPerSeat];
         public string LastRubMessage = string.Empty;
         public int AdsLoanThisStage;
         public int AdsReviveThisStage;
@@ -351,6 +398,12 @@ namespace App.Game
         public readonly List<int> ShopOfferIds = new List<int>();
         /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + 次数 × ShopRefreshAfter。</summary>
         public int ShopRefreshCount;
+        /// <summary>当前关卡 <see cref="App.Level.LevelSnapshot.Id"/>。</summary>
+        public int LevelId;
+        /// <summary>当前上场英雄 <see cref="App.Config.HeroConfig.Id"/>。</summary>
+        public int HeroId;
+        /// <summary>本关是否含 BOSS，来自关卡配置。</summary>
+        public bool HasBoss;
         public readonly List<string> Log = new List<string>();
     }
 }

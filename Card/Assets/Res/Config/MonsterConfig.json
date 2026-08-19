@@ -4,7 +4,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 1000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -12,7 +13,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 1500,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -20,7 +22,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 2000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -28,7 +31,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 2500,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -36,7 +40,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 3000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -44,7 +49,8 @@
     "MonsterId": 1002,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 1000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -52,7 +58,8 @@
     "MonsterId": 1002,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 1500,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -60,7 +67,8 @@
     "MonsterId": 1002,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 2000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -68,7 +76,8 @@
     "MonsterId": 1002,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 2500,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -76,7 +85,8 @@
     "MonsterId": 1002,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 3000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -84,7 +94,8 @@
     "MonsterId": 1003,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 1000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -92,7 +103,8 @@
     "MonsterId": 1003,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 1500,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -100,7 +112,8 @@
     "MonsterId": 1003,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 2000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -108,7 +121,8 @@
     "MonsterId": 1003,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 2500,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -116,7 +130,8 @@
     "MonsterId": 1003,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 3000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -124,7 +139,8 @@
     "MonsterId": 1004,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 1000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -132,7 +148,8 @@
     "MonsterId": 1004,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 1500,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -140,7 +157,8 @@
     "MonsterId": 1004,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 2000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -148,7 +166,8 @@
     "MonsterId": 1004,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 2500,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -156,7 +175,8 @@
     "MonsterId": 1004,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 3000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -164,7 +184,8 @@
     "MonsterId": 1005,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 1000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -172,7 +193,8 @@
     "MonsterId": 1006,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 1500,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -180,7 +202,8 @@
     "MonsterId": 1007,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 2000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -188,7 +211,8 @@
     "MonsterId": 1008,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 2500,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -196,7 +220,8 @@
     "MonsterId": 1009,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 3000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -204,7 +229,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 1,
-    "MonsterHp": 10000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -212,7 +238,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 2,
-    "MonsterHp": 15000,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -220,7 +247,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 3,
-    "MonsterHp": 20000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -228,7 +256,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 4,
-    "MonsterHp": 25000,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -236,7 +265,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 5,
-    "MonsterHp": 30000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -244,7 +274,8 @@
     "MonsterId": 2002,
     "Type": 2,
     "MonsterLevel": 1,
-    "MonsterHp": 10000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -252,7 +283,8 @@
     "MonsterId": 2002,
     "Type": 2,
     "MonsterLevel": 2,
-    "MonsterHp": 15000,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -260,7 +292,8 @@
     "MonsterId": 2002,
     "Type": 2,
     "MonsterLevel": 3,
-    "MonsterHp": 20000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -268,7 +301,8 @@
     "MonsterId": 2002,
     "Type": 2,
     "MonsterLevel": 4,
-    "MonsterHp": 25000,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -276,7 +310,8 @@
     "MonsterId": 2002,
     "Type": 2,
     "MonsterLevel": 5,
-    "MonsterHp": 30000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -284,7 +319,8 @@
     "MonsterId": 2003,
     "Type": 2,
     "MonsterLevel": 1,
-    "MonsterHp": 10000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -292,7 +328,8 @@
     "MonsterId": 2003,
     "Type": 2,
     "MonsterLevel": 2,
-    "MonsterHp": 15000,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -300,7 +337,8 @@
     "MonsterId": 2003,
     "Type": 2,
     "MonsterLevel": 3,
-    "MonsterHp": 20000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -308,7 +346,8 @@
     "MonsterId": 2003,
     "Type": 2,
     "MonsterLevel": 4,
-    "MonsterHp": 25000,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -316,7 +355,8 @@
     "MonsterId": 2003,
     "Type": 2,
     "MonsterLevel": 5,
-    "MonsterHp": 30000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -324,7 +364,8 @@
     "MonsterId": 2004,
     "Type": 2,
     "MonsterLevel": 1,
-    "MonsterHp": 10000,
+    "MonsterHp": 100,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -332,7 +373,8 @@
     "MonsterId": 2004,
     "Type": 2,
     "MonsterLevel": 2,
-    "MonsterHp": 15000,
+    "MonsterHp": 150,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -340,7 +382,8 @@
     "MonsterId": 2004,
     "Type": 2,
     "MonsterLevel": 3,
-    "MonsterHp": 20000,
+    "MonsterHp": 200,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -348,7 +391,8 @@
     "MonsterId": 2004,
     "Type": 2,
     "MonsterLevel": 4,
-    "MonsterHp": 25000,
+    "MonsterHp": 250,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   },
   {
@@ -356,7 +400,8 @@
     "MonsterId": 2004,
     "Type": 2,
     "MonsterLevel": 5,
-    "MonsterHp": 30000,
+    "MonsterHp": 300,
+    "MonsterDamage": 10,
     "MonsterEntry": 0
   }
 ]

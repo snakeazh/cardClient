@@ -28,6 +28,9 @@ namespace App.UI
         private RectTransform _flight;
         private Sequence _seq;
         private int _playToken;
+        private RectTransform _incomingRoot;
+        private Transform _incomingHome;
+        private Vector2 _incomingHomeAnchored;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -55,6 +58,98 @@ namespace App.UI
             }
 
             return _enemyRoots[visualSlot].position;
+        }
+
+        public Vector3 HitPositionPlayer()
+        {
+            return _playerRoot != null ? _playerRoot.position : Vector3.zero;
+        }
+
+        public void PlayIncoming(int visualSlot, int level, Action onHit, Action onReturned, Action onDone)
+        {
+            Kill();
+            level = Mathf.Clamp(level, 1, 3);
+            var enemyRoot = visualSlot >= 0 && visualSlot < _enemyRoots.Length ? _enemyRoots[visualSlot] : null;
+            var enemyAnim = visualSlot >= 0 && visualSlot < _enemyAnims.Length ? _enemyAnims[visualSlot] : null;
+            if (_playerRoot == null || enemyRoot == null)
+            {
+                onHit?.Invoke();
+                onReturned?.Invoke();
+                onDone?.Invoke();
+                return;
+            }
+
+            var token = ++_playToken;
+            var idx = level - 1;
+            var startDur = StartDur[idx];
+            var moveDur = MoveDur[idx];
+            var endDur = EndDur[idx];
+            var backDur = BackDur[idx];
+            _incomingRoot = enemyRoot;
+            _incomingHome = enemyRoot.parent;
+            _incomingHomeAnchored = enemyRoot.anchoredPosition;
+            var homePos = enemyRoot.position;
+            var hitPos = _playerRoot.position;
+
+            AttachIncomingToFlight(homePos);
+
+            _seq = DOTween.Sequence();
+            PlayClip(enemyAnim, Clip(level, "start"));
+            _seq.AppendInterval(startDur);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(enemyAnim, Clip(level, "move"));
+            });
+            _seq.Append(_flight.DOMove(hitPos, moveDur).SetEase(Ease.InQuad));
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(enemyAnim, Clip(level, "end"));
+                PlayClip(_playerAnim, Clip(level, "hit"));
+                onHit?.Invoke();
+            });
+            _seq.AppendInterval(endDur);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(enemyAnim, Clip(level, "back"));
+                PlayClip(_playerAnim, DefaultClip);
+            });
+            _seq.Append(_flight.DOMove(homePos, backDur).SetEase(Ease.OutQuad));
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                RestoreIncoming();
+                PlayClip(enemyAnim, DefaultClip);
+                onReturned?.Invoke();
+            });
+            _seq.AppendInterval(HpHideDelay);
+            _seq.OnComplete(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                onDone?.Invoke();
+            });
         }
 
         public void Play(int visualSlot, int level, Action onHit, Action onReturned, Action onDone)
@@ -147,6 +242,7 @@ namespace App.UI
         {
             Kill();
             RestoreRoot(_playerHome);
+            RestoreIncoming();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
         }
@@ -185,6 +281,38 @@ namespace App.UI
             flight.SetAsLastSibling();
             flight.position = worldPos;
             _playerRoot.SetParent(flight, true);
+        }
+
+        private void AttachIncomingToFlight(Vector3 worldPos)
+        {
+            var flight = EnsureFlight();
+            flight.gameObject.SetActive(true);
+            flight.SetParent(_hud, false);
+            flight.SetAsLastSibling();
+            flight.position = worldPos;
+            _incomingRoot.SetParent(flight, true);
+        }
+
+        private void RestoreIncoming()
+        {
+            if (_incomingRoot == null || _incomingHome == null)
+            {
+                _incomingRoot = null;
+                _incomingHome = null;
+                return;
+            }
+
+            _incomingRoot.SetParent(_incomingHome, false);
+            _incomingRoot.anchoredPosition = _incomingHomeAnchored;
+            _incomingRoot.localScale = Vector3.one;
+            _incomingRoot.localRotation = Quaternion.identity;
+            _incomingRoot = null;
+            _incomingHome = null;
+
+            if (_flight != null && (_playerRoot == null || _playerRoot.parent != _flight))
+            {
+                _flight.gameObject.SetActive(false);
+            }
         }
 
         private RectTransform EnsureFlight()
@@ -229,6 +357,7 @@ namespace App.UI
             _seq?.Kill();
             _seq = null;
             RestoreRoot(_playerHome);
+            RestoreIncoming();
         }
 
         private void DestroyFlight()

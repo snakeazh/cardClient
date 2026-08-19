@@ -75,15 +75,20 @@ namespace App.UI
                 }
             }
 
-            if (_vm.Session.Phase == GamePhase.Betting &&
-                _vm.Session.Run.MagnifierThisRound &&
-                !_vm.Session.Run.PeekSuitUsed &&
-                Input.GetMouseButtonDown(0))
+            if (_vm.Session.Phase == GamePhase.WaitingOpen && Input.GetMouseButtonDown(0))
             {
-                var peek = _cards.HitPlayerCard(_camera);
-                if (peek >= 0)
+                var pick = _cards.HitPlayerCard(_camera);
+                if (pick >= 0)
                 {
-                    _vm.Session.PeekMagnifier(peek);
+                    if (_vm.Session.Run.MagnifierThisRound && !_vm.Session.Run.PeekSuitUsed)
+                    {
+                        _vm.Session.PeekMagnifier(pick);
+                    }
+                    else
+                    {
+                        _vm.Session.TogglePlayerCard(pick);
+                    }
+
                     return;
                 }
             }

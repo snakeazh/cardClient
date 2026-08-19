@@ -37,6 +37,7 @@ namespace App.UI
             Binding.BindActive(GetNode<TMP_Text>("unlockInfo").gameObject, ViewModel.ShowUnlockInfo);
             Binding.BindText(GetNode<TMP_Text>("stageNum"), ViewModel.StageNum);
             Binding.BindText(GetNode<TMP_Text>("stageInfoText"), ViewModel.StageInfoText);
+            BindDifficultyTip();
 
             Binding.BindActive(UI.GetGameObject("heroSelect"), ViewModel.ShowHeroSelect);
             Binding.BindActive(UI.GetGameObject("stageInfo"), ViewModel.ShowStageInfo);
@@ -66,6 +67,7 @@ namespace App.UI
                 RefreshPreview();
             }, emitCurrent: false));
             Binding.Add(ViewModel.SelectedLevelId.Subscribe(_ => RefreshLevelItems(), emitCurrent: false));
+            Binding.Add(ViewModel.SelectedDifficulty.Subscribe(_ => RebuildLevelItems(), emitCurrent: false));
         }
 
         protected override async Task OnViewOpen()
@@ -113,6 +115,70 @@ namespace App.UI
             }
         }
 
+        private void RebuildLevelItems()
+        {
+            for (var i = 0; i < _levelItems.Count; i++)
+            {
+                var item = _levelItems[i];
+                if (item != null)
+                {
+                    Object.Destroy(item.gameObject);
+                }
+            }
+
+            _levelItems.Clear();
+            SpawnLevelItems();
+            RefreshLevelItems();
+        }
+
+        private void BindDifficultyTip()
+        {
+            var tip = FindNamed(transform, "stageTip");
+            if (tip == null)
+            {
+                return;
+            }
+
+            var text = tip.GetComponent<TMP_Text>();
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.DifficultyText);
+            }
+
+            var button = tip.GetComponent<Button>();
+            if (button == null)
+            {
+                button = tip.gameObject.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+            }
+
+            Binding.BindCommand(button, ViewModel.NextDifficultyCommand);
+        }
+
+        private static Transform FindNamed(Transform root, string nodeName)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == nodeName)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindNamed(root.GetChild(i), nodeName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
         private void SpawnLevelItems()
         {
             var listGo = UI.GetGameObject("levelSelect");
@@ -154,10 +220,12 @@ namespace App.UI
         private void RefreshLevelItems()
         {
             var selected = ViewModel.SelectedLevelId.Value;
-            for (var i = 0; i < _levelItems.Count; i++)
+            var stages = ViewModel.Stages;
+            var count = Mathf.Min(_levelItems.Count, stages.Count);
+            for (var i = 0; i < count; i++)
             {
                 var item = _levelItems[i];
-                var stage = ViewModel.Stages[i];
+                var stage = stages[i];
                 item.Bind(stage, ViewModel.IsLevelUnlocked(stage), stage.Id == selected);
             }
         }
@@ -172,19 +240,20 @@ namespace App.UI
             var hero = App.Config.HeroConfig.Get(ViewModel.SelectedHeroId.Value);
             var unlocked = ViewModel.IsHeroUnlocked(hero);
             _playerItem.ApplyTheme(false);
-            _playerItem.SetAttack(0);
             _playerItem.SetState(string.Empty);
             _portraits.TryGetValue(hero != null ? hero.Id : 0, out var portrait);
             if (unlocked && hero != null)
             {
                 _playerItem.SetName(hero.Name);
                 _playerItem.SetHp(hero.Hp);
+                _playerItem.SetAttack(hero.HeroDamage);
                 _playerItem.SetPortrait(portrait);
             }
             else
             {
                 _playerItem.SetName(LevelUIViewModel.LockedText);
                 _playerItem.SetHp(0);
+                _playerItem.SetAttack(0);
                 _playerItem.SetPortrait(portrait, locked: true);
             }
         }

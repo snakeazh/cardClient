@@ -32,6 +32,11 @@ namespace App.Config
         public int MonsterHp;
 
         /// <summary>
+        /// 攻击力
+        /// </summary>
+        public int MonsterDamage;
+
+        /// <summary>
         /// 怪物机制
         /// </summary>
         public int MonsterEntry;

@@ -4,8 +4,8 @@ namespace App.Level
 {
     /// <summary>
     /// Resolves LevelConfig / MonsterGroupConfig / MonsterConfig into snapshots.
-    /// One run plays a single difficulty (default 1); TryGetNext false means the run is complete.
-    /// Not yet wired into GameSession.
+    /// One run plays a single difficulty; TryGetNext false means that difficulty is complete.
+    /// GameSession 按 Current 上场怪物与血量。
     /// </summary>
     public interface ILevelService
     {
@@ -47,6 +47,11 @@ namespace App.Level
         /// Selects Difficulty + Level. Missing: Warning, keeps previous, returns false.
         /// </summary>
         bool TrySelect(int difficulty, int level);
+
+        /// <summary>
+        /// 配置中升序的下一个难度。没有则 false。
+        /// </summary>
+        bool TryGetNextDifficulty(int difficulty, out int next);
 
         bool TryGetMonster(int monsterId, int monsterLevel, out LevelMonster monster);
     }

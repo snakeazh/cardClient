@@ -4,7 +4,7 @@ using Framework.Save;
 namespace App.Level
 {
     /// <summary>
-    /// Persists which difficulties have been cleared (one run = one difficulty).
+    /// 按难度记录通关进度。打完某难度全部关卡后该难度完成，并解锁下一难度。
     /// </summary>
     public interface ILevelProgressService : ISaveFlushable
     {
@@ -14,16 +14,25 @@ namespace App.Level
 
         int LastLevelId { get; }
 
-        int HighestClearedLevel { get; }
+        int LastDifficulty { get; }
 
         /// <summary>
-        /// Whether this difficulty has been fully cleared (last stage of that difficulty was beaten).
+        /// 该难度是否已打完全部关卡。
         /// </summary>
         bool IsCleared(int difficulty);
 
         /// <summary>
-        /// Report a cleared <see cref="LevelSnapshot.Id"/> (LevelConfig.Id).
-        /// Writes difficulty progress only when that stage is the last of its difficulty.
+        /// 该难度是否已解锁。最低难度默认解锁；上一难度打完后解锁下一难度。
+        /// </summary>
+        bool IsDifficultyUnlocked(int difficulty);
+
+        /// <summary>
+        /// 该难度已通关的最高关卡号。未通关任何关为 0。
+        /// </summary>
+        int GetHighestClearedLevel(int difficulty);
+
+        /// <summary>
+        /// 报刚打完的关卡 Id。更新该难度最高关卡；若是最后一关则该难度完成。
         /// </summary>
         void MarkCleared(int levelId);
 
@@ -31,12 +40,14 @@ namespace App.Level
 
         void SetLastLevel(int levelId);
 
+        void SetLastDifficulty(int difficulty);
+
         bool IsHeroUnlocked(int heroId);
 
         bool TryUnlockHero(int heroId);
 
         /// <summary>
-        /// 第 1 关默认解锁；之后必须先通关上一关。
+        /// 难度已解锁，且第 1 关默认开；之后必须先通关同一难度的上一关。
         /// </summary>
         bool IsLevelUnlocked(int levelId);
 

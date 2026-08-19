@@ -64,6 +64,10 @@ MonoBehaviour:
   cardIcon: {fileID: 4360046112712457286}
   cardAttackValue: {fileID: 2251470114000148370}
   cardAttackHeart: {fileID: 3126298132637409539}
+  attackRoot: {fileID: 0}
+  cardState: {fileID: 0}
+  playerRoot: {fileID: 0}
+  playerAnimator: {fileID: 0}
 --- !u!1 &721962555587016893
 GameObject:
   m_ObjectHideFlags: 0
@@ -383,8 +387,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -17.4, y: 122.2}
-  m_SizeDelta: {x: 200, y: 48.1066}
+  m_AnchoredPosition: {x: -15, y: 122.2}
+  m_SizeDelta: {x: 193.3864, y: 48.1066}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2846546487882222511
 CanvasRenderer:
@@ -960,8 +964,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -985,8 +989,8 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0

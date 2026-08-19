@@ -42,7 +42,6 @@ namespace App.UI
             BindPlayerInfo();
             SpawnEnemyInfos();
             BindPhaseButtons();
-            EnsureHint();
             BindAttackHud();
             BindAttackFx();
             ViewModel.Refresh();
@@ -193,24 +192,57 @@ namespace App.UI
 
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
-            _attackFx.Play(session.AttackVisualSlot,
-                session.AttackLevel,
-                () =>
+            Action onHit = () =>
+            {
+                ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
+                ViewModel.ShowHpText.Value = true;
+                if (session.IncomingAttack)
                 {
-                    ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
-                    ViewModel.ShowHpText.Value = true;
+                    PlaceHpAtPlayer();
+                }
+                else
+                {
                     PlaceHpAtTarget(session.AttackVisualSlot);
-                },
-                () => { ViewModel.ShowMask.Value = false; },
-                () =>
+                }
+            };
+            Action onReturned = () => { ViewModel.ShowMask.Value = false; };
+            Action onDone = () =>
+            {
+                ViewModel.ShowHpText.Value = false;
+                RestoreHpText();
+                if (ViewModel != null)
                 {
-                    ViewModel.ShowHpText.Value = false;
-                    RestoreHpText();
-                    if (ViewModel != null)
-                    {
-                        ViewModel.Session.CompletePlayerAttack();
-                    }
-                });
+                    ViewModel.Session.CompletePlayerAttack();
+                }
+            };
+            if (session.IncomingAttack)
+            {
+                _attackFx.PlayIncoming(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
+            }
+            else
+            {
+                _attackFx.Play(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
+            }
+        }
+
+        private void PlaceHpAtPlayer()
+        {
+            if (_hpTextRt == null)
+            {
+                return;
+            }
+
+            var hit = _attackFx.HitPositionPlayer();
+            if (hit == Vector3.zero)
+            {
+                return;
+            }
+
+            _hpTextRt.SetAsLastSibling();
+            _hpTextRt.position = hit;
+            _hpTextRt.DOKill();
+            _hpTextRt.localScale = Vector3.one * 0.6f;
+            _hpTextRt.DOScale(1f, 0.18f).SetEase(Ease.OutBack);
         }
 
         private void PlaceHpAtTarget(int slot)
@@ -343,7 +375,7 @@ namespace App.UI
             var session = ViewModel.Session;
             if (_playerItem != null)
             {
-                _playerItem.Bind(session.Player, _playerPortrait, PlayerAttackValue(session));
+                _playerItem.Bind(session.Player, _playerPortrait, session.Player.Attack);
             }
 
             var activeCount = 0;
@@ -371,25 +403,8 @@ namespace App.UI
                     continue;
                 }
 
-                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], 0, session.ActingAiId);
+                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], enemy.Attack, session.ActingAiId);
             }
-        }
-
-        private static int PlayerAttackValue(GameSession session)
-        {
-            if (session == null)
-            {
-                return 0;
-            }
-
-            if (session.Phase == GamePhase.WaitingAttack || session.AttackPlaying)
-            {
-                return Math.Max(0, session.PendingAttackDamage > 0
-                    ? session.PendingAttackDamage
-                    : session.AttackDamage);
-            }
-
-            return 0;
         }
 
         private static int VisualSlot(int enemyIndex, int activeCount)
@@ -501,7 +516,7 @@ namespace App.UI
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
             BindBtn("CancelBtn", ViewModel.SkipRubCommand, ViewModel.ShowCancel);
             BindBtn("NextRoundBtn", ViewModel.ContinueCommand, ViewModel.ShowContinue);
-            SetBtnLabel("CompareBtn", "比牌");
+            SetBtnLabel("CompareBtn", "开牌");
             SetBtnLabel("PeekBtn", "搓牌");
             SetBtnLabel("LookBtn", "看牌");
             SetBtnLabel("CancelBtn", "取消");
@@ -625,47 +640,6 @@ namespace App.UI
             if (_shopContent != null)
             {
                 _shopContent.gameObject.SetActive(false);
-            }
-        }
-
-        private void EnsureHint()
-        {
-            var existing = transform.Find("duelHint");
-            TMP_Text text;
-            if (existing != null)
-            {
-                text = existing.GetComponent<TMP_Text>();
-            }
-            else
-            {
-                var go = new GameObject("duelHint", typeof(RectTransform), typeof(CanvasRenderer),
-                    typeof(TextMeshProUGUI));
-                go.transform.SetParent(transform, false);
-                var rt = go.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0.5f, 0.5f);
-                rt.anchorMax = new Vector2(0.5f, 0.5f);
-                rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, 210f);
-                rt.sizeDelta = new Vector2(980f, 120f);
-                text = go.GetComponent<TextMeshProUGUI>();
-                var sample = transform.Find("roundInfo")?.GetComponent<TMP_Text>() ??
-                             GetComponentInChildren<TMP_Text>(true);
-                if (sample != null)
-                {
-                    text.font = sample.font;
-                }
-
-                text.fontSize = 36;
-                text.alignment = TextAlignmentOptions.Center;
-                text.color = new Color(1f, 0.93f, 0.55f, 1f);
-                text.enableWordWrapping = true;
-                text.overflowMode = TextOverflowModes.Overflow;
-                text.raycastTarget = false;
-            }
-
-            if (text != null)
-            {
-                Binding.BindText(text, ViewModel.Hint);
             }
         }
 

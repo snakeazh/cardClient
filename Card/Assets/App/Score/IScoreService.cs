@@ -3,9 +3,9 @@ using Framework.Save;
 namespace App.Score
 {
     /// <summary>
-    /// 章节积分。本轮积分 = 成功获得的筹码 / GameConst.ChipsForPoints（向下取整）。
+    /// 章节积分。本轮积分 = 本手对怪造成的总伤害（1:1，读 GameConst.ChipsForPoints）。
     /// 金币 = 总积分 / GameConst.ExchangePointsForGoldCoins（向下取整），不清空积分。
-    /// 尚未接入 GameSession。
+    /// GameSession 在逐个比牌结束后 AwardRoundScore，通关时 CollectGoldDelta。
     /// </summary>
     public interface IScoreService : ISaveFlushable
     {
@@ -32,7 +32,7 @@ namespace App.Score
         void BeginRound();
 
         /// <summary>
-        /// 本轮积分：成功获得的筹码 / GameConst.ChipsForPoints（向下取整）。
+        /// 本轮积分：本手对怪伤害 / GameConst.ChipsForPoints（向下取整，当前 1:1）。
         /// 换算后 &lt;= 0 则本轮为 0，不向上累加。
         /// </summary>
         void AwardRoundScore(int chipsWon);

@@ -1,0 +1,74 @@
+[
+  {
+    "Id": 1,
+    "Name": "天才少年",
+    "Icon": "Adventurer1",
+    "Type": 4,
+    "UnlockCondition": 0,
+    "Desc": "我去,你是怎么做到的?"
+  },
+  {
+    "Id": 2,
+    "Name": "周星星",
+    "Icon": "Warrior1",
+    "Type": 3,
+    "UnlockCondition": 0,
+    "Desc": "忘了告诉你,我有个外号叫赌~~~~~圣！"
+  },
+  {
+    "Id": 3,
+    "Name": "高进",
+    "Icon": "Adventurer1",
+    "Type": 4,
+    "UnlockCondition": 0,
+    "Desc": "我最爱吃的其实是巧克力！"
+  },
+  {
+    "Id": 4,
+    "Name": "小刀",
+    "Icon": "Adventurer1",
+    "Type": 3,
+    "UnlockCondition": 0,
+    "Desc": "我总算没有给师父丢脸"
+  },
+  {
+    "Id": 5,
+    "Name": "邀请函",
+    "Icon": "Ranger1",
+    "Type": 1,
+    "UnlockCondition": 0,
+    "Desc": "奇妙的冒险开始了"
+  },
+  {
+    "Id": 6,
+    "Name": "235",
+    "Icon": "Mage1",
+    "Type": 4,
+    "UnlockCondition": 0,
+    "Desc": "这不是以小博大,这是胆量和实力的结合"
+  },
+  {
+    "Id": 7,
+    "Name": "法国葡萄酒",
+    "Icon": "Adventurer1",
+    "Type": 2,
+    "UnlockCondition": 0,
+    "Desc": "窝腰验牌！"
+  },
+  {
+    "Id": 8,
+    "Name": "阿开的显示器",
+    "Icon": "Adventurer1",
+    "Type": 4,
+    "UnlockCondition": 0,
+    "Desc": "这你要是赢我,我当场把这个显示器吃了"
+  },
+  {
+    "Id": 9,
+    "Name": "一万!",
+    "Icon": "Adventurer1",
+    "Type": 4,
+    "UnlockCondition": 0,
+    "Desc": "一万暴击!一万暴击!"
+  }
+]

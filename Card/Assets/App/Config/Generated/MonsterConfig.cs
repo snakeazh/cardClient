@@ -31,6 +31,11 @@ namespace App.Config
         /// </summary>
         public int MonsterHp;
 
+        /// <summary>
+        /// 怪物机制
+        /// </summary>
+        public int MonsterEntry;
+
     }
 }
 

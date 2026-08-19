@@ -6,10 +6,10 @@ using System;
 namespace App.Config
 {
     /// <summary>
-    /// 配置表 MechanismConfig。访问：MechanismConfig.Get(id) / TryGet / All
+    /// 配置表 HeroEntryConfig。访问：HeroEntryConfig.Get(id) / TryGet / All
     /// </summary>
     [Serializable]
-    public sealed class MechanismConfig : ConfigRowBase<MechanismConfig>
+    public sealed class HeroEntryConfig : ConfigRowBase<HeroEntryConfig>
     {
         /// <summary>
         /// 效果名字
@@ -19,7 +19,7 @@ namespace App.Config
         /// <summary>
         /// 机制类型
         /// </summary>
-        public MechanismType Type;
+        public HeroEntryType Type;
 
         /// <summary>
         /// 值

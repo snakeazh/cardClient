@@ -24,6 +24,8 @@ namespace App.Game
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private TMP_Text cardAttackHeart;
         [SerializeField] private TMP_Text cardState;
+        [SerializeField] private RectTransform playerRoot;
+        [SerializeField] private Animator playerAnimator;
 
         public RectTransform CardIconRect
         {
@@ -31,6 +33,24 @@ namespace App.Game
             {
                 EnsureRefs();
                 return cardIcon != null ? cardIcon.rectTransform : null;
+            }
+        }
+
+        public RectTransform RootRect
+        {
+            get
+            {
+                EnsureRefs();
+                return playerRoot;
+            }
+        }
+
+        public Animator RootAnimator
+        {
+            get
+            {
+                EnsureRefs();
+                return playerAnimator;
             }
         }
 
@@ -197,6 +217,21 @@ namespace App.Game
             if (cardState == null)
             {
                 cardState = FindText("state");
+            }
+
+            if (playerRoot == null)
+            {
+                var node = FindDeep(transform, "PlayerRoot");
+                if (node != null)
+                {
+                    playerRoot = node as RectTransform ?? node.GetComponent<RectTransform>();
+                    playerAnimator = node.GetComponent<Animator>();
+                }
+            }
+
+            if (playerAnimator == null && playerRoot != null)
+            {
+                playerAnimator = playerRoot.GetComponent<Animator>();
             }
         }
 

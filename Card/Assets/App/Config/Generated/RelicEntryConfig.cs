@@ -6,20 +6,20 @@ using System;
 namespace App.Config
 {
     /// <summary>
-    /// 配置表 BossEntryConfig。访问：BossEntryConfig.Get(id) / TryGet / All
+    /// 配置表 RelicEntryConfig。访问：RelicEntryConfig.Get(id) / TryGet / All
     /// </summary>
     [Serializable]
-    public sealed class BossEntryConfig : ConfigRowBase<BossEntryConfig>
+    public sealed class RelicEntryConfig : ConfigRowBase<RelicEntryConfig>
     {
         /// <summary>
-        /// 名字
+        /// 效果名字
         /// </summary>
         public string Name;
 
         /// <summary>
         /// 机制类型
         /// </summary>
-        public BossEntryType Type;
+        public MechanismType Type;
 
         /// <summary>
         /// 值

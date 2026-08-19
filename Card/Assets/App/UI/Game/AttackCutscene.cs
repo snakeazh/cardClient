@@ -1,62 +1,68 @@
 using System;
+using App.Game;
 using DG.Tweening;
 using UnityEngine;
 
 namespace App.UI
 {
     /// <summary>
-        /// 攻击演出只负责 card_icon 位移；mask / hptext 由 GameUI 绑定驱动。
+    /// 攻击演出：PlayerRoot 播 clip，位移由 DOTween 驱动；mask / hptext 由 GameUI 绑定。
     /// </summary>
     public sealed class AttackCutscene
     {
-        private const float DashDuration = 0.38f;
-        private const float HitHold = 0.18f;
-        private const float ReturnDuration = 0.32f;
+        private const string DefaultClip = "ani_default";
         private const float HpHideDelay = 0.85f;
 
-        private Transform _root;
-        private RectTransform _playerIcon;
-        private Transform _playerIconHome;
-        private Vector3 _playerIconHomePos;
-        private Vector2 _playerIconHomeAnchored;
-        private readonly RectTransform[] _enemyIcons = new RectTransform[3];
+        private static readonly float[] StartDur = { 0.43f, 0.90f, 1.25f };
+        private static readonly float[] MoveDur = { 0.18f, 0.18f, 0.18f };
+        private static readonly float[] EndDur = { 0.25f, 0.25f, 0.33f };
+        private static readonly float[] BackDur = { 0.45f, 0.45f, 0.55f };
+
+        private Transform _hud;
+        private RectTransform _playerRoot;
+        private Transform _playerHome;
+        private Animator _playerAnim;
+        private Vector2 _playerHomeAnchored;
+        private readonly RectTransform[] _enemyRoots = new RectTransform[3];
+        private readonly Animator[] _enemyAnims = new Animator[3];
+        private RectTransform _flight;
         private Sequence _seq;
         private int _playToken;
 
-        public void Bind(Transform root, Transform playerInfo, GameObject[] enemyInfos)
+        public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
-            _root = root;
-            _playerIcon = FindChild(playerInfo, "card_icon") as RectTransform;
-            if (_playerIcon != null)
+            _hud = hud;
+            BindPlayer(player);
+
+            var count = enemies != null ? Math.Min(enemies.Length, _enemyRoots.Length) : 0;
+            for (var i = 0; i < _enemyRoots.Length; i++)
             {
-                _playerIconHome = _playerIcon.parent;
-                _playerIconHomePos = _playerIcon.position;
-                _playerIconHomeAnchored = _playerIcon.anchoredPosition;
+                _enemyRoots[i] = null;
+                _enemyAnims[i] = null;
             }
 
-            var count = enemyInfos != null ? Math.Min(enemyInfos.Length, _enemyIcons.Length) : 0;
             for (var i = 0; i < count; i++)
             {
-                var info = enemyInfos[i] != null ? enemyInfos[i].transform : null;
-                _enemyIcons[i] = FindChild(info, "card_icon") as RectTransform;
+                BindEnemy(i, enemies[i]);
             }
         }
 
         public Vector3 HitPosition(int visualSlot)
         {
-            if (visualSlot < 0 || visualSlot >= _enemyIcons.Length || _enemyIcons[visualSlot] == null)
+            if (visualSlot < 0 || visualSlot >= _enemyRoots.Length || _enemyRoots[visualSlot] == null)
             {
                 return Vector3.zero;
             }
 
-            return _enemyIcons[visualSlot].position;
+            return _enemyRoots[visualSlot].position;
         }
 
-        public void Play(int visualSlot, Action onHit, Action onReturned, Action onDone)
+        public void Play(int visualSlot, int level, Action onHit, Action onReturned, Action onDone)
         {
             Kill();
-            if (_playerIcon == null || visualSlot < 0 || visualSlot >= _enemyIcons.Length ||
-                _enemyIcons[visualSlot] == null)
+            level = Mathf.Clamp(level, 1, 3);
+            if (_playerRoot == null || visualSlot < 0 || visualSlot >= _enemyRoots.Length ||
+                _enemyRoots[visualSlot] == null)
             {
                 onHit?.Invoke();
                 onReturned?.Invoke();
@@ -65,16 +71,22 @@ namespace App.UI
             }
 
             var token = ++_playToken;
-            _playerIconHomePos = _playerIcon.position;
-            _playerIconHomeAnchored = _playerIcon.anchoredPosition;
-            var homeParent = _playerIconHome != null ? _playerIconHome : _playerIcon.parent;
-            var hitPos = _enemyIcons[visualSlot].position;
+            var idx = level - 1;
+            var startDur = StartDur[idx];
+            var moveDur = MoveDur[idx];
+            var endDur = EndDur[idx];
+            var backDur = BackDur[idx];
+            var targetAnim = _enemyAnims[visualSlot];
+            var homeParent = _playerHome != null ? _playerHome : _playerRoot.parent;
+            _playerHomeAnchored = _playerRoot.anchoredPosition;
+            var homePos = _playerRoot.position;
+            var hitPos = _enemyRoots[visualSlot].position;
 
-            _playerIcon.SetParent(_root, true);
-            _playerIcon.SetAsLastSibling();
+            AttachToFlight(homePos);
 
             _seq = DOTween.Sequence();
-            _seq.Append(_playerIcon.DOMove(hitPos, DashDuration).SetEase(Ease.InQuad));
+            PlayClip(_playerAnim, Clip(level, "start"));
+            _seq.AppendInterval(startDur);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -82,11 +94,21 @@ namespace App.UI
                     return;
                 }
 
-                _playerIcon.DOPunchScale(Vector3.one * 0.12f, 0.2f, 8, 0.6f);
+                PlayClip(_playerAnim, Clip(level, "move"));
+            });
+            _seq.Append(_flight.DOMove(hitPos, moveDur).SetEase(Ease.InQuad));
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(_playerAnim, Clip(level, "end"));
+                PlayClip(targetAnim, Clip(level, "hit"));
                 onHit?.Invoke();
             });
-            _seq.AppendInterval(HitHold);
-            _seq.Append(_playerIcon.DOMove(_playerIconHomePos, ReturnDuration).SetEase(Ease.OutQuad));
+            _seq.AppendInterval(endDur);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -94,7 +116,19 @@ namespace App.UI
                     return;
                 }
 
-                RestoreIcon(homeParent);
+                PlayClip(_playerAnim, Clip(level, "back"));
+                PlayClip(targetAnim, DefaultClip);
+            });
+            _seq.Append(_flight.DOMove(homePos, backDur).SetEase(Ease.OutQuad));
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                RestoreRoot(homeParent);
+                PlayClip(_playerAnim, DefaultClip);
                 onReturned?.Invoke();
             });
             _seq.AppendInterval(HpHideDelay);
@@ -112,7 +146,81 @@ namespace App.UI
         public void Dispose()
         {
             Kill();
-            RestoreIcon(_playerIconHome);
+            RestoreRoot(_playerHome);
+            PlayClip(_playerAnim, DefaultClip);
+            DestroyFlight();
+        }
+
+        private void BindPlayer(PlayerItem player)
+        {
+            _playerRoot = player != null ? player.RootRect : null;
+            _playerAnim = player != null ? player.RootAnimator : null;
+            if (_playerRoot != null)
+            {
+                _playerHome = _playerRoot.parent;
+                _playerHomeAnchored = _playerRoot.anchoredPosition;
+            }
+            else
+            {
+                _playerHome = null;
+            }
+        }
+
+        private void BindEnemy(int index, PlayerItem enemy)
+        {
+            if (enemy == null)
+            {
+                return;
+            }
+
+            _enemyRoots[index] = enemy.RootRect;
+            _enemyAnims[index] = enemy.RootAnimator;
+        }
+
+        private void AttachToFlight(Vector3 worldPos)
+        {
+            var flight = EnsureFlight();
+            flight.gameObject.SetActive(true);
+            flight.SetParent(_hud, false);
+            flight.SetAsLastSibling();
+            flight.position = worldPos;
+            _playerRoot.SetParent(flight, true);
+        }
+
+        private RectTransform EnsureFlight()
+        {
+            if (_flight != null)
+            {
+                return _flight;
+            }
+
+            var go = new GameObject("AttackFlight", typeof(RectTransform));
+            _flight = go.GetComponent<RectTransform>();
+            _flight.anchorMin = new Vector2(0.5f, 0.5f);
+            _flight.anchorMax = new Vector2(0.5f, 0.5f);
+            _flight.pivot = new Vector2(0.5f, 0.5f);
+            _flight.sizeDelta = Vector2.zero;
+            _flight.localScale = Vector3.one;
+            _flight.localRotation = Quaternion.identity;
+            return _flight;
+        }
+
+        private void RestoreRoot(Transform home)
+        {
+            if (_playerRoot == null || home == null)
+            {
+                return;
+            }
+
+            _playerRoot.SetParent(home, false);
+            _playerRoot.anchoredPosition = _playerHomeAnchored;
+            _playerRoot.localScale = Vector3.one;
+            _playerRoot.localRotation = Quaternion.identity;
+
+            if (_flight != null)
+            {
+                _flight.gameObject.SetActive(false);
+            }
         }
 
         private void Kill()
@@ -120,43 +228,42 @@ namespace App.UI
             _playToken++;
             _seq?.Kill();
             _seq = null;
+            RestoreRoot(_playerHome);
         }
 
-        private void RestoreIcon(Transform home)
+        private void DestroyFlight()
         {
-            if (_playerIcon == null || home == null)
+            if (_flight == null)
             {
                 return;
             }
 
-            _playerIcon.SetParent(home, false);
-            _playerIcon.anchoredPosition = _playerIconHomeAnchored;
-            _playerIcon.localScale = Vector3.one;
-            _playerIcon.localRotation = Quaternion.identity;
+            UnityEngine.Object.Destroy(_flight.gameObject);
+            _flight = null;
         }
 
-        private static Transform FindChild(Transform root, string name)
+        private static string Clip(int level, string phase)
         {
-            if (root == null)
+            return $"ani_atk_lv{level:D2}_{phase}";
+        }
+
+        private static void PlayClip(Animator animator, string clipName)
+        {
+            if (animator == null || string.IsNullOrEmpty(clipName))
             {
-                return null;
+                return;
             }
 
-            if (root.name == name)
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.enabled = true;
+            if (!animator.isInitialized)
             {
-                return root;
+                animator.Rebind();
+                animator.Update(0f);
             }
 
-            for (var i = 0; i < root.childCount; i++)
-            {
-                var found = FindChild(root.GetChild(i), name);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-
-            return null;
+            animator.Play(clipName, 0, 0f);
+            animator.Update(0f);
         }
     }
 }

@@ -167,8 +167,7 @@ namespace App.UI
 
         private void BindAttackFx()
         {
-            var playerRoot = _playerItem != null ? _playerItem.transform : ResolveSlot("PlayerItem");
-            _attackFx.Bind(transform, playerRoot, _enemyInfos);
+            _attackFx.Bind(transform, _playerItem, _enemyItems);
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
         }
 
@@ -195,6 +194,7 @@ namespace App.UI
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
             _attackFx.Play(session.AttackVisualSlot,
+                session.AttackLevel,
                 () =>
                 {
                     ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
@@ -622,80 +622,9 @@ namespace App.UI
 
         private void RefreshShop()
         {
-            if (ViewModel == null || ViewModel.Session.Phase != GamePhase.Shop)
+            if (_shopContent != null)
             {
-                if (_shopContent != null)
-                {
-                    _shopContent.gameObject.SetActive(false);
-                }
-
-                return;
-            }
-
-            if (_shopContent == null)
-            {
-                var go = new GameObject("ShopItems", typeof(RectTransform));
-                go.transform.SetParent(transform, false);
-                var rt = go.GetComponent<RectTransform>();
-                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, 80f);
-                rt.sizeDelta = new Vector2(920f, 900f);
-                _shopContent = go.transform;
-            }
-
-            _shopContent.gameObject.SetActive(true);
-            for (var i = _shopContent.childCount - 1; i >= 0; i--)
-            {
-                Destroy(_shopContent.GetChild(i).gameObject);
-            }
-
-            var template = FindBtn("BlindBtn");
-            var catalog = GameBalance.Catalog;
-            for (var i = 0; i < catalog.Count; i++)
-            {
-                var item = catalog[i];
-                GameObject go;
-                if (template != null)
-                {
-                    go = Instantiate(template.gameObject, _shopContent);
-                    var bind = go.GetComponent<Framework.UI.Binding.UIBind>();
-                    if (bind != null)
-                    {
-                        Destroy(bind);
-                    }
-                }
-                else
-                {
-                    go = new GameObject(item.Id, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
-                        typeof(Button));
-                    go.transform.SetParent(_shopContent, false);
-                }
-
-                go.name = item.Id;
-                go.SetActive(true);
-                var rt = go.GetComponent<RectTransform>();
-                if (rt != null)
-                {
-                    rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = new Vector2(0f, 360f - i * 72f);
-                    rt.sizeDelta = new Vector2(860f, 64f);
-                }
-
-                var label = go.GetComponentInChildren<TMP_Text>();
-                if (label != null)
-                {
-                    label.text = $"{item.Name}  {item.Price}金  {item.Effect}";
-                    label.fontSize = 22;
-                }
-
-                var button = go.GetComponent<Button>();
-                var id = item.Id;
-                if (button != null)
-                {
-                    button.onClick.RemoveAllListeners();
-                    button.onClick.AddListener(() => ViewModel.Session.Buy(id));
-                    button.interactable = true;
-                }
+                _shopContent.gameObject.SetActive(false);
             }
         }
 

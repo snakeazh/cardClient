@@ -17,11 +17,6 @@ namespace App.Config
         public int MonsterId;
 
         /// <summary>
-        /// 怪物机制
-        /// </summary>
-        public int MonsterEntry;
-
-        /// <summary>
         /// 怪物类型
         /// </summary>
         public MonsterType Type;
@@ -35,6 +30,11 @@ namespace App.Config
         /// 生命值
         /// </summary>
         public int MonsterHp;
+
+        /// <summary>
+        /// 怪物机制
+        /// </summary>
+        public int MonsterEntry;
 
     }
 }

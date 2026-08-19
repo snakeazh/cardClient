@@ -2,66 +2,78 @@
   {
     "Id": 101,
     "Name": "禁搓红心",
-    "EntryId": 0
+    "Type": 1,
+    "Value": 0,
+    "Desc": "本局搓牌时,无法出现红心花色"
   },
   {
     "Id": 102,
     "Name": "禁搓黑桃",
-    "EntryId": 0
+    "Type": 2,
+    "Value": 0,
+    "Desc": "本局搓牌时,无法出现黑桃花色"
   },
   {
     "Id": 103,
     "Name": "禁搓方片",
-    "EntryId": 0
+    "Type": 3,
+    "Value": 0,
+    "Desc": "本局搓牌时,无法出现方片花色"
   },
   {
     "Id": 104,
     "Name": "禁搓梅花",
-    "EntryId": 0
+    "Type": 4,
+    "Value": 0,
+    "Desc": "本局搓牌时,无法出现梅花花色"
   },
   {
     "Id": 105,
     "Name": "禁搓人头",
-    "EntryId": 0
+    "Type": 5,
+    "Value": 0,
+    "Desc": "本局搓牌时,无法出现人头牌"
   },
   {
     "Id": 106,
     "Name": "燧石",
-    "EntryId": 0
+    "Type": 6,
+    "Value": -0.5,
+    "Desc": "本局结算时,牌型的倍率减半"
   },
   {
     "Id": 107,
     "Name": "锋芒",
-    "EntryId": 0
+    "Type": 7,
+    "Value": 1,
+    "Desc": "本局内你的随机一种遗物将失效"
   },
   {
     "Id": 108,
     "Name": "孤注一掷",
-    "EntryId": 0
+    "Type": 8,
+    "Value": 0.5,
+    "Desc": "领主每次都会投注你当前血量一半筹码"
   },
   {
     "Id": 109,
-    "Name": "孤注一掷",
-    "EntryId": 0
+    "Name": "同花",
+    "Type": 9,
+    "Value": -0.4,
+    "Desc": "同花牌型在攻击时,伤害降低40%"
   },
   {
     "Id": 110,
-    "Name": "偷天换日",
-    "EntryId": 0
+    "Name": "同花顺",
+    "Type": 10,
+    "Value": -0.25,
+    "Desc": "同花顺牌型在攻击时,伤害降低25%"
   },
   {
     "Id": 111,
-    "Name": "同花",
-    "EntryId": 0
-  },
-  {
-    "Id": 112,
-    "Name": "同花顺",
-    "EntryId": 0
-  },
-  {
-    "Id": 113,
     "Name": "顺子",
-    "EntryId": 0
+    "Type": 11,
+    "Value": -0.5,
+    "Desc": "顺子牌型在攻击时,伤害降低50%"
   }
 ]

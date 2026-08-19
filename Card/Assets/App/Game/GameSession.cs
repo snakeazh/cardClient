@@ -91,6 +91,11 @@ namespace App.Game
         public int RaiseLowUnits => RaiseUnits(GameBalance.RaiseLowMult);
         public int RaiseHighUnits => RaiseUnits(GameBalance.RaiseHighMult);
         public ScoreSnapshot Score => ScoreSvc()?.Current ?? new ScoreSnapshot(0, 0, 0);
+        /// <summary>本关结算刚发放的金币（含双倍）。</summary>
+        public int ShopGoldGranted => _shopGoldGranted;
+        /// <summary>本关每回合积分，进下一关 BeginStage 后清空。</summary>
+        public IReadOnlyList<int> StageRoundScores =>
+            ScoreSvc()?.StageRoundScores ?? Array.Empty<int>();
         public int PendingAttackDamage { get; private set; }
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
@@ -843,6 +848,7 @@ namespace App.Game
             }
 
             var enemy = _compareQueue[_compareCursor];
+            LockBestOpenCardsIfEnemy(enemy);
             var openScore = EvaluateSeat(Player);
             var targetScore = EvaluateSeat(enemy);
             _pendingOpener = Player;
@@ -1392,11 +1398,10 @@ namespace App.Game
             return (1f + extra) * flint;
         }
 
-        /// <summary>评估座位牌型。BOSS 禁用花色/人头会先过滤，燧石减半筹码和倍率。</summary>
-        public HandScore EvaluateSeat(SeatState seat)
+        private void GetScoreBan(out Suit? banned, out bool banFaces)
         {
-            Suit? banned = null;
-            var banFaces = Run.Affix == BossAffix.BanScoreFace;
+            banned = null;
+            banFaces = Run.Affix == BossAffix.BanScoreFace;
             switch (Run.Affix)
             {
                 case BossAffix.BanScoreHeart: banned = Suit.Heart; break;
@@ -1404,8 +1409,30 @@ namespace App.Game
                 case BossAffix.BanScoreDiamond: banned = Suit.Diamond; break;
                 case BossAffix.BanScoreClub: banned = Suit.Club; break;
             }
+        }
 
-            var score = HandEvaluator.Evaluate(CollectEvalCards(seat), banned, banFaces);
+        /// <summary>结算前为敌人锁定 5 选 3 的最大牌型。透视阶段不调用，避免提前抬牌。</summary>
+        private void LockBestOpenCardsIfEnemy(SeatState seat)
+        {
+            if (seat == null || seat.IsPlayer || seat.Hand == null)
+            {
+                return;
+            }
+
+            GetScoreBan(out var banned, out var banFaces);
+            HandEvaluator.SelectBestOpen(
+                seat.Hand,
+                seat.CardSelected,
+                GameBalance.CardsDealt(false),
+                banned,
+                banFaces);
+        }
+
+        /// <summary>评估座位牌型。BOSS 禁用花色/人头会先过滤，燧石减半筹码和倍率。</summary>
+        public HandScore EvaluateSeat(SeatState seat)
+        {
+            GetScoreBan(out var banned, out var banFaces);
+            var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces), banned, banFaces);
             if (Run.Affix == BossAffix.Flint)
             {
                 score = new HandScore(
@@ -1515,7 +1542,7 @@ namespace App.Game
             EnterOpenReady();
         }
 
-        /// <summary>每人发牌。玩家 5 张，敌人 3 张。未上场的敌人不发。</summary>
+        /// <summary>每人发牌。玩家和敌人都发 5 张。未上场的敌人不发。</summary>
         private void DealAll()
         {
             DealSerial++;
@@ -2337,6 +2364,8 @@ namespace App.Game
                 return false;
             }
 
+            LockBestOpenCardsIfEnemy(opener);
+            LockBestOpenCardsIfEnemy(target);
             var openScore = EvaluateSeat(opener);
             var targetScore = EvaluateSeat(target);
             _pendingOpenerWins = openScore.CompareTo(targetScore) > 0;
@@ -2491,6 +2520,7 @@ namespace App.Game
                     continue;
                 }
 
+                LockBestOpenCardsIfEnemy(seat);
                 var score = EvaluateSeat(seat);
                 if (first || score.CompareTo(best) > 0)
                 {
@@ -2682,32 +2712,28 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
-        private static Card[] CollectEvalCards(SeatState seat)
+        private static Card[] CollectEvalCards(SeatState seat, Suit? banned, bool banFaces)
         {
             if (seat == null || seat.Hand == null)
             {
                 return Array.Empty<Card>();
             }
 
+            if (seat.CountSelectedCards() == GameBalance.OpenHandSize)
+            {
+                return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
+            }
+
             if (!seat.IsPlayer)
             {
-                var n = Math.Min(GameBalance.EnemyCardsDealt, seat.Hand.Length);
-                var enemy = new Card[n];
-                Array.Copy(seat.Hand, enemy, n);
-                return enemy;
+                return HandEvaluator.CopyBestOpenCards(
+                    seat.Hand,
+                    GameBalance.CardsDealt(false),
+                    banned,
+                    banFaces);
             }
 
-            var picked = new List<Card>(GameBalance.OpenHandSize);
-            var limit = Math.Min(GameBalance.PlayerCardsDealt, seat.Hand.Length);
-            for (var i = 0; i < limit; i++)
-            {
-                if (seat.IsCardSelected(i))
-                {
-                    picked.Add(seat.Hand[i]);
-                }
-            }
-
-            return picked.ToArray();
+            return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
         }
 
         private string FormatPlayerHand()

@@ -10,6 +10,7 @@ namespace App.UI
         public const string GameUI = "App.GameUI";
         public const string BattleFailPopup = "App.BattleFailPopup";
         public const string BattleShopPop = "App.BattleShopPop";
+        public const string BattleSettleUpPop = "App.BattleSettleUpPop";
         public const string LevelUI = "App.LevelUI";
     }
 }

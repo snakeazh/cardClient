@@ -4,7 +4,7 @@
     "Type": 1,
     "RefreshProbability": 0.6,
     "Name": "粗制长剑",
-    "Icon": "",
+    "Icon": "Sword1",
     "Price": 10,
     "SellingPrice": 5,
     "MechanismId": [
@@ -17,7 +17,7 @@
     "Type": 1,
     "RefreshProbability": 0.6,
     "Name": "青铜项链",
-    "Icon": "",
+    "Icon": "Necklace1",
     "Price": 10,
     "SellingPrice": 5,
     "MechanismId": [
@@ -291,7 +291,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "235",
-    "Icon": "",
+    "Icon": "TwoThreeFive",
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [

@@ -48,6 +48,7 @@ namespace App.UI
             Resources = resources;
 
             CollectHeroes();
+            SelectedDifficulty.Value = ResolveInitialDifficulty();
             CollectStages();
 
             LastBtnCommand = new RelayCommand(OnLast);
@@ -58,6 +59,7 @@ namespace App.UI
             UnlockLevelCommand = new RelayCommand(
                 () => { },
                 () => false);
+            NextDifficultyCommand = new RelayCommand(CycleDifficulty);
         }
 
         public IResourceService Resources { get; }
@@ -71,6 +73,8 @@ namespace App.UI
         public ObservableProperty<int> SelectedHeroId { get; } = new ObservableProperty<int>();
 
         public ObservableProperty<int> SelectedLevelId { get; } = new ObservableProperty<int>();
+
+        public ObservableProperty<int> SelectedDifficulty { get; } = new ObservableProperty<int>();
 
         public ObservableProperty<float> HorX { get; } = new ObservableProperty<float>(HeroHorX);
 
@@ -100,6 +104,8 @@ namespace App.UI
 
         public ObservableProperty<string> StageInfoText { get; } = new ObservableProperty<string>();
 
+        public ObservableProperty<string> DifficultyText { get; } = new ObservableProperty<string>();
+
         public IRelayCommand LastBtnCommand { get; }
 
         public IRelayCommand UseHeroCommand { get; }
@@ -109,6 +115,8 @@ namespace App.UI
         public IRelayCommand StartGameCommand { get; }
 
         public IRelayCommand UnlockLevelCommand { get; }
+
+        public IRelayCommand NextDifficultyCommand { get; }
 
         public static int GetDefaultHeroId()
         {
@@ -165,7 +173,29 @@ namespace App.UI
 
         public string GetLevelUnlockCondition(LevelSnapshot snapshot)
         {
-            if (snapshot == null || snapshot.Level <= 1)
+            if (snapshot == null)
+            {
+                return string.Empty;
+            }
+
+            if (!_progress.IsDifficultyUnlocked(snapshot.Difficulty))
+            {
+                var diffs = _levels.GetDifficulties();
+                if (diffs != null)
+                {
+                    for (var i = 1; i < diffs.Count; i++)
+                    {
+                        if (diffs[i] == snapshot.Difficulty)
+                        {
+                            return $"通关难度{diffs[i - 1]}可解锁";
+                        }
+                    }
+                }
+
+                return "未解锁该难度";
+            }
+
+            if (snapshot.Level <= 1)
             {
                 return string.Empty;
             }
@@ -186,12 +216,43 @@ namespace App.UI
 
         public void SelectLevel(int levelId)
         {
-            if (!_levels.TryGetById(levelId, out _))
+            if (!_levels.TryGetById(levelId, out var snapshot) || snapshot == null)
             {
                 return;
             }
 
             SelectedLevelId.Value = levelId;
+            if (snapshot.Difficulty != SelectedDifficulty.Value)
+            {
+                SelectDifficulty(snapshot.Difficulty);
+                SelectedLevelId.Value = levelId;
+            }
+
+            RefreshStagePanel();
+        }
+
+        public void SelectDifficulty(int difficulty)
+        {
+            if (_levels.GetMaxLevel(difficulty) <= 0)
+            {
+                return;
+            }
+
+            SelectedDifficulty.Value = difficulty;
+            _progress.SetLastDifficulty(difficulty);
+            CollectStages();
+
+            var lastId = _progress.LastLevelId;
+            if (_levels.TryGetById(lastId, out var last) && last != null && last.Difficulty == difficulty)
+            {
+                SelectedLevelId.Value = lastId;
+            }
+            else
+            {
+                var first = _levels.Get(difficulty, 1);
+                SelectedLevelId.Value = first != null ? first.Id : 0;
+            }
+
             RefreshStagePanel();
         }
 
@@ -240,16 +301,7 @@ namespace App.UI
             ShowLevelSelect.Value = true;
             ShowUseHeroBtn.Value = false;
             ShowUnlockHeroBtn.Value = false;
-
-            var levelId = _progress.LastLevelId;
-            if (!_levels.TryGetById(levelId, out _))
-            {
-                _levels.TrySelect(_levels.DefaultDifficulty, 1);
-                levelId = _levels.CurrentLevelId;
-            }
-
-            SelectedLevelId.Value = levelId;
-            RefreshStagePanel();
+            SelectDifficulty(ResolveInitialDifficulty());
         }
 
         private void UnlockSelectedHero()
@@ -289,6 +341,7 @@ namespace App.UI
 
             _progress.SetLastHero(SelectedHeroId.Value);
             _progress.SetLastLevel(SelectedLevelId.Value);
+            _progress.SetLastDifficulty(SelectedDifficulty.Value);
             _session.StartNewRun();
             await _ui.Close(this);
             await _ui.Open(_tableVm);
@@ -326,9 +379,10 @@ namespace App.UI
         {
             var snapshot = _levels.GetById(SelectedLevelId.Value);
             var unlocked = IsLevelUnlocked(snapshot);
+            DifficultyText.Value = FormatDifficulty(SelectedDifficulty.Value);
             if (unlocked && snapshot != null)
             {
-                StageNum.Value = $"关卡{snapshot.Level}";
+                StageNum.Value = $"难度{snapshot.Difficulty} 关卡{snapshot.Level}";
                 StageInfoText.Value = FormatStageInfo(snapshot);
             }
             else
@@ -343,6 +397,7 @@ namespace App.UI
             StartGameCommand.RaiseCanExecuteChanged();
             UnlockLevelCommand.RaiseCanExecuteChanged();
             SelectedLevelId.ForceNotify();
+            SelectedDifficulty.ForceNotify();
         }
 
         private static string FormatStageInfo(LevelSnapshot snapshot)
@@ -380,7 +435,12 @@ namespace App.UI
         private void CollectStages()
         {
             _stages.Clear();
-            var difficulty = _levels.DefaultDifficulty;
+            var difficulty = SelectedDifficulty.Value;
+            if (_levels.GetMaxLevel(difficulty) <= 0)
+            {
+                difficulty = _levels.DefaultDifficulty;
+            }
+
             var max = _levels.GetMaxLevel(difficulty);
             for (var i = 1; i <= max; i++)
             {
@@ -389,6 +449,62 @@ namespace App.UI
                     _stages.Add(snapshot);
                 }
             }
+        }
+
+        private void CycleDifficulty()
+        {
+            var diffs = _levels.GetDifficulties();
+            if (diffs == null || diffs.Count == 0)
+            {
+                return;
+            }
+
+            var current = SelectedDifficulty.Value;
+            var idx = 0;
+            for (var i = 0; i < diffs.Count; i++)
+            {
+                if (diffs[i] == current)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            SelectDifficulty(diffs[(idx + 1) % diffs.Count]);
+        }
+
+        private int ResolveInitialDifficulty()
+        {
+            var difficulty = _progress.LastDifficulty;
+            if (_levels.GetMaxLevel(difficulty) > 0 && _progress.IsDifficultyUnlocked(difficulty))
+            {
+                return difficulty;
+            }
+
+            if (_progress.LastLevelId > 0 &&
+                _levels.TryGetById(_progress.LastLevelId, out var snapshot) &&
+                snapshot != null &&
+                _progress.IsDifficultyUnlocked(snapshot.Difficulty))
+            {
+                return snapshot.Difficulty;
+            }
+
+            return _levels.DefaultDifficulty;
+        }
+
+        private string FormatDifficulty(int difficulty)
+        {
+            if (!_progress.IsDifficultyUnlocked(difficulty))
+            {
+                return $"难度{difficulty} 未解锁";
+            }
+
+            if (_progress.IsCleared(difficulty))
+            {
+                return $"难度{difficulty} 已完成";
+            }
+
+            return $"难度{difficulty}";
         }
     }
 }

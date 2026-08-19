@@ -22,6 +22,7 @@ namespace App.Config
             }
 
             var bossEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BossEntryConfig);
+            var collectionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.CollectionConfig);
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
             var handScoreConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HandScoreConfig);
             var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
@@ -35,6 +36,7 @@ namespace App.Config
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
 
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
+            CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
             HandScoreConfig.Load(ConfigJson.FromArrayJson<HandScoreConfig>(handScoreConfigAsset.text));
             HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));

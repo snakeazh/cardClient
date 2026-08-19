@@ -23,6 +23,7 @@ namespace App.Game
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private TMP_Text cardAttackHeart;
+        [SerializeField] private GameObject attackRoot;
         [SerializeField] private TMP_Text cardState;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
@@ -142,9 +143,19 @@ namespace App.Game
         public void SetAttack(int attack)
         {
             EnsureRefs();
+            var value = Mathf.Max(0, attack);
             if (cardAttackValue != null)
             {
-                cardAttackValue.text = Mathf.Max(0, attack).ToString();
+                cardAttackValue.text = value.ToString();
+            }
+
+            if (attackRoot != null)
+            {
+                attackRoot.SetActive(value > 0);
+            }
+            else if (cardAttackValue != null)
+            {
+                cardAttackValue.gameObject.SetActive(value > 0);
             }
         }
 
@@ -207,6 +218,12 @@ namespace App.Game
             if (cardAttackValue == null)
             {
                 cardAttackValue = FindText("card_attackValue");
+            }
+
+            if (attackRoot == null)
+            {
+                var node = FindDeep(transform, "attack");
+                attackRoot = node != null ? node.gameObject : null;
             }
 
             if (cardAttackHeart == null)

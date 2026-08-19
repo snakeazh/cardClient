@@ -6,10 +6,10 @@ using System;
 namespace App.Config
 {
     /// <summary>
-    /// 配置表 HeroConfig。访问：HeroConfig.Get(id) / TryGet / All
+    /// 配置表 CollectionConfig。访问：CollectionConfig.Get(id) / TryGet / All
     /// </summary>
     [Serializable]
-    public sealed class HeroConfig : ConfigRowBase<HeroConfig>
+    public sealed class CollectionConfig : ConfigRowBase<CollectionConfig>
     {
         /// <summary>
         /// 名字
@@ -17,24 +17,14 @@ namespace App.Config
         public string Name;
 
         /// <summary>
-        /// 生命值
-        /// </summary>
-        public int Hp;
-
-        /// <summary>
-        /// 攻击力
-        /// </summary>
-        public int HeroDamage;
-
-        /// <summary>
-        /// 形象icon
+        /// 收藏品icon
         /// </summary>
         public string Icon;
 
         /// <summary>
-        /// 英雄机制id
+        /// 品质类型
         /// </summary>
-        public int HeroEntryId;
+        public QualityType Type;
 
         /// <summary>
         /// 解锁难度条件

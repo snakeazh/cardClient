@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
+using App.Level;
 using App.Score;
 
 namespace App.Game
 {
     /// <summary>
-    /// 炸金花闯关对局状态机：发牌 → 看牌/搓牌 → 下注街（玩家先手，AI 后手）→ 摊牌/开牌 → 攻击结算。
+    /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → 攻击力×牌型倍率结算伤害。
     /// 敌人座位固定 3 个，人格在 <see cref="CreateSeat"/> 绑定，BOSS 关覆盖成 Expert。
     /// </summary>
     public sealed class GameSession
@@ -42,6 +43,14 @@ namespace App.Game
         private SeatState _pendingOpenTarget;
         private bool _pendingOpenerWins;
         private SeatState _pendingAttackTarget;
+        private readonly List<SeatState> _compareQueue = new List<SeatState>();
+        private int _compareCursor;
+        private int _roundDamageDealt;
+        private bool _sequentialCompare;
+        /// <summary>本回合在血量换算之外额外获得的勇气值（借贷券 / 广告借贷）。</summary>
+        private int _loanCourageBonus;
+        /// <summary>本关商店已按积分发放的金币，供双倍广告再发一份。</summary>
+        private int _shopGoldGranted;
         /// <summary>跨手记录玩家弃/加/看/闷，供 AI 读线。</summary>
         public readonly PlayerHistory History = new PlayerHistory();
 
@@ -54,7 +63,7 @@ namespace App.Game
             _rng = rng ?? new Random();
             Run = new RunState();
             Player = CreateSeat(0, "你", true);
-            // 座位写死 3 个：A 保守 / B 平衡偏激进 / C 激进。每关再按 EnemyCountForStage 决定谁上场。
+            // 座位写死 3 个：A 保守 / B 平衡偏激进 / C 激进。每关再按关卡配置决定谁上场。
             Enemies = new[]
             {
                 CreateSeat(1, "敌人A", false),
@@ -81,6 +90,7 @@ namespace App.Game
         public int PlayerCallCost => CostToReach(CurrentRoundUnits());
         public int RaiseLowUnits => RaiseUnits(GameBalance.RaiseLowMult);
         public int RaiseHighUnits => RaiseUnits(GameBalance.RaiseHighMult);
+        public ScoreSnapshot Score => ScoreSvc()?.Current ?? new ScoreSnapshot(0, 0, 0);
         public int PendingAttackDamage { get; private set; }
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
@@ -88,6 +98,10 @@ namespace App.Game
         /// <summary>攻击演出强度：1 低 / 2 中 / 3 高。</summary>
         public int AttackLevel { get; private set; } = 1;
         public bool AttackPlaying => _pendingAttackTarget != null;
+        /// <summary>当前攻击由敌人打向玩家。</summary>
+        public bool IncomingAttack { get; private set; }
+        /// <summary>本手正在逐个与敌人比牌。</summary>
+        public bool SequentialCompare => _sequentialCompare;
         public int RevealPlaySerial { get; private set; }
         public int RevealWinnerId { get; private set; } = -1;
         public readonly List<int> RevealSeatIds = new List<int>();
@@ -103,12 +117,15 @@ namespace App.Game
             !Player.Folded;
         public bool PlayerMayCancelLookOrRub =>
             Phase == GamePhase.WaitingRub;
-        public bool PlayerCanOpen => Phase == GamePhase.Betting && !Player.Folded && CanAffordOpen(Player);
+        public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
         public bool PlayerMayCompare =>
             !AiActing &&
-            Phase == GamePhase.Betting &&
+            Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
-            CountOpponentsInHand() == 1;
+            AnyEnemyAlive() &&
+            Player.CountSelectedCards() == GameBalance.OpenHandSize &&
+            _revealKind == RevealKind.None &&
+            !AttackPlaying;
 
         public IEnumerable<SeatState> AllSeats()
         {
@@ -152,7 +169,7 @@ namespace App.Game
 
         public void SelectRubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index > 2)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
             {
                 return;
             }
@@ -182,7 +199,7 @@ namespace App.Game
 
         public void RubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index > 2 || Run.RubsLeft <= 0)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt || Run.RubsLeft <= 0)
             {
                 return;
             }
@@ -207,17 +224,11 @@ namespace App.Game
                 return;
             }
 
-            EnterBetting();
+            ReturnToOpenReady(Run.LastRubMessage);
         }
 
         public void CancelLookOrRub()
         {
-            if (Phase == GamePhase.WaitingLookChoice)
-            {
-                BlindBet();
-                return;
-            }
-
             SkipRub();
         }
 
@@ -230,17 +241,17 @@ namespace App.Game
 
             _pendingRubIndex = -1;
             Run.RubsLeft = 0;
-            EnterBetting();
+            ReturnToOpenReady("已跳过搓牌");
         }
 
         public void PeekMagnifier(int index)
         {
-            if (Phase != GamePhase.Betting || !Run.MagnifierThisRound || Run.PeekSuitUsed)
+            if (Phase != GamePhase.WaitingOpen || !Run.MagnifierThisRound || Run.PeekSuitUsed)
             {
                 return;
             }
 
-            if (index < 0 || index > 2)
+            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
             {
                 return;
             }
@@ -263,7 +274,48 @@ namespace App.Game
             Player.Looked = true;
             Player.Status = "已看牌";
             History.NoteLook();
-            EnterBetting();
+            ReturnToOpenReady("点选 3 张牌后开牌。可使用技能");
+        }
+
+        /// <summary>点选手牌。选中上移，开牌用这 3 张；再点取消。</summary>
+        public void TogglePlayerCard(int index)
+        {
+            if (AiActing || Player.Folded)
+            {
+                return;
+            }
+
+            if (Phase != GamePhase.WaitingOpen)
+            {
+                return;
+            }
+
+            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
+            {
+                return;
+            }
+
+            if (Player.IsCardSelected(index))
+            {
+                Player.CardSelected[index] = false;
+            }
+            else
+            {
+                if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+                {
+                    Hint = "已经选了 3 张，再点已选中的牌可取消";
+                    Notify();
+                    return;
+                }
+
+                Player.CardSelected[index] = true;
+            }
+
+            var picked = Player.CountSelectedCards();
+            Hint = picked >= GameBalance.OpenHandSize
+                ? "已选 3 张，可开牌"
+                : $"已选 {picked}/{GameBalance.OpenHandSize} 张，点选卡牌上移表示开牌用牌";
+            Notify();
         }
 
         public void AdjustBetUnits(int delta)
@@ -321,6 +373,7 @@ namespace App.Game
             !AiActing &&
             !Player.Folded &&
             Player.Hp > 0 &&
+            Player.Courage > 0 &&
             (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
 
         public bool PlayerMayRaise =>
@@ -328,17 +381,11 @@ namespace App.Game
             !Player.Folded &&
             (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
 
-        public bool PlayerMayFold =>
-            !AiActing &&
-            !Player.Folded &&
-            (Phase == GamePhase.WaitingLookChoice ||
-             Phase == GamePhase.WaitingRub ||
-             Phase == GamePhase.Betting);
+        public bool PlayerMayFold => false;
 
         private bool PlayerMayUseItems =>
             !Player.Folded &&
-            (Phase == GamePhase.WaitingLookChoice ||
-             Phase == GamePhase.Betting ||
+            (Phase == GamePhase.WaitingOpen ||
              Phase == GamePhase.WaitingRub);
 
         public bool PlayerMayUsePeekGood =>
@@ -441,7 +488,7 @@ namespace App.Game
                 return;
             }
 
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < GameBalance.PlayerCardsDealt; i++)
             {
                 Player.Hand[i] = _deck.Draw();
             }
@@ -451,12 +498,12 @@ namespace App.Game
             if (Player.Looked)
             {
                 Hint =
-                    $"替换：{Player.Hand[0].DisplayName} / {Player.Hand[1].DisplayName} / {Player.Hand[2].DisplayName}（剩余 {Run.TiHuanGoodCharges}）";
-                Log($"替换手牌为 {Player.Hand[0].DisplayName} {Player.Hand[1].DisplayName} {Player.Hand[2].DisplayName}");
+                    $"替换：{FormatPlayerHand()}（剩余 {Run.TiHuanGoodCharges}）";
+                Log($"替换手牌为 {FormatPlayerHand()}");
             }
             else
             {
-                Hint = $"已替换 3 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
+                Hint = $"已替换 {GameBalance.PlayerCardsDealt} 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
                 Log("替换手牌（未看牌）");
             }
 
@@ -482,17 +529,20 @@ namespace App.Game
                 return;
             }
 
-            for (var i = 0; i < 3; i++)
+            var count = GameBalance.CardsDealt(seat.IsPlayer);
+            for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
             }
 
             var score = EvaluateSeat(seat);
-            seat.PeekedType = score.Label;
+            seat.PeekedType = seat.IsPlayer && seat.CountSelectedCards() != GameBalance.OpenHandSize
+                ? "未选定开牌"
+                : score.Label;
             Run.ChaKanGoodCharges--;
             SelectingXRayTarget = false;
-            Hint = $"透视 {seat.Name}：{score.Label}（剩余 {Run.ChaKanGoodCharges}）";
-            Log($"透视 {seat.Name} 翻牌 {score.Label}");
+            Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
+            Log($"透视 {seat.Name} 翻牌 {seat.PeekedType}");
             Notify();
         }
 
@@ -543,22 +593,7 @@ namespace App.Game
             }
 
             SelectingOpenTarget = false;
-            var roundUnits = CurrentRoundUnits();
-            if (Player.StreetUnits < roundUnits)
-            {
-                if (!TryCommitUnits(Player, roundUnits, out var paid))
-                {
-                    Hint = "勇气值不足，无法比牌";
-                    Notify();
-                    return;
-                }
-
-                _playerActedThisStreet = true;
-                Player.Status = Player.Looked ? $"看牌比牌 {paid}" : $"比牌 {paid}";
-                Log($"{Player.Status}，当轮 {roundUnits}，奖池 {Pot}");
-            }
-
-            Showdown();
+            StartSequentialCompare();
         }
 
         /// <summary>赢牌后点选敌人造成伤害。溅射斩会额外打其他存活敌人 30%。</summary>
@@ -585,7 +620,7 @@ namespace App.Game
                 return;
             }
 
-            if (Phase != GamePhase.WaitingAttack)
+            if (Phase != GamePhase.WaitingAttack || _sequentialCompare)
             {
                 return;
             }
@@ -650,7 +685,7 @@ namespace App.Game
 
             if (Phase == GamePhase.WaitingAttack)
             {
-                return !AttackPlaying;
+                return !_sequentialCompare && !AttackPlaying;
             }
 
             return Phase == GamePhase.Betting && SelectingOpenTarget && !target.Folded;
@@ -695,23 +730,255 @@ namespace App.Game
 
         private void FinishPlayerAttack(SeatState target)
         {
+            IncomingAttack = false;
             var damage = Math.Max(1, PendingAttackDamage);
             PendingAttackDamage = 0;
-            ApplyDamage(target, damage, true);
-            if (Run.SplashThisRound)
+            var dealt = ApplyDamage(target, damage, true);
+            if (!target.IsPlayer && Run.SplashThisRound)
             {
                 for (var i = 0; i < Enemies.Length; i++)
                 {
                     if (Enemies[i] != target && Enemies[i].Alive)
                     {
-                        ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
+                        dealt += ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
                     }
                 }
 
                 Run.SplashThisRound = false;
             }
 
+            if (!target.IsPlayer)
+            {
+                _roundDamageDealt += dealt;
+            }
+
+            if (!_sequentialCompare)
+            {
+                AfterRound();
+                return;
+            }
+
+            if (Player.Hp <= 0)
+            {
+                FinishSequentialCompare();
+                return;
+            }
+
+            _compareCursor++;
+            RunNextCompare();
+        }
+
+        private void BeginIncomingAttack(SeatState attacker)
+        {
+            if (Phase != GamePhase.WaitingAttack || attacker == null || Player.Hp <= 0 || _pendingAttackTarget != null)
+            {
+                return;
+            }
+
+            IncomingAttack = true;
+            _pendingAttackTarget = Player;
+            AttackVisualSlot = FindVisualSlot(attacker);
+            AttackDamage = Math.Max(1, PendingAttackDamage);
+            if (AttackLevel < 1 || AttackLevel > 3)
+            {
+                AttackLevel = 1;
+            }
+
+            AttackPlaySerial++;
+            Hint = $"{attacker.Name} 攻击你！";
+            Notify();
+        }
+
+        private void StartSequentialCompare()
+        {
+            _sequentialCompare = true;
+            _compareQueue.Clear();
+            _compareCursor = 0;
+            _roundDamageDealt = 0;
+            IncomingAttack = false;
+            SelectingXRayTarget = false;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                if (Enemies[i].Alive)
+                {
+                    _compareQueue.Add(Enemies[i]);
+                }
+            }
+
+            if (_compareQueue.Count == 0)
+            {
+                FinishSequentialCompare();
+                return;
+            }
+
+            Player.Status = "开牌";
+            Log("开牌，与敌人逐一比牌");
+            RunNextCompare();
+        }
+
+        private void RunNextCompare()
+        {
+            if (!_sequentialCompare)
+            {
+                AfterRound();
+                return;
+            }
+
+            if (Player.Hp <= 0)
+            {
+                FinishSequentialCompare();
+                return;
+            }
+
+            while (_compareCursor < _compareQueue.Count &&
+                   (_compareQueue[_compareCursor] == null || !_compareQueue[_compareCursor].Alive))
+            {
+                _compareCursor++;
+            }
+
+            if (_compareCursor >= _compareQueue.Count || !AnyEnemyAlive())
+            {
+                FinishSequentialCompare();
+                return;
+            }
+
+            var enemy = _compareQueue[_compareCursor];
+            var openScore = EvaluateSeat(Player);
+            var targetScore = EvaluateSeat(enemy);
+            _pendingOpener = Player;
+            _pendingOpenTarget = enemy;
+            _pendingOpenerWins = openScore.CompareTo(targetScore) > 0;
+            _pendingWinner = _pendingOpenerWins ? Player : enemy;
+            _pendingBest = _pendingOpenerWins ? openScore : targetScore;
+            BeginRevealPlay(RevealKind.OpenDuel, BuildDuelRevealOrder(Player, enemy), _pendingWinner);
+            Hint = $"开牌：你 vs {enemy.Name}";
+            LastResult = Hint;
+            Notify();
+        }
+
+        private void FinishSequentialCompare()
+        {
+            _sequentialCompare = false;
+            IncomingAttack = false;
+            if (_roundDamageDealt > 0)
+            {
+                AwardPlayerRoundScore(_roundDamageDealt);
+            }
+
+            if (string.IsNullOrEmpty(LastResult))
+            {
+                LastResult = _roundDamageDealt > 0
+                    ? $"本手造成 {_roundDamageDealt} 伤害"
+                    : "本手比牌结束";
+            }
+
             AfterRound();
+        }
+
+        private void ResolveSequentialDuel()
+        {
+            var opener = _pendingOpener;
+            var target = _pendingOpenTarget;
+            if (opener != null)
+            {
+                RevealHand(opener);
+            }
+
+            if (target != null)
+            {
+                RevealHand(target);
+            }
+
+            var openScore = opener != null ? EvaluateSeat(opener) : default;
+            var targetScore = target != null ? EvaluateSeat(target) : default;
+            if (_pendingOpenerWins)
+            {
+                var damage = ComputeAttackDamage(opener, openScore);
+                PendingAttackDamage = damage;
+                AttackLevel = MapAttackLevel(openScore.Type);
+                LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {damage} 伤害";
+                Log(LastResult);
+                Phase = GamePhase.WaitingAttack;
+                IncomingAttack = false;
+                BeginPlayerAttack(target);
+                if (!AttackPlaying)
+                {
+                    _compareCursor++;
+                    RunNextCompare();
+                }
+
+                return;
+            }
+
+            var loss = ComputeAttackDamage(target, targetScore);
+            PendingAttackDamage = loss;
+            AttackLevel = MapAttackLevel(targetScore.Type);
+            LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {loss} 伤害";
+            Log(LastResult);
+            Phase = GamePhase.WaitingAttack;
+            BeginIncomingAttack(target);
+            if (!AttackPlaying)
+            {
+                ApplyDamage(Player, loss, true);
+                PendingAttackDamage = 0;
+                if (Player.Hp <= 0)
+                {
+                    FinishSequentialCompare();
+                    return;
+                }
+
+                _compareCursor++;
+                RunNextCompare();
+            }
+        }
+
+        private int ComputeAttackDamage(SeatState attacker, HandScore score)
+        {
+            if (attacker == null)
+            {
+                return 1;
+            }
+
+            var mag = HandTypeMagnification(score.Type);
+            var relic = attacker.IsPlayer
+                ? RelicMultiplier(score)
+                : (Run.Affix == BossAffix.Flint ? 0.5f : 1f);
+            return HandEvaluator.ComputeAttackDamage(attacker.Attack, mag, relic);
+        }
+
+        private static float HandTypeMagnification(HandType type)
+        {
+            var configType = ToConfigHandType(type);
+            foreach (var row in HandScoreConfig.All.Values)
+            {
+                if (row != null && row.Type == configType)
+                {
+                    return row.BasicMagnification > 0f ? row.BasicMagnification : 1f;
+                }
+            }
+
+            switch (type)
+            {
+                case HandType.Pair: return 2f;
+                case HandType.Straight: return 3f;
+                case HandType.Flush: return 3.5f;
+                case HandType.StraightFlush: return 5f;
+                case HandType.ThreeOfAKind: return 6f;
+                default: return 1f;
+            }
+        }
+
+        private static App.Config.HandType ToConfigHandType(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.Pair:
+                    return App.Config.HandType.Couplet;
+                case HandType.ThreeOfAKind:
+                    return App.Config.HandType.Leopard;
+                default:
+                    return (App.Config.HandType)((int)type + 1);
+            }
         }
 
         private void DealPlayerLossDamage(SeatState winner)
@@ -981,11 +1248,14 @@ namespace App.Game
                 return;
             }
 
-            Run.Stage++;
-            if (Run.Stage > 30)
+            if (!TryAdvanceLevel())
             {
                 Phase = GamePhase.RunComplete;
-                Hint = "你已通关 3 个章节！";
+                if (string.IsNullOrEmpty(Hint) || Hint.Contains("关卡胜利") || Hint.Contains("兑换"))
+                {
+                    Hint = "你已打完该难度全部关卡！";
+                }
+
                 Notify();
                 return;
             }
@@ -1001,7 +1271,7 @@ namespace App.Game
             }
 
             Run.AdsLoanThisStage++;
-            AddCourage(Player, Math.Max(_roundBaseBet, GameBalance.MinBet));
+            _loanCourageBonus = Math.Max(_roundBaseBet, GameBalance.MinBet);
             Log("观看广告，借贷获得本回合基础注勇气值");
             ContinueAfterLoan();
         }
@@ -1014,7 +1284,6 @@ namespace App.Game
             }
 
             Run.AdsReviveThisStage++;
-            Player.MaxHp = Math.Max(Player.MaxHp, GameBalance.PlayerStartHp);
             Player.Hp = Player.MaxHp;
             HpSvc()?.Revive(Player.Id);
             Log("观看广告复活，生命已回满");
@@ -1031,6 +1300,7 @@ namespace App.Game
             }
 
             Run.AdsExtraRubThisStage++;
+            Run.BonusRubCharges++;
             Run.PeekGoodCharges++;
             Log("观看广告，本关额外获得 1 次搓牌");
             Hint = $"搓牌次数 +1（剩余 {Run.PeekGoodCharges}，本关还可广告 {2 - Run.AdsExtraRubThisStage} 次）";
@@ -1060,10 +1330,15 @@ namespace App.Game
 
             Run.AdsDoubleGoldToday++;
             Run.DoubleGoldThisStage = true;
-            var extra = GameBalance.ConvertHpToGold(Player.Hp);
-            Run.Gold += extra;
+            var extra = _shopGoldGranted;
+            if (extra > 0)
+            {
+                Run.Gold += extra;
+                _shopGoldGranted += extra;
+            }
+
             Log($"双倍金币结算 +{extra}");
-            Hint = $"金币翻倍，额外获得 {extra}";
+            Hint = extra > 0 ? $"金币翻倍，额外获得 {extra}" : "本关已标记双倍金币";
             Notify();
         }
 
@@ -1130,7 +1405,7 @@ namespace App.Game
                 case BossAffix.BanScoreClub: banned = Suit.Club; break;
             }
 
-            var score = HandEvaluator.Evaluate(seat.Hand, banned, banFaces);
+            var score = HandEvaluator.Evaluate(CollectEvalCards(seat), banned, banFaces);
             if (Run.Affix == BossAffix.Flint)
             {
                 score = new HandScore(
@@ -1152,7 +1427,7 @@ namespace App.Game
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
 
-        /// <summary>开新关：按关卡决定 3 敌或 1 BOSS，BOSS 人格改为 Expert 并随机词缀。</summary>
+        /// <summary>开新关：玩家血量读英雄表，怪物血量读关卡配置。BOSS 人格改为 Expert 并随机词缀。</summary>
         private void StartStage()
         {
             Run.AdsLoanThisStage = 0;
@@ -1165,49 +1440,23 @@ namespace App.Game
             Run.DisabledRelic = null;
             Run.DisabledConsumable = null;
             Run.ExtraRubCharges = 0;
-            ResetSkillCharges();
             Run.Affix = BossAffix.None;
             _stageBetRound = 0;
+            _loanCourageBonus = 0;
+            _shopGoldGranted = 0;
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IScoreService>().BeginStage();
             }
 
-            Player.ActiveInStage = true;
-            ApplySeatHp(Player, GameBalance.PlayerStartHp, GameBalance.PlayerStartHp);
+            ApplyHeroToPlayer();
+            var enemyCount = ApplyLevelEnemies();
 
-            var count = GameBalance.EnemyCountForStage(Run.Stage);
-            var boss = GameBalance.IsBossStage(Run.Stage);
-            var names = new[] { "敌人A", "敌人B", "敌人C" };
-            if (boss)
-            {
-                names[0] = "BOSS";
-                Run.Affix = RandomAffix();
-                ApplyEdgeAffix();
-            }
-
-            for (var i = 0; i < Enemies.Length; i++)
-            {
-                var seat = Enemies[i];
-                seat.ActiveInStage = i < count;
-                seat.IsBoss = boss && i == 0;
-                if (seat.IsBoss)
-                {
-                    // BOSS 关只留 Enemies[0]，人格从 CreateSeat 的保守型覆盖成高手。
-                    seat.Profile = AiProfile.Expert;
-                }
-                seat.Name = i < count ? names[i] : $"敌人{i + 1}";
-                var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
-                ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
-                seat.Banner = string.Empty;
-                ClearRound(seat);
-            }
-
-            var title = boss
+            var title = Run.HasBoss
                 ? $"第 {Run.Stage} 关 BOSS · {GameBalance.AffixName(Run.Affix)}"
-                : $"第 {Run.Stage} 关 · {count} 名敌人";
+                : $"第 {Run.Stage} 关 · {enemyCount} 名敌人";
             Log(title);
-            if (boss)
+            if (Run.HasBoss)
             {
                 Log(GameBalance.AffixDesc(Run.Affix));
             }
@@ -1215,12 +1464,13 @@ namespace App.Game
             StartRound();
         }
 
-        /// <summary>重置本手下注状态并发牌，然后进入看牌/闷注选择。</summary>
+        /// <summary>重置本手状态并发牌，然后直接看牌进入开牌阶段。技能次数每手重置。</summary>
         private void StartRound()
         {
             CardsRevealed = false;
             Pot = 0;
             AdvanceStageBetRound();
+            ResetSkillCharges();
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
@@ -1241,6 +1491,11 @@ namespace App.Game
             Run.PeekedSuit = null;
             Run.LastRubMessage = string.Empty;
             PendingAttackDamage = 0;
+            IncomingAttack = false;
+            _sequentialCompare = false;
+            _compareQueue.Clear();
+            _compareCursor = 0;
+            _roundDamageDealt = 0;
             ClearSpyReveal();
             for (var i = 0; i < Run.RubbedReveal.Length; i++)
             {
@@ -1255,18 +1510,12 @@ namespace App.Game
             }
 
             BeginRoundCourage();
-            if (Player.Courage < _roundBaseBet)
-            {
-                TryAutoLoanOrFail();
-                return;
-            }
-
             _deck = new Deck(_rng);
             DealAll();
-            EnterLookChoice();
+            EnterOpenReady();
         }
 
-        /// <summary>每人发 3 张。未上场的敌人不发。</summary>
+        /// <summary>每人发牌。玩家 5 张，敌人 3 张。未上场的敌人不发。</summary>
         private void DealAll()
         {
             DealSerial++;
@@ -1279,11 +1528,14 @@ namespace App.Game
 
                 if (seat.IsPlayer || seat.Alive)
                 {
-                    for (var i = 0; i < 3; i++)
+                    var count = GameBalance.CardsDealt(seat.IsPlayer);
+                    for (var i = 0; i < seat.Hand.Length; i++)
                     {
-                        seat.Hand[i] = _deck.Draw();
+                        seat.Hand[i] = i < count ? _deck.Draw() : default;
                     }
                 }
+
+                seat.ClearCardSelected();
             }
         }
 
@@ -1322,11 +1574,36 @@ namespace App.Game
             });
         }
 
+        /// <summary>发牌后直接看牌，进入开牌/技能阶段。</summary>
+        private void EnterOpenReady()
+        {
+            History.BeginHand(Player.Courage);
+            Player.Looked = true;
+            Player.Status = "已看牌";
+            History.NoteLook();
+            ReturnToOpenReady("点选 3 张牌后开牌。可使用技能");
+        }
+
+        private void ReturnToOpenReady(string hint)
+        {
+            Phase = GamePhase.WaitingOpen;
+            Player.Looked = true;
+            if (!string.IsNullOrEmpty(hint))
+            {
+                Hint = hint;
+            }
+            else
+            {
+                Hint = "点选 3 张牌后开牌。可使用技能";
+            }
+
+            Notify();
+        }
+
         /// <summary>发牌后先让玩家选看牌或闷注，并开始记录本手 History。</summary>
         private void EnterLookChoice()
         {
-            History.BeginHand(Player.Hp);
-            OfferLookOrBlind($"请选择闷注或看牌。本回合基础注 {_roundBaseBet}，所有人均需下注");
+            EnterOpenReady();
         }
 
         /// <summary>每轮所有人下完后，未看牌则再次选择闷注或看牌；已看牌则进入跟注/加注。</summary>
@@ -1361,7 +1638,7 @@ namespace App.Game
 
             _pendingRubIndex = -1;
             Run.RubsLeft = 0;
-            Phase = GamePhase.Betting;
+            Phase = GamePhase.WaitingOpen;
         }
 
         private void EnterBetting()
@@ -1976,6 +2253,11 @@ namespace App.Game
             BetUnits = _roundBaseBet;
         }
 
+        private int NextRoundBaseBet()
+        {
+            return GameBalance.BaseBetForRound(_stageBetRound + 1);
+        }
+
         /// <summary>加注成功后，本街基础跟注抬到加注额，后续跟注都按这个档。</summary>
         private void ApplyRaisedCall(int units)
         {
@@ -2254,6 +2536,7 @@ namespace App.Game
 
             if (playerWin)
             {
+                AwardPlayerRoundScore(potSnap);
                 Run.ConsecutiveLosses = 0;
                 Run.Tilted = false;
                 var relicMult = RelicMultiplier(best);
@@ -2281,6 +2564,11 @@ namespace App.Game
 
         private void ApplyOpenDuelSettlement()
         {
+            if (_sequentialCompare)
+            {
+                ResolveSequentialDuel();
+                return;
+            }
             var opener = _pendingOpener;
             var target = _pendingOpenTarget;
             if (opener != null)
@@ -2394,14 +2682,53 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
+        private static Card[] CollectEvalCards(SeatState seat)
+        {
+            if (seat == null || seat.Hand == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            if (!seat.IsPlayer)
+            {
+                var n = Math.Min(GameBalance.EnemyCardsDealt, seat.Hand.Length);
+                var enemy = new Card[n];
+                Array.Copy(seat.Hand, enemy, n);
+                return enemy;
+            }
+
+            var picked = new List<Card>(GameBalance.OpenHandSize);
+            var limit = Math.Min(GameBalance.PlayerCardsDealt, seat.Hand.Length);
+            for (var i = 0; i < limit; i++)
+            {
+                if (seat.IsCardSelected(i))
+                {
+                    picked.Add(seat.Hand[i]);
+                }
+            }
+
+            return picked.ToArray();
+        }
+
+        private string FormatPlayerHand()
+        {
+            var parts = new string[GameBalance.PlayerCardsDealt];
+            for (var i = 0; i < parts.Length; i++)
+            {
+                parts[i] = Player.Hand[i].DisplayName;
+            }
+
+            return string.Join(" / ", parts);
+        }
+
         private static int SpyKey(int seatId, int cardIndex)
         {
-            if (seatId < 0 || cardIndex < 0 || cardIndex > 2)
+            if (seatId < 0 || cardIndex < 0 || cardIndex >= GameBalance.MaxCardsPerSeat)
             {
                 return -1;
             }
 
-            return seatId * 3 + cardIndex;
+            return seatId * GameBalance.MaxCardsPerSeat + cardIndex;
         }
 
         private void SetSpyReveal(int seatId, int cardIndex, bool value)
@@ -2526,6 +2853,18 @@ namespace App.Game
         {
             if (Phase == GamePhase.WaitingAttack)
             {
+                if (AttackPlaying)
+                {
+                    CompletePlayerAttack();
+                    return;
+                }
+
+                if (_sequentialCompare)
+                {
+                    RunNextCompare();
+                    return;
+                }
+
                 var target = FirstAliveEnemy();
                 if (target != null)
                 {
@@ -2550,18 +2889,17 @@ namespace App.Game
                 return;
             }
 
-            if (Player.Courage < GameBalance.MinBet)
-            {
-                TryAutoLoanOrFail();
-                return;
-            }
-
             Run.MagnifierThisRound = false;
             StartRound();
         }
 
-        private void ApplyDamage(SeatState target, int damage, bool main)
+        private int ApplyDamage(SeatState target, int damage, bool main)
         {
+            if (target == null)
+            {
+                return 0;
+            }
+
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
             target.Hp -= dealt;
             HpSvc()?.Damage(target.Id, dealt);
@@ -2573,6 +2911,8 @@ namespace App.Game
                 target.Status = "阵亡";
                 Log($"击杀 {target.Name}");
             }
+
+            return dealt;
         }
 
         private void ApplyBankruptcy(bool playerWon, SeatState winner)
@@ -2586,7 +2926,7 @@ namespace App.Game
                     continue;
                 }
 
-                if (ai.Courage >= GameBalance.MinBet)
+                if (ai.Hp >= GameBalance.MinBet)
                 {
                     continue;
                 }
@@ -2606,7 +2946,7 @@ namespace App.Game
                     CourageSvc()?.Lose(ai.Id);
                     ai.Status = "斩杀";
                     ai.Banner = "濒死斩杀";
-                    Log($"互助斩杀：{ai.Name} 勇气值耗尽，被你斩杀");
+                    Log($"互助斩杀：{ai.Name} 血量不足继续，被你斩杀");
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
                 {
@@ -2624,6 +2964,7 @@ namespace App.Game
         private void AfterRound()
         {
             PendingAttackDamage = 0;
+            IncomingAttack = false;
             AttackLevel = 1;
             if (Player.Hp <= 0)
             {
@@ -2638,11 +2979,6 @@ namespace App.Game
             {
                 Hint = LastResult + "\n已击杀全部敌人，点击进入商店";
             }
-            else if (Player.Courage < GameBalance.MinBet)
-            {
-                TryAutoLoanOrFail();
-                return;
-            }
             else
             {
                 Hint = LastResult + "\n点击「下一局」继续";
@@ -2653,19 +2989,21 @@ namespace App.Game
 
         private void EnterShop()
         {
-            var remain = Player.Hp;
-            var gold = GameBalance.ConvertHpToGold(remain);
+            var score = ScoreSvc();
+            var gold = score != null ? score.CollectGoldDelta() : 0;
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
             }
 
+            _shopGoldGranted = gold;
             Run.Gold += gold;
-            Log($"通关结算：剩余血量 {remain} → {gold} 金币（总金币 {Run.Gold}）");
+            var total = score != null ? score.Current.Total : 0;
+            Log($"通关结算：总积分 {total} → {gold} 金币（总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             RollShopOffers();
-            Hint = $"关卡胜利！兑换 {gold} 金币。购买道具后进入下一关。";
+            Hint = $"关卡胜利！{total} 积分兑换 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
         }
@@ -2676,7 +3014,7 @@ namespace App.Game
             if (Run.LoanTicket && !magnifierDisabled)
             {
                 Run.LoanTicket = false;
-                AddCourage(Player, GameBalance.MinBet);
+                _loanCourageBonus = GameBalance.MinBet;
                 Log("借贷券生效，获得最低下注勇气值");
                 StartRound();
                 return;
@@ -2693,14 +3031,6 @@ namespace App.Game
             {
                 Phase = GamePhase.StageFail;
                 Hint = "生命仍未恢复，请先复活";
-                Notify();
-                return;
-            }
-
-            if (Player.Courage < GameBalance.MinBet)
-            {
-                Phase = GamePhase.StageFail;
-                Hint = "仍不足以继续";
                 Notify();
                 return;
             }
@@ -2992,11 +3322,11 @@ namespace App.Game
             seat.StreetUnits = 0;
             seat.StreetPaid = 0;
             seat.TotalBet = 0;
-            seat.RoundStartChips = seat.Courage;
             seat.Folded = false;
             seat.Looked = !seat.IsPlayer;
             seat.ShowCards = false;
             seat.PeekedType = string.Empty;
+            seat.ClearCardSelected();
             seat.Status = seat.Alive || seat.IsPlayer ? string.Empty : "未上场";
             if (!seat.IsPlayer && !seat.Alive)
             {
@@ -3013,24 +3343,190 @@ namespace App.Game
 
             seat.MaxHp = Math.Max(0, maxHp);
             seat.Hp = Math.Max(0, hp);
-            seat.Courage = ScoreBalance.HpToCourage(seat.Hp);
-            seat.CourageStake = 0;
             HpSvc()?.BeginStage(seat.Id, seat.MaxHp, seat.Hp);
-            CourageSvc()?.BeginStage(seat.Id, seat.Hp);
         }
 
+        /// <summary>每回合筹码按人物当前血量换算，怪物与玩家同一套；不改血量。</summary>
         private void BeginRoundCourage()
         {
+            var sourceHp = Math.Max(0, Player.Hp);
             foreach (var seat in AllSeats())
             {
+                var hpForChips = seat.IsPlayer || seat.Alive ? sourceHp : 0;
+                seat.Courage = ScoreBalance.HpToCourage(hpForChips);
                 seat.CourageStake = 0;
-                CourageSvc()?.BeginRound(seat.Id);
+                seat.RoundStartChips = seat.Courage;
+                CourageSvc()?.BeginStage(seat.Id, hpForChips);
+            }
+
+            if (_loanCourageBonus > 0)
+            {
+                AddCourage(Player, _loanCourageBonus);
+                Player.RoundStartChips = Player.Courage;
+                _loanCourageBonus = 0;
             }
 
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IScoreService>().BeginRound();
             }
+        }
+
+        private void ApplyHeroToPlayer()
+        {
+            var hero = ResolveHero();
+            Run.HeroId = hero != null ? hero.Id : 0;
+            Player.ActiveInStage = true;
+            Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
+            var hp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
+            ApplySeatHp(Player, hp, hp);
+            Player.Attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
+        }
+
+        private int ApplyLevelEnemies()
+        {
+            var snapshot = LevelSvc()?.Current;
+            var names = new[] { "敌人A", "敌人B", "敌人C" };
+            if (snapshot != null)
+            {
+                Run.LevelId = snapshot.Id;
+                Run.Stage = snapshot.Level;
+                Run.HasBoss = snapshot.HasBoss;
+                if (snapshot.HasBoss)
+                {
+                    Run.Affix = RandomAffix();
+                    ApplyEdgeAffix();
+                }
+
+                var count = Math.Min(snapshot.Monsters.Count, Enemies.Length);
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    var seat = Enemies[i];
+                    if (i < count)
+                    {
+                        var monster = snapshot.Monsters[i];
+                        seat.ActiveInStage = true;
+                        seat.IsBoss = monster.IsBoss;
+                        seat.Profile = monster.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
+                        seat.Name = monster.IsBoss ? "BOSS" : names[i];
+                        ApplySeatHp(seat, monster.Hp, monster.Hp);
+                        seat.Attack = Math.Max(0, monster.Damage);
+                    }
+                    else
+                    {
+                        DeactivateEnemy(seat, i);
+                    }
+
+                    seat.Banner = string.Empty;
+                    ClearRound(seat);
+                }
+
+                return count;
+            }
+
+            var fallbackCount = GameBalance.EnemyCountForStage(Run.Stage);
+            Run.HasBoss = GameBalance.IsBossStage(Run.Stage);
+            if (Run.HasBoss)
+            {
+                names[0] = "BOSS";
+                Run.Affix = RandomAffix();
+                ApplyEdgeAffix();
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var seat = Enemies[i];
+                seat.ActiveInStage = i < fallbackCount;
+                seat.IsBoss = Run.HasBoss && i == 0;
+                seat.Profile = seat.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
+                seat.Name = i < fallbackCount ? names[i] : $"敌人{i + 1}";
+                var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
+                ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
+                seat.Attack = seat.ActiveInStage ? 10 : 0;
+                seat.Banner = string.Empty;
+                ClearRound(seat);
+            }
+
+            return fallbackCount;
+        }
+
+        private void DeactivateEnemy(SeatState seat, int index)
+        {
+            seat.ActiveInStage = false;
+            seat.IsBoss = false;
+            seat.Profile = DefaultEnemyProfile(seat.Id);
+            seat.Name = $"敌人{index + 1}";
+            ApplySeatHp(seat, 0, 0);
+            seat.Attack = 0;
+        }
+
+        private bool TryAdvanceLevel()
+        {
+            var levels = LevelSvc();
+            if (levels == null)
+            {
+                Run.Stage++;
+                return Run.Stage <= 30;
+            }
+
+            var current = levels.Current;
+            if (current == null)
+            {
+                return false;
+            }
+
+            var progress = ProgressSvc();
+            progress?.MarkCleared(current.Id);
+            progress?.SetLastLevel(current.Id);
+            progress?.SetLastDifficulty(current.Difficulty);
+
+            if (levels.TryGetNext(current.Difficulty, current.Level, out var next) && next != null)
+            {
+                levels.TrySelect(next.Id);
+                progress?.SetLastLevel(next.Id);
+                progress?.Save();
+                return true;
+            }
+
+            progress?.Save();
+            if (progress != null && progress.IsCleared(current.Difficulty))
+            {
+                Hint = levels.TryGetNextDifficulty(current.Difficulty, out var nextDiff)
+                    ? $"已完成难度{current.Difficulty}，解锁难度{nextDiff}"
+                    : $"已完成难度{current.Difficulty}，全部难度通关";
+            }
+            else
+            {
+                Hint = "你已打完该难度全部关卡！";
+            }
+
+            return false;
+        }
+
+        private static HeroConfig ResolveHero()
+        {
+            var heroId = ProgressSvc()?.LastHeroId ?? 0;
+            var hero = HeroConfig.Get(heroId);
+            if (hero != null)
+            {
+                return hero;
+            }
+
+            if (GameConst.IsLoaded)
+            {
+                hero = HeroConfig.Get(GameConst.Instance.DefaultHeroId);
+                if (hero != null)
+                {
+                    return hero;
+                }
+            }
+
+            foreach (var pair in HeroConfig.All)
+            {
+                return pair.Value;
+            }
+
+            return null;
         }
 
         private void AddCourage(SeatState seat, int amount)
@@ -3069,6 +3565,32 @@ namespace App.Game
         private static ICourageService CourageSvc()
         {
             return AppServices.IsReady ? AppServices.Resolve<ICourageService>() : null;
+        }
+
+        private static ILevelService LevelSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<ILevelService>() : null;
+        }
+
+        private static ILevelProgressService ProgressSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<ILevelProgressService>() : null;
+        }
+
+        private static IScoreService ScoreSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<IScoreService>() : null;
+        }
+
+        /// <summary>亮牌获胜：本手对怪造成的伤害记入本轮/关卡/总积分。</summary>
+        private void AwardPlayerRoundScore(int potWon)
+        {
+            if (potWon <= 0)
+            {
+                return;
+            }
+
+            ScoreSvc()?.AwardRoundScore(potWon);
         }
 
         private void ApplyEdgeAffix()
@@ -3125,37 +3647,33 @@ namespace App.Game
 
         /// <summary>
         /// 创建座位并绑定 AI 人格：id1 保守、id2 平衡偏激进、id3 激进。
-        /// BOSS 关会在 <see cref="StartStage"/> 把 id1 改成 Expert。
+        /// BOSS 关会在 <see cref="StartStage"/> 把对应座位改成 Expert。
         /// </summary>
         private SeatState CreateSeat(int id, string name, bool player)
         {
-            AiProfile profile = null;
-            if (!player)
-            {
-                switch (id)
-                {
-                    case 1:
-                        profile = AiProfile.Conservative; // 敌人A
-                        break;
-                    case 3:
-                        profile = AiProfile.Aggressive; // 敌人C
-                        break;
-                    default:
-                        profile = AiProfile.BalancedAggressive; // 敌人B
-                        break;
-                }
-            }
-
             return new SeatState
             {
                 Id = id,
                 Name = name,
                 IsPlayer = player,
                 ActiveInStage = player,
-                MaxHp = player ? GameBalance.PlayerStartHp : 0,
-                Hp = player ? GameBalance.PlayerStartHp : 0,
-                Profile = profile
+                MaxHp = 0,
+                Hp = 0,
+                Profile = player ? null : DefaultEnemyProfile(id)
             };
+        }
+
+        private static AiProfile DefaultEnemyProfile(int seatId)
+        {
+            switch (seatId)
+            {
+                case 1:
+                    return AiProfile.Conservative;
+                case 3:
+                    return AiProfile.Aggressive;
+                default:
+                    return AiProfile.BalancedAggressive;
+            }
         }
 
         private void Log(string line)
@@ -3359,6 +3877,10 @@ namespace App.Game
             AddCourage(last, amount);
             LastResult = $"{last.Name} 无人争夺，收走奖池 {amount}";
             Log(LastResult);
+            if (last.IsPlayer)
+            {
+                AwardPlayerRoundScore(amount);
+            }
             ApplyBankruptcy(last.IsPlayer, last);
             Pot = 0;
             if (last.IsPlayer)

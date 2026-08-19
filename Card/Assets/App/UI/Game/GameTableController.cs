@@ -86,7 +86,7 @@ namespace App.UI
                 return;
             }
 
-            if (_vm.Session.Phase == GamePhase.Betting &&
+            if (_vm.Session.Phase == GamePhase.WaitingOpen &&
                 _vm.Session.Run.MagnifierThisRound &&
                 !_vm.Session.Run.PeekSuitUsed &&
                 Input.GetMouseButtonDown(0))

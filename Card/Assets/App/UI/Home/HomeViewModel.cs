@@ -47,7 +47,7 @@ namespace App.UI
             if (_progress.LastLevelId > 0 && _levels.TryGetById(_progress.LastLevelId, out var snapshot) &&
                 snapshot != null)
             {
-                LastStageInfo.Value = $"第{snapshot.Level}关";
+                LastStageInfo.Value = $"难度{snapshot.Difficulty} 第{snapshot.Level}关";
                 return;
             }
 

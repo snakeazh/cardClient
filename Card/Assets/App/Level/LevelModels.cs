@@ -54,6 +54,7 @@ namespace App.Level
             int monsterLevel,
             MonsterType type,
             int hp,
+            int damage,
             int monsterEntry)
         {
             GroupId = groupId;
@@ -61,6 +62,7 @@ namespace App.Level
             MonsterLevel = monsterLevel;
             Type = type;
             Hp = hp;
+            Damage = damage;
             MonsterEntry = monsterEntry;
         }
 
@@ -74,9 +76,19 @@ namespace App.Level
 
         public int Hp { get; }
 
+        /// <summary>`MonsterConfig.MonsterDamage`。</summary>
+        public int Damage { get; }
+
         public int MonsterEntry { get; }
 
         public bool IsBoss => Type == MonsterType.Boss;
+    }
+
+    [Serializable]
+    public sealed class DifficultyProgressEntry
+    {
+        public int Difficulty;
+        public int HighestClearedLevel;
     }
 
     [Serializable]
@@ -85,8 +97,10 @@ namespace App.Level
         public int[] ClearedDifficulties = Array.Empty<int>();
         public int LastHeroId;
         public int LastLevelId;
+        public int LastDifficulty;
         public int[] UnlockedHeroIds = Array.Empty<int>();
-        /// <summary>当前默认难度下已通关的最高关卡号。未通关任何关为 0，因此第 1 关默认解锁。</summary>
+        /// <summary>旧存档：仅默认难度的最高关卡。新存档以 DifficultyProgress 为准。</summary>
         public int HighestClearedLevel;
+        public DifficultyProgressEntry[] DifficultyProgress = Array.Empty<DifficultyProgressEntry>();
     }
 }

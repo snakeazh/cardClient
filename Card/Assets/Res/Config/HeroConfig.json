@@ -2,7 +2,8 @@
   {
     "Id": 1,
     "Name": "平凡之人",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 0,
     "UnlockCondition": 0,
@@ -11,7 +12,8 @@
   {
     "Id": 2,
     "Name": "大壮",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Warrior1",
     "HeroEntryId": 10001,
     "UnlockCondition": 1,
@@ -20,7 +22,8 @@
   {
     "Id": 3,
     "Name": "狠人",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 10002,
     "UnlockCondition": 2,
@@ -29,7 +32,8 @@
   {
     "Id": 4,
     "Name": "多面手",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 10003,
     "UnlockCondition": 3,
@@ -38,7 +42,8 @@
   {
     "Id": 5,
     "Name": "射手",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Ranger1",
     "HeroEntryId": 10004,
     "UnlockCondition": 4,
@@ -47,7 +52,8 @@
   {
     "Id": 6,
     "Name": "大嗓门",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Mage1",
     "HeroEntryId": 10005,
     "UnlockCondition": 5,
@@ -56,7 +62,8 @@
   {
     "Id": 7,
     "Name": "暴发户",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 10006,
     "UnlockCondition": 6,
@@ -65,7 +72,8 @@
   {
     "Id": 8,
     "Name": "流浪汉",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 10007,
     "UnlockCondition": 7,
@@ -74,7 +82,8 @@
   {
     "Id": 9,
     "Name": "赌神",
-    "Hp": 1000,
+    "Hp": 100,
+    "HeroDamage": 10,
     "Icon": "Adventurer1",
     "HeroEntryId": 10008,
     "UnlockCondition": 8,

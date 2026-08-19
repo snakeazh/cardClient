@@ -6,6 +6,7 @@ namespace App.Resources
     public static partial class ResResourcePaths
     {
         public const string BossEntryConfig = "Config/BossEntryConfig";
+        public const string CollectionConfig = "Config/CollectionConfig";
         public const string GameConst = "Config/GameConst";
         public const string HandScoreConfig = "Config/HandScoreConfig";
         public const string HeroConfig = "Config/HeroConfig";

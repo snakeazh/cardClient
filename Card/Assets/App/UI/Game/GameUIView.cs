@@ -42,7 +42,6 @@ namespace App.UI
             BindPlayerInfo();
             SpawnEnemyInfos();
             BindPhaseButtons();
-            EnsureHint();
             BindAttackHud();
             BindAttackFx();
             ViewModel.Refresh();
@@ -641,47 +640,6 @@ namespace App.UI
             if (_shopContent != null)
             {
                 _shopContent.gameObject.SetActive(false);
-            }
-        }
-
-        private void EnsureHint()
-        {
-            var existing = transform.Find("duelHint");
-            TMP_Text text;
-            if (existing != null)
-            {
-                text = existing.GetComponent<TMP_Text>();
-            }
-            else
-            {
-                var go = new GameObject("duelHint", typeof(RectTransform), typeof(CanvasRenderer),
-                    typeof(TextMeshProUGUI));
-                go.transform.SetParent(transform, false);
-                var rt = go.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0.5f, 0.5f);
-                rt.anchorMax = new Vector2(0.5f, 0.5f);
-                rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, 210f);
-                rt.sizeDelta = new Vector2(980f, 120f);
-                text = go.GetComponent<TextMeshProUGUI>();
-                var sample = transform.Find("roundInfo")?.GetComponent<TMP_Text>() ??
-                             GetComponentInChildren<TMP_Text>(true);
-                if (sample != null)
-                {
-                    text.font = sample.font;
-                }
-
-                text.fontSize = 36;
-                text.alignment = TextAlignmentOptions.Center;
-                text.color = new Color(1f, 0.93f, 0.55f, 1f);
-                text.enableWordWrapping = true;
-                text.overflowMode = TextOverflowModes.Overflow;
-                text.raycastTarget = false;
-            }
-
-            if (text != null)
-            {
-                Binding.BindText(text, ViewModel.Hint);
             }
         }
 

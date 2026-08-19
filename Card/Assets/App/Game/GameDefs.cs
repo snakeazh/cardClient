@@ -125,6 +125,19 @@ namespace App.Game
         public const int SkillXRayUses = 1;
         /// <summary>每手替换技能基础次数。</summary>
         public const int SkillReplaceUses = 1;
+        /// <summary>座位手牌数组容量。玩家发 5 张，敌人发 3 张。</summary>
+        public const int MaxCardsPerSeat = 5;
+        /// <summary>玩家每手发牌张数。</summary>
+        public const int PlayerCardsDealt = 5;
+        /// <summary>敌人每手发牌张数。</summary>
+        public const int EnemyCardsDealt = 3;
+        /// <summary>开牌使用的张数。</summary>
+        public const int OpenHandSize = 3;
+
+        public static int CardsDealt(bool player)
+        {
+            return player ? PlayerCardsDealt : EnemyCardsDealt;
+        }
 
         /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
         public static int EnemyCountForStage(int stage)
@@ -302,13 +315,43 @@ namespace App.Game
         public bool Looked;
         public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
-        public Card[] Hand = new Card[3];
+        public Card[] Hand = new Card[GameBalance.MaxCardsPerSeat];
+        /// <summary>玩家点选用于开牌的牌。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
+        public readonly bool[] CardSelected = new bool[GameBalance.MaxCardsPerSeat];
         public string Status = string.Empty;
         public string Banner = string.Empty;
         /// <summary>透视技能看到的牌型，本手有效。</summary>
         public string PeekedType = string.Empty;
         /// <summary>敌人人格。玩家为 null。BOSS 关会覆盖成 Expert。</summary>
         public AiProfile Profile;
+
+        public int CountSelectedCards()
+        {
+            var n = 0;
+            var limit = Math.Min(CardSelected.Length, Hand != null ? Hand.Length : 0);
+            for (var i = 0; i < limit; i++)
+            {
+                if (CardSelected[i])
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        }
+
+        public bool IsCardSelected(int index)
+        {
+            return index >= 0 && index < CardSelected.Length && CardSelected[index];
+        }
+
+        public void ClearCardSelected()
+        {
+            for (var i = 0; i < CardSelected.Length; i++)
+            {
+                CardSelected[i] = false;
+            }
+        }
     }
 
     /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 词缀。</summary>
@@ -333,12 +376,12 @@ namespace App.Game
         public int BonusXRayCharges;
         /// <summary>商店提供的每关额外替换次数，整次闯关保留。</summary>
         public int BonusReplaceCharges;
-        /// <summary>透视揭示标记，下标 = seatId*3 + cardIndex。</summary>
-        public readonly bool[] SpyReveal = new bool[12];
+        /// <summary>透视揭示标记，下标 = seatId * MaxCardsPerSeat + cardIndex。</summary>
+        public readonly bool[] SpyReveal = new bool[20];
         public bool PeekSuitUsed;
         public int PeekSuitIndex = -1;
         public Suit? PeekedSuit;
-        public readonly bool[] RubbedReveal = new bool[3];
+        public readonly bool[] RubbedReveal = new bool[GameBalance.MaxCardsPerSeat];
         public string LastRubMessage = string.Empty;
         public int AdsLoanThisStage;
         public int AdsReviveThisStage;

@@ -14,7 +14,7 @@
 
 1. `GameHud` 下要有名为 `dealpoint`（或 `DealPoint`）的节点。
 2. 在该节点上挂 `CardDealPoint`。没挂的话，运行时 `CardTableAnimator.Bind` 会自动补上（偏移用默认值）。
-3. 各座位节点（`mineNode` / 敌人节点）的 `cardNode` 下要有 `carpoint1`、`carpoint2`、`carpoint3`（也认 `cardpoint` / `CardPoint`）。
+3. 各座位节点（`mineNode` / 敌人节点）的 `cardNode` 下要有落点：玩家 `carpoint1`–`carpoint5`，敌人 `carpoint1`–`carpoint3`（也认 `cardpoint` / `CardPoint`）。
 4. 单张牌外观用现有资源 `Resources/Game/icon/CardIcon`，运行时实例化，不用再生成预制体。
 
 ---
@@ -49,10 +49,10 @@ dealPoint.OffsetY = -0.02f;
 1. 清掉上一局的牌。
 2. 在发牌点叠 **52** 张背面牌（`Deck.Size`），先全部隐藏。
 3. 洗牌动画：每张间隔 **0.05s** 依次显示；前 51 张播 `aini_card_appear01`（0.1s），堆顶最后一张播 `aini_card_appear02`（0.2s）。最后一张播完再发牌。
-4. 按座位轮发：每个还在局中的座位 3 张，从牌堆**最上面**抽出，飞到对应 `carpoint`。抽出时堆顶播 `aini_card_deal`（约 0.23s，与飞牌同时），露出的下一张播 `aini_card_back` 高亮。
+4. 按座位轮发：玩家 5 张、每个还在局中的敌人 3 张，从牌堆**最上面**抽出，飞到对应 `carpoint`。抽出时堆顶播 `aini_card_deal`（约 0.23s，与飞牌同时），露出的下一张播 `aini_card_back` 高亮。
 5. 发够本局所需张数后停止。剩下的牌留在 `dealpoint`，不再飞出。
 
-例如 1 名玩家 + 3 名敌人 = 飞出 12 张，牌堆留 40 张。敌人减少则飞出更少。
+例如 1 名玩家 + 3 名敌人 = 飞出 14 张，牌堆留 38 张。敌人减少则飞出更少。
 
 下一局开始会清空牌堆，重新叠 52 张。
 

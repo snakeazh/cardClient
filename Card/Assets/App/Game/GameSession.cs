@@ -123,6 +123,7 @@ namespace App.Game
             Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
             AnyEnemyAlive() &&
+            Player.CountSelectedCards() == GameBalance.OpenHandSize &&
             _revealKind == RevealKind.None &&
             !AttackPlaying;
 
@@ -168,7 +169,7 @@ namespace App.Game
 
         public void SelectRubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index > 2)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
             {
                 return;
             }
@@ -198,7 +199,7 @@ namespace App.Game
 
         public void RubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index > 2 || Run.RubsLeft <= 0)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt || Run.RubsLeft <= 0)
             {
                 return;
             }
@@ -250,7 +251,7 @@ namespace App.Game
                 return;
             }
 
-            if (index < 0 || index > 2)
+            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
             {
                 return;
             }
@@ -273,7 +274,48 @@ namespace App.Game
             Player.Looked = true;
             Player.Status = "已看牌";
             History.NoteLook();
-            ReturnToOpenReady("已看牌。可使用技能，或开牌与敌人逐一比牌");
+            ReturnToOpenReady("点选 3 张牌后开牌。可使用技能");
+        }
+
+        /// <summary>点选手牌。选中上移，开牌用这 3 张；再点取消。</summary>
+        public void TogglePlayerCard(int index)
+        {
+            if (AiActing || Player.Folded)
+            {
+                return;
+            }
+
+            if (Phase != GamePhase.WaitingOpen)
+            {
+                return;
+            }
+
+            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
+            {
+                return;
+            }
+
+            if (Player.IsCardSelected(index))
+            {
+                Player.CardSelected[index] = false;
+            }
+            else
+            {
+                if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+                {
+                    Hint = "已经选了 3 张，再点已选中的牌可取消";
+                    Notify();
+                    return;
+                }
+
+                Player.CardSelected[index] = true;
+            }
+
+            var picked = Player.CountSelectedCards();
+            Hint = picked >= GameBalance.OpenHandSize
+                ? "已选 3 张，可开牌"
+                : $"已选 {picked}/{GameBalance.OpenHandSize} 张，点选卡牌上移表示开牌用牌";
+            Notify();
         }
 
         public void AdjustBetUnits(int delta)
@@ -446,7 +488,7 @@ namespace App.Game
                 return;
             }
 
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < GameBalance.PlayerCardsDealt; i++)
             {
                 Player.Hand[i] = _deck.Draw();
             }
@@ -456,12 +498,12 @@ namespace App.Game
             if (Player.Looked)
             {
                 Hint =
-                    $"替换：{Player.Hand[0].DisplayName} / {Player.Hand[1].DisplayName} / {Player.Hand[2].DisplayName}（剩余 {Run.TiHuanGoodCharges}）";
-                Log($"替换手牌为 {Player.Hand[0].DisplayName} {Player.Hand[1].DisplayName} {Player.Hand[2].DisplayName}");
+                    $"替换：{FormatPlayerHand()}（剩余 {Run.TiHuanGoodCharges}）";
+                Log($"替换手牌为 {FormatPlayerHand()}");
             }
             else
             {
-                Hint = $"已替换 3 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
+                Hint = $"已替换 {GameBalance.PlayerCardsDealt} 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
                 Log("替换手牌（未看牌）");
             }
 
@@ -487,17 +529,20 @@ namespace App.Game
                 return;
             }
 
-            for (var i = 0; i < 3; i++)
+            var count = GameBalance.CardsDealt(seat.IsPlayer);
+            for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
             }
 
             var score = EvaluateSeat(seat);
-            seat.PeekedType = score.Label;
+            seat.PeekedType = seat.IsPlayer && seat.CountSelectedCards() != GameBalance.OpenHandSize
+                ? "未选定开牌"
+                : score.Label;
             Run.ChaKanGoodCharges--;
             SelectingXRayTarget = false;
-            Hint = $"透视 {seat.Name}：{score.Label}（剩余 {Run.ChaKanGoodCharges}）";
-            Log($"透视 {seat.Name} 翻牌 {score.Label}");
+            Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
+            Log($"透视 {seat.Name} 翻牌 {seat.PeekedType}");
             Notify();
         }
 
@@ -1360,7 +1405,7 @@ namespace App.Game
                 case BossAffix.BanScoreClub: banned = Suit.Club; break;
             }
 
-            var score = HandEvaluator.Evaluate(seat.Hand, banned, banFaces);
+            var score = HandEvaluator.Evaluate(CollectEvalCards(seat), banned, banFaces);
             if (Run.Affix == BossAffix.Flint)
             {
                 score = new HandScore(
@@ -1470,7 +1515,7 @@ namespace App.Game
             EnterOpenReady();
         }
 
-        /// <summary>每人发 3 张。未上场的敌人不发。</summary>
+        /// <summary>每人发牌。玩家 5 张，敌人 3 张。未上场的敌人不发。</summary>
         private void DealAll()
         {
             DealSerial++;
@@ -1483,11 +1528,14 @@ namespace App.Game
 
                 if (seat.IsPlayer || seat.Alive)
                 {
-                    for (var i = 0; i < 3; i++)
+                    var count = GameBalance.CardsDealt(seat.IsPlayer);
+                    for (var i = 0; i < seat.Hand.Length; i++)
                     {
-                        seat.Hand[i] = _deck.Draw();
+                        seat.Hand[i] = i < count ? _deck.Draw() : default;
                     }
                 }
+
+                seat.ClearCardSelected();
             }
         }
 
@@ -1533,7 +1581,7 @@ namespace App.Game
             Player.Looked = true;
             Player.Status = "已看牌";
             History.NoteLook();
-            ReturnToOpenReady("已看牌。可使用技能，或开牌与敌人逐一比牌");
+            ReturnToOpenReady("点选 3 张牌后开牌。可使用技能");
         }
 
         private void ReturnToOpenReady(string hint)
@@ -1546,7 +1594,7 @@ namespace App.Game
             }
             else
             {
-                Hint = "已看牌。可使用技能，或开牌与敌人逐一比牌";
+                Hint = "点选 3 张牌后开牌。可使用技能";
             }
 
             Notify();
@@ -2634,14 +2682,53 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
+        private static Card[] CollectEvalCards(SeatState seat)
+        {
+            if (seat == null || seat.Hand == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            if (!seat.IsPlayer)
+            {
+                var n = Math.Min(GameBalance.EnemyCardsDealt, seat.Hand.Length);
+                var enemy = new Card[n];
+                Array.Copy(seat.Hand, enemy, n);
+                return enemy;
+            }
+
+            var picked = new List<Card>(GameBalance.OpenHandSize);
+            var limit = Math.Min(GameBalance.PlayerCardsDealt, seat.Hand.Length);
+            for (var i = 0; i < limit; i++)
+            {
+                if (seat.IsCardSelected(i))
+                {
+                    picked.Add(seat.Hand[i]);
+                }
+            }
+
+            return picked.ToArray();
+        }
+
+        private string FormatPlayerHand()
+        {
+            var parts = new string[GameBalance.PlayerCardsDealt];
+            for (var i = 0; i < parts.Length; i++)
+            {
+                parts[i] = Player.Hand[i].DisplayName;
+            }
+
+            return string.Join(" / ", parts);
+        }
+
         private static int SpyKey(int seatId, int cardIndex)
         {
-            if (seatId < 0 || cardIndex < 0 || cardIndex > 2)
+            if (seatId < 0 || cardIndex < 0 || cardIndex >= GameBalance.MaxCardsPerSeat)
             {
                 return -1;
             }
 
-            return seatId * 3 + cardIndex;
+            return seatId * GameBalance.MaxCardsPerSeat + cardIndex;
         }
 
         private void SetSpyReveal(int seatId, int cardIndex, bool value)
@@ -3239,6 +3326,7 @@ namespace App.Game
             seat.Looked = !seat.IsPlayer;
             seat.ShowCards = false;
             seat.PeekedType = string.Empty;
+            seat.ClearCardSelected();
             seat.Status = seat.Alive || seat.IsPlayer ? string.Empty : "未上场";
             if (!seat.IsPlayer && !seat.Alive)
             {

@@ -3,7 +3,8 @@
 本文描述当前客户端已落地的规则，供后续改玩法、调数值、接 UI 时对照。  
 实现入口：`GameSession.cs`，数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。  
 关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)。  
-积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。
+积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。  
+局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
 
 玩家血量读 `HeroConfig.Hp`，怪物血量读 `MonsterConfig.MonsterHp`。攻击力读 `HeroConfig.HeroDamage` / `MonsterConfig.MonsterDamage`，在 PlayerItem 上显示。血量只在比牌后的攻击结算时扣除。
 
@@ -12,10 +13,10 @@
 ## 1. 一局流程
 
 ```
-发牌（玩家和存活敌人各 3 张）
+发牌（玩家 5 张，存活敌人各 3 张）
   → 玩家手牌直接翻开（不显示闷牌 / 看牌）
-  → WaitingOpen：只能开牌，或使用技能（搓牌 / 透视 / 替换）
-  → 开牌后按上场顺序，与每名存活敌人逐个比牌
+  → WaitingOpen：点选 3 张牌（选中上移），可使用技能，或开牌
+  → 开牌后用这 3 张，按上场顺序与每名存活敌人逐个比牌
   → 双方亮牌，按炸金花比大小
       赢：玩家按 攻击力 × 牌型倍率 打该怪物
       输：该怪物按自己的 攻击力 × 牌型倍率 打玩家
@@ -23,7 +24,7 @@
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
 ```
 
-主路径 UI：`GameUIView` + `GameBoardController` + `CardTableAnimator`。  
+主路径 UI：见 [`GameUI.md`](../UI/Game/GameUI.md)。  
 `GameTableController` 是旧场景绑法，不是主路径。
 
 ---
@@ -72,8 +73,10 @@
 
 ## 4. 发牌、看牌、技能
 
-- 玩家和存活敌人各发 3 张。敌人牌默认背面；玩家发完即看牌（`Looked=true`，`CardItem.FlipTo(Front)`）。
-- 不显示 **闷牌** / **看牌**。发牌动画结束后只显示 **开牌**，以及技能栏。
+- 玩家发 **5** 张，存活敌人各发 **3** 张。敌人牌默认背面；玩家发完即看牌。
+- 不显示 **闷牌** / **看牌**。发牌动画结束后显示 **开牌** 和技能栏。
+- 玩家点选手牌，选中的牌上移；必须选满 **3** 张才能开牌。开牌只用这 3 张，剩余 2 张不参与比牌。
+- `mineNode/cardNode` 需要 `carpoint1` … `carpoint5`。敌人仍用 `carpoint1` … `carpoint3`。
 - `GameHud.dealpoint` 先叠 52 张 `CardIcon` 并播洗牌出现（用子节点 `Back`，不要关掉它），再飞到各座位落点。
 - 技能在 `WaitingOpen` 可用；搓牌会进入 `WaitingRub`，搓完或取消后回到 `WaitingOpen`。
 
@@ -84,8 +87,8 @@
 |------|------|
 | PeekGood | 搓牌：进入搓牌，点选一张随机替换花色和点数 |
 | ChaKanGood | 透视：点选一名角色翻开其手牌 |
-| TiHuanGood | 替换：自己 3 张牌全部换成牌堆新牌 |
-| CompareBtn 开牌 | 开始与存活敌人逐个比牌，期间不能再改牌 |
+| TiHuanGood | 替换：自己 5 张牌全部换成牌堆新牌 |
+| CompareBtn 开牌 | 用已选的 3 张与存活敌人逐个比牌 |
 
 ---
 
@@ -164,10 +167,11 @@ BOSS 关随机词缀（禁搓花色、禁计分、燧石、锋芒、透视眼等
 | `App/Game/GameSession.cs` | 状态机、开牌队列、逐个比牌、攻击 |
 | `App/Game/GameDefs.cs` | 阶段、平衡、座位、商店目录 |
 | `App/Game/CardModel.cs` | 牌、牌型、伤害公式 |
-| `App/UI/Game/GameUIView.cs` | HUD 绑定 |
+| `App/UI/Game/GameUIView.cs` | HUD 绑定，说明见 [`GameUI.md`](../UI/Game/GameUI.md) |
 | `App/UI/Game/GameTableViewModel.cs` | 文案与按钮 |
 | `App/UI/Game/CardTableAnimator.cs` | 发牌、洗牌出现、看牌/摊牌翻面 |
-| `App/UI/Game/AttackCutscene.cs` | 玩家打怪 / 怪打玩家演出 |
+| `App/UI/Game/AttackCutscene.cs` | 玩家打怪 / 怪打玩家，说明见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) |
+| `App/Item/PlayerItem.cs` | 人物/敌人卡，说明见 [`PlayerItem.md`](../Item/PlayerItem.md) |
 | `App/Game/CardItem.cs` | 单张牌贴图与 `FlipTo` |
 | `App/Game/CardDealPoint.cs` | dealpoint 叠牌 |
 
@@ -184,8 +188,9 @@ BOSS 关随机词缀（禁搓花色、禁计分、燧石、锋芒、透视眼等
 
 1. HP 只在攻击结算时扣除。
 2. 发牌后直接看牌，不要再露出闷牌 / 看牌。
-3. 开牌前只能用技能或点开牌，不要走跟注 / 加注 / 弃牌。
+3. 开牌前点选 3 张牌（或用技能），不要走跟注 / 加注 / 弃牌。
 4. 开牌后必须按敌人顺序逐个比，不要全员一起摊牌后点选。
 5. 伤害用 `攻击力 × HandScoreConfig 倍率`，不要再用奖池 / 当轮注额。
 6. 玩家 HP / 攻击力读 `HeroConfig`，怪物 HP / 攻击力读 `MonsterConfig`。
 7. `HandScore.BaseChips` / `Card.ChipValue` 是牌力，不是货币。
+8. 玩家发 5 张、敌人发 3 张；开牌只用玩家点选的 3 张。

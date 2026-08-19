@@ -15,6 +15,7 @@ namespace App.UI
     {
         private readonly IUIManager _ui;
         private bool _failPopupOpen;
+        private bool _shopPopupOpen;
 
         public GameTableViewModel(
             GameSession session,
@@ -228,6 +229,7 @@ namespace App.UI
             ShowShop.Value = Session.Phase == GamePhase.Shop;
             ShowFail.Value = Session.Phase == GamePhase.StageFail;
             TryPresentFailPopup();
+            TryPresentShopPopup();
             ShowAttack.Value = Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget;
             if (!Session.AttackPlaying)
             {
@@ -317,6 +319,33 @@ namespace App.UI
             finally
             {
                 _failPopupOpen = false;
+            }
+        }
+
+        private async void TryPresentShopPopup()
+        {
+            if (!IsOpen || Session.Phase != GamePhase.Shop || _shopPopupOpen || _ui == null)
+            {
+                return;
+            }
+
+            _shopPopupOpen = true;
+            try
+            {
+                while (IsOpen && Session.Phase == GamePhase.Shop)
+                {
+                    var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
+                    var popup = (BattleShopPopViewModel)_ui.Registry.CreateViewModel(registration);
+                    await _ui.Dialogs.ShowCustomAsync<BattleShopPopViewModel, bool>(popup);
+                }
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+            finally
+            {
+                _shopPopupOpen = false;
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Bootstrap;
+using App.Config;
 using App.Score;
 
 namespace App.Game
@@ -125,6 +126,9 @@ namespace App.Game
             Run.ConsecutiveLosses = 0;
             Run.Tilted = false;
             Run.Relics.Clear();
+            Run.RelicConfigIds.Clear();
+            Run.ShopOfferIds.Clear();
+            Run.ShopRefreshCount = 0;
             Run.LoanTicket = false;
             Run.SplashThisRound = false;
             Run.MagnifierThisRound = false;
@@ -852,6 +856,121 @@ namespace App.Game
             }
 
             Hint = $"已购买 {item.Name}";
+            Notify();
+        }
+
+        /// <summary>下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，之后每次 + <see cref="GameConst.ShopRefreshAfter"/>。</summary>
+        public int ShopRefreshCost
+        {
+            get
+            {
+                var first = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshFirst) : 5;
+                var after = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshAfter) : 3;
+                return first + Math.Max(0, Run.ShopRefreshCount) * after;
+            }
+        }
+
+        public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
+
+        public bool CanRefreshShop =>
+            Phase == GamePhase.Shop &&
+            Run.Gold >= ShopRefreshCost &&
+            HasUnownedRelicConfig();
+
+        public void RefreshShopOffers()
+        {
+            if (Phase != GamePhase.Shop)
+            {
+                return;
+            }
+
+            if (!HasUnownedRelicConfig())
+            {
+                Hint = "没有可刷新的遗物";
+                Notify();
+                return;
+            }
+
+            var cost = ShopRefreshCost;
+            if (Run.Gold < cost)
+            {
+                Hint = "金币不足";
+                Notify();
+                return;
+            }
+
+            Run.Gold -= cost;
+            Run.ShopRefreshCount++;
+            RollShopOffers();
+            Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
+            Hint = $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
+            Notify();
+        }
+
+        public void BuyShopRelic(int relicId)
+        {
+            if (Phase != GamePhase.Shop)
+            {
+                return;
+            }
+
+            if (!Run.ShopOfferIds.Contains(relicId))
+            {
+                return;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null)
+            {
+                return;
+            }
+
+            if (OwnsRelicConfig(relicId))
+            {
+                Hint = "已拥有该遗物";
+                Notify();
+                return;
+            }
+
+            if (Run.Gold < relic.Price)
+            {
+                Hint = "金币不足";
+                Notify();
+                return;
+            }
+
+            Run.Gold -= relic.Price;
+            Run.RelicConfigIds.Add(relicId);
+            Run.ShopOfferIds.Remove(relicId);
+            Log($"购入遗物 {relic.Name}");
+            Hint = $"已购买 {relic.Name}";
+            Notify();
+        }
+
+        public void SellShopRelic(int relicId)
+        {
+            if (Phase != GamePhase.Shop)
+            {
+                return;
+            }
+
+            if (!OwnsRelicConfig(relicId))
+            {
+                Hint = "未拥有该遗物";
+                Notify();
+                return;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null)
+            {
+                return;
+            }
+
+            Run.RelicConfigIds.Remove(relicId);
+            Run.Gold += Math.Max(0, relic.SellingPrice);
+            Log($"出售遗物 {relic.Name}，获得 {relic.SellingPrice} 金币");
+            Hint = $"已出售 {relic.Name}";
             Notify();
         }
 
@@ -2544,6 +2663,8 @@ namespace App.Game
             Run.Gold += gold;
             Log($"通关结算：剩余血量 {remain} → {gold} 金币（总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
+            Run.ShopRefreshCount = 0;
+            RollShopOffers();
             Hint = $"关卡胜利！兑换 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
@@ -3044,6 +3165,79 @@ namespace App.Game
             {
                 Run.Log.RemoveAt(0);
             }
+        }
+
+        private void RollShopOffers()
+        {
+            Run.ShopOfferIds.Clear();
+            var pool = new List<RelicConfig>();
+            foreach (var relic in RelicConfig.All.Values)
+            {
+                if (relic == null || OwnsRelicConfig(relic.Id) || relic.RefreshProbability <= 0f)
+                {
+                    continue;
+                }
+
+                pool.Add(relic);
+            }
+
+            var slots = Math.Min(GameBalance.ShopOfferCount, pool.Count);
+            for (var n = 0; n < slots; n++)
+            {
+                var pick = PickWeightedRelic(pool);
+                if (pick == null)
+                {
+                    break;
+                }
+
+                Run.ShopOfferIds.Add(pick.Id);
+                pool.Remove(pick);
+            }
+        }
+
+        private RelicConfig PickWeightedRelic(List<RelicConfig> pool)
+        {
+            if (pool == null || pool.Count == 0)
+            {
+                return null;
+            }
+
+            var total = 0f;
+            for (var i = 0; i < pool.Count; i++)
+            {
+                total += Math.Max(0f, pool[i].RefreshProbability);
+            }
+
+            if (total <= 0f)
+            {
+                return pool[_rng.Next(pool.Count)];
+            }
+
+            var roll = _rng.NextDouble() * total;
+            var acc = 0.0;
+            for (var i = 0; i < pool.Count; i++)
+            {
+                acc += Math.Max(0f, pool[i].RefreshProbability);
+                if (roll < acc)
+                {
+                    return pool[i];
+                }
+            }
+
+            return pool[pool.Count - 1];
+        }
+
+        private bool HasUnownedRelicConfig()
+        {
+            foreach (var relic in RelicConfig.All.Values)
+            {
+                if (relic != null && !OwnsRelicConfig(relic.Id) && relic.RefreshProbability > 0f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void Notify() => Changed?.Invoke();

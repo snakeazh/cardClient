@@ -91,6 +91,7 @@ namespace App.Game
         public int Price;
         public bool Relic;
         public RelicId RelicId;
+        public int RelicConfigId;
         public ConsumableId ConsumableId;
         public RelicCategory Category;
     }
@@ -109,6 +110,8 @@ namespace App.Game
         public const int RaiseLowMult = 2;
         public const int RaiseHighMult = 4;
         public const int MaxRelics = 4;
+        /// <summary>通关商店货架格子数，对应 BattleShopPop.sellHor。</summary>
+        public const int ShopOfferCount = 3;
         public const float RescueRatio = 0.15f;
         public const float StingyRescueRatio = 0.05f;
         public const float SplashRatio = 0.3f;
@@ -342,6 +345,12 @@ namespace App.Game
         public RelicId? DisabledRelic;
         public ConsumableId? DisabledConsumable;
         public readonly List<RelicId> Relics = new List<RelicId>();
+        /// <summary>本局已拥有的 RelicConfig Id，商店刷新不会再刷出。</summary>
+        public readonly List<int> RelicConfigIds = new List<int>();
+        /// <summary>当前商店货架上的 RelicConfig Id。</summary>
+        public readonly List<int> ShopOfferIds = new List<int>();
+        /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + 次数 × ShopRefreshAfter。</summary>
+        public int ShopRefreshCount;
         public readonly List<string> Log = new List<string>();
     }
 }

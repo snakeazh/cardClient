@@ -1,6 +1,8 @@
 using System;
+using App.Config;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace App.Game
@@ -8,7 +10,7 @@ namespace App.Game
     /// <summary>
     /// 商店货架单卡。节点在预制体上直接挂到序列化字段，展示由 <see cref="Bind"/> 写入，点击通过 <see cref="Clicked"/> 抛出。
     /// </summary>
-    public sealed class ShopItem : MonoBehaviour
+    public sealed class ShopItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
@@ -19,6 +21,12 @@ namespace App.Game
         public ShopItemDef Data { get; private set; }
 
         public event Action<ShopItem> Clicked;
+        public event Action<ShopItem, PointerEventData> DragBegan;
+        public event Action<ShopItem, PointerEventData> DragMoved;
+        public event Action<ShopItem, PointerEventData> DragEnded;
+
+        private Sprite _defaultIcon;
+        private bool _suppressClick;
 
         public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null)
         {
@@ -30,6 +38,21 @@ namespace App.Game
             {
                 SetGoldIcon(goldSprite);
             }
+        }
+
+        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true)
+        {
+            Bind(relic == null
+                ? null
+                : new ShopItemDef
+                {
+                    Id = relic.Id.ToString(),
+                    Name = relic.Name,
+                    Effect = relic.Desc,
+                    Price = forSale ? relic.Price : relic.SellingPrice,
+                    Relic = true,
+                    RelicConfigId = relic.Id
+                }, icon, goldSprite);
         }
 
         public void Bind(string name, Sprite icon, int price, Sprite goldSprite = null)
@@ -47,13 +70,13 @@ namespace App.Game
 
         public void SetIcon(Sprite icon)
         {
-            if (cardIcon == null || icon == null)
+            if (cardIcon == null)
             {
                 return;
             }
 
-            cardIcon.sprite = icon;
-            cardIcon.enabled = true;
+            cardIcon.sprite = icon != null ? icon : _defaultIcon;
+            cardIcon.enabled = cardIcon.sprite != null;
         }
 
         public void SetGoldNum(int price)
@@ -89,8 +112,54 @@ namespace App.Game
             }
         }
 
+        public void BindDrag(
+            Action<ShopItem, PointerEventData> onBegan,
+            Action<ShopItem, PointerEventData> onMoved,
+            Action<ShopItem, PointerEventData> onEnded)
+        {
+            DragBegan = null;
+            DragMoved = null;
+            DragEnded = null;
+            if (onBegan != null)
+            {
+                DragBegan += onBegan;
+            }
+
+            if (onMoved != null)
+            {
+                DragMoved += onMoved;
+            }
+
+            if (onEnded != null)
+            {
+                DragEnded += onEnded;
+            }
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            _suppressClick = true;
+            DragBegan?.Invoke(this, eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            DragMoved?.Invoke(this, eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            _suppressClick = false;
+            DragEnded?.Invoke(this, eventData);
+        }
+
         private void Awake()
         {
+            if (cardIcon != null)
+            {
+                _defaultIcon = cardIcon.sprite;
+            }
+
             HookClick();
         }
 
@@ -102,6 +171,9 @@ namespace App.Game
             }
 
             Clicked = null;
+            DragBegan = null;
+            DragMoved = null;
+            DragEnded = null;
         }
 
         private void HookClick()
@@ -117,6 +189,12 @@ namespace App.Game
 
         private void HandleClick()
         {
+            if (_suppressClick)
+            {
+                _suppressClick = false;
+                return;
+            }
+
             Clicked?.Invoke(this);
         }
 

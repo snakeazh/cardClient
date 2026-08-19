@@ -22,6 +22,11 @@ namespace App.Config
         public int Hp;
 
         /// <summary>
+        /// 攻击力
+        /// </summary>
+        public int HeroDamage;
+
+        /// <summary>
         /// 形象icon
         /// </summary>
         public string Icon;

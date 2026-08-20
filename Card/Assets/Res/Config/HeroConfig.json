@@ -61,7 +61,7 @@
   },
   {
     "Id": 7,
-    "Name": "暴发户",
+    "Name": "富豪",
     "Hp": 100,
     "HeroDamage": 10,
     "Icon": "Adventurer1",
@@ -71,7 +71,7 @@
   },
   {
     "Id": 8,
-    "Name": "流浪汉",
+    "Name": "武林高手",
     "Hp": 100,
     "HeroDamage": 10,
     "Icon": "Adventurer1",

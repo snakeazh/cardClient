@@ -14,13 +14,17 @@ namespace App.Resources
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
         public const string BattleShopPop = "UI/Popup/BattleShopPop";
         public const string BattleSettleUpPop = "UI/Popup/BattleSettleUpPop";
+        public const string IllustratedBookPop = "UI/Popup/IllustratedBookPop";
         public const string ItemTip = "UI/Top/ItemTip";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";
         public const string PlayerItem = "UI/Icon/PlayerItem";
         public const string ShopItem = "UI/Icon/ShopItem";
+        public const string Item = "UI/Icon/Item";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/Relic.spriteatlasv2.</summary>
+        public const string RelicAtlas = "Altas/Relic";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 

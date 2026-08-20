@@ -656,14 +656,14 @@ GameObject:
   - component: {fileID: 4629292544031898967}
   - component: {fileID: 337152588013616580}
   - component: {fileID: 2865754357073755597}
-  - component: {fileID: 3239313932618631457}
+  - component: {fileID: 6949465387586226078}
   m_Layer: 0
-  m_Name: RemainsSCView
+  m_Name: RelicSCView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5102093200255579857
 RectTransform:
   m_ObjectHideFlags: 0
@@ -735,7 +735,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 8173677852314899016}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1
@@ -752,7 +752,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &3239313932618631457
+--- !u!114 &6949465387586226078
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -764,7 +764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _key: RemainsSCView
+  _key: RelicSCView
   _target: {fileID: 2865754357073755597}
 --- !u!1 &3448911596952808569
 GameObject:
@@ -776,9 +776,9 @@ GameObject:
   m_Component:
   - component: {fileID: 3530766798804330987}
   - component: {fileID: 1412984803709526815}
-  - component: {fileID: 4648070910662043684}
+  - component: {fileID: 8946121426541338088}
   m_Layer: 0
-  m_Name: RemainsToggle
+  m_Name: RelicToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -853,7 +853,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_IsOn: 0
---- !u!114 &4648070910662043684
+--- !u!114 &8946121426541338088
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -865,7 +865,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _key: RemainsToggle
+  _key: RelicToggle
   _target: {fileID: 1412984803709526815}
 --- !u!1 &3610221163866484598
 GameObject:
@@ -1089,9 +1089,9 @@ GameObject:
   - component: {fileID: 4910540220596293589}
   - component: {fileID: 6857539595388604811}
   - component: {fileID: 679661942306936240}
-  - component: {fileID: 8771100484831132001}
+  - component: {fileID: 8413524701752271429}
   m_Layer: 0
-  m_Name: TreasureSCView
+  m_Name: CollectSCView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1168,7 +1168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 650174151372108131}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1
@@ -1185,7 +1185,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &8771100484831132001
+--- !u!114 &8413524701752271429
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1197,7 +1197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _key: TreasureSCView
+  _key: CollectSCView
   _target: {fileID: 679661942306936240}
 --- !u!1 &4729083063200391171
 GameObject:
@@ -1501,6 +1501,7 @@ GameObject:
   - component: {fileID: 5373480913689851346}
   - component: {fileID: 6652421127280175970}
   - component: {fileID: 3278660836781131713}
+  - component: {fileID: 9182736451928374651}
   m_Layer: 0
   m_Name: IllustratedBookPop
   m_TagString: Untagged
@@ -1582,27 +1583,40 @@ MonoBehaviour:
   - Key: CloseBtn
     Component: {fileID: 2277005579663842935}
     Bind: {fileID: 4050329233964064719}
-  - Key: TreasureSCView
+  - Key: CollectSCView
     Component: {fileID: 679661942306936240}
-    Bind: {fileID: 8771100484831132001}
-  - Key: RemainsSCView
+    Bind: {fileID: 8413524701752271429}
+  - Key: RelicSCView
     Component: {fileID: 2865754357073755597}
-    Bind: {fileID: 3239313932618631457}
+    Bind: {fileID: 6949465387586226078}
   - Key: MonsterSCView
     Component: {fileID: 8385969504045741125}
     Bind: {fileID: 6743977239123302387}
-  - Key: TreasureToggle
+  - Key: CollectToggle
     Component: {fileID: 8386288620049759240}
-    Bind: {fileID: 9134403293966767381}
-  - Key: RemainsToggle
+    Bind: {fileID: 4108388623568373308}
+  - Key: RelicToggle
     Component: {fileID: 1412984803709526815}
-    Bind: {fileID: 4648070910662043684}
+    Bind: {fileID: 8946121426541338088}
   - Key: MonsterToggle
     Component: {fileID: 8610993859831648474}
-    Bind: {fileID: 121376751635869214}
+    Bind: {fileID: 4927230082349277229}
   - Key: CurItemNum
     Component: {fileID: 3436532386374314530}
     Bind: {fileID: 7491963151621518336}
+--- !u!114 &9182736451928374651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6175134540057785447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8f3c2d14b6e4e7a91d05c3b8e2f4a17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ui: {fileID: 3278660836781131713}
 --- !u!1 &6223232903633917042
 GameObject:
   m_ObjectHideFlags: 0
@@ -1778,9 +1792,9 @@ GameObject:
   m_Component:
   - component: {fileID: 8232786039489963887}
   - component: {fileID: 8386288620049759240}
-  - component: {fileID: 9134403293966767381}
+  - component: {fileID: 4108388623568373308}
   m_Layer: 0
-  m_Name: TreasureToggle
+  m_Name: CollectToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1855,7 +1869,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_IsOn: 1
---- !u!114 &9134403293966767381
+--- !u!114 &4108388623568373308
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1867,7 +1881,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _key: TreasureToggle
+  _key: CollectToggle
   _target: {fileID: 8386288620049759240}
 --- !u!1 &7379456067040367711
 GameObject:
@@ -2114,7 +2128,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2300609217132878467}
   - component: {fileID: 8610993859831648474}
-  - component: {fileID: 121376751635869214}
+  - component: {fileID: 4927230082349277229}
   m_Layer: 0
   m_Name: MonsterToggle
   m_TagString: Untagged
@@ -2191,7 +2205,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_IsOn: 0
---- !u!114 &121376751635869214
+--- !u!114 &4927230082349277229
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2359,7 +2373,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4107445442488226277
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2431,7 +2445,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 6888982754324257980}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1

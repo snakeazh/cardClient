@@ -393,6 +393,104 @@ namespace App.Game
             return HighCard(filtered);
         }
 
+        /// <summary>从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。</summary>
+        public static HandScore SelectBestOpen(Card[] hand, bool[] selected, int dealt, Suit? bannedSuit = null, bool banFaces = false)
+        {
+            if (selected != null)
+            {
+                for (var i = 0; i < selected.Length; i++)
+                {
+                    selected[i] = false;
+                }
+            }
+
+            if (hand == null)
+            {
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+            }
+
+            dealt = Math.Min(dealt, hand.Length);
+            if (dealt < 3)
+            {
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+            }
+
+            var trio = new Card[3];
+            HandScore best = default;
+            var bestI = 0;
+            var bestJ = 1;
+            var bestK = 2;
+            var any = false;
+            for (var i = 0; i < dealt - 2; i++)
+            {
+                for (var j = i + 1; j < dealt - 1; j++)
+                {
+                    for (var k = j + 1; k < dealt; k++)
+                    {
+                        trio[0] = hand[i];
+                        trio[1] = hand[j];
+                        trio[2] = hand[k];
+                        var score = Evaluate(trio, bannedSuit, banFaces);
+                        if (!any || score.CompareTo(best) > 0)
+                        {
+                            best = score;
+                            bestI = i;
+                            bestJ = j;
+                            bestK = k;
+                            any = true;
+                        }
+                    }
+                }
+            }
+
+            if (selected != null && any)
+            {
+                if (bestI < selected.Length)
+                {
+                    selected[bestI] = true;
+                }
+
+                if (bestJ < selected.Length)
+                {
+                    selected[bestJ] = true;
+                }
+
+                if (bestK < selected.Length)
+                {
+                    selected[bestK] = true;
+                }
+            }
+
+            return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+        }
+
+        public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
+        {
+            if (hand == null || selected == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            var picked = new List<Card>(GameBalance.OpenHandSize);
+            var limit = Math.Min(hand.Length, selected.Length);
+            for (var i = 0; i < limit; i++)
+            {
+                if (selected[i])
+                {
+                    picked.Add(hand[i]);
+                }
+            }
+
+            return picked.ToArray();
+        }
+
+        public static Card[] CopyBestOpenCards(Card[] hand, int dealt, Suit? bannedSuit = null, bool banFaces = false)
+        {
+            var flags = new bool[GameBalance.MaxCardsPerSeat];
+            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces);
+            return CopySelectedCards(hand, flags);
+        }
+
         /// <summary>伤害 ≈ 牌面筹码 × 底池 × 牌型倍率 × 遗物倍率。</summary>
         public static int ComputeDamage(HandScore score, int pot, float relicMultiplier)
         {

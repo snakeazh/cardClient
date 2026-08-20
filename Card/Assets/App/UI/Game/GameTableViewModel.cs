@@ -16,6 +16,7 @@ namespace App.UI
         private readonly IUIManager _ui;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
+        private bool _settleShownThisShop;
 
         public GameTableViewModel(
             GameSession session,
@@ -216,6 +217,11 @@ namespace App.UI
                                   !Session.SequentialCompare);
             ShowShop.Value = Session.Phase == GamePhase.Shop;
             ShowFail.Value = Session.Phase == GamePhase.StageFail;
+            if (Session.Phase != GamePhase.Shop)
+            {
+                _settleShownThisShop = false;
+            }
+
             TryPresentFailPopup();
             TryPresentShopPopup();
             ShowAttack.Value = !Session.SequentialCompare &&
@@ -321,6 +327,21 @@ namespace App.UI
             _shopPopupOpen = true;
             try
             {
+                if (!_settleShownThisShop)
+                {
+                    _settleShownThisShop = true;
+                    try
+                    {
+                        var settleReg = _ui.Registry.GetByViewModelType(typeof(BattleSettleUpPopViewModel));
+                        var settle = (BattleSettleUpPopViewModel)_ui.Registry.CreateViewModel(settleReg);
+                        await _ui.Dialogs.ShowCustomAsync<BattleSettleUpPopViewModel, bool>(settle);
+                    }
+                    catch (Exception ex)
+                    {
+                        UnityEngine.Debug.LogException(ex);
+                    }
+                }
+
                 while (IsOpen && Session.Phase == GamePhase.Shop)
                 {
                     var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));

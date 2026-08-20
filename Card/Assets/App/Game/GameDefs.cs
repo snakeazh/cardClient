@@ -125,12 +125,12 @@ namespace App.Game
         public const int SkillXRayUses = 1;
         /// <summary>每手替换技能基础次数。</summary>
         public const int SkillReplaceUses = 1;
-        /// <summary>座位手牌数组容量。玩家发 5 张，敌人发 3 张。</summary>
+        /// <summary>座位手牌数组容量。玩家和敌人都发 5 张。</summary>
         public const int MaxCardsPerSeat = 5;
         /// <summary>玩家每手发牌张数。</summary>
         public const int PlayerCardsDealt = 5;
         /// <summary>敌人每手发牌张数。</summary>
-        public const int EnemyCardsDealt = 3;
+        public const int EnemyCardsDealt = 5;
         /// <summary>开牌使用的张数。</summary>
         public const int OpenHandSize = 3;
 
@@ -316,7 +316,7 @@ namespace App.Game
         public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
         public Card[] Hand = new Card[GameBalance.MaxCardsPerSeat];
-        /// <summary>玩家点选用于开牌的牌。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
+        /// <summary>开牌用牌。玩家点选；敌人结算时锁定最大牌型组合。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
         public readonly bool[] CardSelected = new bool[GameBalance.MaxCardsPerSeat];
         public string Status = string.Empty;
         public string Banner = string.Empty;

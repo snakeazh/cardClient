@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Framework.Save;
 
 namespace App.Score
@@ -12,6 +13,9 @@ namespace App.Score
         bool IsDirty { get; }
 
         ScoreSnapshot Current { get; }
+
+        /// <summary>本关每回合积分，BeginStage / BeginChapter 时清空。</summary>
+        IReadOnlyList<int> StageRoundScores { get; }
 
         /// <summary>floor(总积分 / GameConst.ExchangePointsForGoldCoins)。预览可换金币，不改积分。</summary>
         int CollectableGold { get; }

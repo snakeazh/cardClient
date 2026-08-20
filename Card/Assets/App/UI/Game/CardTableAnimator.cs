@@ -119,12 +119,13 @@ namespace App.UI
 
             if (session.RevealPlaySerial > 0 && session.RevealPlaySerial != _shownReveal)
             {
+                SyncSelectLift(session);
                 PlayReveal(session);
                 return;
             }
 
             SyncAllFaces(session);
-            SyncPlayerSelectLift(session);
+            SyncSelectLift(session);
         }
 
         public int HitPlayerCard(Camera camera)
@@ -397,7 +398,7 @@ namespace App.UI
             var settleCount = CardCount(winnerView, winnerSeat);
             for (var i = 0; i < settleCount; i++)
             {
-                if (winnerSeat != null && winnerSeat.IsPlayer && !winnerSeat.IsCardSelected(i))
+                if (winnerSeat != null && !winnerSeat.IsCardSelected(i))
                 {
                     continue;
                 }
@@ -474,20 +475,26 @@ namespace App.UI
 
             var winner = SeatById(session, session.RevealWinnerId);
             var view = ViewOf(session, winner);
-            TintSeat(view, new Color(1f, 0.9f, 0.45f));
+            TintSeat(view, winner, new Color(1f, 0.9f, 0.45f));
         }
 
-        private static void TintSeat(SeatView view, Color color)
+        private static void TintSeat(SeatView view, SeatState seat, Color color)
         {
             if (view == null)
             {
                 return;
             }
 
+            var onlySelected = seat != null && seat.CountSelectedCards() > 0;
             for (var i = 0; i < view.Items.Length; i++)
             {
                 var item = view.Items[i];
                 if (item == null)
+                {
+                    continue;
+                }
+
+                if (onlySelected && !seat.IsCardSelected(i))
                 {
                     continue;
                 }
@@ -741,7 +748,8 @@ namespace App.UI
                 else if (session.RevealWinnerId == seat.Id &&
                          (session.Phase == GamePhase.Showdown ||
                           session.Phase == GamePhase.WaitingAttack ||
-                          session.Phase == GamePhase.RoundSettle))
+                          session.Phase == GamePhase.RoundSettle) &&
+                         (seat.CountSelectedCards() == 0 || seat.IsCardSelected(i)))
                 {
                     sr.color = new Color(1f, 0.92f, 0.55f, 1f);
                 }
@@ -753,23 +761,71 @@ namespace App.UI
             }
         }
 
-        private void SyncPlayerSelectLift(GameSession session)
+        private void SyncSelectLift(GameSession session)
         {
-            if (_dealing || _player == null || session == null || session.Player == null)
+            if (_dealing || session == null)
             {
                 return;
             }
 
-            for (var i = 0; i < _player.Items.Length; i++)
+            LiftSeat(_player, session.Player, SelectOffset(_player));
+            if (session.Enemies == null)
             {
-                var item = _player.Items[i];
-                if (item == null || !_player.Landed[i] || _player.Points[i] == null)
+                return;
+            }
+
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                var enemy = session.Enemies[i];
+                if (enemy == null || !enemy.ActiveInStage)
                 {
                     continue;
                 }
 
-                var dest = _player.Points[i].position +
-                           (session.Player.IsCardSelected(i) ? Vector3.up * SelectLift : Vector3.zero);
+                var view = ViewOf(session, enemy);
+                LiftSeat(view, enemy, SelectOffset(view));
+            }
+        }
+
+        /// <summary>
+        /// 选中牌朝玩家方向挪开：玩家向上，上方敌人向下，左边敌人向右，右边敌人向左。
+        /// </summary>
+        private Vector3 SelectOffset(SeatView view)
+        {
+            if (view == null || view.IsPlayer)
+            {
+                return Vector3.up * SelectLift;
+            }
+
+            if (view == _enemies[0])
+            {
+                return Vector3.right * SelectLift;
+            }
+
+            if (view == _enemies[2])
+            {
+                return Vector3.left * SelectLift;
+            }
+
+            return Vector3.down * SelectLift;
+        }
+
+        private static void LiftSeat(SeatView view, SeatState seat, Vector3 offset)
+        {
+            if (view == null || seat == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < view.Items.Length; i++)
+            {
+                var item = view.Items[i];
+                if (item == null || !view.Landed[i] || view.Points[i] == null)
+                {
+                    continue;
+                }
+
+                var dest = view.Points[i].position + (seat.IsCardSelected(i) ? offset : Vector3.zero);
                 if ((item.transform.position - dest).sqrMagnitude < 0.0004f)
                 {
                     continue;

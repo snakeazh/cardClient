@@ -4,9 +4,7 @@
     "Difficulty": 1,
     "Level": 1,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      10011
     ]
   },
   {
@@ -14,7 +12,9 @@
     "Difficulty": 1,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      10101,
+      10102,
+      10103
     ]
   },
   {

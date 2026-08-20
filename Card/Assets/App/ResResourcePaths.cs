@@ -13,6 +13,7 @@ namespace App.Resources
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
         public const string BattleShopPop = "UI/Popup/BattleShopPop";
+        public const string BattleSettleUpPop = "UI/Popup/BattleSettleUpPop";
         public const string ItemTip = "UI/Top/ItemTip";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";

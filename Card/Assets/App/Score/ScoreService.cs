@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Framework.Save;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace App.Score
         public const string SaveKey = "score.v1";
 
         private readonly ISaveService _save;
+        private readonly List<int> _stageRoundScores = new List<int>();
         private int _total;
         private int _stage;
         private int _round;
@@ -27,12 +29,15 @@ namespace App.Score
 
         public ScoreSnapshot Current => new ScoreSnapshot(_total, _stage, _round);
 
+        public IReadOnlyList<int> StageRoundScores => _stageRoundScores;
+
         public int CollectableGold => ScoreBalance.PointsToGold(_total);
 
         public int GrantedGold => _grantedGold;
 
         public void BeginChapter()
         {
+            _stageRoundScores.Clear();
             if (_total == 0 && _stage == 0 && _round == 0 && _grantedGold == 0)
             {
                 return;
@@ -47,6 +52,7 @@ namespace App.Score
 
         public void BeginStage()
         {
+            _stageRoundScores.Clear();
             if (_stage == 0 && _round == 0)
             {
                 return;
@@ -73,6 +79,7 @@ namespace App.Score
             var points = ScoreBalance.ChipsToPoints(chipsWon);
             if (points <= 0)
             {
+                _stageRoundScores.Add(0);
                 BeginRound();
                 return;
             }
@@ -80,6 +87,7 @@ namespace App.Score
             _round = points;
             _stage += points;
             _total += points;
+            _stageRoundScores.Add(points);
             _dirty = true;
         }
 
@@ -103,6 +111,7 @@ namespace App.Score
             _stage = 0;
             _round = 0;
             _grantedGold = 0;
+            _stageRoundScores.Clear();
             _dirty = false;
             if (!_save.HasKey(SaveKey))
             {

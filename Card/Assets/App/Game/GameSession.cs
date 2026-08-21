@@ -8,7 +8,7 @@ using App.Score;
 namespace App.Game
 {
     /// <summary>
-    /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → 攻击力×牌型倍率结算伤害。
+    /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → (攻击力+牌面点数)×牌型倍率结算伤害。
     /// 敌人座位固定 3 个，人格在 <see cref="CreateSeat"/> 绑定，BOSS 关覆盖成 Expert。
     /// </summary>
     public sealed class GameSession
@@ -949,7 +949,8 @@ namespace App.Game
             var relic = attacker.IsPlayer
                 ? RelicMultiplier(score)
                 : (Run.Affix == BossAffix.Flint ? 0.5f : 1f);
-            return HandEvaluator.ComputeAttackDamage(attacker.Attack, mag, relic);
+            // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘倍率。
+            return HandEvaluator.ComputeAttackDamage(attacker.Attack, score.BaseChips, mag, relic);
         }
 
         private static float HandTypeMagnification(HandType type)

@@ -2,8 +2,8 @@
   {
     "Id": 1,
     "Name": "平凡之人",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 200,
+    "HeroDamage": 7,
     "Icon": "Adventurer1",
     "HeroEntryId": 0,
     "UnlockCondition": 0,

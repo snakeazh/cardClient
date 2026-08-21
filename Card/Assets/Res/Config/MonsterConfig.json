@@ -4,8 +4,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 1,
-    "MonsterHp": 100,
-    "MonsterDamage": 10,
+    "MonsterHp": 45,
+    "MonsterDamage": 2,
     "MonsterEntry": 0
   },
   {
@@ -13,8 +13,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 2,
-    "MonsterHp": 150,
-    "MonsterDamage": 10,
+    "MonsterHp": 55,
+    "MonsterDamage": 3,
     "MonsterEntry": 0
   },
   {
@@ -22,8 +22,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 3,
-    "MonsterHp": 200,
-    "MonsterDamage": 10,
+    "MonsterHp": 65,
+    "MonsterDamage": 4,
     "MonsterEntry": 0
   },
   {
@@ -31,8 +31,8 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 4,
-    "MonsterHp": 250,
-    "MonsterDamage": 10,
+    "MonsterHp": 60,
+    "MonsterDamage": 3,
     "MonsterEntry": 0
   },
   {
@@ -40,8 +40,53 @@
     "MonsterId": 1001,
     "Type": 1,
     "MonsterLevel": 5,
-    "MonsterHp": 300,
-    "MonsterDamage": 10,
+    "MonsterHp": 72,
+    "MonsterDamage": 4,
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 1001006,
+    "MonsterId": 1001,
+    "Type": 1,
+    "MonsterLevel": 6,
+    "MonsterHp": 84,
+    "MonsterDamage": 5,
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 1001007,
+    "MonsterId": 1001,
+    "Type": 1,
+    "MonsterLevel": 7,
+    "MonsterHp": 65,
+    "MonsterDamage": 2,
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 1001008,
+    "MonsterId": 1001,
+    "Type": 1,
+    "MonsterLevel": 8,
+    "MonsterHp": 78,
+    "MonsterDamage": 3,
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 1001009,
+    "MonsterId": 1001,
+    "Type": 1,
+    "MonsterLevel": 9,
+    "MonsterHp": 91,
+    "MonsterDamage": 4,
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 1001010,
+    "MonsterId": 1001,
+    "Type": 1,
+    "MonsterLevel": 10,
+    "MonsterHp": 50,
+    "MonsterDamage": 2,
     "MonsterEntry": 0
   },
   {
@@ -229,8 +274,8 @@
     "MonsterId": 2001,
     "Type": 2,
     "MonsterLevel": 1,
-    "MonsterHp": 100,
-    "MonsterDamage": 10,
+    "MonsterHp": 160,
+    "MonsterDamage": 8,
     "MonsterEntry": 0
   },
   {

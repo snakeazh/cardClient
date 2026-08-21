@@ -27,7 +27,7 @@ namespace App.Config
         public QualityType Type;
 
         /// <summary>
-        /// 解锁难度条件
+        /// 解锁条件
         /// </summary>
         public int UnlockCondition;
 

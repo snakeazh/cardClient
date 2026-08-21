@@ -23,6 +23,7 @@ namespace App.UI
             _playerItem = GetComponentInChildren<PlayerItem>(true);
             Binding.BindText(UI.GetGameObject("LastStageInfo").GetComponent<TMP_Text>(), ViewModel.LastStageInfo);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
+            Binding.BindCommand(UI.GetGameObject("colletBtn").GetComponent<Button>(), ViewModel.CollectCommand);
             BindHero();
         }
 

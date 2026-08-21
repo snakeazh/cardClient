@@ -15,6 +15,14 @@ namespace Framework.Assets.Editor
         public const string ResRoot = ResPaths.AssetRoot;
         public const string StreamingBundlesRelative = "StreamingAssets/Bundles";
 
+        /// <summary>
+        /// 相对 Assets/Res 的路径前缀，这些目录不参与 AssetBundle 打包。
+        /// </summary>
+        private static readonly string[] ExcludedResRelativePrefixes =
+        {
+            "Textures/test/"
+        };
+
         public static string GetStreamingBundlesAssetPath()
         {
             return Path.Combine("Assets", StreamingBundlesRelative);
@@ -40,6 +48,78 @@ namespace Framework.Assets.Editor
             BuildInternal(bumpVersion: false);
         }
 
+        [MenuItem("Res/Clear Bundle Dir")]
+        public static void ClearBundleDirMenu()
+        {
+            var versionHint = BundleVersionManager.ReadSavedVersion();
+            var versionLine = string.IsNullOrWhiteSpace(versionHint)
+                ? "当前无已保存版本号。"
+                : $"保留版本号：{versionHint}（下次 Build 继续从此版本递增）。";
+
+            if (!EditorUtility.DisplayDialog(
+                    "Clear Bundle Dir",
+                    "将清空以下目录内容：\n" +
+                    $"• {BundleVersionManager.GetBundlesRoot()}\n" +
+                    $"• {GetStreamingBundlesFullPath()}\n\n" +
+                    versionLine,
+                    "清空",
+                    "取消"))
+            {
+                return;
+            }
+
+            ClearBundleDir();
+        }
+
+        /// <summary>
+        /// 清空 Card/Bundles 与 StreamingAssets/Bundles 的产物；保留 Bundles/version.txt 版本号。
+        /// </summary>
+        public static void ClearBundleDir()
+        {
+            var bundlesRoot = BundleVersionManager.GetBundlesRoot();
+            var streaming = GetStreamingBundlesFullPath();
+            var preservedVersion = BundleVersionManager.ReadSavedVersion();
+
+            var clearedRoot = ClearDirectoryContents(bundlesRoot);
+            var clearedStreaming = ClearDirectoryContents(streaming);
+
+            if (!string.IsNullOrWhiteSpace(preservedVersion) &&
+                BundleVersionManager.IsValidSemVer(preservedVersion))
+            {
+                Directory.CreateDirectory(bundlesRoot);
+                File.WriteAllText(BundleVersionManager.GetVersionFilePath(), preservedVersion);
+            }
+
+            AssetDatabase.Refresh();
+
+            Debug.Log(
+                $"[Res] Cleared Bundle Dir.\n" +
+                $"Bundles root: {(clearedRoot ? "ok" : "skip/missing")} → {bundlesRoot}\n" +
+                $"Streaming: {(clearedStreaming ? "ok" : "skip/missing")} → {streaming}\n" +
+                $"Preserved version: {(string.IsNullOrWhiteSpace(preservedVersion) ? "(none)" : preservedVersion)}");
+        }
+
+        private static bool ClearDirectoryContents(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return false;
+            }
+
+            foreach (var file in Directory.GetFiles(directory))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+            }
+
+            foreach (var subDir in Directory.GetDirectories(directory))
+            {
+                Directory.Delete(subDir, recursive: true);
+            }
+
+            return true;
+        }
+
         private static void BuildInternal(bool bumpVersion)
         {
             if (!AssetDatabase.IsValidFolder(ResRoot))
@@ -48,7 +128,15 @@ namespace Framework.Assets.Editor
                 return;
             }
 
-            AssignBundleNames();
+            // 清掉历史写在 meta 上的 Bundle 名，避免与 AssetBundleBuild 分组冲突。
+            ClearBundleNames();
+
+            var builds = CollectAssetBundleBuilds();
+            if (builds.Length == 0)
+            {
+                Debug.LogError($"No assets found under {ResRoot} to build.");
+                return;
+            }
 
             var version = bumpVersion
                 ? BundleVersionManager.BumpAndSaveNextBuildVersion()
@@ -58,6 +146,7 @@ namespace Framework.Assets.Editor
 
             var manifest = BuildPipeline.BuildAssetBundles(
                 versionOutput,
+                builds,
                 BuildAssetBundleOptions.None,
                 EditorUserBuildSettings.activeBuildTarget);
 
@@ -75,7 +164,7 @@ namespace Framework.Assets.Editor
 
             Debug.Log(
                 $"AssetBundles v{version} built to {versionOutput} and copied to {GetStreamingBundlesAssetPath()} " +
-                $"({EditorUserBuildSettings.activeBuildTarget})");
+                $"({EditorUserBuildSettings.activeBuildTarget}), {builds.Length} bundles");
         }
 
         private static void WriteStreamingVersion(string version)
@@ -134,9 +223,14 @@ namespace Framework.Assets.Editor
             File.WriteAllLines(Path.Combine(dest, "catalog.txt"), names);
         }
 
-        private static void AssignBundleNames()
+        /// <summary>
+        /// 按 Assets/Res 下一级目录分组（与运行时 ResourceKeyResolver 一致）。
+        /// </summary>
+        private static AssetBundleBuild[] CollectAssetBundleBuilds()
         {
+            var groups = new Dictionary<string, List<string>>(StringComparer.Ordinal);
             var guids = AssetDatabase.FindAssets(string.Empty, new[] { ResRoot });
+
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -145,19 +239,74 @@ namespace Framework.Assets.Editor
                     continue;
                 }
 
-                var importer = AssetImporter.GetAtPath(path);
-                if (importer == null)
+                var relative = path.Substring(ResRoot.Length + 1).Replace('\\', '/');
+                if (IsExcludedResAsset(relative))
                 {
                     continue;
                 }
 
-                var relative = path.Substring(ResRoot.Length + 1).Replace('\\', '/');
                 var slash = relative.IndexOf('/');
                 var bundleName = slash > 0
                     ? relative.Substring(0, slash).ToLowerInvariant()
                     : Path.GetFileNameWithoutExtension(relative).ToLowerInvariant();
 
-                importer.assetBundleName = bundleName;
+                if (!groups.TryGetValue(bundleName, out var list))
+                {
+                    list = new List<string>();
+                    groups.Add(bundleName, list);
+                }
+
+                list.Add(path);
+            }
+
+            var builds = new AssetBundleBuild[groups.Count];
+            var index = 0;
+            foreach (var pair in groups)
+            {
+                builds[index++] = new AssetBundleBuild
+                {
+                    assetBundleName = pair.Key,
+                    assetNames = pair.Value.ToArray()
+                };
+            }
+
+            return builds;
+        }
+
+        private static bool IsExcludedResAsset(string relativePath)
+        {
+            foreach (var prefix in ExcludedResRelativePrefixes)
+            {
+                if (relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 清空工程内历史 AssetBundleName，避免残留干扰本次 Build。
+        /// </summary>
+        private static void ClearBundleNames()
+        {
+            var bundleNames = AssetDatabase.GetAllAssetBundleNames();
+            foreach (var bundleName in bundleNames)
+            {
+                var assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(bundleName);
+                foreach (var path in assetPaths)
+                {
+                    var importer = AssetImporter.GetAtPath(path);
+                    if (importer == null || string.IsNullOrEmpty(importer.assetBundleName))
+                    {
+                        continue;
+                    }
+
+                    // 必须先清 variant 再清 name；name 为空时不能再写 variant。
+                    importer.assetBundleVariant = string.Empty;
+                    importer.assetBundleName = string.Empty;
+                }
             }
 
             AssetDatabase.RemoveUnusedAssetBundleNames();

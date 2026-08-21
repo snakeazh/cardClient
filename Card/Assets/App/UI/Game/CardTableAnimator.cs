@@ -16,8 +16,8 @@ namespace App.UI
         private const int CardsPerHand = GameBalance.MaxCardsPerSeat;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
-        private const float ShuffleStagger = 0.05f;
-        private const float ShuffleAppear02 = 0.2f;
+        private const float ShuffleStagger = 0.015f;
+        private const float ShuffleAppear02 = 0.8f;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;

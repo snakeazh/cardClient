@@ -164,12 +164,12 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginChapter();
             }
 
-            StartStage();
+            StartStage(inheritPlayerHp: false);
         }
 
         public void RestartStage()
         {
-            StartStage();
+            StartStage(inheritPlayerHp: false);
         }
 
         public void SelectRubCard(int index)
@@ -1266,7 +1266,7 @@ namespace App.Game
                 return;
             }
 
-            StartStage();
+            StartStage(inheritPlayerHp: true);
         }
 
         public void WatchAdLoan()
@@ -1454,8 +1454,8 @@ namespace App.Game
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
 
-        /// <summary>开新关：玩家血量读英雄表，怪物血量读关卡配置。BOSS 人格改为 Expert 并随机词缀。</summary>
-        private void StartStage()
+        /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。BOSS 人格改为 Expert 并随机词缀。</summary>
+        private void StartStage(bool inheritPlayerHp)
         {
             Run.AdsLoanThisStage = 0;
             Run.AdsReviveThisStage = 0;
@@ -1476,7 +1476,7 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginStage();
             }
 
-            ApplyHeroToPlayer();
+            ApplyHeroToPlayer(inheritPlayerHp);
             var enemyCount = ApplyLevelEnemies();
 
             var title = Run.HasBoss
@@ -3398,14 +3398,15 @@ namespace App.Game
             }
         }
 
-        private void ApplyHeroToPlayer()
+        private void ApplyHeroToPlayer(bool inheritHp)
         {
             var hero = ResolveHero();
             Run.HeroId = hero != null ? hero.Id : 0;
             Player.ActiveInStage = true;
             Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
-            var hp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
-            ApplySeatHp(Player, hp, hp);
+            var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
+            var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
+            ApplySeatHp(Player, hp, maxHp);
             Player.Attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
         }
 

@@ -128,6 +128,23 @@ namespace App.Build.Editor
 
             EditorGUILayout.EndHorizontal();
 
+            if (GUILayout.Button("Clear Bundle Dir"))
+            {
+                var versionHint = Framework.Assets.Editor.BundleVersionManager.ReadSavedVersion();
+                var versionLine = string.IsNullOrWhiteSpace(versionHint)
+                    ? "当前无已保存版本号。"
+                    : $"保留版本号：{versionHint}";
+
+                if (EditorUtility.DisplayDialog(
+                        "Clear Bundle Dir",
+                        "清空 Card/Bundles 与 StreamingAssets/Bundles？\n" + versionLine,
+                        "清空",
+                        "取消"))
+                {
+                    Framework.Assets.Editor.ResAssetBundleBuilder.ClearBundleDir();
+                }
+            }
+
             if (!canBuild)
             {
                 EditorGUILayout.HelpBox("编译中或 Play 模式下无法打包。", MessageType.Warning);

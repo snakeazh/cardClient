@@ -15,6 +15,14 @@ namespace Framework.Assets.Editor
         public const string ResRoot = ResPaths.AssetRoot;
         public const string StreamingBundlesRelative = "StreamingAssets/Bundles";
 
+        /// <summary>
+        /// 相对 Assets/Res 的路径前缀，这些目录不参与 AssetBundle 打包。
+        /// </summary>
+        private static readonly string[] ExcludedResRelativePrefixes =
+        {
+            "Textures/test/"
+        };
+
         public static string GetStreamingBundlesAssetPath()
         {
             return Path.Combine("Assets", StreamingBundlesRelative);
@@ -232,6 +240,11 @@ namespace Framework.Assets.Editor
                 }
 
                 var relative = path.Substring(ResRoot.Length + 1).Replace('\\', '/');
+                if (IsExcludedResAsset(relative))
+                {
+                    continue;
+                }
+
                 var slash = relative.IndexOf('/');
                 var bundleName = slash > 0
                     ? relative.Substring(0, slash).ToLowerInvariant()
@@ -258,6 +271,19 @@ namespace Framework.Assets.Editor
             }
 
             return builds;
+        }
+
+        private static bool IsExcludedResAsset(string relativePath)
+        {
+            foreach (var prefix in ExcludedResRelativePrefixes)
+            {
+                if (relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

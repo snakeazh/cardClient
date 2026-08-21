@@ -22,6 +22,11 @@ namespace App.Config
         public MonsterType Type;
 
         /// <summary>
+        /// 怪物icon
+        /// </summary>
+        public string Icon;
+
+        /// <summary>
         /// 怪物等级
         /// </summary>
         public int MonsterLevel;

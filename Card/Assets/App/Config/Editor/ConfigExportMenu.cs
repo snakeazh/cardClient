@@ -12,7 +12,7 @@ namespace App.Config.Editor
     /// </summary>
     public static class ConfigExportMenu
     {
-        private const string MenuExport = "Config/一键导出配置表";
+        private const string MenuExport = "Config/一键导出配置表 %#d";
         private const string ExporterProject = "Tools/ConfigExporter/ConfigExporter.csproj";
         private const string ConfigFolder = "Config";
 

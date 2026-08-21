@@ -59,7 +59,8 @@ namespace App.Game
         /// </summary>
         public int ResourceId => (int)Suit * 100 + (int)Rank;
 
-        public int ChipValue => Rank == Rank.Ace ? 14 : (int)Rank;
+        /// <summary>伤害点数：A=11，2~10 为面值，J/Q/K=11/12/13。比牌大小仍用 RankKey（A=14）。</summary>
+        public int ChipValue => Rank == Rank.Ace ? 11 : (int)Rank;
 
         public string DisplayName => $"{SuitName(Suit)}{RankName(Rank)}";
 
@@ -190,7 +191,7 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 牌型评估结果。Type 决定大小，Keys 拆同分，BaseChips×Multiplier 用于伤害。
+    /// 牌型评估结果。Type 决定大小，Keys 拆同分；BaseChips 为牌面点数，参与攻击力结算。
     /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
@@ -380,7 +381,7 @@ namespace App.Game
                     kicker = b.Rank;
                 }
 
-                var chips = ChipOf(pairRank) * 2;
+                var chips = a.ChipValue + b.ChipValue + c.ChipValue;
                 return new HandScore(
                     HandType.Pair,
                     chips,
@@ -498,29 +499,27 @@ namespace App.Game
             return Math.Max(1, (int)Math.Round(value));
         }
 
-        /// <summary>伤害 = 攻击力 × 牌型倍率 × 遗物倍率。</summary>
-        public static int ComputeAttackDamage(int attack, float handMagnification, float relicMultiplier)
+        /// <summary>伤害 = (攻击力 + 牌面点数) × 牌型倍率 × 遗物倍率。</summary>
+        public static int ComputeAttackDamage(int attack, int cardPoints, float handMagnification, float relicMultiplier)
         {
-            var value = Math.Max(0, attack) * Math.Max(0f, handMagnification) * Math.Max(0f, relicMultiplier);
+            var effectiveAttack = Math.Max(0, attack) + Math.Max(0, cardPoints);
+            var value = effectiveAttack * Math.Max(0f, handMagnification) * Math.Max(0f, relicMultiplier);
             return Math.Max(1, (int)Math.Round(value));
         }
 
         private static HandScore HighCard(List<Card> filtered)
         {
             var keys = new int[filtered.Count];
-            var maxChip = 0;
+            var chips = 0;
             for (var i = 0; i < filtered.Count; i++)
             {
                 keys[i] = RankKey(filtered[i].Rank);
-                if (filtered[i].ChipValue > maxChip)
-                {
-                    maxChip = filtered[i].ChipValue;
-                }
+                chips += filtered[i].ChipValue;
             }
 
             return new HandScore(
                 HandType.HighCard,
-                maxChip,
+                chips,
                 1f,
                 keys,
                 filtered.ToArray(),
@@ -576,7 +575,5 @@ namespace App.Game
         }
 
         private static int RankKey(Rank rank) => rank == Rank.Ace ? 14 : (int)rank;
-
-        private static int ChipOf(Rank rank) => rank == Rank.Ace ? 14 : (int)rank;
     }
 }

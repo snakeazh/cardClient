@@ -59,8 +59,24 @@ namespace App.Game
         /// </summary>
         public int ResourceId => (int)Suit * 100 + (int)Rank;
 
-        /// <summary>伤害点数：A=11，2~10 为面值，J/Q/K=11/12/13。比牌大小仍用 RankKey（A=14）。</summary>
-        public int ChipValue => Rank == Rank.Ace ? 11 : (int)Rank;
+        /// <summary>伤害点数：A=11，J/Q/K=10，2~10 为面值。比牌大小仍用 RankKey（A=14）。</summary>
+        public int ChipValue
+        {
+            get
+            {
+                if (Rank == Rank.Ace)
+                {
+                    return 11;
+                }
+
+                if (IsFace)
+                {
+                    return 10;
+                }
+
+                return (int)Rank;
+            }
+        }
 
         public string DisplayName => $"{SuitName(Suit)}{RankName(Rank)}";
 

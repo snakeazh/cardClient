@@ -6,6 +6,7 @@ using App.Game;
 using App.Level;
 using App.Score;
 using App.UI;
+using App.UI.Splash;
 using Framework.Assets;
 using Framework.Save;
 using Framework.UI;
@@ -47,7 +48,14 @@ namespace App.Bootstrap
 
             _ui = UIFramework.Create(_services.Container);
 
-            await _ui.UI.Open(_services.Resolve<HomeViewModel>());
+            if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
+            {
+                await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
+            }
+            else
+            {
+                await _ui.UI.Open(_services.Resolve<HomeViewModel>());
+            }
         }
 
         private static async Task RegisterAtlas(

@@ -8,6 +8,7 @@ namespace App.Resources
     {
         public const string UIRoot = "UI/UIRoot";
         public const string Home = "UI/Home";
+        public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";

@@ -30,6 +30,7 @@ namespace App.UI
         private readonly PlayerItem[] _enemyItems = new PlayerItem[3];
         private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
         private Sprite _playerPortrait;
         private int _playedAttack;
@@ -167,6 +168,7 @@ namespace App.UI
         private void BindAttackFx()
         {
             _attackFx.Bind(transform, _playerItem, _enemyItems);
+            _cameraShake = Camera.main != null ? Camera.main.GetComponent<CameraShakeAnimator>() : null;
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
         }
 
@@ -194,6 +196,7 @@ namespace App.UI
             ViewModel.ShowHpText.Value = false;
             Action onHit = () =>
             {
+                _cameraShake?.PlayByLevel(session.AttackLevel);
                 ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
                 ViewModel.ShowHpText.Value = true;
                 if (session.IncomingAttack)

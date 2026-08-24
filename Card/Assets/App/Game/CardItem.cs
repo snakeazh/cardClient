@@ -356,7 +356,7 @@ namespace App.Game
                 {
                     if (backRenderer != null)
                     {
-                        frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
+                        // frontTransparentRenderer.sharedMaterial = front.sharedMaterial;
                     }
 
                     if (!_backSeeThrough)

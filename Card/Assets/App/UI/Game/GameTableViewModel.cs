@@ -413,7 +413,7 @@ namespace App.UI
                     continue;
                 }
 
-                ShowEnemy[slot].Value = true;
+                ShowEnemy[slot].Value = enemy.Alive;
                 EnemyChips[slot].Value = $"勇气 {enemy.Courage}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
@@ -477,10 +477,7 @@ namespace App.UI
 
         private void RefreshCardInfo()
         {
-            IsHandSettling = Session.SequentialCompare ||
-                             Session.Phase == GamePhase.Showdown ||
-                             Session.Phase == GamePhase.WaitingAttack ||
-                             Session.Phase == GamePhase.RoundSettle;
+            IsHandSettling = ShouldShowCardInfo(Session);
             if (!IsHandSettling || Session.Player == null)
             {
                 ShowCardInfo.Value = false;
@@ -491,6 +488,15 @@ namespace App.UI
             var score = Session.EvaluateSeat(Session.Player);
             ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, CardTypeNum);
             ShowCardInfo.Value = true;
+        }
+
+        public static bool ShouldShowCardInfo(GameSession session)
+        {
+            return session != null &&
+                   (session.SequentialCompare ||
+                    session.Phase == GamePhase.Showdown ||
+                    session.Phase == GamePhase.WaitingAttack ||
+                    session.Phase == GamePhase.RoundSettle);
         }
 
         public void ApplyCardType(

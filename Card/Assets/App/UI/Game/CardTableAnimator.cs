@@ -29,6 +29,7 @@ namespace App.UI
 
         private IResourceService _resources;
         private GameObject _prefab;
+        private readonly CardShadowPool _shadows = new CardShadowPool();
 
         private Transform _hud;
         private Transform _dealPoint;
@@ -54,6 +55,7 @@ namespace App.UI
             public Transform Node;
             public Transform[] Points = new Transform[CardsPerHand];
             public CardItem[] Items = new CardItem[CardsPerHand];
+            public Transform[] Shadows = new Transform[CardsPerHand];
             public bool[] Landed = new bool[CardsPerHand];
             public bool IsPlayer;
         }
@@ -62,6 +64,7 @@ namespace App.UI
         {
             _resources = resources;
             _hud = hud;
+            _shadows.Bind(resources, hud);
             _dealPoint = FindChild(hud, "dealpoint") ?? FindChild(hud, "DealPoint");
             if (_dealPoint != null)
             {
@@ -221,9 +224,13 @@ namespace App.UI
             _dealToken++;
             _revealToken++;
             ClearAllItems();
-            if (_resources != null && _prefab != null)
+            _shadows.Dispose();
+            if (_resources != null)
             {
-                _resources.Release(ResResourcePaths.CardIcon);
+                if (_prefab != null)
+                {
+                    _resources.Release(ResResourcePaths.CardIcon);
+                }
             }
 
             _prefab = null;
@@ -810,7 +817,7 @@ namespace App.UI
             return Vector3.down * SelectLift;
         }
 
-        private static void LiftSeat(SeatView view, SeatState seat, Vector3 offset)
+        private void LiftSeat(SeatView view, SeatState seat, Vector3 offset)
         {
             if (view == null || seat == null)
             {
@@ -825,14 +832,44 @@ namespace App.UI
                     continue;
                 }
 
-                var dest = view.Points[i].position + (seat.IsCardSelected(i) ? offset : Vector3.zero);
+                var selected = seat.IsCardSelected(i);
+                var dest = view.Points[i].position + (selected ? offset : Vector3.zero);
                 if ((item.transform.position - dest).sqrMagnitude < 0.0004f)
                 {
+                    SyncSlotShadow(view, i, selected);
                     continue;
                 }
 
-                item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad);
+                if (selected)
+                {
+                    SyncSlotShadow(view, i, true);
+                    item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad);
+                    continue;
+                }
+
+                // 取消选中：阴影保留到落位动画结束再回收；期间重新选中则 OnComplete 里跳过回收。
+                var index = i;
+                item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad).OnComplete(() =>
+                {
+                    SyncSlotShadow(view, index, seat.IsCardSelected(index));
+                });
             }
+        }
+
+        private void SyncSlotShadow(SeatView view, int index, bool lifted)
+        {
+            if (lifted)
+            {
+                if (view.Shadows[index] != null)
+                {
+                    return;
+                }
+
+                view.Shadows[index] = _shadows.Rent(view.Points[index]);
+                return;
+            }
+
+            _shadows.Return(ref view.Shadows[index]);
         }
 
         private static int CardCount(SeatView view, SeatState seat)
@@ -1021,7 +1058,7 @@ namespace App.UI
             }
         }
 
-        private static void ClearSeatItems(SeatView view)
+        private void ClearSeatItems(SeatView view)
         {
             if (view == null)
             {
@@ -1036,6 +1073,7 @@ namespace App.UI
                     view.Items[i] = null;
                 }
 
+                _shadows.Return(ref view.Shadows[i]);
                 view.Landed[i] = false;
             }
         }

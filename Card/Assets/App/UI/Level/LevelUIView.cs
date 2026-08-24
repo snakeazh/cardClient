@@ -67,7 +67,7 @@ namespace App.UI
                 RefreshPreview();
             }, emitCurrent: false));
             Binding.Add(ViewModel.SelectedLevelId.Subscribe(_ => RefreshLevelItems(), emitCurrent: false));
-            Binding.Add(ViewModel.SelectedDifficulty.Subscribe(_ => RebuildLevelItems(), emitCurrent: false));
+            Binding.Add(ViewModel.SelectedDifficulty.Subscribe(_ => RefreshLevelItems(), emitCurrent: false));
         }
 
         protected override async Task OnViewOpen()
@@ -115,22 +115,6 @@ namespace App.UI
             }
         }
 
-        private void RebuildLevelItems()
-        {
-            for (var i = 0; i < _levelItems.Count; i++)
-            {
-                var item = _levelItems[i];
-                if (item != null)
-                {
-                    Object.Destroy(item.gameObject);
-                }
-            }
-
-            _levelItems.Clear();
-            SpawnLevelItems();
-            RefreshLevelItems();
-        }
-
         private void BindDifficultyTip()
         {
             var tip = FindNamed(transform, "stageTip");
@@ -145,14 +129,6 @@ namespace App.UI
                 Binding.BindText(text, ViewModel.DifficultyText);
             }
 
-            var button = tip.GetComponent<Button>();
-            if (button == null)
-            {
-                button = tip.gameObject.AddComponent<Button>();
-                button.transition = Selectable.Transition.None;
-            }
-
-            Binding.BindCommand(button, ViewModel.NextDifficultyCommand);
         }
 
         private static Transform FindNamed(Transform root, string nodeName)

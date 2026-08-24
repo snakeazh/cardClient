@@ -1,12 +1,15 @@
 using System;
 using System.Threading.Tasks;
+using App.Atlas;
 using App.Game;
 using App.Level;
+using App.Resources;
 using App.UI.Popup;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI
 {
@@ -22,11 +25,13 @@ namespace App.UI
             GameSession session,
             IResourceService resources,
             IUIManager ui,
-            ILevelProgressService progress)
+            ILevelProgressService progress,
+            IAtlasService atlas)
         {
             Session = session;
             Resources = resources;
             Progress = progress;
+            Atlas = atlas;
             _ui = ui;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
@@ -81,6 +86,7 @@ namespace App.UI
         public GameSession Session { get; }
         public IResourceService Resources { get; }
         public ILevelProgressService Progress { get; }
+        public IAtlasService Atlas { get; }
 
         public ObservableProperty<string> Title { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> Hint { get; } = new ObservableProperty<string>();
@@ -116,6 +122,11 @@ namespace App.UI
         public ObservableProperty<bool> ShowMask { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowHpText { get; } = new ObservableProperty<bool>();
         public ObservableProperty<string> HpText { get; } = new ObservableProperty<string>(string.Empty);
+        public ObservableProperty<bool> ShowCardInfo { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<Sprite> CardTypeIcon { get; } = new ObservableProperty<Sprite>();
+        public ObservableProperty<Sprite> CardTypeLabel { get; } = new ObservableProperty<Sprite>();
+        public ObservableProperty<string> CardTypeNum { get; } = new ObservableProperty<string>(string.Empty);
+        public bool IsHandSettling { get; private set; }
         public readonly ObservableProperty<bool>[] ShowEnemy =
         {
             new ObservableProperty<bool>(),
@@ -193,8 +204,7 @@ namespace App.UI
             PlayerChips.Value = $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            var score = Session.Score;
-            RoundInfo.Value = $"本轮{score.Round} 关卡{score.Stage} 总{score.Total}";
+            RoundInfo.Value = $"第{Session.StageRoundIndex}轮";
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
@@ -232,6 +242,7 @@ namespace App.UI
                 ShowHpText.Value = false;
             }
             RefreshEnemies();
+            RefreshCardInfo();
 
             var start = run.Log.Count > 8 ? run.Log.Count - 8 : 0;
             var log = string.Empty;
@@ -462,6 +473,103 @@ namespace App.UI
             }
 
             return enemyIndex;
+        }
+
+        private void RefreshCardInfo()
+        {
+            IsHandSettling = Session.SequentialCompare ||
+                             Session.Phase == GamePhase.Showdown ||
+                             Session.Phase == GamePhase.WaitingAttack ||
+                             Session.Phase == GamePhase.RoundSettle;
+            if (!IsHandSettling || Session.Player == null)
+            {
+                ShowCardInfo.Value = false;
+                CardTypeNum.Value = string.Empty;
+                return;
+            }
+
+            var score = Session.EvaluateSeat(Session.Player);
+            ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, CardTypeNum);
+            ShowCardInfo.Value = true;
+        }
+
+        public void ApplyCardType(
+            HandType type,
+            ObservableProperty<Sprite> icon,
+            ObservableProperty<Sprite> label,
+            ObservableProperty<string> num)
+        {
+            if (icon != null)
+            {
+                icon.Value = GetCardTypeSprite(IconSpriteName(type));
+            }
+
+            if (label != null)
+            {
+                label.Value = GetCardTypeSprite(LabelSpriteName(type));
+            }
+
+            if (num != null)
+            {
+                num.Value = FormatMultiplier(GameSession.HandTypeMagnification(type));
+            }
+        }
+
+        public Sprite GetCardTypeIcon(HandType type) => GetCardTypeSprite(IconSpriteName(type));
+
+        public Sprite GetCardTypeLabel(HandType type) => GetCardTypeSprite(LabelSpriteName(type));
+
+        public static string FormatHandMultiplier(HandType type)
+        {
+            return FormatMultiplier(GameSession.HandTypeMagnification(type));
+        }
+
+        private Sprite GetCardTypeSprite(string spriteName)
+        {
+            if (Atlas == null || string.IsNullOrEmpty(spriteName))
+            {
+                return null;
+            }
+
+            Atlas.TryGetSprite(ResResourcePaths.CardTypeAtlas, spriteName, out var sprite);
+            return sprite;
+        }
+
+        private static string IconSpriteName(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.Pair: return "PairIcon";
+                case HandType.Straight: return "StraightIcon";
+                case HandType.Flush: return "SameSuitIcon";
+                case HandType.StraightFlush: return "FlushIcon";
+                case HandType.ThreeOfAKind: return "LeopardIcon";
+                default: return "HighCardIcon";
+            }
+        }
+
+        private static string LabelSpriteName(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.Pair: return "Pair";
+                case HandType.Straight: return "Straight";
+                case HandType.Flush: return "SameSuit";
+                case HandType.StraightFlush: return "Flush";
+                case HandType.ThreeOfAKind: return "Leopard";
+                default: return "HighCard";
+            }
+        }
+
+        private static string FormatMultiplier(float value)
+        {
+            var rounded = (float)Math.Round(value, 2);
+            if (Math.Abs(rounded - (float)Math.Round(rounded)) < 0.001f)
+            {
+                return $"x{(int)Math.Round(rounded)}";
+            }
+
+            return $"x{rounded:0.##}";
         }
     }
 }

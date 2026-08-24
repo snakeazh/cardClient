@@ -65,7 +65,7 @@ namespace App.UI
         {
             _resources = resources;
             _hud = hud;
-            _shadows.Bind(resources, hud);
+            _shadows.Bind(hud);
             _dealPoint = FindChild(hud, "dealpoint") ?? FindChild(hud, "DealPoint");
             if (_dealPoint != null)
             {

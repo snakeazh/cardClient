@@ -219,6 +219,8 @@ namespace App.Game
             FadeBackAlpha(seeThrough ? 0.5f : 1f, duration);
         }
 
+        public bool IsBackSeeThrough => _backSeeThrough;
+
         /// <summary>Back 节点透明度渐变到目标值；重复调同一目标不会重播。放大镜偷看用。</summary>
         public void FadeBackAlpha(float alpha, float duration = 0.2f)
         {

@@ -4,10 +4,10 @@
 
 脚本：`Assets/App/UI/Game/GameUIView.cs`  
 视图模型：`Assets/App/UI/Game/GameTableViewModel.cs`  
-牌桌世界：`Assets/App/UI/Game/GameBoardController.cs`  
-规则：[`GameLogic.md`](../../Game/GameLogic.md)
+牌桌世界：[`GameBoardController.md`](GameBoardController.md)  
+规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md)
 
-`GameTableController` 是旧场景绑法，不是主路径。
+`GameTableController` 是旧场景绑法，见 [`GameTableController.md`](GameTableController.md)。
 
 ---
 
@@ -76,7 +76,7 @@ GameUI
 | 按钮 | 效果 |
 |------|------|
 | PeekGood | 进入搓牌，点选一张随机替换 |
-| ChaKanGood | 点选角色，用 `SetBackSeeThrough` 透过牌背显示牌面 |
+| ChaKanGood | 点选角色：5 张先全部抬起，再 `SetBackSeeThrough` 透出牌面；开牌时改成最大 3 张 |
 | TiHuanGood | 自己 5 张全部换成新牌 |
 
 每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或取消回到开牌阶段。

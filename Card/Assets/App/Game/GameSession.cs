@@ -589,6 +589,10 @@ namespace App.Game
             for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
+                if (!seat.IsPlayer)
+                {
+                    seat.CardSelected[i] = true;
+                }
             }
 
             var score = EvaluateSeat(seat);
@@ -869,7 +873,22 @@ namespace App.Game
 
             Player.Status = "开牌";
             Log("开牌，与敌人逐一比牌");
+            ResetEnemyOpenSelection();
             RunNextCompare();
+        }
+
+        /// <summary>结算前清掉透视时抬起的 5 张，再由 LockBestOpenCardsIfEnemy 选出最大 3 张。</summary>
+        private void ResetEnemyOpenSelection()
+        {
+            if (Enemies == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                Enemies[i]?.ClearCardSelected();
+            }
         }
 
         private void RunNextCompare()
@@ -1463,7 +1482,7 @@ namespace App.Game
             }
         }
 
-        /// <summary>结算前为敌人锁定 5 选 3 的最大牌型。透视阶段不调用，避免提前抬牌。</summary>
+        /// <summary>开牌结算时为敌人锁定 5 选 3 的最大牌型（会先清掉透视时的全选）。</summary>
         private void LockBestOpenCardsIfEnemy(SeatState seat)
         {
             if (seat == null || seat.IsPlayer || seat.Hand == null)

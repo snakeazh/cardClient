@@ -43,6 +43,7 @@ namespace App.UI
         private int _shownReveal;
         private int _dealToken;
         private int _revealToken;
+        private int _seeThroughToken;
         private bool _dealing;
         private bool _revealing;
         private GameSession _session;
@@ -130,6 +131,7 @@ namespace App.UI
 
             SyncAllFaces(session);
             SyncSelectLift(session);
+            SyncSeeThrough(session);
         }
 
         public int HitPlayerCard(Camera camera)
@@ -224,6 +226,7 @@ namespace App.UI
             _revealSeq?.Kill();
             _dealToken++;
             _revealToken++;
+            _seeThroughToken++;
             ClearAllItems();
             _shadows.Dispose();
             if (_resources != null)
@@ -246,6 +249,7 @@ namespace App.UI
             _shownDeal = session.DealSerial;
             _shownReveal = session.RevealPlaySerial;
             var token = ++_dealToken;
+            _seeThroughToken++;
             _dealing = true;
             ClearAllItems();
 
@@ -620,14 +624,7 @@ namespace App.UI
 
                 SnapToPoint(item, point);
                 view.Landed[cardIndex] = true;
-                var desired = DesiredFace(_session, seat, view.IsPlayer, cardIndex);
-                ApplyFace(item, desired, false);
-                if (_session != null)
-                {
-                    item.SetBackSeeThrough(
-                        desired == CardFaceState.Back &&
-                        _session.IsSpyRevealed(seat.Id, cardIndex));
-                }
+                ApplyFace(item, DesiredFace(_session, seat, view.IsPlayer, cardIndex), false);
             });
         }
 
@@ -727,9 +724,6 @@ namespace App.UI
 
                 var desired = DesiredFace(session, seat, player, i);
                 ApplyFace(item, desired, true);
-                item.SetBackSeeThrough(
-                    desired == CardFaceState.Back &&
-                    session.IsSpyRevealed(seat.Id, i));
                 var sr = item.CurrentRenderer;
                 if (sr == null)
                 {
@@ -780,6 +774,78 @@ namespace App.UI
 
                 var view = ViewOf(session, enemy);
                 LiftSeat(view, enemy, SelectOffset(view));
+            }
+        }
+
+        /// <summary>透视：先抬牌，抬完再 SetBackSeeThrough。关掉透视则立刻恢复。</summary>
+        private void SyncSeeThrough(GameSession session)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            var token = ++_seeThroughToken;
+            ApplySeatSeeThrough(_player, session.Player, true, session, token);
+            ForEachActiveEnemy(session, (enemy, slot) =>
+            {
+                ApplySeatSeeThrough(EnemyViewAt(slot), enemy, false, session, token);
+            });
+        }
+
+        private void ApplySeatSeeThrough(
+            SeatView view,
+            SeatState seat,
+            bool player,
+            GameSession session,
+            int token)
+        {
+            if (view == null || seat == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < CardsPerHand; i++)
+            {
+                var item = view.Items[i];
+                if (item == null || !view.Landed[i])
+                {
+                    continue;
+                }
+
+                var desired = DesiredFace(session, seat, player, i);
+                var want = desired == CardFaceState.Back && session.IsSpyRevealed(seat.Id, i);
+                if (want == item.IsBackSeeThrough)
+                {
+                    continue;
+                }
+
+                if (!want)
+                {
+                    item.SetBackSeeThrough(false);
+                    continue;
+                }
+
+                var dest = view.Points[i] != null
+                    ? view.Points[i].position + (seat.IsCardSelected(i) ? SelectOffset(view) : Vector3.zero)
+                    : item.transform.position;
+                var lifting = (item.transform.position - dest).sqrMagnitude >= 0.0004f;
+                if (!lifting)
+                {
+                    item.SetBackSeeThrough(true);
+                    continue;
+                }
+
+                var captured = item;
+                DOVirtual.DelayedCall(SelectLiftDuration, () =>
+                {
+                    if (token != _seeThroughToken || captured == null)
+                    {
+                        return;
+                    }
+
+                    captured.SetBackSeeThrough(true);
+                });
             }
         }
 

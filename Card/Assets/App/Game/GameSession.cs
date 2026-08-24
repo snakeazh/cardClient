@@ -85,6 +85,8 @@ namespace App.Game
         public bool CardsRevealed { get; private set; }
         public int DealSerial { get; private set; }
         public int BettingRound => _bettingRound;
+        /// <summary>本关第几手，从 1 起。</summary>
+        public int StageRoundIndex => _stageBetRound < 1 ? 1 : _stageBetRound;
         public int RoundBaseBet => _roundBaseBet;
         public int CurrentCallUnits => CurrentRoundUnits();
         public int PlayerCallCost => CostToReach(CurrentRoundUnits());
@@ -953,7 +955,7 @@ namespace App.Game
             return HandEvaluator.ComputeAttackDamage(attacker.Attack, score.BaseChips, mag, relic);
         }
 
-        private static float HandTypeMagnification(HandType type)
+        public static float HandTypeMagnification(HandType type)
         {
             var configType = ToConfigHandType(type);
             foreach (var row in HandScoreConfig.All.Values)

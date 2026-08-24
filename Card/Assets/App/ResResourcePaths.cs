@@ -24,6 +24,8 @@ namespace App.Resources
         public const string Item = "UI/Icon/Item";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
         public const string CardAtlas = "Altas/Card";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/CardType.spriteatlasv2.</summary>
+        public const string CardTypeAtlas = "Altas/CardType";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Relic.spriteatlasv2.</summary>
         public const string RelicAtlas = "Altas/Relic";
 

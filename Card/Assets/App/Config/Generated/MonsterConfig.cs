@@ -17,16 +17,6 @@ namespace App.Config
         public int MonsterId;
 
         /// <summary>
-        /// 怪物类型
-        /// </summary>
-        public MonsterType Type;
-
-        /// <summary>
-        /// 怪物icon
-        /// </summary>
-        public string Icon;
-
-        /// <summary>
         /// 怪物等级
         /// </summary>
         public int MonsterLevel;
@@ -40,6 +30,21 @@ namespace App.Config
         /// 攻击力
         /// </summary>
         public int MonsterDamage;
+
+        /// <summary>
+        /// 怪物类型
+        /// </summary>
+        public MonsterType Type;
+
+        /// <summary>
+        /// 怪物名字
+        /// </summary>
+        public string Name;
+
+        /// <summary>
+        /// 怪物icon
+        /// </summary>
+        public string Icon;
 
         /// <summary>
         /// 怪物机制

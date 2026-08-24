@@ -95,7 +95,7 @@
     "Difficulty": 2,
     "Level": 1,
     "MonsterGroup": [
-      10011
+      20011
     ]
   },
   {
@@ -103,7 +103,7 @@
     "Difficulty": 2,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      20021
     ]
   },
   {
@@ -111,7 +111,7 @@
     "Difficulty": 2,
     "Level": 3,
     "MonsterGroup": [
-      10031
+      20031
     ]
   },
   {
@@ -119,8 +119,8 @@
     "Difficulty": 2,
     "Level": 4,
     "MonsterGroup": [
-      10041,
-      10042
+      20041,
+      20042
     ]
   },
   {
@@ -128,8 +128,8 @@
     "Difficulty": 2,
     "Level": 5,
     "MonsterGroup": [
-      10051,
-      10052
+      20051,
+      20052
     ]
   },
   {
@@ -137,8 +137,8 @@
     "Difficulty": 2,
     "Level": 6,
     "MonsterGroup": [
-      10061,
-      10062
+      20061,
+      20062
     ]
   },
   {
@@ -146,9 +146,9 @@
     "Difficulty": 2,
     "Level": 7,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      20071,
+      20072,
+      20073
     ]
   },
   {
@@ -156,9 +156,9 @@
     "Difficulty": 2,
     "Level": 8,
     "MonsterGroup": [
-      10081,
-      10082,
-      10083
+      20081,
+      20082,
+      20083
     ]
   },
   {
@@ -166,9 +166,9 @@
     "Difficulty": 2,
     "Level": 9,
     "MonsterGroup": [
-      10091,
-      10092,
-      10093
+      20091,
+      20092,
+      20093
     ]
   },
   {
@@ -176,9 +176,9 @@
     "Difficulty": 2,
     "Level": 10,
     "MonsterGroup": [
-      10101,
-      10102,
-      10103
+      20101,
+      20102,
+      20103
     ]
   },
   {

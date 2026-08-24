@@ -37,9 +37,7 @@ namespace App.Item
                 return;
             }
 
-            levelInfo.text = snapshot.HasBoss
-                ? $"第{snapshot.Level}关\nBOSS"
-                : $"第{snapshot.Level}关";
+            levelInfo.text = $"难度{snapshot.Difficulty}";
         }
 
         public void SetSelected(bool selected)

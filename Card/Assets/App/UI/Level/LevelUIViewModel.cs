@@ -16,7 +16,7 @@ namespace App.UI
     }
 
     /// <summary>
-    /// 选角 → 选关。默认上次选择，没有则 GameConst.DefaultHeroId / 第一关。
+    /// 选角 → 选难度。每项对应该难度第 1 关。
     /// </summary>
     public sealed class LevelUIViewModel : ViewModelBase
     {
@@ -48,8 +48,9 @@ namespace App.UI
             Resources = resources;
 
             CollectHeroes();
+            CollectDifficulties();
             SelectedDifficulty.Value = ResolveInitialDifficulty();
-            CollectStages();
+            ApplyDifficultySelection(SelectedDifficulty.Value);
 
             LastBtnCommand = new RelayCommand(OnLast);
             UseHeroCommand = new RelayCommand(EnterStageSelect, () => IsSelectedHeroUnlocked());
@@ -59,7 +60,6 @@ namespace App.UI
             UnlockLevelCommand = new RelayCommand(
                 () => { },
                 () => false);
-            NextDifficultyCommand = new RelayCommand(CycleDifficulty);
         }
 
         public IResourceService Resources { get; }
@@ -115,8 +115,6 @@ namespace App.UI
         public IRelayCommand StartGameCommand { get; }
 
         public IRelayCommand UnlockLevelCommand { get; }
-
-        public IRelayCommand NextDifficultyCommand { get; }
 
         public static int GetDefaultHeroId()
         {
@@ -221,38 +219,13 @@ namespace App.UI
                 return;
             }
 
-            SelectedLevelId.Value = levelId;
-            if (snapshot.Difficulty != SelectedDifficulty.Value)
-            {
-                SelectDifficulty(snapshot.Difficulty);
-                SelectedLevelId.Value = levelId;
-            }
-
+            ApplyDifficultySelection(snapshot.Difficulty);
             RefreshStagePanel();
         }
 
         public void SelectDifficulty(int difficulty)
         {
-            if (_levels.GetMaxLevel(difficulty) <= 0)
-            {
-                return;
-            }
-
-            SelectedDifficulty.Value = difficulty;
-            _progress.SetLastDifficulty(difficulty);
-            CollectStages();
-
-            var lastId = _progress.LastLevelId;
-            if (_levels.TryGetById(lastId, out var last) && last != null && last.Difficulty == difficulty)
-            {
-                SelectedLevelId.Value = lastId;
-            }
-            else
-            {
-                var first = _levels.Get(difficulty, 1);
-                SelectedLevelId.Value = first != null ? first.Id : 0;
-            }
-
+            ApplyDifficultySelection(difficulty);
             RefreshStagePanel();
         }
 
@@ -302,6 +275,19 @@ namespace App.UI
             ShowUseHeroBtn.Value = false;
             ShowUnlockHeroBtn.Value = false;
             SelectDifficulty(ResolveInitialDifficulty());
+        }
+
+        private void ApplyDifficultySelection(int difficulty)
+        {
+            if (_levels.GetMaxLevel(difficulty) <= 0)
+            {
+                return;
+            }
+
+            SelectedDifficulty.Value = difficulty;
+            _progress.SetLastDifficulty(difficulty);
+            var first = _levels.Get(difficulty, 1);
+            SelectedLevelId.Value = first != null ? first.Id : 0;
         }
 
         private void UnlockSelectedHero()
@@ -432,45 +418,23 @@ namespace App.UI
             _heroes.Sort((a, b) => a.Id.CompareTo(b.Id));
         }
 
-        private void CollectStages()
+        private void CollectDifficulties()
         {
             _stages.Clear();
-            var difficulty = SelectedDifficulty.Value;
-            if (_levels.GetMaxLevel(difficulty) <= 0)
-            {
-                difficulty = _levels.DefaultDifficulty;
-            }
-
-            var max = _levels.GetMaxLevel(difficulty);
-            for (var i = 1; i <= max; i++)
-            {
-                if (_levels.TryGet(difficulty, i, out var snapshot) && snapshot != null)
-                {
-                    _stages.Add(snapshot);
-                }
-            }
-        }
-
-        private void CycleDifficulty()
-        {
             var diffs = _levels.GetDifficulties();
-            if (diffs == null || diffs.Count == 0)
+            if (diffs == null)
             {
                 return;
             }
 
-            var current = SelectedDifficulty.Value;
-            var idx = 0;
             for (var i = 0; i < diffs.Count; i++)
             {
-                if (diffs[i] == current)
+                var first = _levels.Get(diffs[i], 1);
+                if (first != null)
                 {
-                    idx = i;
-                    break;
+                    _stages.Add(first);
                 }
             }
-
-            SelectDifficulty(diffs[(idx + 1) % diffs.Count]);
         }
 
         private int ResolveInitialDifficulty()

@@ -38,7 +38,7 @@ GameUI
 | `cardtype2` | 牌型名称图（`HighCard` / `Pair` / `Straight` / `SameSuit` / `Flush` / `Leopard`） |
 | `cardtypeNum` | 倍率文案，格式 `xn`，n 来自 `HandScoreConfig.BasicMagnification` |
 
-`horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`）。空槽保留底框。
+`horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`）。空槽保留底框，并显示子节点 `nohave`；有装备则隐藏 `nohave`，点击在槽左侧弹出 `ItemTip`。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。
 
@@ -76,7 +76,7 @@ GameUI
 | 按钮 | 效果 |
 |------|------|
 | PeekGood | 进入搓牌，点选一张随机替换 |
-| ChaKanGood | 点选角色翻开其手牌 |
+| ChaKanGood | 点选角色，用 `SetBackSeeThrough` 透过牌背显示牌面 |
 | TiHuanGood | 自己 5 张全部换成新牌 |
 
 每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或取消回到开牌阶段。

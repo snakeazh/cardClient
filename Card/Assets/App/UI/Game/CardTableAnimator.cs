@@ -620,7 +620,14 @@ namespace App.UI
 
                 SnapToPoint(item, point);
                 view.Landed[cardIndex] = true;
-                ApplyFace(item, DesiredFace(_session, seat, view.IsPlayer, cardIndex), false);
+                var desired = DesiredFace(_session, seat, view.IsPlayer, cardIndex);
+                ApplyFace(item, desired, false);
+                if (_session != null)
+                {
+                    item.SetBackSeeThrough(
+                        desired == CardFaceState.Back &&
+                        _session.IsSpyRevealed(seat.Id, cardIndex));
+                }
             });
         }
 
@@ -718,7 +725,11 @@ namespace App.UI
                     item.SetCard(card);
                 }
 
-                ApplyFace(item, DesiredFace(session, seat, player, i), true);
+                var desired = DesiredFace(session, seat, player, i);
+                ApplyFace(item, desired, true);
+                item.SetBackSeeThrough(
+                    desired == CardFaceState.Back &&
+                    session.IsSpyRevealed(seat.Id, i));
                 var sr = item.CurrentRenderer;
                 if (sr == null)
                 {
@@ -878,11 +889,6 @@ namespace App.UI
             }
 
             if (player && seat.Looked)
-            {
-                return CardFaceState.Front;
-            }
-
-            if (session.IsSpyRevealed(seat.Id, cardIndex))
             {
                 return CardFaceState.Front;
             }

@@ -1,11 +1,14 @@
 using System;
 using System.Threading.Tasks;
+using App.Atlas;
 using App.Config;
 using App.Game;
+using App.Resources;
 using Framework.Assets;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI.Popup
 {
@@ -24,10 +27,15 @@ namespace App.UI.Popup
         private readonly IDialogService _dialogs;
         private bool _dragging;
 
-        public BattleShopPopViewModel(GameSession session, IDialogService dialogs, IResourceService resources)
+        public BattleShopPopViewModel(
+            GameSession session,
+            IDialogService dialogs,
+            IResourceService resources,
+            IAtlasService atlas)
         {
             Session = session;
             Resources = resources;
+            Atlas = atlas;
             _dialogs = dialogs;
             RefreshGoldNum = new ObservableProperty<string>(session.ShopRefreshCost.ToString());
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
@@ -48,6 +56,8 @@ namespace App.UI.Popup
         public GameSession Session { get; }
 
         public IResourceService Resources { get; }
+
+        public IAtlasService Atlas { get; }
 
         public ObservableProperty<string> RefreshGoldNum { get; }
 
@@ -80,6 +90,17 @@ namespace App.UI.Popup
         public ShopInteractMode Mode { get; private set; }
 
         public int SelectedRelicId { get; private set; }
+
+        public Sprite GetRelicIcon(RelicConfig relic)
+        {
+            if (relic == null || string.IsNullOrWhiteSpace(relic.Icon) || Atlas == null)
+            {
+                return null;
+            }
+
+            Atlas.TryGetSprite(ResResourcePaths.RelicAtlas, relic.Icon.Trim(), out var sprite);
+            return sprite;
+        }
 
         public void PreviewShopOffer(int relicId)
         {

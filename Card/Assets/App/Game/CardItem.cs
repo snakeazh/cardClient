@@ -77,6 +77,11 @@ namespace App.Game
         {
             _flipTween?.Kill();
             _flipTween = null;
+            if (faceState == CardFaceState.Front)
+            {
+                SetBackSeeThrough(false, 0f);
+            }
+
             FaceState = faceState;
             ApplySprite();
             transform.localRotation = FaceYaw(faceState);
@@ -125,6 +130,11 @@ namespace App.Game
         {
             _rotateTween?.Kill();
             _flipTween?.Kill();
+            if (faceState == CardFaceState.Front)
+            {
+                SetBackSeeThrough(false, 0f);
+            }
+
             if (duration <= 0f)
             {
                 SetFace(faceState);
@@ -344,25 +354,27 @@ namespace App.Game
                 }
             }
 
-            _frontTransparentNode = frontTransparentRenderer.transform;
-            _backNode =  backRenderer.transform;
+            if (frontTransparentRenderer != null)
+            {
+                _frontTransparentNode = frontTransparentRenderer.transform;
+            }
 
-
+            if (backRenderer != null)
+            {
+                _backNode = backRenderer.transform;
+            }
 
             if (_frontTransparentNode != null)
             {
-                _frontTransparentNode.localRotation = Quaternion.Euler(0,180,0);
-                if (frontTransparentRenderer != null)
+                _frontTransparentNode.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                if (backRenderer != null)
                 {
-                    if (backRenderer != null)
-                    {
-                        frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
-                    }
+                    frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
+                }
 
-                    if (!_backSeeThrough)
-                    {
-                        frontTransparentRenderer.enabled = false;
-                    }
+                if (!_backSeeThrough)
+                {
+                    frontTransparentRenderer.enabled = false;
                 }
             }
         }

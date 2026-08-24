@@ -38,7 +38,15 @@ namespace App.UI
         private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
+        private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
         private int _prefabEquipCount;
+        private GameObject _equipTip;
+        private TMP_Text _equipTipText;
+        private GameObject _equipTipCatcher;
+        private Transform _equipTipAnchor;
+        private int _shownEquipRelicId;
+        private Canvas _hudCanvas;
+        private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
         private Sprite _playerPortrait;
@@ -86,6 +94,7 @@ namespace App.UI
 
             _board.Attach(ViewModel);
             await LoadPortraits();
+            await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
 
@@ -111,6 +120,19 @@ namespace App.UI
             {
                 ViewModel.ShowMask.Value = false;
                 ViewModel.ShowHpText.Value = false;
+            }
+
+            HideEquipTip();
+            if (_equipTip != null)
+            {
+                Destroy(_equipTip);
+                _equipTip = null;
+            }
+
+            if (_equipTipCatcher != null)
+            {
+                Destroy(_equipTipCatcher);
+                _equipTipCatcher = null;
             }
 
             if (_gameHud != null)
@@ -915,16 +937,193 @@ namespace App.UI
         private void BindEquips()
         {
             _equipSlots.Clear();
+            _equipRelicIds.Clear();
             for (var i = 0; i < EquipSlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EquipSlotKeys[i]);
                 if (slot != null)
                 {
+                    HookEquipClick(slot, _equipSlots.Count);
                     _equipSlots.Add(slot);
+                    _equipRelicIds.Add(0);
                 }
             }
 
             _prefabEquipCount = _equipSlots.Count;
+        }
+
+        private void HookEquipClick(Transform slot, int index)
+        {
+            if (slot == null)
+            {
+                return;
+            }
+
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnEquipClicked(index));
+        }
+
+        private void OnEquipClicked(int index)
+        {
+            if (index < 0 || index >= _equipRelicIds.Count || _equipRelicIds[index] <= 0)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            var relic = RelicConfig.Get(_equipRelicIds[index]);
+            if (relic == null)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_equipTip != null && _equipTip.activeSelf && _shownEquipRelicId == relic.Id)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowEquipTip(_equipSlots[index], relic);
+        }
+
+        private async Task EnsureEquipTip()
+        {
+            if (_equipTip != null || ViewModel == null || ViewModel.Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.ItemTip);
+                if (prefab == null)
+                {
+                    return;
+                }
+
+                _equipTip = Instantiate(prefab, transform, false);
+                _equipTip.name = "ItemTip";
+                _equipTipText = _equipTip.GetComponentInChildren<TMP_Text>(true);
+                var group = _equipTip.GetComponent<CanvasGroup>();
+                if (group == null)
+                {
+                    group = _equipTip.AddComponent<CanvasGroup>();
+                }
+
+                group.blocksRaycasts = false;
+                group.interactable = false;
+                _equipTip.SetActive(false);
+                _hudCanvas = GetComponentInParent<Canvas>();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private async Task ShowEquipTip(Transform slot, RelicConfig relic)
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null || relic == null)
+            {
+                return;
+            }
+
+            _shownEquipRelicId = relic.Id;
+            _equipTipAnchor = slot;
+            if (_equipTipText != null)
+            {
+                _equipTipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
+            }
+
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _equipTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _equipTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _equipTip.transform.SetAsLastSibling();
+            PositionEquipTip(slot);
+        }
+
+        private void HideEquipTip()
+        {
+            _shownEquipRelicId = 0;
+            _equipTipAnchor = null;
+            if (_equipTip != null)
+            {
+                _equipTip.SetActive(false);
+            }
+
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(false);
+            }
+        }
+
+        private void EnsureEquipTipCatcher()
+        {
+            if (_equipTipCatcher != null)
+            {
+                return;
+            }
+
+            var go = new GameObject("ItemTipCatcher", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var image = go.GetComponent<Image>();
+            image.color = Color.clear;
+            image.raycastTarget = true;
+            var button = go.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.onClick.AddListener(HideEquipTip);
+            go.SetActive(false);
+            _equipTipCatcher = go;
+        }
+
+        private void PositionEquipTip(Transform slot)
+        {
+            var tipRt = _equipTip != null ? _equipTip.GetComponent<RectTransform>() : null;
+            var itemRt = slot != null ? slot as RectTransform : null;
+            var parent = transform as RectTransform;
+            if (tipRt == null || itemRt == null || parent == null)
+            {
+                return;
+            }
+
+            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
+            itemRt.GetWorldCorners(_equipTipCorners);
+            var left = (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, left);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
+            {
+                return;
+            }
+
+            var tipWidth = tipRt.rect.width;
+            var tipHeight = tipRt.rect.height;
+            tipRt.anchoredPosition = new Vector2(
+                local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
+                local.y + (0.5f - tipRt.pivot.y) * tipHeight);
         }
 
         private void RefreshEquips()
@@ -947,10 +1146,18 @@ namespace App.UI
                     Destroy(bind);
                 }
 
+                HookEquipClick(clone.transform, _equipSlots.Count);
                 _equipSlots.Add(clone.transform);
+                _equipRelicIds.Add(0);
+            }
+
+            while (_equipRelicIds.Count < _equipSlots.Count)
+            {
+                _equipRelicIds.Add(0);
             }
 
             var atlas = ViewModel.Atlas;
+            var shownStillOwned = false;
             for (var i = 0; i < _equipSlots.Count; i++)
             {
                 var slot = _equipSlots[i];
@@ -963,6 +1170,12 @@ namespace App.UI
                 if (i < owned.Count)
                 {
                     relic = RelicConfig.Get(owned[i]);
+                }
+
+                _equipRelicIds[i] = relic != null ? relic.Id : 0;
+                if (relic != null && relic.Id == _shownEquipRelicId)
+                {
+                    shownStillOwned = true;
                 }
 
                 Sprite sprite = null;
@@ -982,8 +1195,19 @@ namespace App.UI
                     icon.enabled = sprite != null;
                 }
 
+                var nohave = slot.Find("nohave") ?? FindDeep(slot, "nohave");
+                if (nohave != null)
+                {
+                    nohave.gameObject.SetActive(relic == null);
+                }
+
                 var keepEmptyFrame = i < _prefabEquipCount;
                 slot.gameObject.SetActive(keepEmptyFrame || sprite != null);
+            }
+
+            if (_shownEquipRelicId > 0 && !shownStillOwned)
+            {
+                HideEquipTip();
             }
         }
 

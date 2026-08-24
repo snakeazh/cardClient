@@ -22,7 +22,6 @@ namespace App.UI.Popup
     {
         private readonly List<ShopItem> _sellItems = new List<ShopItem>();
         private readonly List<ShopItem> _mineItems = new List<ShopItem>();
-        private readonly Dictionary<int, Sprite> _icons = new Dictionary<int, Sprite>();
         private ShopItem _sellTemplate;
         private ShopItem _mineTemplate;
         private RectTransform _sellHor;
@@ -69,12 +68,12 @@ namespace App.UI.Popup
 
         private void OnShopRevision(int revision)
         {
-            _ = ReloadAndRefresh();
+            RefreshItems();
+            ApplyTip();
         }
 
         protected override async Task OnViewOpen()
         {
-            await LoadOfferIcons();
             await EnsureTip();
             ApplyTip();
         }
@@ -93,13 +92,6 @@ namespace App.UI.Popup
             }
 
             return Task.CompletedTask;
-        }
-
-        private async Task ReloadAndRefresh()
-        {
-            await LoadOfferIcons();
-            RefreshItems();
-            ApplyTip();
         }
 
         private void BindResourceBar()
@@ -312,9 +304,8 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                _icons.TryGetValue(relic.Id, out var icon);
                 item.gameObject.SetActive(true);
-                item.Bind(relic, icon);
+                item.Bind(relic, ViewModel.GetRelicIcon(relic));
             }
         }
 
@@ -348,53 +339,8 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                _icons.TryGetValue(relic.Id, out var icon);
                 item.gameObject.SetActive(true);
-                item.Bind(relic, icon, forSale: false);
-            }
-        }
-
-        private async Task LoadOfferIcons()
-        {
-            var ids = new HashSet<int>();
-            var offers = ViewModel.Session.Run.ShopOfferIds;
-            for (var i = 0; i < offers.Count; i++)
-            {
-                ids.Add(offers[i]);
-            }
-
-            var owned = ViewModel.Session.Run.RelicConfigIds;
-            for (var i = 0; i < owned.Count; i++)
-            {
-                ids.Add(owned[i]);
-            }
-
-            foreach (var id in ids)
-            {
-                await EnsureIcon(id);
-            }
-        }
-
-        private async Task EnsureIcon(int relicId)
-        {
-            if (_icons.ContainsKey(relicId) || ViewModel.Resources == null)
-            {
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            var key = ResResourcePaths.RelicIcon(relic != null ? relic.Icon : null);
-            if (string.IsNullOrEmpty(key))
-            {
-                return;
-            }
-
-            try
-            {
-                _icons[relicId] = await ViewModel.Resources.LoadAsync<Sprite>(key);
-            }
-            catch (Exception)
-            {
+                item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
             }
         }
 

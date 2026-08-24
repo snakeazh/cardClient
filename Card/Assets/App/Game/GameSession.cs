@@ -499,7 +499,7 @@ namespace App.Game
 
             SelectingXRayTarget = !SelectingXRayTarget;
             Hint = SelectingXRayTarget
-                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名角色翻开其手牌"
+                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名角色透视其手牌"
                 : "已取消透视";
             Notify();
         }
@@ -598,7 +598,7 @@ namespace App.Game
             Run.ChaKanGoodCharges--;
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
-            Log($"透视 {seat.Name} 翻牌 {seat.PeekedType}");
+            Log($"透视 {seat.Name} {seat.PeekedType}");
             Notify();
         }
 

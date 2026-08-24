@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using App.Game;
 using App.Resources;
@@ -526,25 +527,15 @@ namespace App.UI
                 return _player;
             }
 
-            var activeCount = CountActive(session);
-            var placed = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
+            SeatView view = null;
+            ForEachActiveEnemy(session, (enemy, slot) =>
             {
-                var enemy = session.Enemies[i];
-                if (!enemy.ActiveInStage)
+                if (view == null && enemy.Id == seat.Id)
                 {
-                    continue;
+                    view = EnemyViewAt(slot);
                 }
-
-                var slot = VisualSlot(placed, activeCount);
-                placed++;
-                if (enemy.Id == seat.Id)
-                {
-                    return slot >= 0 && slot < _enemies.Length ? _enemies[slot] : null;
-                }
-            }
-
-            return null;
+            });
+            return view;
         }
 
         private static SeatState SeatById(GameSession session, int id)
@@ -577,7 +568,7 @@ namespace App.UI
                 return null;
             }
 
-            var go = Object.Instantiate(prefab);
+            var go = UnityEngine.Object.Instantiate(prefab);
             go.name = "DealCard" + (_dealPile.Count + 1);
 
             var item = go.GetComponent<CardItem>();
@@ -680,7 +671,7 @@ namespace App.UI
 
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
-            var go = Object.Instantiate(prefab);
+            var go = UnityEngine.Object.Instantiate(prefab);
 
             var item = go.GetComponent<CardItem>();
             if (item == null)
@@ -700,23 +691,10 @@ namespace App.UI
             }
 
             SyncSeatFaces(_player, session.Player, true, session);
-            var activeCount = CountActive(session);
-            var placed = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
+            ForEachActiveEnemy(session, (enemy, slot) =>
             {
-                var enemy = session.Enemies[i];
-                if (!enemy.ActiveInStage)
-                {
-                    continue;
-                }
-
-                var slot = VisualSlot(placed, activeCount);
-                placed++;
-                if (slot >= 0 && slot < _enemies.Length)
-                {
-                    SyncSeatFaces(_enemies[slot], enemy, false, session);
-                }
-            }
+                SyncSeatFaces(EnemyViewAt(slot), enemy, false, session);
+            });
         }
 
         private void SyncSeatFaces(SeatView view, SeatState seat, bool player, GameSession session)
@@ -931,7 +909,6 @@ namespace App.UI
 
         private void ApplySeatVisibility(GameSession session)
         {
-            var activeCount = CountActive(session);
             for (var slot = 0; slot < _enemies.Length; slot++)
             {
                 if (_enemies[slot] == null || _enemies[slot].Node == null)
@@ -942,21 +919,19 @@ namespace App.UI
                 _enemies[slot].Node.gameObject.SetActive(false);
             }
 
-            var placed = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
+            ForEachActiveEnemy(session, (enemy, slot) =>
             {
-                if (!session.Enemies[i].ActiveInStage)
+                if (!enemy.Alive)
                 {
-                    continue;
+                    return;
                 }
 
-                var slot = VisualSlot(placed, activeCount);
-                placed++;
-                if (slot >= 0 && slot < _enemies.Length && _enemies[slot] != null && _enemies[slot].Node != null)
+                var view = EnemyViewAt(slot);
+                if (view != null && view.Node != null)
                 {
-                    _enemies[slot].Node.gameObject.SetActive(true);
+                    view.Node.gameObject.SetActive(true);
                 }
-            }
+            });
 
             if (_player != null && _player.Node != null)
             {
@@ -972,25 +947,53 @@ namespace App.UI
                 list.Add((_player, session.Player));
             }
 
+            ForEachActiveEnemy(session, (enemy, slot) =>
+            {
+                if (!enemy.Alive)
+                {
+                    return;
+                }
+
+                var view = EnemyViewAt(slot);
+                if (view != null)
+                {
+                    list.Add((view, enemy));
+                }
+            });
+
+            return list;
+        }
+
+        /// <summary>
+        /// 上场敌人（含阵亡）按原视觉槽遍历。阵亡仍占位，不能按存活人数压缩，
+        /// 否则发牌会落到别人座位，开牌按原槽去翻就翻空。
+        /// </summary>
+        private void ForEachActiveEnemy(GameSession session, Action<SeatState, int> fn)
+        {
+            if (session?.Enemies == null || fn == null)
+            {
+                return;
+            }
+
             var activeCount = CountActive(session);
             var placed = 0;
             for (var i = 0; i < session.Enemies.Length; i++)
             {
                 var enemy = session.Enemies[i];
-                if (!enemy.ActiveInStage || !enemy.Alive)
+                if (enemy == null || !enemy.ActiveInStage)
                 {
                     continue;
                 }
 
                 var slot = VisualSlot(placed, activeCount);
                 placed++;
-                if (slot >= 0 && slot < _enemies.Length && _enemies[slot] != null)
-                {
-                    list.Add((_enemies[slot], enemy));
-                }
+                fn(enemy, slot);
             }
+        }
 
-            return list;
+        private SeatView EnemyViewAt(int slot)
+        {
+            return slot >= 0 && slot < _enemies.Length ? _enemies[slot] : null;
         }
 
         private void BindEnemySlots(Transform hud)
@@ -1069,7 +1072,7 @@ namespace App.UI
             {
                 if (view.Items[i] != null)
                 {
-                    Object.Destroy(view.Items[i].gameObject);
+                    UnityEngine.Object.Destroy(view.Items[i].gameObject);
                     view.Items[i] = null;
                 }
 

@@ -109,6 +109,36 @@ namespace App.Game
         public bool IncomingAttack { get; private set; }
         /// <summary>本手正在逐个与敌人比牌。</summary>
         public bool SequentialCompare => _sequentialCompare;
+        /// <summary>回合指示箭头：玩家 -1，敌人视觉槽 0/1/2，无人 -2。</summary>
+        public const int TurnArrowNone = -2;
+        public const int TurnArrowPlayer = -1;
+        public int TurnArrowSlot
+        {
+            get
+            {
+                if (SequentialCompare ||
+                    Phase == GamePhase.Showdown ||
+                    Phase == GamePhase.WaitingAttack)
+                {
+                    return EnemyTurnSlot(_pendingAttackTarget ?? _pendingOpenTarget);
+                }
+
+                if (AiActing)
+                {
+                    return EnemyTurnSlot(FindEnemyById(ActingAiId));
+                }
+
+                if (Phase == GamePhase.WaitingOpen ||
+                    Phase == GamePhase.WaitingRub ||
+                    Phase == GamePhase.WaitingLookChoice ||
+                    Phase == GamePhase.Betting)
+                {
+                    return TurnArrowPlayer;
+                }
+
+                return TurnArrowNone;
+            }
+        }
         public int RevealPlaySerial { get; private set; }
         public int RevealWinnerId { get; private set; } = -1;
         public readonly List<int> RevealSeatIds = new List<int>();
@@ -212,8 +242,14 @@ namespace App.Game
             }
 
             var old = Player.Hand[index];
-            _deck.Remove(old);
             var next = DrawRubCard(old);
+            if (!next.IsValid || next.Equals(old))
+            {
+                Hint = "没有可换的新牌";
+                Notify();
+                return;
+            }
+
             Player.Hand[index] = next;
             Run.RubsLeft--;
             if (Run.PeekGoodCharges > 0)
@@ -495,9 +531,22 @@ namespace App.Game
                 return;
             }
 
-            for (var i = 0; i < GameBalance.PlayerCardsDealt; i++)
+            SyncDeckWithTable();
+            var nextCards = new Card[GameBalance.PlayerCardsDealt];
+            for (var i = 0; i < nextCards.Length; i++)
             {
-                Player.Hand[i] = _deck.Draw();
+                if (!_deck.TryDraw(out nextCards[i]) || !nextCards[i].IsValid)
+                {
+                    SyncDeckWithTable();
+                    Hint = "牌堆不足，无法替换";
+                    Notify();
+                    return;
+                }
+            }
+
+            for (var i = 0; i < nextCards.Length; i++)
+            {
+                Player.Hand[i] = nextCards[i];
             }
 
             Player.PeekedType = string.Empty;
@@ -1545,33 +1594,66 @@ namespace App.Game
             EnterOpenReady();
         }
 
-        /// <summary>每人发牌。玩家和敌人都发 5 张。未上场的敌人不发。</summary>
+        /// <summary>每人发牌。玩家和敌人都发 5 张。未上场的敌人不发。一副牌不重复。</summary>
         private void DealAll()
         {
             DealSerial++;
             foreach (var seat in AllSeats())
             {
-                if (!seat.Alive && !seat.IsPlayer)
+                ClearSeatHand(seat);
+            }
+
+            SyncDeckWithTable();
+            foreach (var seat in AllSeats())
+            {
+                if (!seat.IsPlayer && !seat.Alive)
                 {
                     continue;
                 }
 
-                if (seat.IsPlayer || seat.Alive)
+                var count = GameBalance.CardsDealt(seat.IsPlayer);
+                for (var i = 0; i < seat.Hand.Length; i++)
                 {
-                    var count = GameBalance.CardsDealt(seat.IsPlayer);
-                    for (var i = 0; i < seat.Hand.Length; i++)
+                    if (i >= count)
                     {
-                        seat.Hand[i] = i < count ? _deck.Draw() : default;
+                        seat.Hand[i] = default;
+                        continue;
                     }
-                }
 
-                seat.ClearCardSelected();
+                    if (!_deck.TryDraw(out var card) || !card.IsValid)
+                    {
+                        SyncDeckWithTable();
+                        if (!_deck.TryDraw(out card) || !card.IsValid)
+                        {
+                            seat.Hand[i] = default;
+                            continue;
+                        }
+                    }
+
+                    seat.Hand[i] = card;
+                }
             }
         }
 
-        /// <summary>搓牌换一张。禁搓词缀过滤花色/人头；磁力手套有概率保留原花色。</summary>
+        private static void ClearSeatHand(SeatState seat)
+        {
+            if (seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < seat.Hand.Length; i++)
+            {
+                seat.Hand[i] = default;
+            }
+
+            seat.ClearCardSelected();
+        }
+
+        /// <summary>搓牌换一张。只从牌堆未发牌里抽，不会与桌上已有牌重复。</summary>
         private Card DrawRubCard(Card original)
         {
+            SyncDeckWithTable();
             Suit? bannedSuit = null;
             var banFaces = Run.Affix == BossAffix.BanRubFace;
             switch (Run.Affix)
@@ -1583,25 +1665,77 @@ namespace App.Game
             }
 
             var keepSuit = HasRelic(RelicId.MagnetGloves) && _rng.NextDouble() < GameBalance.MagnetKeepSuitChance;
-            return _deck.DrawMatching(card =>
+            if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, keepSuit), out var next))
             {
-                if (bannedSuit.HasValue && card.Suit == bannedSuit.Value)
+                return next;
+            }
+
+            if (keepSuit &&
+                _deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, false), out next))
+            {
+                return next;
+            }
+
+            return _deck.TryDraw(out next) ? next : original;
+        }
+
+        private static bool RubCardAllowed(
+            Card card,
+            Card original,
+            Suit? bannedSuit,
+            bool banFaces,
+            bool keepSuit)
+        {
+            if (!card.IsValid || card.Equals(original))
+            {
+                return false;
+            }
+
+            if (bannedSuit.HasValue && card.Suit == bannedSuit.Value)
+            {
+                return false;
+            }
+
+            if (banFaces && card.IsFace)
+            {
+                return false;
+            }
+
+            return !keepSuit || card.Suit == original.Suit;
+        }
+
+        private void SyncDeckWithTable()
+        {
+            if (_deck == null)
+            {
+                _deck = new Deck(_rng);
+            }
+
+            _deck.RestoreUnused(CollectDealtCards());
+        }
+
+        private List<Card> CollectDealtCards()
+        {
+            var list = new List<Card>(Deck.Size);
+            foreach (var seat in AllSeats())
+            {
+                if (seat?.Hand == null)
                 {
-                    return false;
+                    continue;
                 }
 
-                if (banFaces && card.IsFace)
+                var count = GameBalance.CardsDealt(seat.IsPlayer);
+                for (var i = 0; i < count && i < seat.Hand.Length; i++)
                 {
-                    return false;
+                    var card = seat.Hand[i];
+                    if (card.IsValid)
+                    {
+                        list.Add(card);
+                    }
                 }
+            }
 
-                if (keepSuit && card.Suit != original.Suit)
-                {
-                    return false;
-                }
-
-                return !card.Equals(original);
-            });
+            return list;
         }
 
         /// <summary>发牌后直接看牌，进入开牌/技能阶段。</summary>
@@ -3201,6 +3335,17 @@ namespace App.Game
             }
 
             return -1;
+        }
+
+        private int EnemyTurnSlot(SeatState enemy)
+        {
+            if (enemy == null || enemy.IsPlayer)
+            {
+                return TurnArrowNone;
+            }
+
+            var slot = FindVisualSlot(enemy);
+            return slot >= 0 ? slot : TurnArrowNone;
         }
 
         private SeatState BestRemainingAi()

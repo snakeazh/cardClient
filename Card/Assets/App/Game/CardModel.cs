@@ -51,6 +51,8 @@ namespace App.Game
         public Suit Suit { get; }
         public Rank Rank { get; }
 
+        public bool IsValid => Suit >= Suit.Heart && Suit <= Suit.Spade && Rank >= Rank.Ace && Rank <= Rank.King;
+
         public bool IsFace => Rank == Rank.Jack || Rank == Rank.Queen || Rank == Rank.King;
 
         /// <summary>
@@ -112,7 +114,7 @@ namespace App.Game
         }
     }
 
-    /// <summary>52 张标准扑克。抽空会自动重置。</summary>
+    /// <summary>52 张标准扑克。桌上已发的牌不得再抽，抽空也不会把已发牌塞回牌堆。</summary>
     public sealed class Deck
     {
         public const int Size = 52;
@@ -153,6 +155,19 @@ namespace App.Game
             }
         }
 
+        public bool Contains(Card card)
+        {
+            for (var i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i].Equals(card))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void Remove(Card card)
         {
             for (var i = 0; i < _cards.Count; i++)
@@ -165,24 +180,76 @@ namespace App.Game
             }
         }
 
+        public void Return(Card card)
+        {
+            if (!card.IsValid || Contains(card))
+            {
+                return;
+            }
+
+            _cards.Add(card);
+        }
+
+        /// <summary>牌堆重建为 52 张减去桌上已发牌，避免抽到重复牌。</summary>
+        public void RestoreUnused(IEnumerable<Card> dealt)
+        {
+            var used = new HashSet<Card>();
+            if (dealt != null)
+            {
+                foreach (var card in dealt)
+                {
+                    if (card.IsValid)
+                    {
+                        used.Add(card);
+                    }
+                }
+            }
+
+            _cards.Clear();
+            foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+            {
+                foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+                {
+                    var card = new Card(suit, rank);
+                    if (!used.Contains(card))
+                    {
+                        _cards.Add(card);
+                    }
+                }
+            }
+
+            Shuffle();
+        }
+
         public Card Draw()
+        {
+            return TryDraw(out var card) ? card : default;
+        }
+
+        public bool TryDraw(out Card card)
         {
             if (_cards.Count == 0)
             {
-                Reset();
+                card = default;
+                return false;
             }
 
             var last = _cards.Count - 1;
-            var card = _cards[last];
+            card = _cards[last];
             _cards.RemoveAt(last);
-            return card;
+            return true;
         }
 
         public Card DrawMatching(Func<Card, bool> predicate)
         {
+            return TryDrawMatching(predicate, out var card) ? card : Draw();
+        }
+
+        public bool TryDrawMatching(Func<Card, bool> predicate, out Card card)
+        {
             if (predicate == null)
             {
-                return Draw();
+                return TryDraw(out card);
             }
 
             var matches = new List<int>();
@@ -196,13 +263,14 @@ namespace App.Game
 
             if (matches.Count == 0)
             {
-                return Draw();
+                card = default;
+                return false;
             }
 
             var pick = matches[_rng.Next(matches.Count)];
-            var card = _cards[pick];
+            card = _cards[pick];
             _cards.RemoveAt(pick);
-            return card;
+            return true;
         }
     }
 

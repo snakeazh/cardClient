@@ -64,6 +64,7 @@ MonoBehaviour:
   goldNum: {fileID: 6976042617991310244}
   gold: {fileID: 2168313349117267106}
   button: {fileID: 7892797844888771391}
+  animator: {fileID: 3777721370096284635}
 --- !u!114 &7892797844888771391
 MonoBehaviour:
   m_ObjectHideFlags: 0

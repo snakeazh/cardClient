@@ -12,14 +12,21 @@ namespace App.Game
     /// </summary>
     public sealed class ShopItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
+        public const string ChooseStartAnim = "ani_shop_choose_start";
+        public const string ChooseEndAnim = "ani_shop_choose_end";
+
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text goldNum;
         [SerializeField] private Image gold;
         [SerializeField] private Button button;
+        [SerializeField] private Animator animator;
 
         public ShopItemDef Data { get; private set; }
 
+        
+        
+        
         public event Action<ShopItem> Clicked;
         public event Action<ShopItem, PointerEventData> DragBegan;
         public event Action<ShopItem, PointerEventData> DragMoved;
@@ -112,6 +119,28 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 播放 ShopRoot 上 Animator 的指定状态。预制体挂 ShopRoot.controller（无参数，靠状态名播放）。
+        /// </summary>
+        public void PlayAnimation(string stateName, int layer = 0, float normalizedTime = 0f)
+        {
+            EnsureAnimator();
+            if (animator != null && !string.IsNullOrEmpty(stateName))
+            {
+                animator.Play(stateName, layer, normalizedTime);
+            }
+        }
+
+        public void PlayChooseStart()
+        {
+            PlayAnimation(ChooseStartAnim);
+        }
+
+        public void PlayChooseEnd()
+        {
+            PlayAnimation(ChooseEndAnim);
+        }
+
         public void BindDrag(
             Action<ShopItem, PointerEventData> onBegan,
             Action<ShopItem, PointerEventData> onMoved,
@@ -198,6 +227,29 @@ namespace App.Game
             Clicked?.Invoke(this);
         }
 
+        private void EnsureAnimator()
+        {
+            if (animator != null)
+            {
+                return;
+            }
+
+            var nodes = GetComponentsInChildren<Transform>(true);
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].name != "ShopRoot")
+                {
+                    continue;
+                }
+
+                animator = nodes[i].GetComponent<Animator>();
+                if (animator != null)
+                {
+                    return;
+                }
+            }
+        }
+
 #if UNITY_EDITOR
         private void Reset()
         {
@@ -234,6 +286,11 @@ namespace App.Game
             if (button == null)
             {
                 button = GetComponent<Button>();
+            }
+
+            if (animator == null)
+            {
+                animator = FindNamed<Animator>("ShopRoot");
             }
         }
 

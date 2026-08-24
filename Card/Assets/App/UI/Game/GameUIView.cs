@@ -64,6 +64,7 @@ namespace App.UI
             BindAttackHud();
             BindAttackFx();
             BindArrows();
+            BindHudChrome();
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
@@ -683,6 +684,54 @@ namespace App.UI
             {
                 Debug.LogWarning($"Failed to load portrait '{key}': {ex.Message}");
                 return null;
+            }
+        }
+
+        private void BindHudChrome()
+        {
+            BindBtn("backBtn", ViewModel.BackCommand);
+            BindResourceBar();
+        }
+
+        private void BindResourceBar()
+        {
+            var bar = ResolveSlot("ResourceBar") ?? transform.Find("ResourceBar") ?? FindDeep(transform, "ResourceBar");
+            if (bar == null)
+            {
+                return;
+            }
+
+            bar.gameObject.SetActive(true);
+            var top = bar.Find("TopArea") ?? FindDeep(bar, "TopArea") ?? bar;
+            Transform goldItem = null;
+            for (var i = 0; i < top.childCount; i++)
+            {
+                var child = top.GetChild(i);
+                if (!child.name.StartsWith("ResourceItem"))
+                {
+                    continue;
+                }
+
+                if (goldItem == null)
+                {
+                    goldItem = child;
+                    child.gameObject.SetActive(true);
+                    continue;
+                }
+
+                child.gameObject.SetActive(false);
+            }
+
+            if (goldItem == null)
+            {
+                return;
+            }
+
+            var num = goldItem.Find("Num") ?? FindDeep(goldItem, "Num");
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.GoldText);
             }
         }
 

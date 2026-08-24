@@ -65,6 +65,7 @@ namespace App.UI
                       (Session.Phase == GamePhase.WaitingAttack &&
                        !Session.AttackPlaying &&
                        !Session.SequentialCompare));
+            BackCommand = new RelayCommand(OnBack);
             LeaveShopCommand = new RelayCommand(() => Session.LeaveShop(), () => Session.Phase == GamePhase.Shop);
             LoanCommand = new RelayCommand(() => Session.WatchAdLoan(), () => Session.Phase == GamePhase.StageFail);
             ReviveCommand = new RelayCommand(() => Session.WatchAdRevive(), () => Session.Phase == GamePhase.StageFail);
@@ -168,6 +169,7 @@ namespace App.UI
         public IRelayCommand MinusBetCommand { get; }
         public IRelayCommand PlusBetCommand { get; }
         public IRelayCommand ContinueCommand { get; }
+        public IRelayCommand BackCommand { get; }
         public IRelayCommand LeaveShopCommand { get; }
         public IRelayCommand LoanCommand { get; }
         public IRelayCommand ReviveCommand { get; }
@@ -199,7 +201,7 @@ namespace App.UI
                 ? $"第{run.Stage}关 BOSS {GameBalance.AffixName(run.Affix)}"
                 : $"第{run.Stage}关";
             Hint.Value = Session.Hint ?? string.Empty;
-            GoldText.Value = $"金币 {run.Gold}";
+            GoldText.Value = run.Gold.ToString();
             PotText.Value = string.Empty;
             PlayerChips.Value = $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
@@ -368,6 +370,16 @@ namespace App.UI
             {
                 _shopPopupOpen = false;
             }
+        }
+
+        private async void OnBack()
+        {
+            if (_ui == null)
+            {
+                return;
+            }
+
+            await LeaveToHome();
         }
 
         private async Task LeaveToHome()

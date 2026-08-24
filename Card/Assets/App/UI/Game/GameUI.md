@@ -15,6 +15,8 @@
 
 ```
 GameUI
+  backBtn                 ← 返回主页
+  ResourceBar             ← 资源栏，当前只显示金币
   PlayerItem              ← 玩家卡，显示 HeroDamage / Hp
   敌人槽（运行时克隆 PlayerItem）
   horBtns                 ← 开牌 / 取消 / 下一局（发牌动画结束才显示）

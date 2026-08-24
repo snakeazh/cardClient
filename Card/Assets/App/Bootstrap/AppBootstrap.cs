@@ -35,6 +35,7 @@ namespace App.Bootstrap
             _services.Register(_resources.Resources);
 
             await RegisterAtlas(_services, _resources.Resources);
+            await CardShadowPool.PreloadAsync(_resources.Resources);
 
             _services.Register(SaveFramework.Create());
             _services.Register(new GameSession());

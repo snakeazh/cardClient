@@ -201,3 +201,5 @@ if (item.FaceState == CardFaceState.Front)
 - 翻面中途 `Kill` 可能停在 Y≈90° 侧立；需要复位请重新 `Initialize` 或自己改 `transform.rotation`。
 - `Card.IsFace` 表示 J/Q/K（人头牌），与 `CardFaceState`（正反面）不是一回事。
 - 不要为了让看牌可见而去隐藏 `Back`；看牌只应 `FlipTo(Front)` 换 `CurrentRenderer` 贴图。
+- 放大镜用 `SetBackSeeThrough`：牌背半透明 + `FrontTransparent` 垫层露牌面。不要改旋转。
+- `Back` 透明度用 `FadeBackAlpha`，不要直接改 `backRenderer.color.a`，否则状态同步会重复播渐变。

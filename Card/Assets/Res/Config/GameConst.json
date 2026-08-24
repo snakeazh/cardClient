@@ -6,5 +6,6 @@
   "BasicBettingAmount": 10,
   "AfterBettingAmount": 10,
   "ShopRefreshFirst": 5,
-  "ShopRefreshAfter": 3
+  "ShopRefreshAfter": 3,
+  "GoldIcon": "coin"
 }

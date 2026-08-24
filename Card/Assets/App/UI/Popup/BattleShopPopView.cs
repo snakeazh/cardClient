@@ -33,6 +33,7 @@ namespace App.UI.Popup
         private TMP_Text _tipText;
         private GameObject _tipCatcher;
         private ShopItem _tipAnchor;
+        private ShopItem _tipAnimAnchor;
         private GameObject _ghost;
         private Vector2 _ghostGrabOffset;
         private Canvas _canvas;
@@ -374,10 +375,7 @@ namespace App.UI.Popup
             }
 
             var show = ViewModel.ShowTip.Value;
-            if (!show)
-            {
-                _tipAnchor = null;
-            }
+            UpdateTipAnimations(show);
 
             EnsureTipCatcher();
             if (_tipCatcher != null)
@@ -418,6 +416,39 @@ namespace App.UI.Popup
 
             _tip.transform.SetAsLastSibling();
             PositionTipBelow(_tipAnchor);
+        }
+
+        private void UpdateTipAnimations(bool show)
+        {
+            if (show)
+            {
+                if (_tipAnchor == null)
+                {
+                    return;
+                }
+
+                if (_tipAnimAnchor == _tipAnchor)
+                {
+                    return;
+                }
+
+                if (_tipAnimAnchor != null)
+                {
+                    _tipAnimAnchor.PlayChooseEnd();
+                }
+
+                _tipAnchor.PlayChooseStart();
+                _tipAnimAnchor = _tipAnchor;
+                return;
+            }
+
+            if (_tipAnimAnchor != null)
+            {
+                _tipAnimAnchor.PlayChooseEnd();
+                _tipAnimAnchor = null;
+            }
+
+            _tipAnchor = null;
         }
 
         private void EnsureTipCatcher()

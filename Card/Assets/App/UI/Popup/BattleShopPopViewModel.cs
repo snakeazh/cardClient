@@ -30,6 +30,7 @@ namespace App.UI.Popup
             Resources = resources;
             _dialogs = dialogs;
             RefreshGoldNum = new ObservableProperty<string>(session.ShopRefreshCost.ToString());
+            GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ShopRevision = new ObservableProperty<int>();
             ShowSellHor = new ObservableProperty<bool>(true);
             ShowMineHor = new ObservableProperty<bool>(true);
@@ -49,6 +50,8 @@ namespace App.UI.Popup
         public IResourceService Resources { get; }
 
         public ObservableProperty<string> RefreshGoldNum { get; }
+
+        public ObservableProperty<string> GoldText { get; }
 
         public ObservableProperty<int> ShopRevision { get; }
 
@@ -175,6 +178,7 @@ namespace App.UI.Popup
         private void Refresh()
         {
             RefreshGoldNum.Value = Session.ShopRefreshCost.ToString();
+            GoldText.Value = Session.Run.Gold.ToString();
             RefreshCommand.RaiseCanExecuteChanged();
             if (SelectedRelicId > 0 && !IsSelectionValid())
             {

@@ -15,15 +15,30 @@
 
 ```
 GameUI
+  backBtn                 ← 返回主页
+  ResourceBar             ← 资源栏，当前只显示金币
   PlayerItem              ← 玩家卡，显示 HeroDamage / Hp
   敌人槽（运行时克隆 PlayerItem）
   horBtns                 ← 开牌 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换
-  roundInfo               ← 本轮 / 关卡 / 总积分
+  horEquipBtns2           ← 已携带遗物（equip1/2/3）
+  cardinfoItem            ← 结算时显示玩家牌型；敌人克隆到 cardInfoParent
+  roundInfo               ← 第几轮
+  arrow                   ← 当前行动对象指示（玩家 / player1/2/3 各一），上下缓动
   mask / hptext           ← 攻击演出用
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2`、`roundInfo` 隐藏，发完再亮。
+发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2`、`horEquipBtns2` 隐藏，发完再亮。`roundInfo` 局内一直显示第几轮。
+
+`cardinfoItem` 只在结算（开牌比牌 / 攻击演出 / 本手结束）时显示：玩家用 HUD 上的原节点，敌人把同一套克隆到各自 `player1/2/3.cardInfoParent` 下。
+
+| 节点 | 用途 |
+|------|------|
+| `cardtype` | 牌型图标，读 `Altas/CardType`（`HighCardIcon` / `PairIcon` / `StraightIcon` / `SameSuitIcon` / `FlushIcon` / `LeopardIcon`） |
+| `cardtype2` | 牌型名称图（`HighCard` / `Pair` / `Straight` / `SameSuit` / `Flush` / `Leopard`） |
+| `cardtypeNum` | 倍率文案，格式 `xn`，n 来自 `HandScoreConfig.BasicMagnification` |
+
+`horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`）。空槽保留底框。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。
 
@@ -73,8 +88,9 @@ GameUI
 
 ## 积分条
 
-`roundInfo`：`本轮{Round} 关卡{Stage} 总{Total}`。  
-本轮 = 这一手对怪造成的总伤害。不再显示奖池。
+`roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
+
+HUD 根节点 `arrow` 指向玩家；`player1/2/3` 下各有一个 `arrow`。同一时间只亮当前对象：选牌/技能时是玩家，比牌和攻击时是当前敌人。亮起后沿 Y 轴上下缓动。
 
 ---
 

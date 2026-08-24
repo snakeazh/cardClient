@@ -369,7 +369,7 @@ namespace App.Game
                 _frontTransparentNode.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 if (backRenderer != null)
                 {
-                    frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
+                    // frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
                 }
 
                 if (!_backSeeThrough)

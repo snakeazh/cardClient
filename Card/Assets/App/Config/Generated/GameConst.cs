@@ -51,6 +51,11 @@ namespace App.Config
         /// </summary>
         public int ShopRefreshAfter;
 
+        /// <summary>
+        /// 金币道具icon
+        /// </summary>
+        public string GoldIcon;
+
     }
 }
 

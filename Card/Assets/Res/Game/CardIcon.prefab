@@ -104,6 +104,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentRenderer: {fileID: 1500414084062459219}
+  CardDragEffect: {fileID: 5398217308811808724}
+  CardDragSuccessEffect: {fileID: 7744183268842903648}
   backRenderer: {fileID: 70993717205349809}
   frontTransparentRenderer: {fileID: 180746053289002404}
 --- !u!1 &4464075292584615947
@@ -440,6 +442,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 507813996391351140, guid: 76f3bf8c20167464f85cc6920a342f84, type: 3}
   m_PrefabInstance: {fileID: 4287075180697712717}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7744183268842903648 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5766328871704518701, guid: 76f3bf8c20167464f85cc6920a342f84, type: 3}
+  m_PrefabInstance: {fileID: 4287075180697712717}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8240597219640769095
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -501,6 +508,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5ae519e7ad40e2e4fbaf17ef9cd6cd8b, type: 3}
+--- !u!1 &5398217308811808724 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4086499376612357523, guid: 5ae519e7ad40e2e4fbaf17ef9cd6cd8b, type: 3}
+  m_PrefabInstance: {fileID: 8240597219640769095}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6357941065182402875 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3055562829090431868, guid: 5ae519e7ad40e2e4fbaf17ef9cd6cd8b, type: 3}

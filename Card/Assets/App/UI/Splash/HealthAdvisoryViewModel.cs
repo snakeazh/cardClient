@@ -9,11 +9,13 @@ namespace App.UI.Splash
     public sealed class HealthAdvisoryViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly NavigationViewModel _navigation;
         private bool _enteredHome;
 
-        public HealthAdvisoryViewModel(IUIManager ui)
+        public HealthAdvisoryViewModel(IUIManager ui, NavigationViewModel navigation)
         {
             _ui = ui;
+            _navigation = navigation;
             Title = new ObservableProperty<string>(HealthAdvisoryText.Title);
             Body = new ObservableProperty<string>(HealthAdvisoryText.Body);
             Footer = new ObservableProperty<string>(HealthAdvisoryText.WeChatFooter);
@@ -59,6 +61,7 @@ namespace App.UI.Splash
             var registration = _ui.Registry.GetByViewModelType(typeof(HomeViewModel));
             var home = (HomeViewModel)_ui.Registry.CreateViewModel(registration);
             await _ui.Open(home);
+            await _navigation.EnsureShown();
         }
     }
 }

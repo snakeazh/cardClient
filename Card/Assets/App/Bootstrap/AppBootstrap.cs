@@ -42,6 +42,7 @@ namespace App.Bootstrap
             _services.Register(SaveFramework.Create());
             _services.Register(new GameSession());
             _services.Container.AddSingleton<GameTableViewModel>();
+            _services.Container.AddSingleton<NavigationViewModel>();
 
             await ConfigTables.LoadAsync(_resources.Resources);
             RegisterBag(_services);
@@ -58,8 +59,14 @@ namespace App.Bootstrap
             }
             else
             {
-                await _ui.UI.Open(_services.Resolve<HomeViewModel>());
+                await OpenHomeWithNavigation();
             }
+        }
+
+        private async Task OpenHomeWithNavigation()
+        {
+            await _ui.UI.Open(_services.Resolve<HomeViewModel>());
+            await _services.Resolve<NavigationViewModel>().EnsureShown();
         }
 
         private static async Task RegisterAtlas(

@@ -14,6 +14,7 @@ namespace Framework.UI.Navigation
 
         [SerializeField] private RectTransform _hudLayer;
         [SerializeField] private RectTransform _pageLayer;
+        [SerializeField] private RectTransform _navigationLayer;
         [SerializeField] private RectTransform _popupLayer;
         [SerializeField] private RectTransform _loadingLayer;
         [SerializeField] private RectTransform _topMostLayer;
@@ -77,6 +78,7 @@ namespace Framework.UI.Navigation
 
             RegisterLayer(UILayer.Hud, _hudLayer);
             RegisterLayer(UILayer.Page, _pageLayer);
+            RegisterLayer(UILayer.Navigation, _navigationLayer);
             RegisterLayer(UILayer.Popup, _popupLayer);
             RegisterLayer(UILayer.Loading, _loadingLayer);
             RegisterLayer(UILayer.TopMost, _topMostLayer);

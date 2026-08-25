@@ -4,8 +4,9 @@ namespace Framework.UI.Navigation
     {
         Hud = 0,
         Page = 1,
-        Popup = 2,
-        Loading = 3,
-        TopMost = 4
+        Navigation = 2,
+        Popup = 3,
+        Loading = 4,
+        TopMost = 5
     }
 }

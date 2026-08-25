@@ -75,7 +75,7 @@ GameUI
 
 | 按钮 | 效果 |
 |------|------|
-| PeekGood | 进入搓牌，点选一张随机替换 |
+| PeekGood | 进入搓牌；点选一张翻到背面，拖拽抖动后松手换牌 |
 | ChaKanGood | 点选角色：5 张先全部抬起，再 `SetBackSeeThrough` 透出牌面；开牌时改成最大 3 张 |
 | TiHuanGood | 自己 5 张全部换成新牌 |
 

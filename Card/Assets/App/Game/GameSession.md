@@ -51,7 +51,8 @@ StartNewRun / Continue
 |------|------|--------|
 | `TogglePlayerCard(i)` | 点自己的牌 | 选中/取消，最多 3 张，选中会抬起 |
 | `UsePeekGood()` | 搓牌 | 进入 `WaitingRub` |
-| `RubCard(i)` / `SkipRub()` | 点牌或取消 | 随机换一张，或跳过 |
+| `SelectRubCard(i)` / `ClearRubSelection()` | 点选 / 松手未达标 | 记录待搓索引与提示 |
+| `RubCard(i)` / `SkipRub()` | 搓牌成功或取消 | 随机换一张，或跳过 |
 | `UseChaKanGood()` | 透视 | 开关 `SelectingXRayTarget` |
 | `TryXRayPlayer()` / `TryXRayEnemySlot(slot)` | 点角色或他的牌 | 见下节 |
 | `UseTiHuanGood()` | 替换 | 自己 5 张全部换成新牌 |

@@ -47,9 +47,26 @@ namespace App.UI
         private bool _dealing;
         private bool _revealing;
         private GameSession _session;
+        private int _rubLockIndex = -1;
+        private bool _rubShakeReady;
+        private Vector3 _rubRestWorldPos;
+        private Vector3 _rubGrabOffset;
+        private int _rubSavedOrder;
+        private float _rubPeakOffset;
+        private float _rubDragStartTime;
+        private const float MaxRubDrag = 0.5f;
+        /// <summary>松手时峰值偏移低于此值视为搓牌失败。</summary>
+        public const float MinRubOffset = 0.4f;
+        /// <summary>从开始跟手到松手的最短持续时间（秒）。</summary>
+        public const float MinRubDuration = 0.45f;
 
         public bool IsDealing => _dealing;
         public bool IsBusy => _dealing || _revealing;
+        public bool IsRubPreviewActive => _rubLockIndex >= 0;
+        public bool IsRubShakeReady => _rubShakeReady;
+        public float RubPeakOffset => _rubPeakOffset;
+        public float RubDragElapsed => _rubDragStartTime > 0f ? Time.time - _rubDragStartTime : 0f;
+        public int RubLockIndex => _rubLockIndex;
         public event System.Action DealFinished;
 
         private sealed class SeatView
@@ -220,6 +237,196 @@ namespace App.UI
             }
         }
 
+        /// <summary>点选搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
+        public void BeginRubPreview(int index)
+        {
+            if (_player == null || index < 0 || index >= CardsPerHand)
+            {
+                return;
+            }
+
+            var item = _player.Items[index];
+            if (item == null || !_player.Landed[index] || _player.Points[index] == null)
+            {
+                return;
+            }
+
+            if (_rubLockIndex >= 0 && _rubLockIndex != index)
+            {
+                CancelRubPreview();
+            }
+
+            _rubLockIndex = index;
+            _rubShakeReady = false;
+            _rubRestWorldPos = _player.Points[index].position;
+            var lifted = _rubRestWorldPos + SelectOffset(_player);
+            SyncSlotShadow(_player, index, true);
+            BringRubCardToFront(index);
+            item.MoveTo(lifted, SelectLiftDuration, Ease.OutQuad).OnUpdate(FollowRubShadow);
+            FollowRubShadow();
+            TintPlayerCard(index, Color.white);
+
+            var flip = item.FlipTo(CardFaceState.Back, FlipDuration);
+            if (flip == null)
+            {
+                _rubShakeReady = item.FaceState == CardFaceState.Back;
+                return;
+            }
+
+            var token = index;
+            flip.OnComplete(() =>
+            {
+                if (_rubLockIndex == token)
+                {
+                    _rubShakeReady = true;
+                }
+            });
+        }
+
+        /// <summary>开始跟手：记下抓取点，避免第一帧跳到鼠标中心。</summary>
+        public void BeginRubDrag(Camera camera, Vector3 screenPos)
+        {
+            if (_rubLockIndex < 0 || !_rubShakeReady || _player == null || camera == null)
+            {
+                return;
+            }
+
+            var item = _player.Items[_rubLockIndex];
+            if (item == null)
+            {
+                return;
+            }
+
+            item.StopMove();
+            _rubPeakOffset = 0f;
+            _rubDragStartTime = Time.time;
+            _rubGrabOffset = item.transform.position - ScreenOnCardPlane(camera, screenPos, item.transform.position.z);
+        }
+
+        /// <summary>跟手拖拽，限制在抬起点附近。</summary>
+        public void DragRubCard(Camera camera, Vector3 screenPos)
+        {
+            if (_rubLockIndex < 0 || !_rubShakeReady || _player == null || camera == null)
+            {
+                return;
+            }
+
+            var item = _player.Items[_rubLockIndex];
+            if (item == null)
+            {
+                return;
+            }
+
+            var rest = _rubRestWorldPos + SelectOffset(_player);
+            var mouse = ScreenOnCardPlane(camera, screenPos, item.transform.position.z);
+            var target = mouse + _rubGrabOffset;
+            var offset = target - rest;
+            offset.z = 0f;
+            offset = Vector3.ClampMagnitude(offset, MaxRubDrag);
+            item.transform.position = rest + offset;
+            FollowRubShadow();
+            if (offset.magnitude > _rubPeakOffset)
+            {
+                _rubPeakOffset = offset.magnitude;
+            }
+
+            var t = Mathf.Clamp01(offset.magnitude / MaxRubDrag);
+            TintPlayerCard(_rubLockIndex, Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), t));
+        }
+
+        private static Vector3 ScreenOnCardPlane(Camera camera, Vector3 screenPos, float cardZ)
+        {
+            screenPos.z = Mathf.Abs(camera.transform.position.z - cardZ);
+            return camera.ScreenToWorldPoint(screenPos);
+        }
+
+        /// <summary>拖拽未达标：停在抬起的背面，不翻回正面。</summary>
+        public void ResetRubShake()
+        {
+            if (_rubLockIndex < 0 || _player == null)
+            {
+                return;
+            }
+
+            var item = _player.Items[_rubLockIndex];
+            if (item == null)
+            {
+                return;
+            }
+
+            item.transform.position = _rubRestWorldPos + SelectOffset(_player);
+            FollowRubShadow();
+            _rubPeakOffset = 0f;
+            _rubDragStartTime = 0f;
+            TintPlayerCard(_rubLockIndex, Color.white);
+        }
+
+        /// <summary>取消点选：翻回正面并落回原位。</summary>
+        public void CancelRubPreview()
+        {
+            if (_rubLockIndex < 0 || _player == null)
+            {
+                return;
+            }
+
+            var index = _rubLockIndex;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
+            var item = _player.Items[index];
+            if (item == null)
+            {
+                return;
+            }
+
+            var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
+            RestoreRubCardLayer(index);
+            item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
+                .OnUpdate(() => FollowRubShadowAt(index))
+                .OnComplete(() =>
+                {
+                    if (_rubLockIndex != index)
+                    {
+                        SyncSlotShadow(_player, index, false);
+                    }
+                });
+            item.FlipTo(CardFaceState.Front, FlipDuration);
+            TintPlayerCard(index, Color.white);
+        }
+
+        /// <summary>
+        /// 搓牌成功：手牌已由 Sync SetCard（仍锁在背面），翻回正面揭示新牌。
+        /// </summary>
+        public void CompleteRubFlip()
+        {
+            if (_rubLockIndex < 0 || _player == null)
+            {
+                return;
+            }
+
+            var index = _rubLockIndex;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
+            var item = _player.Items[index];
+            if (item == null)
+            {
+                return;
+            }
+
+            var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
+            RestoreRubCardLayer(index);
+            item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
+                .OnUpdate(() => FollowRubShadowAt(index))
+                .OnComplete(() =>
+                {
+                    if (_rubLockIndex != index)
+                    {
+                        SyncSlotShadow(_player, index, false);
+                    }
+                });
+            item.FlipTo(CardFaceState.Front, FlipDuration);
+            TintPlayerCard(index, Color.white);
+        }
+
         public void Dispose()
         {
             _dealSeq?.Kill();
@@ -227,6 +434,8 @@ namespace App.UI
             _dealToken++;
             _revealToken++;
             _seeThroughToken++;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
             ClearAllItems();
             _shadows.Dispose();
             if (_resources != null)
@@ -246,6 +455,8 @@ namespace App.UI
             _dealSeq?.Kill();
             _revealSeq?.Kill();
             _revealing = false;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
             _shownDeal = session.DealSerial;
             _shownReveal = session.RevealPlaySerial;
             var token = ++_dealToken;
@@ -722,6 +933,12 @@ namespace App.UI
                     item.SetCard(card);
                 }
 
+                // 搓牌预览锁面：允许换牌数据，但不强制翻回正面。
+                if (player && (i == _rubLockIndex || session.PendingRubIndex == i))
+                {
+                    continue;
+                }
+
                 var desired = DesiredFace(session, seat, player, i);
                 ApplyFace(item, desired, true);
                 var sr = item.CurrentRenderer;
@@ -887,6 +1104,12 @@ namespace App.UI
                     continue;
                 }
 
+                // 搓牌拖拽中自己管位置，避免 Sync 把牌拽回原点。
+                if (view.IsPlayer && (i == _rubLockIndex || (_session != null && _session.PendingRubIndex == i)))
+                {
+                    continue;
+                }
+
                 var selected = seat.IsCardSelected(i);
                 var dest = view.Points[i].position + (selected ? offset : Vector3.zero);
                 if ((item.transform.position - dest).sqrMagnitude < 0.0004f)
@@ -927,6 +1150,98 @@ namespace App.UI
             _shadows.Return(ref view.Shadows[index]);
         }
 
+        private void FollowRubShadow()
+        {
+            if (_rubLockIndex >= 0)
+            {
+                FollowRubShadowAt(_rubLockIndex);
+            }
+        }
+
+        private void FollowRubShadowAt(int index)
+        {
+            if (_player == null || index < 0 || index >= CardsPerHand)
+            {
+                return;
+            }
+
+            var shadow = _player.Shadows[index];
+            var item = _player.Items[index];
+            if (shadow == null || item == null)
+            {
+                return;
+            }
+
+            var pos = item.transform.position;
+            shadow.position = new Vector3(pos.x, pos.y, shadow.position.z);
+        }
+
+        private void BringRubCardToFront(int index)
+        {
+            var item = _player.Items[index];
+            if (item == null)
+            {
+                return;
+            }
+
+            var sr = item.CurrentRenderer;
+            _rubSavedOrder = sr != null ? sr.sortingOrder : 0;
+            var top = PlayerHandMaxSorting() + 20;
+            item.SetSortingOrder(top);
+            SetShadowSorting(_player.Shadows[index], top - 1);
+        }
+
+        private void RestoreRubCardLayer(int index)
+        {
+            if (_player == null || index < 0 || index >= CardsPerHand)
+            {
+                return;
+            }
+
+            var item = _player.Items[index];
+            if (item != null)
+            {
+                item.SetSortingOrder(_rubSavedOrder);
+            }
+
+            SetShadowSorting(_player.Shadows[index], 2);
+        }
+
+        private int PlayerHandMaxSorting()
+        {
+            var max = 0;
+            if (_player == null)
+            {
+                return max;
+            }
+
+            for (var i = 0; i < CardsPerHand; i++)
+            {
+                var item = _player.Items[i];
+                var sr = item != null ? item.CurrentRenderer : null;
+                if (sr != null && sr.sortingOrder > max)
+                {
+                    max = sr.sortingOrder;
+                }
+            }
+
+            return max;
+        }
+
+        private static void SetShadowSorting(Transform shadow, int order)
+        {
+            if (shadow == null)
+            {
+                return;
+            }
+
+            var sr = shadow.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                sr.sortingOrder = order;
+            }
+        }
+
         private static int CardCount(SeatView view, SeatState seat)
         {
             if (view == null)
@@ -944,6 +1259,13 @@ namespace App.UI
                 return CardFaceState.Back;
             }
 
+            if (player &&
+                session.Phase == GamePhase.WaitingRub &&
+                session.PendingRubIndex == cardIndex)
+            {
+                return CardFaceState.Back;
+            }
+
             if (seat.ShowCards)
             {
                 return CardFaceState.Front;
@@ -952,6 +1274,11 @@ namespace App.UI
             if (session.CardsRevealed)
             {
                 return CardFaceState.Front;
+            }
+
+            if (player && session.Phase == GamePhase.WaitingRub && session.PendingRubIndex == cardIndex)
+            {
+                return CardFaceState.Back;
             }
 
             if (player && seat.Looked)

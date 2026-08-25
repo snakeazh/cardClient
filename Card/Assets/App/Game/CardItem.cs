@@ -112,6 +112,12 @@ namespace App.Game
             return _moveTween;
         }
 
+        public void StopMove()
+        {
+            _moveTween?.Kill();
+            _moveTween = null;
+        }
+
         public Tween RotateTo(Quaternion worldRotation, float duration, Ease ease = Ease.OutCubic)
         {
             _rotateTween?.Kill();
@@ -141,12 +147,36 @@ namespace App.Game
                 return null;
             }
 
+            if (FaceState == faceState)
+            {
+                transform.localRotation = FaceYaw(faceState);
+                return null;
+            }
+
             DisableShuffleAnimator();
             transform.localRotation = FaceYaw(FaceState);
 
+            // 转到侧立时换贴图，再转到目标朝向，避免背面被镜像。
+            var fromYaw = FaceState == CardFaceState.Back ? 180f : 0f;
+            var toYaw = faceState == CardFaceState.Back ? 180f : 0f;
+            var midYaw = (fromYaw + toYaw) * 0.5f;
+            var half = duration * 0.5f;
+            var target = faceState;
+
             var seq = DOTween.Sequence();
-            seq.Append(transform.DOLocalRotateQuaternion(FaceYaw(faceState), duration).SetEase(ease));
-            seq.OnComplete(() => SetFace(faceState));
+            seq.Append(transform.DOLocalRotate(new Vector3(0f, midYaw, 0f), half).SetEase(ease));
+            seq.AppendCallback(() =>
+            {
+                FaceState = target;
+                ApplySprite();
+            });
+            seq.Append(transform.DOLocalRotate(new Vector3(0f, toYaw, 0f), half).SetEase(ease));
+            seq.OnComplete(() =>
+            {
+                FaceState = target;
+                ApplySprite();
+                transform.localRotation = FaceYaw(target);
+            });
             _flipTween = seq;
             return seq;
         }
@@ -274,7 +304,8 @@ namespace App.Game
             var front = ResolveRenderer();
             if (front != null)
             {
-                front.sprite = face;
+                // 逻辑背面用牌背贴图画在 CurrentRenderer 上（与 FlipTo 中途换图一致）。
+                front.sprite = FaceState == CardFaceState.Back ? CardSpriteLibrary.Back : face;
             }
 
             var back = ResolveBackRenderer();

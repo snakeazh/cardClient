@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using App.Talent;
 using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
@@ -10,38 +11,48 @@ using Framework.UI.View;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 一个天赋：TalentConfig 中同 TalentId 的多行按 TalentLevel 升序聚合。
+    /// 列表条目：ITalentService 快照 + 配置名（未解锁时快照无 Config，名字从 1 级行兜底）。
     /// </summary>
-    public sealed class TalentEntry
+    public sealed class TalentItem
     {
-        public int TalentId;
+        public TalentSnapshot Snapshot;
         public string Name;
-        public string Icon;
-        public readonly List<TalentConfig> Levels = new List<TalentConfig>();
     }
 
     /// <summary>
-    /// 天赋弹窗：按 TalentId 聚合 TalentConfig 生成列表；点击条目打开天赋详情。
+    /// 天赋弹窗：列表读 ITalentService（未解锁显示 ???），点击条目打开天赋详情；
+    /// BuyBtn 显示抽天赋金币价（购买流程未接入，暂不响应点击）。
     /// </summary>
     public sealed class TalentPopupViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly List<TalentEntry> _entries = new List<TalentEntry>();
+        private readonly ITalentService _talent;
+        private readonly List<TalentItem> _items = new List<TalentItem>();
 
-        public TalentPopupViewModel(IUIManager ui)
+        public TalentPopupViewModel(IUIManager ui, ITalentService talent)
         {
             _ui = ui;
+            _talent = talent;
             CloseCommand = new RelayCommand(Dismiss);
-            BuildEntries();
+            BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
+            RebuildItems();
         }
 
-        public IReadOnlyList<TalentEntry> Entries => _entries;
+        public IReadOnlyList<TalentItem> Items => _items;
+
+        public ObservableProperty<string> BuyCostText { get; }
 
         public IRelayCommand CloseCommand { get; }
 
-        public async Task OpenDetail(TalentEntry entry)
+        protected override Task OnOpen(object args)
         {
-            if (entry == null || entry.Levels.Count == 0)
+            RebuildItems();
+            return Task.CompletedTask;
+        }
+
+        public async Task OpenDetail(TalentItem item)
+        {
+            if (item == null || !item.Snapshot.IsOwned)
             {
                 return;
             }
@@ -50,7 +61,7 @@ namespace App.UI.Popup
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
                 var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
-                vm.Setup(entry);
+                vm.Setup(item.Snapshot.TalentId);
                 await _ui.Open(vm);
             }
             catch (Exception ex)
@@ -59,38 +70,34 @@ namespace App.UI.Popup
             }
         }
 
-        private void BuildEntries()
+        private void RebuildItems()
         {
-            _entries.Clear();
-            var grouped = new Dictionary<int, TalentEntry>();
-            foreach (var kv in TalentConfig.All)
+            _items.Clear();
+            var ids = _talent.GetIds();
+            for (var i = 0; i < ids.Count; i++)
             {
-                var row = kv.Value;
-                if (row == null || row.TalentId <= 0)
+                var snapshot = _talent.GetCurrent(ids[i]);
+                _items.Add(new TalentItem
                 {
-                    continue;
-                }
+                    Snapshot = snapshot,
+                    Name = ResolveName(snapshot)
+                });
+            }
+        }
 
-                if (!grouped.TryGetValue(row.TalentId, out var entry))
-                {
-                    entry = new TalentEntry
-                    {
-                        TalentId = row.TalentId,
-                        Name = row.Name,
-                        Icon = row.Icon
-                    };
-                    grouped[row.TalentId] = entry;
-                    _entries.Add(entry);
-                }
-
-                entry.Levels.Add(row);
+        private string ResolveName(TalentSnapshot snapshot)
+        {
+            if (snapshot.Config != null)
+            {
+                return snapshot.Config.Name;
             }
 
-            _entries.Sort((a, b) => a.TalentId.CompareTo(b.TalentId));
-            for (var i = 0; i < _entries.Count; i++)
-            {
-                _entries[i].Levels.Sort((a, b) => a.TalentLevel.CompareTo(b.TalentLevel));
-            }
+            return _talent.TryGet(snapshot.TalentId, 1, out var row) ? row.Name : null;
+        }
+
+        private static string ResolveBuyCost()
+        {
+            return GameConst.IsLoaded ? GameConst.Instance.TalentChestNeedGold.ToString() : "0";
         }
 
         private void Dismiss()

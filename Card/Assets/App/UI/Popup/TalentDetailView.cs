@@ -10,26 +10,31 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 天赋详情弹窗。注册在 TopMost 层：叠加在 Popup 层的天赋列表之上，弹出时不隐藏列表。
-    /// Item 卡显示天赋名，Tip/Detail 显示等级与描述，LeftBtn/RightBtn 翻等级，点 Mask 关闭。
+    /// Item 卡显示天赋名，Detail 显示当前等级描述；LeftBtn/RightBtn 切换已解锁天赋，
+    /// 不足两个时隐藏；Tip 为预制体固定文案；点 Mask 关闭。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentDetail, UILayer.TopMost, ResResourcePaths.TalentDetail)]
     public sealed class TalentDetailView : ViewBase<TalentDetailViewModel>
     {
         protected override void OnBind()
         {
-            var talent = ViewModel.Talent;
             var card = UI.GetGameObject("Item").GetComponent<ItemCard>();
             if (card != null)
             {
                 card.SetShadowVisible(false);
                 card.SetAnimationEnabled(false);
-                card.Bind(talent != null ? talent.Name : null, null, true);
+                card.SetIcon(null);
+                card.SetUnlocked(true);
+                Binding.Add(ViewModel.NameText.Subscribe(card.SetName));
             }
 
-            Binding.BindText(UI.GetGameObject("Tip").GetComponent<TMP_Text>(), ViewModel.TipText);
+            var left = UI.GetGameObject("LeftBtn");
+            var right = UI.GetGameObject("RightBtn");
+            Binding.BindCommand(left.GetComponent<Button>(), ViewModel.PrevCommand);
+            Binding.BindCommand(right.GetComponent<Button>(), ViewModel.NextCommand);
+            Binding.BindActive(left, ViewModel.ShowSwitch);
+            Binding.BindActive(right, ViewModel.ShowSwitch);
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);
-            Binding.BindCommand(UI.GetGameObject("LeftBtn").GetComponent<Button>(), ViewModel.PrevCommand);
-            Binding.BindCommand(UI.GetGameObject("RightBtn").GetComponent<Button>(), ViewModel.NextCommand);
             BindMaskClose();
         }
 

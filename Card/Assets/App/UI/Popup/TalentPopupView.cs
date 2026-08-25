@@ -5,6 +5,7 @@ using App.Resources;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.UI.View;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,13 +21,14 @@ namespace App.UI.Popup
         private const string TemplateName = "Item";
 
         private readonly List<ItemCard> _cards = new List<ItemCard>();
-        private readonly Dictionary<ItemCard, TalentEntry> _entries =
-            new Dictionary<ItemCard, TalentEntry>();
+        private readonly Dictionary<ItemCard, TalentItem> _entries =
+            new Dictionary<ItemCard, TalentItem>();
         private GameObject _template;
 
         protected override void OnBind()
         {
             BindOverlayClose();
+            BindBuyCost();
             FillList();
         }
 
@@ -64,12 +66,12 @@ namespace App.UI.Popup
                 return;
             }
 
-            var entries = ViewModel.Entries;
-            for (var i = 0; i < entries.Count; i++)
+            var items = ViewModel.Items;
+            for (var i = 0; i < items.Count; i++)
             {
-                var entry = entries[i];
+                var item = items[i];
                 var go = Instantiate(_template, content, false);
-                go.name = "Talent_" + entry.TalentId;
+                go.name = "Talent_" + item.Snapshot.TalentId;
                 go.SetActive(true);
                 var bind = go.GetComponent<UIBind>();
                 if (bind != null)
@@ -85,10 +87,21 @@ namespace App.UI.Popup
 
                 card.SetShadowVisible(false);
                 card.SetAnimationEnabled(false);
-                card.Bind(entry.Name, null, true);
+                card.Bind(item.Name, null, item.Snapshot.IsOwned);
                 card.Clicked += OnCardClicked;
-                _entries[card] = entry;
+                _entries[card] = item;
                 _cards.Add(card);
+            }
+        }
+
+        private void BindBuyCost()
+        {
+            var buyBtn = UI.GetGameObject("BuyBtn");
+            var num = buyBtn != null ? buyBtn.transform.Find("Num") : null;
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.BuyCostText);
             }
         }
 
@@ -115,9 +128,9 @@ namespace App.UI.Popup
 
         private void OnCardClicked(ItemCard card)
         {
-            if (_entries.TryGetValue(card, out var entry))
+            if (_entries.TryGetValue(card, out var item))
             {
-                _ = ViewModel.OpenDetail(entry);
+                _ = ViewModel.OpenDetail(item);
             }
         }
 

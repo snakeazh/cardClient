@@ -1,4 +1,5 @@
 using App.Bootstrap;
+using App.Talent;
 using App.UI.Popup;
 using Framework.UI;
 using UnityEditor;
@@ -24,6 +25,28 @@ namespace App.UI.Editor
             var registration = ui.Registry.GetByViewModelType(typeof(TalentPopupViewModel));
             var vm = (TalentPopupViewModel)ui.Registry.CreateViewModel(registration);
             _ = ui.Open(vm);
+        }
+
+        [MenuItem("Debug/UI/随机获得一个天赋", false, 1)]
+        public static void GrantRandomTalent()
+        {
+            if (!Application.isPlaying || !AppServices.IsReady)
+            {
+                Debug.LogWarning("需要在 Play 模式且启动流程完成后使用");
+                return;
+            }
+
+            var talent = AppServices.Resolve<ITalentService>();
+            var ids = talent.GetIds();
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            var id = ids[Random.Range(0, ids.Count)];
+            var result = talent.Add(id);
+            talent.Save();
+            Debug.Log($"获得天赋 {id}，等级 {result.PreviousLevel} -> {result.Current.Level}");
         }
     }
 }

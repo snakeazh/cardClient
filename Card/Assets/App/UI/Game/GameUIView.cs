@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
 using App.Game;
@@ -21,6 +22,7 @@ namespace App.UI
     public sealed class GameUIView : ViewBase<GameTableViewModel>
     {
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
+        private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -28,8 +30,23 @@ namespace App.UI
         private Transform _shopContent;
         private readonly GameObject[] _enemyInfos = new GameObject[3];
         private readonly PlayerItem[] _enemyItems = new PlayerItem[3];
+        private GameObject _playerCardInfo;
+        private readonly GameObject[] _enemyCardInfos = new GameObject[3];
+        private readonly Image[] _enemyCardTypeIcons = new Image[3];
+        private readonly Image[] _enemyCardTypeLabels = new Image[3];
+        private readonly TMP_Text[] _enemyCardTypeNums = new TMP_Text[3];
         private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
+        private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
+        private int _prefabEquipCount;
+        private GameObject _equipTip;
+        private TMP_Text _equipTipText;
+        private GameObject _equipTipCatcher;
+        private Transform _equipTipAnchor;
+        private int _shownEquipRelicId;
+        private Canvas _hudCanvas;
+        private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
         private Sprite _playerPortrait;
@@ -37,16 +54,30 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Coroutine _aiDelay;
+        private RectTransform _playerArrow;
+        private Vector2 _playerArrowHome;
+        private readonly RectTransform[] _enemyArrows = new RectTransform[3];
+        private readonly Vector2[] _enemyArrowHomes = new Vector2[3];
+        private int _shownArrow = int.MinValue;
+        private const float ArrowBob = 16f;
+        private const float ArrowBobDuration = 0.45f;
 
         protected override void OnBind()
         {
             BindPlayerInfo();
             SpawnEnemyInfos();
             BindPhaseButtons();
+            BindCardInfo();
+            BindEquips();
             BindAttackHud();
             BindAttackFx();
+            BindArrows();
+            BindHudChrome();
             ViewModel.Refresh();
             RefreshPlayerItems();
+            RefreshCardInfos();
+            RefreshEquips();
+            RefreshArrows();
         }
 
         protected override async Task OnViewOpen()
@@ -63,6 +94,7 @@ namespace App.UI
 
             _board.Attach(ViewModel);
             await LoadPortraits();
+            await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
 
@@ -82,11 +114,25 @@ namespace App.UI
             }
 
             _attackFx.Dispose();
+            StopArrowMotion();
             RestoreHpText();
             if (ViewModel != null)
             {
                 ViewModel.ShowMask.Value = false;
                 ViewModel.ShowHpText.Value = false;
+            }
+
+            HideEquipTip();
+            if (_equipTip != null)
+            {
+                Destroy(_equipTip);
+                _equipTip = null;
+            }
+
+            if (_equipTipCatcher != null)
+            {
+                Destroy(_equipTipCatcher);
+                _equipTipCatcher = null;
             }
 
             if (_gameHud != null)
@@ -102,6 +148,9 @@ namespace App.UI
         {
             RefreshShop();
             RefreshPlayerItems();
+            RefreshCardInfos();
+            RefreshEquips();
+            RefreshArrows();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -300,9 +349,120 @@ namespace App.UI
                 return;
             }
 
-            var text = roundInfo.GetComponentInChildren<TMP_Text>(true);
-            Binding.BindText(text, ViewModel.RoundInfo);
-            Binding.BindActive(roundInfo.gameObject, ViewModel.ShowTableButtons);
+            roundInfo.gameObject.SetActive(true);
+            roundInfo.SetAsLastSibling();
+            var textSlot = ResolveSlot("roundInfoText");
+            var text = textSlot != null
+                ? textSlot.GetComponent<TMP_Text>()
+                : roundInfo.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.RoundInfo);
+            }
+        }
+
+        private void BindArrows()
+        {
+            _playerArrow = ResolveArrow(ResolveSlot("arrow") ?? transform.Find("arrow"));
+            if (_playerArrow != null)
+            {
+                _playerArrowHome = _playerArrow.anchoredPosition;
+                _playerArrow.gameObject.SetActive(false);
+            }
+
+            for (var i = 0; i < EnemySlotKeys.Length; i++)
+            {
+                var slot = ResolveSlot(EnemySlotKeys[i]);
+                var arrow = slot != null ? slot.Find("arrow") : null;
+                _enemyArrows[i] = ResolveArrow(arrow);
+                if (_enemyArrows[i] != null)
+                {
+                    _enemyArrowHomes[i] = _enemyArrows[i].anchoredPosition;
+                    _enemyArrows[i].gameObject.SetActive(false);
+                }
+            }
+
+            _shownArrow = int.MinValue;
+        }
+
+        private static RectTransform ResolveArrow(Transform node)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            return node as RectTransform ?? node.GetComponent<RectTransform>();
+        }
+
+        private void RefreshArrows()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var slot = ViewModel.Session.TurnArrowSlot;
+            if (slot == _shownArrow)
+            {
+                return;
+            }
+
+            HideAllArrows();
+            _shownArrow = slot;
+            if (slot == GameSession.TurnArrowPlayer)
+            {
+                PlayArrow(_playerArrow, _playerArrowHome);
+                return;
+            }
+
+            if (slot >= 0 && slot < _enemyArrows.Length)
+            {
+                PlayArrow(_enemyArrows[slot], _enemyArrowHomes[slot]);
+            }
+        }
+
+        private void PlayArrow(RectTransform arrow, Vector2 home)
+        {
+            if (arrow == null)
+            {
+                return;
+            }
+
+            arrow.DOKill();
+            arrow.anchoredPosition = home;
+            arrow.gameObject.SetActive(true);
+            arrow.DOAnchorPosY(home.y + ArrowBob, ArrowBobDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(arrow.gameObject);
+        }
+
+        private void HideAllArrows()
+        {
+            HideArrow(_playerArrow, _playerArrowHome);
+            for (var i = 0; i < _enemyArrows.Length; i++)
+            {
+                HideArrow(_enemyArrows[i], _enemyArrowHomes[i]);
+            }
+        }
+
+        private static void HideArrow(RectTransform arrow, Vector2 home)
+        {
+            if (arrow == null)
+            {
+                return;
+            }
+
+            arrow.DOKill();
+            arrow.anchoredPosition = home;
+            arrow.gameObject.SetActive(false);
+        }
+
+        private void StopArrowMotion()
+        {
+            HideAllArrows();
+            _shownArrow = int.MinValue;
         }
 
         private PlayerItem ResolvePlayerItem()
@@ -401,12 +561,92 @@ namespace App.UI
 
                 var slot = VisualSlot(placed, activeCount);
                 placed++;
-                if (slot < 0 || slot >= _enemyItems.Length || _enemyItems[slot] == null)
+                if (!enemy.Alive || slot < 0 || slot >= _enemyItems.Length || _enemyItems[slot] == null)
                 {
                     continue;
                 }
 
                 _enemyItems[slot].Bind(enemy, _enemyPortraits[i], enemy.Attack, session.ActingAiId);
+            }
+        }
+
+        private void RefreshCardInfos()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var session = ViewModel.Session;
+            var settling = GameTableViewModel.ShouldShowCardInfo(session);
+            if (_playerCardInfo != null)
+            {
+                _playerCardInfo.SetActive(settling);
+            }
+
+            for (var i = 0; i < _enemyCardInfos.Length; i++)
+            {
+                if (_enemyCardInfos[i] != null)
+                {
+                    _enemyCardInfos[i].SetActive(false);
+                }
+            }
+
+            if (!settling)
+            {
+                return;
+            }
+
+            var activeCount = 0;
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                if (session.Enemies[i].ActiveInStage)
+                {
+                    activeCount++;
+                }
+            }
+
+            var placed = 0;
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                var enemy = session.Enemies[i];
+                if (!enemy.ActiveInStage)
+                {
+                    continue;
+                }
+
+                var slot = VisualSlot(placed, activeCount);
+                placed++;
+                if (!enemy.Alive)
+                {
+                    continue;
+                }
+
+                ApplyEnemyCardInfo(slot, session.EvaluateSeat(enemy));
+            }
+        }
+
+        private void ApplyEnemyCardInfo(int slot, HandScore score)
+        {
+            if (slot < 0 || slot >= _enemyCardInfos.Length || _enemyCardInfos[slot] == null)
+            {
+                return;
+            }
+
+            _enemyCardInfos[slot].SetActive(true);
+            if (_enemyCardTypeIcons[slot] != null)
+            {
+                _enemyCardTypeIcons[slot].sprite = ViewModel.GetCardTypeIcon(score.Type);
+            }
+
+            if (_enemyCardTypeLabels[slot] != null)
+            {
+                _enemyCardTypeLabels[slot].sprite = ViewModel.GetCardTypeLabel(score.Type);
+            }
+
+            if (_enemyCardTypeNums[slot] != null)
+            {
+                _enemyCardTypeNums[slot].text = GameTableViewModel.FormatHandMultiplier(score.Type);
             }
         }
 
@@ -469,6 +709,54 @@ namespace App.UI
             }
         }
 
+        private void BindHudChrome()
+        {
+            BindBtn("backBtn", ViewModel.BackCommand);
+            BindResourceBar();
+        }
+
+        private void BindResourceBar()
+        {
+            var bar = ResolveSlot("ResourceBar") ?? transform.Find("ResourceBar") ?? FindDeep(transform, "ResourceBar");
+            if (bar == null)
+            {
+                return;
+            }
+
+            bar.gameObject.SetActive(true);
+            var top = bar.Find("TopArea") ?? FindDeep(bar, "TopArea") ?? bar;
+            Transform goldItem = null;
+            for (var i = 0; i < top.childCount; i++)
+            {
+                var child = top.GetChild(i);
+                if (!child.name.StartsWith("ResourceItem"))
+                {
+                    continue;
+                }
+
+                if (goldItem == null)
+                {
+                    goldItem = child;
+                    child.gameObject.SetActive(true);
+                    continue;
+                }
+
+                child.gameObject.SetActive(false);
+            }
+
+            if (goldItem == null)
+            {
+                return;
+            }
+
+            var num = goldItem.Find("Num") ?? FindDeep(goldItem, "Num");
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.GoldText);
+            }
+        }
+
         private void BindSeatClick(GameObject target, IRelayCommand command)
         {
             if (target == null || command == null)
@@ -505,7 +793,6 @@ namespace App.UI
             Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
             BindDealHidden("horBtns2");
             BindDealHidden("horEquipBtns2");
-            BindDealHidden("roundInfo");
 
             BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
@@ -553,6 +840,386 @@ namespace App.UI
             {
                 Binding.BindActive(node.gameObject, ViewModel.ShowTableButtons);
             }
+        }
+
+        private void BindCardInfo()
+        {
+            var root = ResolveSlot("cardinfoItem");
+            if (root != null)
+            {
+                _playerCardInfo = root.gameObject;
+                _playerCardInfo.SetActive(false);
+                Binding.BindActive(_playerCardInfo, ViewModel.ShowCardInfo);
+            }
+
+            BindImage("cardtype", ViewModel.CardTypeIcon);
+            BindImage("cardtype2", ViewModel.CardTypeLabel);
+            var num = ResolveSlot("cardtypeNum");
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.CardTypeNum);
+            }
+
+            SpawnEnemyCardInfos(root);
+        }
+
+        private void SpawnEnemyCardInfos(Transform template)
+        {
+            if (template == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < EnemySlotKeys.Length; i++)
+            {
+                var slot = ResolveSlot(EnemySlotKeys[i]);
+                if (slot == null)
+                {
+                    continue;
+                }
+
+                var parent = slot.Find("cardInfoParent") ?? FindDeep(slot, "cardInfoParent");
+                if (parent == null)
+                {
+                    continue;
+                }
+
+                var clone = Instantiate(template.gameObject, parent, false);
+                clone.name = "cardinfoItem";
+                clone.SetActive(false);
+                var bind = clone.GetComponent<Framework.UI.Binding.UIBind>();
+                if (bind != null)
+                {
+                    Destroy(bind);
+                }
+
+                var rt = clone.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0.5f, 0.5f);
+                    rt.anchorMax = new Vector2(0.5f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    rt.anchoredPosition = Vector2.zero;
+                    rt.localRotation = Quaternion.identity;
+                    rt.localScale = Vector3.one;
+                }
+
+                StripBindKeys(clone);
+                _enemyCardInfos[i] = clone;
+                _enemyCardTypeIcons[i] = FindUiImage(clone.transform, "cardtype");
+                _enemyCardTypeLabels[i] = FindUiImage(clone.transform, "cardtype2");
+                _enemyCardTypeNums[i] = FindUiText(clone.transform, "cardtypeNum");
+            }
+        }
+
+        private static void StripBindKeys(GameObject root)
+        {
+            var binds = root.GetComponentsInChildren<Framework.UI.Binding.UIBind>(true);
+            for (var i = 0; i < binds.Length; i++)
+            {
+                Destroy(binds[i]);
+            }
+        }
+
+        private void BindImage(string key, ObservableProperty<Sprite> source)
+        {
+            var node = ResolveSlot(key);
+            var image = node != null ? node.GetComponent<Image>() : null;
+            if (image == null)
+            {
+                return;
+            }
+
+            Binding.BindImageSprite(image, source);
+        }
+
+        private void BindEquips()
+        {
+            _equipSlots.Clear();
+            _equipRelicIds.Clear();
+            for (var i = 0; i < EquipSlotKeys.Length; i++)
+            {
+                var slot = ResolveSlot(EquipSlotKeys[i]);
+                if (slot != null)
+                {
+                    HookEquipClick(slot, _equipSlots.Count);
+                    _equipSlots.Add(slot);
+                    _equipRelicIds.Add(0);
+                }
+            }
+
+            _prefabEquipCount = _equipSlots.Count;
+        }
+
+        private void HookEquipClick(Transform slot, int index)
+        {
+            if (slot == null)
+            {
+                return;
+            }
+
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnEquipClicked(index));
+        }
+
+        private void OnEquipClicked(int index)
+        {
+            if (index < 0 || index >= _equipRelicIds.Count || _equipRelicIds[index] <= 0)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            var relic = RelicConfig.Get(_equipRelicIds[index]);
+            if (relic == null)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_equipTip != null && _equipTip.activeSelf && _shownEquipRelicId == relic.Id)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowEquipTip(_equipSlots[index], relic);
+        }
+
+        private async Task EnsureEquipTip()
+        {
+            if (_equipTip != null || ViewModel == null || ViewModel.Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.ItemTip);
+                if (prefab == null)
+                {
+                    return;
+                }
+
+                _equipTip = Instantiate(prefab, transform, false);
+                _equipTip.name = "ItemTip";
+                _equipTipText = _equipTip.GetComponentInChildren<TMP_Text>(true);
+                var group = _equipTip.GetComponent<CanvasGroup>();
+                if (group == null)
+                {
+                    group = _equipTip.AddComponent<CanvasGroup>();
+                }
+
+                group.blocksRaycasts = false;
+                group.interactable = false;
+                _equipTip.SetActive(false);
+                _hudCanvas = GetComponentInParent<Canvas>();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private async Task ShowEquipTip(Transform slot, RelicConfig relic)
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null || relic == null)
+            {
+                return;
+            }
+
+            _shownEquipRelicId = relic.Id;
+            _equipTipAnchor = slot;
+            if (_equipTipText != null)
+            {
+                _equipTipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
+            }
+
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _equipTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _equipTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _equipTip.transform.SetAsLastSibling();
+            PositionEquipTip(slot);
+        }
+
+        private void HideEquipTip()
+        {
+            _shownEquipRelicId = 0;
+            _equipTipAnchor = null;
+            if (_equipTip != null)
+            {
+                _equipTip.SetActive(false);
+            }
+
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(false);
+            }
+        }
+
+        private void EnsureEquipTipCatcher()
+        {
+            if (_equipTipCatcher != null)
+            {
+                return;
+            }
+
+            var go = new GameObject("ItemTipCatcher", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var image = go.GetComponent<Image>();
+            image.color = Color.clear;
+            image.raycastTarget = true;
+            var button = go.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.onClick.AddListener(HideEquipTip);
+            go.SetActive(false);
+            _equipTipCatcher = go;
+        }
+
+        private void PositionEquipTip(Transform slot)
+        {
+            var tipRt = _equipTip != null ? _equipTip.GetComponent<RectTransform>() : null;
+            var itemRt = slot != null ? slot as RectTransform : null;
+            var parent = transform as RectTransform;
+            if (tipRt == null || itemRt == null || parent == null)
+            {
+                return;
+            }
+
+            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
+            itemRt.GetWorldCorners(_equipTipCorners);
+            var left = (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, left);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
+            {
+                return;
+            }
+
+            var tipWidth = tipRt.rect.width;
+            var tipHeight = tipRt.rect.height;
+            tipRt.anchoredPosition = new Vector2(
+                local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
+                local.y + (0.5f - tipRt.pivot.y) * tipHeight);
+        }
+
+        private void RefreshEquips()
+        {
+            if (ViewModel == null || _equipSlots.Count == 0)
+            {
+                return;
+            }
+
+            var owned = ViewModel.Session.Run.RelicConfigIds;
+            var template = _equipSlots[0];
+            var parent = template.parent;
+            while (_equipSlots.Count < owned.Count && _equipSlots.Count < GameBalance.MaxRelics)
+            {
+                var clone = Instantiate(template.gameObject, parent);
+                clone.name = $"equip{_equipSlots.Count + 1}";
+                var bind = clone.GetComponent<Framework.UI.Binding.UIBind>();
+                if (bind != null)
+                {
+                    Destroy(bind);
+                }
+
+                HookEquipClick(clone.transform, _equipSlots.Count);
+                _equipSlots.Add(clone.transform);
+                _equipRelicIds.Add(0);
+            }
+
+            while (_equipRelicIds.Count < _equipSlots.Count)
+            {
+                _equipRelicIds.Add(0);
+            }
+
+            var atlas = ViewModel.Atlas;
+            var shownStillOwned = false;
+            for (var i = 0; i < _equipSlots.Count; i++)
+            {
+                var slot = _equipSlots[i];
+                if (slot == null)
+                {
+                    continue;
+                }
+
+                RelicConfig relic = null;
+                if (i < owned.Count)
+                {
+                    relic = RelicConfig.Get(owned[i]);
+                }
+
+                _equipRelicIds[i] = relic != null ? relic.Id : 0;
+                if (relic != null && relic.Id == _shownEquipRelicId)
+                {
+                    shownStillOwned = true;
+                }
+
+                Sprite sprite = null;
+                if (relic != null && atlas != null && !string.IsNullOrEmpty(relic.Icon))
+                {
+                    atlas.TryGetSprite(ResResourcePaths.RelicAtlas, relic.Icon.Trim(), out sprite);
+                }
+
+                var icon = FindUiImage(slot, "icon");
+                if (icon != null)
+                {
+                    if (sprite != null)
+                    {
+                        icon.sprite = sprite;
+                    }
+
+                    icon.enabled = sprite != null;
+                }
+
+                var nohave = slot.Find("nohave") ?? FindDeep(slot, "nohave");
+                if (nohave != null)
+                {
+                    nohave.gameObject.SetActive(relic == null);
+                }
+
+                var keepEmptyFrame = i < _prefabEquipCount;
+                slot.gameObject.SetActive(keepEmptyFrame || sprite != null);
+            }
+
+            if (_shownEquipRelicId > 0 && !shownStillOwned)
+            {
+                HideEquipTip();
+            }
+        }
+
+        private static Image FindUiImage(Transform root, string name)
+        {
+            var child = root.Find(name);
+            if (child == null)
+            {
+                child = FindDeep(root, name);
+            }
+
+            return child != null ? child.GetComponent<Image>() : null;
         }
 
         private void BindBtn(string name, IRelayCommand command)

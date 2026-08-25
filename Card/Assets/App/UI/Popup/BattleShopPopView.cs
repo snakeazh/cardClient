@@ -22,7 +22,6 @@ namespace App.UI.Popup
     {
         private readonly List<ShopItem> _sellItems = new List<ShopItem>();
         private readonly List<ShopItem> _mineItems = new List<ShopItem>();
-        private readonly Dictionary<int, Sprite> _icons = new Dictionary<int, Sprite>();
         private ShopItem _sellTemplate;
         private ShopItem _mineTemplate;
         private RectTransform _sellHor;
@@ -48,6 +47,7 @@ namespace App.UI.Popup
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
             Binding.BindCommand(GetNode<Button>("CloseBtn"), ViewModel.CloseCommand);
+            BindResourceBar();
             Binding.BindActive(UI.GetGameObject("sellHor"), ViewModel.ShowSellHor);
             Binding.BindActive(UI.GetGameObject("MineHor"), ViewModel.ShowMineHor);
             Binding.BindActive(UI.GetGameObject("buy"), ViewModel.ShowBuy);
@@ -68,12 +68,12 @@ namespace App.UI.Popup
 
         private void OnShopRevision(int revision)
         {
-            _ = ReloadAndRefresh();
+            RefreshItems();
+            ApplyTip();
         }
 
         protected override async Task OnViewOpen()
         {
-            await LoadOfferIcons();
             await EnsureTip();
             ApplyTip();
         }
@@ -94,11 +94,75 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
-        private async Task ReloadAndRefresh()
+        private void BindResourceBar()
         {
-            await LoadOfferIcons();
-            RefreshItems();
-            ApplyTip();
+            var bar = transform.Find("ResourceBar");
+            if (bar == null)
+            {
+                bar = FindDeep(transform, "ResourceBar");
+            }
+
+            if (bar == null)
+            {
+                return;
+            }
+
+            bar.gameObject.SetActive(true);
+            var top = bar.Find("TopArea") ?? FindDeep(bar, "TopArea") ?? bar;
+            Transform goldItem = null;
+            for (var i = 0; i < top.childCount; i++)
+            {
+                var child = top.GetChild(i);
+                if (!child.name.StartsWith("ResourceItem"))
+                {
+                    continue;
+                }
+
+                if (goldItem == null)
+                {
+                    goldItem = child;
+                    child.gameObject.SetActive(true);
+                    continue;
+                }
+
+                child.gameObject.SetActive(false);
+            }
+
+            if (goldItem == null)
+            {
+                return;
+            }
+
+            var num = goldItem.Find("Num") ?? FindDeep(goldItem, "Num");
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.GoldText);
+            }
+        }
+
+        private static Transform FindDeep(Transform root, string name)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == name)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindDeep(root.GetChild(i), name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private T GetNode<T>(string key) where T : Component
@@ -240,9 +304,8 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                _icons.TryGetValue(relic.Id, out var icon);
                 item.gameObject.SetActive(true);
-                item.Bind(relic, icon);
+                item.Bind(relic, ViewModel.GetRelicIcon(relic));
             }
         }
 
@@ -276,53 +339,8 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                _icons.TryGetValue(relic.Id, out var icon);
                 item.gameObject.SetActive(true);
-                item.Bind(relic, icon, forSale: false);
-            }
-        }
-
-        private async Task LoadOfferIcons()
-        {
-            var ids = new HashSet<int>();
-            var offers = ViewModel.Session.Run.ShopOfferIds;
-            for (var i = 0; i < offers.Count; i++)
-            {
-                ids.Add(offers[i]);
-            }
-
-            var owned = ViewModel.Session.Run.RelicConfigIds;
-            for (var i = 0; i < owned.Count; i++)
-            {
-                ids.Add(owned[i]);
-            }
-
-            foreach (var id in ids)
-            {
-                await EnsureIcon(id);
-            }
-        }
-
-        private async Task EnsureIcon(int relicId)
-        {
-            if (_icons.ContainsKey(relicId) || ViewModel.Resources == null)
-            {
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            var key = ResResourcePaths.RelicIcon(relic != null ? relic.Icon : null);
-            if (string.IsNullOrEmpty(key))
-            {
-                return;
-            }
-
-            try
-            {
-                _icons[relicId] = await ViewModel.Resources.LoadAsync<Sprite>(key);
-            }
-            catch (Exception)
-            {
+                item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
             }
         }
 

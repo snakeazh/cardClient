@@ -7,27 +7,26 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 选中卡牌阴影的实例池。预制体在启动时经 PreloadAsync 预热进资源缓存；
-    /// Rent 把阴影挂到卡位下，Return 回收挂回 idleParent，Dispose 销毁池并释放资源引用。
+    /// 选中卡牌阴影的实例池。预制体在启动时经 PreloadAsync 预热；
+    /// Rent 把阴影挂到卡位下，Return 回收挂回 idleParent，Dispose 销毁池内实例。
     /// </summary>
     public sealed class CardShadowPool
     {
-        private IResourceService _resources;
+        private static GameObject _prefab;
         private Transform _idleParent;
-        private GameObject _prefab;
         private readonly Stack<Transform> _pool = new Stack<Transform>();
 
-        /// <summary>启动时预热 CardShadow 预制体；常驻资源缓存，之后 Rent 的同步加载直接命中缓存。</summary>
+        /// <summary>启动时预热 CardShadow 预制体，常驻资源缓存。</summary>
         public static async Task PreloadAsync(IResourceService resources)
         {
-            if (resources == null)
+            if (resources == null || _prefab != null)
             {
                 return;
             }
 
             try
             {
-                await resources.LoadAsync<GameObject>(ResResourcePaths.CardShadow);
+                _prefab = await resources.LoadAsync<GameObject>(ResResourcePaths.CardShadow);
             }
             catch (System.Exception ex)
             {
@@ -35,15 +34,13 @@ namespace App.UI
             }
         }
 
-        public void Bind(IResourceService resources, Transform idleParent)
+        public void Bind(Transform idleParent)
         {
-            _resources = resources;
             _idleParent = idleParent;
         }
 
         public Transform Rent(Transform point)
         {
-            var prefab = LoadPrefab();
             Transform shadow = null;
             while (_pool.Count > 0 && shadow == null)
             {
@@ -52,12 +49,12 @@ namespace App.UI
 
             if (shadow == null)
             {
-                if (prefab == null)
+                if (_prefab == null)
                 {
                     return null;
                 }
 
-                var go = Object.Instantiate(prefab);
+                var go = Object.Instantiate(_prefab);
                 go.name = "CardShadow";
                 shadow = go.transform;
             }
@@ -78,10 +75,23 @@ namespace App.UI
                 return;
             }
 
-            shadow.gameObject.SetActive(false);
-            shadow.SetParent(_idleParent, false);
-            _pool.Push(shadow);
+            var instance = shadow;
             shadow = null;
+
+            // 父节点正在销毁时禁止 SetParent（GameHud OnDestroy 会先失活）。
+            if (_idleParent == null || !_idleParent.gameObject.activeInHierarchy)
+            {
+                if (instance != null)
+                {
+                    Object.Destroy(instance.gameObject);
+                }
+
+                return;
+            }
+
+            instance.gameObject.SetActive(false);
+            instance.SetParent(_idleParent, false);
+            _pool.Push(instance);
         }
 
         public void Dispose()
@@ -95,39 +105,7 @@ namespace App.UI
                 }
             }
 
-            if (_resources != null && _prefab != null)
-            {
-                _resources.Release(ResResourcePaths.CardShadow);
-            }
-
-            _prefab = null;
-            _resources = null;
             _idleParent = null;
-        }
-
-        private GameObject LoadPrefab()
-        {
-            if (_prefab != null)
-            {
-                return _prefab;
-            }
-
-            if (_resources == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                _prefab = _resources.LoadAsync<GameObject>(ResResourcePaths.CardShadow).GetAwaiter().GetResult();
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning("CardShadow prefab not found at Res/" + ResResourcePaths.CardShadow + ": " + ex.Message);
-                return null;
-            }
-
-            return _prefab;
         }
     }
 }

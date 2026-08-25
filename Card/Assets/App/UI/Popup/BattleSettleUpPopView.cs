@@ -25,6 +25,7 @@ namespace App.UI.Popup
             Binding.BindText(GetNode<TMP_Text>("CoinNum"), ViewModel.CoinNum);
             Binding.BindText(GetNode<TMP_Text>("Num"), ViewModel.WithdrawNum);
             Binding.BindCommand(GetNode<Button>("WithDrawBtn"), ViewModel.ContinueCommand);
+            BindResourceBar();
             BindOverlayClose();
             RefreshRoundList();
         }
@@ -45,6 +46,77 @@ namespace App.UI.Popup
             }
 
             Binding.BindCommand(overlay, ViewModel.ContinueCommand);
+        }
+
+        private void BindResourceBar()
+        {
+            var bar = transform.Find("ResourceBar");
+            if (bar == null)
+            {
+                bar = FindDeep(transform, "ResourceBar");
+            }
+
+            if (bar == null)
+            {
+                return;
+            }
+
+            bar.gameObject.SetActive(true);
+            var top = bar.Find("TopArea") ?? FindDeep(bar, "TopArea") ?? bar;
+            Transform goldItem = null;
+            for (var i = 0; i < top.childCount; i++)
+            {
+                var child = top.GetChild(i);
+                if (!child.name.StartsWith("ResourceItem"))
+                {
+                    continue;
+                }
+
+                if (goldItem == null)
+                {
+                    goldItem = child;
+                    child.gameObject.SetActive(true);
+                    continue;
+                }
+
+                child.gameObject.SetActive(false);
+            }
+
+            if (goldItem == null)
+            {
+                return;
+            }
+
+            var num = goldItem.Find("Num") ?? FindDeep(goldItem, "Num");
+            var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.GoldText);
+            }
+        }
+
+        private static Transform FindDeep(Transform root, string name)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == name)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindDeep(root.GetChild(i), name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private T GetNode<T>(string key) where T : Component

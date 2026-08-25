@@ -1,10 +1,10 @@
 # 炸金花闯关 · 对局逻辑
 
 本文描述当前客户端已落地的规则，供后续改玩法、调数值、接 UI 时对照。  
-实现入口：`GameSession.cs`，数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。  
+实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。  
 关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)。  
 积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。  
-局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
+局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。牌桌见 [`GameBoardController.md`](../UI/Game/GameBoardController.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
 
 玩家血量读 `HeroConfig.Hp`，怪物血量读 `MonsterConfig.MonsterHp`。攻击力读 `HeroConfig.HeroDamage` / `MonsterConfig.MonsterDamage`，在 PlayerItem 上显示。血量只在比牌后的攻击结算时扣除。
 
@@ -25,8 +25,8 @@
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
 ```
 
-主路径 UI：见 [`GameUI.md`](../UI/Game/GameUI.md)。  
-`GameTableController` 是旧场景绑法，不是主路径。
+主路径 UI：见 [`GameUI.md`](../UI/Game/GameUI.md) + [`GameBoardController.md`](../UI/Game/GameBoardController.md)。  
+`GameTableController` 是旧场景绑法，见 [`GameTableController.md`](../UI/Game/GameTableController.md)。
 
 ---
 
@@ -77,7 +77,7 @@
 - 玩家发 **5** 张，存活敌人各发 **5** 张。敌人牌默认背面；玩家发完即看牌。
 - 不显示 **闷牌** / **看牌**。发牌动画结束后显示 **开牌** 和技能栏。
 - 玩家点选手牌，选中的牌上移；必须选满 **3** 张才能开牌。开牌只用这 3 张，剩余 2 张不参与比牌。
-- 结算时敌人从 5 张里枚举 `C(5,3)` 种组合，选出最大牌型的 3 张并朝玩家方向移开（上家向下、左家向右、右家向左）；未选中的 2 张不参与比牌、不播赢家结算动画。透视只显示最佳牌型，不提前抬牌。
+- 结算时敌人从 5 张里枚举 `C(5,3)` 种组合，选出最大牌型的 3 张并朝玩家方向移开（上家向下、左家向右、右家向左）；未选中的 2 张不参与比牌、不播赢家结算动画。透视时该座位 5 张全部选中：先抬起，抬完再背面透视（不翻牌）；开牌结算会先清选中，再锁敌人最大的 3 张。
 - `mineNode` 与敌人节点的 `cardNode` 都需要 `carpoint1` … `carpoint5`。
 - `GameHud.dealpoint` 先叠 52 张 `CardIcon` 并播洗牌出现（用子节点 `Back`，不要关掉它），再飞到各座位落点。
 - 技能在 `WaitingOpen` 可用；搓牌会进入 `WaitingRub`，搓完或取消后回到 `WaitingOpen`。
@@ -88,7 +88,7 @@
 | 按钮 | 效果 |
 |------|------|
 | PeekGood | 搓牌：进入搓牌，点选一张随机替换花色和点数 |
-| ChaKanGood | 透视：点选一名角色翻开其手牌 |
+| ChaKanGood | 透视：点选一名角色，5 张全部选中并先抬起，抬完再背面透视（不翻牌）；开牌时先重置，再锁最大 3 张 |
 | TiHuanGood | 替换：自己 5 张牌全部换成牌堆新牌 |
 | CompareBtn 开牌 | 用已选的 3 张与存活敌人逐个比牌 |
 

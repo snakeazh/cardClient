@@ -24,6 +24,7 @@ namespace App.UI.Popup
             TotalScoreNum = new ObservableProperty<string>("0");
             CoinNum = new ObservableProperty<string>("0");
             WithdrawNum = new ObservableProperty<string>("0");
+            GoldText = new ObservableProperty<string>("0");
             ContinueCommand = new RelayCommand(Continue);
         }
 
@@ -36,6 +37,8 @@ namespace App.UI.Popup
         public ObservableProperty<string> CoinNum { get; }
 
         public ObservableProperty<string> WithdrawNum { get; }
+
+        public ObservableProperty<string> GoldText { get; }
 
         public IRelayCommand ContinueCommand { get; }
 
@@ -52,6 +55,7 @@ namespace App.UI.Popup
             TotalScoreNum.Value = snap.Total.ToString();
             CoinNum.Value = Session.ShopGoldGranted.ToString();
             WithdrawNum.Value = (_score != null ? _score.CollectableGold : 0).ToString();
+            GoldText.Value = Session.Run.Gold.ToString();
         }
 
         private void Continue()

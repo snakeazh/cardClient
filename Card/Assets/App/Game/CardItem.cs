@@ -20,10 +20,15 @@ namespace App.Game
         private Tween _moveTween;
         private Tween _rotateTween;
         private Tween _flipTween;
+        private Tween _backFadeTween;
+        private float _backAlphaTarget = 1f;
+        private bool _backSeeThrough;
         private Animator _tweenAnimator;
         private Transform _tweenTarget;
         private Transform _backNode;
-        private SpriteRenderer _backRenderer;
+        private Transform _frontTransparentNode;
+        public SpriteRenderer backRenderer;
+        public SpriteRenderer frontTransparentRenderer;
         private bool _tweenAnimatorResolved;
 
         private const string ShuffleAppear01 = "aini_card_appear01";
@@ -47,7 +52,17 @@ namespace App.Game
             t.localScale = scale;
 
             DisableShuffleAnimator();
+            _backSeeThrough = false;
+            _backAlphaTarget = 1f;
             SetFace(CardFaceState.Back);
+            ApplyFrontTransparentVisible(false);
+            var back = ResolveBackRenderer();
+            if (back != null)
+            {
+                var c = back.color;
+                c.a = 1f;
+                back.color = c;
+            }
         }
 
         public void Initialize(Card card, CardFaceState faceState, Vector3 worldPosition, Vector3 worldEulerAngles, Vector3 scale)
@@ -60,9 +75,23 @@ namespace App.Game
         /// </summary>
         public void SetFace(CardFaceState faceState)
         {
+            _flipTween?.Kill();
+            _flipTween = null;
+            if (faceState == CardFaceState.Front)
+            {
+                SetBackSeeThrough(false, 0f);
+            }
+
             FaceState = faceState;
             ApplySprite();
             transform.localRotation = FaceYaw(faceState);
+        }
+
+        /// <summary>停掉洗牌/飞牌 Animator，并把 TweenTarget 姿势归零（落位后调用）。</summary>
+        public void StopTweenAnimation()
+        {
+            DisableShuffleAnimator();
+            ResetTweenTargetPose();
         }
 
         public static Quaternion FaceYaw(CardFaceState faceState)
@@ -101,6 +130,11 @@ namespace App.Game
         {
             _rotateTween?.Kill();
             _flipTween?.Kill();
+            if (faceState == CardFaceState.Front)
+            {
+                SetBackSeeThrough(false, 0f);
+            }
+
             if (duration <= 0f)
             {
                 SetFace(faceState);
@@ -139,6 +173,9 @@ namespace App.Game
             {
                 back.enabled = visible;
             }
+
+            // 透视垫层只在放大镜偷看时亮，避免未偷看时透出牌面像翻牌。
+            ApplyFrontTransparentVisible(visible && _backSeeThrough);
         }
 
         public void SetSortingOrder(int order)
@@ -154,6 +191,53 @@ namespace App.Game
             {
                 back.sortingOrder = order;
             }
+
+            var peek = ResolveFrontTransparentRenderer();
+            if (peek != null)
+            {
+                peek.sortingOrder = order - 1;
+            }
+        }
+
+        /// <summary>
+        /// 放大镜偷看：牌背半透明，垫层露出牌面。不改旋转、不翻面。
+        /// </summary>
+        public void SetBackSeeThrough(bool seeThrough, float duration = 0.2f)
+        {
+            if (_backSeeThrough == seeThrough)
+            {
+                return;
+            }
+
+            _backSeeThrough = seeThrough;
+            if (seeThrough)
+            {
+                ApplySprite();
+            }
+
+            ApplyFrontTransparentVisible(seeThrough);
+            FadeBackAlpha(seeThrough ? 0.5f : 1f, duration);
+        }
+
+        public bool IsBackSeeThrough => _backSeeThrough;
+
+        /// <summary>Back 节点透明度渐变到目标值；重复调同一目标不会重播。放大镜偷看用。</summary>
+        public void FadeBackAlpha(float alpha, float duration = 0.2f)
+        {
+            if (Mathf.Approximately(_backAlphaTarget, alpha))
+            {
+                return;
+            }
+
+            _backAlphaTarget = alpha;
+            var back = ResolveBackRenderer();
+            if (back == null)
+            {
+                return;
+            }
+
+            _backFadeTween?.Kill();
+            _backFadeTween = back.DOFade(alpha, duration);
         }
 
         /// <summary>发牌：堆顶飞出播 aini_card_deal。</summary>
@@ -181,20 +265,37 @@ namespace App.Game
             _moveTween?.Kill();
             _rotateTween?.Kill();
             _flipTween?.Kill();
+            _backFadeTween?.Kill();
         }
 
         private void ApplySprite()
         {
+            var face = CardSpriteLibrary.GetFace(Card);
             var front = ResolveRenderer();
             if (front != null)
             {
-                front.sprite = CardSpriteLibrary.GetFace(Card);
+                front.sprite = face;
             }
 
             var back = ResolveBackRenderer();
             if (back != null)
             {
                 back.sprite = CardSpriteLibrary.Back;
+            }
+
+            var peek = ResolveFrontTransparentRenderer();
+            if (peek != null)
+            {
+                peek.sprite = face;
+            }
+        }
+
+        private void ApplyFrontTransparentVisible(bool visible)
+        {
+            var peek = ResolveFrontTransparentRenderer();
+            if (peek != null)
+            {
+                peek.enabled = visible;
             }
         }
 
@@ -223,7 +324,13 @@ namespace App.Game
         private SpriteRenderer ResolveBackRenderer()
         {
             ResolveTweenHierarchy();
-            return _backRenderer;
+            return backRenderer;
+        }
+
+        private SpriteRenderer ResolveFrontTransparentRenderer()
+        {
+            ResolveTweenHierarchy();
+            return frontTransparentRenderer;
         }
 
         private void ResolveTweenHierarchy()
@@ -249,19 +356,28 @@ namespace App.Game
                 }
             }
 
-            if (_tweenTarget != null)
+            if (frontTransparentRenderer != null)
             {
-                _backNode = _tweenTarget.Find("Back");
+                _frontTransparentNode = frontTransparentRenderer.transform;
             }
 
-            if (_backNode == null)
+            if (backRenderer != null)
             {
-                _backNode = transform.Find("TweenTarget/Back") ?? transform.Find("Back");
+                _backNode = backRenderer.transform;
             }
 
-            if (_backNode != null)
+            if (_frontTransparentNode != null)
             {
-                _backRenderer = _backNode.GetComponent<SpriteRenderer>();
+                _frontTransparentNode.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                if (backRenderer != null)
+                {
+                    // frontTransparentRenderer.sharedMaterial = backRenderer.sharedMaterial;
+                }
+
+                if (!_backSeeThrough)
+                {
+                    frontTransparentRenderer.enabled = false;
+                }
             }
         }
 
@@ -303,6 +419,19 @@ namespace App.Game
             {
                 animator.enabled = false;
             }
+        }
+
+        private void ResetTweenTargetPose()
+        {
+            ResolveTweenHierarchy();
+            if (_tweenTarget == null)
+            {
+                return;
+            }
+
+            _tweenTarget.localPosition = Vector3.zero;
+            _tweenTarget.localRotation = Quaternion.identity;
+            _tweenTarget.localScale = Vector3.one;
         }
     }
 }

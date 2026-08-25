@@ -5,6 +5,7 @@ using App.Config;
 using App.Game;
 using App.Level;
 using App.Score;
+using App.Talent;
 using App.UI;
 using App.UI.Splash;
 using Framework.Assets;
@@ -46,6 +47,7 @@ namespace App.Bootstrap
             RegisterBag(_services);
             RegisterLevel(_services);
             RegisterScore(_services);
+            RegisterTalent(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -107,6 +109,14 @@ namespace App.Bootstrap
             var courage = new CourageService();
             services.Register(courage);
             services.Register<ICourageService>(courage);
+        }
+
+        private static void RegisterTalent(AppServicesHost services)
+        {
+            var talent = new TalentService(services.Resolve<ISaveService>());
+            talent.Load();
+            services.Register(talent);
+            services.Register<ITalentService>(talent);
         }
 
         private static void LogConfigSmoke()

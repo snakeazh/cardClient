@@ -55,11 +55,12 @@ namespace App.UI
         private int _rubSavedOrder;
         private float _rubPeakOffset;
         private float _rubDragStartTime;
-        private const float MaxRubDrag = 0.5f;
+        private bool _rubSuccessFxShown;
+        private const float MaxRubDrag = 10f;
         /// <summary>松手时峰值偏移低于此值视为搓牌失败。</summary>
-        public const float MinRubOffset = 0.4f;
+        public const float MinRubOffset = 2f;
         /// <summary>从开始跟手到松手的最短持续时间（秒）。</summary>
-        public const float MinRubDuration = 0.45f;
+        public const float MinRubDuration = 0.5f;
 
         public bool IsDealing => _dealing;
         public bool IsBusy => _dealing || _revealing;
@@ -266,6 +267,7 @@ namespace App.UI
             item.MoveTo(lifted, SelectLiftDuration, Ease.OutQuad).OnUpdate(FollowRubShadow);
             FollowRubShadow();
             TintPlayerCard(index, Color.white);
+            item.SetDragEffectVisible(true);
 
             var flip = item.FlipTo(CardFaceState.Back, FlipDuration);
             if (flip == null)
@@ -301,6 +303,7 @@ namespace App.UI
             item.StopMove();
             _rubPeakOffset = 0f;
             _rubDragStartTime = Time.time;
+            _rubSuccessFxShown = false;
             _rubGrabOffset = item.transform.position - ScreenOnCardPlane(camera, screenPos, item.transform.position.z);
         }
 
@@ -333,6 +336,29 @@ namespace App.UI
 
             var t = Mathf.Clamp01(offset.magnitude / MaxRubDrag);
             TintPlayerCard(_rubLockIndex, Color.Lerp(Color.white, new Color(1f, 0.85f, 0.4f), t));
+            TryShowRubSuccessEffect();
+        }
+
+        private void TryShowRubSuccessEffect()
+        {
+            if (_rubSuccessFxShown || _rubLockIndex < 0 || _player == null)
+            {
+                return;
+            }
+
+            if (_rubPeakOffset < MinRubOffset || RubDragElapsed < MinRubDuration)
+            {
+                return;
+            }
+
+            var item = _player.Items[_rubLockIndex];
+            if (item == null)
+            {
+                return;
+            }
+
+            _rubSuccessFxShown = true;
+            item.PlayDragSuccessEffect();
         }
 
         private static Vector3 ScreenOnCardPlane(Camera camera, Vector3 screenPos, float cardZ)
@@ -359,6 +385,7 @@ namespace App.UI
             FollowRubShadow();
             _rubPeakOffset = 0f;
             _rubDragStartTime = 0f;
+            _rubSuccessFxShown = false;
             TintPlayerCard(_rubLockIndex, Color.white);
         }
 
@@ -373,6 +400,7 @@ namespace App.UI
             var index = _rubLockIndex;
             _rubLockIndex = -1;
             _rubShakeReady = false;
+            _rubSuccessFxShown = false;
             var item = _player.Items[index];
             if (item == null)
             {
@@ -381,6 +409,7 @@ namespace App.UI
 
             var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
             RestoreRubCardLayer(index);
+            item.HideDragEffects();
             item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
                 .OnUpdate(() => FollowRubShadowAt(index))
                 .OnComplete(() =>
@@ -415,6 +444,17 @@ namespace App.UI
 
             var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
             RestoreRubCardLayer(index);
+            item.SetDragEffectVisible(false);
+            if (_rubSuccessFxShown)
+            {
+                item.HideDragSuccessLater();
+            }
+            else
+            {
+                item.PlayDragSuccessEffect(1.2f);
+            }
+
+            _rubSuccessFxShown = false;
             item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
                 .OnUpdate(() => FollowRubShadowAt(index))
                 .OnComplete(() =>

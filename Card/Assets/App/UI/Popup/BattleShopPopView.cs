@@ -247,9 +247,13 @@ namespace App.UI.Popup
                 return;
             }
 
-            _dragging = true;
             var buying = _sellItems.Contains(item);
-            ViewModel.BeginDragTrade(relicId, buying);
+            if (!ViewModel.BeginDragTrade(relicId, buying))
+            {
+                return;
+            }
+
+            _dragging = true;
             ApplyTip();
             SetItemDragging(item, true);
             BeginGhost(item, eventData);
@@ -317,8 +321,9 @@ namespace App.UI.Popup
             }
 
             var owned = ViewModel.Session.Run.RelicConfigIds;
+            var shown = Math.Min(owned.Count, GameBalance.MaxRelics);
             var root = _mineTemplate.transform.parent;
-            while (_mineItems.Count < owned.Count)
+            while (_mineItems.Count < shown)
             {
                 _mineItems.Add(CloneItem(_mineTemplate, root, $"mineItem_{_mineItems.Count}", OnMineClicked));
             }
@@ -326,7 +331,7 @@ namespace App.UI.Popup
             for (var i = 0; i < _mineItems.Count; i++)
             {
                 var item = _mineItems[i];
-                if (i >= owned.Count)
+                if (i >= shown)
                 {
                     item.gameObject.SetActive(false);
                     continue;

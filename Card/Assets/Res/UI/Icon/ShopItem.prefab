@@ -62,6 +62,8 @@ MonoBehaviour:
   cardName: {fileID: 1638339239333136613}
   cardIcon: {fileID: 4360046112712457286}
   iconBg: {fileID: 7560281592887580797}
+  iconTitleBg: {fileID: 6277799943787763627}
+  cardCircle: {fileID: 8590270700218054800}
   goldNum: {fileID: 6976042617991310244}
   gold: {fileID: 2168313349117267106}
   button: {fileID: 7892797844888771391}

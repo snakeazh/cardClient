@@ -37,14 +37,14 @@ namespace App.Config
         public int TalentLevel;
 
         /// <summary>
-        /// 描述
-        /// </summary>
-        public string Desc;
-
-        /// <summary>
         /// 天赋机制
         /// </summary>
         public int TalentEntry;
+
+        /// <summary>
+        /// 描述
+        /// </summary>
+        public string Desc;
 
     }
 }

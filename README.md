@@ -9,7 +9,8 @@ Unity 卡牌客户端。
 | [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
 | [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md) | 关卡查询、通关进度 |
 | [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md) | 章节积分、玩家血量、金币换算 |
-| 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡**、**积分** |
+| [`Card/Assets/App/Talent/天赋模块使用文档.md`](Card/Assets/App/Talent/天赋模块使用文档.md) | 天赋查询、每获得 1 次升 1 级 |
+| 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡**、**积分**、**天赋** |
 
 ---
 
@@ -31,6 +32,7 @@ AppBootstrap（启动场景，可销毁）
                  ├─ IScoreService
                  ├─ IHpService
                  ├─ ICourageService
+                 ├─ ITalentService
                  └─ ...
 ```
 
@@ -52,6 +54,7 @@ var progress = AppServices.Resolve<ILevelProgressService>();
 var score = AppServices.Resolve<IScoreService>();
 var hp = AppServices.Resolve<IHpService>();
 var courage = AppServices.Resolve<ICourageService>();
+var talent = AppServices.Resolve<ITalentService>();
 ```
 
 或构造函数注入：DI 会从 `ServiceContainer` 解析依赖。
@@ -242,4 +245,22 @@ var hp = AppServices.Resolve<IHpService>();
 hp.BeginStage();
 var courage = AppServices.Resolve<ICourageService>();
 courage.BeginStage(hp.Hp);
+```
+
+---
+
+## 7. 天赋（ITalentService）
+
+详见 [`Card/Assets/App/Talent/天赋模块使用文档.md`](Card/Assets/App/Talent/天赋模块使用文档.md)。
+
+按 `TalentId` 记获得次数；等级 = `min(MaxLevel, Count)`，每获得 1 次升 1 级。启动时在配置表加载之后注册。落盘 `talent.v1`（只存次数，等级运行时重算）。
+
+**尚未接入 `GameSession`**：对局伤害与生命仍只读遗物。
+
+```csharp
+var talent = AppServices.Resolve<ITalentService>();
+var result = talent.Add(101);          // 获得 1 个
+if (result.LeveledUp) { /* 刚升级 */ }
+var snapshot = talent.GetCurrent(101); // Level / Count / Config / Entry
+talent.Save();
 ```

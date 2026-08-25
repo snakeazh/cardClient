@@ -1,6 +1,5 @@
 using App.Config;
 using App.Level;
-using App.UI.Popup;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -11,22 +10,25 @@ namespace App.UI
     public sealed class HomeViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly NavigationViewModel _navigation;
         private readonly ILevelService _levels;
         private readonly ILevelProgressService _progress;
 
         public HomeViewModel(
             IUIManager ui,
+            NavigationViewModel navigation,
             ILevelService levels,
             ILevelProgressService progress,
             IResourceService resources)
         {
             _ui = ui;
+            _navigation = navigation;
             _levels = levels;
             _progress = progress;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
-            CollectCommand = new RelayCommand(OpenIllustratedBook);
+            CollectCommand = new RelayCommand(() => _navigation.ShowIllustratedBook());
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -60,15 +62,9 @@ namespace App.UI
 
         private async void OpenLevelUI()
         {
+            _navigation.HideBar();
             var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
             var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
-            await _ui.Open(vm);
-        }
-
-        private async void OpenIllustratedBook()
-        {
-            var registration = _ui.Registry.GetByViewModelType(typeof(IllustratedBookPopViewModel));
-            var vm = (IllustratedBookPopViewModel)_ui.Registry.CreateViewModel(registration);
             await _ui.Open(vm);
         }
     }

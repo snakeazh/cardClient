@@ -292,6 +292,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _hudLayer: {fileID: 4367732406769667182}
   _pageLayer: {fileID: 1015660740184324843}
+  _navigationLayer: {fileID: 602269629269643052}
   _popupLayer: {fileID: 8588248385682043619}
   _loadingLayer: {fileID: 5533221109876543211}
   _topMostLayer: {fileID: 6688642282098287112}

@@ -23,6 +23,7 @@ namespace Framework.UI
         Task Open(ScreenId screenId, ViewModelBase viewModel, object args = null);
         Task Close(ViewModelBase viewModel = null);
         Task Close(UILayer layer);
+        bool HasScreen(UILayer layer);
 
         IUIManager RegisterScreen<TView, TVm>(
             ScreenId id,
@@ -81,6 +82,9 @@ namespace Framework.UI
 
         public Task Close(UILayer layer) =>
             _navigator.Close(layer);
+
+        public bool HasScreen(UILayer layer) =>
+            _navigator.HasScreen(layer);
 
         public IUIManager RegisterScreen<TView, TVm>(
             ScreenId id,

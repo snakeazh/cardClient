@@ -28,6 +28,8 @@ namespace Framework.UI.Navigation
         /// Closes the top screen on the specified layer.
         /// </summary>
         Task Close(UILayer layer);
+
+        bool HasScreen(UILayer layer);
     }
 
     public sealed class UINavigator : IUINavigator
@@ -94,6 +96,11 @@ namespace Framework.UI.Navigation
             }
 
             await Close(FindTopMostLayerWithScreens());
+        }
+
+        public bool HasScreen(UILayer layer)
+        {
+            return _stacks.TryGetValue(layer, out var stack) && stack.Count > 0;
         }
 
         public async Task Close(UILayer layer)
@@ -206,6 +213,11 @@ namespace Framework.UI.Navigation
             if (_stacks[UILayer.Popup].Count > 0)
             {
                 return UILayer.Popup;
+            }
+
+            if (_stacks[UILayer.Navigation].Count > 0)
+            {
+                return UILayer.Navigation;
             }
 
             if (_stacks[UILayer.Page].Count > 0)

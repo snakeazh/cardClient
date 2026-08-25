@@ -155,214 +155,429 @@ namespace App.Config
     public enum MechanismType
     {
         /// <summary>
-        /// 所有牌型倍率提高
+        /// 数字牌2提供额外攻击力
         /// </summary>
-        CardMagnification = 1,
+        TwoCardAttack = 1,
 
         /// <summary>
-        /// 方片花色牌倍率提高
+        /// 数字牌3提供额外攻击力
         /// </summary>
-        SquarePlate = 2,
+        ThreeCardAttack = 2,
 
         /// <summary>
-        /// 黑桃花色牌倍率提高
+        /// 数字牌4提供额外攻击力
         /// </summary>
-        Spades = 3,
+        FourCardAttack = 3,
 
         /// <summary>
-        /// 红心花色牌倍率提高
+        /// 数字牌5提供额外攻击力
         /// </summary>
-        RedHeart = 4,
+        FiveCardAttack = 4,
 
         /// <summary>
-        /// 梅花花色牌倍率提高
+        /// 数字牌6提供额外攻击力
         /// </summary>
-        PlumBlossom = 5,
+        SixCardAttack = 5,
+
+        /// <summary>
+        /// 数字牌7提供额外攻击力
+        /// </summary>
+        SevenCardAttack = 6,
+
+        /// <summary>
+        /// 数字牌8提供额外攻击力
+        /// </summary>
+        EightCardAttack = 7,
+
+        /// <summary>
+        /// 数字牌9提供额外攻击力
+        /// </summary>
+        NineCardAttack = 8,
+
+        /// <summary>
+        /// 数字牌10提供额外攻击力
+        /// </summary>
+        TenCardAttack = 9,
+
+        /// <summary>
+        /// A牌提供额外攻击力
+        /// </summary>
+        ACardAttack = 10,
+
+        /// <summary>
+        /// 人头牌提供额外攻击力
+        /// </summary>
+        HeadCardAttack = 11,
+
+        /// <summary>
+        /// 英雄的血量上限
+        /// </summary>
+        HeroHpMax = 12,
+
+        /// <summary>
+        /// 英雄承受的伤害
+        /// </summary>
+        HeroTakeDamage = 13,
+
+        /// <summary>
+        /// 英雄的基础攻击力
+        /// </summary>
+        HeroAttack = 14,
+
+        /// <summary>
+        /// 英雄的暴击率
+        /// </summary>
+        HeroCritical = 15,
+
+        /// <summary>
+        /// 对BOSS的伤害
+        /// </summary>
+        AttackBossDamage = 16,
+
+        /// <summary>
+        /// 每关首次亮牌后结算倍率
+        /// </summary>
+        FirstShowCardEveryLevel = 17,
+
+        /// <summary>
+        /// 斩杀10%血量以下非BOSS敌人的概率
+        /// </summary>
+        KillingProbabilityTen = 18,
+
+        /// <summary>
+        /// 血量低于20%以下时,杀人回血
+        /// </summary>
+        KillingBringsBackBlood = 19,
+
+        /// <summary>
+        /// 敌人数量大于1时,造成的伤害
+        /// </summary>
+        ManyMonsterDamage = 20,
+
+        /// <summary>
+        /// 亮牌前使用过搓牌,结算时的攻击力
+        /// </summary>
+        UsingRubbingCards = 21,
+
+        /// <summary>
+        /// 每关结束后,回复的血量百分比
+        /// </summary>
+        HeroHpReplyEveryLevelEnding = 22,
+
+        /// <summary>
+        /// 结算时,获得额外资金的概率
+        /// </summary>
+        ProOfObtainingFundsEverySettlement = 23,
+
+        /// <summary>
+        /// 只剩1名敌人时,造成的伤害
+        /// </summary>
+        OneMonsterDamage = 24,
+
+        /// <summary>
+        /// 血量低于20%时,造成的伤害
+        /// </summary>
+        HpUnderDamage = 25,
+
+        /// <summary>
+        /// 击杀敌人时,获得额外资金的概率
+        /// </summary>
+        KillingProOfObtainingFunds = 26,
+
+        /// <summary>
+        /// 初始拥有资金
+        /// </summary>
+        InitialFunds = 27,
+
+        /// <summary>
+        /// 额外造成1次10%伤害的概率
+        /// </summary>
+        ProOfExtraAttack = 28,
+
+        /// <summary>
+        /// 结算时获得额外倍率
+        /// </summary>
+        CardMagnification = 29,
+
+        /// <summary>
+        /// 每张方片牌在结算时提供倍率
+        /// </summary>
+        SquarePlate = 30,
+
+        /// <summary>
+        /// 每张黑桃牌在结算时提供倍率
+        /// </summary>
+        Spades = 31,
+
+        /// <summary>
+        /// 每张红心牌在结算时提供倍率
+        /// </summary>
+        RedHeart = 32,
+
+        /// <summary>
+        /// 每张梅花牌在结算时提供倍率
+        /// </summary>
+        PlumBlossom = 33,
 
         /// <summary>
         /// 对子倍率提高
         /// </summary>
-        Couplet = 6,
-
-        /// <summary>
-        /// 同花倍率提高
-        /// </summary>
-        Flush = 7,
+        Couplet = 34,
 
         /// <summary>
         /// 顺子倍率提高
         /// </summary>
-        Straight = 8,
+        Straight = 35,
 
         /// <summary>
-        /// 立即获得生命值
+        /// 同花倍率提高
         /// </summary>
-        MaxHp = 9,
-
-        /// <summary>
-        /// 每次结算生命值提高
-        /// </summary>
-        EveryRoundHpUp = 10,
+        Flush = 36,
 
         /// <summary>
         /// 同花顺倍率提高
         /// </summary>
-        StraightFlush = 11,
-
-        /// <summary>
-        /// 每次攻击时,获得生命窃取
-        /// </summary>
-        BloodSucking = 12,
+        StraightFlush = 37,
 
         /// <summary>
         /// 豹子倍率提高
         /// </summary>
-        Leopard = 13,
+        Leopard = 38,
+
+        /// <summary>
+        /// 每张方片牌在结算时提供攻击力
+        /// </summary>
+        SquarePlateAttack = 39,
+
+        /// <summary>
+        /// 每张黑桃牌在结算时提供攻击力
+        /// </summary>
+        SpadesAttack = 40,
+
+        /// <summary>
+        /// 每张红心牌在结算时提供攻击力
+        /// </summary>
+        RedHeartAttack = 41,
+
+        /// <summary>
+        /// 每张梅花牌在结算时提供攻击力
+        /// </summary>
+        PlumBlossomAttack = 42,
+
+        /// <summary>
+        /// 对子牌型在结算时提供攻击力
+        /// </summary>
+        CoupletAttack = 43,
+
+        /// <summary>
+        /// 顺子牌型在结算时提供攻击力
+        /// </summary>
+        StraightAttack = 44,
+
+        /// <summary>
+        /// 同花牌型在结算时提供攻击力
+        /// </summary>
+        FlushAttack = 45,
+
+        /// <summary>
+        /// 同花顺牌型在结算时提供攻击力
+        /// </summary>
+        StraightFlushAttack = 46,
+
+        /// <summary>
+        /// 豹子牌型在结算时提供攻击力
+        /// </summary>
+        LeopardAttack = 47,
+
+        /// <summary>
+        /// 回合结束回复当前生命值
+        /// </summary>
+        HeroHpReplyEveryRoundEnding = 48,
+
+        /// <summary>
+        /// 资金可以为负数
+        /// </summary>
+        Liability = 49,
+
+        /// <summary>
+        /// 每剩余1个搓牌次数,提供倍率
+        /// </summary>
+        EveryRubbingNum = 50,
+
+        /// <summary>
+        /// 人头牌提供1资金的概率
+        /// </summary>
+        ProOfHeadCardFunds = 51,
+
+        /// <summary>
+        /// 每有1张留在手里的每张黑桃/梅花,提供倍率
+        /// </summary>
+        Camera = 52,
+
+        /// <summary>
+        /// 每有1张留在手里的每张方片/红心,提供倍率
+        /// </summary>
+        Cupid = 53,
+
+        /// <summary>
+        /// 每花费10资金,提供英雄攻击力
+        /// </summary>
+        ConsumeFundsGetAttack = 54,
+
+        /// <summary>
+        /// 受到伤害,提供资金
+        /// </summary>
+        TakeDamageGetFunds = 55,
+
+        /// <summary>
+        /// 吸血效果
+        /// </summary>
+        BloodSucking = 56,
+
+        /// <summary>
+        /// 亮出的牌点数提供的攻击力提高
+        /// </summary>
+        DoubleCardAttack = 57,
+
+        /// <summary>
+        /// 结算伤害时,将留在手牌上最大牌点数转化为额外攻击力
+        /// </summary>
+        TheSwordOfVictory = 58,
+
+        /// <summary>
+        /// 每回合内,每搓1次牌,结算时提供倍率
+        /// </summary>
+        EveryUseRubbingNum = 59,
+
+        /// <summary>
+        /// 免费商店刷新次数
+        /// </summary>
+        FreeShopRefresh = 60,
+
+        /// <summary>
+        /// 顺子牌型可以相隔1点组成
+        /// </summary>
+        SpecialStraight = 61,
+
+        /// <summary>
+        /// 亮出的每张8在结算时提供+8攻击力
+        /// </summary>
+        SpecialEightCard = 62,
+
+        /// <summary>
+        /// 亮出的每张偶数牌[2、4、6、8、10]在结算时提供倍率
+        /// </summary>
+        EvenNumberCard = 63,
+
+        /// <summary>
+        /// 亮出的每张奇数牌[A、3、5、7、9]在结算时提供倍率
+        /// </summary>
+        OddNumberCard = 64,
+
+        /// <summary>
+        /// 人头牌提供额外倍率
+        /// </summary>
+        HeadCard = 65,
+
+        /// <summary>
+        /// 击杀敌人,收藏品出售价格提高
+        /// </summary>
+        KillAfterSellingPrice = 66,
+
+        /// <summary>
+        /// 亮出的每张牌的点数在结算时会使其提供的攻击力永久提高
+        /// </summary>
+        EveryCardAttackForever = 67,
+
+        /// <summary>
+        /// 亮出的每张9在结算时提供资金
+        /// </summary>
+        SpecialNineCard = 68,
+
+        /// <summary>
+        /// 散排235牌型等同于豹子牌型,并且可以战胜所有牌型
+        /// </summary>
+        SpecialTwoThreeFive = 69,
+
+        /// <summary>
+        /// 红桃和方片视为同一花色,黑桃和梅花视为同一花色
+        /// </summary>
+        SpecialFlush = 70,
+
+        /// <summary>
+        /// 每回合搓牌次数
+        /// </summary>
+        RubbingCardsNum = 71,
+
+        /// <summary>
+        /// 结算时,所有技能都无剩余使用次数时,提供倍率
+        /// </summary>
+        NoSkill = 72,
+
+        /// <summary>
+        /// 每有1个收藏品,结算时提供倍率
+        /// </summary>
+        EveryRelic = 73,
+
+        /// <summary>
+        /// 结算时,若未使用过搓牌,每个搓牌次数提供+6倍率
+        /// </summary>
+        NoUseRubbingEveryRubbingNum = 74,
+
+        /// <summary>
+        /// 所有牌均视为人头牌
+        /// </summary>
+        AllCardIsHeadCard = 75,
+
+        /// <summary>
+        /// A牌在结算时提供倍率
+        /// </summary>
+        SpecialACard = 76,
+
+        /// <summary>
+        /// 亮牌时,将该牌型在本局内亮出过的次数来提供倍率
+        /// </summary>
+        AccumulatedNumOfCardType = 77,
+
+        /// <summary>
+        /// 亮牌时,有概率将该牌型提供的倍率永久+1
+        /// </summary>
+        ProOfUpCardType = 78,
+
+        /// <summary>
+        /// 每使用1次搓牌,结算时该收藏品永久提供倍率
+        /// </summary>
+        RubbingCardRelic = 79,
+
+        /// <summary>
+        /// 幸运七触发概率
+        /// </summary>
+        SpecialSevenCardPro = 80,
+
+        /// <summary>
+        /// 幸运七触发时提供的攻击力
+        /// </summary>
+        SpecialSevenCardAttack = 81,
+
+        /// <summary>
+        /// 幸运七触发时提供的倍率
+        /// </summary>
+        SpecialSevenCard = 82,
+
+        /// <summary>
+        /// 立即获得生命值
+        /// </summary>
+        MaxHp = 11,
+
+        /// <summary>
+        /// 每次结算生命值提高
+        /// </summary>
+        EveryRoundHpUp = 12,
 
         /// <summary>
         /// 235牌型
         /// </summary>
         TwoThreeFive = 14,
-
-        /// <summary>
-        /// 数字牌2提供额外攻击力
-        /// </summary>
-        TwoCardAttack = 15,
-
-        /// <summary>
-        /// 数字牌3提供额外攻击力
-        /// </summary>
-        ThreeCardAttack = 16,
-
-        /// <summary>
-        /// 数字牌4提供额外攻击力
-        /// </summary>
-        FourCardAttack = 17,
-
-        /// <summary>
-        /// 数字牌5提供额外攻击力
-        /// </summary>
-        FiveCardAttack = 18,
-
-        /// <summary>
-        /// 数字牌6提供额外攻击力
-        /// </summary>
-        SixCardAttack = 19,
-
-        /// <summary>
-        /// 数字牌7提供额外攻击力
-        /// </summary>
-        SevenCardAttack = 20,
-
-        /// <summary>
-        /// 数字牌8提供额外攻击力
-        /// </summary>
-        EightCardAttack = 21,
-
-        /// <summary>
-        /// 数字牌9提供额外攻击力
-        /// </summary>
-        NineCardAttack = 22,
-
-        /// <summary>
-        /// 数字牌10提供额外攻击力
-        /// </summary>
-        TenCardAttack = 23,
-
-        /// <summary>
-        /// A牌提供额外攻击力
-        /// </summary>
-        ACardAttack = 24,
-
-        /// <summary>
-        /// 人头牌提供额外攻击力
-        /// </summary>
-        HeadCardAttack = 25,
-
-        /// <summary>
-        /// 英雄的血量上限
-        /// </summary>
-        HeroHpMax = 26,
-
-        /// <summary>
-        /// 英雄承受的伤害
-        /// </summary>
-        HeroTakeDamage = 27,
-
-        /// <summary>
-        /// 英雄的基础攻击力
-        /// </summary>
-        HeroAttack = 28,
-
-        /// <summary>
-        /// 英雄的暴击率
-        /// </summary>
-        HeroCritical = 29,
-
-        /// <summary>
-        /// 对BOSS的伤害
-        /// </summary>
-        AttackBossDamage = 30,
-
-        /// <summary>
-        /// 每关首次亮牌后结算倍率
-        /// </summary>
-        FirstShowCardEveryLevel = 31,
-
-        /// <summary>
-        /// 斩杀10%血量以下非BOSS敌人的概率
-        /// </summary>
-        KillingProbabilityTen = 32,
-
-        /// <summary>
-        /// 血量低于20%以下时,杀人回血
-        /// </summary>
-        KillingBringsBackBlood = 33,
-
-        /// <summary>
-        /// 敌人数量大于1时,造成的伤害
-        /// </summary>
-        ManyMonsterDamage = 34,
-
-        /// <summary>
-        /// 亮牌前使用过搓牌,结算时的攻击力
-        /// </summary>
-        UsingRubbingCards = 35,
-
-        /// <summary>
-        /// 每关结束后,回复的血量
-        /// </summary>
-        HeroHpReplyEveryLevelEnding = 36,
-
-        /// <summary>
-        /// 结算时,获得额外资金的概率
-        /// </summary>
-        ProOfObtainingFundsEverySettlement = 37,
-
-        /// <summary>
-        /// 只剩1名敌人时,造成的伤害
-        /// </summary>
-        OneMonsterDamage = 38,
-
-        /// <summary>
-        /// 血量低于20%时,造成的伤害
-        /// </summary>
-        HpUnderDamage = 39,
-
-        /// <summary>
-        /// 击杀敌人时,获得额外资金的概率
-        /// </summary>
-        KillingProOfObtainingFunds = 40,
-
-        /// <summary>
-        /// 初始拥有资金
-        /// </summary>
-        InitialFunds = 41,
-
-        /// <summary>
-        /// 额外造成1次10%伤害的概率
-        /// </summary>
-        ProOfExtraAttack = 42,
 
     }
 

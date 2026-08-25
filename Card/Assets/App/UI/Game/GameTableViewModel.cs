@@ -18,6 +18,7 @@ namespace App.UI
     public sealed class GameTableViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly NavigationViewModel _navigation;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -27,6 +28,7 @@ namespace App.UI
             GameSession session,
             IResourceService resources,
             IUIManager ui,
+            NavigationViewModel navigation,
             ILevelProgressService progress,
             IAtlasService atlas)
         {
@@ -35,6 +37,7 @@ namespace App.UI
             Progress = progress;
             Atlas = atlas;
             _ui = ui;
+            _navigation = navigation;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -448,6 +451,7 @@ namespace App.UI
             var home = (HomeViewModel)_ui.Registry.CreateViewModel(
                 _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
             await _ui.Open(home);
+            await _navigation.EnsureShown();
         }
 
         private void RefreshEnemies()

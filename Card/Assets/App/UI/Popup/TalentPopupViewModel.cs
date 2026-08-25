@@ -26,12 +26,14 @@ namespace App.UI.Popup
     public sealed class TalentPopupViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly NavigationViewModel _navigation;
         private readonly ITalentService _talent;
         private readonly List<TalentItem> _items = new List<TalentItem>();
 
-        public TalentPopupViewModel(IUIManager ui, ITalentService talent)
+        public TalentPopupViewModel(IUIManager ui, NavigationViewModel navigation, ITalentService talent)
         {
             _ui = ui;
+            _navigation = navigation;
             _talent = talent;
             CloseCommand = new RelayCommand(Dismiss);
             BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
@@ -102,7 +104,7 @@ namespace App.UI.Popup
 
         private void Dismiss()
         {
-            _ = _ui.Close(this);
+            _navigation.ShowHome();
         }
     }
 }

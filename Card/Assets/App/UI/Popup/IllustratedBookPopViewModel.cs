@@ -4,7 +4,6 @@ using App.Atlas;
 using App.Config;
 using App.Level;
 using Framework.Assets;
-using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
 
@@ -32,19 +31,19 @@ namespace App.UI.Popup
     /// </summary>
     public sealed class IllustratedBookPopViewModel : ViewModelBase
     {
-        private readonly IUIManager _ui;
+        private readonly NavigationViewModel _navigation;
         private readonly ILevelProgressService _progress;
         private readonly List<IllustratedBookEntry> _collect = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _relics = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _monsters = new List<IllustratedBookEntry>();
 
         public IllustratedBookPopViewModel(
-            IUIManager ui,
+            NavigationViewModel navigation,
             ILevelProgressService progress,
             IResourceService resources,
             IAtlasService atlas)
         {
-            _ui = ui;
+            _navigation = navigation;
             _progress = progress;
             Resources = resources;
             Atlas = atlas;
@@ -149,6 +148,12 @@ namespace App.UI.Popup
         {
             HideTip();
             ApplyTab(IllustratedBookTab.Collect, force: true);
+            return Task.CompletedTask;
+        }
+
+        protected override Task OnClose()
+        {
+            _navigation.NotifyBookClosed();
             return Task.CompletedTask;
         }
 
@@ -292,7 +297,7 @@ namespace App.UI.Popup
         private void Close()
         {
             HideTip();
-            _ = _ui.Close(this);
+            _navigation.ShowHome();
         }
     }
 }

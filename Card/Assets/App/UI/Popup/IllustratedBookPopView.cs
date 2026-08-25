@@ -15,7 +15,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换三份 ScrollRect。
     /// </summary>
-    [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Popup, ResResourcePaths.IllustratedBookPop)]
+    [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
     public sealed class IllustratedBookPopView : ViewBase<IllustratedBookPopViewModel>
     {
         private readonly List<ItemCard> _collectCards = new List<ItemCard>();

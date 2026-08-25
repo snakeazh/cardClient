@@ -9,11 +9,6 @@ namespace App.Game
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
     {
-        private static readonly Color PlayerIconBg = ParseHex("EB9852");
-        private static readonly Color PlayerCircle = ParseHex("F8AB67");
-        private static readonly Color EnemyIconBg = ParseHex("F6393C");
-        private static readonly Color EnemyCircle = ParseHex("B20003");
-
         private static readonly Color UnlockedPortraitColor = Color.white;
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
 
@@ -24,6 +19,10 @@ namespace App.Game
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private TMP_Text cardAttackHeart;
         [SerializeField] private GameObject attackRoot;
+        [SerializeField] private Image attackBg;
+        [SerializeField] private Image heartBg;
+        [SerializeField] private Sprite playerStatFrame;
+        [SerializeField] private Sprite enemyStatFrame;
         [SerializeField] private TMP_Text cardState;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
@@ -122,12 +121,26 @@ namespace App.Game
             EnsureRefs();
             if (iconBg != null)
             {
-                iconBg.color = enemy ? EnemyIconBg : PlayerIconBg;
+                iconBg.color = enemy ? ThemeColors.Enemy : ThemeColors.Player;
             }
 
             if (cardCircle != null)
             {
-                cardCircle.color = enemy ? EnemyCircle : PlayerCircle;
+                cardCircle.color = enemy ? ThemeColors.EnemyCircle : ThemeColors.PlayerCircle;
+            }
+
+            var frame = enemy ? enemyStatFrame : playerStatFrame;
+            if (frame != null)
+            {
+                if (attackBg != null)
+                {
+                    attackBg.sprite = frame;
+                }
+
+                if (heartBg != null)
+                {
+                    heartBg.sprite = frame;
+                }
             }
         }
 
@@ -220,10 +233,26 @@ namespace App.Game
                 cardAttackValue = FindText("card_attackValue");
             }
 
-            if (attackRoot == null)
+            if (attackRoot == null || attackBg == null)
             {
                 var node = FindDeep(transform, "attack");
-                attackRoot = node != null ? node.gameObject : null;
+                if (node != null)
+                {
+                    if (attackRoot == null)
+                    {
+                        attackRoot = node.gameObject;
+                    }
+
+                    if (attackBg == null)
+                    {
+                        attackBg = node.GetComponent<Image>();
+                    }
+                }
+            }
+
+            if (heartBg == null)
+            {
+                heartBg = FindImage("heart");
             }
 
             if (cardAttackHeart == null)
@@ -286,13 +315,6 @@ namespace App.Game
             }
 
             return null;
-        }
-
-        private static Color ParseHex(string hex)
-        {
-            ColorUtility.TryParseHtmlString("#" + hex, out var color);
-            color.a = 1f;
-            return color;
         }
     }
 }

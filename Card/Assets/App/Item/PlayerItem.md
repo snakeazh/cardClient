@@ -4,6 +4,7 @@
 
 脚本：`Assets/App/Item/PlayerItem.cs`  
 预制体：`Assets/Res/UI/Icon/PlayerItem.prefab`（资源键 `ResResourcePaths.PlayerItem` = `UI/Icon/PlayerItem`）  
+色板：`Assets/App/ThemeColors.cs`  
 命名空间：`App.Game`
 
 对局规则见 [`GameLogic.md`](../Game/GameLogic.md)。攻击力来源见下文。
@@ -16,13 +17,14 @@
 
 | 节点 | 用途 |
 |------|------|
-| `IconBG` | 底色。玩家橙 `#EB9852`，敌人红 `#F6393C` |
-| `card_Circle` | 头像圈。玩家 `#F8AB67`，敌人 `#B20003` |
+| `IconBG` | 底色。读 `ThemeColors`：人物 `#FBF5DF`，敌人 `#F6393C` |
+| `card_Circle` | 头像圈。读 `ThemeColors`：人物 `#F8AB67`，敌人 `#B20003` |
 | `card_icon` | 头像 Image |
 | `card_Name` | 名字 |
 | `card_attackValue` | 攻击力数字 |
 | `card_attackHeart` | 当前血量 |
-| `attack` | 攻击力整块；值为 0 时隐藏 |
+| `attack` | 攻击力整块；值为 0 时隐藏。底图：人物 `FrameSlection1`，敌人 `FrameSlection2` |
+| `heart` | 血量整块。底图与 `attack` 相同 |
 | `state` | 敌人状态 / 透视牌型 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
 
@@ -52,7 +54,7 @@ _enemyItems[slot].Bind(enemy, portrait, enemy.Attack, session.ActingAiId);
 ## API
 
 ```csharp
-item.ApplyTheme(enemy: false);          // 玩家橙 / 敌人红
+item.ApplyTheme(enemy: false);          // 人物底色 + FrameSlection1；敌人底色 + FrameSlection2
 item.SetName("平凡之人");
 item.SetHp(1000);
 item.SetAttack(10);

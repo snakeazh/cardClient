@@ -3,14 +3,14 @@
     "Id": 101,
     "Type": 1,
     "RefreshProbability": 0.6,
-    "Name": "粗制长剑",
+    "Name": "冒险证明",
     "Icon": "Sword1",
     "Price": 10,
     "SellingPrice": 5,
     "MechanismId": [
       10001
     ],
-    "Desc": "结算时倍率+1"
+    "Desc": "结算时提供+1倍率"
   },
   {
     "Id": 102,
@@ -23,7 +23,7 @@
     "MechanismId": [
       10002
     ],
-    "Desc": "结算时方片花色牌可使倍率+1"
+    "Desc": "亮出的每张方片牌在结算时提供+1倍率"
   },
   {
     "Id": 103,
@@ -36,7 +36,7 @@
     "MechanismId": [
       10003
     ],
-    "Desc": "结算时黑桃花色牌可使倍率+1"
+    "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
   },
   {
     "Id": 104,
@@ -49,7 +49,7 @@
     "MechanismId": [
       10004
     ],
-    "Desc": "结算时红心花色牌可使倍率+1"
+    "Desc": "亮出的每张红心牌在结算时提供+1倍率"
   },
   {
     "Id": 105,
@@ -62,7 +62,7 @@
     "MechanismId": [
       10005
     ],
-    "Desc": "结算时梅花花色牌可使倍率+1"
+    "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
   },
   {
     "Id": 106,
@@ -75,219 +75,479 @@
     "MechanismId": [
       10006
     ],
-    "Desc": "对子在攻击时提供的倍率+1"
+    "Desc": "亮出的对子牌型在结算时提供+2倍率"
   },
   {
     "Id": 107,
     "Type": 1,
     "RefreshProbability": 0.6,
-    "Name": "青铜法杖",
+    "Name": "木制法杖",
     "Icon": "Staff1",
     "Price": 10,
     "SellingPrice": 5,
     "MechanismId": [
       10007
     ],
-    "Desc": "同花在攻击时提供的倍率+1"
+    "Desc": "亮出的顺子牌型在结算时提供+2倍率"
+  },
+  {
+    "Id": 108,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "木制长弓",
+    "Icon": "Staff1",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10008
+    ],
+    "Desc": "亮出的同花牌型在结算时提供+2倍率"
+  },
+  {
+    "Id": 109,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "木制长矛",
+    "Icon": "Staff1",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10009
+    ],
+    "Desc": "亮出的同花顺牌型在结算时提供+2倍率"
+  },
+  {
+    "Id": 110,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "木制长斧",
+    "Icon": "Staff1",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10010
+    ],
+    "Desc": "亮出的豹子牌型在结算时提供+2倍率"
+  },
+  {
+    "Id": 111,
+    "Type": 1,
+    "RefreshProbability": 0.6,
+    "Name": "木制圆盾",
+    "Icon": "Staff1",
+    "Price": 10,
+    "SellingPrice": 5,
+    "MechanismId": [
+      10011
+    ],
+    "Desc": "每次受到的伤害降低2点"
   },
   {
     "Id": 201,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "铁质长剑",
-    "Icon": "Sword3",
+    "Name": "白银项链",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10008
+      20001
     ],
-    "Desc": "对子在攻击时提供的倍率+2"
+    "Desc": "亮出的每张方片牌在结算时提供+2攻击力"
   },
   {
     "Id": 202,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "白银法杖",
-    "Icon": "Staff2",
+    "Name": "白银手镯",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10009
+      20002
     ],
-    "Desc": "同花在攻击时提供的倍率+2"
+    "Desc": "亮出的每张黑桃牌在结算时提供+2攻击力"
   },
   {
     "Id": 203,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "翡翠诗篇",
-    "Icon": "Poetry1",
+    "Name": "白银耳环",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10010
+      20003
     ],
-    "Desc": "顺子在攻击时提供的倍率+2"
+    "Desc": "亮出的每张红心牌在结算时提供+2攻击力"
   },
   {
     "Id": 204,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "白银项链",
-    "Icon": "Necklace2",
+    "Name": "白银戒指",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10011
+      20004
     ],
-    "Desc": "结算时方片花色牌可使倍率+2"
+    "Desc": "亮出的每张梅花牌在结算时提供+2攻击力"
   },
   {
     "Id": 205,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "白银手镯",
-    "Icon": "Bracelet2",
+    "Name": "铁制长剑",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10012
+      20005
     ],
-    "Desc": "结算时黑桃花色牌可使倍率+2"
+    "Desc": "亮出的对子牌型在结算时提供+2攻击力"
   },
   {
     "Id": 206,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "白银耳环",
-    "Icon": "Earrings2",
+    "Name": "铁制法杖",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10013
+      20006
     ],
-    "Desc": "结算时红心花色牌可使倍率+2"
+    "Desc": "亮出的顺子牌型在结算时提供+4攻击力"
   },
   {
     "Id": 207,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "白银戒指",
-    "Icon": "Ring2",
+    "Name": "铁制长弓",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10014
+      20007
     ],
-    "Desc": "结算时梅花花色牌可使倍率+2"
+    "Desc": "亮出的同花牌型在结算时提供+6攻击力"
   },
   {
     "Id": 208,
     "Type": 2,
     "RefreshProbability": 0.4,
-    "Name": "小精灵",
-    "Icon": "Elf",
+    "Name": "铁制长矛",
+    "Icon": "Staff1",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
-      10015,
-      10016
+      20008
     ],
-    "Desc": "立即获得300生命值,每次结算生命值+20"
+    "Desc": "亮出的同花顺牌型在结算时提供+8攻击力"
+  },
+  {
+    "Id": 209,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制长斧",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20009
+    ],
+    "Desc": "亮出的豹子牌型在结算时提供+10攻击力"
+  },
+  {
+    "Id": 210,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "小精灵",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20010,
+      200101
+    ],
+    "Desc": "获得30点生命值上限,每回合结束后恢复2点当前生命值"
+  },
+  {
+    "Id": 211,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白条",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20011
+    ],
+    "Desc": "可以负债,最多-20资金"
+  },
+  {
+    "Id": 212,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "旗帜",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20012
+    ],
+    "Desc": "在结算时,每剩余1个未使用的搓牌次数,都提供+1倍率"
+  },
+  {
+    "Id": 213,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "恐怖面具",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20013
+    ],
+    "Desc": "亮出的每张人头牌在结算时提供+4攻击力"
+  },
+  {
+    "Id": 214,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "黄金面具",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20014
+    ],
+    "Desc": "亮出的每张人头牌在结算时有30%概率+1资金"
+  },
+  {
+    "Id": 215,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "黑白相机",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20015
+    ],
+    "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+4倍率"
+  },
+  {
+    "Id": 216,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "丘比特",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20016
+    ],
+    "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+4倍率"
+  },
+  {
+    "Id": 217,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "投资",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20017
+    ],
+    "Desc": "每花费10资金,英雄+1基础攻击力"
+  },
+  {
+    "Id": 218,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "补偿金",
+    "Icon": "Staff1",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      20018
+    ],
+    "Desc": "每次受到伤害时,+1资金"
   },
   {
     "Id": 301,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "翡翠长剑",
-    "Icon": "Sword4",
+    "Name": "疯狂面具",
+    "Icon": "Staff1",
     "Price": 40,
     "SellingPrice": 20,
     "MechanismId": [
-      10017
+      30001
     ],
-    "Desc": "对子在攻击时提供的倍率+3"
+    "Desc": "造成伤害时,获得1%的生命窃取"
   },
   {
     "Id": 302,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "黄金法杖",
-    "Icon": "Staff3",
+    "Name": "回旋刃",
+    "Icon": "Staff1",
     "Price": 40,
     "SellingPrice": 20,
     "MechanismId": [
-      10018
+      30002
     ],
-    "Desc": "同花在攻击时提供的倍率+3"
+    "Desc": "亮出的牌点数提供的攻击力加成翻倍"
   },
   {
     "Id": 303,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "黄金头冠",
-    "Icon": "Crown1",
+    "Name": "致胜之剑",
+    "Icon": "Staff1",
     "Price": 40,
     "SellingPrice": 20,
     "MechanismId": [
-      10019
+      30003
     ],
-    "Desc": "同花顺在攻击时提供的倍率+6"
+    "Desc": "结算伤害时,会将留在手牌上最小的牌点数转化为额外攻击力"
   },
   {
     "Id": 304,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "黄金诗篇",
-    "Icon": "Poetry2",
+    "Name": "搓牌能手",
+    "Icon": "Staff1",
     "Price": 40,
     "SellingPrice": 20,
     "MechanismId": [
-      10020
+      30004
     ],
-    "Desc": "顺子在攻击时提供的倍率+3"
+    "Desc": "每回合内,每搓1次牌,结算时提供的倍率+1"
   },
   {
     "Id": 305,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "疯狂面具",
-    "Icon": "CrazyMask",
+    "Name": "会员卡",
+    "Icon": "Staff1",
     "Price": 40,
     "SellingPrice": 20,
     "MechanismId": [
-      10021
+      30005
     ],
-    "Desc": "每次攻击时,可获得1%的生命窃取"
+    "Desc": "每次进入商店提供1次免费刷新的机会"
+  },
+  {
+    "Id": 306,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "错峰出行",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30006
+    ],
+    "Desc": "顺子牌型可以相隔1点组成"
+  },
+  {
+    "Id": 307,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "致命黑八",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30007
+    ],
+    "Desc": "亮出的每张8在结算时提供+8攻击力"
+  },
+  {
+    "Id": 308,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "偶数韵律",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30008
+    ],
+    "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+4倍率"
+  },
+  {
+    "Id": 309,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "奇数韵律",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30009
+    ],
+    "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+4倍率"
+  },
+  {
+    "Id": 310,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "贵族",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30010
+    ],
+    "Desc": "亮出的每张人头牌在结算时提供+6倍率"
+  },
+  {
+    "Id": 311,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "工资卡",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30011
+    ],
+    "Desc": "每击杀1名敌人,该收藏品的出售价格+1资金"
+  },
+  {
+    "Id": 312,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "训练",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30012
+    ],
+    "Desc": "亮出的每张牌的点数在结算时会使其提供的攻击力永久+1"
+  },
+  {
+    "Id": 313,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "九霄云外",
+    "Icon": "Staff1",
+    "Price": 40,
+    "SellingPrice": 20,
+    "MechanismId": [
+      30013
+    ],
+    "Desc": "亮出的每张9在结算时提供2资金"
   },
   {
     "Id": 401,
-    "Type": 4,
-    "RefreshProbability": 0.1,
-    "Name": "钻石头冠",
-    "Icon": "Crown2",
-    "Price": 80,
-    "SellingPrice": 40,
-    "MechanismId": [
-      10022
-    ],
-    "Desc": "同花顺在攻击时提供的倍率+12"
-  },
-  {
-    "Id": 402,
-    "Type": 4,
-    "RefreshProbability": 0.1,
-    "Name": "国王权杖",
-    "Icon": "Staff4",
-    "Price": 80,
-    "SellingPrice": 40,
-    "MechanismId": [
-      10023
-    ],
-    "Desc": "豹子在攻击时提供的倍率+50"
-  },
-  {
-    "Id": 403,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "235",
@@ -295,12 +555,12 @@
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [
-      10024
+      40001
     ],
     "Desc": "散排235牌型等同于豹子牌型,并且可以战胜所有牌型"
   },
   {
-    "Id": 404,
+    "Id": 402,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "奢华沙发",
@@ -308,8 +568,168 @@
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [
-      10025
+      40002
     ],
-    "Desc": "立即获得2000生命值"
+    "Desc": "获得500点生命值上限"
+  },
+  {
+    "Id": 403,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老花眼",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40003
+    ],
+    "Desc": "红桃和方片视为同一花色,黑桃和梅花视为同一花色"
+  },
+  {
+    "Id": 404,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "周星星",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40004
+    ],
+    "Desc": "每回合搓牌次数+1"
+  },
+  {
+    "Id": 405,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "穷途末路",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40005
+    ],
+    "Desc": "结算时,所有技能都无剩余使用次数,则提供+15倍率"
+  },
+  {
+    "Id": 406,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "收藏夹",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40006
+    ],
+    "Desc": "每有1个收藏品,结算时提供+5倍率"
+  },
+  {
+    "Id": 407,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "奢侈品",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40007
+    ],
+    "Desc": "结算时,若未使用过搓牌,每个搓牌次数提供+6倍率"
+  },
+  {
+    "Id": 408,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "近视眼",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40008
+    ],
+    "Desc": "所有牌均视为人头牌"
+  },
+  {
+    "Id": 409,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "顶尖学者",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40009,
+      400091
+    ],
+    "Desc": "亮出的每张A在结算伤害时提供+6攻击力和+6倍率"
+  },
+  {
+    "Id": 410,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老千",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40010
+    ],
+    "Desc": "亮牌时,将该牌型在本局内亮出过的次数来提供倍率"
+  },
+  {
+    "Id": 411,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "天使",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40011
+    ],
+    "Desc": "亮牌时,有25%概率将该牌型提供的倍率永久+1"
+  },
+  {
+    "Id": 412,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "双刃剑",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40012,
+      400121
+    ],
+    "Desc": "每回合失去2次搓牌机会,但结算时提供+20倍率"
+  },
+  {
+    "Id": 413,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老搓家",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40013
+    ],
+    "Desc": "每使用1次搓牌,结算时该收藏品永久提供+0.5倍率"
+  },
+  {
+    "Id": 414,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "幸运七",
+    "Icon": "Staff1",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      40014,
+      400141,
+      400142
+    ],
+    "Desc": "亮出的每张7结算时有7%概率提供+77攻击力和+7倍率"
   }
 ]

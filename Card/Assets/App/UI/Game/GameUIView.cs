@@ -6,6 +6,7 @@ using App.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
+using Framework.Log;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -97,6 +98,21 @@ namespace App.UI
             await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
+
+#if UNITY_EDITOR
+        private void Update()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.G))
+            {
+                ViewModel.Session.DebugAddGold();
+            }
+        }
+#endif
 
         protected override Task OnViewClose()
         {
@@ -704,7 +720,7 @@ namespace App.UI
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"Failed to load portrait '{key}': {ex.Message}");
+                AppLog.Warn(LogChannel.UI, $"Failed to load portrait '{key}': {ex.Message}");
                 return null;
             }
         }

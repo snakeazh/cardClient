@@ -5,7 +5,8 @@
 `GameTableController` 是旧场景绑法，见 [`GameTableController.md`](../UI/Game/GameTableController.md)。
 
 脚本：`Assets/App/Game/GameSession.cs`  
-数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）
+数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）  
+商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)
 
 ---
 
@@ -58,7 +59,7 @@ StartNewRun / Continue
 | `RequestShowdown()` | 开牌 | 与存活敌人逐个比牌 |
 | `CompletePlayerAttack()` | 攻击演出结束 | 结算伤害，打下一个 |
 | `Continue()` | 下一局 / 进商店后 | 下一手或下一关 |
-| `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖遗物 |
+| `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖 RelicConfig 商品，机制见 [`RelicMechanics.md`](RelicMechanics.md) |
 | `AnnounceSeatRevealed` / `FinishRevealPlay` | 牌桌动画回调 | 亮牌演出步进 |
 
 旧下注接口（`BlindBet` / `LookCards` / `RaiseBet` / `Fold` / `AllIn`）还在，主循环不再进 `WaitingLookChoice` / `Betting`。
@@ -86,4 +87,5 @@ StartNewRun / Continue
 - 不要在透视阶段调用 `LockBestOpenCardsIfEnemy`，否则 5 张全选会被改成 3 张。
 - `EvaluateSeat` 在敌人未锁 3 张时会自己枚举最大牌型，透视文案仍准确。
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
+- 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
 - 牌堆抽牌走 `Deck.TryDraw`，空堆不会把桌上的牌再发出来。

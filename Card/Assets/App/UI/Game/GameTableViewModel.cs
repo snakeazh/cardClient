@@ -6,6 +6,7 @@ using App.Level;
 using App.Resources;
 using App.UI.Popup;
 using Framework.Assets;
+using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -322,7 +323,7 @@ namespace App.UI
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogException(ex);
+                AppLog.Exception(LogChannel.UI, ex);
             }
             finally
             {
@@ -351,7 +352,7 @@ namespace App.UI
                     }
                     catch (Exception ex)
                     {
-                        UnityEngine.Debug.LogException(ex);
+                        AppLog.Exception(LogChannel.UI, ex);
                     }
                 }
 
@@ -364,7 +365,7 @@ namespace App.UI
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogException(ex);
+                AppLog.Exception(LogChannel.UI, ex);
             }
             finally
             {

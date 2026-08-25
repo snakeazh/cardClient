@@ -4,6 +4,7 @@ using App.Game;
 using App.Resources;
 using DG.Tweening;
 using Framework.Assets;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.UI
@@ -315,7 +316,7 @@ namespace App.UI
             var prefab = LoadPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
                 return 0f;
             }
 
@@ -669,7 +670,7 @@ namespace App.UI
             var prefab = LoadPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon);
                 return null;
             }
 
@@ -1228,7 +1229,7 @@ namespace App.UI
 
             if (_resources == null)
             {
-                Debug.LogWarning("CardIcon prefab not loaded: IResourceService is missing.");
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not loaded: IResourceService is missing.");
                 return null;
             }
 
@@ -1238,7 +1239,7 @@ namespace App.UI
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning("CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
                 return null;
             }
 

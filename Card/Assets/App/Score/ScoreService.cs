@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework.Log;
 using Framework.Save;
 using UnityEngine;
 
@@ -127,7 +128,7 @@ namespace App.Score
             var data = JsonUtility.FromJson<ScoreSaveData>(json);
             if (data == null)
             {
-                Debug.LogWarning("[Score] Failed to parse save data.");
+                AppLog.Warn(LogChannel.Score, "Failed to parse save data.");
                 return;
             }
 

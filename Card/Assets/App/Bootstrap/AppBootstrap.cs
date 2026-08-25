@@ -8,6 +8,7 @@ using App.Score;
 using App.UI;
 using App.UI.Splash;
 using Framework.Assets;
+using Framework.Log;
 using Framework.Save;
 using Framework.UI;
 using UnityEngine;
@@ -111,8 +112,9 @@ namespace App.Bootstrap
         private static void LogConfigSmoke()
         {
             var sample = ItemConfig.Get(101);
-            Debug.Log(
-                $"[Config] loaded: GameFps={GameConst.Instance.GameFps}, " +
+            AppLog.Info(
+                LogChannel.Config,
+                $"loaded: GameFps={GameConst.Instance.GameFps}, " +
                 $"ItemCount={ItemConfig.Count}, " +
                 $"ItemName={sample?.Name ?? "(missing)"}, " +
                 $"Item(101)={sample?.Desc ?? "(missing)"}");

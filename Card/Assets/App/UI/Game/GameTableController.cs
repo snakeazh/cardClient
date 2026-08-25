@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using App.Game;
+using Framework.Log;
 using Framework.UI.Binding;
 using Framework.UI.Core;
 using TMPro;
@@ -379,7 +380,7 @@ namespace App.UI
 
         private void RefreshShop()
         {
-            if (_shopContent == null || _vm == null || _vm.Session.Phase != GamePhase.Shop)
+            if (_shopContent == null)
             {
                 return;
             }
@@ -387,23 +388,6 @@ namespace App.UI
             for (var i = _shopContent.childCount - 1; i >= 0; i--)
             {
                 Destroy(_shopContent.GetChild(i).gameObject);
-            }
-
-            var catalog = GameBalance.Catalog;
-            for (var i = 0; i < catalog.Count; i++)
-            {
-                var item = catalog[i];
-                var y = 380f - i * 70f;
-                var id = item.Id;
-                var btn = CreateButton(_shopContent, $"{item.Name}  {item.Price}金", new Vector2(0f, y), null, 860f);
-                var label = btn.GetComponentInChildren<Text>();
-                if (label != null)
-                {
-                    label.text = $"{item.Name}  {item.Price}金  {item.Effect}";
-                    label.fontSize = 22;
-                }
-
-                btn.onClick.AddListener(() => _vm.Session.Buy(id));
             }
         }
 
@@ -478,7 +462,7 @@ namespace App.UI
             var prefab = LoadCardIconPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning("CardIcon prefab not found at Resources/" + CardIconResourcePath);
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Resources/" + CardIconResourcePath);
                 return;
             }
 

@@ -41,6 +41,12 @@ namespace App.Build.Editor
             BuildAndroid(appBundle: true, rebuildBundles: true);
         }
 
+        [MenuItem("Build/Android/Build APK (Test Logs)", false, 120)]
+        public static void BuildApkTestLogs()
+        {
+            BuildAndroid(appBundle: false, rebuildBundles: false, enableAppLog: true);
+        }
+
         [MenuItem("Build/Android/Open Output Folder", false, 200)]
         public static void OpenOutputFolder()
         {
@@ -53,14 +59,19 @@ namespace App.Build.Editor
         [MenuItem("Build/Android/Build AAB", true)]
         [MenuItem("Build/Android/Build APK (Rebuild Bundles)", true)]
         [MenuItem("Build/Android/Build AAB (Rebuild Bundles)", true)]
+        [MenuItem("Build/Android/Build APK (Test Logs)", true)]
         private static bool ValidateBuild()
         {
             return !EditorApplication.isCompiling && !EditorApplication.isPlayingOrWillChangePlaymode;
         }
 
-        public static void BuildAndroid(bool appBundle, bool rebuildBundles)
+        public static void BuildAndroid(bool appBundle, bool rebuildBundles, bool enableAppLog = false)
         {
             var formatLabel = appBundle ? "AAB" : "APK";
+            if (enableAppLog)
+            {
+                formatLabel += " Test Logs";
+            }
             try
             {
                 EditorUtility.DisplayProgressBar($"Build Android {formatLabel}", "切换构建目标…", 0.1f);
@@ -96,7 +107,7 @@ namespace App.Build.Editor
                     return;
                 }
 
-                var outputPath = PrepareOutputPath(appBundle);
+                var outputPath = PrepareOutputPath(appBundle, enableAppLog);
                 EditorUtility.DisplayProgressBar(
                     $"Build Android {formatLabel}",
                     $"输出: {Path.GetFileName(outputPath)}",
@@ -111,6 +122,11 @@ namespace App.Build.Editor
                     target = BuildTarget.Android,
                     options = BuildOptions.None
                 };
+                if (enableAppLog)
+                {
+                    options.extraScriptingDefines = new[] { "ENABLE_APP_LOG" };
+                    Debug.Log("[AndroidBuild] 本包追加 ENABLE_APP_LOG，Info/Debug 会输出。");
+                }
 
                 var report = BuildPipeline.BuildPlayer(options);
                 LogBuildReport(report, outputPath);
@@ -200,7 +216,7 @@ namespace App.Build.Editor
             }
         }
 
-        private static string PrepareOutputPath(bool appBundle)
+        private static string PrepareOutputPath(bool appBundle, bool enableAppLog)
         {
             var dir = GetOutputDirectory();
             Directory.CreateDirectory(dir);
@@ -214,8 +230,9 @@ namespace App.Build.Editor
             var version = PlayerSettings.bundleVersion;
             var code = PlayerSettings.Android.bundleVersionCode;
             var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var tag = enableAppLog ? "_TestLogs" : string.Empty;
             var ext = appBundle ? "aab" : "apk";
-            return Path.Combine(dir, $"{safeName}_{version}_{code}_{stamp}.{ext}");
+            return Path.Combine(dir, $"{safeName}_{version}_{code}{tag}_{stamp}.{ext}");
         }
 
         private static string GetOutputDirectory()

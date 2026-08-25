@@ -4,7 +4,7 @@
 
 脚本：`Assets/App/UI/Game/AttackCutscene.cs`  
 调用：`GameUIView.TryPlayAttack`  
-规则：[`GameLogic.md`](../../Game/GameLogic.md)
+规则：[`GameLogic.md`](../../Game/GameLogic.md) · 遗物与伤害公式：[`RelicMechanics.md`](../../Game/RelicMechanics.md)
 
 ---
 
@@ -55,8 +55,10 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 逻辑伤害：
 
 ```
-伤害 = (SeatState.Attack + HandScore.BaseChips) × HandScoreConfig.BasicMagnification × 遗物倍率
+伤害 = (SeatState.Attack + HandScore.BaseChips) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
 ```
+
+细则见 [`RelicMechanics.md`](../../Game/RelicMechanics.md)。
 
 攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。演出只表现已算好的 `AttackDamage`，不改公式。
 

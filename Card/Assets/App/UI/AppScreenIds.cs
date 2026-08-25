@@ -13,6 +13,8 @@ namespace App.UI
         public const string BattleShopPop = "App.BattleShopPop";
         public const string BattleSettleUpPop = "App.BattleSettleUpPop";
         public const string IllustratedBookPop = "App.IllustratedBookPop";
+        public const string TalentPopup = "App.TalentPopup";
+        public const string TalentDetail = "App.TalentDetail";
         public const string LevelUI = "App.LevelUI";
     }
 }

@@ -20,6 +20,7 @@ namespace Framework.Log.Editor
         private const string ChAtlas = "Log/Channel/Atlas";
         private const string ChAssets = "Log/Channel/Assets";
         private const string ChSave = "Log/Channel/Save";
+        private const string ChTalent = "Log/Channel/Talent";
 
         [MenuItem(MinDebug, false, 100)]
         private static void SetMinDebug() => LogFilter.MinLevel = LogLevel.Debug;
@@ -126,6 +127,12 @@ namespace Framework.Log.Editor
 
         [MenuItem(ChSave, true)]
         private static bool ToggleSaveValidate() => Validate(ChSave, LogChannel.Save);
+
+        [MenuItem(ChTalent, false, 220)]
+        private static void ToggleTalent() => Toggle(LogChannel.Talent);
+
+        [MenuItem(ChTalent, true)]
+        private static bool ToggleTalentValidate() => Validate(ChTalent, LogChannel.Talent);
 
         private static void Toggle(LogChannel channel)
         {

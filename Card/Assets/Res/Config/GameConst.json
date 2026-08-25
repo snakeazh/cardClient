@@ -7,5 +7,6 @@
   "AfterBettingAmount": 10,
   "ShopRefreshFirst": 5,
   "ShopRefreshAfter": 3,
-  "GoldIcon": "coin"
+  "GoldIcon": "coin",
+  "TalentChestNeedGold": 10
 }

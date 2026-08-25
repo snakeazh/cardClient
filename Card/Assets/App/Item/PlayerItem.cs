@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using App.Config;
 
 namespace App.Game
 {
@@ -13,6 +14,7 @@ namespace App.Game
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
 
         [SerializeField] private Image iconBg;
+        [SerializeField] private Image iconTitleBg;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
@@ -119,14 +121,13 @@ namespace App.Game
         public void ApplyTheme(bool enemy)
         {
             EnsureRefs();
-            if (iconBg != null)
+            if (enemy)
             {
-                iconBg.color = enemy ? ThemeColors.Enemy : ThemeColors.Player;
+                ThemeColors.ApplyCard(ThemeColors.Enemy, ThemeColors.EnemyTitle, iconBg, iconTitleBg, cardCircle);
             }
-
-            if (cardCircle != null)
+            else
             {
-                cardCircle.color = enemy ? ThemeColors.EnemyCircle : ThemeColors.PlayerCircle;
+                ThemeColors.ApplyCard(QualityType.Ordinary, iconBg, iconTitleBg, cardCircle);
             }
 
             var frame = enemy ? enemyStatFrame : playerStatFrame;
@@ -211,6 +212,11 @@ namespace App.Game
             if (iconBg == null)
             {
                 iconBg = FindImage("IconBG");
+            }
+
+            if (iconTitleBg == null)
+            {
+                iconTitleBg = FindImage("IconTitleBG");
             }
 
             if (cardName == null)

@@ -149,7 +149,7 @@
 
 击杀本关全部敌人 → 总积分按 10:1 向下取整换金币进商店（不清空积分；699 → 69）。
 
-商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 4 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
+商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 3 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 
 广告（按钮模拟）：
 

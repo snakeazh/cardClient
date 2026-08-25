@@ -27,6 +27,11 @@ namespace App.Config
         public int HeroDamage;
 
         /// <summary>
+        /// 暴击率
+        /// </summary>
+        public float Critical;
+
+        /// <summary>
         /// 形象icon
         /// </summary>
         public string Icon;

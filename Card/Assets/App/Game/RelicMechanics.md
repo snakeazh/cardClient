@@ -111,7 +111,7 @@
 
 另外只在有情况时打：
 
-- 计算伤害大于当前 HP（截断）
+- 计算伤害大于当前 HP（扣血截断；积分仍按攻击数值）
 - 吸血实际回了多少
 
 生效词条文案来自 `RelicMechanics.CollectMultiplierParts`。

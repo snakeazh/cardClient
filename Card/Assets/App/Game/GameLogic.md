@@ -4,7 +4,7 @@
 实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`，商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)。  
 关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)。  
 积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。  
-局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。牌桌见 [`GameBoardController.md`](../UI/Game/GameBoardController.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
+局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。牌桌见 [`GameBoardController.md`](../UI/Game/GameBoardController.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。闯关结算见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)。
 
 玩家血量读 `HeroConfig.Hp`，怪物血量读 `MonsterConfig.MonsterHp`。攻击力读 `HeroConfig.HeroDamage` / `MonsterConfig.MonsterDamage`，在 PlayerItem 上显示。血量只在比牌后的攻击结算时扣除。
 
@@ -23,6 +23,7 @@
       输：该怪物按 (攻击力 + 牌面点数) × 牌型倍率 打玩家
   → 打完所有存活敌人
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
+  → 打完该难度：BattleResultPopup 成功；放弃挑战：BattleResultPopup 失败
 ```
 
 主路径 UI：见 [`GameUI.md`](../UI/Game/GameUI.md) + [`GameBoardController.md`](../UI/Game/GameBoardController.md)。  
@@ -41,8 +42,8 @@
 | `WaitingAttack` | 播放攻击演出（玩家打怪或怪打玩家） |
 | `RoundSettle` | 本手结束，点下一局 |
 | `Shop` | 关卡胜利商店 |
-| `StageFail` | 阵亡，可广告复活或重开 |
-| `RunComplete` | 通关 |
+| `StageFail` | 阵亡，可广告复活或放弃 |
+| `RunComplete` | 通关该难度，弹出 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 | `WaitingLookChoice` / `Betting` | 旧下注流程保留在代码里，当前主循环不再进入 |
 
 ---
@@ -57,12 +58,13 @@
 | 怪物 HP | `LevelConfig` → `MonsterGroupConfig` → `MonsterConfig.MonsterHp` |
 | 攻击力 | 玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`。PlayerItem 显示该值 |
 | 勇气值 | 每手仍按人物当前血量换算（旧下注用），当前主循环不再下注 |
-| 积分 | 本手玩家对怪造成的总伤害 1:1 记分。`GameConst.ChipsForPoints` 当前为 1 |
-| 金币 | 通关：总积分 / 10 向下取整换金币，积分不清空。`GameConst.ExchangePointsForGoldCoins` 当前为 10 |
+| 积分 | 本手玩家打出的攻击数值 1:1 记分（不被剩余血量截断）。`GameConst.ChipsForPoints` 当前为 1 |
+| 局内金币 | 关卡胜利：总积分按 10:1 向下取整发差额进 `Run.Gold`，积分不清空。`GameConst.ExchangePointsForGoldCoins` 当前为 10 |
+| 局外货币 | 闯关结束（成功或放弃）按同样 10:1 兑入钱包。见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 
 血量只在攻击结算时扣除。
 
-三种积分：`Total` 本章节累计；`Stage` 当前关卡各回合之和；`Round` 本回合。本手没打出伤害则本轮为 0。699 积分 → 69 金币。多关只发差额，避免按总积分重复加钱。
+三种积分：`Total` 本章节累计；`Stage` 当前关卡各回合之和；`Round` 本回合。本手没打出伤害则本轮为 0。699 积分 → 69 局内金币（关卡胜利差额）/ 69 局外货币（闯关结算）。多关只发差额，避免按总积分重复加局内金币。
 
 - 玩家 HP 在关卡内跨局保留，进下一关时按英雄满血重开。
 - 敌人每关按关卡配置血量入场，人数按该关怪物组（最多 3）。
@@ -125,7 +127,7 @@
 | 豹子 | Leopard | 6 |
 
 玩家攻击把遗物加成加进牌型倍率，再乘燧石（×0.5）；怪物攻击只吃燧石。  
-积分：本手玩家对怪造成的总伤害记入本轮。
+积分：本手玩家打出的**攻击数值**记入本轮（公式结果，不被怪物剩余血量截断）。扣血仍按剩余 HP 封顶。
 
 实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
 
@@ -147,9 +149,15 @@
 
 ## 9. 商店、广告、词缀
 
-击杀本关全部敌人 → 总积分按 10:1 向下取整换金币进商店（不清空积分；699 → 69）。
+击杀本关全部敌人 → 总积分按 10:1 向下取整发差额换**局内金币**进商店（不清空积分；699 → 69）。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
 
 商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 3 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
+
+打完该难度全部关卡（`LeaveShop` → `RunComplete`）或关卡失败后放弃 → [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)：
+
+- 成功：只显示 BackBtn
+- 失败：BackBtn + AgainBtn（再次挑战从当前难度第 1 关重开）
+- `coinNum`：局外货币 = 总积分 / 10
 
 广告（按钮模拟）：
 
@@ -171,7 +179,8 @@ BOSS 关随机词缀（禁搓花色、禁计分、燧石、锋芒、透视眼等
 | `App/Game/RelicMechanics.cs` | RelicConfig 商品效果，说明见 [`RelicMechanics.md`](RelicMechanics.md) |
 | `App/Game/CardModel.cs` | 牌、牌型、伤害公式 |
 | `App/UI/Game/GameUIView.cs` | HUD 绑定，说明见 [`GameUI.md`](../UI/Game/GameUI.md) |
-| `App/UI/Game/GameTableViewModel.cs` | 文案与按钮 |
+| `App/UI/Game/GameTableViewModel.cs` | 文案、按钮、弹出失败/商店/结算 |
+| `App/UI/Popup/BattleResultPopupView.cs` | 闯关结算，说明见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 | `App/UI/Game/CardTableAnimator.cs` | 发牌、洗牌出现、看牌/摊牌翻面 |
 | `App/UI/Game/AttackCutscene.cs` | 玩家打怪 / 怪打玩家，说明见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) |
 | `App/Item/PlayerItem.cs` | 人物/敌人卡，说明见 [`PlayerItem.md`](../Item/PlayerItem.md) |

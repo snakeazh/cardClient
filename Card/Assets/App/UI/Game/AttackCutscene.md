@@ -60,7 +60,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 细则见 [`RelicMechanics.md`](../../Game/RelicMechanics.md)。
 
-攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。演出只表现已算好的 `AttackDamage`，不改公式。
+攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。演出只表现已算好的 `AttackDamage`，不改公式。积分也按该攻击数值记，不按实际扣血。
 
 ---
 

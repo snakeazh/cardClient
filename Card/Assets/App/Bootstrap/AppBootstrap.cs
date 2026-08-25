@@ -5,6 +5,7 @@ using App.Config;
 using App.Game;
 using App.Level;
 using App.Score;
+using App.Wallet;
 using App.UI;
 using App.UI.Splash;
 using Framework.Assets;
@@ -46,6 +47,7 @@ namespace App.Bootstrap
             RegisterBag(_services);
             RegisterLevel(_services);
             RegisterScore(_services);
+            RegisterWallet(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -107,6 +109,14 @@ namespace App.Bootstrap
             var courage = new CourageService();
             services.Register(courage);
             services.Register<ICourageService>(courage);
+        }
+
+        private static void RegisterWallet(AppServicesHost services)
+        {
+            var wallet = new WalletService(services.Resolve<ISaveService>());
+            wallet.Load();
+            services.Register(wallet);
+            services.Register<IWalletService>(wallet);
         }
 
         private static void LogConfigSmoke()

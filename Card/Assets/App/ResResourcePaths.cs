@@ -13,6 +13,7 @@ namespace App.Resources
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
+        public const string BattleResultPopup = "UI/Popup/BattleResultPopup";
         public const string BattleShopPop = "UI/Popup/BattleShopPop";
         public const string BattleSettleUpPop = "UI/Popup/BattleSettleUpPop";
         public const string IllustratedBookPop = "UI/Popup/IllustratedBookPop";

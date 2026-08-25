@@ -4,7 +4,7 @@ using Framework.Save;
 namespace App.Score
 {
     /// <summary>
-    /// 章节积分。本轮积分 = 本手对怪造成的总伤害（1:1，读 GameConst.ChipsForPoints）。
+    /// 章节积分。本轮积分 = 本手打出的攻击数值（1:1，读 GameConst.ChipsForPoints），不按怪物实际扣血。
     /// 金币 = 总积分 / GameConst.ExchangePointsForGoldCoins（向下取整），不清空积分。
     /// GameSession 在逐个比牌结束后 AwardRoundScore，通关时 CollectGoldDelta。
     /// </summary>
@@ -36,8 +36,8 @@ namespace App.Score
         void BeginRound();
 
         /// <summary>
-        /// 本轮积分：本手对怪伤害 / GameConst.ChipsForPoints（向下取整，当前 1:1）。
-        /// 换算后 &lt;= 0 则本轮为 0，不向上累加。
+        /// 本轮积分：本手打出的攻击数值 / GameConst.ChipsForPoints（向下取整，当前 1:1）。
+        /// 换算后 &lt;= 0 则本轮为 0，不向上累加。不按怪物剩余血量截断。
         /// </summary>
         void AwardRoundScore(int chipsWon);
 

@@ -201,6 +201,19 @@ namespace App.Game
             StartStage(inheritPlayerHp: false);
         }
 
+        /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
+        public void RestartChallenge()
+        {
+            var levels = LevelSvc();
+            var current = levels?.Current;
+            if (current != null)
+            {
+                levels.TrySelect(current.Difficulty, 1);
+            }
+
+            StartNewRun();
+        }
+
         public void RestartStage()
         {
             StartStage(inheritPlayerHp: false);
@@ -830,13 +843,16 @@ namespace App.Game
             var damage = Math.Max(1, PendingAttackDamage);
             PendingAttackDamage = 0;
             var dealt = ApplyDamage(target, damage, true);
+            var scoreDamage = damage;
             if (!target.IsPlayer && Run.SplashThisRound)
             {
                 for (var i = 0; i < Enemies.Length; i++)
                 {
                     if (Enemies[i] != target && Enemies[i].Alive)
                     {
-                        dealt += ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
+                        var splash = (int)Math.Round(damage * GameBalance.SplashRatio);
+                        dealt += ApplyDamage(Enemies[i], splash, false);
+                        scoreDamage += splash;
                     }
                 }
 
@@ -845,7 +861,7 @@ namespace App.Game
 
             if (!target.IsPlayer)
             {
-                _roundDamageDealt += dealt;
+                _roundDamageDealt += scoreDamage;
                 ApplyBloodSucking(dealt);
             }
 
@@ -3165,12 +3181,13 @@ namespace App.Game
 
             _shopGoldGranted = gold;
             Run.Gold += gold;
+            var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
-            Log($"通关结算：总积分 {total} → {gold} 金币（总金币 {Run.Gold}）");
+            Log($"关卡结算：本关积分 {stage} → {gold} 金币（章节累计 {total}，总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             RollShopOffers();
-            Hint = $"关卡胜利！{total} 积分兑换 {gold} 金币。购买道具后进入下一关。";
+            Hint = $"关卡胜利！本关 {stage} 积分兑换 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
         }

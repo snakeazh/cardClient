@@ -479,7 +479,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 4029563246249347844}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1
@@ -677,6 +677,7 @@ GameObject:
   - component: {fileID: 5373480913689851346}
   - component: {fileID: 6652421127280175970}
   - component: {fileID: 3278660836781131713}
+  - component: {fileID: 8440342400605156837}
   m_Layer: 0
   m_Name: TalentPopup
   m_TagString: Untagged
@@ -764,6 +765,19 @@ MonoBehaviour:
   - Key: ADBtn
     Component: {fileID: 4860674034878651918}
     Bind: {fileID: 5595069418152777455}
+--- !u!114 &8440342400605156837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6175134540057785447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7bbcb2dd7e24d7c8f040e098f0ed003, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ui: {fileID: 3278660836781131713}
 --- !u!1 &7946325779311347630
 GameObject:
   m_ObjectHideFlags: 0

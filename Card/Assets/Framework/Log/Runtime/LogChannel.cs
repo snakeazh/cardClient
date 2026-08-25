@@ -11,6 +11,7 @@ namespace Framework.Log
         Score = 6,
         Atlas = 7,
         Assets = 8,
-        Save = 9
+        Save = 9,
+        Talent = 10
     }
 }

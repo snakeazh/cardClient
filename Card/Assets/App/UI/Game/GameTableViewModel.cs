@@ -21,6 +21,7 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
+        private bool _resultPopupOpen;
         private bool _settleShownThisShop;
 
         public GameTableViewModel(
@@ -240,6 +241,7 @@ namespace App.UI
 
             TryPresentFailPopup();
             TryPresentShopPopup();
+            TryPresentResultPopup();
             ShowAttack.Value = !Session.SequentialCompare &&
                                (Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget);
             if (!Session.AttackPlaying)
@@ -319,7 +321,16 @@ namespace App.UI
                     var result = await _ui.Dialogs.ShowCustomAsync<BattleFailPopupViewModel, BattleFailResult>(popup);
                     if (result == BattleFailResult.Abandon)
                     {
-                        await LeaveToHome();
+                        _resultPopupOpen = true;
+                        try
+                        {
+                            await PresentResultThenLeaveOrRetry();
+                        }
+                        finally
+                        {
+                            _resultPopupOpen = false;
+                        }
+
                         return;
                     }
                 }
@@ -374,6 +385,54 @@ namespace App.UI
             {
                 _shopPopupOpen = false;
             }
+
+            TryPresentResultPopup();
+        }
+
+        private async void TryPresentResultPopup()
+        {
+            if (!IsOpen ||
+                Session.Phase != GamePhase.RunComplete ||
+                _resultPopupOpen ||
+                _shopPopupOpen ||
+                _failPopupOpen ||
+                _ui == null)
+            {
+                return;
+            }
+
+            _resultPopupOpen = true;
+            try
+            {
+                await PresentResultThenLeaveOrRetry();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+            finally
+            {
+                _resultPopupOpen = false;
+            }
+        }
+
+        private async Task PresentResultThenLeaveOrRetry()
+        {
+            var action = await ShowBattleResultAsync();
+            if (action == BattleResultAction.Again)
+            {
+                Session.RestartChallenge();
+                return;
+            }
+
+            await LeaveToHome();
+        }
+
+        private async Task<BattleResultAction> ShowBattleResultAsync()
+        {
+            var registration = _ui.Registry.GetByViewModelType(typeof(BattleResultPopupViewModel));
+            var popup = (BattleResultPopupViewModel)_ui.Registry.CreateViewModel(registration);
+            return await _ui.Dialogs.ShowCustomAsync<BattleResultPopupViewModel, BattleResultAction>(popup);
         }
 
         private async void OnBack()

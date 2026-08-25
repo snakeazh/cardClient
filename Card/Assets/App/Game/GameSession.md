@@ -2,6 +2,7 @@
 
 对局状态机。规则细节见 [`GameLogic.md`](GameLogic.md)。  
 主路径表现：[`GameUI.md`](../UI/Game/GameUI.md) + [`GameBoardController.md`](../UI/Game/GameBoardController.md)。  
+闯关结算：[`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)。  
 `GameTableController` 是旧场景绑法，见 [`GameTableController.md`](../UI/Game/GameTableController.md)。
 
 脚本：`Assets/App/Game/GameSession.cs`  
@@ -39,7 +40,7 @@ StartNewRun / Continue
       再对当前敌人 LockBestOpenCardsIfEnemy（锁最大 3 张）
       RevealPlaySerial++ ，牌桌播翻牌
   → WaitingAttack → 扣血
-  → 下一只敌人，或 RoundSettle / Shop / StageFail
+  → 下一只敌人，或 RoundSettle / Shop / StageFail / RunComplete
 ```
 
 发牌结束后由 `GameBoardController` 调 `GameTableViewModel.NotifyDealReady()`，HUD 才显示开牌和技能栏。
@@ -60,7 +61,9 @@ StartNewRun / Continue
 | `RequestShowdown()` | 开牌 | 与存活敌人逐个比牌 |
 | `CompletePlayerAttack()` | 攻击演出结束 | 结算伤害，打下一个 |
 | `Continue()` | 下一局 / 进商店后 | 下一手或下一关 |
-| `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖 RelicConfig 商品，机制见 [`RelicMechanics.md`](RelicMechanics.md) |
+| `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖 RelicConfig 商品；最后一关 `LeaveShop` → `RunComplete` |
+| `RestartChallenge()` | 结算页再次挑战 | 回到当前难度第 1 关并 `StartNewRun` |
+| `WatchAdRevive()` | 失败弹窗再试试 | HP 回满，本关继续 |
 | `AnnounceSeatRevealed` / `FinishRevealPlay` | 牌桌动画回调 | 亮牌演出步进 |
 
 旧下注接口（`BlindBet` / `LookCards` / `RaiseBet` / `Fold` / `AllIn`）还在，主循环不再进 `WaitingLookChoice` / `Betting`。
@@ -89,4 +92,5 @@ StartNewRun / Continue
 - `EvaluateSeat` 在敌人未锁 3 张时会自己枚举最大牌型，透视文案仍准确。
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
 - 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
+- 打完该难度或放弃挑战走 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)，不要在 HUD 上另做一套结算。
 - 牌堆抽牌走 `Deck.TryDraw`，空堆不会把桌上的牌再发出来。

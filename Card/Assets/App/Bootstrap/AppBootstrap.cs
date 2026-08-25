@@ -6,6 +6,7 @@ using App.Game;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.Wallet;
 using App.UI;
 using App.UI.Splash;
 using Framework.Assets;
@@ -49,6 +50,7 @@ namespace App.Bootstrap
             RegisterLevel(_services);
             RegisterScore(_services);
             RegisterTalent(_services);
+            RegisterWallet(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -124,6 +126,14 @@ namespace App.Bootstrap
             talent.Load();
             services.Register(talent);
             services.Register<ITalentService>(talent);
+        }
+
+        private static void RegisterWallet(AppServicesHost services)
+        {
+            var wallet = new WalletService(services.Resolve<ISaveService>());
+            wallet.Load();
+            services.Register(wallet);
+            services.Register<IWalletService>(wallet);
         }
 
         private static void LogConfigSmoke()

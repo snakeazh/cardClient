@@ -1,0 +1,108 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Config;
+using App.Talent;
+using Framework.Log;
+using Framework.UI;
+using Framework.UI.Core;
+using Framework.UI.View;
+
+namespace App.UI.Popup
+{
+    /// <summary>
+    /// 列表条目：ITalentService 快照 + 配置名（未解锁时快照无 Config，名字从 1 级行兜底）。
+    /// </summary>
+    public sealed class TalentItem
+    {
+        public TalentSnapshot Snapshot;
+        public string Name;
+    }
+
+    /// <summary>
+    /// 天赋弹窗：列表读 ITalentService（未解锁显示 ???），点击条目打开天赋详情；
+    /// BuyBtn 显示抽天赋金币价（购买流程未接入，暂不响应点击）。
+    /// </summary>
+    public sealed class TalentPopupViewModel : ViewModelBase
+    {
+        private readonly IUIManager _ui;
+        private readonly ITalentService _talent;
+        private readonly List<TalentItem> _items = new List<TalentItem>();
+
+        public TalentPopupViewModel(IUIManager ui, ITalentService talent)
+        {
+            _ui = ui;
+            _talent = talent;
+            CloseCommand = new RelayCommand(Dismiss);
+            BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
+            RebuildItems();
+        }
+
+        public IReadOnlyList<TalentItem> Items => _items;
+
+        public ObservableProperty<string> BuyCostText { get; }
+
+        public IRelayCommand CloseCommand { get; }
+
+        protected override Task OnOpen(object args)
+        {
+            RebuildItems();
+            return Task.CompletedTask;
+        }
+
+        public async Task OpenDetail(TalentItem item)
+        {
+            if (item == null || !item.Snapshot.IsOwned)
+            {
+                return;
+            }
+
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
+                var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
+                vm.Setup(item.Snapshot.TalentId);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+        }
+
+        private void RebuildItems()
+        {
+            _items.Clear();
+            var ids = _talent.GetIds();
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var snapshot = _talent.GetCurrent(ids[i]);
+                _items.Add(new TalentItem
+                {
+                    Snapshot = snapshot,
+                    Name = ResolveName(snapshot)
+                });
+            }
+        }
+
+        private string ResolveName(TalentSnapshot snapshot)
+        {
+            if (snapshot.Config != null)
+            {
+                return snapshot.Config.Name;
+            }
+
+            return _talent.TryGet(snapshot.TalentId, 1, out var row) ? row.Name : null;
+        }
+
+        private static string ResolveBuyCost()
+        {
+            return GameConst.IsLoaded ? GameConst.Instance.TalentChestNeedGold.ToString() : "0";
+        }
+
+        private void Dismiss()
+        {
+            _ = _ui.Close(this);
+        }
+    }
+}

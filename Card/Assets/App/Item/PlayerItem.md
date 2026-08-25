@@ -25,7 +25,7 @@
 | `card_attackValue` | 攻击力数字 |
 | `card_attackHeart` | 当前血量 |
 | `attack` | 攻击力整块；值为 0 时隐藏。底图：人物 `FrameSlection1`，敌人 `FrameSlection2` |
-| `heart` | 血量整块。底图与 `attack` 相同 |
+| `heart` | 血量整块；值为 0 时隐藏。底图与 `attack` 相同 |
 | `state` | 敌人状态 / 透视牌型 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
 
@@ -41,7 +41,7 @@
 | 局内玩家 | `SeatState.Attack` ← `HeroConfig.HeroDamage` | `SeatState.Hp` |
 | 局内敌人 | `SeatState.Attack` ← `MonsterConfig.MonsterDamage` | `SeatState.Hp` |
 
-`SetAttack(0)` 会关掉 `attack` 节点。配置攻击力大于 0 才会显示。
+`SetAttack(0)` 会关掉 `attack` 节点，`SetHp(0)` 会关掉 `heart`。未解锁英雄（LevelUI 预览 / HeroItem）两边都传 0，攻击和血量都不显示。配置值大于 0 才会显示。
 
 局内绑法：
 

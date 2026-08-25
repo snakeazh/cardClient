@@ -69,7 +69,7 @@ GameUI
   → 玩家 5 张手牌已翻开
   → 点选 3 张（选中上移），可点技能，或点「开牌」
   → 用这 3 张与每名存活敌人逐个亮牌、打伤害（敌人从 5 张里自动选出最大 3 张，朝玩家方向移开）
-  → 全灭：进商店；否则点「下一局」
+  → 全灭：进商店；打完该难度出结算成功页；阵亡先出失败复活弹窗
 ```
 
 技能：
@@ -84,7 +84,17 @@ GameUI
 
 人物卡攻击力 / 血量见 [`PlayerItem.md`](../../Item/PlayerItem.md)。  
 商店货架单卡见 [`ShopItem.md`](../../Item/ShopItem.md)。  
-攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。
+攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。  
+闯关结算见 [`BattleResultPopup.md`](../Popup/BattleResultPopup.md)。
+
+`GameTableViewModel` 按阶段弹窗：
+
+| 阶段 | 弹窗 | 说明 |
+|------|------|------|
+| `StageFail` | `BattleFailPopup` | 广告复活或放弃 |
+| `Shop` | `BattleSettleUpPop` 一次，然后 `BattleShopPop` | 本关积分与本关掉落金币，再买遗物 |
+| `RunComplete` | `BattleResultPopup` 成功 | 只显示 BackBtn |
+| 放弃挑战后 | `BattleResultPopup` 失败 | BackBtn + AgainBtn |
 
 ---
 

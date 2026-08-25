@@ -176,9 +176,19 @@ namespace App.Game
         public void SetHp(int hp)
         {
             EnsureRefs();
+            var value = Mathf.Max(0, hp);
             if (cardAttackHeart != null)
             {
-                cardAttackHeart.text = Mathf.Max(0, hp).ToString();
+                cardAttackHeart.text = value.ToString();
+            }
+
+            if (heartBg != null)
+            {
+                heartBg.gameObject.SetActive(value > 0);
+            }
+            else if (cardAttackHeart != null)
+            {
+                cardAttackHeart.gameObject.SetActive(value > 0);
             }
         }
 

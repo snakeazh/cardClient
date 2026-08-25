@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using App.Game;
-using App.Score;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
@@ -8,18 +7,16 @@ using Framework.UI.View;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 关卡结算：当前关积分、总积分、本关金币、每回合积分、可提现金额。
+    /// 关卡结算：只统计本关。当前关积分 / 总积分都是本关 Stage，金币与提现是本关掉落。
     /// </summary>
     public sealed class BattleSettleUpPopViewModel : ViewModelBase
     {
         private readonly IDialogService _dialogs;
-        private readonly IScoreService _score;
 
-        public BattleSettleUpPopViewModel(GameSession session, IDialogService dialogs, IScoreService score)
+        public BattleSettleUpPopViewModel(GameSession session, IDialogService dialogs)
         {
             Session = session;
             _dialogs = dialogs;
-            _score = score;
             CurScoreNum = new ObservableProperty<string>("0");
             TotalScoreNum = new ObservableProperty<string>("0");
             CoinNum = new ObservableProperty<string>("0");
@@ -50,11 +47,12 @@ namespace App.UI.Popup
 
         private void Refresh()
         {
-            var snap = Session.Score;
-            CurScoreNum.Value = snap.Stage.ToString();
-            TotalScoreNum.Value = snap.Total.ToString();
-            CoinNum.Value = Session.ShopGoldGranted.ToString();
-            WithdrawNum.Value = (_score != null ? _score.CollectableGold : 0).ToString();
+            var stageScore = Session.Score.Stage;
+            var stageGold = Session.ShopGoldGranted;
+            CurScoreNum.Value = stageScore.ToString();
+            TotalScoreNum.Value = stageScore.ToString();
+            CoinNum.Value = stageGold.ToString();
+            WithdrawNum.Value = stageGold.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
         }
 

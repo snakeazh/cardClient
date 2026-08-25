@@ -201,6 +201,19 @@ namespace App.Game
             StartStage(inheritPlayerHp: false);
         }
 
+        /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
+        public void RestartChallenge()
+        {
+            var levels = LevelSvc();
+            var current = levels?.Current;
+            if (current != null)
+            {
+                levels.TrySelect(current.Difficulty, 1);
+            }
+
+            StartNewRun();
+        }
+
         public void RestartStage()
         {
             StartStage(inheritPlayerHp: false);
@@ -830,13 +843,16 @@ namespace App.Game
             var damage = Math.Max(1, PendingAttackDamage);
             PendingAttackDamage = 0;
             var dealt = ApplyDamage(target, damage, true);
+            var scoreDamage = damage;
             if (!target.IsPlayer && Run.SplashThisRound)
             {
                 for (var i = 0; i < Enemies.Length; i++)
                 {
                     if (Enemies[i] != target && Enemies[i].Alive)
                     {
-                        dealt += ApplyDamage(Enemies[i], (int)Math.Round(damage * GameBalance.SplashRatio), false);
+                        var splash = (int)Math.Round(damage * GameBalance.SplashRatio);
+                        dealt += ApplyDamage(Enemies[i], splash, false);
+                        scoreDamage += splash;
                     }
                 }
 
@@ -845,7 +861,7 @@ namespace App.Game
 
             if (!target.IsPlayer)
             {
-                _roundDamageDealt += dealt;
+                _roundDamageDealt += scoreDamage;
                 ApplyBloodSucking(dealt);
             }
 
@@ -1428,6 +1444,12 @@ namespace App.Game
 #if UNITY_EDITOR
         public const int EditorDebugGoldAmount = 99999;
 
+        /// <summary>编辑器外挂：玩家免伤。ApplyDamage 生效。</summary>
+        public static bool DebugGodMode { get; set; }
+
+        /// <summary>编辑器外挂：对敌伤害直接斩杀。ApplyDamage 生效。</summary>
+        public static bool DebugOneHitKill { get; set; }
+
         public void DebugAddGold(int amount = EditorDebugGoldAmount)
         {
             if (amount <= 0)
@@ -1438,6 +1460,58 @@ namespace App.Game
             Run.Gold += amount;
             Log($"[编辑器] 金币 +{amount}（总金币 {Run.Gold}）");
             Notify();
+        }
+
+        public void DebugFullHp()
+        {
+            var healed = Player.MaxHp - Player.Hp;
+            if (healed <= 0)
+            {
+                Log("[编辑器] 血量已满");
+                Notify();
+                return;
+            }
+
+            Player.Hp = Player.MaxHp;
+            HpSvc()?.Heal(Player.Id, healed);
+            Log($"[编辑器] 回满血 +{healed}");
+            Notify();
+        }
+
+        public void DebugMaxSkillCharges()
+        {
+            Run.PeekGoodCharges += 99;
+            Run.ChaKanGoodCharges += 99;
+            Run.TiHuanGoodCharges += 99;
+            Log("[编辑器] 搓牌/透视/替换次数 +99（每手发牌后重置）");
+            Notify();
+        }
+
+        public void DebugSkipStage()
+        {
+            if (Phase != GamePhase.WaitingOpen && Phase != GamePhase.WaitingRub &&
+                Phase != GamePhase.RoundSettle)
+            {
+                Hint = "[编辑器] 当前阶段不可跳关，请回到待开牌/结算阶段";
+                Log(Hint);
+                Notify();
+                return;
+            }
+
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (enemy == null || enemy.Hp <= 0)
+                {
+                    continue;
+                }
+
+                Log($"[编辑器] 秒杀 {enemy.Name}");
+                enemy.Hp = 0;
+                enemy.Status = "阵亡";
+            }
+
+            EnterShop();
         }
 #endif
 
@@ -3061,6 +3135,19 @@ namespace App.Game
                 return 0;
             }
 
+#if UNITY_EDITOR
+            if (DebugGodMode && ReferenceEquals(target, Player))
+            {
+                Log($"[编辑器] 无敌模式：{target.Name} 免疫 {damage} 伤害");
+                return 0;
+            }
+
+            if (DebugOneHitKill && !ReferenceEquals(target, Player))
+            {
+                damage = Math.Max(damage, target.Hp);
+            }
+#endif
+
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
             if (dealt < damage)
             {
@@ -3165,12 +3252,13 @@ namespace App.Game
 
             _shopGoldGranted = gold;
             Run.Gold += gold;
+            var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
-            Log($"通关结算：总积分 {total} → {gold} 金币（总金币 {Run.Gold}）");
+            Log($"关卡结算：本关积分 {stage} → {gold} 金币（章节累计 {total}，总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             RollShopOffers();
-            Hint = $"关卡胜利！{total} 积分兑换 {gold} 金币。购买道具后进入下一关。";
+            Hint = $"关卡胜利！本关 {stage} 积分兑换 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
         }

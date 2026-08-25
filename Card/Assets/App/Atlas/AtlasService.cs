@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Framework.Assets;
+using Framework.Log;
 using UnityEngine;
 using UnityEngine.U2D;
 
@@ -45,7 +46,7 @@ namespace App.Atlas
                 RegisterAtlas(atlases[i]);
             }
 
-            Debug.Log($"[Atlas] preloaded {_atlases.Count} atlas(es) from bundle '{AtlasBundleName}'.");
+            AppLog.Info(LogChannel.Atlas, $"preloaded {_atlases.Count} atlas(es) from bundle '{AtlasBundleName}'.");
         }
 
         public SpriteAtlas GetAtlas(string atlasKey)
@@ -72,7 +73,7 @@ namespace App.Atlas
                 return sprite;
             }
 
-            Debug.LogWarning($"[Atlas] Sprite '{spriteName}' not found in '{atlasKey}'.");
+            AppLog.Warn(LogChannel.Atlas, $"Sprite '{spriteName}' not found in '{atlasKey}'.");
             return null;
         }
 
@@ -125,7 +126,7 @@ namespace App.Atlas
             }
 
             WarmSprites(atlasKey, atlas);
-            Debug.Log($"[Atlas] loaded '{atlasKey}' ({atlas.spriteCount} sprites).");
+            AppLog.Info(LogChannel.Atlas, $"loaded '{atlasKey}' ({atlas.spriteCount} sprites).");
         }
 
         private void WarmSprites(string atlasKey, SpriteAtlas atlas)

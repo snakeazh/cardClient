@@ -1,4 +1,5 @@
 using DG.Tweening;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.Game
@@ -423,8 +424,9 @@ namespace App.Game
 
             if (animator.runtimeAnimatorController == null)
             {
-                Debug.LogWarning(
-                    $"[Card] '{animator.name}' has no AnimatorController — " +
+                AppLog.Warn(
+                    LogChannel.Game,
+                    $"'{animator.name}' has no AnimatorController — " +
                     "bundle dependency 'animations' not loaded. Cannot play " + clipName);
                 return;
             }

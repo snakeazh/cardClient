@@ -5,6 +5,7 @@ Unity 卡牌客户端。
 | 文档 | 内容 |
 |------|------|
 | [`Card/Assets/Framework/框架使用文档.md`](Card/Assets/Framework/框架使用文档.md) | DI、资源、UI、绑定、对话框、列表 |
+| [`Card/Assets/Framework/Log/日志使用文档.md`](Card/Assets/Framework/Log/日志使用文档.md) | 开发日志：正式包关 Info、测试包按模块开 |
 | [`Config/配置表使用文档.md`](Config/配置表使用文档.md) | Excel 导出 / 配置表加载 |
 | [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md) | 关卡查询、通关进度 |
 | [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md) | 章节积分、玩家血量、金币换算 |

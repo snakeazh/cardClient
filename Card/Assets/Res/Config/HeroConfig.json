@@ -4,6 +4,7 @@
     "Name": "平凡之人",
     "Hp": 200,
     "HeroDamage": 7,
+    "Critical": 0,
     "Icon": "Adventurer1",
     "HeroEntryId": 0,
     "UnlockCondition": 0,
@@ -12,81 +13,122 @@
   {
     "Id": 2,
     "Name": "大壮",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 170,
+    "HeroDamage": 9,
+    "Critical": 0,
     "Icon": "Warrior1",
     "HeroEntryId": 10001,
     "UnlockCondition": 1,
-    "Desc": "受到的伤害-25%"
+    "Desc": "受到的伤害-20%"
   },
   {
     "Id": 3,
     "Name": "狠人",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0.05,
     "Icon": "Adventurer1",
     "HeroEntryId": 10002,
     "UnlockCondition": 2,
-    "Desc": "造成的伤害+25%"
+    "Desc": "造成的伤害+10%,且拥有5%暴击率"
   },
   {
     "Id": 4,
     "Name": "多面手",
-    "Hp": 100,
+    "Hp": 160,
     "HeroDamage": 10,
+    "Critical": 0,
     "Icon": "Adventurer1",
     "HeroEntryId": 10003,
     "UnlockCondition": 3,
-    "Desc": "攻击时,对其他敌人造成30%的伤害"
+    "Desc": "攻击时,对其他人造成30%的伤害"
   },
   {
     "Id": 5,
     "Name": "射手",
-    "Hp": 100,
+    "Hp": 160,
     "HeroDamage": 10,
+    "Critical": 0,
     "Icon": "Ranger1",
     "HeroEntryId": 10004,
     "UnlockCondition": 4,
-    "Desc": "攻击时,有50%概率额外进行一次攻击"
+    "Desc": "攻击时,有50%概率额外攻击1次"
   },
   {
     "Id": 6,
     "Name": "大嗓门",
-    "Hp": 100,
+    "Hp": 160,
     "HeroDamage": 10,
+    "Critical": 0,
     "Icon": "Mage1",
     "HeroEntryId": 10005,
     "UnlockCondition": 5,
-    "Desc": "攻击时,对所有人造成1次原伤害50%的群体伤害"
+    "Desc": "攻击时,对所有人造成50%的群体伤害"
   },
   {
     "Id": 7,
     "Name": "富豪",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0,
     "Icon": "Adventurer1",
     "HeroEntryId": 10006,
     "UnlockCondition": 6,
-    "Desc": "初始拥有一定资金"
+    "Desc": "初始拥有20资金"
   },
   {
     "Id": 8,
     "Name": "武林高手",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0.05,
     "Icon": "Adventurer1",
     "HeroEntryId": 10007,
     "UnlockCondition": 7,
-    "Desc": "在闷注获胜后,获得的积分数量翻倍"
+    "Desc": "承受伤害时有25%概率免疫伤害,且初始拥有5%的暴击率"
   },
   {
     "Id": 9,
     "Name": "赌神",
-    "Hp": 100,
-    "HeroDamage": 10,
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0,
     "Icon": "Adventurer1",
     "HeroEntryId": 10008,
     "UnlockCondition": 8,
-    "Desc": "拿到非散牌的概率提高"
+    "Desc": "额外拥有1次搓牌的机会"
+  },
+  {
+    "Id": 10,
+    "Name": "暴发户",
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0,
+    "Icon": "Adventurer1",
+    "HeroEntryId": 10009,
+    "UnlockCondition": 9,
+    "Desc": "商店里刷到史诗及以上品质的遗物概率提高5%"
+  },
+  {
+    "Id": 11,
+    "Name": "关系户",
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0,
+    "Icon": "Adventurer1",
+    "HeroEntryId": 10010,
+    "UnlockCondition": 10,
+    "Desc": "商店中的所有遗物的购买价格打八折"
+  },
+  {
+    "Id": 12,
+    "Name": "经济教授",
+    "Hp": 200,
+    "HeroDamage": 7,
+    "Critical": 0,
+    "Icon": "Adventurer1",
+    "HeroEntryId": 10011,
+    "UnlockCondition": 11,
+    "Desc": "结算伤害后获得的金币数量+10%"
   }
 ]

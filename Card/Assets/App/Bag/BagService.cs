@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using Framework.Log;
 using Framework.Save;
 using UnityEngine;
 
@@ -123,7 +124,7 @@ namespace App.Bag
             var data = JsonUtility.FromJson<BagSaveData>(json);
             if (data?.Entries == null)
             {
-                Debug.LogWarning("[Bag] Failed to parse save data.");
+                AppLog.Warn(LogChannel.Bag, "Failed to parse save data.");
                 return;
             }
 
@@ -167,7 +168,7 @@ namespace App.Bag
         {
             if (ItemConfig.Count > 0 && !ItemConfig.TryGet(itemId, out _))
             {
-                Debug.LogWarning($"[Bag] Unknown item Id={itemId} (not in ItemConfig).");
+                AppLog.Warn(LogChannel.Bag, $"Unknown item Id={itemId} (not in ItemConfig).");
             }
         }
     }

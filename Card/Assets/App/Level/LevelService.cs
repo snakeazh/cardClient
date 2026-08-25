@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
-using UnityEngine;
+using Framework.Log;
 
 namespace App.Level
 {
@@ -31,8 +31,9 @@ namespace App.Level
             IndexMonsters();
             IndexLevels();
             TrySelect(DefaultDifficulty, 1);
-            Debug.Log(
-                $"[Level] indexed: levels={CountNested(_levels)}, monsters={CountNested(_monsters)}, difficulties={_levels.Count}, current={CurrentLevelId}");
+            AppLog.Info(
+                LogChannel.Level,
+                $"indexed: levels={CountNested(_levels)}, monsters={CountNested(_monsters)}, difficulties={_levels.Count}, current={CurrentLevelId}");
         }
 
         public IReadOnlyList<int> GetDifficulties() => _difficulties;
@@ -94,7 +95,7 @@ namespace App.Level
         {
             if (!TryGetById(levelId, out var snapshot) || snapshot == null)
             {
-                Debug.LogWarning($"[Level] Unknown level Id={levelId}.");
+                AppLog.Warn(LogChannel.Level, $"Unknown level Id={levelId}.");
                 return false;
             }
 
@@ -106,7 +107,7 @@ namespace App.Level
         {
             if (!TryGet(difficulty, level, out var snapshot) || snapshot == null)
             {
-                Debug.LogWarning($"[Level] Missing Difficulty={difficulty} Level={level}.");
+                AppLog.Warn(LogChannel.Level, $"Missing Difficulty={difficulty} Level={level}.");
                 return false;
             }
 
@@ -159,8 +160,9 @@ namespace App.Level
 
                 if (byLevel.ContainsKey(row.MonsterLevel))
                 {
-                    Debug.LogWarning(
-                        $"[Level] Duplicate MonsterId={row.MonsterId} Level={row.MonsterLevel} (Id={row.Id}), later row wins.");
+                    AppLog.Warn(
+                        LogChannel.Level,
+                        $"Duplicate MonsterId={row.MonsterId} Level={row.MonsterLevel} (Id={row.Id}), later row wins.");
                 }
 
                 byLevel[row.MonsterLevel] = new LevelMonster(
@@ -193,8 +195,9 @@ namespace App.Level
 
                 if (byLevel.ContainsKey(row.Level))
                 {
-                    Debug.LogWarning(
-                        $"[Level] Duplicate Difficulty={row.Difficulty} Level={row.Level} (Id={row.Id}), later row wins.");
+                    AppLog.Warn(
+                        LogChannel.Level,
+                        $"Duplicate Difficulty={row.Difficulty} Level={row.Level} (Id={row.Id}), later row wins.");
                 }
 
                 byLevel[row.Level] = snapshot;
@@ -212,14 +215,15 @@ namespace App.Level
             var groups = row.MonsterGroup;
             if (groups == null || groups.Length == 0)
             {
-                Debug.LogWarning($"[Level] Level Id={row.Id} has no MonsterGroup.");
+                AppLog.Warn(LogChannel.Level, $"Level Id={row.Id} has no MonsterGroup.");
                 return new LevelSnapshot(row.Id, row.Difficulty, row.Level, monsters);
             }
 
             if (groups.Length > MaxMonstersPerLevel)
             {
-                Debug.LogWarning(
-                    $"[Level] Level Id={row.Id} has {groups.Length} monster groups, only first {MaxMonstersPerLevel} are used.");
+                AppLog.Warn(
+                    LogChannel.Level,
+                    $"Level Id={row.Id} has {groups.Length} monster groups, only first {MaxMonstersPerLevel} are used.");
             }
 
             var count = groups.Length < MaxMonstersPerLevel ? groups.Length : MaxMonstersPerLevel;
@@ -228,14 +232,15 @@ namespace App.Level
                 var groupId = groups[i];
                 if (!MonsterGroupConfig.TryGet(groupId, out var group) || group == null)
                 {
-                    Debug.LogWarning($"[Level] Level Id={row.Id} missing MonsterGroup Id={groupId}.");
+                    AppLog.Warn(LogChannel.Level, $"Level Id={row.Id} missing MonsterGroup Id={groupId}.");
                     continue;
                 }
 
                 if (!TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster) || monster == null)
                 {
-                    Debug.LogWarning(
-                        $"[Level] Level Id={row.Id} group {groupId}: missing MonsterId={group.MonsterId} Level={group.MonsterLevel}.");
+                    AppLog.Warn(
+                        LogChannel.Level,
+                        $"Level Id={row.Id} group {groupId}: missing MonsterId={group.MonsterId} Level={group.MonsterLevel}.");
                     continue;
                 }
 

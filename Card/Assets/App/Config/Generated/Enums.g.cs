@@ -224,6 +224,66 @@ namespace App.Config
         /// </summary>
         TwoThreeFive = 14,
 
+        /// <summary>
+        /// 数字牌2提供攻击力
+        /// </summary>
+        TwoCardAttack = 15,
+
+        /// <summary>
+        /// 数字牌3提供攻击力
+        /// </summary>
+        ThreeCardAttack = 16,
+
+        /// <summary>
+        /// 数字牌4提供攻击力
+        /// </summary>
+        FourCardAttack = 17,
+
+        /// <summary>
+        /// 数字牌5提供攻击力
+        /// </summary>
+        FiveCardAttack = 18,
+
+        /// <summary>
+        /// 数字牌6提供攻击力
+        /// </summary>
+        SixCardAttack = 19,
+
+        /// <summary>
+        /// 数字牌7提供攻击力
+        /// </summary>
+        SevenCardAttack = 20,
+
+        /// <summary>
+        /// 数字牌8提供攻击力
+        /// </summary>
+        EightCardAttack = 21,
+
+        /// <summary>
+        /// 数字牌9提供攻击力
+        /// </summary>
+        NineCardAttack = 22,
+
+        /// <summary>
+        /// 数字牌10提供攻击力
+        /// </summary>
+        TenCardAttack = 23,
+
+        /// <summary>
+        /// 英雄的生命值上限提高
+        /// </summary>
+        Sturdy = 24,
+
+        /// <summary>
+        /// 受到的伤害降低
+        /// </summary>
+        ImpregnableFortress = 25,
+
+        /// <summary>
+        /// 英雄的基础攻击力提高
+        /// </summary>
+        Strong = 26,
+
     }
 
     /// <summary>

@@ -1,7 +1,7 @@
 # 炸金花闯关 · 对局逻辑
 
 本文描述当前客户端已落地的规则，供后续改玩法、调数值、接 UI 时对照。  
-实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`。  
+实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`，商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)。  
 关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)。  
 积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。  
 局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。牌桌见 [`GameBoardController.md`](../UI/Game/GameBoardController.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
@@ -19,8 +19,8 @@
   → 开牌后用这 3 张，按上场顺序与每名存活敌人逐个比牌
       敌人从 5 张里自动选出最大的 3 张牌型，选中的牌朝玩家方向移开
   → 双方亮牌，按炸金花比大小
-      赢：玩家按 攻击力 × 牌型倍率 打该怪物
-      输：该怪物按自己的 攻击力 × 牌型倍率 打玩家
+      赢：玩家按 (攻击力 + 牌面点数) × (牌型倍率 + 遗物加成) 打该怪物
+      输：该怪物按 (攻击力 + 牌面点数) × 牌型倍率 打玩家
   → 打完所有存活敌人
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
 ```
@@ -110,7 +110,7 @@
 ## 6. 伤害
 
 ```
-伤害 = (攻击力 + 牌面点数 BaseChips) × HandScoreConfig.BasicMagnification × 遗物倍率
+伤害 = (攻击力 + 牌面点数 BaseChips) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
 ```
 
 攻击力进关时从配置写入 `SeatState.Attack`，本关内不随扣血变化。`BaseChips` 为亮出三张牌的 `ChipValue` 全加（A=11，J/Q/K=10，2~10 为面值）。
@@ -124,10 +124,10 @@
 | 顺金 | StraightFlush | 5 |
 | 豹子 | Leopard | 6 |
 
-玩家攻击带上遗物倍率（粗制剑 / 木剑等）和燧石词缀；怪物攻击只吃燧石（×0.5）。  
+玩家攻击把遗物加成加进牌型倍率，再乘燧石（×0.5）；怪物攻击只吃燧石。  
 积分：本手玩家对怪造成的总伤害记入本轮。
 
-实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`。
+实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
 
 ---
 
@@ -149,7 +149,7 @@
 
 击杀本关全部敌人 → 总积分按 10:1 向下取整换金币进商店（不清空积分；699 → 69）。
 
-道具 / 遗物见 `GameBalance.Catalog`。遗物最多 4 件。
+商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 4 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 
 广告（按钮模拟）：
 
@@ -167,7 +167,8 @@ BOSS 关随机词缀（禁搓花色、禁计分、燧石、锋芒、透视眼等
 | 文件 | 职责 |
 |------|------|
 | `App/Game/GameSession.cs` | 状态机、开牌队列、逐个比牌、攻击 |
-| `App/Game/GameDefs.cs` | 阶段、平衡、座位、商店目录 |
+| `App/Game/GameDefs.cs` | 阶段、平衡、座位 |
+| `App/Game/RelicMechanics.cs` | RelicConfig 商品效果，说明见 [`RelicMechanics.md`](RelicMechanics.md) |
 | `App/Game/CardModel.cs` | 牌、牌型、伤害公式 |
 | `App/UI/Game/GameUIView.cs` | HUD 绑定，说明见 [`GameUI.md`](../UI/Game/GameUI.md) |
 | `App/UI/Game/GameTableViewModel.cs` | 文案与按钮 |
@@ -192,7 +193,7 @@ BOSS 关随机词缀（禁搓花色、禁计分、燧石、锋芒、透视眼等
 2. 发牌后直接看牌，不要再露出闷牌 / 看牌。
 3. 开牌前点选 3 张牌（或用技能），不要走跟注 / 加注 / 弃牌。
 4. 开牌后必须按敌人顺序逐个比，不要全员一起摊牌后点选。
-5. 伤害用 `(攻击力 + BaseChips) × HandScoreConfig 倍率`，不要再用奖池 / 当轮注额。
+5. 伤害用 `(攻击力 + BaseChips) × (HandScoreConfig 倍率 + 遗物加成)`，遗物是加在倍率上，不要再乘一层。细则见 [`RelicMechanics.md`](RelicMechanics.md)。
 6. 玩家 HP / 攻击力读 `HeroConfig`，怪物 HP / 攻击力读 `MonsterConfig`。
 7. `HandScore.BaseChips` / `Card.ChipValue` 是牌力，不是货币。
 8. 玩家和敌人都发 5 张；开牌各用 3 张（玩家点选，敌人自动选最大牌型）。

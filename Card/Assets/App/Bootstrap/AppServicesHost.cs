@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework.Log;
 using Framework.Save;
 using Framework.UI.DI;
 using UnityEngine;
@@ -57,7 +58,7 @@ namespace App.Bootstrap
                 }
                 catch (Exception e)
                 {
-                    Debug.LogException(e);
+                    AppLog.Exception(LogChannel.Bootstrap, e);
                 }
             }
         }

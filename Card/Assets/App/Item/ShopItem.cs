@@ -57,7 +57,6 @@ namespace App.Game
                     Name = relic.Name,
                     Effect = relic.Desc,
                     Price = forSale ? relic.Price : relic.SellingPrice,
-                    Relic = true,
                     RelicConfigId = relic.Id
                 }, icon, goldSprite);
         }

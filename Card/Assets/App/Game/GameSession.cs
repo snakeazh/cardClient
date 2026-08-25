@@ -4,6 +4,7 @@ using App.Bootstrap;
 using App.Config;
 using App.Level;
 using App.Score;
+using Framework.Log;
 
 namespace App.Game
 {
@@ -181,7 +182,6 @@ namespace App.Game
             Run.Stage = 1;
             Run.ConsecutiveLosses = 0;
             Run.Tilted = false;
-            Run.Relics.Clear();
             Run.RelicConfigIds.Clear();
             Run.ShopOfferIds.Clear();
             Run.ShopRefreshCount = 0;
@@ -846,6 +846,7 @@ namespace App.Game
             if (!target.IsPlayer)
             {
                 _roundDamageDealt += dealt;
+                ApplyBloodSucking(dealt);
             }
 
             if (!_sequentialCompare)
@@ -1005,7 +1006,7 @@ namespace App.Game
             var targetScore = target != null ? EvaluateSeat(target) : default;
             if (_pendingOpenerWins)
             {
-                var damage = ComputeAttackDamage(opener, openScore);
+                var damage = ComputeAttackDamage(opener, openScore, target);
                 PendingAttackDamage = damage;
                 AttackLevel = MapAttackLevel(openScore.Type);
                 LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {damage} 伤害";
@@ -1022,7 +1023,7 @@ namespace App.Game
                 return;
             }
 
-            var loss = ComputeAttackDamage(target, targetScore);
+            var loss = ComputeAttackDamage(target, targetScore, opener);
             PendingAttackDamage = loss;
             AttackLevel = MapAttackLevel(targetScore.Type);
             LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {loss} 伤害";
@@ -1044,7 +1045,7 @@ namespace App.Game
             }
         }
 
-        private int ComputeAttackDamage(SeatState attacker, HandScore score)
+        private int ComputeAttackDamage(SeatState attacker, HandScore score, SeatState defender = null)
         {
             if (attacker == null)
             {
@@ -1052,11 +1053,59 @@ namespace App.Game
             }
 
             var mag = HandTypeMagnification(score.Type);
-            var relic = attacker.IsPlayer
-                ? RelicMultiplier(score)
-                : (Run.Affix == BossAffix.Flint ? 0.5f : 1f);
-            // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘倍率。
-            return HandEvaluator.ComputeAttackDamage(attacker.Attack, score.BaseChips, mag, relic);
+            var extra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score) : 0f;
+            var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
+            var totalMag = (mag + extra) * flint;
+            // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
+            var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack, score.BaseChips, totalMag);
+            LogAttackDamage(attacker, defender, score, extra, mag, flint, totalMag, damage);
+            return damage;
+        }
+
+        private void LogAttackDamage(
+            SeatState attacker,
+            SeatState defender,
+            HandScore score,
+            float extra,
+            float mag,
+            float flint,
+            float totalMag,
+            int damage)
+        {
+            var atk = Math.Max(0, attacker.Attack);
+            var chips = Math.Max(0, score.BaseChips);
+            var effective = atk + chips;
+            var vs = defender != null ? $"→{defender.Name}" : string.Empty;
+            var beats = score.BeatsAll ? " 通杀" : string.Empty;
+            var cards = FormatUsedCards(score);
+            var parts = attacker.IsPlayer ? RelicMechanics.CollectMultiplierParts(Run, score) : string.Empty;
+            var relicText = extra == 0f
+                ? "遗物+0"
+                : string.IsNullOrEmpty(parts)
+                    ? $"遗物+{extra}"
+                    : $"遗物+{extra} ({parts})";
+            AppLog.Info(
+                LogChannel.Game,
+                $"伤害 {attacker.Name}{vs} | {HandEvaluator.TypeName(score.Type)}{beats} {cards}\n" +
+                $"  攻击{atk} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
+                $"  {effective} x {totalMag} = {damage}");
+        }
+
+        private static string FormatUsedCards(HandScore score)
+        {
+            var cards = score.UsedCards;
+            if (cards == null || cards.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var text = cards[0].DisplayName;
+            for (var i = 1; i < cards.Length; i++)
+            {
+                text += cards[i].DisplayName;
+            }
+
+            return text;
         }
 
         public static float HandTypeMagnification(HandType type)
@@ -1151,94 +1200,6 @@ namespace App.Game
             return enemyIndex;
         }
 
-        public void Buy(string itemId)
-        {
-            if (Phase != GamePhase.Shop)
-            {
-                return;
-            }
-
-            ShopItemDef item = null;
-            for (var i = 0; i < GameBalance.Catalog.Count; i++)
-            {
-                if (GameBalance.Catalog[i].Id == itemId)
-                {
-                    item = GameBalance.Catalog[i];
-                    break;
-                }
-            }
-
-            if (item == null || Run.Gold < item.Price)
-            {
-                Hint = "金币不足";
-                Notify();
-                return;
-            }
-
-            if (item.Relic)
-            {
-                if (Run.Relics.Contains(item.RelicId))
-                {
-                    Hint = "已拥有该遗物";
-                    Notify();
-                    return;
-                }
-
-                if (Run.Relics.Count >= GameBalance.MaxRelics)
-                {
-                    Hint = "遗物槽已满（最多 4 件）";
-                    Notify();
-                    return;
-                }
-
-                var category = GameBalance.CategoryOf(item.RelicId);
-                for (var i = 0; i < Run.Relics.Count; i++)
-                {
-                    if (GameBalance.CategoryOf(Run.Relics[i]) == category &&
-                        category != RelicCategory.Combat)
-                    {
-                        Hint = "该类型遗物只能装备 1 件";
-                        Notify();
-                        return;
-                    }
-                }
-
-                Run.Gold -= item.Price;
-                Run.Relics.Add(item.RelicId);
-                Log($"购入遗物 {item.Name}");
-            }
-            else
-            {
-                Run.Gold -= item.Price;
-                switch (item.ConsumableId)
-                {
-                    case ConsumableId.SplashSlash:
-                        Run.SplashThisRound = true;
-                        break;
-                    case ConsumableId.Magnifier:
-                        Run.MagnifierThisRound = true;
-                        break;
-                    case ConsumableId.LoanTicket:
-                        Run.LoanTicket = true;
-                        break;
-                    case ConsumableId.RubCharge:
-                        Run.BonusRubCharges++;
-                        break;
-                    case ConsumableId.XRayCharge:
-                        Run.BonusXRayCharges++;
-                        break;
-                    case ConsumableId.ReplaceCharge:
-                        Run.BonusReplaceCharges++;
-                        break;
-                }
-
-                Log($"购入道具 {item.Name}");
-            }
-
-            Hint = $"已购买 {item.Name}";
-            Notify();
-        }
-
         /// <summary>下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，之后每次 + <see cref="GameConst.ShopRefreshAfter"/>。</summary>
         public int ShopRefreshCost
         {
@@ -1312,6 +1273,13 @@ namespace App.Game
                 return;
             }
 
+            if (Run.RelicConfigIds.Count >= GameBalance.MaxRelics)
+            {
+                Hint = "遗物槽已满（最多 4 件）";
+                Notify();
+                return;
+            }
+
             if (Run.Gold < relic.Price)
             {
                 Hint = "金币不足";
@@ -1322,6 +1290,7 @@ namespace App.Game
             Run.Gold -= relic.Price;
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
+            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.MaxHp)));
             Log($"购入遗物 {relic.Name}");
             Hint = $"已购买 {relic.Name}";
             Notify();
@@ -1349,6 +1318,7 @@ namespace App.Game
 
             Run.RelicConfigIds.Remove(relicId);
             Run.Gold += Math.Max(0, relic.SellingPrice);
+            ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.MaxHp)));
             Log($"出售遗物 {relic.Name}，获得 {relic.SellingPrice} 金币");
             Hint = $"已出售 {relic.Name}";
             Notify();
@@ -1455,52 +1425,26 @@ namespace App.Game
             Notify();
         }
 
-        public bool HasRelic(RelicId id) => Run.Relics.Contains(id) && Run.DisabledRelic != id;
+#if UNITY_EDITOR
+        public const int EditorDebugGoldAmount = 99999;
 
-        /// <summary>牌型倍率 + 花色/牌型遗物；燧石词缀再打五折。</summary>
+        public void DebugAddGold(int amount = EditorDebugGoldAmount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            Run.Gold += amount;
+            Log($"[编辑器] 金币 +{amount}（总金币 {Run.Gold}）");
+            Notify();
+        }
+#endif
+
+        /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物加在牌型倍率上。</summary>
         public float RelicMultiplier(HandScore score)
         {
-            var extra = 0f;
-            if (HasRelic(RelicId.CrudeSword))
-            {
-                extra += 4f;
-            }
-
-            if (HasRelic(RelicId.WoodenSword) && score.Type == HandType.Pair)
-            {
-                extra += 8f;
-            }
-
-            if (HasRelic(RelicId.IronSword) && score.Type == HandType.Straight)
-            {
-                extra += 8f;
-            }
-
-            if (HasRelic(RelicId.JadeSword) && score.Type == HandType.Flush)
-            {
-                extra += 8f;
-            }
-
-            if (HasRelic(RelicId.GreedyNecklace) && ContainsSuit(score, Suit.Diamond))
-            {
-                extra += 3f;
-            }
-
-            if (HasRelic(RelicId.GreedyBracelet) && ContainsSuit(score, Suit.Heart))
-            {
-                extra += 3f;
-            }
-
-            if (HasRelic(RelicId.GreedyEarring) && ContainsSuit(score, Suit.Spade))
-            {
-                extra += 3f;
-            }
-
-            if (HasRelic(RelicId.GreedyRing) && ContainsSuit(score, Suit.Club))
-            {
-                extra += 3f;
-            }
-
+            var extra = RelicMechanics.SumMultiplierExtra(Run, score);
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             return (1f + extra) * flint;
         }
@@ -1540,6 +1484,11 @@ namespace App.Game
         {
             GetScoreBan(out var banned, out var banFaces);
             var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces), banned, banFaces);
+            if (seat != null && seat.IsPlayer && RelicMechanics.HasMechanism(Run, MechanismType.TwoThreeFive))
+            {
+                score = RelicMechanics.ApplyTwoThreeFive(score);
+            }
+
             if (Run.Affix == BossAffix.Flint)
             {
                 score = new HandScore(
@@ -1548,7 +1497,8 @@ namespace App.Game
                     score.Multiplier * 0.5f,
                     score.Keys,
                     score.UsedCards,
-                    score.Label + "（燧石）");
+                    score.Label + "（燧石）",
+                    score.BeatsAll);
             }
 
             return score;
@@ -1571,7 +1521,7 @@ namespace App.Game
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
-            Run.DisabledRelic = null;
+            Run.DisabledRelicConfigId = 0;
             Run.DisabledConsumable = null;
             Run.ExtraRubCharges = 0;
             Run.Affix = BossAffix.None;
@@ -1719,14 +1669,7 @@ namespace App.Game
                 case BossAffix.BanRubClub: bannedSuit = Suit.Club; break;
             }
 
-            var keepSuit = HasRelic(RelicId.MagnetGloves) && _rng.NextDouble() < GameBalance.MagnetKeepSuitChance;
-            if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, keepSuit), out var next))
-            {
-                return next;
-            }
-
-            if (keepSuit &&
-                _deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, false), out next))
+            if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, false), out var next))
             {
                 return next;
             }
@@ -1966,7 +1909,7 @@ namespace App.Game
                 return;
             }
 
-            var scare = HasRelic(RelicId.ScareMask);
+            var scare = false;
             if (_aiPendingOpen)
             {
                 _aiPendingOpen = false;
@@ -3119,6 +3062,11 @@ namespace App.Game
             }
 
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
+            if (dealt < damage)
+            {
+                AppLog.Info(LogChannel.Game, $"伤害截断 {target.Name} 计算{damage} → 实际{dealt}（当前HP {target.Hp}）");
+            }
+
             target.Hp -= dealt;
             HpSvc()?.Damage(target.Id, dealt);
             target.Banner = main ? $"-{dealt}" : $"溅射 -{dealt}";
@@ -3192,6 +3140,7 @@ namespace App.Game
                 return;
             }
 
+            ApplyEveryRoundHpUp();
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
             {
@@ -3608,9 +3557,60 @@ namespace App.Game
             Player.ActiveInStage = true;
             Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
             var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
+            maxHp += (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.MaxHp));
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
             ApplySeatHp(Player, hp, maxHp);
             Player.Attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
+        }
+
+        private void ApplyRelicMaxHpDelta(int delta)
+        {
+            if (delta == 0 || Player == null)
+            {
+                return;
+            }
+
+            var maxHp = Math.Max(1, Player.MaxHp + delta);
+            var hp = delta > 0 ? Player.Hp + delta : Math.Min(Player.Hp, maxHp);
+            if (hp < 1)
+            {
+                hp = 1;
+            }
+
+            ApplySeatHp(Player, hp, maxHp);
+        }
+
+        private void ApplyEveryRoundHpUp()
+        {
+            HealPlayer((int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundHpUp)));
+        }
+
+        private void ApplyBloodSucking(int dealt)
+        {
+            if (dealt <= 0)
+            {
+                return;
+            }
+
+            var ratio = RelicMechanics.SumValue(Run, MechanismType.BloodSucking);
+            var heal = HealPlayer((int)Math.Round(dealt * ratio));
+            if (heal > 0)
+            {
+                AppLog.Info(LogChannel.Game, $"吸血 {dealt} x {ratio} → +{heal} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            }
+        }
+
+        private int HealPlayer(int amount)
+        {
+            if (amount <= 0 || Player == null || Player.Hp <= 0)
+            {
+                return 0;
+            }
+
+            var before = Player.Hp;
+            var hp = Math.Min(Player.MaxHp, Player.Hp + amount);
+            ApplySeatHp(Player, hp, Player.MaxHp);
+            return hp - before;
         }
 
         private int ApplyLevelEnemies()
@@ -3830,10 +3830,12 @@ namespace App.Game
                 return;
             }
 
-            if (Run.Relics.Count > 0 && _rng.Next(2) == 0)
+            if (Run.RelicConfigIds.Count > 0 && _rng.Next(2) == 0)
             {
-                Run.DisabledRelic = Run.Relics[_rng.Next(Run.Relics.Count)];
-                Log($"锋芒：本局禁用遗物 {Run.DisabledRelic}");
+                Run.DisabledRelicConfigId = Run.RelicConfigIds[_rng.Next(Run.RelicConfigIds.Count)];
+                var relic = RelicConfig.Get(Run.DisabledRelicConfigId);
+                var name = relic != null ? relic.Name : Run.DisabledRelicConfigId.ToString();
+                Log($"锋芒：本局禁用遗物 {name}");
                 return;
             }
 
@@ -4008,19 +4010,6 @@ namespace App.Game
             }
 
             return value > max ? max : value;
-        }
-
-        private static bool ContainsSuit(HandScore score, Suit suit)
-        {
-            for (var i = 0; i < score.UsedCards.Length; i++)
-            {
-                if (score.UsedCards[i].Suit == suit)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private bool IsAllIn(SeatState seat)

@@ -24,6 +24,9 @@ namespace App.Resources
         public const string CardIcon = "Game/CardIcon";
         public const string CardShadow = "UI/Icon/CardShadow";
         public const string PlayerItem = "UI/Icon/PlayerItem";
+        public const string CardPointEffect01 = "Effect/UI/Card/CardPointEffect01";
+        public const string CardPointEffect02 = "Effect/UI/Card/CardPointEffect02";
+        public const string CardPointEffect03 = "Effect/UI/Card/CardPointEffect03";
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>

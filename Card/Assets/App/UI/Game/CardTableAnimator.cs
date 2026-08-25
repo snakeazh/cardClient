@@ -468,6 +468,38 @@ namespace App.UI
             TintPlayerCard(index, Color.white);
         }
 
+        public void CollectSelectedCards(GameSession session, SeatState seat, List<CardItem> dest)
+        {
+            if (dest == null)
+            {
+                return;
+            }
+
+            dest.Clear();
+            var view = ViewOf(session, seat);
+            if (view == null || seat == null)
+            {
+                return;
+            }
+
+            var anySelected = seat.CountSelectedCards() > 0;
+            for (var i = 0; i < view.Items.Length; i++)
+            {
+                var item = view.Items[i];
+                if (item == null || !view.Landed[i])
+                {
+                    continue;
+                }
+
+                if (anySelected && !seat.IsCardSelected(i))
+                {
+                    continue;
+                }
+
+                dest.Add(item);
+            }
+        }
+
         public void Dispose()
         {
             _dealSeq?.Kill();

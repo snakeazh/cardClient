@@ -1171,7 +1171,7 @@ namespace App.Game
             ApplyDamage(Player, damage, true);
         }
 
-        private SeatState EnemyAtVisualSlot(int visualSlot)
+        public SeatState EnemyAtVisualSlot(int visualSlot)
         {
             var activeCount = 0;
             for (var i = 0; i < Enemies.Length; i++)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using App.Game;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -38,6 +39,11 @@ namespace App.UI
             _vm.Session.Changed += OnSessionChanged;
             _cards.DealFinished += OnDealFinished;
             OnSessionChanged();
+        }
+
+        public void CollectSelectedCards(SeatState seat, List<CardItem> dest)
+        {
+            _cards.CollectSelectedCards(_vm != null ? _vm.Session : null, seat, dest);
         }
 
         public void Detach()

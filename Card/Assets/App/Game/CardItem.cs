@@ -20,6 +20,14 @@ namespace App.Game
         public Card Card { get; private set; }
         public CardFaceState FaceState { get; private set; }
 
+        public Transform FxAnchor
+        {
+            get
+            {
+                return CurrentRenderer != null ? CurrentRenderer.transform : transform;
+            }
+        }
+
         private Tween _moveTween;
         private Tween _rotateTween;
         private Tween _flipTween;

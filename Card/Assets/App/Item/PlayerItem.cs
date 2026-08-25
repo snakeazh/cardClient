@@ -19,6 +19,7 @@ namespace App.Game
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text cardAttackValue;
+        [SerializeField] private Animator attackValueAnimator;
         [SerializeField] private TMP_Text cardAttackHeart;
         [SerializeField] private GameObject attackRoot;
         [SerializeField] private Image attackBg;
@@ -53,6 +54,24 @@ namespace App.Game
             {
                 EnsureRefs();
                 return playerAnimator;
+            }
+        }
+
+        public RectTransform AttackValueRect
+        {
+            get
+            {
+                EnsureRefs();
+                return cardAttackValue != null ? cardAttackValue.rectTransform : null;
+            }
+        }
+
+        public Animator AttackValueAnimator
+        {
+            get
+            {
+                EnsureRefs();
+                return attackValueAnimator;
             }
         }
 
@@ -173,6 +192,37 @@ namespace App.Game
             }
         }
 
+        public void PlayAttackNumberShake(bool low, bool high)
+        {
+            EnsureRefs();
+            if (attackValueAnimator == null)
+            {
+                return;
+            }
+
+            attackValueAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            attackValueAnimator.enabled = true;
+            attackValueAnimator.SetBool("low", false);
+            attackValueAnimator.SetBool("high", false);
+            attackValueAnimator.SetBool("normal", false);
+
+            var state = low ? "NumberShackLow" : high ? "NumberShackHigh" : "NumberNormal";
+            attackValueAnimator.SetBool("low", low);
+            attackValueAnimator.SetBool("high", high);
+            attackValueAnimator.SetBool("normal", !low && !high);
+            attackValueAnimator.Play(state, 0, 0f);
+            attackValueAnimator.Update(0f);
+            if (low)
+            {
+                attackValueAnimator.SetBool("low", false);
+            }
+
+            if (high)
+            {
+                attackValueAnimator.SetBool("high", false);
+            }
+        }
+
         public void SetHp(int hp)
         {
             EnsureRefs();
@@ -247,6 +297,11 @@ namespace App.Game
             if (cardAttackValue == null)
             {
                 cardAttackValue = FindText("card_attackValue");
+            }
+
+            if (attackValueAnimator == null && cardAttackValue != null)
+            {
+                attackValueAnimator = cardAttackValue.GetComponent<Animator>();
             }
 
             if (attackRoot == null || attackBg == null)

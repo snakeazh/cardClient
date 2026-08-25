@@ -38,6 +38,8 @@ namespace App.UI
         private readonly TMP_Text[] _enemyCardTypeNums = new TMP_Text[3];
         private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
+        private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
         private int _prefabEquipCount;
@@ -52,6 +54,11 @@ namespace App.UI
         private PlayerItem _playerItem;
         private Sprite _playerPortrait;
         private int _playedAttack;
+        private TMP_Text _playerCardTypeNum;
+        private TMP_Text _beilvNum;
+        private bool _holdAttackDisplay;
+        private PlayerItem _heldAttackItem;
+        private int _heldAttackValue;
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Coroutine _aiDelay;
@@ -72,6 +79,8 @@ namespace App.UI
             BindEquips();
             BindAttackHud();
             BindAttackFx();
+            BindSettleFx();
+            BindBeilvNum();
             BindArrows();
             BindHudChrome();
             ViewModel.Refresh();
@@ -130,6 +139,8 @@ namespace App.UI
             }
 
             _attackFx.Dispose();
+            _settleFx.Dispose();
+            ClearAttackHold();
             StopArrowMotion();
             RestoreHpText();
             if (ViewModel != null)
@@ -237,6 +248,28 @@ namespace App.UI
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
         }
 
+        private void BindSettleFx()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            _settleFx.Bind(ViewModel.Resources, transform);
+        }
+
+        private void BindBeilvNum()
+        {
+            var node = ResolveSlot("beilvNum");
+            if (node == null)
+            {
+                return;
+            }
+
+            _beilvNum = node.GetComponent<TMP_Text>();
+            node.gameObject.SetActive(false);
+        }
+
         private void TryPlayAttack()
         {
             if (ViewModel == null)
@@ -251,6 +284,78 @@ namespace App.UI
             }
 
             _playedAttack = session.AttackPlaySerial;
+            PlaySettleThenAttack(session);
+        }
+
+        private void PlaySettleThenAttack(GameSession session)
+        {
+            var attacker = session.IncomingAttack
+                ? session.EnemyAtVisualSlot(session.AttackVisualSlot)
+                : session.Player;
+            var attackItem = session.IncomingAttack
+                ? AttackItemAtSlot(session.AttackVisualSlot)
+                : _playerItem;
+            var score = session.EvaluateSeat(attacker);
+            var extra = attacker != null && attacker.IsPlayer
+                ? RelicMechanics.SumMultiplierExtra(session.Run, score)
+                : 0f;
+            var baseAttack = attacker != null ? Math.Max(0, attacker.Attack) : 0;
+            _holdAttackDisplay = true;
+            _heldAttackItem = attackItem;
+            _heldAttackValue = baseAttack;
+            if (_beilvNum != null)
+            {
+                _beilvNum.gameObject.SetActive(false);
+            }
+
+            if (_board != null)
+            {
+                _board.CollectSelectedCards(attacker, _settleCards);
+            }
+            else
+            {
+                _settleCards.Clear();
+            }
+
+            var relicText = extra > 0f ? GameTableViewModel.FormatMultiplier(extra) : string.Empty;
+            var typeText = GameTableViewModel.FormatHandMultiplier(score.Type);
+            var cardTypeNum = _playerCardTypeNum;
+            _settleFx.Play(
+                _settleCards,
+                attackItem,
+                extra > 0f ? _beilvNum : null,
+                relicText,
+                cardTypeNum,
+                typeText,
+                baseAttack,
+                score.BaseChips,
+                Math.Max(1, session.AttackDamage),
+                value => { _heldAttackValue = value; },
+                () =>
+                {
+                    if (ViewModel == null)
+                    {
+                        ClearAttackHold();
+                        return;
+                    }
+
+                    _heldAttackValue = Math.Max(1, session.AttackDamage);
+                    PlayAttackCutscene(session);
+                });
+        }
+
+        private int AttackDisplay(PlayerItem item, int logicAttack)
+        {
+            if (_holdAttackDisplay && item != null && item == _heldAttackItem)
+            {
+                return _heldAttackValue;
+            }
+
+            return logicAttack;
+        }
+
+        private void PlayAttackCutscene(GameSession session)
+        {
             var mask = ResolveSlot("mask");
             if (mask != null)
             {
@@ -278,6 +383,7 @@ namespace App.UI
             {
                 ViewModel.ShowHpText.Value = false;
                 RestoreHpText();
+                ClearAttackHold();
                 if (ViewModel != null)
                 {
                     ViewModel.Session.CompletePlayerAttack();
@@ -291,6 +397,23 @@ namespace App.UI
             {
                 _attackFx.Play(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
             }
+        }
+
+        private PlayerItem AttackItemAtSlot(int slot)
+        {
+            if (slot < 0 || slot >= _enemyItems.Length)
+            {
+                return null;
+            }
+
+            return _enemyItems[slot];
+        }
+
+        private void ClearAttackHold()
+        {
+            _holdAttackDisplay = false;
+            _heldAttackItem = null;
+            _heldAttackValue = 0;
         }
 
         private void PlaceHpAtPlayer()
@@ -554,7 +677,7 @@ namespace App.UI
             var session = ViewModel.Session;
             if (_playerItem != null)
             {
-                _playerItem.Bind(session.Player, _playerPortrait, session.Player.Attack);
+                _playerItem.Bind(session.Player, _playerPortrait, AttackDisplay(_playerItem, session.Player.Attack));
             }
 
             var activeCount = 0;
@@ -582,7 +705,7 @@ namespace App.UI
                     continue;
                 }
 
-                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], enemy.Attack, session.ActingAiId);
+                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], AttackDisplay(_enemyItems[slot], enemy.Attack), session.ActingAiId);
             }
         }
 
@@ -595,6 +718,14 @@ namespace App.UI
 
             var session = ViewModel.Session;
             var settling = GameTableViewModel.ShouldShowCardInfo(session);
+            if (!settling)
+            {
+                if (_beilvNum != null)
+                {
+                    _beilvNum.gameObject.SetActive(false);
+                }
+            }
+
             if (_playerCardInfo != null)
             {
                 _playerCardInfo.SetActive(settling);
@@ -872,6 +1003,7 @@ namespace App.UI
             BindImage("cardtype2", ViewModel.CardTypeLabel);
             var num = ResolveSlot("cardtypeNum");
             var text = num != null ? num.GetComponent<TMP_Text>() : null;
+            _playerCardTypeNum = text;
             if (text != null)
             {
                 Binding.BindText(text, ViewModel.CardTypeNum);

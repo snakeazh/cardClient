@@ -639,7 +639,7 @@ namespace App.UI
             }
         }
 
-        private static string FormatMultiplier(float value)
+        public static string FormatMultiplier(float value)
         {
             var rounded = (float)Math.Round(value, 2);
             if (Math.Abs(rounded - (float)Math.Round(rounded)) < 0.001f)

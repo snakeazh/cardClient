@@ -1,0 +1,1202 @@
+[
+  {
+    "Id": 10101,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌2提供的攻击力+1",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10102,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌2提供的攻击力+2",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10103,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌2提供的攻击力+3",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10104,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌2提供的攻击力+4",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10105,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌2提供的攻击力+5",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10106,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌2提供的攻击力+6",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10107,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌2提供的攻击力+7",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10108,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌2提供的攻击力+8",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10109,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌2提供的攻击力+9",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10110,
+    "TalentId": 101,
+    "Name": "2点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌2提供的攻击力+10",
+    "TalentEntry": 101
+  },
+  {
+    "Id": 10201,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌3提供的攻击力+1",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10202,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌3提供的攻击力+2",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10203,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌3提供的攻击力+3",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10204,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌3提供的攻击力+4",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10205,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌3提供的攻击力+5",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10206,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌3提供的攻击力+6",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10207,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌3提供的攻击力+7",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10208,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌3提供的攻击力+8",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10209,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌3提供的攻击力+9",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10210,
+    "TalentId": 102,
+    "Name": "3点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌3提供的攻击力+10",
+    "TalentEntry": 102
+  },
+  {
+    "Id": 10301,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌4提供的攻击力+1",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10302,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌4提供的攻击力+2",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10303,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌4提供的攻击力+3",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10304,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌4提供的攻击力+4",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10305,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌4提供的攻击力+5",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10306,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌4提供的攻击力+6",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10307,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌4提供的攻击力+7",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10308,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌4提供的攻击力+8",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10309,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌4提供的攻击力+9",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10310,
+    "TalentId": 103,
+    "Name": "4点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌4提供的攻击力+10",
+    "TalentEntry": 103
+  },
+  {
+    "Id": 10401,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌5提供的攻击力+1",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10402,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌5提供的攻击力+2",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10403,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌5提供的攻击力+3",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10404,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌5提供的攻击力+4",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10405,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌5提供的攻击力+5",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10406,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌5提供的攻击力+6",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10407,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌5提供的攻击力+7",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10408,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌5提供的攻击力+8",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10409,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌5提供的攻击力+9",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10410,
+    "TalentId": 104,
+    "Name": "5点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌5提供的攻击力+10",
+    "TalentEntry": 104
+  },
+  {
+    "Id": 10501,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌6提供的攻击力+1",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10502,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌6提供的攻击力+2",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10503,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌6提供的攻击力+3",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10504,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌6提供的攻击力+4",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10505,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌6提供的攻击力+5",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10506,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌6提供的攻击力+6",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10507,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌6提供的攻击力+7",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10508,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌6提供的攻击力+8",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10509,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌6提供的攻击力+9",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10510,
+    "TalentId": 105,
+    "Name": "6点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌6提供的攻击力+10",
+    "TalentEntry": 105
+  },
+  {
+    "Id": 10601,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌7提供的攻击力+1",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10602,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌7提供的攻击力+2",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10603,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌7提供的攻击力+3",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10604,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌7提供的攻击力+4",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10605,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌7提供的攻击力+5",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10606,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌7提供的攻击力+6",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10607,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌7提供的攻击力+7",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10608,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌7提供的攻击力+8",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10609,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌7提供的攻击力+9",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10610,
+    "TalentId": 106,
+    "Name": "7点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌7提供的攻击力+10",
+    "TalentEntry": 106
+  },
+  {
+    "Id": 10701,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌8提供的攻击力+1",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10702,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌8提供的攻击力+2",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10703,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌8提供的攻击力+3",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10704,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌8提供的攻击力+4",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10705,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌8提供的攻击力+5",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10706,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌8提供的攻击力+6",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10707,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌8提供的攻击力+7",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10708,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌8提供的攻击力+8",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10709,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌8提供的攻击力+9",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10710,
+    "TalentId": 107,
+    "Name": "8点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌8提供的攻击力+10",
+    "TalentEntry": 107
+  },
+  {
+    "Id": 10801,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌9提供的攻击力+1",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10802,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌9提供的攻击力+2",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10803,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌9提供的攻击力+3",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10804,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌9提供的攻击力+4",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10805,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌9提供的攻击力+5",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10806,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌9提供的攻击力+6",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10807,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌9提供的攻击力+7",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10808,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌9提供的攻击力+8",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10809,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌9提供的攻击力+9",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10810,
+    "TalentId": 108,
+    "Name": "9点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌9提供的攻击力+10",
+    "TalentEntry": 108
+  },
+  {
+    "Id": 10901,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "数字牌10提供的攻击力+1",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10902,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "数字牌10提供的攻击力+2",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10903,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "数字牌10提供的攻击力+3",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10904,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "数字牌10提供的攻击力+4",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10905,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "数字牌10提供的攻击力+5",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10906,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "数字牌10提供的攻击力+6",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10907,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "数字牌10提供的攻击力+7",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10908,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "数字牌10提供的攻击力+8",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10909,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "数字牌10提供的攻击力+9",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 10910,
+    "TalentId": 109,
+    "Name": "10点精通",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "数字牌10提供的攻击力+10",
+    "TalentEntry": 109
+  },
+  {
+    "Id": 11001,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "英雄的生命值上限+4",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11002,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "英雄的生命值上限+8",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11003,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "英雄的生命值上限+12",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11004,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "英雄的生命值上限+16",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11005,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "英雄的生命值上限+20",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11006,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "英雄的生命值上限+24",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11007,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "英雄的生命值上限+28",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11008,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "英雄的生命值上限+32",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11009,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "英雄的生命值上限+36",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11010,
+    "TalentId": 110,
+    "Name": "结实",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "英雄的生命值上限+40",
+    "TalentEntry": 110
+  },
+  {
+    "Id": 11101,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "受到的伤害降低1点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11102,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "受到的伤害降低2点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11103,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "受到的伤害降低3点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11104,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "受到的伤害降低4点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11105,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "受到的伤害降低5点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11106,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "受到的伤害降低6点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11107,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "受到的伤害降低7点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11108,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "受到的伤害降低8点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11109,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "受到的伤害降低9点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11110,
+    "TalentId": 111,
+    "Name": "铜墙铁壁",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "受到的伤害降低10点",
+    "TalentEntry": 111
+  },
+  {
+    "Id": 11201,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 1,
+    "Desc": "英雄的基础攻击力+1",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11202,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 2,
+    "Desc": "英雄的基础攻击力+2",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11203,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 3,
+    "Desc": "英雄的基础攻击力+3",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11204,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 4,
+    "Desc": "英雄的基础攻击力+4",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11205,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 5,
+    "Desc": "英雄的基础攻击力+5",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11206,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 6,
+    "Desc": "英雄的基础攻击力+6",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11207,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 7,
+    "Desc": "英雄的基础攻击力+7",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11208,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 8,
+    "Desc": "英雄的基础攻击力+8",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11209,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 9,
+    "Desc": "英雄的基础攻击力+9",
+    "TalentEntry": 112
+  },
+  {
+    "Id": 11210,
+    "TalentId": 112,
+    "Name": "强壮",
+    "Type": 1,
+    "Icon": "",
+    "TalentLevel": 10,
+    "Desc": "英雄的基础攻击力+10",
+    "TalentEntry": 112
+  }
+]

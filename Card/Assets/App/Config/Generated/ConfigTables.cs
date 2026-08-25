@@ -34,6 +34,8 @@ namespace App.Config
             var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
             var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
+            var talentConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentConfig);
+            var talentEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentEntryConfig);
 
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
@@ -48,6 +50,8 @@ namespace App.Config
             MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
             RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
             RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
+            TalentConfig.Load(ConfigJson.FromArrayJson<TalentConfig>(talentConfigAsset.text));
+            TalentEntryConfig.Load(ConfigJson.FromArrayJson<TalentEntryConfig>(talentEntryConfigAsset.text));
         }
     }
 }

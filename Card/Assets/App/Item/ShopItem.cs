@@ -18,6 +18,8 @@ namespace App.Game
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
         [SerializeField] private Image iconBg;
+        [SerializeField] private Image iconTitleBg;
+        [SerializeField] private Image cardCircle;
         [SerializeField] private TMP_Text goldNum;
         [SerializeField] private Image gold;
         [SerializeField] private Button button;
@@ -110,11 +112,8 @@ namespace App.Game
 
         public void ApplyQuality(QualityType type)
         {
-            EnsureIconBg();
-            if (iconBg != null)
-            {
-                iconBg.color = ThemeColors.ForQuality(type);
-            }
+            EnsureQualityRefs();
+            ThemeColors.ApplyCard(type, iconBg, iconTitleBg, cardCircle);
         }
 
         public void BindClick(Action<ShopItem> onClick)
@@ -257,11 +256,21 @@ namespace App.Game
             }
         }
 
-        private void EnsureIconBg()
+        private void EnsureQualityRefs()
         {
             if (iconBg == null)
             {
                 iconBg = FindNamed<Image>("IconBG");
+            }
+
+            if (iconTitleBg == null)
+            {
+                iconTitleBg = FindNamed<Image>("IconTitleBG");
+            }
+
+            if (cardCircle == null)
+            {
+                cardCircle = FindNamed<Image>("card_Circle");
             }
         }
 
@@ -305,6 +314,16 @@ namespace App.Game
             if (iconBg == null)
             {
                 iconBg = FindNamed<Image>("IconBG");
+            }
+
+            if (iconTitleBg == null)
+            {
+                iconTitleBg = FindNamed<Image>("IconTitleBG");
+            }
+
+            if (cardCircle == null)
+            {
+                cardCircle = FindNamed<Image>("card_Circle");
             }
 
             if (goldNum == null)

@@ -1275,7 +1275,7 @@ namespace App.Game
 
             if (Run.RelicConfigIds.Count >= GameBalance.MaxRelics)
             {
-                Hint = "遗物槽已满（最多 4 件）";
+                Hint = $"遗物槽已满（最多 {GameBalance.MaxRelics} 件）";
                 Notify();
                 return;
             }

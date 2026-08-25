@@ -112,16 +112,22 @@ namespace App.UI.Popup
             Preview(relicId, fromShop: false);
         }
 
-        public void BeginDragTrade(int relicId, bool buying)
+        public bool BeginDragTrade(int relicId, bool buying)
         {
+            if (buying && Session.Run.RelicConfigIds.Count >= GameBalance.MaxRelics)
+            {
+                return false;
+            }
+
             if (!TryBindRelic(relicId, buying ? ShopInteractMode.Buying : ShopInteractMode.Selling))
             {
-                return;
+                return false;
             }
 
             _dragging = true;
             ShowTip.Value = false;
             ShowDropZones(buying);
+            return true;
         }
 
         public void EndDragTrade()

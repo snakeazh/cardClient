@@ -1,12 +1,13 @@
 using App.Bootstrap;
 using App.Game;
+using App.Talent;
 using UnityEditor;
 using UnityEngine;
 
 namespace App.Game.Editor
 {
     /// <summary>
-    /// 编辑器外挂菜单（Debug/外挂）。仅 Play 模式生效，全部走 GameSession 的 UNITY_EDITOR 调试 API，不进真机包。
+    /// 编辑器外挂菜单（Debug/外挂）。仅 Play 模式生效，全部走 GameSession / ITalentService 的 UNITY_EDITOR 调试 API，不进真机包。
     /// </summary>
     public static class GameCheatMenu
     {
@@ -22,6 +23,28 @@ namespace App.Game.Editor
             }
 
             session.DebugAddGold();
+        }
+
+        [MenuItem("Debug/外挂/随机获得一个天赋", false, 14)]
+        public static void GrantRandomTalent()
+        {
+            if (!Application.isPlaying || !AppServices.IsReady)
+            {
+                Debug.LogWarning("需要在 Play 模式且启动流程完成后使用");
+                return;
+            }
+
+            var talent = AppServices.Resolve<ITalentService>();
+            var ids = talent.GetIds();
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            var id = ids[Random.Range(0, ids.Count)];
+            var result = talent.Add(id);
+            talent.Save();
+            Debug.Log($"[外挂] 获得天赋 {id}，等级 {result.PreviousLevel} -> {result.Current.Level}");
         }
 
         [MenuItem("Debug/外挂/回满血", false, 11)]

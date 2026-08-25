@@ -31,7 +31,14 @@ namespace App.UI
 
             if (UI.TryGet<Toggle>("TalentBtn", out var talent))
             {
-                talent.interactable = false;
+                Binding.BindToggle(talent, ViewModel.TalentOn);
+                Binding.Add(ViewModel.TalentOn.Subscribe(on =>
+                {
+                    if (on)
+                    {
+                        ViewModel.ShowTalent();
+                    }
+                }, emitCurrent: false));
             }
         }
     }

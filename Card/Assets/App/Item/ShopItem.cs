@@ -17,6 +17,7 @@ namespace App.Game
 
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
+        [SerializeField] private Image iconBg;
         [SerializeField] private TMP_Text goldNum;
         [SerializeField] private Image gold;
         [SerializeField] private Button button;
@@ -24,9 +25,6 @@ namespace App.Game
 
         public ShopItemDef Data { get; private set; }
 
-        
-        
-        
         public event Action<ShopItem> Clicked;
         public event Action<ShopItem, PointerEventData> DragBegan;
         public event Action<ShopItem, PointerEventData> DragMoved;
@@ -59,6 +57,7 @@ namespace App.Game
                     Price = forSale ? relic.Price : relic.SellingPrice,
                     RelicConfigId = relic.Id
                 }, icon, goldSprite);
+            ApplyQuality(relic != null ? relic.Type : QualityType.Ordinary);
         }
 
         public void Bind(string name, Sprite icon, int price, Sprite goldSprite = null)
@@ -107,6 +106,15 @@ namespace App.Game
 
             gold.sprite = goldSprite;
             gold.enabled = true;
+        }
+
+        public void ApplyQuality(QualityType type)
+        {
+            EnsureIconBg();
+            if (iconBg != null)
+            {
+                iconBg.color = ThemeColors.ForQuality(type);
+            }
         }
 
         public void BindClick(Action<ShopItem> onClick)
@@ -249,6 +257,28 @@ namespace App.Game
             }
         }
 
+        private void EnsureIconBg()
+        {
+            if (iconBg == null)
+            {
+                iconBg = FindNamed<Image>("IconBG");
+            }
+        }
+
+        private T FindNamed<T>(string nodeName) where T : Component
+        {
+            var nodes = GetComponentsInChildren<Transform>(true);
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].name == nodeName)
+                {
+                    return nodes[i].GetComponent<T>();
+                }
+            }
+
+            return null;
+        }
+
 #if UNITY_EDITOR
         private void Reset()
         {
@@ -272,6 +302,11 @@ namespace App.Game
                 cardIcon = FindNamed<Image>("card_icon");
             }
 
+            if (iconBg == null)
+            {
+                iconBg = FindNamed<Image>("IconBG");
+            }
+
             if (goldNum == null)
             {
                 goldNum = FindNamed<TMP_Text>("goldNum");
@@ -291,20 +326,6 @@ namespace App.Game
             {
                 animator = FindNamed<Animator>("ShopRoot");
             }
-        }
-
-        private T FindNamed<T>(string nodeName) where T : Component
-        {
-            var nodes = GetComponentsInChildren<Transform>(true);
-            for (var i = 0; i < nodes.Length; i++)
-            {
-                if (nodes[i].name == nodeName)
-                {
-                    return nodes[i].GetComponent<T>();
-                }
-            }
-
-            return null;
         }
 #endif
     }

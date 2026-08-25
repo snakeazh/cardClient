@@ -6,8 +6,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌2提供的攻击力+1",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+1"
   },
   {
     "Id": 10102,
@@ -16,8 +16,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌2提供的攻击力+2",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+2"
   },
   {
     "Id": 10103,
@@ -26,8 +26,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌2提供的攻击力+3",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+3"
   },
   {
     "Id": 10104,
@@ -36,8 +36,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌2提供的攻击力+4",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+4"
   },
   {
     "Id": 10105,
@@ -46,8 +46,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌2提供的攻击力+5",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+5"
   },
   {
     "Id": 10106,
@@ -56,8 +56,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌2提供的攻击力+6",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+6"
   },
   {
     "Id": 10107,
@@ -66,8 +66,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌2提供的攻击力+7",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+7"
   },
   {
     "Id": 10108,
@@ -76,8 +76,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌2提供的攻击力+8",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+8"
   },
   {
     "Id": 10109,
@@ -86,8 +86,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌2提供的攻击力+9",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+9"
   },
   {
     "Id": 10110,
@@ -96,8 +96,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌2提供的攻击力+10",
-    "TalentEntry": 101
+    "TalentEntry": 101,
+    "Desc": "数字牌2提供的攻击力+10"
   },
   {
     "Id": 10201,
@@ -106,8 +106,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌3提供的攻击力+1",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+1"
   },
   {
     "Id": 10202,
@@ -116,8 +116,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌3提供的攻击力+2",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+2"
   },
   {
     "Id": 10203,
@@ -126,8 +126,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌3提供的攻击力+3",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+3"
   },
   {
     "Id": 10204,
@@ -136,8 +136,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌3提供的攻击力+4",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+4"
   },
   {
     "Id": 10205,
@@ -146,8 +146,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌3提供的攻击力+5",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+5"
   },
   {
     "Id": 10206,
@@ -156,8 +156,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌3提供的攻击力+6",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+6"
   },
   {
     "Id": 10207,
@@ -166,8 +166,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌3提供的攻击力+7",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+7"
   },
   {
     "Id": 10208,
@@ -176,8 +176,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌3提供的攻击力+8",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+8"
   },
   {
     "Id": 10209,
@@ -186,8 +186,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌3提供的攻击力+9",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+9"
   },
   {
     "Id": 10210,
@@ -196,8 +196,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌3提供的攻击力+10",
-    "TalentEntry": 102
+    "TalentEntry": 102,
+    "Desc": "数字牌3提供的攻击力+10"
   },
   {
     "Id": 10301,
@@ -206,8 +206,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌4提供的攻击力+1",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+1"
   },
   {
     "Id": 10302,
@@ -216,8 +216,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌4提供的攻击力+2",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+2"
   },
   {
     "Id": 10303,
@@ -226,8 +226,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌4提供的攻击力+3",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+3"
   },
   {
     "Id": 10304,
@@ -236,8 +236,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌4提供的攻击力+4",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+4"
   },
   {
     "Id": 10305,
@@ -246,8 +246,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌4提供的攻击力+5",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+5"
   },
   {
     "Id": 10306,
@@ -256,8 +256,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌4提供的攻击力+6",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+6"
   },
   {
     "Id": 10307,
@@ -266,8 +266,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌4提供的攻击力+7",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+7"
   },
   {
     "Id": 10308,
@@ -276,8 +276,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌4提供的攻击力+8",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+8"
   },
   {
     "Id": 10309,
@@ -286,8 +286,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌4提供的攻击力+9",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+9"
   },
   {
     "Id": 10310,
@@ -296,8 +296,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌4提供的攻击力+10",
-    "TalentEntry": 103
+    "TalentEntry": 103,
+    "Desc": "数字牌4提供的攻击力+10"
   },
   {
     "Id": 10401,
@@ -306,8 +306,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌5提供的攻击力+1",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+1"
   },
   {
     "Id": 10402,
@@ -316,8 +316,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌5提供的攻击力+2",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+2"
   },
   {
     "Id": 10403,
@@ -326,8 +326,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌5提供的攻击力+3",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+3"
   },
   {
     "Id": 10404,
@@ -336,8 +336,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌5提供的攻击力+4",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+4"
   },
   {
     "Id": 10405,
@@ -346,8 +346,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌5提供的攻击力+5",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+5"
   },
   {
     "Id": 10406,
@@ -356,8 +356,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌5提供的攻击力+6",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+6"
   },
   {
     "Id": 10407,
@@ -366,8 +366,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌5提供的攻击力+7",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+7"
   },
   {
     "Id": 10408,
@@ -376,8 +376,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌5提供的攻击力+8",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+8"
   },
   {
     "Id": 10409,
@@ -386,8 +386,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌5提供的攻击力+9",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+9"
   },
   {
     "Id": 10410,
@@ -396,8 +396,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌5提供的攻击力+10",
-    "TalentEntry": 104
+    "TalentEntry": 104,
+    "Desc": "数字牌5提供的攻击力+10"
   },
   {
     "Id": 10501,
@@ -406,8 +406,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌6提供的攻击力+1",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+1"
   },
   {
     "Id": 10502,
@@ -416,8 +416,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌6提供的攻击力+2",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+2"
   },
   {
     "Id": 10503,
@@ -426,8 +426,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌6提供的攻击力+3",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+3"
   },
   {
     "Id": 10504,
@@ -436,8 +436,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌6提供的攻击力+4",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+4"
   },
   {
     "Id": 10505,
@@ -446,8 +446,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌6提供的攻击力+5",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+5"
   },
   {
     "Id": 10506,
@@ -456,8 +456,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌6提供的攻击力+6",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+6"
   },
   {
     "Id": 10507,
@@ -466,8 +466,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌6提供的攻击力+7",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+7"
   },
   {
     "Id": 10508,
@@ -476,8 +476,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌6提供的攻击力+8",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+8"
   },
   {
     "Id": 10509,
@@ -486,8 +486,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌6提供的攻击力+9",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+9"
   },
   {
     "Id": 10510,
@@ -496,8 +496,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌6提供的攻击力+10",
-    "TalentEntry": 105
+    "TalentEntry": 105,
+    "Desc": "数字牌6提供的攻击力+10"
   },
   {
     "Id": 10601,
@@ -506,8 +506,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌7提供的攻击力+1",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+1"
   },
   {
     "Id": 10602,
@@ -516,8 +516,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌7提供的攻击力+2",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+2"
   },
   {
     "Id": 10603,
@@ -526,8 +526,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌7提供的攻击力+3",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+3"
   },
   {
     "Id": 10604,
@@ -536,8 +536,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌7提供的攻击力+4",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+4"
   },
   {
     "Id": 10605,
@@ -546,8 +546,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌7提供的攻击力+5",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+5"
   },
   {
     "Id": 10606,
@@ -556,8 +556,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌7提供的攻击力+6",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+6"
   },
   {
     "Id": 10607,
@@ -566,8 +566,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌7提供的攻击力+7",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+7"
   },
   {
     "Id": 10608,
@@ -576,8 +576,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌7提供的攻击力+8",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+8"
   },
   {
     "Id": 10609,
@@ -586,8 +586,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌7提供的攻击力+9",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+9"
   },
   {
     "Id": 10610,
@@ -596,8 +596,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌7提供的攻击力+10",
-    "TalentEntry": 106
+    "TalentEntry": 106,
+    "Desc": "数字牌7提供的攻击力+10"
   },
   {
     "Id": 10701,
@@ -606,8 +606,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌8提供的攻击力+1",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+1"
   },
   {
     "Id": 10702,
@@ -616,8 +616,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌8提供的攻击力+2",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+2"
   },
   {
     "Id": 10703,
@@ -626,8 +626,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌8提供的攻击力+3",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+3"
   },
   {
     "Id": 10704,
@@ -636,8 +636,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌8提供的攻击力+4",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+4"
   },
   {
     "Id": 10705,
@@ -646,8 +646,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌8提供的攻击力+5",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+5"
   },
   {
     "Id": 10706,
@@ -656,8 +656,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌8提供的攻击力+6",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+6"
   },
   {
     "Id": 10707,
@@ -666,8 +666,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌8提供的攻击力+7",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+7"
   },
   {
     "Id": 10708,
@@ -676,8 +676,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌8提供的攻击力+8",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+8"
   },
   {
     "Id": 10709,
@@ -686,8 +686,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌8提供的攻击力+9",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+9"
   },
   {
     "Id": 10710,
@@ -696,8 +696,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌8提供的攻击力+10",
-    "TalentEntry": 107
+    "TalentEntry": 107,
+    "Desc": "数字牌8提供的攻击力+10"
   },
   {
     "Id": 10801,
@@ -706,8 +706,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌9提供的攻击力+1",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+1"
   },
   {
     "Id": 10802,
@@ -716,8 +716,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌9提供的攻击力+2",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+2"
   },
   {
     "Id": 10803,
@@ -726,8 +726,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌9提供的攻击力+3",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+3"
   },
   {
     "Id": 10804,
@@ -736,8 +736,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌9提供的攻击力+4",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+4"
   },
   {
     "Id": 10805,
@@ -746,8 +746,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌9提供的攻击力+5",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+5"
   },
   {
     "Id": 10806,
@@ -756,8 +756,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌9提供的攻击力+6",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+6"
   },
   {
     "Id": 10807,
@@ -766,8 +766,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌9提供的攻击力+7",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+7"
   },
   {
     "Id": 10808,
@@ -776,8 +776,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌9提供的攻击力+8",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+8"
   },
   {
     "Id": 10809,
@@ -786,8 +786,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌9提供的攻击力+9",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+9"
   },
   {
     "Id": 10810,
@@ -796,8 +796,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌9提供的攻击力+10",
-    "TalentEntry": 108
+    "TalentEntry": 108,
+    "Desc": "数字牌9提供的攻击力+10"
   },
   {
     "Id": 10901,
@@ -806,8 +806,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "数字牌10提供的攻击力+1",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+1"
   },
   {
     "Id": 10902,
@@ -816,8 +816,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "数字牌10提供的攻击力+2",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+2"
   },
   {
     "Id": 10903,
@@ -826,8 +826,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "数字牌10提供的攻击力+3",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+3"
   },
   {
     "Id": 10904,
@@ -836,8 +836,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "数字牌10提供的攻击力+4",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+4"
   },
   {
     "Id": 10905,
@@ -846,8 +846,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "数字牌10提供的攻击力+5",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+5"
   },
   {
     "Id": 10906,
@@ -856,8 +856,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "数字牌10提供的攻击力+6",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+6"
   },
   {
     "Id": 10907,
@@ -866,8 +866,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "数字牌10提供的攻击力+7",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+7"
   },
   {
     "Id": 10908,
@@ -876,8 +876,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "数字牌10提供的攻击力+8",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+8"
   },
   {
     "Id": 10909,
@@ -886,8 +886,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "数字牌10提供的攻击力+9",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+9"
   },
   {
     "Id": 10910,
@@ -896,8 +896,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "数字牌10提供的攻击力+10",
-    "TalentEntry": 109
+    "TalentEntry": 109,
+    "Desc": "数字牌10提供的攻击力+10"
   },
   {
     "Id": 11001,
@@ -906,8 +906,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "英雄的生命值上限+4",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+4"
   },
   {
     "Id": 11002,
@@ -916,8 +916,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "英雄的生命值上限+8",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+8"
   },
   {
     "Id": 11003,
@@ -926,8 +926,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "英雄的生命值上限+12",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+12"
   },
   {
     "Id": 11004,
@@ -936,8 +936,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "英雄的生命值上限+16",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+16"
   },
   {
     "Id": 11005,
@@ -946,8 +946,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "英雄的生命值上限+20",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+20"
   },
   {
     "Id": 11006,
@@ -956,8 +956,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "英雄的生命值上限+24",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+24"
   },
   {
     "Id": 11007,
@@ -966,8 +966,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "英雄的生命值上限+28",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+28"
   },
   {
     "Id": 11008,
@@ -976,8 +976,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "英雄的生命值上限+32",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+32"
   },
   {
     "Id": 11009,
@@ -986,8 +986,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "英雄的生命值上限+36",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+36"
   },
   {
     "Id": 11010,
@@ -996,8 +996,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "英雄的生命值上限+40",
-    "TalentEntry": 110
+    "TalentEntry": 110,
+    "Desc": "英雄的生命值上限+40"
   },
   {
     "Id": 11101,
@@ -1006,8 +1006,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "受到的伤害降低1点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低1点"
   },
   {
     "Id": 11102,
@@ -1016,8 +1016,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "受到的伤害降低2点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低2点"
   },
   {
     "Id": 11103,
@@ -1026,8 +1026,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "受到的伤害降低3点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低3点"
   },
   {
     "Id": 11104,
@@ -1036,8 +1036,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "受到的伤害降低4点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低4点"
   },
   {
     "Id": 11105,
@@ -1046,8 +1046,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "受到的伤害降低5点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低5点"
   },
   {
     "Id": 11106,
@@ -1056,8 +1056,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "受到的伤害降低6点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低6点"
   },
   {
     "Id": 11107,
@@ -1066,8 +1066,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "受到的伤害降低7点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低7点"
   },
   {
     "Id": 11108,
@@ -1076,8 +1076,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "受到的伤害降低8点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低8点"
   },
   {
     "Id": 11109,
@@ -1086,8 +1086,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "受到的伤害降低9点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低9点"
   },
   {
     "Id": 11110,
@@ -1096,8 +1096,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "受到的伤害降低10点",
-    "TalentEntry": 111
+    "TalentEntry": 111,
+    "Desc": "受到的伤害降低10点"
   },
   {
     "Id": 11201,
@@ -1106,8 +1106,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 1,
-    "Desc": "英雄的基础攻击力+1",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+1"
   },
   {
     "Id": 11202,
@@ -1116,8 +1116,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 2,
-    "Desc": "英雄的基础攻击力+2",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+2"
   },
   {
     "Id": 11203,
@@ -1126,8 +1126,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 3,
-    "Desc": "英雄的基础攻击力+3",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+3"
   },
   {
     "Id": 11204,
@@ -1136,8 +1136,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 4,
-    "Desc": "英雄的基础攻击力+4",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+4"
   },
   {
     "Id": 11205,
@@ -1146,8 +1146,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 5,
-    "Desc": "英雄的基础攻击力+5",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+5"
   },
   {
     "Id": 11206,
@@ -1156,8 +1156,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 6,
-    "Desc": "英雄的基础攻击力+6",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+6"
   },
   {
     "Id": 11207,
@@ -1166,8 +1166,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 7,
-    "Desc": "英雄的基础攻击力+7",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+7"
   },
   {
     "Id": 11208,
@@ -1176,8 +1176,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 8,
-    "Desc": "英雄的基础攻击力+8",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+8"
   },
   {
     "Id": 11209,
@@ -1186,8 +1186,8 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 9,
-    "Desc": "英雄的基础攻击力+9",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+9"
   },
   {
     "Id": 11210,
@@ -1196,7 +1196,1607 @@
     "Type": 1,
     "Icon": "",
     "TalentLevel": 10,
-    "Desc": "英雄的基础攻击力+10",
-    "TalentEntry": 112
+    "TalentEntry": 112,
+    "Desc": "英雄的基础攻击力+10"
+  },
+  {
+    "Id": 20101,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+1"
+  },
+  {
+    "Id": 20102,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+2"
+  },
+  {
+    "Id": 20103,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+3"
+  },
+  {
+    "Id": 20104,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+4"
+  },
+  {
+    "Id": 20105,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+5"
+  },
+  {
+    "Id": 20106,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+6"
+  },
+  {
+    "Id": 20107,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+7"
+  },
+  {
+    "Id": 20108,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+8"
+  },
+  {
+    "Id": 20109,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+9"
+  },
+  {
+    "Id": 20110,
+    "TalentId": 201,
+    "Name": "人头精通",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 201,
+    "Desc": "人头牌提供的攻击力+10"
+  },
+  {
+    "Id": 20201,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+0.5%"
+  },
+  {
+    "Id": 20202,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+1%"
+  },
+  {
+    "Id": 20203,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+1.5%"
+  },
+  {
+    "Id": 20204,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+2%"
+  },
+  {
+    "Id": 20205,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+2.5%"
+  },
+  {
+    "Id": 20206,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+3%"
+  },
+  {
+    "Id": 20207,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+3.5%"
+  },
+  {
+    "Id": 20208,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+4%"
+  },
+  {
+    "Id": 20209,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+4.5%"
+  },
+  {
+    "Id": 20210,
+    "TalentId": 202,
+    "Name": "强力打击",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 202,
+    "Desc": "英雄暴击率+5%"
+  },
+  {
+    "Id": 20301,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+0.5%"
+  },
+  {
+    "Id": 20302,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+1%"
+  },
+  {
+    "Id": 20303,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+1.5%"
+  },
+  {
+    "Id": 20304,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+2%"
+  },
+  {
+    "Id": 20305,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+2.5%"
+  },
+  {
+    "Id": 20306,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+3%"
+  },
+  {
+    "Id": 20307,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+3.5%"
+  },
+  {
+    "Id": 20308,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+4%"
+  },
+  {
+    "Id": 20309,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+4.5%"
+  },
+  {
+    "Id": 20310,
+    "TalentId": 203,
+    "Name": "巨人杀手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 203,
+    "Desc": "对BOSS的伤害+5%"
+  },
+  {
+    "Id": 20401,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+0.2"
+  },
+  {
+    "Id": 20402,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+0.4"
+  },
+  {
+    "Id": 20403,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+0.6"
+  },
+  {
+    "Id": 20404,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+0.8"
+  },
+  {
+    "Id": 20405,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+1"
+  },
+  {
+    "Id": 20406,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+1.2"
+  },
+  {
+    "Id": 20407,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+1.4"
+  },
+  {
+    "Id": 20408,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+1.6"
+  },
+  {
+    "Id": 20409,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+1.8"
+  },
+  {
+    "Id": 20410,
+    "TalentId": 204,
+    "Name": "好兆头",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 204,
+    "Desc": "每关的首次亮牌,倍率+2"
+  },
+  {
+    "Id": 20501,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有0.5%概率斩杀"
+  },
+  {
+    "Id": 20502,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有1%概率斩杀"
+  },
+  {
+    "Id": 20503,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有1.5%概率斩杀"
+  },
+  {
+    "Id": 20504,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有2%概率斩杀"
+  },
+  {
+    "Id": 20505,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有2.5%概率斩杀"
+  },
+  {
+    "Id": 20506,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有3%概率斩杀"
+  },
+  {
+    "Id": 20507,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有3.5%概率斩杀"
+  },
+  {
+    "Id": 20508,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有4%概率斩杀"
+  },
+  {
+    "Id": 20509,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有4.5%概率斩杀"
+  },
+  {
+    "Id": 20510,
+    "TalentId": 205,
+    "Name": "侩子手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 205,
+    "Desc": "攻击血量低于10%的非BOSS敌人时,有5%概率斩杀"
+  },
+  {
+    "Id": 20601,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复0.5%的血量"
+  },
+  {
+    "Id": 20602,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复1%的血量"
+  },
+  {
+    "Id": 20603,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复1.5%的血量"
+  },
+  {
+    "Id": 20604,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复2%的血量"
+  },
+  {
+    "Id": 20605,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复2.5%的血量"
+  },
+  {
+    "Id": 20606,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复3%的血量"
+  },
+  {
+    "Id": 20607,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复3.5%的血量"
+  },
+  {
+    "Id": 20608,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复4%的血量"
+  },
+  {
+    "Id": 20609,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复4.5%的血量"
+  },
+  {
+    "Id": 20610,
+    "TalentId": 206,
+    "Name": "逢凶化吉",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 206,
+    "Desc": "当血量低于20%以下时,击杀敌人会回复5%的血量"
+  },
+  {
+    "Id": 20701,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+0.5%"
+  },
+  {
+    "Id": 20702,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+1%"
+  },
+  {
+    "Id": 20703,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+1.5%"
+  },
+  {
+    "Id": 20704,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+2%"
+  },
+  {
+    "Id": 20705,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+2.5%"
+  },
+  {
+    "Id": 20706,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+3%"
+  },
+  {
+    "Id": 20707,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+3.5%"
+  },
+  {
+    "Id": 20708,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+4%"
+  },
+  {
+    "Id": 20709,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+4.5%"
+  },
+  {
+    "Id": 20710,
+    "TalentId": 207,
+    "Name": "人多势众",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 207,
+    "Desc": "当敌人数量大于1时,造成的伤害+5%"
+  },
+  {
+    "Id": 20801,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供1点攻击力"
+  },
+  {
+    "Id": 20802,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供2点攻击力"
+  },
+  {
+    "Id": 20803,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供3点攻击力"
+  },
+  {
+    "Id": 20804,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供4点攻击力"
+  },
+  {
+    "Id": 20805,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供5点攻击力"
+  },
+  {
+    "Id": 20806,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供6点攻击力"
+  },
+  {
+    "Id": 20807,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供7点攻击力"
+  },
+  {
+    "Id": 20808,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供8点攻击力"
+  },
+  {
+    "Id": 20809,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供9点攻击力"
+  },
+  {
+    "Id": 20810,
+    "TalentId": 208,
+    "Name": "搓牌高手",
+    "Type": 2,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 208,
+    "Desc": "亮牌前,只要使用过搓牌,结算时就提供10点攻击力"
+  },
+  {
+    "Id": 30101,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复0.5%的血量"
+  },
+  {
+    "Id": 30102,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复1%的血量"
+  },
+  {
+    "Id": 30103,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复1.5%的血量"
+  },
+  {
+    "Id": 30104,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复2%的血量"
+  },
+  {
+    "Id": 30105,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复2.5%的血量"
+  },
+  {
+    "Id": 30106,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复3%的血量"
+  },
+  {
+    "Id": 30107,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复3.5%的血量"
+  },
+  {
+    "Id": 30108,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复4%的血量"
+  },
+  {
+    "Id": 30109,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复4.5%的血量"
+  },
+  {
+    "Id": 30110,
+    "TalentId": 301,
+    "Name": "回复",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 301,
+    "Desc": "每回结束后,回复5%的血量"
+  },
+  {
+    "Id": 30201,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有1%概率获得1资金"
+  },
+  {
+    "Id": 30202,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有2%概率获得1资金"
+  },
+  {
+    "Id": 30203,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有3%概率获得1资金"
+  },
+  {
+    "Id": 30204,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有4%概率获得1资金"
+  },
+  {
+    "Id": 30205,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有5%概率获得1资金"
+  },
+  {
+    "Id": 30206,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有6%概率获得1资金"
+  },
+  {
+    "Id": 30207,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有7%概率获得1资金"
+  },
+  {
+    "Id": 30208,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有8%概率获得1资金"
+  },
+  {
+    "Id": 30209,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有9%概率获得1资金"
+  },
+  {
+    "Id": 30210,
+    "TalentId": 302,
+    "Name": "资本家",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 302,
+    "Desc": "每回合结算时,有10%概率获得1资金"
+  },
+  {
+    "Id": 30301,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+2"
+  },
+  {
+    "Id": 30302,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+4"
+  },
+  {
+    "Id": 30303,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+6"
+  },
+  {
+    "Id": 30304,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+8"
+  },
+  {
+    "Id": 30305,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+10"
+  },
+  {
+    "Id": 30306,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+12"
+  },
+  {
+    "Id": 30307,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+14"
+  },
+  {
+    "Id": 30308,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+16"
+  },
+  {
+    "Id": 30309,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+18"
+  },
+  {
+    "Id": 30310,
+    "TalentId": 303,
+    "Name": "A点精通",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 303,
+    "Desc": "A牌提供的攻击力+20"
+  },
+  {
+    "Id": 30401,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+0.5%"
+  },
+  {
+    "Id": 30402,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+1%"
+  },
+  {
+    "Id": 30403,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+1.5%"
+  },
+  {
+    "Id": 30404,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+2%"
+  },
+  {
+    "Id": 30405,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+2.5%"
+  },
+  {
+    "Id": 30406,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+3%"
+  },
+  {
+    "Id": 30407,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+3.5%"
+  },
+  {
+    "Id": 30408,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+4%"
+  },
+  {
+    "Id": 30409,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+4.5%"
+  },
+  {
+    "Id": 30410,
+    "TalentId": 304,
+    "Name": "孤立无援",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 304,
+    "Desc": "只剩下1名敌人时,对其造成的伤害+5%"
+  },
+  {
+    "Id": 30501,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+0.5%"
+  },
+  {
+    "Id": 30502,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+1%"
+  },
+  {
+    "Id": 30503,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+1.5%"
+  },
+  {
+    "Id": 30504,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+2%"
+  },
+  {
+    "Id": 30505,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+2.5%"
+  },
+  {
+    "Id": 30506,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+3%"
+  },
+  {
+    "Id": 30507,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+3.5%"
+  },
+  {
+    "Id": 30508,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+4%"
+  },
+  {
+    "Id": 30509,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+4.5%"
+  },
+  {
+    "Id": 30510,
+    "TalentId": 305,
+    "Name": "触底反弹",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 305,
+    "Desc": "当血量低于20%以下时,造成的伤害+5%"
+  },
+  {
+    "Id": 30601,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有1%概率获得1资金"
+  },
+  {
+    "Id": 30602,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有2%概率获得1资金"
+  },
+  {
+    "Id": 30603,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有3%概率获得1资金"
+  },
+  {
+    "Id": 30604,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有4%概率获得1资金"
+  },
+  {
+    "Id": 30605,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有5%概率获得1资金"
+  },
+  {
+    "Id": 30606,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有6%概率获得1资金"
+  },
+  {
+    "Id": 30607,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有7%概率获得1资金"
+  },
+  {
+    "Id": 30608,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有8%概率获得1资金"
+  },
+  {
+    "Id": 30609,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有9%概率获得1资金"
+  },
+  {
+    "Id": 30610,
+    "TalentId": 306,
+    "Name": "点金手",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 306,
+    "Desc": "击杀敌人时,有10%概率获得1资金"
+  },
+  {
+    "Id": 30701,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 307,
+    "Desc": "初始拥有1资金"
+  },
+  {
+    "Id": 30702,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 307,
+    "Desc": "初始拥有2资金"
+  },
+  {
+    "Id": 30703,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 307,
+    "Desc": "初始拥有3资金"
+  },
+  {
+    "Id": 30704,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 307,
+    "Desc": "初始拥有4资金"
+  },
+  {
+    "Id": 30705,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 307,
+    "Desc": "初始拥有5资金"
+  },
+  {
+    "Id": 30706,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 307,
+    "Desc": "初始拥有6资金"
+  },
+  {
+    "Id": 30707,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 307,
+    "Desc": "初始拥有7资金"
+  },
+  {
+    "Id": 30708,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 307,
+    "Desc": "初始拥有8资金"
+  },
+  {
+    "Id": 30709,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 307,
+    "Desc": "初始拥有9资金"
+  },
+  {
+    "Id": 30710,
+    "TalentId": 307,
+    "Name": "富裕",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 307,
+    "Desc": "初始拥有10资金"
+  },
+  {
+    "Id": 30801,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 1,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有1%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30802,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 2,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有2%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30803,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 3,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有3%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30804,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 4,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有4%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30805,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 5,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有5%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30806,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 6,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有6%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30807,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 7,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有7%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30808,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 8,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有8%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30809,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 9,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有9%概率额外造成1次原伤害10%的攻击"
+  },
+  {
+    "Id": 30810,
+    "TalentId": 308,
+    "Name": "追击",
+    "Type": 3,
+    "Icon": "",
+    "TalentLevel": 10,
+    "TalentEntry": 308,
+    "Desc": "攻击敌人时,有10%概率额外造成1次原伤害10%的攻击"
   }
 ]

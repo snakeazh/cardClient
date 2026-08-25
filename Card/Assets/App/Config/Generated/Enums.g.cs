@@ -225,64 +225,144 @@ namespace App.Config
         TwoThreeFive = 14,
 
         /// <summary>
-        /// 数字牌2提供攻击力
+        /// 数字牌2提供额外攻击力
         /// </summary>
         TwoCardAttack = 15,
 
         /// <summary>
-        /// 数字牌3提供攻击力
+        /// 数字牌3提供额外攻击力
         /// </summary>
         ThreeCardAttack = 16,
 
         /// <summary>
-        /// 数字牌4提供攻击力
+        /// 数字牌4提供额外攻击力
         /// </summary>
         FourCardAttack = 17,
 
         /// <summary>
-        /// 数字牌5提供攻击力
+        /// 数字牌5提供额外攻击力
         /// </summary>
         FiveCardAttack = 18,
 
         /// <summary>
-        /// 数字牌6提供攻击力
+        /// 数字牌6提供额外攻击力
         /// </summary>
         SixCardAttack = 19,
 
         /// <summary>
-        /// 数字牌7提供攻击力
+        /// 数字牌7提供额外攻击力
         /// </summary>
         SevenCardAttack = 20,
 
         /// <summary>
-        /// 数字牌8提供攻击力
+        /// 数字牌8提供额外攻击力
         /// </summary>
         EightCardAttack = 21,
 
         /// <summary>
-        /// 数字牌9提供攻击力
+        /// 数字牌9提供额外攻击力
         /// </summary>
         NineCardAttack = 22,
 
         /// <summary>
-        /// 数字牌10提供攻击力
+        /// 数字牌10提供额外攻击力
         /// </summary>
         TenCardAttack = 23,
 
         /// <summary>
-        /// 英雄的生命值上限提高
+        /// A牌提供额外攻击力
         /// </summary>
-        Sturdy = 24,
+        ACardAttack = 24,
 
         /// <summary>
-        /// 受到的伤害降低
+        /// 人头牌提供额外攻击力
         /// </summary>
-        ImpregnableFortress = 25,
+        HeadCardAttack = 25,
 
         /// <summary>
-        /// 英雄的基础攻击力提高
+        /// 英雄的血量上限
         /// </summary>
-        Strong = 26,
+        HeroHpMax = 26,
+
+        /// <summary>
+        /// 英雄承受的伤害
+        /// </summary>
+        HeroTakeDamage = 27,
+
+        /// <summary>
+        /// 英雄的基础攻击力
+        /// </summary>
+        HeroAttack = 28,
+
+        /// <summary>
+        /// 英雄的暴击率
+        /// </summary>
+        HeroCritical = 29,
+
+        /// <summary>
+        /// 对BOSS的伤害
+        /// </summary>
+        AttackBossDamage = 30,
+
+        /// <summary>
+        /// 每关首次亮牌后结算倍率
+        /// </summary>
+        FirstShowCardEveryLevel = 31,
+
+        /// <summary>
+        /// 斩杀10%血量以下非BOSS敌人的概率
+        /// </summary>
+        KillingProbabilityTen = 32,
+
+        /// <summary>
+        /// 血量低于20%以下时,杀人回血
+        /// </summary>
+        KillingBringsBackBlood = 33,
+
+        /// <summary>
+        /// 敌人数量大于1时,造成的伤害
+        /// </summary>
+        ManyMonsterDamage = 34,
+
+        /// <summary>
+        /// 亮牌前使用过搓牌,结算时的攻击力
+        /// </summary>
+        UsingRubbingCards = 35,
+
+        /// <summary>
+        /// 每关结束后,回复的血量
+        /// </summary>
+        HeroHpReplyEveryLevelEnding = 36,
+
+        /// <summary>
+        /// 结算时,获得额外资金的概率
+        /// </summary>
+        ProOfObtainingFundsEverySettlement = 37,
+
+        /// <summary>
+        /// 只剩1名敌人时,造成的伤害
+        /// </summary>
+        OneMonsterDamage = 38,
+
+        /// <summary>
+        /// 血量低于20%时,造成的伤害
+        /// </summary>
+        HpUnderDamage = 39,
+
+        /// <summary>
+        /// 击杀敌人时,获得额外资金的概率
+        /// </summary>
+        KillingProOfObtainingFunds = 40,
+
+        /// <summary>
+        /// 初始拥有资金
+        /// </summary>
+        InitialFunds = 41,
+
+        /// <summary>
+        /// 额外造成1次10%伤害的概率
+        /// </summary>
+        ProOfExtraAttack = 42,
 
     }
 

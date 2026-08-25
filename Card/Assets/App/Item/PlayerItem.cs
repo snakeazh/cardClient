@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using App.Config;
 
 namespace App.Game
 {
@@ -9,21 +10,21 @@ namespace App.Game
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
     {
-        private static readonly Color PlayerIconBg = ParseHex("EB9852");
-        private static readonly Color PlayerCircle = ParseHex("F8AB67");
-        private static readonly Color EnemyIconBg = ParseHex("F6393C");
-        private static readonly Color EnemyCircle = ParseHex("B20003");
-
         private static readonly Color UnlockedPortraitColor = Color.white;
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
 
         [SerializeField] private Image iconBg;
+        [SerializeField] private Image iconTitleBg;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private TMP_Text cardAttackHeart;
         [SerializeField] private GameObject attackRoot;
+        [SerializeField] private Image attackBg;
+        [SerializeField] private Image heartBg;
+        [SerializeField] private Sprite playerStatFrame;
+        [SerializeField] private Sprite enemyStatFrame;
         [SerializeField] private TMP_Text cardState;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
@@ -120,14 +121,27 @@ namespace App.Game
         public void ApplyTheme(bool enemy)
         {
             EnsureRefs();
-            if (iconBg != null)
+            if (enemy)
             {
-                iconBg.color = enemy ? EnemyIconBg : PlayerIconBg;
+                ThemeColors.ApplyCard(ThemeColors.Enemy, ThemeColors.EnemyTitle, iconBg, iconTitleBg, cardCircle);
+            }
+            else
+            {
+                ThemeColors.ApplyCard(QualityType.Ordinary, iconBg, iconTitleBg, cardCircle);
             }
 
-            if (cardCircle != null)
+            var frame = enemy ? enemyStatFrame : playerStatFrame;
+            if (frame != null)
             {
-                cardCircle.color = enemy ? EnemyCircle : PlayerCircle;
+                if (attackBg != null)
+                {
+                    attackBg.sprite = frame;
+                }
+
+                if (heartBg != null)
+                {
+                    heartBg.sprite = frame;
+                }
             }
         }
 
@@ -200,6 +214,11 @@ namespace App.Game
                 iconBg = FindImage("IconBG");
             }
 
+            if (iconTitleBg == null)
+            {
+                iconTitleBg = FindImage("IconTitleBG");
+            }
+
             if (cardName == null)
             {
                 cardName = FindText("card_Name");
@@ -220,10 +239,26 @@ namespace App.Game
                 cardAttackValue = FindText("card_attackValue");
             }
 
-            if (attackRoot == null)
+            if (attackRoot == null || attackBg == null)
             {
                 var node = FindDeep(transform, "attack");
-                attackRoot = node != null ? node.gameObject : null;
+                if (node != null)
+                {
+                    if (attackRoot == null)
+                    {
+                        attackRoot = node.gameObject;
+                    }
+
+                    if (attackBg == null)
+                    {
+                        attackBg = node.GetComponent<Image>();
+                    }
+                }
+            }
+
+            if (heartBg == null)
+            {
+                heartBg = FindImage("heart");
             }
 
             if (cardAttackHeart == null)
@@ -286,13 +321,6 @@ namespace App.Game
             }
 
             return null;
-        }
-
-        private static Color ParseHex(string hex)
-        {
-            ColorUtility.TryParseHtmlString("#" + hex, out var color);
-            color.a = 1f;
-            return color;
         }
     }
 }

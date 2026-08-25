@@ -155,6 +155,8 @@ namespace App.Game
             !Player.Folded;
         public bool PlayerMayCancelLookOrRub =>
             Phase == GamePhase.WaitingRub;
+        /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
+        public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
         public bool PlayerMayCompare =>
             !AiActing &&
@@ -212,7 +214,41 @@ namespace App.Game
             }
 
             _pendingRubIndex = index;
-            Hint = $"已选中第 {index + 1} 张牌，点选即随机替换花色和点数";
+            Hint = $"已选中第 {index + 1} 张：拖开并持续搓够时间后松手，幅度或时间不够需重搓";
+            Notify();
+        }
+
+        public void NotifyRubTooWeak()
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            Hint = "搓牌幅度不够，请再拖一次";
+            Notify();
+        }
+
+        public void NotifyRubTooShort()
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            Hint = "搓牌时间不够，请再搓久一点";
+            Notify();
+        }
+
+        public void ClearRubSelection()
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            _pendingRubIndex = -1;
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
             Notify();
         }
 
@@ -485,7 +521,7 @@ namespace App.Game
             Run.RubsLeft = 1;
             _pendingRubIndex = -1;
             Phase = GamePhase.WaitingRub;
-            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌，随机替换花色和点数";
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
             Log("使用技能：搓牌");
             Notify();
         }
@@ -1239,7 +1275,7 @@ namespace App.Game
 
             if (Run.RelicConfigIds.Count >= GameBalance.MaxRelics)
             {
-                Hint = "遗物槽已满（最多 4 件）";
+                Hint = $"遗物槽已满（最多 {GameBalance.MaxRelics} 件）";
                 Notify();
                 return;
             }

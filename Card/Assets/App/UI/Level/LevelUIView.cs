@@ -15,6 +15,7 @@ namespace App.UI
 {
     /// <summary>
     /// 选角 / 选关。节点通过 UIReference / UIBind 解析。
+    /// heroSelect / levelSelect 是 ScrollRect，列表项生成到 content（网格）上。
     /// </summary>
     [AutoScreen(AppScreenIds.LevelUI, UILayer.Page, ResResourcePaths.LevelUI)]
     public sealed class LevelUIView : ViewBase<LevelUIViewModel>
@@ -91,16 +92,16 @@ namespace App.UI
 
         private void SpawnHeroItems()
         {
-            var listGo = UI.GetGameObject("heroSelect");
             var template = UI.GetGameObject("heroItem").GetComponent<HeroItem>();
             template.gameObject.SetActive(false);
             _heroItems.Clear();
 
+            var parent = ResolveListContent("heroSelect", template.transform.parent);
             var heroes = ViewModel.Heroes;
             for (var i = 0; i < heroes.Count; i++)
             {
                 var hero = heroes[i];
-                var go = Object.Instantiate(template.gameObject, listGo.transform, false);
+                var go = Object.Instantiate(template.gameObject, parent, false);
                 go.name = $"heroItem_{hero.Id}";
                 go.SetActive(true);
                 var bind = go.GetComponent<UIBind>();
@@ -113,6 +114,8 @@ namespace App.UI
                 item.BindClick(clicked => ViewModel.SelectHero(clicked.Data.Id));
                 _heroItems.Add(item);
             }
+
+            RebuildListLayout(parent);
         }
 
         private void BindDifficultyTip()
@@ -157,16 +160,16 @@ namespace App.UI
 
         private void SpawnLevelItems()
         {
-            var listGo = UI.GetGameObject("levelSelect");
             var template = UI.GetGameObject("levelItem").GetComponent<LevelItem>();
             template.gameObject.SetActive(false);
             _levelItems.Clear();
 
+            var parent = ResolveListContent("levelSelect", template.transform.parent);
             var stages = ViewModel.Stages;
             for (var i = 0; i < stages.Count; i++)
             {
                 var stage = stages[i];
-                var go = Object.Instantiate(template.gameObject, listGo.transform, false);
+                var go = Object.Instantiate(template.gameObject, parent, false);
                 go.name = $"levelItem_{stage.Id}";
                 go.SetActive(true);
                 var bind = go.GetComponent<UIBind>();
@@ -178,6 +181,34 @@ namespace App.UI
                 var item = go.GetComponent<LevelItem>();
                 item.BindClick(clicked => ViewModel.SelectLevel(clicked.Data.Id));
                 _levelItems.Add(item);
+            }
+
+            RebuildListLayout(parent);
+        }
+
+        private Transform ResolveListContent(string listKey, Transform fallback)
+        {
+            var listGo = UI.GetGameObject(listKey);
+            if (listGo != null)
+            {
+                var scroll = listGo.GetComponent<ScrollRect>();
+                if (scroll != null && scroll.content != null)
+                {
+                    return scroll.content;
+                }
+
+                return listGo.transform;
+            }
+
+            return fallback;
+        }
+
+        private static void RebuildListLayout(Transform parent)
+        {
+            var content = parent as RectTransform;
+            if (content != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
             }
         }
 

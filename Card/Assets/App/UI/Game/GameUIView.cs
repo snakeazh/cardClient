@@ -1211,6 +1211,12 @@ namespace App.UI
                     icon.enabled = sprite != null;
                 }
 
+                var bg = FindUiImage(slot, "bgcolor") ?? FindUiImage(slot, "Image (1)");
+                if (bg != null)
+                {
+                    bg.color = ThemeColors.EquipSlot(relic != null, relic != null ? relic.Type : QualityType.Ordinary);
+                }
+
                 var nohave = slot.Find("nohave") ?? FindDeep(slot, "nohave");
                 if (nohave != null)
                 {

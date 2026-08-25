@@ -83,7 +83,8 @@ namespace App.Game
         public const int BaseBetStep = 10;
         public const int RaiseLowMult = 2;
         public const int RaiseHighMult = 4;
-        public const int MaxRelics = 4;
+        /// <summary>已购道具上限，对应 GameUI equip1～equip3 与商店已拥有栏。</summary>
+        public const int MaxRelics = 3;
         /// <summary>通关商店货架格子数，对应 BattleShopPop.sellHor。</summary>
         public const int ShopOfferCount = 3;
         public const float RescueRatio = 0.15f;

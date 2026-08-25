@@ -14,6 +14,8 @@ namespace App.Game
     public class CardItem : MonoBehaviour
     {
         public SpriteRenderer CurrentRenderer;
+        public GameObject CardDragEffect;
+        public GameObject CardDragSuccessEffect;
 
         public Card Card { get; private set; }
         public CardFaceState FaceState { get; private set; }
@@ -22,6 +24,7 @@ namespace App.Game
         private Tween _rotateTween;
         private Tween _flipTween;
         private Tween _backFadeTween;
+        private Tween _successFxHide;
         private float _backAlphaTarget = 1f;
         private bool _backSeeThrough;
         private Animator _tweenAnimator;
@@ -31,6 +34,8 @@ namespace App.Game
         public SpriteRenderer backRenderer;
         public SpriteRenderer frontTransparentRenderer;
         private bool _tweenAnimatorResolved;
+
+        private Tween _successFxTween;
 
         private const string ShuffleAppear01 = "aini_card_appear01";
         private const string ShuffleAppear02 = "aini_card_appear02";
@@ -57,6 +62,7 @@ namespace App.Game
             _backAlphaTarget = 1f;
             SetFace(CardFaceState.Back);
             ApplyFrontTransparentVisible(false);
+            HideDragEffects();
             var back = ResolveBackRenderer();
             if (back != null)
             {
@@ -113,6 +119,12 @@ namespace App.Game
             return _moveTween;
         }
 
+        public void StopMove()
+        {
+            _moveTween?.Kill();
+            _moveTween = null;
+        }
+
         public Tween RotateTo(Quaternion worldRotation, float duration, Ease ease = Ease.OutCubic)
         {
             _rotateTween?.Kill();
@@ -142,12 +154,36 @@ namespace App.Game
                 return null;
             }
 
+            if (FaceState == faceState)
+            {
+                transform.localRotation = FaceYaw(faceState);
+                return null;
+            }
+
             DisableShuffleAnimator();
             transform.localRotation = FaceYaw(FaceState);
 
+            // 转到侧立时换贴图，再转到目标朝向，避免背面被镜像。
+            var fromYaw = FaceState == CardFaceState.Back ? 180f : 0f;
+            var toYaw = faceState == CardFaceState.Back ? 180f : 0f;
+            var midYaw = (fromYaw + toYaw) * 0.5f;
+            var half = duration * 0.5f;
+            var target = faceState;
+
             var seq = DOTween.Sequence();
-            seq.Append(transform.DOLocalRotateQuaternion(FaceYaw(faceState), duration).SetEase(ease));
-            seq.OnComplete(() => SetFace(faceState));
+            seq.Append(transform.DOLocalRotate(new Vector3(0f, midYaw, 0f), half).SetEase(ease));
+            seq.AppendCallback(() =>
+            {
+                FaceState = target;
+                ApplySprite();
+            });
+            seq.Append(transform.DOLocalRotate(new Vector3(0f, toYaw, 0f), half).SetEase(ease));
+            seq.OnComplete(() =>
+            {
+                FaceState = target;
+                ApplySprite();
+                transform.localRotation = FaceYaw(target);
+            });
             _flipTween = seq;
             return seq;
         }
@@ -198,6 +234,55 @@ namespace App.Game
             {
                 peek.sortingOrder = order - 1;
             }
+
+            ApplyEffectSorting(CardDragEffect, order + 1);
+            ApplyEffectSorting(CardDragSuccessEffect, order + 1);
+        }
+
+        /// <summary>点选搓牌时显示循环拖拽特效。</summary>
+        public void SetDragEffectVisible(bool visible)
+        {
+            SetEffectActive(CardDragEffect, visible);
+            if (visible)
+            {
+                var order = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
+                ApplyEffectSorting(CardDragEffect, order);
+            }
+        }
+
+        /// <summary>幅度和时间都够时叠上成功特效，拖拽特效保持显示。</summary>
+        public void PlayDragSuccessEffect(float autoHideAfter = 0f)
+        {
+            SetEffectActive(CardDragSuccessEffect, true);
+            var order = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
+            ApplyEffectSorting(CardDragSuccessEffect, Mathf.Max(order, 80));
+
+            _successFxHide?.Kill();
+            _successFxHide = null;
+            if (autoHideAfter > 0f)
+            {
+                _successFxHide = DOVirtual.DelayedCall(autoHideAfter, () => SetEffectActive(CardDragSuccessEffect, false));
+            }
+        }
+
+        public void HideDragSuccessLater(float delay = 1.2f)
+        {
+            _successFxHide?.Kill();
+            if (CardDragSuccessEffect == null || !CardDragSuccessEffect.activeSelf)
+            {
+                _successFxHide = null;
+                return;
+            }
+
+            _successFxHide = DOVirtual.DelayedCall(delay, () => SetEffectActive(CardDragSuccessEffect, false));
+        }
+
+        public void HideDragEffects()
+        {
+            _successFxHide?.Kill();
+            _successFxHide = null;
+            SetEffectActive(CardDragEffect, false);
+            SetEffectActive(CardDragSuccessEffect, false);
         }
 
         /// <summary>
@@ -267,6 +352,52 @@ namespace App.Game
             _rotateTween?.Kill();
             _flipTween?.Kill();
             _backFadeTween?.Kill();
+            _successFxHide?.Kill();
+        }
+
+        private static void SetEffectActive(GameObject go, bool visible)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            if (!visible)
+            {
+                if (go.activeSelf)
+                {
+                    go.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (go.activeSelf)
+            {
+                go.SetActive(false);
+            }
+
+            go.SetActive(true);
+            var systems = go.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < systems.Length; i++)
+            {
+                systems[i].Clear(true);
+                systems[i].Play(true);
+            }
+        }
+
+        private static void ApplyEffectSorting(GameObject go, int order)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var renderers = go.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            for (var i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].sortingOrder = order;
+            }
         }
 
         private void ApplySprite()
@@ -275,7 +406,8 @@ namespace App.Game
             var front = ResolveRenderer();
             if (front != null)
             {
-                front.sprite = face;
+                // 逻辑背面用牌背贴图画在 CurrentRenderer 上（与 FlipTo 中途换图一致）。
+                front.sprite = FaceState == CardFaceState.Back ? CardSpriteLibrary.Back : face;
             }
 
             var back = ResolveBackRenderer();

@@ -4,6 +4,7 @@
 
 脚本：`Assets/App/UI/Game/GameUIView.cs`  
 视图模型：`Assets/App/UI/Game/GameTableViewModel.cs`  
+色板：[`ThemeColors.md`](../../ThemeColors.md)（装备槽 `bgcolor`）  
 牌桌世界：[`GameBoardController.md`](GameBoardController.md)  
 规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md)
 
@@ -38,7 +39,7 @@ GameUI
 | `cardtype2` | 牌型名称图（`HighCard` / `Pair` / `Straight` / `SameSuit` / `Flush` / `Leopard`） |
 | `cardtypeNum` | 倍率文案，格式 `xn`，n 来自 `HandScoreConfig.BasicMagnification` |
 
-`horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`）。空槽保留底框，并显示子节点 `nohave`；有装备则隐藏 `nohave`，点击在槽左侧弹出 `ItemTip`。
+`horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`），`bgcolor` 按 `RelicConfig.Type` 取品质底色，空槽为黑。色值见 [`ThemeColors.md`](../../ThemeColors.md)。有装备则隐藏 `nohave`，点击在槽左侧弹出 `ItemTip`。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。
 
@@ -75,13 +76,14 @@ GameUI
 
 | 按钮 | 效果 |
 |------|------|
-| PeekGood | 进入搓牌，点选一张随机替换 |
+| PeekGood | 进入搓牌；点选一张翻到背面，拖拽抖动后松手换牌 |
 | ChaKanGood | 点选角色：5 张先全部抬起，再 `SetBackSeeThrough` 透出牌面；开牌时改成最大 3 张 |
 | TiHuanGood | 自己 5 张全部换成新牌 |
 
 每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或取消回到开牌阶段。
 
 人物卡攻击力 / 血量见 [`PlayerItem.md`](../../Item/PlayerItem.md)。  
+商店货架单卡见 [`ShopItem.md`](../../Item/ShopItem.md)。  
 攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。
 
 ---

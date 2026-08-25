@@ -87,7 +87,7 @@
 
 | 按钮 | 效果 |
 |------|------|
-| PeekGood | 搓牌：进入搓牌，点选一张随机替换花色和点数 |
+| PeekGood | 搓牌：进入搓牌；点选手牌翻到背面，拖拽抖动够量后松手换牌并翻回正面 |
 | ChaKanGood | 透视：点选一名角色，5 张全部选中并先抬起，抬完再背面透视（不翻牌）；开牌时先重置，再锁最大 3 张 |
 | TiHuanGood | 替换：自己 5 张牌全部换成牌堆新牌 |
 | CompareBtn 开牌 | 用已选的 3 张与存活敌人逐个比牌 |
@@ -149,7 +149,7 @@
 
 击杀本关全部敌人 → 总积分按 10:1 向下取整换金币进商店（不清空积分；699 → 69）。
 
-商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 4 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
+商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 3 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 
 广告（按钮模拟）：
 

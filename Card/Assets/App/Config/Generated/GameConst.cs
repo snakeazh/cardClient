@@ -56,6 +56,11 @@ namespace App.Config
         /// </summary>
         public string GoldIcon;
 
+        /// <summary>
+        /// 抽天赋所需金币
+        /// </summary>
+        public int TalentChestNeedGold;
+
     }
 }
 

@@ -7,7 +7,7 @@
 `RelicEntryConfig` 是商品效果词条（`MechanismType` + `Value`）。一件商品可挂多条（如小精灵 `10015` + `10016`）。  
 `Run.RelicConfigIds` 是已购商品 Id。锋芒禁用写在 `Run.DisabledRelicConfigId`（0 表示未禁用）。
 
-对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。
+对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架卡：[`ShopItem.md`](../Item/ShopItem.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。
 
 ---
 
@@ -21,7 +21,7 @@
 
 访问：`RelicConfig.Get(id)` / `RelicEntryConfig.Get(id)`。Excel 源在仓库 `Config/`。
 
-买卖只走 `GameSession.BuyShopRelic` / `SellShopRelic`。最多 `GameBalance.MaxRelics`（4）件。没有第二套商品表。
+买卖只走 `GameSession.BuyShopRelic` / `SellShopRelic`。最多 `GameBalance.MaxRelics`（3）件。没有第二套商品表。
 
 ---
 

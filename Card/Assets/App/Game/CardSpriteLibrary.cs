@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using App.Atlas;
 using App.Resources;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.Game
@@ -58,7 +59,7 @@ namespace App.Game
         {
             if (_atlas == null)
             {
-                Debug.LogWarning("[CardSprite] IAtlasService is not ready. Preload atlases in AppBootstrap.");
+                AppLog.Warn(LogChannel.Game, "IAtlasService is not ready. Preload atlases in AppBootstrap.");
                 return null;
             }
 

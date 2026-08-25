@@ -279,7 +279,7 @@ namespace App.Game
     /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
-        public HandScore(HandType type, int baseChips, float multiplier, int[] keys, Card[] usedCards, string label)
+        public HandScore(HandType type, int baseChips, float multiplier, int[] keys, Card[] usedCards, string label, bool beatsAll = false)
         {
             Type = type;
             BaseChips = baseChips;
@@ -287,6 +287,7 @@ namespace App.Game
             Keys = keys ?? Array.Empty<int>();
             UsedCards = usedCards ?? Array.Empty<Card>();
             Label = label ?? string.Empty;
+            BeatsAll = beatsAll;
         }
 
         public HandType Type { get; }
@@ -295,9 +296,16 @@ namespace App.Game
         public int[] Keys { get; }
         public Card[] UsedCards { get; }
         public string Label { get; }
+        /// <summary>散牌 235 遗物：比牌时胜过任何未通杀的牌型。</summary>
+        public bool BeatsAll { get; }
 
         public int CompareTo(HandScore other)
         {
+            if (BeatsAll != other.BeatsAll)
+            {
+                return BeatsAll ? 1 : -1;
+            }
+
             var type = Type.CompareTo(other.Type);
             if (type != 0)
             {
@@ -583,11 +591,11 @@ namespace App.Game
             return Math.Max(1, (int)Math.Round(value));
         }
 
-        /// <summary>伤害 = (攻击力 + 牌面点数) × 牌型倍率 × 遗物倍率。</summary>
-        public static int ComputeAttackDamage(int attack, int cardPoints, float handMagnification, float relicMultiplier)
+        /// <summary>伤害 = (攻击力 + 牌面点数) × 总倍率（牌型倍率 + 遗物加成）。</summary>
+        public static int ComputeAttackDamage(int attack, int cardPoints, float magnification)
         {
             var effectiveAttack = Math.Max(0, attack) + Math.Max(0, cardPoints);
-            var value = effectiveAttack * Math.Max(0f, handMagnification) * Math.Max(0f, relicMultiplier);
+            var value = effectiveAttack * Math.Max(0f, magnification);
             return Math.Max(1, (int)Math.Round(value));
         }
 

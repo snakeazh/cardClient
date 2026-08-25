@@ -5,7 +5,7 @@
 脚本：`Assets/App/UI/Game/GameUIView.cs`  
 视图模型：`Assets/App/UI/Game/GameTableViewModel.cs`  
 牌桌世界：[`GameBoardController.md`](GameBoardController.md)  
-规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md)
+规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md)
 
 `GameTableController` 是旧场景绑法，见 [`GameTableController.md`](GameTableController.md)。
 

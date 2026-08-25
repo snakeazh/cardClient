@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Resources;
 using Framework.Assets;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.UI
@@ -30,7 +31,7 @@ namespace App.UI
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning("CardShadow prefab not found at Res/" + ResResourcePaths.CardShadow + ": " + ex.Message);
+                AppLog.Warn(LogChannel.UI, "CardShadow prefab not found at Res/" + ResResourcePaths.CardShadow + ": " + ex.Message);
             }
         }
 

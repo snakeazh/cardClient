@@ -24,22 +24,6 @@ namespace App.Game
         WaitingOpen = 10
     }
 
-    /// <summary>遗物。战斗类改结算倍率；恐吓面具压 AI；磁力手套改搓牌。</summary>
-    public enum RelicId
-    {
-        CrudeSword = 0,
-        GreedyNecklace = 1,
-        GreedyBracelet = 2,
-        GreedyEarring = 3,
-        GreedyRing = 4,
-        WoodenSword = 5,
-        IronSword = 6,
-        JadeSword = 7,
-        /// <summary>AI 决策时胜率下调、诈唬减少。</summary>
-        ScareMask = 8,
-        MagnetGloves = 9
-    }
-
     public enum ConsumableId
     {
         SplashSlash = 0,
@@ -48,14 +32,6 @@ namespace App.Game
         RubCharge = 3,
         XRayCharge = 4,
         ReplaceCharge = 5
-    }
-
-    public enum RelicCategory
-    {
-        Combat = 0,
-        Rub = 1,
-        Bet = 2,
-        Special = 3
     }
 
     /// <summary>BOSS 关随机词缀。禁搓/禁计分改牌面，其余改经济或对局规则。</summary>
@@ -84,18 +60,14 @@ namespace App.Game
         Stingy = 15
     }
 
-    /// <summary>商店条目。Relic=true 为永久遗物，否则为本局消耗品。</summary>
+    /// <summary>商店货架 UI 包装，商品来自 <c>RelicConfig</c>。</summary>
     public sealed class ShopItemDef
     {
         public string Id;
         public string Name;
         public string Effect;
         public int Price;
-        public bool Relic;
-        public RelicId RelicId;
         public int RelicConfigId;
-        public ConsumableId ConsumableId;
-        public RelicCategory Category;
     }
 
     /// <summary>闯关数值：开局血量、敌人数量/血量、下注下限、商店与救助。</summary>
@@ -117,7 +89,6 @@ namespace App.Game
         public const float RescueRatio = 0.15f;
         public const float StingyRescueRatio = 0.05f;
         public const float SplashRatio = 0.3f;
-        public const float MagnetKeepSuitChance = 0.3f;
         public const int DailyDoubleGoldAds = 3;
         /// <summary>每手搓牌技能基础次数。</summary>
         public const int SkillRubUses = 3;
@@ -249,36 +220,6 @@ namespace App.Game
             }
         }
 
-        public static RelicCategory CategoryOf(RelicId id)
-        {
-            switch (id)
-            {
-                case RelicId.MagnetGloves: return RelicCategory.Rub;
-                case RelicId.ScareMask: return RelicCategory.Bet;
-                default: return RelicCategory.Combat;
-            }
-        }
-
-        public static IReadOnlyList<ShopItemDef> Catalog { get; } = new[]
-        {
-            new ShopItemDef { Id = "splash", Name = "瞬劈斩", Effect = "本局胜利攻击溅射其他敌人 30%", Price = 80, ConsumableId = ConsumableId.SplashSlash },
-            new ShopItemDef { Id = "magnifier", Name = "放大镜", Effect = "下注前偷看 1 张牌的花色", Price = 50, ConsumableId = ConsumableId.Magnifier },
-            new ShopItemDef { Id = "loan", Name = "借贷券", Effect = "血量不足以继续下注时自动获得最低下注血量", Price = 30, ConsumableId = ConsumableId.LoanTicket },
-            new ShopItemDef { Id = "crude", Name = "粗制长剑", Effect = "结算倍率 +4", Price = 120, Relic = true, RelicId = RelicId.CrudeSword, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "neck", Name = "贪婪项链", Effect = "方片结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyNecklace, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "bracelet", Name = "贪婪手镯", Effect = "红桃结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyBracelet, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "ear", Name = "贪婪耳环", Effect = "黑桃结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyEarring, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "ring", Name = "贪婪戒指", Effect = "梅花结算倍率 +3", Price = 90, Relic = true, RelicId = RelicId.GreedyRing, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "wood", Name = "木制长剑", Effect = "对子结算倍率 +8", Price = 140, Relic = true, RelicId = RelicId.WoodenSword, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "iron", Name = "铁质长剑", Effect = "顺子结算倍率 +8", Price = 140, Relic = true, RelicId = RelicId.IronSword, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "jade", Name = "翡翠长剑", Effect = "金花结算倍率 +8", Price = 160, Relic = true, RelicId = RelicId.JadeSword, Category = RelicCategory.Combat },
-            new ShopItemDef { Id = "mask", Name = "恐吓面具", Effect = "AI 跟注率降低 10%", Price = 180, Relic = true, RelicId = RelicId.ScareMask, Category = RelicCategory.Bet },
-            new ShopItemDef { Id = "magnet", Name = "磁力手套", Effect = "搓牌保留原花色概率 +30%", Price = 150, Relic = true, RelicId = RelicId.MagnetGloves, Category = RelicCategory.Rub },
-            new ShopItemDef { Id = "rubCharge", Name = "搓牌秘籍", Effect = "每关搓牌次数 +1", Price = 80, ConsumableId = ConsumableId.RubCharge },
-            new ShopItemDef { Id = "xrayCharge", Name = "透视秘籍", Effect = "每关透视次数 +1", Price = 80, ConsumableId = ConsumableId.XRayCharge },
-            new ShopItemDef { Id = "replaceCharge", Name = "替换秘籍", Effect = "每关替换次数 +1", Price = 80, ConsumableId = ConsumableId.ReplaceCharge }
-        };
-
         private static int Take(ref int remain, int slice, float rate)
         {
             var used = Math.Min(remain, slice);
@@ -389,10 +330,10 @@ namespace App.Game
         public int AdsDoubleGoldToday;
         public bool DoubleGoldThisStage;
         public BossAffix Affix;
-        public RelicId? DisabledRelic;
+        /// <summary>锋芒禁用的 RelicConfig Id，0 表示未禁用。</summary>
+        public int DisabledRelicConfigId;
         public ConsumableId? DisabledConsumable;
-        public readonly List<RelicId> Relics = new List<RelicId>();
-        /// <summary>本局已拥有的 RelicConfig Id，商店刷新不会再刷出。</summary>
+        /// <summary>已购 RelicConfig Id。商店商品唯一持有列表。</summary>
         public readonly List<int> RelicConfigIds = new List<int>();
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();

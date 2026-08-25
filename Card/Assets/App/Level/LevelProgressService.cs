@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework.Log;
 using Framework.Save;
 using UnityEngine;
 
@@ -77,7 +78,7 @@ namespace App.Level
         {
             if (!_levels.TryGetById(levelId, out var snapshot) || snapshot == null)
             {
-                Debug.LogWarning($"[LevelProgress] Unknown level Id={levelId}.");
+                AppLog.Warn(LogChannel.Level, $"Unknown level Id={levelId}.");
                 return;
             }
 
@@ -219,7 +220,7 @@ namespace App.Level
             var data = JsonUtility.FromJson<LevelProgressSaveData>(json);
             if (data == null)
             {
-                Debug.LogWarning("[LevelProgress] Failed to parse save data.");
+                AppLog.Warn(LogChannel.Level, "Failed to parse save data.");
                 return;
             }
 
@@ -355,7 +356,7 @@ namespace App.Level
         {
             if (_levels.GetMaxLevel(difficulty) <= 0)
             {
-                Debug.LogWarning($"[LevelProgress] Unknown difficulty={difficulty} (not in LevelConfig).");
+                AppLog.Warn(LogChannel.Level, $"Unknown difficulty={difficulty} (not in LevelConfig).");
             }
         }
     }

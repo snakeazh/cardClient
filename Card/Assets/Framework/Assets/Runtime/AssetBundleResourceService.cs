@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Framework.Log;
 using UnityEngine;
 using UnityEngine.Networking;
 using Object = UnityEngine.Object;
@@ -247,7 +248,8 @@ namespace Framework.Assets
             var manifestPath = Path.Combine(_bundleRoot, ManifestBundleName);
             if (!File.Exists(manifestPath))
             {
-                Debug.LogWarning(
+                AppLog.Warn(
+                    LogChannel.Assets,
                     $"Manifest bundle not found: {manifestPath}. Bundle dependencies will not be loaded. " +
                     "Run menu Res/Build AssetBundles.");
                 return;
@@ -256,7 +258,8 @@ namespace Framework.Assets
             var manifestBundle = AssetBundle.LoadFromFile(manifestPath);
             if (manifestBundle == null)
             {
-                Debug.LogWarning(
+                AppLog.Warn(
+                    LogChannel.Assets,
                     $"Failed to load manifest bundle: {manifestPath}. Bundle dependencies will not be loaded.");
                 return;
             }
@@ -265,13 +268,15 @@ namespace Framework.Assets
             _manifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
             if (_manifest == null)
             {
-                Debug.LogWarning(
+                AppLog.Warn(
+                    LogChannel.Assets,
                     $"Manifest asset missing in bundle: {manifestPath}. Bundle dependencies will not be loaded.");
                 return;
             }
 
-            Debug.Log(
-                $"[Assets] Manifest loaded: {_manifest.GetAllAssetBundles().Length} bundles, " +
+            AppLog.Info(
+                LogChannel.Assets,
+                $"Manifest loaded: {_manifest.GetAllAssetBundles().Length} bundles, " +
                 $"version {BundleVersion ?? "(unknown)"}.");
         }
 
@@ -352,7 +357,7 @@ namespace Framework.Assets
             if (HasCompleteExtract(persistentRoot, remoteVersion))
             {
                 _bundleRoot = persistentRoot;
-                Debug.Log($"[Assets] Using cached StreamingAssets extract at {persistentRoot} v{remoteVersion}.");
+                AppLog.Info(LogChannel.Assets, $"Using cached StreamingAssets extract at {persistentRoot} v{remoteVersion}.");
                 return;
             }
 
@@ -379,7 +384,7 @@ namespace Framework.Assets
             }
 
             _bundleRoot = persistentRoot;
-            Debug.Log($"[Assets] Extracted {names.Count} bundles from APK to {persistentRoot} v{remoteVersion ?? "(unknown)"}.");
+            AppLog.Info(LogChannel.Assets, $"Extracted {names.Count} bundles from APK to {persistentRoot} v{remoteVersion ?? "(unknown)"}.");
         }
 
         private async Task<List<string>> ResolvePackedFileNamesAsync()

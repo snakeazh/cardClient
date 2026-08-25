@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework.Log;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
@@ -104,13 +105,13 @@ namespace Framework.UI.Binding
                 var key = bind.Key;
                 if (string.IsNullOrWhiteSpace(key))
                 {
-                    Debug.LogWarning($"UIBind on '{bind.name}' has empty key.", bind);
+                    AppLog.Warn(LogChannel.UI, $"UIBind on '{bind.name}' has empty key.", bind);
                     continue;
                 }
 
                 if (!usedKeys.Add(key))
                 {
-                    Debug.LogError($"Duplicate UIBind key '{key}' under '{name}'.", bind);
+                    AppLog.Error(LogChannel.UI, $"Duplicate UIBind key '{key}' under '{name}'.", bind);
                     continue;
                 }
 

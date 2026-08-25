@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Framework.Log;
 using UnityEngine;
 using UnityEngine.Networking;
 using Object = UnityEngine.Object;
@@ -202,7 +203,8 @@ namespace Framework.Assets
             }
             catch (Exception e)
             {
-                Debug.LogWarning(
+                AppLog.Warn(
+                    LogChannel.Assets,
                     $"Manifest bundle '{ManifestBundleName}' not loaded, bundle dependencies will not resolve: {e.Message}");
                 return;
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.Config
@@ -49,7 +50,7 @@ namespace App.Config
 
                     if (map.ContainsKey(row.Id))
                     {
-                        Debug.LogWarning($"[{typeof(T).Name}] Duplicate Id={row.Id}, later row wins.");
+                        AppLog.Warn(LogChannel.Config, $"{typeof(T).Name} Duplicate Id={row.Id}, later row wins.");
                     }
 
                     map[row.Id] = row;

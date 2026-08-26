@@ -12,11 +12,13 @@ namespace App.UI
     {
         private const string DefaultClip = "ani_default";
         private const float HpHideDelay = 0.85f;
+        private const float RetreatDur = 0.18f;
 
         private static readonly float[] StartDur = { 0.43f, 0.90f, 1.25f };
         private static readonly float[] MoveDur = { 0.18f, 0.18f, 0.18f };
         private static readonly float[] EndDur = { 0.25f, 0.25f, 0.33f };
         private static readonly float[] BackDur = { 0.45f, 0.45f, 0.55f };
+        private static readonly float[] RetreatDist = { 40f, 56f, 72f };
 
         private Transform _hud;
         private RectTransform _playerRoot;
@@ -92,10 +94,11 @@ namespace App.UI
             var hitPos = _playerRoot.position;
 
             AttachIncomingToFlight(homePos);
+            var homeAnchored = _flight.anchoredPosition;
+            var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
-            PlayClip(enemyAnim, Clip(level, "start"));
-            _seq.AppendInterval(startDur);
+            AppendAimAndRetreat(enemyAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: true);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -105,7 +108,7 @@ namespace App.UI
 
                 PlayClip(enemyAnim, Clip(level, "move"));
             });
-            _seq.Append(_flight.DOMove(hitPos, moveDur).SetEase(Ease.InQuad));
+            _seq.Append(_flight.DOAnchorPos(hitAnchored, moveDur).SetEase(Ease.InQuad));
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -128,7 +131,7 @@ namespace App.UI
                 PlayClip(enemyAnim, Clip(level, "back"));
                 PlayClip(_playerAnim, DefaultClip);
             });
-            _seq.Append(_flight.DOMove(homePos, backDur).SetEase(Ease.OutQuad));
+            AppendReturnHome(homeAnchored, backDur);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -178,10 +181,11 @@ namespace App.UI
             var hitPos = _enemyRoots[visualSlot].position;
 
             AttachToFlight(homePos);
+            var homeAnchored = _flight.anchoredPosition;
+            var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
-            PlayClip(_playerAnim, Clip(level, "start"));
-            _seq.AppendInterval(startDur);
+            AppendAimAndRetreat(_playerAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: false);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -191,7 +195,7 @@ namespace App.UI
 
                 PlayClip(_playerAnim, Clip(level, "move"));
             });
-            _seq.Append(_flight.DOMove(hitPos, moveDur).SetEase(Ease.InQuad));
+            _seq.Append(_flight.DOAnchorPos(hitAnchored, moveDur).SetEase(Ease.InQuad));
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -214,7 +218,7 @@ namespace App.UI
                 PlayClip(_playerAnim, Clip(level, "back"));
                 PlayClip(targetAnim, DefaultClip);
             });
-            _seq.Append(_flight.DOMove(homePos, backDur).SetEase(Ease.OutQuad));
+            AppendReturnHome(homeAnchored, backDur);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -275,22 +279,25 @@ namespace App.UI
 
         private void AttachToFlight(Vector3 worldPos)
         {
-            var flight = EnsureFlight();
-            flight.gameObject.SetActive(true);
-            flight.SetParent(_hud, false);
-            flight.SetAsLastSibling();
-            flight.position = worldPos;
-            _playerRoot.SetParent(flight, true);
+            PlaceFlight(worldPos);
+            _playerRoot.SetParent(_flight, true);
         }
 
         private void AttachIncomingToFlight(Vector3 worldPos)
+        {
+            PlaceFlight(worldPos);
+            _incomingRoot.SetParent(_flight, true);
+        }
+
+        private void PlaceFlight(Vector3 worldPos)
         {
             var flight = EnsureFlight();
             flight.gameObject.SetActive(true);
             flight.SetParent(_hud, false);
             flight.SetAsLastSibling();
-            flight.position = worldPos;
-            _incomingRoot.SetParent(flight, true);
+            flight.localRotation = Quaternion.identity;
+            flight.localScale = Vector3.one;
+            flight.anchoredPosition = WorldToHudAnchored(worldPos);
         }
 
         private void RestoreIncoming()
@@ -369,6 +376,75 @@ namespace App.UI
 
             UnityEngine.Object.Destroy(_flight.gameObject);
             _flight = null;
+        }
+
+        private void AppendAimAndRetreat(
+            Animator attacker,
+            int level,
+            float startDur,
+            Vector2 homeAnchored,
+            Vector2 hitAnchored,
+            int idx,
+            bool invertAim)
+        {
+            PlayClip(attacker, Clip(level, "start"));
+            var dir = hitAnchored - homeAnchored;
+            var angle = AimAngleZ(dir);
+            if (invertAim)
+            {
+                angle += 180f;
+            }
+
+            var aim = new Vector3(0f, 0f, angle);
+            _seq.Append(_flight.DOLocalRotate(aim, startDur).SetEase(Ease.OutCubic));
+            _seq.Append(_flight.DOAnchorPos(RetreatPoint(homeAnchored, dir, RetreatDist[idx]*4), RetreatDur)
+                .SetEase(Ease.OutQuad));
+        }
+
+        private void AppendReturnHome(Vector2 homeAnchored, float backDur)
+        {
+            _seq.Append(_flight.DOAnchorPos(homeAnchored, backDur).SetEase(Ease.OutQuad));
+            _seq.Join(_flight.DOLocalRotate(Vector3.zero, backDur).SetEase(Ease.OutCubic));
+        }
+
+        private Vector2 WorldToHudAnchored(Vector3 world)
+        {
+            var parent = _flight != null ? _flight.parent as RectTransform : _hud as RectTransform;
+            if (parent == null)
+            {
+                return world;
+            }
+
+            var canvas = parent.GetComponentInParent<Canvas>();
+            Camera cam = null;
+            if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            {
+                cam = canvas.worldCamera;
+            }
+
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, world);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local);
+            return local;
+        }
+
+        private static float AimAngleZ(Vector2 dir)
+        {
+            if (dir.sqrMagnitude < 0.0001f)
+            {
+                return 0f;
+            }
+
+            return Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+        }
+
+        private static Vector2 RetreatPoint(Vector2 from, Vector2 dir, float distance)
+        {
+            if (dir.sqrMagnitude < 0.0001f)
+            {
+                return from;
+            }
+
+            return from - dir.normalized * distance;
         }
 
         private static string Clip(int level, string phase)

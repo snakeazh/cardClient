@@ -1625,21 +1625,19 @@ namespace App.Game
             }
 
             GetScoreBan(out var banned, out var banFaces);
-            var rules = GetHandEvalRules();
             HandEvaluator.SelectBestOpen(
                 seat.Hand,
                 seat.CardSelected,
                 GameBalance.CardsDealt(false),
                 banned,
-                banFaces,
-                rules);
+                banFaces);
         }
 
         /// <summary>评估座位牌型。BOSS 禁用花色/人头会先过滤，燧石减半筹码和倍率。</summary>
         public HandScore EvaluateSeat(SeatState seat)
         {
             GetScoreBan(out var banned, out var banFaces);
-            var rules = GetHandEvalRules();
+            var rules = GetHandEvalRules(seat);
             var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces, rules), banned, banFaces, rules);
             if (seat != null && seat.IsPlayer && RelicMechanics.HasMechanism(Run, MechanismType.SpecialTwoThreeFive))
             {
@@ -1661,8 +1659,13 @@ namespace App.Game
             return score;
         }
 
-        private HandEvalRules GetHandEvalRules()
+        private HandEvalRules GetHandEvalRules(SeatState seat)
         {
+            if (seat == null || !seat.IsPlayer)
+            {
+                return default;
+            }
+
             return new HandEvalRules(
                 RelicMechanics.HasMechanism(Run, MechanismType.SpecialFlush),
                 RelicMechanics.HasMechanism(Run, MechanismType.SpecialStraight));

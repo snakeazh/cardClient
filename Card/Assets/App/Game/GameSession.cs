@@ -51,7 +51,7 @@ namespace App.Game
         private bool _sequentialCompare;
         /// <summary>本回合在血量换算之外额外获得的勇气值（借贷券 / 广告借贷）。</summary>
         private int _loanCourageBonus;
-        /// <summary>本关商店已按 LevelConfig.GetGold 发放的金币，供双倍广告再发一份。</summary>
+        /// <summary>本关进商店发放的金币（GetGold + 击杀加成，含双倍），供广告再发一份。不含本手伤害换金。</summary>
         private int _shopGoldGranted;
         private int _rubsUsedThisHand;
         private bool _rubbedThisHand;
@@ -1063,6 +1063,7 @@ namespace App.Game
             if (_roundDamageDealt > 0)
             {
                 AwardPlayerRoundScore(_roundDamageDealt);
+                GrantDamageGold(_roundDamageDealt);
             }
 
             if (string.IsNullOrEmpty(LastResult))
@@ -3857,6 +3858,7 @@ namespace App.Game
                 gold = Math.Max(0, (int)Math.Round(gold * (1f + goldPer)));
             }
 
+            gold += CountStageKills() * KillMonsterGoldBonus();
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
@@ -4563,6 +4565,58 @@ namespace App.Game
             }
 
             ScoreSvc()?.AwardRoundScore(potWon);
+        }
+
+        /// <summary>
+        /// 本手攻击值按 <see cref="GameConst.DamageTurnToGold"/> 当场换成局内金币。
+        /// 比例 [a, b]：floor(伤害 × b / a)。每手单独取整，不计入商店双倍。
+        /// </summary>
+        private void GrantDamageGold(int damage)
+        {
+            var gold = DamageToGold(damage);
+            if (gold <= 0)
+            {
+                return;
+            }
+
+            Run.Gold += gold;
+            Log($"伤害换金 +{gold}（本手 {damage} 伤害，总金币 {Run.Gold}）");
+        }
+
+        private static int DamageToGold(int damage)
+        {
+            if (damage <= 0 || !GameConst.IsLoaded)
+            {
+                return 0;
+            }
+
+            var rate = GameConst.Instance.DamageTurnToGold;
+            if (rate == null || rate.Length < 2 || rate[0] <= 0)
+            {
+                return 0;
+            }
+
+            return damage * Math.Max(0, rate[1]) / rate[0];
+        }
+
+        private int CountStageKills()
+        {
+            var kills = 0;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (enemy != null && enemy.ActiveInStage && enemy.Hp <= 0)
+                {
+                    kills++;
+                }
+            }
+
+            return kills;
+        }
+
+        private static int KillMonsterGoldBonus()
+        {
+            return GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.KillMonsterGetGold) : 0;
         }
 
         private void ApplyEdgeAffix()

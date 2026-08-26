@@ -42,7 +42,7 @@
 | 赌神 | RubbingCardsNum | `ResetSkillCharges` | 与遗物搓牌次数相加 |
 | 暴发户 | EpicLegendRelicProUp | `PickWeightedRelic` | 史诗/传说权重 `× (1 + Value)` |
 | 关系户 | RelicPricePer | 购买价 | `round(Price × (1 + Value))`，下限 0。不改售价 |
-| 经济教授 | GetGoldAfterLevel | `EnterShop` | `GetGold × (1 + Value)` 后再吃广告双倍 |
+| 经济教授 | GetGoldAfterLevel | `EnterShop` | `GetGold × (1 + Value)`，再加击杀数 × `KillMonsterGetGold`，然后广告双倍翻整笔 |
 
 `Damage` 名字过泛，按枚举 Id 84 使用即可。英雄词条 Id 与遗物词条 Id 都从 10001 起，但是两张表，没有冲突。
 
@@ -58,6 +58,6 @@
 | 受伤百分比 | `ApplyDamage`；演出飘字读 `TakenDamage` |
 | 闪避 | `ApplyDamage` |
 | 搓牌次数 | `ResetSkillCharges` |
-| 通关金币 | `EnterShop` |
+| 通关金币 | `EnterShop`（GetGold × 经济教授 + 击杀加成，再双倍） |
 | 商店权重 | `PickWeightedRelic` |
 | 购买价 | `BuyShopRelic` / `EffectiveBuyPrice`；货架 UI 同步显示折后价 |

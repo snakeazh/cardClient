@@ -59,7 +59,7 @@
 | 攻击力 | 玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`。PlayerItem 显示该值 |
 | 勇气值 | 每手仍按人物当前血量换算（旧下注用），当前主循环不再下注 |
 | 积分 | 本手玩家打出的攻击数值 1:1 记分（不被剩余血量截断）。`GameConst.ChipsForPoints` 当前为 1 |
-| 局内金币 | 开局 `GameConst.PlayerInitialGoldNum`（可加天赋富裕、英雄富豪）。关卡胜利发 `LevelConfig.GetGold`（可乘英雄经济教授）进 `Run.Gold`，广告双倍再发一份。商店刷新：`ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter` |
+| 局内金币 | 开局 `GameConst.PlayerInitialGoldNum`（可加天赋富裕、英雄富豪）。本手攻击值按 `DamageTurnToGold`（当前 12:1）当场换金。关卡胜利发 `LevelConfig.GetGold`（可乘英雄经济教授）+ 本关击杀数 × `KillMonsterGetGold`，广告双倍再翻进店这一笔。商店刷新：`ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter` |
 | 局外货币 | 闯关结束（成功或放弃）按总积分 / `GameConst.ExchangePointsForGoldCoins`（当前 10:1）兑入钱包。见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 
 血量只在攻击结算时扣除。
@@ -149,7 +149,7 @@
 
 ## 9. 商店、广告、词缀
 
-击杀本关全部敌人 → 发本关 `LevelConfig.GetGold` 为**局内金币**进商店。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
+击杀本关全部敌人 → 发本关 `LevelConfig.GetGold`（可乘经济教授）+ 击杀数 × `KillMonsterGetGold` 为**局内金币**进商店；本手伤害换金已在比牌结束时入账。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
 
 商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 3 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 

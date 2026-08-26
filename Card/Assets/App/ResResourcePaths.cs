@@ -9,6 +9,7 @@ namespace App.Resources
         public const string UIRoot = "UI/UIRoot";
         public const string Home = "UI/Home";
         public const string MainInterfaceBottom = "UI/Bottom/MainInterfaceBottom";
+        public const string MainResource = "UI/Bottom/MainResource";
         public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
         public const string ConfirmDialog = "UI/ConfirmDialog";
@@ -66,5 +67,18 @@ namespace App.Resources
         }
 
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
+
+        /// <summary>
+        /// <see cref="App.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
+        /// </summary>
+        public static string CommonIcon(string icon)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+
+            return $"Textures/Common/{icon.Trim()}";
+        }
     }
 }

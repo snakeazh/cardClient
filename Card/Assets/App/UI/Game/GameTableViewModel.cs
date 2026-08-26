@@ -19,6 +19,7 @@ namespace App.UI
     {
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
+        private readonly MainResourceViewModel _mainResource;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -29,6 +30,7 @@ namespace App.UI
             IResourceService resources,
             IUIManager ui,
             NavigationViewModel navigation,
+            MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IAtlasService atlas)
         {
@@ -38,6 +40,7 @@ namespace App.UI
             Atlas = atlas;
             _ui = ui;
             _navigation = navigation;
+            _mainResource = mainResource ?? throw new ArgumentNullException(nameof(mainResource));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -296,6 +299,13 @@ namespace App.UI
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
+            _mainResource.SetInRun(true);
+            return Task.CompletedTask;
+        }
+
+        protected override Task OnClose()
+        {
+            _mainResource.SetInRun(false);
             return Task.CompletedTask;
         }
 

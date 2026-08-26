@@ -210,6 +210,11 @@ namespace Framework.UI.Navigation
                 return UILayer.Loading;
             }
 
+            if (_stacks[UILayer.Resource].Count > 0)
+            {
+                return UILayer.Resource;
+            }
+
             if (_stacks[UILayer.Popup].Count > 0)
             {
                 return UILayer.Popup;

@@ -6,7 +6,8 @@ namespace Framework.UI.Navigation
         Page = 1,
         Navigation = 2,
         Popup = 3,
-        Loading = 4,
-        TopMost = 5
+        Resource = 4,
+        Loading = 5,
+        TopMost = 6
     }
 }

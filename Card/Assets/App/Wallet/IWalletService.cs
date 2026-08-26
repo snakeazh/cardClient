@@ -1,3 +1,4 @@
+using System;
 using Framework.Save;
 
 namespace App.Wallet
@@ -8,6 +9,8 @@ namespace App.Wallet
     public interface IWalletService : ISaveFlushable
     {
         int Gold { get; }
+
+        event Action Changed;
 
         void Add(int amount);
 

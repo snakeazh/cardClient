@@ -18,6 +18,7 @@ namespace Framework.UI.Navigation
         [SerializeField] private RectTransform _popupLayer;
         [SerializeField] private RectTransform _loadingLayer;
         [SerializeField] private RectTransform _topMostLayer;
+        [SerializeField] private RectTransform _resourceLayer;
 
         public Canvas RootCanvas { get; private set; }
 
@@ -80,6 +81,7 @@ namespace Framework.UI.Navigation
             RegisterLayer(UILayer.Page, _pageLayer);
             RegisterLayer(UILayer.Navigation, _navigationLayer);
             RegisterLayer(UILayer.Popup, _popupLayer);
+            RegisterLayer(UILayer.Resource, _resourceLayer);
             RegisterLayer(UILayer.Loading, _loadingLayer);
             RegisterLayer(UILayer.TopMost, _topMostLayer);
         }

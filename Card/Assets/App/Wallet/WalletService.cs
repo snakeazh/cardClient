@@ -21,6 +21,8 @@ namespace App.Wallet
 
         public int Gold => _gold;
 
+        public event Action Changed;
+
         public void Add(int amount)
         {
             if (amount <= 0)
@@ -30,6 +32,7 @@ namespace App.Wallet
 
             _gold += amount;
             _dirty = true;
+            Changed?.Invoke();
         }
 
         public void Load()
@@ -41,6 +44,7 @@ namespace App.Wallet
             }
 
             _dirty = false;
+            Changed?.Invoke();
         }
 
         public void Save()

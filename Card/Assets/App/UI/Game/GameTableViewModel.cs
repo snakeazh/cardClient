@@ -483,14 +483,7 @@ namespace App.UI
                 }
             }
 
-            for (var i = 0; i < ShowEnemy.Length; i++)
-            {
-                ShowEnemy[i].Value = false;
-                EnemyChips[i].Value = string.Empty;
-                EnemyBet[i].Value = string.Empty;
-                EnemyState[i].Value = string.Empty;
-            }
-
+            var shown = new bool[ShowEnemy.Length];
             var placed = 0;
             for (var i = 0; i < Session.Enemies.Length; i++)
             {
@@ -507,10 +500,21 @@ namespace App.UI
                     continue;
                 }
 
-                ShowEnemy[slot].Value = enemy.Alive;
+                shown[slot] = enemy.Alive;
                 EnemyChips[slot].Value = $"勇气 {enemy.Courage}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
+            }
+
+            for (var i = 0; i < ShowEnemy.Length; i++)
+            {
+                ShowEnemy[i].Value = shown[i];
+                if (!shown[i])
+                {
+                    EnemyChips[i].Value = string.Empty;
+                    EnemyBet[i].Value = string.Empty;
+                    EnemyState[i].Value = string.Empty;
+                }
             }
         }
 

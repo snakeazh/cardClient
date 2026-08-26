@@ -94,6 +94,8 @@ namespace App.UI
             var hitPos = _playerRoot.position;
 
             AttachRootToFlight(_incomingRoot, homePos);
+            var homeAnchored = _flight.anchoredPosition;
+            var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
             AppendAimAndRetreat(enemyAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: true);
@@ -179,6 +181,8 @@ namespace App.UI
             var hitPos = _enemyRoots[visualSlot].position;
 
             AttachRootToFlight(_playerRoot, homePos);
+            var homeAnchored = _flight.anchoredPosition;
+            var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
             AppendAimAndRetreat(_playerAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: false);
@@ -286,7 +290,8 @@ namespace App.UI
             flight.SetParent(_hud, false);
             flight.SetAsLastSibling();
             CopyRelativeScale(flight, homeParent);
-            flight.position = worldPos;
+            flight.localRotation = Quaternion.identity;
+            flight.anchoredPosition = WorldToHudAnchored(worldPos);
             root.SetParent(flight, true);
             root.localScale = Vector3.one;
         }

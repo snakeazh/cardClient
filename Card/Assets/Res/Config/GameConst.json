@@ -5,8 +5,10 @@
   "ExchangePointsForGoldCoins": 10,
   "BasicBettingAmount": 10,
   "AfterBettingAmount": 10,
-  "ShopRefreshFirst": 5,
-  "ShopRefreshAfter": 3,
+  "ShopRefreshFirst": 15,
+  "ShopRefreshAfter": 15,
+  "ShopRefreshGoldUpNumMax": 3,
   "GoldIcon": "coin",
-  "TalentChestNeedGold": 10
+  "TalentChestNeedGold": 10,
+  "PlayerInitialGoldNum": 120
 }

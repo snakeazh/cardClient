@@ -653,5 +653,16 @@ namespace App.UI
 
             return $"x{rounded:0.##}";
         }
+
+        public static string FormatBonus(float value)
+        {
+            var rounded = (float)Math.Round(value, 2);
+            if (Math.Abs(rounded - (float)Math.Round(rounded)) < 0.001f)
+            {
+                return $"+{(int)Math.Round(rounded)}";
+            }
+
+            return $"+{rounded:0.##}";
+        }
     }
 }

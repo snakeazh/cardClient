@@ -1070,11 +1070,12 @@ namespace App.Game
 
             var mag = HandTypeMagnification(score.Type);
             var extra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score) : 0f;
+            var attackExtra = attacker.IsPlayer ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score)) : 0;
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             var totalMag = (mag + extra) * flint;
             // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
-            var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack, score.BaseChips, totalMag);
-            LogAttackDamage(attacker, defender, score, extra, mag, flint, totalMag, damage);
+            var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack + attackExtra, score.BaseChips, totalMag);
+            LogAttackDamage(attacker, defender, score, extra, attackExtra, mag, flint, totalMag, damage);
             return damage;
         }
 
@@ -1083,6 +1084,7 @@ namespace App.Game
             SeatState defender,
             HandScore score,
             float extra,
+            int attackExtra,
             float mag,
             float flint,
             float totalMag,
@@ -1090,7 +1092,7 @@ namespace App.Game
         {
             var atk = Math.Max(0, attacker.Attack);
             var chips = Math.Max(0, score.BaseChips);
-            var effective = atk + chips;
+            var effective = atk + attackExtra + chips;
             var vs = defender != null ? $"→{defender.Name}" : string.Empty;
             var beats = score.BeatsAll ? " 通杀" : string.Empty;
             var cards = FormatUsedCards(score);
@@ -1100,10 +1102,11 @@ namespace App.Game
                 : string.IsNullOrEmpty(parts)
                     ? $"遗物+{extra}"
                     : $"遗物+{extra} ({parts})";
+            var attackRelic = attackExtra == 0 ? string.Empty : $" + 遗物攻{attackExtra}";
             AppLog.Info(
                 LogChannel.Game,
                 $"伤害 {attacker.Name}{vs} | {HandEvaluator.TypeName(score.Type)}{beats} {cards}\n" +
-                $"  攻击{atk} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
+                $"  攻击{atk}{attackRelic} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
                 $"  {effective} x {totalMag} = {damage}");
         }
 

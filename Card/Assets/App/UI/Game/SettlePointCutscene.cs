@@ -16,12 +16,21 @@ namespace App.UI
     {
         private const float Fx01Duration = 0.45f;
         private const float Fx02MoveDuration = 0.4f;
+        private const float AttackLowDuration = 0.35f;
+        private const float BonusStepDuration = 0.5f;
         private const float Fx03Duration = 0.55f;
         private const float BeilvFloatDuration = 0.1f;
-        private const float BeilvFloatPixels = 48f;
-        private const float CardTypeNumLowDuration = 0.5f;
-        private const float HighDuration = 0.4f;
+        private const float BeilvFloatPixels = 20f;
         private const int FxSortingOrder = 220;
+
+        public struct BonusBeat
+        {
+            public Animator EquipAnimator;
+            public bool IsAttack;
+            public string BeilvText;
+            public string CardTypeText;
+            public int AttackValue;
+        }
 
         private IResourceService _resources;
         private RectTransform _uiRoot;
@@ -32,6 +41,7 @@ namespace App.UI
         private Sequence _seq;
         private int _playToken;
         private readonly List<GameObject> _spawned = new List<GameObject>(8);
+        private readonly List<BonusBeat> _beats = new List<BonusBeat>(8);
         private Vector2 _beilvHome;
         private RectTransform _beilvRt;
 
@@ -54,9 +64,8 @@ namespace App.UI
             IReadOnlyList<CardItem> cards,
             PlayerItem attackItem,
             TMP_Text beilvNum,
-            string relicMultText,
             TMP_Text cardTypeNum,
-            string cardTypeMultText,
+            IReadOnlyList<BonusBeat> bonusBeats,
             int baseAttack,
             int cardPoints,
             int finalDamage,
@@ -68,6 +77,15 @@ namespace App.UI
             var token = ++_playToken;
             var attackRect = attackItem != null ? attackItem.AttackValueRect : null;
             var targetPos = attackRect != null ? attackRect.position : Vector3.zero;
+            _beats.Clear();
+            if (bonusBeats != null)
+            {
+                for (var i = 0; i < bonusBeats.Count; i++)
+                {
+                    _beats.Add(bonusBeats[i]);
+                }
+            }
+
             _beilvRt = beilvNum != null ? beilvNum.rectTransform : null;
             if (_beilvRt != null)
             {
@@ -82,6 +100,7 @@ namespace App.UI
             }
 
             _seq = DOTween.Sequence();
+            _seq.Pause();
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -116,11 +135,41 @@ namespace App.UI
                     SetAttackNumber(attackItem, Mathf.Max(0, baseAttack) + Mathf.Max(0, cardPoints), onAttackNumber);
                     attackItem.PlayAttackNumberShake(true, false);
                 }
+            });
+            _seq.AppendInterval(AttackLowDuration);
+            for (var i = 0; i < _beats.Count; i++)
+            {
+                var index = i;
+                _seq.AppendCallback(() =>
+                {
+                    if (token != _playToken)
+                    {
+                        return;
+                    }
 
-                SpawnFx03(targetPos);
+                    ApplyBonusBeat(_beats[index], attackItem, beilvNum, cardTypeNum, onAttackNumber);
+                });
+                _seq.AppendInterval(BonusStepDuration);
+            }
+
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                HideBeilv();
+                if (attackItem != null)
+                {
+                    SetAttackNumber(attackItem, Mathf.Max(1, finalDamage), onAttackNumber);
+                    attackItem.PlayAttackNumberShake(false, true);
+                }
+
+                SpawnFx03(attackItem);
             });
             _seq.AppendInterval(Fx03Duration);
-            _seq.AppendCallback(() =>
+            _seq.OnComplete(() =>
             {
                 if (token != _playToken)
                 {
@@ -133,50 +182,13 @@ namespace App.UI
                     attackItem.PlayAttackNumberShake(false, false);
                 }
 
-                if (cardTypeNum != null)
-                {
-                    if (!string.IsNullOrEmpty(cardTypeMultText))
-                    {
-                        cardTypeNum.text = cardTypeMultText;
-                    }
-
-                    PlayNumberShake(cardTypeNum, true, false);
-                }
-
-                ShowBeilv(beilvNum, relicMultText);
-            });
-            _seq.AppendInterval(CardTypeNumLowDuration);
-            _seq.AppendCallback(() =>
-            {
-                if (token != _playToken)
-                {
-                    return;
-                }
-
-                if (attackItem != null)
-                {
-                    SetAttackNumber(attackItem, Mathf.Max(1, finalDamage), onAttackNumber);
-                    attackItem.PlayAttackNumberShake(false, true);
-                }
-            });
-            _seq.AppendInterval(HighDuration);
-            _seq.OnComplete(() =>
-            {
-                if (token != _playToken)
-                {
-                    return;
-                }
-
-                if (attackItem != null)
-                {
-                    attackItem.PlayAttackNumberShake(false, false);
-                }
-
                 PlayNumberShake(cardTypeNum, false, false);
+                ResetBonusEquips();
                 RestoreBeilv();
                 IsPlaying = false;
                 onDone?.Invoke();
             });
+            _seq.Play();
         }
 
         public void Dispose()
@@ -203,7 +215,46 @@ namespace App.UI
                 return;
             }
 
-            var animator = text.GetComponent<Animator>();
+            PlayNumberShake(text.GetComponent<Animator>(), low, high);
+        }
+
+        private void ApplyBonusBeat(
+            BonusBeat beat,
+            PlayerItem attackItem,
+            TMP_Text beilvNum,
+            TMP_Text cardTypeNum,
+            Action<int> onAttackNumber)
+        {
+            PlayNumberShake(beat.EquipAnimator, true, false);
+            ShowBeilv(beilvNum, beat.BeilvText);
+            if (beat.IsAttack)
+            {
+                if (attackItem != null)
+                {
+                    SetAttackNumber(attackItem, Mathf.Max(0, beat.AttackValue), onAttackNumber);
+                    attackItem.PlayAttackNumberShake(true, false);
+                }
+
+                return;
+            }
+
+            if (cardTypeNum != null && !string.IsNullOrEmpty(beat.CardTypeText))
+            {
+                cardTypeNum.text = beat.CardTypeText;
+                PlayNumberShake(cardTypeNum, true, false);
+            }
+        }
+
+        private void ResetBonusEquips()
+        {
+            for (var i = 0; i < _beats.Count; i++)
+            {
+                PlayNumberShake(_beats[i].EquipAnimator, false, false);
+            }
+        }
+
+        private static void PlayNumberShake(Animator animator, bool low, bool high)
+        {
             if (animator == null)
             {
                 return;
@@ -299,14 +350,25 @@ namespace App.UI
             }
         }
 
-        private void SpawnFx03(Vector3 targetPos)
+        private void SpawnFx03(PlayerItem attackItem)
         {
             if (_fx03Prefab == null)
             {
                 return;
             }
 
-            SpawnOnUi(_fx03Prefab, targetPos);
+            var rect = attackItem != null ? attackItem.AttackValueRect : null;
+            var pos = rect != null ? rect.position : Vector3.zero;
+            var go = UnityEngine.Object.Instantiate(_fx03Prefab);
+            go.transform.SetParent(null, false);
+            go.transform.position = pos;
+            go.transform.rotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            go.SetActive(true);
+            ApplySorting(go, FxSortingOrder);
+            RestartParticles(go);
+            ClearTrails(go);
+            _spawned.Add(go);
         }
 
         private GameObject SpawnOnCard(GameObject prefab, CardItem card)
@@ -391,11 +453,12 @@ namespace App.UI
             _beilvRt.DOKill();
             _beilvRt.anchoredPosition = _beilvHome;
             _beilvRt.gameObject.SetActive(true);
+            PlayNumberShake(beilvNum, true, false);
             _beilvRt.DOAnchorPos(_beilvHome + new Vector2(0f, BeilvFloatPixels), BeilvFloatDuration)
                 .SetEase(Ease.OutQuad);
         }
 
-        private void RestoreBeilv()
+        private void HideBeilv()
         {
             if (_beilvRt == null)
             {
@@ -404,7 +467,13 @@ namespace App.UI
 
             _beilvRt.DOKill();
             _beilvRt.anchoredPosition = _beilvHome;
+            PlayNumberShake(_beilvRt.GetComponent<TMP_Text>(), false, false);
             _beilvRt.gameObject.SetActive(false);
+        }
+
+        private void RestoreBeilv()
+        {
+            HideBeilv();
             _beilvRt = null;
         }
 
@@ -465,8 +534,9 @@ namespace App.UI
             var systems = go.GetComponentsInChildren<ParticleSystem>(true);
             for (var i = 0; i < systems.Length; i++)
             {
-                systems[i].Clear(true);
-                systems[i].Play(true);
+                var ps = systems[i];
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.Play(true);
             }
         }
 

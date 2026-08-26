@@ -42,6 +42,8 @@ namespace App.UI
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
+        private readonly List<RelicBonusPart> _relicBonuses = new List<RelicBonusPart>(GameBalance.MaxRelics);
+        private readonly List<SettlePointCutscene.BonusBeat> _bonusBeats = new List<SettlePointCutscene.BonusBeat>(GameBalance.MaxRelics * 2);
         private int _prefabEquipCount;
         private GameObject _equipTip;
         private TMP_Text _equipTipText;
@@ -317,16 +319,14 @@ namespace App.UI
                 _settleCards.Clear();
             }
 
-            var relicText = extra > 0f ? GameTableViewModel.FormatMultiplier(extra) : string.Empty;
-            var typeText = GameTableViewModel.FormatHandMultiplier(score.Type);
-            var cardTypeNum = _playerCardTypeNum;
+            CollectBonusBeats(extra, attacker, session, score, baseAttack);
+            var cardTypeNum = attacker != null && attacker.IsPlayer ? _playerCardTypeNum : null;
             _settleFx.Play(
                 _settleCards,
                 attackItem,
-                extra > 0f ? _beilvNum : null,
-                relicText,
+                _beilvNum,
                 cardTypeNum,
-                typeText,
+                _bonusBeats,
                 baseAttack,
                 score.BaseChips,
                 Math.Max(1, session.AttackDamage),
@@ -342,6 +342,76 @@ namespace App.UI
                     _heldAttackValue = Math.Max(1, session.AttackDamage);
                     PlayAttackCutscene(session);
                 });
+        }
+
+        private void CollectBonusBeats(float extra, SeatState attacker, GameSession session, HandScore score, int baseAttack)
+        {
+            _relicBonuses.Clear();
+            _bonusBeats.Clear();
+            if (attacker == null || !attacker.IsPlayer || session == null)
+            {
+                return;
+            }
+
+            RelicMechanics.CollectRelicBonuses(session.Run, score, _relicBonuses);
+            if (_relicBonuses.Count == 0 && extra <= 0f)
+            {
+                return;
+            }
+
+            var mag = GameSession.HandTypeMagnification(score.Type);
+            var attackValue = Math.Max(0, baseAttack) + Math.Max(0, score.BaseChips);
+            for (var i = 0; i < _relicBonuses.Count; i++)
+            {
+                var part = _relicBonuses[i];
+                var equip = FindEquipAnimator(part.RelicId);
+                if (part.MultiplierAdd != 0f)
+                {
+                    mag += part.MultiplierAdd;
+                    _bonusBeats.Add(new SettlePointCutscene.BonusBeat
+                    {
+                        EquipAnimator = equip,
+                        IsAttack = false,
+                        BeilvText = GameTableViewModel.FormatBonus(part.MultiplierAdd),
+                        CardTypeText = GameTableViewModel.FormatMultiplier(mag),
+                        AttackValue = attackValue
+                    });
+                }
+
+                if (part.AttackAdd != 0f)
+                {
+                    attackValue += (int)Math.Round(part.AttackAdd);
+                    _bonusBeats.Add(new SettlePointCutscene.BonusBeat
+                    {
+                        EquipAnimator = equip,
+                        IsAttack = true,
+                        BeilvText = GameTableViewModel.FormatBonus(part.AttackAdd),
+                        CardTypeText = null,
+                        AttackValue = attackValue
+                    });
+                }
+            }
+        }
+
+        private Animator FindEquipAnimator(int relicId)
+        {
+            if (relicId <= 0)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < _equipSlots.Count; i++)
+            {
+                if (i >= _equipRelicIds.Count || _equipRelicIds[i] != relicId)
+                {
+                    continue;
+                }
+
+                var slot = _equipSlots[i];
+                return slot != null ? slot.GetComponent<Animator>() : null;
+            }
+
+            return null;
         }
 
         private int AttackDisplay(PlayerItem item, int logicAttack)

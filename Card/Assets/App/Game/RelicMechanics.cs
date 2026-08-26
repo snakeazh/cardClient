@@ -469,7 +469,12 @@ namespace App.Game
                     var factor = entry.Value == 0f ? 1f : entry.Value;
                     return maxChip * factor;
                 case MechanismType.ConsumeFundsGetAttack:
-                    return run == null ? 0f : (run.GoldSpentThisRun / 10) * entry.Value;
+                    if (run == null || entry.Value <= 0f)
+                    {
+                        return 0f;
+                    }
+
+                    return (float)Math.Floor(run.GoldSpentThisRun / (double)entry.Value);
                 case MechanismType.EveryCardAttackForever:
                     return SumRankAttackForever(run, score);
                 case MechanismType.SpecialSevenCardAttack:

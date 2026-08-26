@@ -13,11 +13,13 @@ namespace App.Level
             int id,
             int difficulty,
             int level,
+            int getGold,
             IReadOnlyList<LevelMonster> monsters)
         {
             Id = id;
             Difficulty = difficulty;
             Level = level;
+            GetGold = getGold < 0 ? 0 : getGold;
             Monsters = monsters ?? Array.Empty<LevelMonster>();
             var hasBoss = false;
             for (var i = 0; i < Monsters.Count; i++)
@@ -37,6 +39,9 @@ namespace App.Level
         public int Difficulty { get; }
 
         public int Level { get; }
+
+        /// <summary>通关发放的局内金币，来自 <see cref="LevelConfig.GetGold"/>。</summary>
+        public int GetGold { get; }
 
         public bool HasBoss { get; }
 

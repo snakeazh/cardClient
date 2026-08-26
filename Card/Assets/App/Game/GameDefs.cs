@@ -338,7 +338,7 @@ namespace App.Game
         public readonly List<int> RelicConfigIds = new List<int>();
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();
-        /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + 次数 × ShopRefreshAfter。</summary>
+        /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter。</summary>
         public int ShopRefreshCount;
         /// <summary>当前关卡 <see cref="App.Level.LevelSnapshot.Id"/>。</summary>
         public int LevelId;

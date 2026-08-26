@@ -105,7 +105,7 @@
 | 花色/牌型 Attack、SpecialEightCard、DoubleCardAttack | 与既有结算相同 |
 | HeadCardAttack / ACardAttack | 人头 / 每张 A |
 | TheSwordOfVictory | 未亮出 2 张里 `ChipValue` 最大的那张（表 Value=0 时按 ×1） |
-| ConsumeFundsGetAttack | `floor(本局花费金币/10) × Value`（卖掉不加也不扣花费） |
+| ConsumeFundsGetAttack | `floor(本局花费金币 / Value)`（Value 为每 +1 攻击所需金币；卖掉不加也不扣花费） |
 | EveryCardAttackForever | 亮出每张牌读训练永久点数加成（卖掉仍加） |
 | SpecialSevenCardAttack | 幸运七触发次数 × Value |
 

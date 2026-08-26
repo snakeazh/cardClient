@@ -51,7 +51,7 @@ namespace App.Game
         private bool _sequentialCompare;
         /// <summary>本回合在血量换算之外额外获得的勇气值（借贷券 / 广告借贷）。</summary>
         private int _loanCourageBonus;
-        /// <summary>本关商店已按积分发放的金币，供双倍广告再发一份。</summary>
+        /// <summary>本关商店已按 LevelConfig.GetGold 发放的金币，供双倍广告再发一份。</summary>
         private int _shopGoldGranted;
         private int _rubsUsedThisHand;
         private bool _rubbedThisHand;
@@ -177,11 +177,12 @@ namespace App.Game
             Run.BonusReplaceCharges = 0;
             Run.ClearRunProgress();
             Run.Log.Clear();
-            var startGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
-            if (startGold > 0)
+            var baseGold = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.PlayerInitialGoldNum) : 0;
+            var talentGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
+            Run.Gold = baseGold + Math.Max(0, talentGold);
+            if (talentGold > 0)
             {
-                Run.Gold = startGold;
-                Log($"富裕：初始金币 {startGold}");
+                Log($"富裕：初始金币 {Run.Gold}（基础 {baseGold} + {talentGold}）");
             }
 
             if (AppServices.IsReady)
@@ -1472,14 +1473,19 @@ namespace App.Game
             return enemyIndex;
         }
 
-        /// <summary>下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，之后每次 + <see cref="GameConst.ShopRefreshAfter"/>。</summary>
+        /// <summary>
+        /// 下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，
+        /// 之后每次 + <see cref="GameConst.ShopRefreshAfter"/>，增长次数不超过 <see cref="GameConst.ShopRefreshGoldUpNumMax"/>。
+        /// </summary>
         public int ShopRefreshCost
         {
             get
             {
                 var first = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshFirst) : 5;
                 var after = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshAfter) : 3;
-                return first + Math.Max(0, Run.ShopRefreshCount) * after;
+                var maxUp = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshGoldUpNumMax) : int.MaxValue;
+                var ups = Math.Min(Math.Max(0, Run.ShopRefreshCount), maxUp);
+                return first + ups * after;
             }
         }
 
@@ -3755,7 +3761,8 @@ namespace App.Game
         {
             ApplyTalentStageEndHeal();
             var score = ScoreSvc();
-            var gold = score != null ? score.CollectGoldDelta() : 0;
+            var current = LevelSvc()?.Current;
+            var gold = current != null ? Math.Max(0, current.GetGold) : 0;
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
@@ -3765,12 +3772,12 @@ namespace App.Game
             Run.Gold += gold;
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
-            Log($"关卡结算：本关积分 {stage} → {gold} 金币（章节累计 {total}，总金币 {Run.Gold}）");
+            Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
             RollShopOffers();
-            Hint = $"关卡胜利！本关 {stage} 积分兑换 {gold} 金币。购买道具后进入下一关。";
+            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
         }

@@ -26,6 +26,11 @@ namespace App.Config
         /// </summary>
         public int[] MonsterGroup;
 
+        /// <summary>
+        /// 通关金币
+        /// </summary>
+        public int GetGold;
+
     }
 }
 

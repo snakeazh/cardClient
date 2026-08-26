@@ -52,6 +52,11 @@ namespace App.Config
         public int ShopRefreshAfter;
 
         /// <summary>
+        /// 商店刷新费用增长次数上限
+        /// </summary>
+        public int ShopRefreshGoldUpNumMax;
+
+        /// <summary>
         /// 金币道具icon
         /// </summary>
         public string GoldIcon;
@@ -60,6 +65,11 @@ namespace App.Config
         /// 抽天赋所需金币
         /// </summary>
         public int TalentChestNeedGold;
+
+        /// <summary>
+        /// 每局初始金币数
+        /// </summary>
+        public int PlayerInitialGoldNum;
 
     }
 }

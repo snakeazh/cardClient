@@ -1,7 +1,7 @@
 [
   {
     "Id": 1,
-    "Name": "散牌",
+    "Name": "高牌",
     "Type": 1,
     "BasicMagnification": 1
   },
@@ -19,13 +19,13 @@
   },
   {
     "Id": 4,
-    "Name": "金花",
+    "Name": "同花",
     "Type": 4,
     "BasicMagnification": 3.5
   },
   {
     "Id": 5,
-    "Name": "顺金",
+    "Name": "同花顺",
     "Type": 5,
     "BasicMagnification": 5
   },

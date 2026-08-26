@@ -554,10 +554,14 @@ namespace App.UI
         private void RefreshCardInfo()
         {
             IsHandSettling = ShouldShowCardInfo(Session);
-            if (!IsHandSettling || Session.Player == null)
+            if (!IsHandSettling || Session.Player == null || Session.IncomingAttack)
             {
                 ShowCardInfo.Value = false;
-                CardTypeNum.Value = string.Empty;
+                if (!IsHandSettling)
+                {
+                    CardTypeNum.Value = string.Empty;
+                }
+
                 return;
             }
 

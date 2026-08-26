@@ -320,7 +320,7 @@ namespace App.UI
             }
 
             CollectBonusBeats(extra, attacker, session, score, baseAttack);
-            var cardTypeNum = attacker != null && attacker.IsPlayer ? _playerCardTypeNum : null;
+            var cardTypeNum = AttackerCardTypeNum(session, attacker);
             _settleFx.Play(
                 _settleCards,
                 attackItem,
@@ -391,6 +391,27 @@ namespace App.UI
                     });
                 }
             }
+        }
+
+        private TMP_Text AttackerCardTypeNum(GameSession session, SeatState attacker)
+        {
+            if (attacker == null)
+            {
+                return null;
+            }
+
+            if (attacker.IsPlayer)
+            {
+                return _playerCardTypeNum;
+            }
+
+            var slot = session != null ? session.AttackVisualSlot : -1;
+            if (slot < 0 || slot >= _enemyCardTypeNums.Length)
+            {
+                return null;
+            }
+
+            return _enemyCardTypeNums[slot];
         }
 
         private Animator FindEquipAnimator(int relicId)
@@ -798,7 +819,7 @@ namespace App.UI
 
             if (_playerCardInfo != null)
             {
-                _playerCardInfo.SetActive(settling);
+                _playerCardInfo.SetActive(settling && !session.IncomingAttack);
             }
 
             for (var i = 0; i < _enemyCardInfos.Length; i++)

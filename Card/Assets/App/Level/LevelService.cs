@@ -216,7 +216,7 @@ namespace App.Level
             if (groups == null || groups.Length == 0)
             {
                 AppLog.Warn(LogChannel.Level, $"Level Id={row.Id} has no MonsterGroup.");
-                return new LevelSnapshot(row.Id, row.Difficulty, row.Level, monsters);
+                return new LevelSnapshot(row.Id, row.Difficulty, row.Level, row.GetGold, monsters);
             }
 
             if (groups.Length > MaxMonstersPerLevel)
@@ -254,7 +254,7 @@ namespace App.Level
                     monster.MonsterEntry));
             }
 
-            return new LevelSnapshot(row.Id, row.Difficulty, row.Level, monsters);
+            return new LevelSnapshot(row.Id, row.Difficulty, row.Level, row.GetGold, monsters);
         }
 
         private static int CountNested<T>(Dictionary<int, Dictionary<int, T>> map)

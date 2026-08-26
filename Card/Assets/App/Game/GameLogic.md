@@ -59,12 +59,12 @@
 | 攻击力 | 玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`。PlayerItem 显示该值 |
 | 勇气值 | 每手仍按人物当前血量换算（旧下注用），当前主循环不再下注 |
 | 积分 | 本手玩家打出的攻击数值 1:1 记分（不被剩余血量截断）。`GameConst.ChipsForPoints` 当前为 1 |
-| 局内金币 | 关卡胜利：总积分按 10:1 向下取整发差额进 `Run.Gold`，积分不清空。`GameConst.ExchangePointsForGoldCoins` 当前为 10 |
-| 局外货币 | 闯关结束（成功或放弃）按同样 10:1 兑入钱包。见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
+| 局内金币 | 开局 `GameConst.PlayerInitialGoldNum`（可加天赋富裕）。关卡胜利发 `LevelConfig.GetGold` 进 `Run.Gold`，广告双倍再发一份。商店刷新：`ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter` |
+| 局外货币 | 闯关结束（成功或放弃）按总积分 / `GameConst.ExchangePointsForGoldCoins`（当前 10:1）兑入钱包。见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 
 血量只在攻击结算时扣除。
 
-三种积分：`Total` 本章节累计；`Stage` 当前关卡各回合之和；`Round` 本回合。本手没打出伤害则本轮为 0。699 积分 → 69 局内金币（关卡胜利差额）/ 69 局外货币（闯关结算）。多关只发差额，避免按总积分重复加局内金币。
+三种积分：`Total` 本章节累计；`Stage` 当前关卡各回合之和；`Round` 本回合。本手没打出伤害则本轮为 0。局内金币不再由积分换算。闯关结束时 699 积分 → 69 局外货币。
 
 - 玩家 HP 在关卡内跨局保留，进下一关时按英雄满血重开。
 - 敌人每关按关卡配置血量入场，人数按该关怪物组（最多 3）。
@@ -149,7 +149,7 @@
 
 ## 9. 商店、广告、词缀
 
-击杀本关全部敌人 → 总积分按 10:1 向下取整发差额换**局内金币**进商店（不清空积分；699 → 69）。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
+击杀本关全部敌人 → 发本关 `LevelConfig.GetGold` 为**局内金币**进商店。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
 
 商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，最多 3 件。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 

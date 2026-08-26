@@ -5,8 +5,9 @@ namespace App.Score
 {
     /// <summary>
     /// 章节积分。本轮积分 = 本手打出的攻击数值（1:1，读 GameConst.ChipsForPoints），不按怪物实际扣血。
-    /// 金币 = 总积分 / GameConst.ExchangePointsForGoldCoins（向下取整），不清空积分。
-    /// GameSession 在逐个比牌结束后 AwardRoundScore，通关时 CollectGoldDelta。
+    /// 局外货币 = 总积分 / GameConst.ExchangePointsForGoldCoins（向下取整），不清空积分。
+    /// 局内金币改读 LevelConfig.GetGold，对局不再调用 CollectGoldDelta。
+    /// GameSession 在逐个比牌结束后 AwardRoundScore。
     /// </summary>
     public interface IScoreService : ISaveFlushable
     {
@@ -17,10 +18,13 @@ namespace App.Score
         /// <summary>本关每回合积分，BeginStage / BeginChapter 时清空。</summary>
         IReadOnlyList<int> StageRoundScores { get; }
 
-        /// <summary>floor(总积分 / GameConst.ExchangePointsForGoldCoins)。预览可换金币，不改积分。</summary>
+        /// <summary>
+        /// floor(总积分 / GameConst.ExchangePointsForGoldCoins)。预览可兑局外货币，不改积分。
+        /// 对局不再用此发局内金币。
+        /// </summary>
         int CollectableGold { get; }
 
-        /// <summary>本章节已按总积分发放过的金币。</summary>
+        /// <summary>本章节已按总积分发放过的金币。对局不再累加，仅存档兼容。</summary>
         int GrantedGold { get; }
 
         /// <summary>
@@ -42,8 +46,8 @@ namespace App.Score
         void AwardRoundScore(int chipsWon);
 
         /// <summary>
-        /// 关卡胜利结算：总积分 / GameConst.ExchangePointsForGoldCoins 向下取整换金币，
-        /// 发放差额（CollectableGold - GrantedGold）。积分不清空。
+        /// 旧局内金币差额发放（CollectableGold - GrantedGold）。积分不清空。
+        /// 对局已改读 LevelConfig.GetGold，不再调用；保留存档兼容。
         /// </summary>
         int CollectGoldDelta();
 

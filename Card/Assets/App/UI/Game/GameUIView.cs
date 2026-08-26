@@ -50,6 +50,8 @@ namespace App.UI
         private GameObject _equipTipCatcher;
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
+        private bool _shownPeekTip;
+        private Button _peekGoodBtn;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -85,6 +87,8 @@ namespace App.UI
             BindBeilvNum();
             BindArrows();
             BindHudChrome();
+            ViewModel.PeekGoodTipRequested -= OnPeekGoodTipRequested;
+            ViewModel.PeekGoodTipRequested += OnPeekGoodTipRequested;
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
@@ -129,6 +133,7 @@ namespace App.UI
         {
             if (ViewModel != null)
             {
+                ViewModel.PeekGoodTipRequested -= OnPeekGoodTipRequested;
                 ViewModel.Session.Changed -= OnSessionChanged;
             }
 
@@ -562,11 +567,6 @@ namespace App.UI
         private void BindPlayerInfo()
         {
             _playerItem = ResolvePlayerItem();
-            if (_playerItem != null)
-            {
-                BindSeatClick(_playerItem.gameObject, ViewModel.XRayPlayerCommand);
-            }
-
             BindRoundInfo();
             RefreshPlayerItems();
         }
@@ -1039,6 +1039,7 @@ namespace App.UI
             BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowCompare);
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
+            _peekGoodBtn = FindBtn("PeekGood");
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
             BindBtn("TiHuanGood", ViewModel.TiHuanGoodCommand);
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
@@ -1232,6 +1233,52 @@ namespace App.UI
             _ = ShowEquipTip(_equipSlots[index], relic);
         }
 
+        private void OnPeekGoodTipRequested()
+        {
+            if (_shownPeekTip && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowPeekGoodTip();
+        }
+
+        private async Task ShowPeekGoodTip()
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null || _peekGoodBtn == null)
+            {
+                return;
+            }
+
+            _shownPeekTip = true;
+            _shownEquipRelicId = 0;
+            _equipTipAnchor = _peekGoodBtn.transform;
+            if (_equipTipText != null)
+            {
+                _equipTipText.text = "长按牌即可拖拽来搓牌";
+            }
+
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _equipTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _equipTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _equipTip.transform.SetAsLastSibling();
+            PositionItemTip(_peekGoodBtn.transform, placeRight: true);
+        }
+
         private async Task EnsureEquipTip()
         {
             if (_equipTip != null || ViewModel == null || ViewModel.Resources == null)
@@ -1275,6 +1322,7 @@ namespace App.UI
             }
 
             _shownEquipRelicId = relic.Id;
+            _shownPeekTip = false;
             _equipTipAnchor = slot;
             if (_equipTipText != null)
             {
@@ -1297,12 +1345,13 @@ namespace App.UI
             }
 
             _equipTip.transform.SetAsLastSibling();
-            PositionEquipTip(slot);
+            PositionItemTip(slot, placeRight: false);
         }
 
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
+            _shownPeekTip = false;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -1339,10 +1388,10 @@ namespace App.UI
             _equipTipCatcher = go;
         }
 
-        private void PositionEquipTip(Transform slot)
+        private void PositionItemTip(Transform slot, bool placeRight)
         {
             var tipRt = _equipTip != null ? _equipTip.GetComponent<RectTransform>() : null;
-            var itemRt = slot != null ? slot as RectTransform : null;
+            var itemRt = slot != null ? slot.transform as RectTransform : null;
             var parent = transform as RectTransform;
             if (tipRt == null || itemRt == null || parent == null)
             {
@@ -1351,8 +1400,10 @@ namespace App.UI
 
             var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
             itemRt.GetWorldCorners(_equipTipCorners);
-            var left = (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
-            var screen = RectTransformUtility.WorldToScreenPoint(cam, left);
+            var edge = placeRight
+                ? (_equipTipCorners[2] + _equipTipCorners[3]) * 0.5f
+                : (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, edge);
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
             {
                 return;
@@ -1360,9 +1411,13 @@ namespace App.UI
 
             var tipWidth = tipRt.rect.width;
             var tipHeight = tipRt.rect.height;
-            tipRt.anchoredPosition = new Vector2(
-                local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
-                local.y + (0.5f - tipRt.pivot.y) * tipHeight);
+            tipRt.anchoredPosition = placeRight
+                ? new Vector2(
+                    local.x + 8f + tipRt.pivot.x * tipWidth,
+                    local.y + (0.5f - tipRt.pivot.y) * tipHeight)
+                : new Vector2(
+                    local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
+                    local.y + (0.5f - tipRt.pivot.y) * tipHeight);
         }
 
         private void RefreshEquips()

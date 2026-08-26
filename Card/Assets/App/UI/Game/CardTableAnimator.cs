@@ -239,7 +239,7 @@ namespace App.UI
             }
         }
 
-        /// <summary>点选搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
+        /// <summary>长按搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
         public void BeginRubPreview(int index)
         {
             if (_player == null || index < 0 || index >= CardsPerHand)
@@ -286,7 +286,7 @@ namespace App.UI
             });
         }
 
-        /// <summary>开始跟手：记下抓取点，避免第一帧跳到鼠标中心。</summary>
+        /// <summary>开始跟手：牌立刻移到手指位置。</summary>
         public void BeginRubDrag(Camera camera, Vector3 screenPos)
         {
             if (_rubLockIndex < 0 || !_rubShakeReady || _player == null || camera == null)
@@ -304,7 +304,8 @@ namespace App.UI
             _rubPeakOffset = 0f;
             _rubDragStartTime = Time.time;
             _rubSuccessFxShown = false;
-            _rubGrabOffset = item.transform.position - ScreenOnCardPlane(camera, screenPos, item.transform.position.z);
+            _rubGrabOffset = Vector3.zero;
+            DragRubCard(camera, screenPos);
         }
 
         /// <summary>跟手拖拽，限制在抬起点附近。</summary>

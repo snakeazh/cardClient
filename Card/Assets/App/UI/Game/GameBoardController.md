@@ -43,13 +43,12 @@ Detach / OnDestroy
 
 | 条件 | 点击 | 调用 |
 |------|------|------|
-| `SelectingXRayTarget` | 自己的牌 | `TryXRayPlayer()` |
-| `SelectingXRayTarget` | 敌人槽上的牌 | `TryXRayEnemySlot(slot)` |
-| `WaitingOpen` | 自己的牌 | 放大镜未用则 `PeekMagnifier`，否则 `TogglePlayerCard` |
+| `SelectingXRayTarget` | 敌人槽上的牌 | `TryXRayEnemySlot(slot)`（不能透视自己） |
+| `WaitingOpen` | 自己的牌 | 短按：放大镜未用则 `PeekMagnifier`，否则 `TogglePlayerCard`；有搓牌次数时长按进入搓牌拖拽 |
 | `WaitingAttack` / `SelectingOpenTarget` | 敌人牌 | `AttackEnemyAtSlot`（当前主流程开牌后自动打，一般用不到） |
-| `WaitingRub` | 自己的牌 | 点选 → 翻到背面 → 拖拽抖动达标后松手换牌并翻回 |
+| `WaitingRub` | 自己的牌 | 已长按：翻到背面，拖拽抖动达标后松手换牌并翻回 |
 
-敌人槽 0/1/2 = `player1` / `player2` / `player3`。点空地、点人物卡不走这里；人物卡透视由 `GameUIView` 绑 `XRayPlayerCommand` / 敌人槽点击。
+敌人槽 0/1/2 = `player1` / `player2` / `player3`。点空地、点人物卡不走这里；敌人人物卡透视由 `GameUIView` 绑敌人槽点击（`AttackEnemyAtSlot` 在透视中会转去 `TryXRayEnemySlot`）。
 
 ---
 

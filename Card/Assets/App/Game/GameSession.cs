@@ -159,8 +159,14 @@ namespace App.Game
             Phase == GamePhase.WaitingLookChoice &&
             !Player.Looked &&
             !Player.Folded;
-        public bool PlayerMayCancelLookOrRub =>
-            Phase == GamePhase.WaitingRub;
+        public bool PlayerMayCancelLookOrRub => false;
+        /// <summary>开牌阶段且还有搓牌次数时，可长按手牌进入搓牌。</summary>
+        public bool PlayerMayHoldRub =>
+            !AiActing &&
+            !Player.Folded &&
+            Player.Looked &&
+            Phase == GamePhase.WaitingOpen &&
+            Run.PeekGoodCharges > 0;
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
@@ -234,8 +240,26 @@ namespace App.Game
             }
 
             _pendingRubIndex = index;
-            Hint = $"已选中第 {index + 1} 张：拖开并持续搓够时间后松手，幅度或时间不够需重搓";
+            Hint = $"已选中第 {index + 1} 张：拖开并持续搓够时间后松手";
             Notify();
+        }
+
+        /// <summary>长按手牌进入搓牌：翻到背面后拖拽，松手不够则取消。</summary>
+        public bool TryBeginHoldRub(int index)
+        {
+            if (!PlayerMayHoldRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
+            {
+                return false;
+            }
+
+            Player.Status = "已看牌";
+            SelectingXRayTarget = false;
+            Run.RubsLeft = 1;
+            _pendingRubIndex = index;
+            Phase = GamePhase.WaitingRub;
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。拖开并搓够时间后松手替换";
+            Notify();
+            return true;
         }
 
         public void NotifyRubTooWeak()
@@ -260,6 +284,21 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>长按搓牌未达标或松手取消，不消耗次数，回到开牌。</summary>
+        public void CancelHoldRub(string hint)
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            _pendingRubIndex = -1;
+            Run.RubsLeft = 0;
+            ReturnToOpenReady(string.IsNullOrEmpty(hint)
+                ? "点选 3 张牌后开牌。可使用技能"
+                : hint);
+        }
+
         public void ClearRubSelection()
         {
             if (Phase != GamePhase.WaitingRub)
@@ -268,7 +307,7 @@ namespace App.Game
             }
 
             _pendingRubIndex = -1;
-            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。长按手牌拖开并搓够时间后松手替换";
             Notify();
         }
 
@@ -323,15 +362,9 @@ namespace App.Game
             _pendingRubIndex = -1;
             Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
-
-            if (Run.RubsLeft > 0)
-            {
-                Hint = $"{Run.LastRubMessage}。还可再搓 {Run.RubsLeft} 次，或点取消跳过";
-                Notify();
-                return;
-            }
-
-            ReturnToOpenReady(Run.LastRubMessage);
+            ReturnToOpenReady(Run.PeekGoodCharges > 0
+                ? $"{Run.LastRubMessage}。还可长按搓牌 {Run.PeekGoodCharges} 次"
+                : Run.LastRubMessage);
         }
 
         public void CancelLookOrRub()
@@ -538,6 +571,7 @@ namespace App.Game
             ResolveAiStreet();
         }
 
+        /// <summary>点击搓牌按钮：不进入搓牌阶段，由 HUD 弹出长按提示。</summary>
         public void UsePeekGood()
         {
             if (!PlayerMayUsePeekGood)
@@ -545,12 +579,7 @@ namespace App.Game
                 return;
             }
 
-            Player.Status = "已看牌";
-            Run.RubsLeft = 1;
-            _pendingRubIndex = -1;
-            Phase = GamePhase.WaitingRub;
-            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
-            Log("使用技能：搓牌");
+            Hint = "长按牌即可拖拽来搓牌";
             Notify();
         }
 
@@ -563,19 +592,13 @@ namespace App.Game
 
             SelectingXRayTarget = !SelectingXRayTarget;
             Hint = SelectingXRayTarget
-                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名角色透视其手牌"
+                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名敌人透视其手牌"
                 : "已取消透视";
             Notify();
         }
 
         public void TryXRayPlayer()
         {
-            if (!SelectingXRayTarget)
-            {
-                return;
-            }
-
-            TryXRaySeat(Player);
         }
 
         public void TryXRayEnemySlot(int visualSlot)
@@ -632,12 +655,12 @@ namespace App.Game
 
         private void TryXRaySeat(SeatState seat)
         {
-            if (!PlayerMayUseChaKanGood || seat == null || !HasHand(seat))
+            if (!PlayerMayUseChaKanGood || seat == null || !HasHand(seat) || seat.IsPlayer)
             {
                 return;
             }
 
-            if (!seat.IsPlayer && (!seat.Alive || seat.Folded))
+            if (!seat.Alive || seat.Folded)
             {
                 return;
             }
@@ -653,16 +676,11 @@ namespace App.Game
             for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
-                if (!seat.IsPlayer)
-                {
-                    seat.CardSelected[i] = true;
-                }
+                seat.CardSelected[i] = true;
             }
 
             var score = EvaluateSeat(seat);
-            seat.PeekedType = seat.IsPlayer && seat.CountSelectedCards() != GameBalance.OpenHandSize
-                ? "未选定开牌"
-                : score.Label;
+            seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";

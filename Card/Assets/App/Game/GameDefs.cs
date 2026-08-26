@@ -7,7 +7,7 @@ namespace App.Game
     public enum GamePhase
     {
         Idle = 0,
-        /// <summary>看牌后搓牌，必须选一张或跳过。</summary>
+        /// <summary>长按搓牌拖拽中。</summary>
         WaitingRub = 1,
         /// <summary>下注街：跟/加/弃/开牌（旧流程保留）。</summary>
         Betting = 2,

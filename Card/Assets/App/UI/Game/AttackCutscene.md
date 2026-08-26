@@ -16,7 +16,7 @@
 _attackFx.Bind(transform, _playerItem, _enemyItems);
 ```
 
-位移根节点用各卡的 `PlayerItem.RootRect`，动画用 `RootAnimator`。
+位移根节点用各卡的 `PlayerItem.RootRect`，动画用 `RootAnimator`。冲锋时把 `PlayerRoot` 挂到 HUD 下的 `AttackFlight`（盖住 mask，且位移不和 Animator 抢节点）。`AttackFlight` 要带上原父节点相对 HUD 的缩放，人物卡和敌人卡都是；`PlayerRoot` 保持 `localScale = 1`，否则会从 0.78 放大到 1。
 
 ---
 
@@ -68,4 +68,5 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 - 逐个比牌时不要等玩家点选敌人，结算后立刻 `BeginPlayerAttack` / `BeginIncomingAttack`。
 - `Kill` 会把冲出去的卡拽回 `PlayerRoot` 父节点；换手或关界面要 `Dispose`。
+- 不要把 `AttackFlight` 的缩放写成 1 后直接挂 `PlayerRoot`；飞行层必须跟原父节点（`PlayerItem` 的 0.78）对齐。
 - 槽位无效时跳过位移，仍走 onHit / onDone，避免卡死状态机。

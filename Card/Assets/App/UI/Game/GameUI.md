@@ -25,7 +25,6 @@ GameUI
   horEquipBtns2           ← 已携带遗物（equip1/2/3）
   cardinfoItem            ← 结算时显示玩家牌型；敌人克隆到 cardInfoParent
   roundInfo               ← 第几轮
-  arrow                   ← 当前行动对象指示（玩家 / player1/2/3 各一），上下缓动
   mask / hptext           ← 攻击演出用
 ```
 
@@ -41,7 +40,8 @@ GameUI
 
 `horEquipBtns2` 按 `Run.RelicConfigIds` 把遗物图标填进 `equip1`～`equip3` 的 `icon`（`Altas/Relic`），`bgcolor` 按 `RelicConfig.Type` 取品质底色，空槽为黑。色值见 [`ThemeColors.md`](../../ThemeColors.md)。有装备则隐藏 `nohave`，点击在槽左侧弹出 `ItemTip`。
 
-**不要再创建或绑定 `duelHint`。** 中间提示条已去掉。
+**不要再创建或绑定 `duelHint`。** 中间提示条已去掉。  
+**不要再创建或绑定 `arrow`。** 当前行动对象指示已去掉。
 
 ---
 
@@ -100,8 +100,6 @@ GameUI
 ## 积分条
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
-
-HUD 根节点 `arrow` 指向玩家；`player1/2/3` 下各有一个 `arrow`。同一时间只亮当前对象：选牌/技能时是玩家，比牌和攻击时是当前敌人。亮起后沿 Y 轴上下缓动。
 
 ---
 

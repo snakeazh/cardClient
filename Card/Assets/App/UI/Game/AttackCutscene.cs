@@ -93,9 +93,7 @@ namespace App.UI
             var homePos = enemyRoot.position;
             var hitPos = _playerRoot.position;
 
-            AttachIncomingToFlight(homePos);
-            var homeAnchored = _flight.anchoredPosition;
-            var hitAnchored = WorldToHudAnchored(hitPos);
+            AttachRootToFlight(_incomingRoot, homePos);
 
             _seq = DOTween.Sequence();
             AppendAimAndRetreat(enemyAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: true);
@@ -180,9 +178,7 @@ namespace App.UI
             var homePos = _playerRoot.position;
             var hitPos = _enemyRoots[visualSlot].position;
 
-            AttachToFlight(homePos);
-            var homeAnchored = _flight.anchoredPosition;
-            var hitAnchored = WorldToHudAnchored(hitPos);
+            AttachRootToFlight(_playerRoot, homePos);
 
             _seq = DOTween.Sequence();
             AppendAimAndRetreat(_playerAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: false);
@@ -277,27 +273,48 @@ namespace App.UI
             _enemyAnims[index] = enemy.RootAnimator;
         }
 
-        private void AttachToFlight(Vector3 worldPos)
+        private void AttachRootToFlight(RectTransform root, Vector3 worldPos)
         {
-            PlaceFlight(worldPos);
-            _playerRoot.SetParent(_flight, true);
-        }
+            if (root == null)
+            {
+                return;
+            }
 
-        private void AttachIncomingToFlight(Vector3 worldPos)
-        {
-            PlaceFlight(worldPos);
-            _incomingRoot.SetParent(_flight, true);
-        }
-
-        private void PlaceFlight(Vector3 worldPos)
-        {
+            var homeParent = root.parent;
             var flight = EnsureFlight();
             flight.gameObject.SetActive(true);
             flight.SetParent(_hud, false);
             flight.SetAsLastSibling();
-            flight.localRotation = Quaternion.identity;
-            flight.localScale = Vector3.one;
-            flight.anchoredPosition = WorldToHudAnchored(worldPos);
+            CopyRelativeScale(flight, homeParent);
+            flight.position = worldPos;
+            root.SetParent(flight, true);
+            root.localScale = Vector3.one;
+        }
+
+        private static void CopyRelativeScale(Transform target, Transform worldSource)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (target.parent == null || worldSource == null)
+            {
+                target.localScale = Vector3.one;
+                return;
+            }
+
+            var parentLossy = target.parent.lossyScale;
+            var sourceLossy = worldSource.lossyScale;
+            target.localScale = new Vector3(
+                DivideScale(sourceLossy.x, parentLossy.x),
+                DivideScale(sourceLossy.y, parentLossy.y),
+                DivideScale(sourceLossy.z, parentLossy.z));
+        }
+
+        private static float DivideScale(float value, float parent)
+        {
+            return Mathf.Abs(parent) < 0.0001f ? 1f : value / parent;
         }
 
         private void RestoreIncoming()

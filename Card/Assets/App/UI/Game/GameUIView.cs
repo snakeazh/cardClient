@@ -66,13 +66,6 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Coroutine _aiDelay;
-        private RectTransform _playerArrow;
-        private Vector2 _playerArrowHome;
-        private readonly RectTransform[] _enemyArrows = new RectTransform[3];
-        private readonly Vector2[] _enemyArrowHomes = new Vector2[3];
-        private int _shownArrow = int.MinValue;
-        private const float ArrowBob = 16f;
-        private const float ArrowBobDuration = 0.45f;
 
         protected override void OnBind()
         {
@@ -85,7 +78,6 @@ namespace App.UI
             BindAttackFx();
             BindSettleFx();
             BindBeilvNum();
-            BindArrows();
             BindHudChrome();
             ViewModel.PeekGoodTipRequested -= OnPeekGoodTipRequested;
             ViewModel.PeekGoodTipRequested += OnPeekGoodTipRequested;
@@ -93,7 +85,6 @@ namespace App.UI
             RefreshPlayerItems();
             RefreshCardInfos();
             RefreshEquips();
-            RefreshArrows();
         }
 
         protected override async Task OnViewOpen()
@@ -148,7 +139,6 @@ namespace App.UI
             _attackFx.Dispose();
             _settleFx.Dispose();
             ClearAttackHold();
-            StopArrowMotion();
             RestoreHpText();
             if (ViewModel != null)
             {
@@ -184,7 +174,6 @@ namespace App.UI
             RefreshPlayerItems();
             RefreshCardInfos();
             RefreshEquips();
-            RefreshArrows();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -617,110 +606,6 @@ namespace App.UI
             {
                 Binding.BindText(text, ViewModel.RoundInfo);
             }
-        }
-
-        private void BindArrows()
-        {
-            _playerArrow = ResolveArrow(ResolveSlot("arrow") ?? transform.Find("arrow"));
-            if (_playerArrow != null)
-            {
-                _playerArrowHome = _playerArrow.anchoredPosition;
-                _playerArrow.gameObject.SetActive(false);
-            }
-
-            for (var i = 0; i < EnemySlotKeys.Length; i++)
-            {
-                var slot = ResolveSlot(EnemySlotKeys[i]);
-                var arrow = slot != null ? slot.Find("arrow") : null;
-                _enemyArrows[i] = ResolveArrow(arrow);
-                if (_enemyArrows[i] != null)
-                {
-                    _enemyArrowHomes[i] = _enemyArrows[i].anchoredPosition;
-                    _enemyArrows[i].gameObject.SetActive(false);
-                }
-            }
-
-            _shownArrow = int.MinValue;
-        }
-
-        private static RectTransform ResolveArrow(Transform node)
-        {
-            if (node == null)
-            {
-                return null;
-            }
-
-            return node as RectTransform ?? node.GetComponent<RectTransform>();
-        }
-
-        private void RefreshArrows()
-        {
-            if (ViewModel == null)
-            {
-                return;
-            }
-
-            var slot = ViewModel.Session.TurnArrowSlot;
-            if (slot == _shownArrow)
-            {
-                return;
-            }
-
-            HideAllArrows();
-            _shownArrow = slot;
-            if (slot == GameSession.TurnArrowPlayer)
-            {
-                PlayArrow(_playerArrow, _playerArrowHome);
-                return;
-            }
-
-            if (slot >= 0 && slot < _enemyArrows.Length)
-            {
-                PlayArrow(_enemyArrows[slot], _enemyArrowHomes[slot]);
-            }
-        }
-
-        private void PlayArrow(RectTransform arrow, Vector2 home)
-        {
-            if (arrow == null)
-            {
-                return;
-            }
-
-            arrow.DOKill();
-            arrow.anchoredPosition = home;
-            arrow.gameObject.SetActive(true);
-            arrow.DOAnchorPosY(home.y + ArrowBob, ArrowBobDuration)
-                .SetEase(Ease.InOutSine)
-                .SetLoops(-1, LoopType.Yoyo)
-                .SetLink(arrow.gameObject);
-        }
-
-        private void HideAllArrows()
-        {
-            HideArrow(_playerArrow, _playerArrowHome);
-            for (var i = 0; i < _enemyArrows.Length; i++)
-            {
-                HideArrow(_enemyArrows[i], _enemyArrowHomes[i]);
-            }
-        }
-
-        private static void HideArrow(RectTransform arrow, Vector2 home)
-        {
-            if (arrow == null)
-            {
-                return;
-            }
-
-            arrow.DOKill();
-            arrow.anchoredPosition = home;
-            arrow.gameObject.SetActive(false);
-        }
-
-        private void StopArrowMotion()
-        {
-            HideAllArrows();
-            _shownArrow = int.MinValue;
         }
 
         private PlayerItem ResolvePlayerItem()

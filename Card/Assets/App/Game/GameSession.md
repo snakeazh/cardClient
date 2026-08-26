@@ -7,7 +7,8 @@
 
 脚本：`Assets/App/Game/GameSession.cs`  
 数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）  
-商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)
+商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)  
+天赋局内效果：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)
 
 ---
 
@@ -92,5 +93,6 @@ StartNewRun / Continue
 - `EvaluateSeat` 在敌人未锁 3 张时会自己枚举最大牌型，透视文案仍准确。
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
 - 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
+- 天赋养成走 `ITalentService`；局内效果走 `TalentMechanics`（`Value × 等级`）。见 [`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
 - 打完该难度或放弃挑战走 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)，不要在 HUD 上另做一套结算。
 - 牌堆抽牌走 `Deck.TryDraw`，空堆不会把桌上的牌再发出来。

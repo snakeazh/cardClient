@@ -8,6 +8,18 @@ namespace App.Talent
     {
         /// <summary>Copies required to raise one talent level.</summary>
         public const int CopiesPerLevel = 1;
+
+        /// <summary>追击额外伤害占原伤害的比例（词条 Value 只表示触发概率）。</summary>
+        public const float ExtraAttackDamageRatio = 0.1f;
+
+        /// <summary>侩子手：攻击前目标血量低于该比例才可斩杀。</summary>
+        public const float ExecuteHpRatio = 0.1f;
+
+        /// <summary>逢凶化吉 / 触底反弹：玩家血量低于该比例。</summary>
+        public const float LowHpRatio = 0.2f;
+
+        /// <summary>HeroConfig.CriticalDamage 缺省或非法时的暴击伤害倍率。</summary>
+        public const float DefaultCriticalDamage = 2f;
     }
 
     /// <summary>
@@ -58,6 +70,10 @@ namespace App.Talent
 
         /// <summary>TalentEntryConfig for the current level row, or null.</summary>
         public TalentEntryConfig Entry { get; }
+
+        /// <summary>局内有效值：Entry.Value × Level。未解锁或无词条为 0。</summary>
+        public float EffectiveValue =>
+            Entry == null || Level <= 0 ? 0f : Entry.Value * Level;
     }
 
     public readonly struct TalentAddResult

@@ -4,6 +4,7 @@ using App.Bootstrap;
 using App.Config;
 using App.Level;
 using App.Score;
+using App.Talent;
 using Framework.Log;
 
 namespace App.Game
@@ -116,36 +117,6 @@ namespace App.Game
         public bool IncomingAttack { get; private set; }
         /// <summary>本手正在逐个与敌人比牌。</summary>
         public bool SequentialCompare => _sequentialCompare;
-        /// <summary>回合指示箭头：玩家 -1，敌人视觉槽 0/1/2，无人 -2。</summary>
-        public const int TurnArrowNone = -2;
-        public const int TurnArrowPlayer = -1;
-        public int TurnArrowSlot
-        {
-            get
-            {
-                if (SequentialCompare ||
-                    Phase == GamePhase.Showdown ||
-                    Phase == GamePhase.WaitingAttack)
-                {
-                    return EnemyTurnSlot(_pendingAttackTarget ?? _pendingOpenTarget);
-                }
-
-                if (AiActing)
-                {
-                    return EnemyTurnSlot(FindEnemyById(ActingAiId));
-                }
-
-                if (Phase == GamePhase.WaitingOpen ||
-                    Phase == GamePhase.WaitingRub ||
-                    Phase == GamePhase.WaitingLookChoice ||
-                    Phase == GamePhase.Betting)
-                {
-                    return TurnArrowPlayer;
-                }
-
-                return TurnArrowNone;
-            }
-        }
         public int RevealPlaySerial { get; private set; }
         public int RevealWinnerId { get; private set; } = -1;
         public readonly List<int> RevealSeatIds = new List<int>();
@@ -206,6 +177,13 @@ namespace App.Game
             Run.BonusReplaceCharges = 0;
             Run.ClearRunProgress();
             Run.Log.Clear();
+            var startGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
+            if (startGold > 0)
+            {
+                Run.Gold = startGold;
+                Log($"富裕：初始金币 {startGold}");
+            }
+
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IScoreService>().BeginChapter();
@@ -1106,6 +1084,10 @@ namespace App.Game
 
             var mag = HandTypeMagnification(score.Type);
             var ctx = RelicCombatContext.Empty;
+            var talent = attacker.IsPlayer ? TalentSvc() : null;
+            var firstShow = attacker.IsPlayer && _stageBetRound == 1;
+            var talentMag = 0f;
+            var talentAttack = 0;
             if (attacker.IsPlayer)
             {
                 ctx = RelicMechanics.BuildCombatContext(
@@ -1116,29 +1098,119 @@ namespace App.Game
                     _rubbedThisHand,
                     _rng);
                 LastRelicContext = ctx;
+                talentMag = TalentMechanics.SumMultiplierExtra(talent, firstShow);
+                talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
             }
 
-            var extra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score, ctx) : 0f;
-            var attackExtra = attacker.IsPlayer ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx)) : 0;
+            var relicExtra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score, ctx) : 0f;
+            var relicAttack = attacker.IsPlayer
+                ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx))
+                : 0;
+            var extra = relicExtra + talentMag;
+            var attackExtra = relicAttack + talentAttack;
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             var totalMag = (mag + extra) * flint;
+            var relicMag = (mag + relicExtra) * flint;
             // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
             var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack + attackExtra, score.BaseChips, totalMag);
-            LogAttackDamage(attacker, defender, score, extra, attackExtra, mag, flint, totalMag, damage, ctx);
-            return damage;
+            var formulaDamage = damage;
+            var withoutTalent = HandEvaluator.ComputeAttackDamage(
+                attacker.Attack + relicAttack,
+                score.BaseChips,
+                relicMag);
+            var dmgPercent = 0f;
+            var crit = false;
+            var critMul = 0f;
+            var chaseAdd = 0;
+            var execute = false;
+            if (attacker.IsPlayer)
+            {
+                dmgPercent = TalentMechanics.SumDamagePercent(
+                    talent,
+                    defender,
+                    Player,
+                    CountAliveEnemies());
+                if (dmgPercent != 0f)
+                {
+                    damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
+                }
+
+                var hero = ResolveHero();
+                var critRate = TalentMechanics.CriticalRate(talent, hero);
+                critMul = TalentMechanics.CriticalDamageMultiplier(hero);
+                if (critRate > 0f && _rng.NextDouble() < critRate)
+                {
+                    crit = true;
+                    damage = Math.Max(1, (int)Math.Round(damage * critMul));
+                    withoutTalent = Math.Max(1, (int)Math.Round(withoutTalent * critMul));
+                }
+
+                var original = damage;
+                if (TalentMechanics.Roll(talent, MechanismType.ProOfExtraAttack, _rng))
+                {
+                    chaseAdd = (int)Math.Round(original * TalentBalance.ExtraAttackDamageRatio);
+                    damage += chaseAdd;
+                }
+
+                if (defender != null &&
+                    !defender.IsPlayer &&
+                    !defender.IsBoss &&
+                    TalentMechanics.IsBelowHpRatio(defender, TalentBalance.ExecuteHpRatio) &&
+                    TalentMechanics.Roll(talent, MechanismType.KillingProbabilityTen, _rng))
+                {
+                    execute = true;
+                    damage = Math.Max(damage, defender.Hp);
+                }
+            }
+
+            var talentDamage = attacker.IsPlayer ? damage - withoutTalent : 0;
+            LogAttackDamage(
+                attacker,
+                defender,
+                score,
+                relicExtra,
+                relicAttack,
+                attackExtra,
+                mag,
+                flint,
+                totalMag,
+                formulaDamage,
+                damage,
+                talentDamage,
+                ctx,
+                firstShow,
+                talentMag,
+                talentAttack,
+                dmgPercent,
+                crit,
+                critMul,
+                chaseAdd,
+                execute);
+            return Math.Max(1, damage);
         }
 
         private void LogAttackDamage(
             SeatState attacker,
             SeatState defender,
             HandScore score,
-            float extra,
+            float relicExtra,
+            int relicAttack,
             int attackExtra,
             float mag,
             float flint,
             float totalMag,
+            int formulaDamage,
             int damage,
-            RelicCombatContext ctx)
+            int talentDamage,
+            RelicCombatContext ctx,
+            bool firstShow,
+            float talentMag,
+            int talentAttack,
+            float dmgPercent,
+            bool crit,
+            float critMul,
+            int chaseAdd,
+            bool execute)
         {
             var atk = Math.Max(0, attacker.Attack);
             var chips = Math.Max(0, score.BaseChips);
@@ -1148,16 +1220,47 @@ namespace App.Game
             var cards = FormatUsedCards(score);
             var parts = attacker.IsPlayer ? RelicMechanics.CollectMultiplierParts(Run, score, ctx) : string.Empty;
             var attackParts = attacker.IsPlayer ? RelicMechanics.CollectAttackParts(Run, score, ctx) : string.Empty;
-            var relicText = extra == 0f
+            var talent = attacker.IsPlayer ? TalentSvc() : null;
+            var talentMagParts = attacker.IsPlayer
+                ? TalentMechanics.CollectMultiplierParts(talent, firstShow)
+                : string.Empty;
+            var talentAtkParts = attacker.IsPlayer
+                ? TalentMechanics.CollectAttackParts(talent, score, ctx)
+                : string.Empty;
+            var talentPctParts = attacker.IsPlayer
+                ? TalentMechanics.CollectDamagePercentParts(
+                    talent,
+                    defender,
+                    Player,
+                    CountAliveEnemies())
+                : string.Empty;
+            var talentParts = JoinLogParts(talentAtkParts, talentMagParts, talentPctParts);
+            var relicText = relicExtra == 0f
                 ? "遗物+0"
                 : string.IsNullOrEmpty(parts)
-                    ? $"遗物+{extra}"
-                    : $"遗物+{extra} ({parts})";
-            var attackRelic = attackExtra == 0
+                    ? $"遗物+{relicExtra}"
+                    : $"遗物+{relicExtra} ({parts})";
+            if (talentMag != 0f)
+            {
+                relicText += string.IsNullOrEmpty(talentMagParts)
+                    ? $" 天赋+{talentMag}"
+                    : $" 天赋+{talentMag} ({talentMagParts})";
+            }
+
+            var attackRelic = relicAttack == 0
                 ? string.Empty
                 : string.IsNullOrEmpty(attackParts)
-                    ? $" + 遗物攻{attackExtra}"
-                    : $" + 遗物攻{attackExtra} ({attackParts})";
+                    ? $" + 遗物攻{relicAttack}"
+                    : $" + 遗物攻{relicAttack} ({attackParts})";
+            if (talentAttack != 0 && !string.IsNullOrEmpty(talentAtkParts))
+            {
+                attackRelic += $" + 天赋攻{talentAttack} ({talentAtkParts})";
+            }
+            else if (talentAttack != 0)
+            {
+                attackRelic += $" + 天赋攻{talentAttack}";
+            }
+
             var contextLine = string.Empty;
             if (attacker.IsPlayer)
             {
@@ -1167,12 +1270,88 @@ namespace App.Game
                     $" 透视{ctx.XRayLeft} 替换{ctx.ReplaceLeft} | 幸运七x{ctx.LuckySevenHits}\n";
             }
 
+            var talentLine = string.Empty;
+            if (attacker.IsPlayer &&
+                (talentDamage != 0 || talentParts.Length > 0 || dmgPercent != 0f || crit || chaseAdd != 0 || execute))
+            {
+                talentLine = "  ";
+                if (talentDamage != 0)
+                {
+                    var sign = talentDamage > 0 ? "+" : string.Empty;
+                    talentLine += $"天赋伤害{sign}{talentDamage}";
+                    if (talentParts.Length > 0)
+                    {
+                        talentLine += $" ({talentParts})";
+                    }
+
+                    talentLine += " ";
+                }
+                else if (talentParts.Length > 0)
+                {
+                    talentLine += $"天赋 ({talentParts}) ";
+                }
+
+                if (dmgPercent != 0f)
+                {
+                    talentLine += $"伤害x{1f + dmgPercent} ";
+                }
+
+                if (crit)
+                {
+                    talentLine += $"暴击x{critMul} ";
+                }
+
+                if (chaseAdd != 0)
+                {
+                    talentLine += $"追击+{chaseAdd} ";
+                }
+
+                if (execute)
+                {
+                    talentLine += "斩杀";
+                }
+
+                talentLine = talentLine.TrimEnd() + "\n";
+            }
+
+            var resultLine = formulaDamage == damage
+                ? $"  {effective} x {totalMag} = {damage}"
+                : $"  {effective} x {totalMag} = {formulaDamage} → {damage}";
+            if (attacker.IsPlayer && talentDamage != 0)
+            {
+                var sign = talentDamage > 0 ? "+" : string.Empty;
+                resultLine += $" | 天赋伤害{sign}{talentDamage}";
+            }
+
             AppLog.Info(
                 LogChannel.Game,
                 $"伤害 {attacker.Name}{vs} | {HandEvaluator.TypeName(score.Type)}{beats} {cards}\n" +
                 $"  攻击{atk}{attackRelic} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
                 contextLine +
-                $"  {effective} x {totalMag} = {damage}");
+                talentLine +
+                resultLine);
+        }
+
+        private static string JoinLogParts(params string[] parts)
+        {
+            string text = null;
+            if (parts == null)
+            {
+                return string.Empty;
+            }
+
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                if (string.IsNullOrEmpty(part))
+                {
+                    continue;
+                }
+
+                text = text == null ? part : text + ", " + part;
+            }
+
+            return text ?? string.Empty;
         }
 
         private static string FormatUsedCards(HandScore score)
@@ -1613,10 +1792,11 @@ namespace App.Game
         }
 #endif
 
-        /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物加在牌型倍率上。</summary>
+        /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物/天赋加在牌型倍率上。</summary>
         public float RelicMultiplier(HandScore score)
         {
-            var extra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext);
+            var extra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext) +
+                        TalentMechanics.SumMultiplierExtra(TalentSvc(), _stageBetRound == 1);
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             return (1f + extra) * flint;
         }
@@ -3453,7 +3633,9 @@ namespace App.Game
 
             if (ReferenceEquals(target, Player))
             {
-                var take = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage));
+                var take = (int)Math.Round(
+                    RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
+                    TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
                 if (take != 0)
                 {
                     damage = Math.Max(1, damage + take);
@@ -3488,6 +3670,7 @@ namespace App.Game
                 if (!target.IsPlayer)
                 {
                     ApplyKillSellBonus();
+                    ApplyTalentKillRewards();
                 }
             }
 
@@ -3554,6 +3737,7 @@ namespace App.Game
             }
 
             ApplyEveryRoundHpUp();
+            ApplyTalentRoundGold();
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
             {
@@ -3569,6 +3753,7 @@ namespace App.Game
 
         private void EnterShop()
         {
+            ApplyTalentStageEndHeal();
             var score = ScoreSvc();
             var gold = score != null ? score.CollectGoldDelta() : 0;
             if (Run.DoubleGoldThisStage)
@@ -3754,17 +3939,6 @@ namespace App.Game
             }
 
             return -1;
-        }
-
-        private int EnemyTurnSlot(SeatState enemy)
-        {
-            if (enemy == null || enemy.IsPlayer)
-            {
-                return TurnArrowNone;
-            }
-
-            var slot = FindVisualSlot(enemy);
-            return slot >= 0 ? slot : TurnArrowNone;
         }
 
         private SeatState BestRemainingAi()
@@ -3972,10 +4146,14 @@ namespace App.Game
             Player.ActiveInStage = true;
             Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
             var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
-            maxHp += (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.HeroHpMax));
+            maxHp += (int)Math.Round(
+                RelicMechanics.SumValue(Run, MechanismType.HeroHpMax) +
+                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax));
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
             ApplySeatHp(Player, hp, maxHp);
-            Player.Attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
+            var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
+            attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
+            Player.Attack = Math.Max(0, attack);
         }
 
         private void ApplyRelicMaxHpDelta(int delta)
@@ -4225,6 +4403,54 @@ namespace App.Game
         private static IScoreService ScoreSvc()
         {
             return AppServices.IsReady ? AppServices.Resolve<IScoreService>() : null;
+        }
+
+        private static ITalentService TalentSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<ITalentService>() : null;
+        }
+
+        private void ApplyTalentKillRewards()
+        {
+            var talent = TalentSvc();
+            if (TalentMechanics.Roll(talent, MechanismType.KillingProOfObtainingFunds, _rng))
+            {
+                Run.Gold += 1;
+                Log($"点金手 +1 金币（总金币 {Run.Gold}）");
+            }
+
+            if (!TalentMechanics.IsBelowHpRatio(Player, TalentBalance.LowHpRatio))
+            {
+                return;
+            }
+
+            var ratio = TalentMechanics.SumValue(talent, MechanismType.KillingBringsBackBlood);
+            var heal = HealPlayer((int)Math.Round(Player.MaxHp * ratio));
+            if (heal > 0)
+            {
+                Log($"逢凶化吉 +{heal} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            }
+        }
+
+        private void ApplyTalentRoundGold()
+        {
+            if (!TalentMechanics.Roll(TalentSvc(), MechanismType.ProOfObtainingFundsEverySettlement, _rng))
+            {
+                return;
+            }
+
+            Run.Gold += 1;
+            Log($"资本家 +1 金币（总金币 {Run.Gold}）");
+        }
+
+        private void ApplyTalentStageEndHeal()
+        {
+            var ratio = TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpReplyEveryLevelEnding);
+            var heal = HealPlayer((int)Math.Round(Player.MaxHp * ratio));
+            if (heal > 0)
+            {
+                Log($"回复 +{heal} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            }
         }
 
         /// <summary>亮牌获胜：本手对怪造成的伤害记入本轮/关卡/总积分。</summary>

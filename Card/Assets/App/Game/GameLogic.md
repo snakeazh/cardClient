@@ -1,12 +1,12 @@
 # 炸金花闯关 · 对局逻辑
 
 本文描述当前客户端已落地的规则，供后续改玩法、调数值、接 UI 时对照。  
-实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`，商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)。  
+实现入口：[`GameSession.md`](GameSession.md)（`GameSession.cs`），数值：`GameDefs.cs`，牌型：`CardModel.cs`，AI：`AiBrain.cs`，商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)，英雄技能：[`HeroMechanics.md`](HeroMechanics.md)。  
 关卡配置查询见 [`关卡模块使用文档.md`](../Level/关卡模块使用文档.md)。  
 积分、血量与勇气值见 [`积分与血量模块使用文档.md`](../Score/积分与血量模块使用文档.md)。  
 局内 HUD 见 [`GameUI.md`](../UI/Game/GameUI.md)。牌桌见 [`GameBoardController.md`](../UI/Game/GameBoardController.md)。人物卡见 [`PlayerItem.md`](../Item/PlayerItem.md)。攻击演出见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。闯关结算见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)。
 
-玩家血量读 `HeroConfig.Hp`，怪物血量读 `MonsterConfig.MonsterHp`。攻击力读 `HeroConfig.HeroDamage` / `MonsterConfig.MonsterDamage`，在 PlayerItem 上显示。血量只在比牌后的攻击结算时扣除。
+玩家血量读 `HeroConfig.Hp`，怪物血量读 `MonsterConfig.MonsterHp`。攻击力读 `HeroConfig.HeroDamage` / `MonsterConfig.MonsterDamage`，在 PlayerItem 上显示。血量只在比牌后的攻击结算时扣除。玩家技能读 `HeroEntryConfig`，开局金币 / 暴击 / 搓牌可与天赋、遗物叠加。
 
 ---
 
@@ -59,7 +59,7 @@
 | 攻击力 | 玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`。PlayerItem 显示该值 |
 | 勇气值 | 每手仍按人物当前血量换算（旧下注用），当前主循环不再下注 |
 | 积分 | 本手玩家打出的攻击数值 1:1 记分（不被剩余血量截断）。`GameConst.ChipsForPoints` 当前为 1 |
-| 局内金币 | 开局 `GameConst.PlayerInitialGoldNum`（可加天赋富裕）。关卡胜利发 `LevelConfig.GetGold` 进 `Run.Gold`，广告双倍再发一份。商店刷新：`ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter` |
+| 局内金币 | 开局 `GameConst.PlayerInitialGoldNum`（可加天赋富裕、英雄富豪）。关卡胜利发 `LevelConfig.GetGold`（可乘英雄经济教授）进 `Run.Gold`，广告双倍再发一份。商店刷新：`ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter` |
 | 局外货币 | 闯关结束（成功或放弃）按总积分 / `GameConst.ExchangePointsForGoldCoins`（当前 10:1）兑入钱包。见 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |
 
 血量只在攻击结算时扣除。
@@ -85,7 +85,7 @@
 - 技能在 `WaitingOpen` 可用。有搓牌次数时长按手牌即可拖拽搓牌（进入 `WaitingRub`）；搓完或松手取消后回到 `WaitingOpen`。点「搓牌」不进搓牌，只在按钮右侧弹出 `ItemTip`。
 
 `GameUI` 的 `horBtns2` 上三个按钮始终显示：`PeekGood` / `ChaKanGood` / `TiHuanGood`。开牌或搓牌阶段且仍有次数时可点，否则只禁用、不隐藏。
-每手发牌后次数重置为：搓牌 3 / 透视 1 / 替换 1（商店额外次数加在上面）。
+每手发牌后次数重置为：搓牌 3 / 透视 1 / 替换 1（商店额外次数、英雄赌神加在上面）。
 
 | 按钮 | 效果 |
 |------|------|
@@ -105,7 +105,7 @@
 3. **玩家输**：当前这只怪物立刻攻击玩家。
 4. 打完当前对后进入下一只存活敌人。玩家中途阵亡则本关失败；队列打完则本手结束。
 
-溅射斩仍在玩家打中主目标时，对其余存活敌人打 30%。
+溅射斩仍在玩家打中主目标时，对其余存活敌人打 30%；多面手按词条比例溅射，两者叠加。大嗓门则把本刀变成对所有存活敌人各打原伤害的 30%，并跳过溅射。
 
 ---
 
@@ -129,7 +129,7 @@
 玩家攻击把遗物加成加进牌型倍率，再乘燧石（×0.5）；怪物攻击只吃燧石。  
 积分：本手玩家打出的**攻击数值**记入本轮（公式结果，不被怪物剩余血量截断）。扣血仍按剩余 HP 封顶。
 
-实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
+实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`，英雄技能读 `HeroMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)、[`HeroMechanics.md`](HeroMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
 
 ---
 

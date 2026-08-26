@@ -452,7 +452,7 @@ namespace App.UI
             Action onHit = () =>
             {
                 _cameraShake?.PlayByLevel(session.AttackLevel);
-                ViewModel.HpText.Value = $"-{Math.Max(1, session.AttackDamage)}";
+                ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage)}";
                 ViewModel.ShowHpText.Value = true;
                 if (session.IncomingAttack)
                 {
@@ -493,7 +493,9 @@ namespace App.UI
                 return;
             }
 
-            var damage = Math.Max(1, session.AttackDamage);
+            var damage = session.IncomingAttack
+                ? Math.Max(1, session.TakenDamage)
+                : Math.Max(1, session.AttackDamage);
             if (session.IncomingAttack)
             {
                 if (session.Player != null && session.Player.Hp <= damage)

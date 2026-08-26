@@ -8,6 +8,7 @@
 脚本：`Assets/App/Game/GameSession.cs`  
 数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）  
 商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)  
+英雄技能：[`HeroMechanics.md`](HeroMechanics.md)  
 天赋局内效果：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)
 
 ---

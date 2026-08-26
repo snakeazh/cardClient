@@ -267,7 +267,7 @@ namespace App.UI.Popup
             Mode = mode;
             SelectedRelicId = relicId;
             TipText.Value = relic.Desc ?? string.Empty;
-            BuyNum.Value = Math.Max(0, relic.Price).ToString();
+            BuyNum.Value = Session.EffectiveBuyPrice(relicId).ToString();
             SellNum.Value = Session.EffectiveSellPrice(relicId).ToString();
             return true;
         }

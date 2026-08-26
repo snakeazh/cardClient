@@ -57,7 +57,9 @@ namespace App.UI
 
             LastBtnCommand = new RelayCommand(OnLast);
             UseHeroCommand = new RelayCommand(EnterStageSelect, () => IsSelectedHeroUnlocked());
-            UnlockHeroCommand = new RelayCommand(UnlockSelectedHero, () => !IsSelectedHeroUnlocked());
+            UnlockHeroCommand = new RelayCommand(
+                UnlockSelectedHero,
+                () => false);
             StartGameCommand = new RelayCommand(StartGame, () =>
                 Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
             UnlockLevelCommand = new RelayCommand(
@@ -149,12 +151,17 @@ namespace App.UI
                 return false;
             }
 
-            return hero.Id == GetDefaultHeroId() || _progress.IsHeroUnlocked(hero.Id);
+            if (hero.Id == GetDefaultHeroId() || hero.UnlockCondition <= 0)
+            {
+                return true;
+            }
+
+            return _progress.IsHeroUnlocked(hero.Id) || MeetsDifficultyUnlock(hero);
         }
 
         public bool HasUnlockCondition(HeroConfig hero)
         {
-            return hero != null && hero.Id != GetDefaultHeroId();
+            return hero != null && hero.UnlockCondition > 0;
         }
 
         public string GetUnlockCondition(HeroConfig hero)
@@ -164,7 +171,7 @@ namespace App.UI
                 return string.Empty;
             }
 
-            return "达成第12关可解锁";
+            return $"通关难度{hero.UnlockCondition}可解锁";
         }
 
         public bool IsLevelUnlocked(LevelSnapshot snapshot)
@@ -296,13 +303,23 @@ namespace App.UI
         private void UnlockSelectedHero()
         {
             var hero = HeroConfig.Get(SelectedHeroId.Value);
-            if (hero == null || IsHeroUnlocked(hero))
+            if (hero == null || IsHeroUnlocked(hero) || !MeetsDifficultyUnlock(hero))
             {
                 return;
             }
 
             _progress.TryUnlockHero(hero.Id);
             RefreshHeroPanel();
+        }
+
+        private bool MeetsDifficultyUnlock(HeroConfig hero)
+        {
+            if (hero == null || hero.UnlockCondition <= 0)
+            {
+                return true;
+            }
+
+            return _progress.IsCleared(hero.UnlockCondition);
         }
 
         private async void OnLast()

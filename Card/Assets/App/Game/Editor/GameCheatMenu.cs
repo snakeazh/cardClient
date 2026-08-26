@@ -58,7 +58,7 @@ namespace App.Game.Editor
             session.DebugFullHp();
         }
 
-        [MenuItem("Debug/外挂/技能次数 +99（搓牌/透视/替换）", false, 12)]
+        [MenuItem("Debug/外挂/技能次数+99（搓牌 透视 替换）", false, 12)]
         public static void MaxSkillCharges()
         {
             if (!TryGetSession(out var session))

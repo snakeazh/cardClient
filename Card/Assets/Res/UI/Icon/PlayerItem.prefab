@@ -65,6 +65,7 @@ MonoBehaviour:
   cardCircle: {fileID: 8590270700218054800}
   cardIcon: {fileID: 4360046112712457286}
   cardAttackValue: {fileID: 2251470114000148370}
+  attackValueAnimator: {fileID: 0}
   cardAttackHeart: {fileID: 3126298132637409539}
   attackRoot: {fileID: 3658755805805169692}
   attackBg: {fileID: 7173772964839206773}

@@ -1,7 +1,10 @@
+using System;
+using App.Config;
+using App.UI;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using App.Config;
 
 namespace App.Game
 {
@@ -73,6 +76,23 @@ namespace App.Game
                 EnsureRefs();
                 return attackValueAnimator;
             }
+        }
+
+        public Tween PlayDissolve(float duration = -1f, Action onComplete = null)
+        {
+            var dissolve = GetComponent<UiDissolve>();
+            if (dissolve == null)
+            {
+                dissolve = gameObject.AddComponent<UiDissolve>();
+            }
+
+            return dissolve.Play(duration, onComplete);
+        }
+
+        public void ResetDissolve()
+        {
+            var dissolve = GetComponent<UiDissolve>();
+            dissolve?.ResetState();
         }
 
         public void Bind(SeatState seat, Sprite portrait, int attack = 0, int actingAiId = -1)

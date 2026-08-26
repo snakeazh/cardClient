@@ -462,6 +462,8 @@ namespace App.UI
                 {
                     PlaceHpAtTarget(session.AttackVisualSlot);
                 }
+
+                TryDissolveIfLethal(session);
             };
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };
             Action onDone = () =>
@@ -481,6 +483,32 @@ namespace App.UI
             else
             {
                 _attackFx.Play(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
+            }
+        }
+
+        private void TryDissolveIfLethal(GameSession session)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            var damage = Math.Max(1, session.AttackDamage);
+            if (session.IncomingAttack)
+            {
+                if (session.Player != null && session.Player.Hp <= damage)
+                {
+                    _playerItem?.PlayDissolve();
+                }
+
+                return;
+            }
+
+            var target = session.EnemyAtVisualSlot(session.AttackVisualSlot);
+            if (target != null && target.Hp <= damage)
+            {
+                var item = AttackItemAtSlot(session.AttackVisualSlot);
+                item?.PlayDissolve(-1f, () => HideEnemyItem(item));
             }
         }
 
@@ -616,7 +644,7 @@ namespace App.UI
 
                 var clone = Instantiate(template.gameObject, slot);
                 clone.name = "PlayerItem";
-                clone.SetActive(true);
+                clone.SetActive(false);
                 var bind = clone.GetComponent<Framework.UI.Binding.UIBind>();
                 if (bind != null)
                 {
@@ -636,10 +664,38 @@ namespace App.UI
                 var item = clone.GetComponent<PlayerItem>() ?? clone.AddComponent<PlayerItem>();
                 item.ApplyTheme(true);
                 item.SetAttack(0);
-                Binding.BindActive(clone, ViewModel.ShowEnemy[i]);
+                BindEnemyVisible(i, clone, item);
                 BindSeatClick(clone, ViewModel.AttackCommands[i]);
                 _enemyItems[i] = item;
                 _enemyInfos[i] = clone;
+            }
+        }
+
+        private void BindEnemyVisible(int slot, GameObject go, PlayerItem item)
+        {
+            Binding.Add(ViewModel.ShowEnemy[slot].Subscribe(visible =>
+            {
+                if (visible)
+                {
+                    go.SetActive(true);
+                    item.ResetDissolve();
+                    return;
+                }
+
+                if (go == null || !go.activeSelf)
+                {
+                    return;
+                }
+
+                item.PlayDissolve(-1f, () => HideEnemyItem(item));
+            }));
+        }
+
+        private static void HideEnemyItem(PlayerItem item)
+        {
+            if (item != null)
+            {
+                item.gameObject.SetActive(false);
             }
         }
 
@@ -653,6 +709,15 @@ namespace App.UI
             var session = ViewModel.Session;
             if (_playerItem != null)
             {
+                if (session.Player != null && session.Player.Hp > 0)
+                {
+                    var dissolve = _playerItem.GetComponent<UiDissolve>();
+                    if (dissolve == null || !dissolve.IsPlaying)
+                    {
+                        _playerItem.ResetDissolve();
+                    }
+                }
+
                 _playerItem.Bind(session.Player, _playerPortrait, AttackDisplay(_playerItem, session.Player.Attack));
             }
 
@@ -676,7 +741,7 @@ namespace App.UI
 
                 var slot = VisualSlot(placed, activeCount);
                 placed++;
-                if (!enemy.Alive || slot < 0 || slot >= _enemyItems.Length || _enemyItems[slot] == null)
+                if (slot < 0 || slot >= _enemyItems.Length || _enemyItems[slot] == null)
                 {
                     continue;
                 }

@@ -34,7 +34,7 @@
 `BattleShopPopView` 货架和已拥有都走 `Bind(RelicConfig, icon, forSale)`：
 
 ```csharp
-item.Bind(relic, ViewModel.GetRelicIcon(relic));              // 货架，显示 Price
+item.Bind(relic, ViewModel.GetRelicIcon(relic), buyPrice: session.EffectiveBuyPrice(relic.Id)); // 货架，显示折后买入价
 item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false); // 已拥有，显示 SellingPrice
 ```
 

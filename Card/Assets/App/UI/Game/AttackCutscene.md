@@ -46,7 +46,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `back` | 退回 |
 | `ani_default` | 复位 |
 
-位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{AttackDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。
+位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。
 
 ---
 
@@ -60,7 +60,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 细则见 [`RelicMechanics.md`](../../Game/RelicMechanics.md)。
 
-攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。演出只表现已算好的 `AttackDamage`，不改公式。积分也按该攻击数值记，不按实际扣血。
+攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。怪物卡上的攻击数字读减伤前的 `AttackDamage`；命中飘字读减伤后的 `TakenDamage`。积分也按该攻击数值记，不按实际扣血。
 
 ---
 

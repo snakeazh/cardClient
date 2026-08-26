@@ -19,7 +19,7 @@ namespace App.Config
         /// <summary>
         /// 机制类型
         /// </summary>
-        public HeroEntryType Type;
+        public MechanismType Type;
 
         /// <summary>
         /// 值

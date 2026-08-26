@@ -51,7 +51,7 @@ namespace App.Game
         private bool _sequentialCompare;
         /// <summary>本回合在血量换算之外额外获得的勇气值（借贷券 / 广告借贷）。</summary>
         private int _loanCourageBonus;
-        /// <summary>本关商店已按积分发放的金币，供双倍广告再发一份。</summary>
+        /// <summary>本关商店已按 LevelConfig.GetGold 发放的金币，供双倍广告再发一份。</summary>
         private int _shopGoldGranted;
         private int _rubsUsedThisHand;
         private bool _rubbedThisHand;
@@ -110,6 +110,8 @@ namespace App.Game
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
         public int AttackDamage { get; private set; }
+        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于 <see cref="AttackDamage"/>。</summary>
+        public int TakenDamage { get; private set; }
         /// <summary>攻击演出强度：1 低 / 2 中 / 3 高。</summary>
         public int AttackLevel { get; private set; } = 1;
         public bool AttackPlaying => _pendingAttackTarget != null;
@@ -177,11 +179,16 @@ namespace App.Game
             Run.BonusReplaceCharges = 0;
             Run.ClearRunProgress();
             Run.Log.Clear();
-            var startGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
-            if (startGold > 0)
+            var hero = ResolveHero();
+            Run.HeroId = hero != null ? hero.Id : 0;
+            var baseGold = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.PlayerInitialGoldNum) : 0;
+            var talentGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
+            var heroGold = (int)Math.Round(HeroMechanics.SumValue(hero, MechanismType.InitialFunds));
+            var extraGold = Math.Max(0, talentGold) + Math.Max(0, heroGold);
+            Run.Gold = baseGold + extraGold;
+            if (extraGold > 0)
             {
-                Run.Gold = startGold;
-                Log($"富裕：初始金币 {startGold}");
+                Log($"富裕：初始金币 {Run.Gold}（基础 {baseGold} + {extraGold}）");
             }
 
             if (AppServices.IsReady)
@@ -780,6 +787,7 @@ namespace App.Game
             _pendingAttackTarget = target;
             AttackVisualSlot = FindVisualSlot(target);
             AttackDamage = Math.Max(1, PendingAttackDamage);
+            TakenDamage = AttackDamage;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -853,22 +861,7 @@ namespace App.Game
             IncomingAttack = false;
             var damage = Math.Max(1, PendingAttackDamage);
             PendingAttackDamage = 0;
-            var dealt = ApplyDamage(target, damage, true);
-            var scoreDamage = damage;
-            if (!target.IsPlayer && Run.SplashThisRound)
-            {
-                for (var i = 0; i < Enemies.Length; i++)
-                {
-                    if (Enemies[i] != target && Enemies[i].Alive)
-                    {
-                        var splash = (int)Math.Round(damage * GameBalance.SplashRatio);
-                        dealt += ApplyDamage(Enemies[i], splash, false);
-                        scoreDamage += splash;
-                    }
-                }
-
-                Run.SplashThisRound = false;
-            }
+            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
 
             if (!target.IsPlayer)
             {
@@ -892,6 +885,72 @@ namespace App.Game
             RunNextCompare();
         }
 
+        private int ApplyPlayerAttackHits(SeatState target, int damage, out int scoreDamage)
+        {
+            scoreDamage = 0;
+            if (target == null)
+            {
+                return 0;
+            }
+
+            if (target.IsPlayer)
+            {
+                scoreDamage = damage;
+                return ApplyDamage(target, damage, true);
+            }
+
+            var dealt = 0;
+            var aoe = HeroMechanics.SumValue(Run, MechanismType.AoeDamage);
+            if (aoe > 0f)
+            {
+                var aoeDmg = (int)Math.Round(damage * aoe);
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    if (!Enemies[i].Alive)
+                    {
+                        continue;
+                    }
+
+                    dealt += ApplyDamage(Enemies[i], aoeDmg, Enemies[i] == target);
+                    scoreDamage += aoeDmg;
+                }
+
+                Run.SplashThisRound = false;
+            }
+            else
+            {
+                dealt = ApplyDamage(target, damage, true);
+                scoreDamage = damage;
+                var splashRatio = (Run.SplashThisRound ? GameBalance.SplashRatio : 0f)
+                    + HeroMechanics.SumValue(Run, MechanismType.VersatilePerson);
+                if (splashRatio > 0f)
+                {
+                    for (var i = 0; i < Enemies.Length; i++)
+                    {
+                        if (Enemies[i] == target || !Enemies[i].Alive)
+                        {
+                            continue;
+                        }
+
+                        var splash = (int)Math.Round(damage * splashRatio);
+                        dealt += ApplyDamage(Enemies[i], splash, false);
+                        scoreDamage += splash;
+                    }
+                }
+
+                Run.SplashThisRound = false;
+            }
+
+            if (HeroMechanics.Roll(Run, MechanismType.ExtraAttackOneTime, _rng))
+            {
+                dealt += ApplyDamage(target, damage, true);
+                scoreDamage += damage;
+                Log("追击：额外攻击 1 次");
+            }
+
+            return dealt;
+        }
+
         private void BeginIncomingAttack(SeatState attacker)
         {
             if (Phase != GamePhase.WaitingAttack || attacker == null || Player.Hp <= 0 || _pendingAttackTarget != null)
@@ -903,6 +962,7 @@ namespace App.Game
             _pendingAttackTarget = Player;
             AttackVisualSlot = FindVisualSlot(attacker);
             AttackDamage = Math.Max(1, PendingAttackDamage);
+            TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage);
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -1056,7 +1116,8 @@ namespace App.Game
             TryApplyPermanentCardBonuses(openScore);
             PendingAttackDamage = loss;
             AttackLevel = MapAttackLevel(targetScore.Type);
-            LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {loss} 伤害";
+            var taken = IncomingDamageAfterMitigation(loss);
+            LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {taken} 伤害";
             Log(LastResult);
             Phase = GamePhase.WaitingAttack;
             BeginIncomingAttack(target);
@@ -1125,18 +1186,20 @@ namespace App.Game
             var execute = false;
             if (attacker.IsPlayer)
             {
+                var hero = ResolveHero();
                 dmgPercent = TalentMechanics.SumDamagePercent(
                     talent,
                     defender,
                     Player,
                     CountAliveEnemies());
+                dmgPercent += HeroMechanics.SumValue(hero, MechanismType.Damage);
                 if (dmgPercent != 0f)
                 {
                     damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
                 }
 
-                var hero = ResolveHero();
-                var critRate = TalentMechanics.CriticalRate(talent, hero);
+                var critRate = TalentMechanics.CriticalRate(talent, hero)
+                    + HeroMechanics.SumValue(hero, MechanismType.HeroCritical);
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero);
                 if (critRate > 0f && _rng.NextDouble() < critRate)
                 {
@@ -1186,6 +1249,26 @@ namespace App.Game
                 critMul,
                 chaseAdd,
                 execute);
+            return Math.Max(1, damage);
+        }
+
+        /// <summary>打玩家前的减伤：先加遗物/天赋 HeroTakeDamage，再乘英雄 HeroTakeDamagePer。闪避仍在 ApplyDamage。</summary>
+        private int IncomingDamageAfterMitigation(int damage)
+        {
+            var take = (int)Math.Round(
+                RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
+                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
+            if (take != 0)
+            {
+                damage = Math.Max(1, damage + take);
+            }
+
+            var takePer = HeroMechanics.SumValue(Run, MechanismType.HeroTakeDamagePer);
+            if (takePer != 0f)
+            {
+                damage = Math.Max(1, (int)Math.Round(damage * (1f + takePer)));
+            }
+
             return Math.Max(1, damage);
         }
 
@@ -1472,14 +1555,19 @@ namespace App.Game
             return enemyIndex;
         }
 
-        /// <summary>下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，之后每次 + <see cref="GameConst.ShopRefreshAfter"/>。</summary>
+        /// <summary>
+        /// 下次刷新商店所需金币：首次 <see cref="GameConst.ShopRefreshFirst"/>，
+        /// 之后每次 + <see cref="GameConst.ShopRefreshAfter"/>，增长次数不超过 <see cref="GameConst.ShopRefreshGoldUpNumMax"/>。
+        /// </summary>
         public int ShopRefreshCost
         {
             get
             {
                 var first = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshFirst) : 5;
                 var after = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshAfter) : 3;
-                return first + Math.Max(0, Run.ShopRefreshCount) * after;
+                var maxUp = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.ShopRefreshGoldUpNumMax) : int.MaxValue;
+                var ups = Math.Min(Math.Max(0, Run.ShopRefreshCount), maxUp);
+                return first + ups * after;
             }
         }
 
@@ -1487,6 +1575,8 @@ namespace App.Game
         public int EffectiveShopRefreshCost => Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost;
 
         public int EffectiveSellPrice(int relicId) => RelicMechanics.SellPrice(Run, relicId);
+
+        public int EffectiveBuyPrice(int relicId) => HeroMechanics.BuyPrice(Run, RelicConfig.Get(relicId));
 
         public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
 
@@ -1570,7 +1660,8 @@ namespace App.Game
                 return;
             }
 
-            if (!RelicMechanics.CanAfford(Run, relic.Price))
+            var price = EffectiveBuyPrice(relicId);
+            if (!RelicMechanics.CanAfford(Run, price))
             {
                 Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
                     ? "超出白条额度"
@@ -1579,7 +1670,7 @@ namespace App.Game
                 return;
             }
 
-            SpendGold(relic.Price);
+            SpendGold(price);
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
             ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
@@ -2014,7 +2105,9 @@ namespace App.Game
 
         private void ResetSkillCharges()
         {
-            var rubDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
+            var rubDelta = (int)Math.Round(
+                RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
+                HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
             Run.PeekGoodCharges = Math.Max(0, GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta);
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
@@ -3633,13 +3726,14 @@ namespace App.Game
 
             if (ReferenceEquals(target, Player))
             {
-                var take = (int)Math.Round(
-                    RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
-                    TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
-                if (take != 0)
+                if (HeroMechanics.Roll(Run, MechanismType.MissDamagePer, _rng))
                 {
-                    damage = Math.Max(1, damage + take);
+                    Log($"闪避：{target.Name} 免疫 {damage} 伤害");
+                    target.Banner = "闪避";
+                    return 0;
                 }
+
+                damage = IncomingDamageAfterMitigation(damage);
             }
 
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
@@ -3755,7 +3849,14 @@ namespace App.Game
         {
             ApplyTalentStageEndHeal();
             var score = ScoreSvc();
-            var gold = score != null ? score.CollectGoldDelta() : 0;
+            var current = LevelSvc()?.Current;
+            var gold = current != null ? Math.Max(0, current.GetGold) : 0;
+            var goldPer = HeroMechanics.SumValue(Run, MechanismType.GetGoldAfterLevel);
+            if (goldPer != 0f)
+            {
+                gold = Math.Max(0, (int)Math.Round(gold * (1f + goldPer)));
+            }
+
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
@@ -3765,12 +3866,12 @@ namespace App.Game
             Run.Gold += gold;
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
-            Log($"关卡结算：本关积分 {stage} → {gold} 金币（章节累计 {total}，总金币 {Run.Gold}）");
+            Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
             RollShopOffers();
-            Hint = $"关卡胜利！本关 {stage} 积分兑换 {gold} 金币。购买道具后进入下一关。";
+            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
         }
@@ -4596,7 +4697,7 @@ namespace App.Game
             var total = 0f;
             for (var i = 0; i < pool.Count; i++)
             {
-                total += Math.Max(0f, pool[i].RefreshProbability);
+                total += HeroMechanics.ShopWeight(Run, pool[i]);
             }
 
             if (total <= 0f)
@@ -4608,7 +4709,7 @@ namespace App.Game
             var acc = 0.0;
             for (var i = 0; i < pool.Count; i++)
             {
-                acc += Math.Max(0f, pool[i].RefreshProbability);
+                acc += HeroMechanics.ShopWeight(Run, pool[i]);
                 if (roll < acc)
                 {
                     return pool[i];

@@ -44,7 +44,7 @@ namespace App.Config
         /// <summary>
         /// 英雄机制id
         /// </summary>
-        public int HeroEntryId;
+        public int[] HeroEntryId;
 
         /// <summary>
         /// 解锁难度条件

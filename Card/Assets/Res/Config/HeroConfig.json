@@ -7,140 +7,164 @@
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 0,
+    "HeroEntryId": [],
     "UnlockCondition": 0,
     "Desc": "平平无奇之人"
   },
   {
     "Id": 2,
     "Name": "大壮",
-    "Hp": 170,
-    "HeroDamage": 9,
+    "Hp": 180,
+    "HeroDamage": 7,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Warrior1",
-    "HeroEntryId": 10001,
+    "HeroEntryId": [
+      10001
+    ],
     "UnlockCondition": 1,
-    "Desc": "受到的伤害-20%"
+    "Desc": "受到的伤害-25%"
   },
   {
     "Id": 3,
     "Name": "狠人",
     "Hp": 200,
-    "HeroDamage": 7,
+    "HeroDamage": 5,
     "Critical": 0.05,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10002,
+    "HeroEntryId": [
+      10002,
+      100021
+    ],
     "UnlockCondition": 2,
-    "Desc": "造成的伤害+10%,且拥有5%暴击率"
+    "Desc": "造成的伤害+20%,且拥有15%暴击率"
   },
   {
     "Id": 4,
     "Name": "多面手",
-    "Hp": 160,
-    "HeroDamage": 10,
+    "Hp": 180,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10003,
+    "HeroEntryId": [
+      10003
+    ],
     "UnlockCondition": 3,
-    "Desc": "攻击时,对其他人造成30%的伤害"
+    "Desc": "攻击时,对其他人造成25%的伤害"
   },
   {
     "Id": 5,
     "Name": "射手",
-    "Hp": 160,
-    "HeroDamage": 10,
+    "Hp": 180,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Ranger1",
-    "HeroEntryId": 10004,
+    "HeroEntryId": [
+      10004
+    ],
     "UnlockCondition": 4,
-    "Desc": "攻击时,有50%概率额外攻击1次"
+    "Desc": "攻击时,有25%概率额外攻击1次"
   },
   {
     "Id": 6,
     "Name": "大嗓门",
-    "Hp": 160,
-    "HeroDamage": 10,
+    "Hp": 180,
+    "HeroDamage": 5,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Mage1",
-    "HeroEntryId": 10005,
+    "HeroEntryId": [
+      10005
+    ],
     "UnlockCondition": 5,
-    "Desc": "攻击时,对所有人造成50%的群体伤害"
+    "Desc": "攻击时,对所有人造成30%的群体伤害"
   },
   {
     "Id": 7,
     "Name": "富豪",
-    "Hp": 200,
-    "HeroDamage": 7,
+    "Hp": 180,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10006,
+    "HeroEntryId": [
+      10006
+    ],
     "UnlockCondition": 6,
-    "Desc": "初始拥有20资金"
+    "Desc": "初始额外拥有30金币"
   },
   {
     "Id": 8,
     "Name": "武林高手",
-    "Hp": 200,
-    "HeroDamage": 7,
+    "Hp": 170,
+    "HeroDamage": 6,
     "Critical": 0.05,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10007,
+    "HeroEntryId": [
+      10007,
+      100071
+    ],
     "UnlockCondition": 7,
-    "Desc": "承受伤害时有25%概率免疫伤害,且初始拥有5%的暴击率"
+    "Desc": "承受伤害时有20%概率免疫伤害,且拥有15%暴击率"
   },
   {
     "Id": 9,
     "Name": "赌神",
     "Hp": 200,
-    "HeroDamage": 7,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10008,
+    "HeroEntryId": [
+      10008
+    ],
     "UnlockCondition": 8,
-    "Desc": "额外拥有1次搓牌的机会"
+    "Desc": "额外拥有1次搓牌机会"
   },
   {
     "Id": 10,
     "Name": "暴发户",
-    "Hp": 200,
-    "HeroDamage": 7,
+    "Hp": 190,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10009,
+    "HeroEntryId": [
+      10009
+    ],
     "UnlockCondition": 9,
-    "Desc": "商店里刷到史诗及以上品质的遗物概率提高5%"
+    "Desc": "商店刷到史诗及以上品质的收藏品概率+15%"
   },
   {
     "Id": 11,
     "Name": "关系户",
-    "Hp": 200,
-    "HeroDamage": 7,
+    "Hp": 190,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10010,
+    "HeroEntryId": [
+      10010
+    ],
     "UnlockCondition": 10,
-    "Desc": "商店中的所有遗物的购买价格打八折"
+    "Desc": "商店中的所有收藏品的购买价格-15%"
   },
   {
     "Id": 12,
     "Name": "经济教授",
-    "Hp": 200,
-    "HeroDamage": 7,
+    "Hp": 190,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Adventurer1",
-    "HeroEntryId": 10011,
+    "HeroEntryId": [
+      10011
+    ],
     "UnlockCondition": 11,
-    "Desc": "结算伤害后获得的金币数量+10%"
+    "Desc": "每关通过后获得的金币数量+20%"
   }
 ]

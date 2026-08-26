@@ -103,53 +103,6 @@ namespace App.Config
     }
 
     /// <summary>
-    /// 由 EnumConfig.xlsx 生成的 HeroEntryType 枚举。
-    /// </summary>
-    public enum HeroEntryType
-    {
-        /// <summary>
-        /// 大壮
-        /// </summary>
-        AStrongPerson = 1,
-
-        /// <summary>
-        /// 狠人
-        /// </summary>
-        Badass = 2,
-
-        /// <summary>
-        /// 多面手
-        /// </summary>
-        VersatilePerson = 3,
-
-        /// <summary>
-        /// 射手
-        /// </summary>
-        Archer = 4,
-
-        /// <summary>
-        /// 大嗓门
-        /// </summary>
-        LoudVoice = 5,
-
-        /// <summary>
-        /// 暴发户
-        /// </summary>
-        NouveauRiche = 6,
-
-        /// <summary>
-        /// 流浪汉
-        /// </summary>
-        HomelessPerson = 7,
-
-        /// <summary>
-        /// 赌神
-        /// </summary>
-        GodOfGamblers = 8,
-
-    }
-
-    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 MechanismType 枚举。
     /// </summary>
     public enum MechanismType
@@ -565,19 +518,64 @@ namespace App.Config
         SpecialSevenCard = 82,
 
         /// <summary>
-        /// 立即获得生命值
+        /// 英雄承受的伤害百分比
         /// </summary>
-        MaxHp = 11,
+        HeroTakeDamagePer = 83,
 
         /// <summary>
-        /// 每次结算生命值提高
+        /// 英雄造成的伤害百分比
         /// </summary>
-        EveryRoundHpUp = 12,
+        Damage = 84,
 
         /// <summary>
-        /// 235牌型
+        /// 攻击时,对其他人造成百分比伤害
         /// </summary>
-        TwoThreeFive = 14,
+        VersatilePerson = 85,
+
+        /// <summary>
+        /// 额外攻击敌人1次的概率
+        /// </summary>
+        ExtraAttackOneTime = 86,
+
+        /// <summary>
+        /// 攻击变成原伤害百分比的群体伤害
+        /// </summary>
+        AoeDamage = 87,
+
+        /// <summary>
+        /// 史诗/传说的收藏品概率提高
+        /// </summary>
+        EpicLegendRelicProUp = 88,
+
+        /// <summary>
+        /// 收藏品价格百分比
+        /// </summary>
+        RelicPricePer = 89,
+
+        /// <summary>
+        /// 每关通过后获得的金币数量百分比
+        /// </summary>
+        GetGoldAfterLevel = 90,
+
+        /// <summary>
+        /// 免疫伤害的概率
+        /// </summary>
+        MissDamagePer = 91,
+
+        /// <summary>
+        /// 免疫伤害的概率
+        /// </summary>
+        MaxHp = 92,
+
+        /// <summary>
+        /// 免疫伤害的概率
+        /// </summary>
+        EveryRoundHpUp = 93,
+
+        /// <summary>
+        /// 235
+        /// </summary>
+        TwoThreeFive = 94,
 
     }
 

@@ -47,7 +47,7 @@ namespace App.Game
             }
         }
 
-        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true)
+        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1)
         {
             Bind(relic == null
                 ? null
@@ -56,7 +56,9 @@ namespace App.Game
                     Id = relic.Id.ToString(),
                     Name = relic.Name,
                     Effect = relic.Desc,
-                    Price = forSale ? relic.Price : relic.SellingPrice,
+                    Price = forSale
+                        ? relic.Price
+                        : (sellPrice >= 0 ? sellPrice : Math.Max(0, relic.SellingPrice)),
                     RelicConfigId = relic.Id
                 }, icon, goldSprite);
             ApplyQuality(relic != null ? relic.Type : QualityType.Ordinary);

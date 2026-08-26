@@ -299,7 +299,7 @@ namespace App.UI
                 : _playerItem;
             var score = session.EvaluateSeat(attacker);
             var extra = attacker != null && attacker.IsPlayer
-                ? RelicMechanics.SumMultiplierExtra(session.Run, score)
+                ? RelicMechanics.SumMultiplierExtra(session.Run, score, session.LastRelicContext)
                 : 0f;
             var baseAttack = attacker != null ? Math.Max(0, attacker.Attack) : 0;
             _holdAttackDisplay = true;
@@ -353,7 +353,7 @@ namespace App.UI
                 return;
             }
 
-            RelicMechanics.CollectRelicBonuses(session.Run, score, _relicBonuses);
+            RelicMechanics.CollectRelicBonuses(session.Run, score, _relicBonuses, session.LastRelicContext);
             if (_relicBonuses.Count == 0 && extra <= 0f)
             {
                 return;

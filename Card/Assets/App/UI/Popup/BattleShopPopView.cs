@@ -345,7 +345,11 @@ namespace App.UI.Popup
                 }
 
                 item.gameObject.SetActive(true);
-                item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
+                item.Bind(
+                    relic,
+                    ViewModel.GetRelicIcon(relic),
+                    forSale: false,
+                    sellPrice: ViewModel.Session.EffectiveSellPrice(owned[i]));
             }
         }
 

@@ -37,7 +37,7 @@ namespace App.UI.Popup
             Resources = resources;
             Atlas = atlas;
             _dialogs = dialogs;
-            RefreshGoldNum = new ObservableProperty<string>(session.ShopRefreshCost.ToString());
+            RefreshGoldNum = new ObservableProperty<string>(session.EffectiveShopRefreshCost.ToString());
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ShopRevision = new ObservableProperty<int>();
             ShowSellHor = new ObservableProperty<bool>(true);
@@ -204,7 +204,7 @@ namespace App.UI.Popup
 
         private void Refresh()
         {
-            RefreshGoldNum.Value = Session.ShopRefreshCost.ToString();
+            RefreshGoldNum.Value = Session.EffectiveShopRefreshCost.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
             RefreshCommand.RaiseCanExecuteChanged();
             if (SelectedRelicId > 0 && !IsSelectionValid())
@@ -268,7 +268,7 @@ namespace App.UI.Popup
             SelectedRelicId = relicId;
             TipText.Value = relic.Desc ?? string.Empty;
             BuyNum.Value = Math.Max(0, relic.Price).ToString();
-            SellNum.Value = Math.Max(0, relic.SellingPrice).ToString();
+            SellNum.Value = Session.EffectiveSellPrice(relicId).ToString();
             return true;
         }
 

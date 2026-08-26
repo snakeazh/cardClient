@@ -346,6 +346,92 @@ namespace App.Game
         public int HeroId;
         /// <summary>本关是否含 BOSS，来自关卡配置。</summary>
         public bool HasBoss;
+        /// <summary>本局花费金币累计（买遗物 + 付费刷新），卖掉不减。投资用。</summary>
+        public int GoldSpentThisRun;
+        /// <summary>训练：点数 → 永久额外攻击。下标为 <see cref="Rank"/>，卖掉不清。</summary>
+        public readonly int[] RankAttackForever = new int[14];
+        /// <summary>天使：牌型永久额外倍率。卖掉不清。</summary>
+        public readonly float[] HandTypeMagForever = new float[6];
+        /// <summary>老搓家累计倍率。卖掉不清。</summary>
+        public float RubRelicMagForever;
+        /// <summary>工资卡：遗物 Id → 售价加成。卖掉后再买仍用。</summary>
+        public readonly Dictionary<int, int> RelicSellBonus = new Dictionary<int, int>();
+        /// <summary>老千：各牌型本局亮出次数。卖掉不清。</summary>
+        public readonly int[] HandTypeShowCounts = new int[6];
+        /// <summary>会员卡：本店剩余免费刷新次数。</summary>
+        public int FreeShopRefreshLeft;
         public readonly List<string> Log = new List<string>();
+
+        public void ClearRunProgress()
+        {
+            GoldSpentThisRun = 0;
+            RubRelicMagForever = 0f;
+            FreeShopRefreshLeft = 0;
+            Array.Clear(RankAttackForever, 0, RankAttackForever.Length);
+            Array.Clear(HandTypeMagForever, 0, HandTypeMagForever.Length);
+            Array.Clear(HandTypeShowCounts, 0, HandTypeShowCounts.Length);
+            RelicSellBonus.Clear();
+        }
+
+        public int RankAttackBonus(Rank rank)
+        {
+            var key = (int)rank;
+            return key >= 0 && key < RankAttackForever.Length ? RankAttackForever[key] : 0;
+        }
+
+        public void AddRankAttackBonus(Rank rank, int delta)
+        {
+            var key = (int)rank;
+            if (key >= 0 && key < RankAttackForever.Length)
+            {
+                RankAttackForever[key] += delta;
+            }
+        }
+
+        public float HandTypeMagBonus(HandType type)
+        {
+            var key = (int)type;
+            return key >= 0 && key < HandTypeMagForever.Length ? HandTypeMagForever[key] : 0f;
+        }
+
+        public void AddHandTypeMagBonus(HandType type, float delta)
+        {
+            var key = (int)type;
+            if (key >= 0 && key < HandTypeMagForever.Length)
+            {
+                HandTypeMagForever[key] += delta;
+            }
+        }
+
+        public int HandTypeShowCount(HandType type)
+        {
+            var key = (int)type;
+            return key >= 0 && key < HandTypeShowCounts.Length ? HandTypeShowCounts[key] : 0;
+        }
+
+        public void AddHandTypeShowCount(HandType type, int delta = 1)
+        {
+            var key = (int)type;
+            if (key >= 0 && key < HandTypeShowCounts.Length)
+            {
+                HandTypeShowCounts[key] += delta;
+            }
+        }
+
+        public int RelicSellPriceBonus(int relicId)
+        {
+            return RelicSellBonus.TryGetValue(relicId, out var bonus) ? bonus : 0;
+        }
+
+        public void AddRelicSellPriceBonus(int relicId, int delta)
+        {
+            if (relicId <= 0 || delta == 0)
+            {
+                return;
+            }
+
+            RelicSellBonus.TryGetValue(relicId, out var current);
+            RelicSellBonus[relicId] = current + delta;
+        }
     }
 }

@@ -327,6 +327,22 @@ namespace App.Game
         }
     }
 
+    /// <summary>遗物改写的比牌规则。花色计数类遗物仍看真实花色。</summary>
+    public readonly struct HandEvalRules
+    {
+        public HandEvalRules(bool colorFlush, bool gappedStraight)
+        {
+            ColorFlush = colorFlush;
+            GappedStraight = gappedStraight;
+        }
+
+        /// <summary>老花眼：红桃=方片、黑桃=梅花，仅金花/同花顺判定。</summary>
+        public bool ColorFlush { get; }
+
+        /// <summary>错峰出行：排序后相邻点差为 1 或 2 即成顺子。</summary>
+        public bool GappedStraight { get; }
+    }
+
     /// <summary>
     /// 三张牌炸金花评估。BOSS「禁用花色/人头」通过 bannedSuit / banFaces 过滤后再比牌。
     /// </summary>
@@ -358,7 +374,11 @@ namespace App.Game
             }
         }
 
-        public static HandScore Evaluate(IReadOnlyList<Card> cards, Suit? bannedSuit = null, bool banFaces = false)
+        public static HandScore Evaluate(
+            IReadOnlyList<Card> cards,
+            Suit? bannedSuit = null,
+            bool banFaces = false,
+            HandEvalRules rules = default)
         {
             var filtered = Filter(cards, bannedSuit, banFaces);
             if (filtered.Count == 0)
@@ -400,10 +420,10 @@ namespace App.Game
             var a = filtered[0];
             var b = filtered[1];
             var c = filtered[2];
-            var flush = a.Suit == b.Suit && b.Suit == c.Suit;
+            var flush = IsFlush(a.Suit, b.Suit, c.Suit, rules.ColorFlush);
             var three = a.Rank == b.Rank && b.Rank == c.Rank;
             var pair = a.Rank == b.Rank || b.Rank == c.Rank || a.Rank == c.Rank;
-            var straight = IsStraight(a.Rank, b.Rank, c.Rank, out var straightHigh);
+            var straight = IsStraight(a.Rank, b.Rank, c.Rank, rules.GappedStraight, out var straightHigh);
 
             if (three)
             {
@@ -487,7 +507,13 @@ namespace App.Game
         }
 
         /// <summary>从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。</summary>
-        public static HandScore SelectBestOpen(Card[] hand, bool[] selected, int dealt, Suit? bannedSuit = null, bool banFaces = false)
+        public static HandScore SelectBestOpen(
+            Card[] hand,
+            bool[] selected,
+            int dealt,
+            Suit? bannedSuit = null,
+            bool banFaces = false,
+            HandEvalRules rules = default)
         {
             if (selected != null)
             {
@@ -499,13 +525,13 @@ namespace App.Game
 
             if (hand == null)
             {
-                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules);
             }
 
             dealt = Math.Min(dealt, hand.Length);
             if (dealt < 3)
             {
-                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules);
             }
 
             var trio = new Card[3];
@@ -523,7 +549,7 @@ namespace App.Game
                         trio[0] = hand[i];
                         trio[1] = hand[j];
                         trio[2] = hand[k];
-                        var score = Evaluate(trio, bannedSuit, banFaces);
+                        var score = Evaluate(trio, bannedSuit, banFaces, rules);
                         if (!any || score.CompareTo(best) > 0)
                         {
                             best = score;
@@ -554,7 +580,7 @@ namespace App.Game
                 }
             }
 
-            return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces);
+            return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules);
         }
 
         public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
@@ -577,10 +603,15 @@ namespace App.Game
             return picked.ToArray();
         }
 
-        public static Card[] CopyBestOpenCards(Card[] hand, int dealt, Suit? bannedSuit = null, bool banFaces = false)
+        public static Card[] CopyBestOpenCards(
+            Card[] hand,
+            int dealt,
+            Suit? bannedSuit = null,
+            bool banFaces = false,
+            HandEvalRules rules = default)
         {
             var flags = new bool[GameBalance.MaxCardsPerSeat];
-            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces);
+            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules);
             return CopySelectedCards(hand, flags);
         }
 
@@ -645,24 +676,61 @@ namespace App.Game
             return list;
         }
 
-        private static bool IsStraight(Rank a, Rank b, Rank c, out int high)
+        private static bool IsFlush(Suit a, Suit b, Suit c, bool colorFlush)
+        {
+            if (colorFlush)
+            {
+                return FlushColor(a) == FlushColor(b) && FlushColor(b) == FlushColor(c);
+            }
+
+            return a == b && b == c;
+        }
+
+        private static int FlushColor(Suit suit)
+        {
+            return suit == Suit.Heart || suit == Suit.Diamond ? 0 : 1;
+        }
+
+        private static bool IsStraight(Rank a, Rank b, Rank c, bool gapped, out int high)
         {
             var keys = new[] { RankKey(a), RankKey(b), RankKey(c) };
             Array.Sort(keys);
-            if (keys[0] + 1 == keys[1] && keys[1] + 1 == keys[2])
+            if (TryStraightKeys(keys, gapped, out high))
+            {
+                return true;
+            }
+
+            if (keys[2] == 14)
+            {
+                var wheel = new[] { 1, keys[0], keys[1] };
+                Array.Sort(wheel);
+                if (TryStraightKeys(wheel, gapped, out high))
+                {
+                    return true;
+                }
+            }
+
+            high = 0;
+            return false;
+        }
+
+        private static bool TryStraightKeys(int[] keys, bool gapped, out int high)
+        {
+            high = 0;
+            if (keys == null || keys.Length < 3 || keys[0] == keys[1] || keys[1] == keys[2])
+            {
+                return false;
+            }
+
+            var d1 = keys[1] - keys[0];
+            var d2 = keys[2] - keys[1];
+            var maxGap = gapped ? 2 : 1;
+            if (d1 >= 1 && d1 <= maxGap && d2 >= 1 && d2 <= maxGap)
             {
                 high = keys[2];
                 return true;
             }
 
-            // A-2-3 wheel. Ace is stored as 14.
-            if (keys[0] == 2 && keys[1] == 3 && keys[2] == 14)
-            {
-                high = 3;
-                return true;
-            }
-
-            high = 0;
             return false;
         }
 

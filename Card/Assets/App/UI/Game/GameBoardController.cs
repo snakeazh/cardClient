@@ -11,6 +11,8 @@ namespace App.UI
     /// </summary>
     public sealed class GameBoardController : MonoBehaviour
     {
+        private const float RubLongPress = 0.1f;
+
         private GameTableViewModel _vm;
         private readonly CardTableAnimator _cards = new CardTableAnimator();
         private Camera _camera;
@@ -20,6 +22,9 @@ namespace App.UI
         private bool _rubGrabArmed;
         private Vector3 _lastMouse;
         private bool _rubCompleting;
+        private int _pressCard = -1;
+        private float _pressTime;
+        private bool _pressPending;
 
         public void Attach(GameTableViewModel viewModel)
         {
@@ -55,6 +60,7 @@ namespace App.UI
             }
 
             ClearRubDrag(cancelPreview: true);
+            ClearPress();
             _vm = null;
             enabled = false;
         }
@@ -67,9 +73,15 @@ namespace App.UI
             }
 
             // 搓牌按住拖拽时即使滑到 UI 上也继续累计。
-            if (_vm.Session.Phase == GamePhase.WaitingRub && _rubHolding)
+            if (_rubHolding)
             {
                 UpdateRubHold();
+                return;
+            }
+
+            if (_pressPending)
+            {
+                UpdateCardPress();
                 return;
             }
 
@@ -80,12 +92,6 @@ namespace App.UI
 
             if (_vm.Session.SelectingXRayTarget && Input.GetMouseButtonDown(0))
             {
-                if (_cards.HitPlayerCard(_camera) >= 0)
-                {
-                    _vm.Session.TryXRayPlayer();
-                    return;
-                }
-
                 var xraySlot = _cards.HitEnemySlot(_camera);
                 if (xraySlot >= 0)
                 {
@@ -99,13 +105,13 @@ namespace App.UI
                 var pick = _cards.HitPlayerCard(_camera);
                 if (pick >= 0)
                 {
-                    if (_vm.Session.Run.MagnifierThisRound && !_vm.Session.Run.PeekSuitUsed)
+                    if (_vm.Session.PlayerMayHoldRub)
                     {
-                        _vm.Session.PeekMagnifier(pick);
+                        BeginCardPress(pick);
                     }
                     else
                     {
-                        _vm.Session.TogglePlayerCard(pick);
+                        HandleOpenClick(pick);
                     }
 
                     return;
@@ -149,6 +155,69 @@ namespace App.UI
             }
         }
 
+        private void BeginCardPress(int index)
+        {
+            _pressCard = index;
+            _pressTime = Time.time;
+            _pressPending = true;
+        }
+
+        private void UpdateCardPress()
+        {
+            if (!_pressPending)
+            {
+                return;
+            }
+
+            if (Input.GetMouseButton(0))
+            {
+                if (_vm.Session.PlayerMayHoldRub && Time.time - _pressTime >= RubLongPress)
+                {
+                    var index = _pressCard;
+                    ClearPress();
+                    BeginHoldRub(index);
+                }
+
+                return;
+            }
+
+            var clickIndex = _pressCard;
+            ClearPress();
+            HandleOpenClick(clickIndex);
+        }
+
+        private void HandleOpenClick(int index)
+        {
+            if (index < 0 || _vm.Session.Phase != GamePhase.WaitingOpen)
+            {
+                return;
+            }
+
+            if (_vm.Session.Run.MagnifierThisRound && !_vm.Session.Run.PeekSuitUsed)
+            {
+                _vm.Session.PeekMagnifier(index);
+                return;
+            }
+
+            _vm.Session.TogglePlayerCard(index);
+        }
+
+        private void BeginHoldRub(int index)
+        {
+            // 先锁面再 Notify，避免 Sync 按 Looked 把牌翻回正面。
+            _cards.BeginRubPreview(index);
+            _rubPreviewIndex = index;
+            if (!_vm.Session.TryBeginHoldRub(index))
+            {
+                ClearRubDrag(cancelPreview: true);
+                return;
+            }
+
+            _rubHolding = true;
+            _rubGrabArmed = false;
+            _lastMouse = Input.mousePosition;
+        }
+
         private void BeginRubSelect(int index)
         {
             // 先锁面再 Notify，避免 Sync 按 Looked 把牌翻回正面。
@@ -160,7 +229,11 @@ namespace App.UI
                 }
 
                 _cards.BeginRubPreview(index);
-                _vm.Session.SelectRubCard(index);
+                if (_vm.Session.PendingRubIndex != index)
+                {
+                    _vm.Session.SelectRubCard(index);
+                }
+
                 _rubPreviewIndex = index;
             }
 
@@ -216,18 +289,20 @@ namespace App.UI
             var enough = _cards.IsRubShakeReady && enoughOffset && enoughTime;
             if (!enough)
             {
-                _cards.ResetRubShake();
-                _rubGrabArmed = false;
-                if (_cards.IsRubShakeReady)
+                var weak = _cards.IsRubShakeReady;
+                var tooWeak = weak && !enoughOffset;
+                ClearRubDrag(cancelPreview: true);
+                if (tooWeak)
                 {
-                    if (!enoughOffset)
-                    {
-                        _vm.Session.NotifyRubTooWeak();
-                    }
-                    else
-                    {
-                        _vm.Session.NotifyRubTooShort();
-                    }
+                    _vm.Session.CancelHoldRub("搓牌幅度不够，请再长按拖一次");
+                }
+                else if (weak)
+                {
+                    _vm.Session.CancelHoldRub("搓牌时间不够，请再搓久一点");
+                }
+                else
+                {
+                    _vm.Session.CancelHoldRub(null);
                 }
 
                 return;
@@ -249,6 +324,12 @@ namespace App.UI
             {
                 _rubCompleting = false;
             }
+        }
+
+        private void ClearPress()
+        {
+            _pressPending = false;
+            _pressCard = -1;
         }
 
         private void ClearRubDrag(bool cancelPreview)
@@ -277,6 +358,7 @@ namespace App.UI
 
             if (_vm.Session.Phase != GamePhase.WaitingRub && !_rubCompleting)
             {
+                ClearPress();
                 ClearRubDrag(cancelPreview: true);
             }
 

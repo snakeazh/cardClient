@@ -53,12 +53,11 @@ GameUI
 |------|------|----------|
 | `CompareBtn` | 开牌 | `WaitingOpen`，且已选 3 张 |
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | 搓牌 n / 透视 n / 替换 n | 始终在 `horBtns2`，没次数则禁用 |
-| `CancelBtn` | 取消 | 搓牌中，跳过搓牌 |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 
 以下节点仍在预制体里，当前流程**隐藏**：
 
-`BlindBtn`（闷注）、`LookBtn`（看牌）、`RaiseBtn` / `RaiseHighBtn`、`AllInBtn`、`FoldBtn`。
+`BlindBtn`（闷注）、`LookBtn`（看牌）、`RaiseBtn` / `RaiseHighBtn`、`AllInBtn`、`FoldBtn`、`CancelBtn`。
 
 ---
 
@@ -76,11 +75,11 @@ GameUI
 
 | 按钮 | 效果 |
 |------|------|
-| PeekGood | 进入搓牌；点选一张翻到背面，拖拽抖动后松手换牌 |
-| ChaKanGood | 点选角色：5 张先全部抬起，再 `SetBackSeeThrough` 透出牌面；开牌时改成最大 3 张 |
+| PeekGood | 点按钮在右侧弹出 `ItemTip`「长按牌即可拖拽来搓牌」；有次数时长按手牌翻到背面，拖拽后松手换牌 |
+| ChaKanGood | 点选敌人：5 张先全部抬起，再 `SetBackSeeThrough` 透出牌面；不能透视自己；开牌时改成最大 3 张 |
 | TiHuanGood | 自己 5 张全部换成新牌 |
 
-每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或取消回到开牌阶段。
+每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或松手未达标回到开牌阶段。
 
 人物卡攻击力 / 血量见 [`PlayerItem.md`](../../Item/PlayerItem.md)。  
 商店货架单卡见 [`ShopItem.md`](../../Item/ShopItem.md)。  

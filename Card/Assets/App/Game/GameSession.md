@@ -34,7 +34,7 @@
 ```
 StartNewRun / Continue
   → DealSerial++ ，牌桌播发牌
-  → WaitingOpen：点选 3 张，或搓牌 / 透视 / 替换
+  → WaitingOpen：点选 3 张，或长按搓牌 / 透视 / 替换
   → RequestShowdown（开牌）
       先 ResetEnemyOpenSelection（清掉透视时的 5 张全选）
       再对当前敌人 LockBestOpenCardsIfEnemy（锁最大 3 张）
@@ -52,11 +52,12 @@ StartNewRun / Continue
 | 方法 | 谁点 | 做什么 |
 |------|------|--------|
 | `TogglePlayerCard(i)` | 点自己的牌 | 选中/取消，最多 3 张，选中会抬起 |
-| `UsePeekGood()` | 搓牌 | 进入 `WaitingRub` |
+| `UsePeekGood()` | 搓牌按钮 | 不进搓牌，HUD 弹出长按提示 |
+| `TryBeginHoldRub(i)` / `CancelHoldRub()` | 长按手牌 / 松手未达标 | 进入 `WaitingRub`，或取消回到开牌 |
 | `SelectRubCard(i)` / `ClearRubSelection()` | 点选 / 松手未达标 | 记录待搓索引与提示 |
 | `RubCard(i)` / `SkipRub()` | 搓牌成功或取消 | 随机换一张，或跳过 |
 | `UseChaKanGood()` | 透视 | 开关 `SelectingXRayTarget` |
-| `TryXRayPlayer()` / `TryXRayEnemySlot(slot)` | 点角色或他的牌 | 见下节 |
+| `TryXRayEnemySlot(slot)` | 点敌人或他的牌 | 见下节 |
 | `UseTiHuanGood()` | 替换 | 自己 5 张全部换成新牌 |
 | `RequestShowdown()` | 开牌 | 与存活敌人逐个比牌 |
 | `CompletePlayerAttack()` | 攻击演出结束 | 结算伤害，打下一个 |
@@ -73,12 +74,11 @@ StartNewRun / Continue
 ## 透视
 
 1. 点 **透视** → `SelectingXRayTarget = true`。
-2. 再点一名角色（头像或他的牌，包括自己）。
+2. 再点一名敌人（头像或他的牌）。**不能透视自己的牌。**
 3. `TryXRaySeat`：
    - 该座位 5 张都标 `IsSpyRevealed`（背面透视用）。
-   - **敌人** 5 张全部 `CardSelected = true`（先抬起）。
-   - **自己** 不改你已经点选的 3 张，避免没法开牌。
-   - 写入 `seat.PeekedType`（牌型名；自己没选满 3 张则是「未选定开牌」），扣 1 次。
+   - 敌人 5 张全部 `CardSelected = true`（先抬起）。
+   - 写入 `seat.PeekedType`（牌型名），扣 1 次。
 4. 牌桌：先播抬牌（`SelectLiftDuration`），抬完再 `CardItem.SetBackSeeThrough(true)`，**不翻牌**。
 5. 开牌时 `ResetEnemyOpenSelection()` 清掉 5 张全选，再 `LockBestOpenCardsIfEnemy` 只抬最大牌型的 3 张，然后才翻面亮牌。
 

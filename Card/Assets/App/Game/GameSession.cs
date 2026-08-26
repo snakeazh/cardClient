@@ -52,6 +52,10 @@ namespace App.Game
         private int _loanCourageBonus;
         /// <summary>本关商店已按积分发放的金币，供双倍广告再发一份。</summary>
         private int _shopGoldGranted;
+        private int _rubsUsedThisHand;
+        private bool _rubbedThisHand;
+        private bool _playerCardsShownThisRound;
+        private bool _playerHandSettledThisRound;
         /// <summary>跨手记录玩家弃/加/看/闷，供 AI 读线。</summary>
         public readonly PlayerHistory History = new PlayerHistory();
 
@@ -100,6 +104,8 @@ namespace App.Game
         public IReadOnlyList<int> StageRoundScores =>
             ScoreSvc()?.StageRoundScores ?? Array.Empty<int>();
         public int PendingAttackDamage { get; private set; }
+        /// <summary>最近一次玩家伤害结算的遗物上下文，HUD 装备加成动画复用同一份掷骰。</summary>
+        public RelicCombatContext LastRelicContext { get; private set; }
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
         public int AttackDamage { get; private set; }
@@ -153,8 +159,14 @@ namespace App.Game
             Phase == GamePhase.WaitingLookChoice &&
             !Player.Looked &&
             !Player.Folded;
-        public bool PlayerMayCancelLookOrRub =>
-            Phase == GamePhase.WaitingRub;
+        public bool PlayerMayCancelLookOrRub => false;
+        /// <summary>开牌阶段且还有搓牌次数时，可长按手牌进入搓牌。</summary>
+        public bool PlayerMayHoldRub =>
+            !AiActing &&
+            !Player.Folded &&
+            Player.Looked &&
+            Phase == GamePhase.WaitingOpen &&
+            Run.PeekGoodCharges > 0;
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
@@ -192,6 +204,7 @@ namespace App.Game
             Run.BonusRubCharges = 0;
             Run.BonusXRayCharges = 0;
             Run.BonusReplaceCharges = 0;
+            Run.ClearRunProgress();
             Run.Log.Clear();
             if (AppServices.IsReady)
             {
@@ -227,8 +240,26 @@ namespace App.Game
             }
 
             _pendingRubIndex = index;
-            Hint = $"已选中第 {index + 1} 张：拖开并持续搓够时间后松手，幅度或时间不够需重搓";
+            Hint = $"已选中第 {index + 1} 张：拖开并持续搓够时间后松手";
             Notify();
+        }
+
+        /// <summary>长按手牌进入搓牌：翻到背面后拖拽，松手不够则取消。</summary>
+        public bool TryBeginHoldRub(int index)
+        {
+            if (!PlayerMayHoldRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
+            {
+                return false;
+            }
+
+            Player.Status = "已看牌";
+            SelectingXRayTarget = false;
+            Run.RubsLeft = 1;
+            _pendingRubIndex = index;
+            Phase = GamePhase.WaitingRub;
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。拖开并搓够时间后松手替换";
+            Notify();
+            return true;
         }
 
         public void NotifyRubTooWeak()
@@ -253,6 +284,21 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>长按搓牌未达标或松手取消，不消耗次数，回到开牌。</summary>
+        public void CancelHoldRub(string hint)
+        {
+            if (Phase != GamePhase.WaitingRub)
+            {
+                return;
+            }
+
+            _pendingRubIndex = -1;
+            Run.RubsLeft = 0;
+            ReturnToOpenReady(string.IsNullOrEmpty(hint)
+                ? "点选 3 张牌后开牌。可使用技能"
+                : hint);
+        }
+
         public void ClearRubSelection()
         {
             if (Phase != GamePhase.WaitingRub)
@@ -261,7 +307,7 @@ namespace App.Game
             }
 
             _pendingRubIndex = -1;
-            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。长按手牌拖开并搓够时间后松手替换";
             Notify();
         }
 
@@ -305,18 +351,20 @@ namespace App.Game
             {
                 Run.PeekGoodCharges--;
             }
+
+            _rubsUsedThisHand++;
+            _rubbedThisHand = true;
+            if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
+            {
+                Run.RubRelicMagForever += RelicMechanics.SumValue(Run, MechanismType.RubbingCardRelic);
+            }
+
             _pendingRubIndex = -1;
             Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
-
-            if (Run.RubsLeft > 0)
-            {
-                Hint = $"{Run.LastRubMessage}。还可再搓 {Run.RubsLeft} 次，或点取消跳过";
-                Notify();
-                return;
-            }
-
-            ReturnToOpenReady(Run.LastRubMessage);
+            ReturnToOpenReady(Run.PeekGoodCharges > 0
+                ? $"{Run.LastRubMessage}。还可长按搓牌 {Run.PeekGoodCharges} 次"
+                : Run.LastRubMessage);
         }
 
         public void CancelLookOrRub()
@@ -523,6 +571,7 @@ namespace App.Game
             ResolveAiStreet();
         }
 
+        /// <summary>点击搓牌按钮：不进入搓牌阶段，由 HUD 弹出长按提示。</summary>
         public void UsePeekGood()
         {
             if (!PlayerMayUsePeekGood)
@@ -530,12 +579,7 @@ namespace App.Game
                 return;
             }
 
-            Player.Status = "已看牌";
-            Run.RubsLeft = 1;
-            _pendingRubIndex = -1;
-            Phase = GamePhase.WaitingRub;
-            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选手牌翻面，拖开并搓够时间后松手替换";
-            Log("使用技能：搓牌");
+            Hint = "长按牌即可拖拽来搓牌";
             Notify();
         }
 
@@ -548,19 +592,13 @@ namespace App.Game
 
             SelectingXRayTarget = !SelectingXRayTarget;
             Hint = SelectingXRayTarget
-                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名角色透视其手牌"
+                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名敌人透视其手牌"
                 : "已取消透视";
             Notify();
         }
 
         public void TryXRayPlayer()
         {
-            if (!SelectingXRayTarget)
-            {
-                return;
-            }
-
-            TryXRaySeat(Player);
         }
 
         public void TryXRayEnemySlot(int visualSlot)
@@ -617,12 +655,12 @@ namespace App.Game
 
         private void TryXRaySeat(SeatState seat)
         {
-            if (!PlayerMayUseChaKanGood || seat == null || !HasHand(seat))
+            if (!PlayerMayUseChaKanGood || seat == null || !HasHand(seat) || seat.IsPlayer)
             {
                 return;
             }
 
-            if (!seat.IsPlayer && (!seat.Alive || seat.Folded))
+            if (!seat.Alive || seat.Folded)
             {
                 return;
             }
@@ -638,16 +676,11 @@ namespace App.Game
             for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
-                if (!seat.IsPlayer)
-                {
-                    seat.CardSelected[i] = true;
-                }
+                seat.CardSelected[i] = true;
             }
 
             var score = EvaluateSeat(seat);
-            seat.PeekedType = seat.IsPlayer && seat.CountSelectedCards() != GameBalance.OpenHandSize
-                ? "未选定开牌"
-                : score.Label;
+            seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
@@ -976,7 +1009,7 @@ namespace App.Game
             var targetScore = EvaluateSeat(enemy);
             _pendingOpener = Player;
             _pendingOpenTarget = enemy;
-            _pendingOpenerWins = openScore.CompareTo(targetScore) > 0;
+            _pendingOpenerWins = OpenerWinsCompare(Player, openScore, enemy, targetScore);
             _pendingWinner = _pendingOpenerWins ? Player : enemy;
             _pendingBest = _pendingOpenerWins ? openScore : targetScore;
             BeginRevealPlay(RevealKind.OpenDuel, BuildDuelRevealOrder(Player, enemy), _pendingWinner);
@@ -1020,9 +1053,11 @@ namespace App.Game
 
             var openScore = opener != null ? EvaluateSeat(opener) : default;
             var targetScore = target != null ? EvaluateSeat(target) : default;
+            NotifyPlayerShowdown(openScore, _pendingOpenerWins);
             if (_pendingOpenerWins)
             {
                 var damage = ComputeAttackDamage(opener, openScore, target);
+                TryApplyPermanentCardBonuses(openScore);
                 PendingAttackDamage = damage;
                 AttackLevel = MapAttackLevel(openScore.Type);
                 LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {damage} 伤害";
@@ -1040,6 +1075,7 @@ namespace App.Game
             }
 
             var loss = ComputeAttackDamage(target, targetScore, opener);
+            TryApplyPermanentCardBonuses(openScore);
             PendingAttackDamage = loss;
             AttackLevel = MapAttackLevel(targetScore.Type);
             LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {loss} 伤害";
@@ -1069,13 +1105,26 @@ namespace App.Game
             }
 
             var mag = HandTypeMagnification(score.Type);
-            var extra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score) : 0f;
-            var attackExtra = attacker.IsPlayer ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score)) : 0;
+            var ctx = RelicCombatContext.Empty;
+            if (attacker.IsPlayer)
+            {
+                ctx = RelicMechanics.BuildCombatContext(
+                    Run,
+                    score,
+                    CollectUnshownCards(attacker),
+                    _rubsUsedThisHand,
+                    _rubbedThisHand,
+                    _rng);
+                LastRelicContext = ctx;
+            }
+
+            var extra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score, ctx) : 0f;
+            var attackExtra = attacker.IsPlayer ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx)) : 0;
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             var totalMag = (mag + extra) * flint;
             // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
             var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack + attackExtra, score.BaseChips, totalMag);
-            LogAttackDamage(attacker, defender, score, extra, attackExtra, mag, flint, totalMag, damage);
+            LogAttackDamage(attacker, defender, score, extra, attackExtra, mag, flint, totalMag, damage, ctx);
             return damage;
         }
 
@@ -1088,7 +1137,8 @@ namespace App.Game
             float mag,
             float flint,
             float totalMag,
-            int damage)
+            int damage,
+            RelicCombatContext ctx)
         {
             var atk = Math.Max(0, attacker.Attack);
             var chips = Math.Max(0, score.BaseChips);
@@ -1096,35 +1146,59 @@ namespace App.Game
             var vs = defender != null ? $"→{defender.Name}" : string.Empty;
             var beats = score.BeatsAll ? " 通杀" : string.Empty;
             var cards = FormatUsedCards(score);
-            var parts = attacker.IsPlayer ? RelicMechanics.CollectMultiplierParts(Run, score) : string.Empty;
+            var parts = attacker.IsPlayer ? RelicMechanics.CollectMultiplierParts(Run, score, ctx) : string.Empty;
+            var attackParts = attacker.IsPlayer ? RelicMechanics.CollectAttackParts(Run, score, ctx) : string.Empty;
             var relicText = extra == 0f
                 ? "遗物+0"
                 : string.IsNullOrEmpty(parts)
                     ? $"遗物+{extra}"
                     : $"遗物+{extra} ({parts})";
-            var attackRelic = attackExtra == 0 ? string.Empty : $" + 遗物攻{attackExtra}";
+            var attackRelic = attackExtra == 0
+                ? string.Empty
+                : string.IsNullOrEmpty(attackParts)
+                    ? $" + 遗物攻{attackExtra}"
+                    : $" + 遗物攻{attackExtra} ({attackParts})";
+            var contextLine = string.Empty;
+            if (attacker.IsPlayer)
+            {
+                var unshown = FormatCardList(ctx.Unshown);
+                contextLine =
+                    $"  未亮出 {unshown} | 搓牌已用{ctx.RubsUsedThisHand} 剩余{ctx.PeekLeft}" +
+                    $" 透视{ctx.XRayLeft} 替换{ctx.ReplaceLeft} | 幸运七x{ctx.LuckySevenHits}\n";
+            }
+
             AppLog.Info(
                 LogChannel.Game,
                 $"伤害 {attacker.Name}{vs} | {HandEvaluator.TypeName(score.Type)}{beats} {cards}\n" +
                 $"  攻击{atk}{attackRelic} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
+                contextLine +
                 $"  {effective} x {totalMag} = {damage}");
         }
 
         private static string FormatUsedCards(HandScore score)
         {
-            var cards = score.UsedCards;
+            return FormatCardList(score.UsedCards);
+        }
+
+        private static string FormatCardList(Card[] cards)
+        {
             if (cards == null || cards.Length == 0)
             {
-                return string.Empty;
+                return "无";
             }
 
-            var text = cards[0].DisplayName;
+            var text = cards[0].IsValid ? cards[0].DisplayName : string.Empty;
             for (var i = 1; i < cards.Length; i++)
             {
+                if (!cards[i].IsValid)
+                {
+                    continue;
+                }
+
                 text += cards[i].DisplayName;
             }
 
-            return text;
+            return string.IsNullOrEmpty(text) ? "无" : text;
         }
 
         public static float HandTypeMagnification(HandType type)
@@ -1230,12 +1304,17 @@ namespace App.Game
             }
         }
 
+        /// <summary>会员卡免费刷新时为 0，否则为下次付费刷新价。</summary>
+        public int EffectiveShopRefreshCost => Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost;
+
+        public int EffectiveSellPrice(int relicId) => RelicMechanics.SellPrice(Run, relicId);
+
         public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
 
         public bool CanRefreshShop =>
             Phase == GamePhase.Shop &&
-            Run.Gold >= ShopRefreshCost &&
-            HasUnownedRelicConfig();
+            HasUnownedRelicConfig() &&
+            (Run.FreeShopRefreshLeft > 0 || RelicMechanics.CanAfford(Run, ShopRefreshCost));
 
         public void RefreshShopOffers()
         {
@@ -1251,15 +1330,28 @@ namespace App.Game
                 return;
             }
 
+            var free = Run.FreeShopRefreshLeft > 0;
             var cost = ShopRefreshCost;
-            if (Run.Gold < cost)
+            if (!free && !RelicMechanics.CanAfford(Run, cost))
             {
                 Hint = "金币不足";
                 Notify();
                 return;
             }
 
-            Run.Gold -= cost;
+            if (free)
+            {
+                Run.FreeShopRefreshLeft--;
+                RollShopOffers();
+                Log($"免费刷新商店（会员卡，下次 {ShopRefreshCost} 金币）");
+                Hint = Run.FreeShopRefreshLeft > 0
+                    ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
+                    : $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
+                Notify();
+                return;
+            }
+
+            SpendGold(cost);
             Run.ShopRefreshCount++;
             RollShopOffers();
             Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
@@ -1299,17 +1391,19 @@ namespace App.Game
                 return;
             }
 
-            if (Run.Gold < relic.Price)
+            if (!RelicMechanics.CanAfford(Run, relic.Price))
             {
-                Hint = "金币不足";
+                Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
+                    ? "超出白条额度"
+                    : "金币不足";
                 Notify();
                 return;
             }
 
-            Run.Gold -= relic.Price;
+            SpendGold(relic.Price);
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
-            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.MaxHp)));
+            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
             Log($"购入遗物 {relic.Name}");
             Hint = $"已购买 {relic.Name}";
             Notify();
@@ -1336,9 +1430,10 @@ namespace App.Game
             }
 
             Run.RelicConfigIds.Remove(relicId);
-            Run.Gold += Math.Max(0, relic.SellingPrice);
-            ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.MaxHp)));
-            Log($"出售遗物 {relic.Name}，获得 {relic.SellingPrice} 金币");
+            var sell = RelicMechanics.SellPrice(Run, relicId);
+            Run.Gold += sell;
+            ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+            Log($"出售遗物 {relic.Name}，获得 {sell} 金币");
             Hint = $"已出售 {relic.Name}";
             Notify();
         }
@@ -1521,7 +1616,7 @@ namespace App.Game
         /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物加在牌型倍率上。</summary>
         public float RelicMultiplier(HandScore score)
         {
-            var extra = RelicMechanics.SumMultiplierExtra(Run, score);
+            var extra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext);
             var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
             return (1f + extra) * flint;
         }
@@ -1560,8 +1655,9 @@ namespace App.Game
         public HandScore EvaluateSeat(SeatState seat)
         {
             GetScoreBan(out var banned, out var banFaces);
-            var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces), banned, banFaces);
-            if (seat != null && seat.IsPlayer && RelicMechanics.HasMechanism(Run, MechanismType.TwoThreeFive))
+            var rules = GetHandEvalRules(seat);
+            var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces, rules), banned, banFaces, rules);
+            if (seat != null && seat.IsPlayer && RelicMechanics.HasMechanism(Run, MechanismType.SpecialTwoThreeFive))
             {
                 score = RelicMechanics.ApplyTwoThreeFive(score);
             }
@@ -1581,9 +1677,165 @@ namespace App.Game
             return score;
         }
 
+        private HandEvalRules GetHandEvalRules(SeatState seat)
+        {
+            if (seat == null || !seat.IsPlayer)
+            {
+                return default;
+            }
+
+            return new HandEvalRules(
+                RelicMechanics.HasMechanism(Run, MechanismType.SpecialFlush),
+                RelicMechanics.HasMechanism(Run, MechanismType.SpecialStraight));
+        }
+
+        private static bool OpenerWinsCompare(
+            SeatState opener,
+            HandScore openScore,
+            SeatState target,
+            HandScore targetScore)
+        {
+            var cmp = openScore.CompareTo(targetScore);
+            if (opener != null && opener.IsPlayer && (target == null || !target.IsPlayer))
+            {
+                return cmp >= 0;
+            }
+
+            if (target != null && target.IsPlayer && (opener == null || !opener.IsPlayer))
+            {
+                return cmp > 0;
+            }
+
+            return cmp > 0;
+        }
+
+        private void NotifyPlayerShowdown(HandScore playerScore, bool playerWon)
+        {
+            if (playerScore.UsedCards == null || playerScore.UsedCards.Length == 0)
+            {
+                return;
+            }
+
+            OnPlayerCardsShown(playerScore);
+            if (playerWon)
+            {
+                ApplyPlayerWinGold(playerScore);
+            }
+        }
+
+        private void OnPlayerCardsShown(HandScore score)
+        {
+            if (_playerCardsShownThisRound)
+            {
+                return;
+            }
+
+            _playerCardsShownThisRound = true;
+            Run.AddHandTypeShowCount(score.Type);
+        }
+
+        private void TryApplyPermanentCardBonuses(HandScore score)
+        {
+            if (_playerHandSettledThisRound)
+            {
+                return;
+            }
+
+            _playerHandSettledThisRound = true;
+            if (RelicMechanics.HasMechanism(Run, MechanismType.EveryCardAttackForever) && score.UsedCards != null)
+            {
+                var delta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryCardAttackForever));
+                if (delta != 0)
+                {
+                    for (var i = 0; i < score.UsedCards.Length; i++)
+                    {
+                        Run.AddRankAttackBonus(score.UsedCards[i].Rank, delta);
+                    }
+                }
+            }
+
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.ProOfUpCardType)
+                {
+                    return;
+                }
+
+                if (_rng.NextDouble() < entry.Value)
+                {
+                    Run.AddHandTypeMagBonus(score.Type, 1f);
+                    Log($"天使：{HandEvaluator.TypeName(score.Type)} 倍率永久 +1");
+                }
+            });
+        }
+
+        private void ApplyPlayerWinGold(HandScore score)
+        {
+            var cards = score.UsedCards;
+            if (cards == null)
+            {
+                return;
+            }
+
+            var allFace = RelicMechanics.HasMechanism(Run, MechanismType.AllCardIsHeadCard);
+            var headChance = RelicMechanics.SumValue(Run, MechanismType.ProOfHeadCardFunds);
+            var nineGold = RelicMechanics.SumValue(Run, MechanismType.SpecialNineCard);
+            var gained = 0;
+            for (var i = 0; i < cards.Length; i++)
+            {
+                var card = cards[i];
+                if ((allFace || card.IsFace) && headChance > 0f && _rng.NextDouble() < headChance)
+                {
+                    gained += 1;
+                }
+
+                if (card.Rank == Rank.Nine && nineGold != 0f)
+                {
+                    gained += (int)Math.Round(nineGold);
+                }
+            }
+
+            if (gained == 0)
+            {
+                return;
+            }
+
+            Run.Gold += gained;
+            Log($"亮牌结算 +{gained} 金币（总金币 {Run.Gold}）");
+        }
+
+        private void ApplyKillSellBonus()
+        {
+            RelicMechanics.ForEachEntry(Run, (relic, entry) =>
+            {
+                if (relic == null || entry.Type != MechanismType.KillAfterSellingPrice)
+                {
+                    return;
+                }
+
+                var delta = (int)Math.Round(entry.Value);
+                if (delta != 0)
+                {
+                    Run.AddRelicSellPriceBonus(relic.Id, delta);
+                }
+            });
+        }
+
+        private void SpendGold(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            Run.Gold -= amount;
+            Run.GoldSpentThisRun += amount;
+        }
+
         private void ResetSkillCharges()
         {
-            Run.PeekGoodCharges = GameBalance.SkillRubUses + Run.BonusRubCharges;
+            var rubDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
+            Run.PeekGoodCharges = Math.Max(0, GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta);
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
@@ -1632,6 +1884,11 @@ namespace App.Game
             Pot = 0;
             AdvanceStageBetRound();
             ResetSkillCharges();
+            _rubsUsedThisHand = 0;
+            _rubbedThisHand = false;
+            _playerCardsShownThisRound = false;
+            _playerHandSettledThisRound = false;
+            LastRelicContext = RelicCombatContext.Empty;
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
@@ -2580,7 +2837,7 @@ namespace App.Game
             LockBestOpenCardsIfEnemy(target);
             var openScore = EvaluateSeat(opener);
             var targetScore = EvaluateSeat(target);
-            _pendingOpenerWins = openScore.CompareTo(targetScore) > 0;
+            _pendingOpenerWins = OpenerWinsCompare(opener, openScore, target, targetScore);
             _pendingOpener = opener;
             _pendingOpenTarget = target;
             _pendingWinner = _pendingOpenerWins ? opener : target;
@@ -2773,6 +3030,8 @@ namespace App.Game
             AwardPots();
             var playerScore = EvaluateSeat(Player);
             var playerWin = winner.IsPlayer;
+            NotifyPlayerShowdown(playerScore, playerWin);
+            TryApplyPermanentCardBonuses(playerScore);
             LastResult = FormatShowdownLine(winner, best, playerScore, playerWin, potSnap);
             Log(LastResult);
 
@@ -2825,6 +3084,20 @@ namespace App.Game
 
             var openScore = opener != null ? EvaluateSeat(opener) : default;
             var targetScore = target != null ? EvaluateSeat(target) : default;
+            var playerScore = opener != null && opener.IsPlayer
+                ? openScore
+                : target != null && target.IsPlayer
+                    ? targetScore
+                    : default;
+            var playerWon = opener != null && opener.IsPlayer
+                ? _pendingOpenerWins
+                : target != null && target.IsPlayer && !_pendingOpenerWins;
+            if ((opener != null && opener.IsPlayer) || (target != null && target.IsPlayer))
+            {
+                NotifyPlayerShowdown(playerScore, playerWon);
+                TryApplyPermanentCardBonuses(playerScore);
+            }
+
             if (_pendingOpenerWins)
             {
                 if (target != null)
@@ -2924,7 +3197,7 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
-        private static Card[] CollectEvalCards(SeatState seat, Suit? banned, bool banFaces)
+        private static Card[] CollectEvalCards(SeatState seat, Suit? banned, bool banFaces, HandEvalRules rules)
         {
             if (seat == null || seat.Hand == null)
             {
@@ -2942,10 +3215,37 @@ namespace App.Game
                     seat.Hand,
                     GameBalance.CardsDealt(false),
                     banned,
-                    banFaces);
+                    banFaces,
+                    rules);
             }
 
             return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
+        }
+
+        private Card[] CollectUnshownCards(SeatState seat)
+        {
+            if (seat?.Hand == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            var picked = new List<Card>(2);
+            var dealt = Math.Min(GameBalance.CardsDealt(seat.IsPlayer), seat.Hand.Length);
+            var selected = seat.CardSelected;
+            for (var i = 0; i < dealt; i++)
+            {
+                if (selected != null && i < selected.Length && selected[i])
+                {
+                    continue;
+                }
+
+                if (seat.Hand[i].IsValid)
+                {
+                    picked.Add(seat.Hand[i]);
+                }
+            }
+
+            return picked.ToArray();
         }
 
         private string FormatPlayerHand()
@@ -3151,6 +3451,15 @@ namespace App.Game
             }
 #endif
 
+            if (ReferenceEquals(target, Player))
+            {
+                var take = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage));
+                if (take != 0)
+                {
+                    damage = Math.Max(1, damage + take);
+                }
+            }
+
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
             if (dealt < damage)
             {
@@ -3161,11 +3470,25 @@ namespace App.Game
             HpSvc()?.Damage(target.Id, dealt);
             target.Banner = main ? $"-{dealt}" : $"溅射 -{dealt}";
             Log($"攻击 {target.Name} {dealt}，剩余 HP {target.Hp}");
+            if (ReferenceEquals(target, Player) && dealt > 0)
+            {
+                var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TakeDamageGetFunds));
+                if (gold != 0)
+                {
+                    Run.Gold += gold;
+                    Log($"补偿金 +{gold} 金币（总金币 {Run.Gold}）");
+                }
+            }
+
             if (target.Hp <= 0)
             {
                 target.Hp = 0;
                 target.Status = "阵亡";
                 Log($"击杀 {target.Name}");
+                if (!target.IsPlayer)
+                {
+                    ApplyKillSellBonus();
+                }
             }
 
             return dealt;
@@ -3260,6 +3583,7 @@ namespace App.Game
             Log($"关卡结算：本关积分 {stage} → {gold} 金币（章节累计 {total}，总金币 {Run.Gold}）");
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
+            Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
             RollShopOffers();
             Hint = $"关卡胜利！本关 {stage} 积分兑换 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
@@ -3648,7 +3972,7 @@ namespace App.Game
             Player.ActiveInStage = true;
             Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
             var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
-            maxHp += (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.MaxHp));
+            maxHp += (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.HeroHpMax));
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
             ApplySeatHp(Player, hp, maxHp);
             Player.Attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
@@ -3673,7 +3997,7 @@ namespace App.Game
 
         private void ApplyEveryRoundHpUp()
         {
-            HealPlayer((int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundHpUp)));
+            HealPlayer((int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.HeroHpReplyEveryRoundEnding)));
         }
 
         private void ApplyBloodSucking(int dealt)

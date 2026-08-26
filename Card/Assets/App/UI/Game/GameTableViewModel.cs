@@ -57,7 +57,7 @@ namespace App.UI
                 () => Session.RequestShowdown(),
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
-            PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
+            PeekGoodCommand = new RelayCommand(OnPeekGoodClicked, () => Session.PlayerMayUsePeekGood);
             ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
             XRayPlayerCommand = new RelayCommand(
                 () => Session.TryXRayPlayer(),
@@ -168,6 +168,8 @@ namespace App.UI
         public IRelayCommand FoldCommand { get; }
         public IRelayCommand OpenCommand { get; }
         public IRelayCommand AllInCommand { get; }
+        public event Action PeekGoodTipRequested;
+
         public IRelayCommand PeekGoodCommand { get; }
         public IRelayCommand ChaKanGoodCommand { get; }
         public IRelayCommand XRayPlayerCommand { get; }
@@ -312,6 +314,12 @@ namespace App.UI
         protected override void OnDispose()
         {
             Session.Changed -= Refresh;
+        }
+
+        private void OnPeekGoodClicked()
+        {
+            Session.UsePeekGood();
+            PeekGoodTipRequested?.Invoke();
         }
 
         private async void TryPresentFailPopup()
@@ -564,10 +572,14 @@ namespace App.UI
         private void RefreshCardInfo()
         {
             IsHandSettling = ShouldShowCardInfo(Session);
-            if (!IsHandSettling || Session.Player == null)
+            if (!IsHandSettling || Session.Player == null || Session.IncomingAttack)
             {
                 ShowCardInfo.Value = false;
-                CardTypeNum.Value = string.Empty;
+                if (!IsHandSettling)
+                {
+                    CardTypeNum.Value = string.Empty;
+                }
+
                 return;
             }
 

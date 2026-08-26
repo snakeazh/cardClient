@@ -32,6 +32,11 @@ namespace App.Config
         public float Critical;
 
         /// <summary>
+        /// 暴击伤害
+        /// </summary>
+        public float CriticalDamage;
+
+        /// <summary>
         /// 形象icon
         /// </summary>
         public string Icon;

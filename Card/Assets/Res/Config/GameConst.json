@@ -10,5 +10,10 @@
   "ShopRefreshGoldUpNumMax": 3,
   "GoldIcon": "coin",
   "TalentChestNeedGold": 10,
-  "PlayerInitialGoldNum": 120
+  "PlayerInitialGoldNum": 140,
+  "DamageTurnToGold": [
+    12,
+    1
+  ],
+  "KillMonsterGetGold": 8
 }

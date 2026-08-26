@@ -71,6 +71,16 @@ namespace App.Config
         /// </summary>
         public int PlayerInitialGoldNum;
 
+        /// <summary>
+        /// 局内伤害与金币的转换比例
+        /// </summary>
+        public int[] DamageTurnToGold;
+
+        /// <summary>
+        /// 每击杀一名敌人给予结算金币加成
+        /// </summary>
+        public int KillMonsterGetGold;
+
     }
 }
 

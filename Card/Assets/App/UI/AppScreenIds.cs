@@ -19,6 +19,7 @@ namespace App.UI
         public const string TalentPopup = "App.TalentPopup";
         public const string TalentDetail = "App.TalentDetail";
         public const string LevelUI = "App.LevelUI";
+        public const string ToastPanel = "App.ToastPanel";
     }
 }
 

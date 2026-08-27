@@ -82,7 +82,7 @@ StartNewRun / Continue
    - 敌人 5 张全部 `CardSelected = true`（先抬起）。
    - 写入 `seat.PeekedType`（牌型名），扣 1 次。
 4. 牌桌：先播抬牌（`SelectLiftDuration`），抬完再 `CardItem.SetBackSeeThrough(true)`，**不翻牌**。
-5. 开牌时 `ResetEnemyOpenSelection()` 清掉 5 张全选，再 `LockBestOpenCardsIfEnemy` 只抬最大牌型的 3 张，然后才翻面亮牌。
+5. 开牌时 `ResetEnemyOpenSelection()` 清掉 5 张全选，再 `LockBestOpenCardsIfEnemy` 只锁最大牌型的 3 张并翻面亮牌（不抬起）。
 
 同一座位本手只能透视一次。
 

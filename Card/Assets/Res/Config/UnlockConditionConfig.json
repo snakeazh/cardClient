@@ -1,0 +1,58 @@
+[
+  {
+    "Id": 1001,
+    "Type": 1,
+    "StackedValue": 1,
+    "Value": 40,
+    "Desc": "击杀40只敌人后解锁"
+  },
+  {
+    "Id": 1002,
+    "Type": 2,
+    "StackedValue": 1,
+    "Value": 90,
+    "Desc": "使用90次搓牌后解锁"
+  },
+  {
+    "Id": 1003,
+    "Type": 3,
+    "StackedValue": 1,
+    "Value": 25,
+    "Desc": "刷新25次商店后解锁"
+  },
+  {
+    "Id": 1004,
+    "Type": 4,
+    "StackedValue": 1,
+    "Value": 30,
+    "Desc": "亮出30次顺子后解锁"
+  },
+  {
+    "Id": 1005,
+    "Type": 5,
+    "StackedValue": 1,
+    "Value": 5,
+    "Desc": "亮出5次散牌235后解锁"
+  },
+  {
+    "Id": 1006,
+    "Type": 6,
+    "StackedValue": 1,
+    "Value": 90,
+    "Desc": "使用搓牌并战胜90次敌人解锁"
+  },
+  {
+    "Id": 1007,
+    "Type": 2,
+    "StackedValue": 1,
+    "Value": 180,
+    "Desc": "使用180次搓牌后解锁"
+  },
+  {
+    "Id": 1008,
+    "Type": 7,
+    "StackedValue": 1,
+    "Value": 50,
+    "Desc": "亮出50次数字牌7后解锁"
+  }
+]

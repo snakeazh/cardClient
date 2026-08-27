@@ -47,6 +47,11 @@ namespace App.Config
         public int[] MechanismId;
 
         /// <summary>
+        /// 解锁条件ID
+        /// </summary>
+        public int UnlockConditionId;
+
+        /// <summary>
         /// 描述
         /// </summary>
         public string Desc;

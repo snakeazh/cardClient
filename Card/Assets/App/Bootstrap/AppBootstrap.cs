@@ -39,6 +39,7 @@ namespace App.Bootstrap
 
             await RegisterAtlas(_services, _resources.Resources);
             await CardShadowPool.PreloadAsync(_resources.Resources);
+            await AttackTuningConfig.PreloadAsync(_resources.Resources);
 
             _services.Register(SaveFramework.Create());
             _services.Register(new GameSession());

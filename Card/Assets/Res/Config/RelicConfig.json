@@ -10,6 +10,7 @@
     "MechanismId": [
       10001
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算时提供+1倍率"
   },
   {
@@ -23,6 +24,7 @@
     "MechanismId": [
       10002
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张方片牌在结算时提供+1倍率"
   },
   {
@@ -36,6 +38,7 @@
     "MechanismId": [
       10003
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
   },
   {
@@ -49,6 +52,7 @@
     "MechanismId": [
       10004
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张红心牌在结算时提供+1倍率"
   },
   {
@@ -62,6 +66,7 @@
     "MechanismId": [
       10005
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
   },
   {
@@ -75,6 +80,7 @@
     "MechanismId": [
       10006
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的对子牌型在结算时提供+2倍率"
   },
   {
@@ -88,6 +94,7 @@
     "MechanismId": [
       10007
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的顺子牌型在结算时提供+2倍率"
   },
   {
@@ -101,6 +108,7 @@
     "MechanismId": [
       10008
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的同花牌型在结算时提供+2倍率"
   },
   {
@@ -114,6 +122,7 @@
     "MechanismId": [
       10009
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+2倍率"
   },
   {
@@ -127,6 +136,7 @@
     "MechanismId": [
       10010
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的豹子牌型在结算时提供+2倍率"
   },
   {
@@ -140,6 +150,7 @@
     "MechanismId": [
       10011
     ],
+    "UnlockConditionId": 0,
     "Desc": "每次受到的伤害降低1点"
   },
   {
@@ -153,6 +164,7 @@
     "MechanismId": [
       20001
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张方片牌在结算时提供+2攻击力"
   },
   {
@@ -166,6 +178,7 @@
     "MechanismId": [
       20002
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+2攻击力"
   },
   {
@@ -179,6 +192,7 @@
     "MechanismId": [
       20003
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张红心牌在结算时提供+2攻击力"
   },
   {
@@ -192,6 +206,7 @@
     "MechanismId": [
       20004
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+2攻击力"
   },
   {
@@ -205,6 +220,7 @@
     "MechanismId": [
       20005
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的对子牌型在结算时提供+4攻击力"
   },
   {
@@ -218,6 +234,7 @@
     "MechanismId": [
       20006
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的顺子牌型在结算时提供+6攻击力"
   },
   {
@@ -231,6 +248,7 @@
     "MechanismId": [
       20007
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的同花牌型在结算时提供+6攻击力"
   },
   {
@@ -244,6 +262,7 @@
     "MechanismId": [
       20008
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+6攻击力"
   },
   {
@@ -257,6 +276,7 @@
     "MechanismId": [
       20009
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的豹子牌型在结算时提供+6攻击力"
   },
   {
@@ -271,6 +291,7 @@
       20010,
       200101
     ],
+    "UnlockConditionId": 0,
     "Desc": "获得30点生命值上限,每回合结束后恢复2点当前生命值"
   },
   {
@@ -284,6 +305,7 @@
     "MechanismId": [
       20011
     ],
+    "UnlockConditionId": 0,
     "Desc": "可以负债,最多-50金币"
   },
   {
@@ -297,6 +319,7 @@
     "MechanismId": [
       20012
     ],
+    "UnlockConditionId": 0,
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+1倍率"
   },
   {
@@ -310,6 +333,7 @@
     "MechanismId": [
       20013
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张人头牌在结算时提供+2攻击力"
   },
   {
@@ -323,6 +347,7 @@
     "MechanismId": [
       20014
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张人头牌在结算时有20%概率+1金币"
   },
   {
@@ -336,6 +361,7 @@
     "MechanismId": [
       20015
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+2倍率"
   },
   {
@@ -349,6 +375,7 @@
     "MechanismId": [
       20016
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+2倍率"
   },
   {
@@ -362,6 +389,7 @@
     "MechanismId": [
       20017
     ],
+    "UnlockConditionId": 0,
     "Desc": "每花费20资金,英雄+1攻击力"
   },
   {
@@ -375,6 +403,7 @@
     "MechanismId": [
       20018
     ],
+    "UnlockConditionId": 0,
     "Desc": "每次受到伤害时,+10金币"
   },
   {
@@ -388,6 +417,7 @@
     "MechanismId": [
       30001
     ],
+    "UnlockConditionId": 1001,
     "Desc": "造成伤害时,获得2%的生命窃取"
   },
   {
@@ -401,6 +431,7 @@
     "MechanismId": [
       30002
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的牌点数提供的攻击力加成翻倍"
   },
   {
@@ -414,6 +445,7 @@
     "MechanismId": [
       30003
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算伤害时,会将留在手牌上最大的牌点数转化为额外攻击力"
   },
   {
@@ -427,6 +459,7 @@
     "MechanismId": [
       30004
     ],
+    "UnlockConditionId": 1002,
     "Desc": "每回合内,每搓1次牌,结算时提供的倍率+1"
   },
   {
@@ -440,6 +473,7 @@
     "MechanismId": [
       30005
     ],
+    "UnlockConditionId": 1003,
     "Desc": "每次进入商店提供1次免费刷新的机会"
   },
   {
@@ -453,6 +487,7 @@
     "MechanismId": [
       30006
     ],
+    "UnlockConditionId": 1004,
     "Desc": "顺子牌型可以相隔1点组成"
   },
   {
@@ -466,6 +501,7 @@
     "MechanismId": [
       30007
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张8在结算时提供+6攻击力"
   },
   {
@@ -479,6 +515,7 @@
     "MechanismId": [
       30008
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+2倍率"
   },
   {
@@ -492,6 +529,7 @@
     "MechanismId": [
       30009
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+2倍率"
   },
   {
@@ -505,6 +543,7 @@
     "MechanismId": [
       30010
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张人头牌在结算时提供+3倍率"
   },
   {
@@ -518,6 +557,7 @@
     "MechanismId": [
       30011
     ],
+    "UnlockConditionId": 0,
     "Desc": "每击杀1名敌人,该收藏品的出售价格+5金币"
   },
   {
@@ -531,6 +571,7 @@
     "MechanismId": [
       30012
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张牌的点数在结算时会使其提供的攻击力永久+1"
   },
   {
@@ -544,6 +585,7 @@
     "MechanismId": [
       30013
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张9在结算时提供10金币"
   },
   {
@@ -557,6 +599,7 @@
     "MechanismId": [
       40001
     ],
+    "UnlockConditionId": 1005,
     "Desc": "散排235牌型等同于豹子牌型,并且可以战胜所有牌型"
   },
   {
@@ -570,6 +613,7 @@
     "MechanismId": [
       40002
     ],
+    "UnlockConditionId": 1006,
     "Desc": "获得500点生命值上限"
   },
   {
@@ -583,6 +627,7 @@
     "MechanismId": [
       40003
     ],
+    "UnlockConditionId": 0,
     "Desc": "红桃和方片视为同一花色,黑桃和梅花视为同一花色"
   },
   {
@@ -596,6 +641,7 @@
     "MechanismId": [
       40004
     ],
+    "UnlockConditionId": 0,
     "Desc": "每回合搓牌次数+1"
   },
   {
@@ -609,6 +655,7 @@
     "MechanismId": [
       40005
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算时,所有技能都无剩余使用次数,则提供+15倍率"
   },
   {
@@ -622,6 +669,7 @@
     "MechanismId": [
       40006
     ],
+    "UnlockConditionId": 0,
     "Desc": "每有1个收藏品,结算时提供+5倍率"
   },
   {
@@ -635,6 +683,7 @@
     "MechanismId": [
       40007
     ],
+    "UnlockConditionId": 0,
     "Desc": "结算时,若未使用过搓牌,每个搓牌次数提供+5倍率"
   },
   {
@@ -648,6 +697,7 @@
     "MechanismId": [
       40008
     ],
+    "UnlockConditionId": 0,
     "Desc": "所有牌均视为人头牌"
   },
   {
@@ -662,6 +712,7 @@
       40009,
       400091
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮出的每张A在结算伤害时提供+5攻击力和+5倍率"
   },
   {
@@ -675,6 +726,7 @@
     "MechanismId": [
       40010
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮牌时,将该牌型在本局内亮出过的次数来提供倍率"
   },
   {
@@ -688,6 +740,7 @@
     "MechanismId": [
       40011
     ],
+    "UnlockConditionId": 0,
     "Desc": "亮牌时,有25%概率将该牌型提供的倍率永久+1"
   },
   {
@@ -702,6 +755,7 @@
       40012,
       400121
     ],
+    "UnlockConditionId": 0,
     "Desc": "每回合失去2次搓牌机会,但结算时提供+20倍率"
   },
   {
@@ -715,6 +769,7 @@
     "MechanismId": [
       40013
     ],
+    "UnlockConditionId": 1007,
     "Desc": "每使用1次搓牌,结算时该收藏品永久提供+0.5倍率"
   },
   {
@@ -730,6 +785,7 @@
       400141,
       400142
     ],
+    "UnlockConditionId": 1008,
     "Desc": "亮出的每张7结算时有7%概率提供+77攻击力和+7倍率"
   }
 ]

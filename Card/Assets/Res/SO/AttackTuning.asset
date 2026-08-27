@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7a41c9e2f6d4a53b8c0d1e2f3a4b5c6, type: 3}
+  m_Name: AttackTuning
+  m_EditorClassIdentifier: 
+  low:
+    StartDuration: 0.43
+    MoveDuration: 0.18
+    HitHoldDuration: 0.25
+    BackDuration: 0.45
+    RetreatDistance: 160
+  middle:
+    StartDuration: 0.9
+    MoveDuration: 0.18
+    HitHoldDuration: 0.25
+    BackDuration: 0.45
+    RetreatDistance: 224
+  high:
+    StartDuration: 1.25
+    MoveDuration: 0.18
+    HitHoldDuration: 0.33
+    BackDuration: 0.55
+    RetreatDistance: 288
+  hpTextHoldDuration: 0.85

@@ -66,6 +66,48 @@ namespace App.Config
     }
 
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 ContidionType 枚举。
+    /// </summary>
+    public enum ContidionType
+    {
+        /// <summary>
+        /// 杀敌
+        /// </summary>
+        KillMonster = 1,
+
+        /// <summary>
+        /// 搓牌
+        /// </summary>
+        ShuffleCard = 2,
+
+        /// <summary>
+        /// 刷新商店
+        /// </summary>
+        RefreshStore = 3,
+
+        /// <summary>
+        /// 亮出顺子
+        /// </summary>
+        Straight = 4,
+
+        /// <summary>
+        /// 亮出散牌235
+        /// </summary>
+        TwoThreeFive = 5,
+
+        /// <summary>
+        /// 搓牌并战胜对手
+        /// </summary>
+        ShuffleCardAndVictory = 6,
+
+        /// <summary>
+        /// 亮出数字牌7
+        /// </summary>
+        Seven = 7,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 HandType 枚举。
     /// </summary>
     public enum HandType

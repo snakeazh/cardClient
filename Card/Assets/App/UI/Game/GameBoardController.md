@@ -67,7 +67,7 @@ GameHud
 
 1. 座位显隐（按 `ActiveInStage`，死人仍占原槽）
 2. `DealSerial` 变了 → 洗牌 + 飞牌，结束发 `DealFinished`
-3. `RevealPlaySerial` 变了 → 先抬选中牌，再按座位翻牌、播结算 clip
+3. `RevealPlaySerial` 变了 → 玩家选中牌保持抬起；敌人不抬，只翻已锁定的 3 张，再播结算 clip
 4. 平时：同步正反面 → **先抬选中牌** → **透视的牌抬完再 `SetBackSeeThrough`**
 
 选中位移：玩家向上，左敌向右，上敌向下，右敌向左。

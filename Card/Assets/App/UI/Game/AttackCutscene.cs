@@ -11,14 +11,6 @@ namespace App.UI
     public sealed class AttackCutscene
     {
         private const string DefaultClip = "ani_default";
-        private const float HpHideDelay = 0.85f;
-        private const float RetreatDur = 0.18f;
-
-        private static readonly float[] StartDur = { 0.43f, 0.90f, 1.25f };
-        private static readonly float[] MoveDur = { 0.18f, 0.18f, 0.18f };
-        private static readonly float[] EndDur = { 0.25f, 0.25f, 0.33f };
-        private static readonly float[] BackDur = { 0.45f, 0.45f, 0.55f };
-        private static readonly float[] RetreatDist = { 40f, 56f, 72f };
 
         private Transform _hud;
         private RectTransform _playerRoot;
@@ -82,11 +74,8 @@ namespace App.UI
             }
 
             var token = ++_playToken;
-            var idx = level - 1;
-            var startDur = StartDur[idx];
-            var moveDur = MoveDur[idx];
-            var endDur = EndDur[idx];
-            var backDur = BackDur[idx];
+            var tuning = AttackTuningConfig.Instance;
+            var beat = tuning.Level(level);
             _incomingRoot = enemyRoot;
             _incomingHome = enemyRoot.parent;
             _incomingHomeAnchored = enemyRoot.anchoredPosition;
@@ -98,7 +87,7 @@ namespace App.UI
             var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
-            AppendAimAndRetreat(enemyAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: true);
+            AppendAimAndRetreat(enemyAnim, level, beat, homeAnchored, hitAnchored, invertAim: true);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -108,7 +97,7 @@ namespace App.UI
 
                 PlayClip(enemyAnim, Clip(level, "move"));
             });
-            _seq.Append(_flight.DOAnchorPos(hitAnchored, moveDur).SetEase(Ease.InQuad));
+            _seq.Append(_flight.DOAnchorPos(hitAnchored, beat.MoveDuration).SetEase(Ease.InQuad));
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -120,7 +109,7 @@ namespace App.UI
                 PlayClip(_playerAnim, Clip(level, "hit"));
                 onHit?.Invoke();
             });
-            _seq.AppendInterval(endDur);
+            _seq.AppendInterval(beat.HitHoldDuration);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -131,7 +120,7 @@ namespace App.UI
                 PlayClip(enemyAnim, Clip(level, "back"));
                 PlayClip(_playerAnim, DefaultClip);
             });
-            AppendReturnHome(homeAnchored, backDur);
+            AppendReturnHome(homeAnchored, beat.BackDuration);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -143,7 +132,7 @@ namespace App.UI
                 PlayClip(enemyAnim, DefaultClip);
                 onReturned?.Invoke();
             });
-            _seq.AppendInterval(HpHideDelay);
+            _seq.AppendInterval(tuning.HpTextHoldDuration);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -169,11 +158,8 @@ namespace App.UI
             }
 
             var token = ++_playToken;
-            var idx = level - 1;
-            var startDur = StartDur[idx];
-            var moveDur = MoveDur[idx];
-            var endDur = EndDur[idx];
-            var backDur = BackDur[idx];
+            var tuning = AttackTuningConfig.Instance;
+            var beat = tuning.Level(level);
             var targetAnim = _enemyAnims[visualSlot];
             var homeParent = _playerHome != null ? _playerHome : _playerRoot.parent;
             _playerHomeAnchored = _playerRoot.anchoredPosition;
@@ -185,7 +171,7 @@ namespace App.UI
             var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
-            AppendAimAndRetreat(_playerAnim, level, startDur, homeAnchored, hitAnchored, idx, invertAim: false);
+            AppendAimAndRetreat(_playerAnim, level, beat, homeAnchored, hitAnchored, invertAim: false);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -195,7 +181,7 @@ namespace App.UI
 
                 PlayClip(_playerAnim, Clip(level, "move"));
             });
-            _seq.Append(_flight.DOAnchorPos(hitAnchored, moveDur).SetEase(Ease.InQuad));
+            _seq.Append(_flight.DOAnchorPos(hitAnchored, beat.MoveDuration).SetEase(Ease.InQuad));
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -207,7 +193,7 @@ namespace App.UI
                 PlayClip(targetAnim, Clip(level, "hit"));
                 onHit?.Invoke();
             });
-            _seq.AppendInterval(endDur);
+            _seq.AppendInterval(beat.HitHoldDuration);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -218,7 +204,7 @@ namespace App.UI
                 PlayClip(_playerAnim, Clip(level, "back"));
                 PlayClip(targetAnim, DefaultClip);
             });
-            AppendReturnHome(homeAnchored, backDur);
+            AppendReturnHome(homeAnchored, beat.BackDuration);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -230,7 +216,7 @@ namespace App.UI
                 PlayClip(_playerAnim, DefaultClip);
                 onReturned?.Invoke();
             });
-            _seq.AppendInterval(HpHideDelay);
+            _seq.AppendInterval(tuning.HpTextHoldDuration);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -403,10 +389,9 @@ namespace App.UI
         private void AppendAimAndRetreat(
             Animator attacker,
             int level,
-            float startDur,
+            AttackTuningConfig.LevelTuning beat,
             Vector2 homeAnchored,
             Vector2 hitAnchored,
-            int idx,
             bool invertAim)
         {
             PlayClip(attacker, Clip(level, "start"));
@@ -418,9 +403,10 @@ namespace App.UI
             }
 
             var aim = new Vector3(0f, 0f, angle);
-            _seq.Append(_flight.DOLocalRotate(aim, startDur).SetEase(Ease.OutCubic));
-            _seq.Append(_flight.DOAnchorPos(RetreatPoint(homeAnchored, dir, RetreatDist[idx]*4), RetreatDur)
+            _seq.Append(_flight
+                .DOAnchorPos(RetreatPoint(homeAnchored, dir, beat.RetreatDistance), beat.StartDuration)
                 .SetEase(Ease.OutQuad));
+            _seq.Join(_flight.DOLocalRotate(aim, beat.StartDuration).SetEase(Ease.InOutQuad));
         }
 
         private void AppendReturnHome(Vector2 homeAnchored, float backDur)

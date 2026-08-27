@@ -6,7 +6,7 @@
     "HeroDamage": 7,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [],
     "UnlockCondition": 0,
     "Desc": "平平无奇之人"
@@ -18,7 +18,7 @@
     "HeroDamage": 7,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Warrior1",
+    "Icon": "Warrior",
     "HeroEntryId": [
       10001
     ],
@@ -32,7 +32,7 @@
     "HeroDamage": 5,
     "Critical": 0.05,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10002,
       100021
@@ -47,7 +47,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10003
     ],
@@ -61,7 +61,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Ranger1",
+    "Icon": "Ranger",
     "HeroEntryId": [
       10004
     ],
@@ -75,7 +75,7 @@
     "HeroDamage": 5,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Mage1",
+    "Icon": "Mage",
     "HeroEntryId": [
       10005
     ],
@@ -89,7 +89,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10006
     ],
@@ -103,7 +103,7 @@
     "HeroDamage": 6,
     "Critical": 0.05,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10007,
       100071
@@ -118,7 +118,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10008
     ],
@@ -132,7 +132,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10009
     ],
@@ -146,7 +146,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10010
     ],
@@ -160,7 +160,7 @@
     "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer1",
+    "Icon": "Adventurer",
     "HeroEntryId": [
       10011
     ],

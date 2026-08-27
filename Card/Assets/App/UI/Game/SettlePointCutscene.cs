@@ -345,7 +345,7 @@ namespace App.UI
                     continue;
                 }
 
-                ClearTrails(go);
+                UiFx.ClearTrails(go);
                 go.transform.DOMove(targetPos, Fx02MoveDuration).SetEase(Ease.InQuad);
             }
         }
@@ -365,9 +365,9 @@ namespace App.UI
             go.transform.rotation = Quaternion.identity;
             go.transform.localScale = Vector3.one;
             go.SetActive(true);
-            ApplySorting(go, FxSortingOrder);
-            RestartParticles(go);
-            ClearTrails(go);
+            UiFx.ApplySorting(go, FxSortingOrder);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
             _spawned.Add(go);
         }
 
@@ -383,9 +383,9 @@ namespace App.UI
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
             go.SetActive(true);
-            ApplySorting(go, FxSortingOrder);
-            RestartParticles(go);
-            ClearTrails(go);
+            UiFx.ApplySorting(go, FxSortingOrder);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
             _spawned.Add(go);
             return go;
         }
@@ -401,9 +401,9 @@ namespace App.UI
             go.transform.position = uiWorld;
             go.transform.localRotation = Quaternion.identity;
             go.SetActive(true);
-            ApplySorting(go, FxSortingOrder);
-            RestartParticles(go);
-            ClearTrails(go);
+            UiFx.ApplySorting(go, FxSortingOrder);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
             _spawned.Add(go);
             return go;
         }
@@ -502,56 +502,6 @@ namespace App.UI
             HideSpawned();
             RestoreBeilv();
             IsPlaying = false;
-        }
-
-        private static void ApplySorting(GameObject go, int order)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            var particles = go.GetComponentsInChildren<ParticleSystemRenderer>(true);
-            for (var i = 0; i < particles.Length; i++)
-            {
-                particles[i].sortingOrder = order;
-            }
-
-            var trails = go.GetComponentsInChildren<TrailRenderer>(true);
-            for (var i = 0; i < trails.Length; i++)
-            {
-                trails[i].sortingOrder = order;
-            }
-        }
-
-        private static void RestartParticles(GameObject go)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            var systems = go.GetComponentsInChildren<ParticleSystem>(true);
-            for (var i = 0; i < systems.Length; i++)
-            {
-                var ps = systems[i];
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                ps.Play(true);
-            }
-        }
-
-        private static void ClearTrails(GameObject go)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            var trails = go.GetComponentsInChildren<TrailRenderer>(true);
-            for (var i = 0; i < trails.Length; i++)
-            {
-                trails[i].Clear();
-            }
         }
     }
 }

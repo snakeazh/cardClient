@@ -36,6 +36,7 @@ namespace App.Config
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
             var talentConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentConfig);
             var talentEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentEntryConfig);
+            var unlockConditionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.UnlockConditionConfig);
 
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
@@ -52,6 +53,7 @@ namespace App.Config
             RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
             TalentConfig.Load(ConfigJson.FromArrayJson<TalentConfig>(talentConfigAsset.text));
             TalentEntryConfig.Load(ConfigJson.FromArrayJson<TalentEntryConfig>(talentEntryConfigAsset.text));
+            UnlockConditionConfig.Load(ConfigJson.FromArrayJson<UnlockConditionConfig>(unlockConditionConfigAsset.text));
         }
     }
 }

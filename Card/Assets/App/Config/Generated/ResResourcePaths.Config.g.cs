@@ -20,6 +20,7 @@ namespace App.Resources
         public const string RelicEntryConfig = "Config/RelicEntryConfig";
         public const string TalentConfig = "Config/TalentConfig";
         public const string TalentEntryConfig = "Config/TalentEntryConfig";
+        public const string UnlockConditionConfig = "Config/UnlockConditionConfig";
     }
 }
 

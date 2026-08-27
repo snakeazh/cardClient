@@ -649,9 +649,19 @@ namespace App.UI
                     continue;
                 }
 
+                if (!seat.IsPlayer)
+                {
+                    ClearSeatSeeThrough(view);
+                }
+
                 var count = CardCount(view, seat);
                 for (var i = 0; i < count; i++)
                 {
+                    if (SkipEnemyUnselectedFlip(seat, i))
+                    {
+                        continue;
+                    }
+
                     var cardIndex = i;
                     seq.InsertCallback(delay, () =>
                     {
@@ -747,6 +757,50 @@ namespace App.UI
             }
 
             ApplyFace(item, CardFaceState.Front, true);
+        }
+
+        private static void ClearSeatSeeThrough(SeatView view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < view.Items.Length; i++)
+            {
+                var item = view.Items[i];
+                if (item != null && item.IsBackSeeThrough)
+                {
+                    item.SetBackSeeThrough(false);
+                }
+            }
+        }
+
+        /// <summary>敌人开牌只翻已锁定的 3 张；未选中的保持背面。</summary>
+        private static bool SkipEnemyUnselectedFlip(SeatState seat, int cardIndex)
+        {
+            return seat != null &&
+                   !seat.IsPlayer &&
+                   seat.CountSelectedCards() > 0 &&
+                   !seat.IsCardSelected(cardIndex);
+        }
+
+        /// <summary>透视阶段才抬敌人选中牌；开牌翻面/已亮牌时落回原位。</summary>
+        private static bool EnemyUsesSelectLift(GameSession session, SeatState seat)
+        {
+            if (seat == null || seat.IsPlayer)
+            {
+                return true;
+            }
+
+            if (session == null)
+            {
+                return false;
+            }
+
+            return !seat.ShowCards &&
+                   !session.CardsRevealed &&
+                   session.Phase != GamePhase.Showdown;
         }
 
         private static void PlaySettleCard(SeatView view, int cardIndex)
@@ -1064,7 +1118,8 @@ namespace App.UI
                 }
 
                 var view = ViewOf(session, enemy);
-                LiftSeat(view, enemy, SelectOffset(view));
+                // 开牌翻面不抬敌人选中牌；透视阶段仍抬起。
+                LiftSeat(view, enemy, SelectOffset(view), EnemyUsesSelectLift(session, enemy));
             }
         }
 
@@ -1105,7 +1160,9 @@ namespace App.UI
                 }
 
                 var desired = DesiredFace(session, seat, player, i);
-                var want = desired == CardFaceState.Back && session.IsSpyRevealed(seat.Id, i);
+                var want = desired == CardFaceState.Back &&
+                           session.IsSpyRevealed(seat.Id, i) &&
+                           EnemyUsesSelectLift(session, seat);
                 if (want == item.IsBackSeeThrough)
                 {
                     continue;
@@ -1163,7 +1220,7 @@ namespace App.UI
             return Vector3.down * SelectLift;
         }
 
-        private void LiftSeat(SeatView view, SeatState seat, Vector3 offset)
+        private void LiftSeat(SeatView view, SeatState seat, Vector3 offset, bool allowLift = true)
         {
             if (view == null || seat == null)
             {
@@ -1184,7 +1241,7 @@ namespace App.UI
                     continue;
                 }
 
-                var selected = seat.IsCardSelected(i);
+                var selected = allowLift && seat.IsCardSelected(i);
                 var dest = view.Points[i].position + (selected ? offset : Vector3.zero);
                 if ((item.transform.position - dest).sqrMagnitude < 0.0004f)
                 {
@@ -1201,9 +1258,10 @@ namespace App.UI
 
                 // 取消选中：阴影保留到落位动画结束再回收；期间重新选中则 OnComplete 里跳过回收。
                 var index = i;
+                var lift = allowLift;
                 item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad).OnComplete(() =>
                 {
-                    SyncSlotShadow(view, index, seat.IsCardSelected(index));
+                    SyncSlotShadow(view, index, lift && seat.IsCardSelected(index));
                 });
             }
         }
@@ -1340,13 +1398,13 @@ namespace App.UI
                 return CardFaceState.Back;
             }
 
-            if (seat.ShowCards)
+            if (seat.ShowCards || session.CardsRevealed)
             {
-                return CardFaceState.Front;
-            }
+                if (SkipEnemyUnselectedFlip(seat, cardIndex))
+                {
+                    return CardFaceState.Back;
+                }
 
-            if (session.CardsRevealed)
-            {
                 return CardFaceState.Front;
             }
 

@@ -1001,7 +1001,7 @@ namespace App.Game
             RunNextCompare();
         }
 
-        /// <summary>结算前清掉透视时抬起的 5 张，再由 LockBestOpenCardsIfEnemy 选出最大 3 张。</summary>
+        /// <summary>结算前清掉透视时的 5 张全选，再由 LockBestOpenCardsIfEnemy 锁最大 3 张（翻面亮牌，不抬起）。</summary>
         private void ResetEnemyOpenSelection()
         {
             if (Enemies == null)

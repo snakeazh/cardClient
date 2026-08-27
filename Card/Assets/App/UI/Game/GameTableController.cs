@@ -348,6 +348,11 @@ namespace App.UI
 
                 var card = seat.Hand != null && i < seat.Hand.Length ? seat.Hand[i] : default;
                 var revealThis = reveal;
+                if (revealThis && !player && seat.CountSelectedCards() > 0 && !seat.IsCardSelected(i))
+                {
+                    revealThis = false;
+                }
+
                 if (revealThis)
                 {
                     sr.sprite = CardSpriteLibrary.GetFace(card);

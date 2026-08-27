@@ -292,7 +292,7 @@ namespace App.UI.Popup
                     Name = isBoss ? "BOSS " + row.MonsterId : "怪物 " + row.MonsterId,
                     Desc = (isBoss ? "BOSS" : "普通敌人") +
                            "\n生命 " + row.MonsterHp + "  攻击 " + row.MonsterDamage,
-                    Icon = null,
+                    Icon = row.Icon,
                     Unlocked = true
                 });
             }

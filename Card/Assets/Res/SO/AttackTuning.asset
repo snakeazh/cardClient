@@ -40,3 +40,6 @@ MonoBehaviour:
     HitKnockbackDuration: 0.16
     HitRecoverDuration: 0.34
   hpTextHoldDuration: 0.85
+  deathDissolveDelay: 2
+  deathEffect: {fileID: 4988058555448458962, guid: 960f2c25212a01e468e1a655f350f30b, type: 3}
+  deathEffectDuration: 0.6

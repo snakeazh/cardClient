@@ -172,7 +172,8 @@ namespace App.Level
                     type: row.Type,
                     hp: row.MonsterHp,
                     damage: row.MonsterDamage,
-                    monsterEntry: row.MonsterEntry);
+                    monsterEntry: row.MonsterEntry,
+                    icon: row.Icon);
             }
         }
 
@@ -251,7 +252,8 @@ namespace App.Level
                     monster.Type,
                     monster.Hp,
                     monster.Damage,
-                    monster.MonsterEntry));
+                    monster.MonsterEntry,
+                    monster.Icon));
             }
 
             return new LevelSnapshot(row.Id, row.Difficulty, row.Level, row.GetGold, monsters);

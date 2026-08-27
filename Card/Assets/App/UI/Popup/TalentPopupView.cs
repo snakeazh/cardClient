@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Item;
@@ -12,10 +13,10 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 天赋弹窗。Content 下的 Item 模板按天赋聚合结果克隆成网格；
-    /// 点条目打开天赋详情，点遮罩关闭。
+    /// 天赋页面。Content 下的 Item 模板按天赋聚合结果克隆成网格；
+    /// 点条目打开天赋详情，点遮罩回主页。
     /// </summary>
-    [AutoScreen(AppScreenIds.TalentPopup, UILayer.Popup, ResResourcePaths.TalentPopup)]
+    [AutoScreen(AppScreenIds.TalentPopup, UILayer.Page, ResResourcePaths.TalentPopup)]
     public sealed class TalentPopupView : ViewBase<TalentPopupViewModel>
     {
         private const string TemplateName = "Item";
@@ -87,11 +88,39 @@ namespace App.UI.Popup
 
                 card.SetShadowVisible(false);
                 card.SetAnimationEnabled(false);
-                card.Bind(item.Name, null, item.Snapshot.IsOwned);
+                // 不清 card_icon：无配置 Icon 时保留预制体默认图，未解锁由 SetUnlocked 染黑
+                card.SetName(item.Name);
+                card.SetUnlocked(item.Snapshot.IsOwned);
+                if (!string.IsNullOrEmpty(item.IconKey))
+                {
+                    _ = LoadCardIcon(card, item.Snapshot.IsOwned, item.IconKey);
+                }
                 card.Clicked += OnCardClicked;
                 _entries[card] = item;
                 _cards.Add(card);
             }
+        }
+
+        /// <summary>按配置 key 异步加载图标回填；页面关闭后卡已销毁，直接丢弃。</summary>
+        private async Task LoadCardIcon(ItemCard card, bool unlocked, string key)
+        {
+            Sprite sprite;
+            try
+            {
+                sprite = await ViewModel.Resources.LoadAsync<Sprite>(key);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (card == null)
+            {
+                return;
+            }
+
+            card.SetIcon(sprite);
+            card.SetUnlocked(unlocked);
         }
 
         private void BindBuyCost()

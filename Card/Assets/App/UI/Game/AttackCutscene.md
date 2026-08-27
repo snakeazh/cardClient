@@ -22,7 +22,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 ## 何时播放
 
-`GameSession.AttackPlaySerial` 增加一次，播一段。结束回调 `CompletePlayerAttack()`，再结算伤害、进入下一对敌人。
+`GameSession.AttackPlaySerial` 增加一次，播一段。受击开始回调 `ApplyPendingAttackHits()` 扣血；结束回调 `CompletePlayerAttack()`，进入下一对敌人。
 
 | 情况 | 字段 | 方法 |
 |------|------|------|
@@ -54,6 +54,36 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 ---
 
+## 死亡演出
+
+这一击把血量打到 0 时，命中那一刻立刻冒致死特效，溶解则延迟 `DeathDissolveDelay`（默认 2 秒）才开始。非致死两者都不播。
+
+判定在 `GameUIView.TryDissolveIfLethal`，在 `onHit` 里**先**按扣血前的 `Hp <= damage` 排队溶解，**再** `ApplyPendingAttackHits` 真正扣血。这样 `ShowEnemy` 翻 false 时 `_deathDissolves` 已经占位，不会被 `BindEnemyVisible` 抢着溶掉。玩家挨打和打怪两个分支各来一次，特效即时、溶解排队：
+
+```csharp
+_attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
+ScheduleDeathDissolve(AttackItemAtSlot(session.AttackVisualSlot), hideWhenDone: true);
+```
+
+`PlayDeathEffect` 把 `DeathEffect` 实例化到 HUD 末尾，位置取被打者 `RootRect` 的当前世界坐标（此刻正在击退位移中，所以落在撞击点上），按 `UiFx` 写 `sortingOrder` 并重播粒子、清拖尾。它不进攻击序列的时间轴，`DeathEffectDuration` 到点自己销毁。注意 `Kill` 会清残留特效，而下一段攻击约 1.55 秒后就开始并触发 `Kill`，所以 `DeathEffectDuration` 调超过这个数会被下一段攻击掐掉。特效 prefab 由 SO 直接引用，AssetBundle 会带上依赖，不用另外注册资源路径。
+
+延迟到点后 `PlayDeathDissolve` 才 `PlayerItem.PlayDissolve`，`hideWhenDone` 为真（怪）溶完 `HideEnemyItem` 隐藏节点，为假（玩家）留着。
+
+**结算节奏不跟着等。** 命中时就已经扣血，`ShowEnemy` 会立刻翻 false；命中后再过 `HitHoldDuration + BackDuration + HpTextHoldDuration`（约 1.55 秒）才 `onDone` 进下一个对手。溶解默认还要再等 2 秒。`BindEnemyVisible` 必须给延迟让位：
+
+```csharp
+if (_deathDissolves.ContainsKey(item))
+{
+    return;
+}
+```
+
+漏了这一步，卡会在 1.55 秒被抢着溶掉，延迟等于没有。`_deathDissolves` 记 item 到延迟 tween 的映射，`ShowEnemy` 翻回 true（换关、重开）时 `CancelDeathDissolve` 撤掉，避免延迟落到复用后的新怪身上；`OnViewClose` 走 `CancelAllDeathDissolves`。延迟 tween 还 `SetLink(item.gameObject)` 兜一层。
+
+代价是延迟这 2 秒里下一段攻击已经开始，死掉的卡冒完烟还会站着不动一会儿才化；玩家死亡时战斗失败弹窗也可能先盖上来。要改成“等溶解播完再结算”得把 `onDone` 推后，那是另一套节奏。
+
+---
+
 ## 参数配置
 
 时长和后撤距离在 `Assets/Res/SO/AttackTuning.asset`（`AttackTuningConfig`），策划直接在 Inspector 改，每个字段带中文 Tooltip。
@@ -69,8 +99,11 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `HitKnockbackDuration` | 受击方被击退的时长 |
 | `HitRecoverDuration` | 受击方从击退位置回原位的时长 |
 | `HpTextHoldDuration` | 退回后伤害数字继续停留，过完才扣血 |
+| `deathDissolveDelay` | 致死后等多久才开始溶解和播致死特效 |
+| `deathEffect` | 致死时在被打者位置播的特效 prefab，留空不播 |
+| `deathEffectDuration` | 致死特效的存活时长，到点销毁 |
 
-低 / 中 / 三档各一组，对应 `AttackLevel` 的 1 / 2 / 3。
+前八项低 / 中 / 高三档各一组，对应 `AttackLevel` 的 1 / 2 / 3；后四项在“通用”段，不分档。
 
 加载：`AppBootstrap` 启动时 `await AttackTuningConfig.PreloadAsync(resources)` 预热一次，和 `CardShadowPool.PreloadAsync` 同级；`AttackCutscene` 直接读 `AttackTuningConfig.Instance`，不再逐次开界面加载。编辑器下走 AssetDatabase，改完重进游戏生效；出包要先跑一次 `Res/Build AssetBundles`。资产丢了或预热失败只打 Warning，`Instance` 退回字段默认值继续演出。
 
@@ -101,3 +134,6 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 - 时长不要写回代码常量，一律加到 `AttackTuningConfig` 让策划调。
 - 受击击退不要挂飞行层、不要动 `PlayerRoot` 的父子关系，否则致死溶解会失效。
 - 击退 + 回位的总时长若超过 `HitHoldDuration + BackDuration + HpTextHoldDuration`，整段会被拉长，`onDone` 跟着延后。
+- 致死特效不要 `Insert` 进攻击序列：致死是 `onHit` 运行时才知道的，序列早已建好；独立计时销毁即可。
+- 改致死溶解的时机时，`BindEnemyVisible` 那条数据驱动的溶解路径要一起看，它比延迟更早触发。
+- 粒子特效挂到 UI 下必须走 `UiFx.ApplySorting`，否则会被 UI 盖掉。

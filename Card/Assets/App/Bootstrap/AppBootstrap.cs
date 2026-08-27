@@ -49,6 +49,7 @@ namespace App.Bootstrap
             _services.Container.AddSingleton<MainResourceViewModel>();
 
             await ConfigTables.LoadAsync(_resources.Resources);
+            await PortraitLoader.PreloadAsync(_resources.Resources);
             RegisterBag(_services);
             RegisterLevel(_services);
             RegisterScore(_services);

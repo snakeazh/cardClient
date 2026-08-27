@@ -8,7 +8,7 @@ namespace App.Item
     /// <summary>
     /// 图鉴/收集类单卡显示控制，挂在预制体 <c>Res/UI/Icon/Item</c> 根节点上。
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
-    /// 界面结构：Item(Button) / ItemRoot(Animator) / IconShdow + cardFrame(IconBG + card(card_Name、card_Circle、card_icon、card_UnKnown))。
+    /// 界面结构：Item(Button) / ItemRoot(Animator) / IconShdow + cardFrame(IconBG + card(card_Name、card_Circle、card_icon))。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
     {
@@ -21,7 +21,6 @@ namespace App.Item
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
-        [SerializeField] private Image cardUnknown;
         [SerializeField] private Image iconShadow;
         [SerializeField] private Button button;
         [SerializeField] private RectTransform itemRoot;
@@ -124,20 +123,14 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 解锁态：显示 card_icon，隐藏 card_UnKnown；
-        /// 未解锁：反过来，名字占位为 ？？？。两个节点在预制体中同位同尺寸，互斥显示。
+        /// 解锁态：card_icon 染回本色（白）；未解锁：染黑表示未收集剪影，名字占位为 ？？？。
         /// </summary>
         public void SetUnlocked(bool unlocked)
         {
             EnsureRefs();
-            if (cardIcon != null && cardIcon.sprite != null)
+            if (cardIcon != null)
             {
-                cardIcon.enabled = unlocked;
-            }
-
-            if (cardUnknown != null)
-            {
-                cardUnknown.gameObject.SetActive(!unlocked);
+                cardIcon.color = unlocked ? Color.white : Color.black;
             }
 
             if (!unlocked)
@@ -246,11 +239,6 @@ namespace App.Item
             if (cardIcon == null)
             {
                 cardIcon = FindImage("card_icon");
-            }
-
-            if (cardUnknown == null)
-            {
-                cardUnknown = FindImage("card_UnKnown");
             }
 
             if (iconShadow == null)

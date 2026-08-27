@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
 using App.Level;
+using App.Unlock;
 using Framework.Assets;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -24,6 +25,7 @@ namespace App.UI.Popup
         public string Desc;
         public string Icon;
         public bool Unlocked;
+        public string UnlockTip;
     }
 
     /// <summary>
@@ -33,6 +35,7 @@ namespace App.UI.Popup
     {
         private readonly NavigationViewModel _navigation;
         private readonly ILevelProgressService _progress;
+        private readonly IUnlockConditionService _unlock;
         private readonly List<IllustratedBookEntry> _collect = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _relics = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _monsters = new List<IllustratedBookEntry>();
@@ -40,11 +43,13 @@ namespace App.UI.Popup
         public IllustratedBookPopViewModel(
             NavigationViewModel navigation,
             ILevelProgressService progress,
+            IUnlockConditionService unlock,
             IResourceService resources,
             IAtlasService atlas)
         {
             _navigation = navigation;
             _progress = progress;
+            _unlock = unlock;
             Resources = resources;
             Atlas = atlas;
             CollectOn = new ObservableProperty<bool>(true);
@@ -128,7 +133,9 @@ namespace App.UI.Popup
             }
 
             SelectedId = entry.Id;
-            TipText.Value = entry.Unlocked ? (entry.Desc ?? string.Empty) : "尚未解锁";
+            TipText.Value = entry.Unlocked
+                ? (entry.Desc ?? string.Empty)
+                : (string.IsNullOrEmpty(entry.UnlockTip) ? "尚未解锁" : entry.UnlockTip);
             ShowTip.Value = true;
         }
 
@@ -144,9 +151,16 @@ namespace App.UI.Popup
             return entry != null && entry.Tab == Tab && entry.Id == SelectedId && ShowTip.Value;
         }
 
+        public void RefreshEntries()
+        {
+            BuildEntries();
+            RefreshCount();
+        }
+
         protected override Task OnOpen(object args)
         {
             HideTip();
+            BuildEntries();
             ApplyTab(IllustratedBookTab.Collect, force: true);
             return Task.CompletedTask;
         }
@@ -233,6 +247,7 @@ namespace App.UI.Popup
                     continue;
                 }
 
+                var unlocked = IsRelicUnlocked(row);
                 _relics.Add(new IllustratedBookEntry
                 {
                     Tab = IllustratedBookTab.Relic,
@@ -240,7 +255,8 @@ namespace App.UI.Popup
                     Name = row.Name,
                     Desc = row.Desc,
                     Icon = row.Icon,
-                    Unlocked = true
+                    Unlocked = unlocked,
+                    UnlockTip = unlocked ? null : RelicUnlockTip(row, _unlock)
                 });
             }
 
@@ -292,6 +308,40 @@ namespace App.UI.Popup
             }
 
             return _progress != null && _progress.IsDifficultyUnlocked(unlockCondition);
+        }
+
+        private bool IsRelicUnlocked(RelicConfig relic)
+        {
+            if (relic == null || relic.UnlockConditionId <= 0)
+            {
+                return true;
+            }
+
+            return _unlock != null && _unlock.IsRelicUnlocked(relic.Id);
+        }
+
+        private static string RelicUnlockTip(RelicConfig relic, IUnlockConditionService unlock)
+        {
+            if (relic == null || relic.UnlockConditionId <= 0)
+            {
+                return "尚未解锁";
+            }
+
+            var condition = UnlockConditionConfig.Get(relic.UnlockConditionId);
+            var current = unlock != null ? unlock.GetProgress(relic.UnlockConditionId) : 0;
+            var target = condition != null && condition.Value > 0 ? condition.Value : 0;
+            if (target > 0 && current > target)
+            {
+                current = target;
+            }
+
+            var progress = target > 0 ? current + "/" + target : current.ToString();
+            if (string.IsNullOrEmpty(condition?.Desc))
+            {
+                return "尚未解锁（" + progress + "）";
+            }
+
+            return condition.Desc + "（" + progress + "）";
         }
 
         private void Close()

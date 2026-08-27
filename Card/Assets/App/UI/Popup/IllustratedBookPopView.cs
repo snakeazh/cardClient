@@ -34,6 +34,7 @@ namespace App.UI.Popup
 
         protected override async Task OnViewOpen()
         {
+            ViewModel.RefreshEntries();
             await EnsureItemPrefab();
             await LoadIcons();
             await EnsureTip();

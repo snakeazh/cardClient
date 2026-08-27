@@ -309,7 +309,7 @@ namespace App.Game
         /// <summary>散牌 2+3+5 视为豹子，且比牌通杀。</summary>
         public static HandScore ApplyTwoThreeFive(HandScore score)
         {
-            if (score.Type != HandType.HighCard || !IsTwoThreeFive(score.UsedCards))
+            if (score.Type != HandType.HighCard || !IsNaturalTwoThreeFive(score.UsedCards))
             {
                 return score;
             }
@@ -378,13 +378,13 @@ namespace App.Game
                 case MechanismType.CardMagnification:
                     return entry.Value;
                 case MechanismType.SquarePlate:
-                    return CountSuit(score, Suit.Diamond) * entry.Value;
+                    return CountSuit(score, Suit.Diamond, run) * entry.Value;
                 case MechanismType.Spades:
-                    return CountSuit(score, Suit.Spade) * entry.Value;
+                    return CountSuit(score, Suit.Spade, run) * entry.Value;
                 case MechanismType.RedHeart:
-                    return CountSuit(score, Suit.Heart) * entry.Value;
+                    return CountSuit(score, Suit.Heart, run) * entry.Value;
                 case MechanismType.PlumBlossom:
-                    return CountSuit(score, Suit.Club) * entry.Value;
+                    return CountSuit(score, Suit.Club, run) * entry.Value;
                 case MechanismType.Couplet:
                     return score.Type == HandType.Pair ? entry.Value : 0f;
                 case MechanismType.Flush:
@@ -439,13 +439,13 @@ namespace App.Game
             switch (entry.Type)
             {
                 case MechanismType.SquarePlateAttack:
-                    return CountSuit(score, Suit.Diamond) * entry.Value;
+                    return CountSuit(score, Suit.Diamond, run) * entry.Value;
                 case MechanismType.SpadesAttack:
-                    return CountSuit(score, Suit.Spade) * entry.Value;
+                    return CountSuit(score, Suit.Spade, run) * entry.Value;
                 case MechanismType.RedHeartAttack:
-                    return CountSuit(score, Suit.Heart) * entry.Value;
+                    return CountSuit(score, Suit.Heart, run) * entry.Value;
                 case MechanismType.PlumBlossomAttack:
-                    return CountSuit(score, Suit.Club) * entry.Value;
+                    return CountSuit(score, Suit.Club, run) * entry.Value;
                 case MechanismType.CoupletAttack:
                     return score.Type == HandType.Pair ? entry.Value : 0f;
                 case MechanismType.StraightAttack:
@@ -500,7 +500,7 @@ namespace App.Game
             return extra;
         }
 
-        private static int CountSuit(HandScore score, Suit suit)
+        private static int CountSuit(HandScore score, Suit suit, RunState run)
         {
             var cards = score.UsedCards;
             if (cards == null)
@@ -508,10 +508,23 @@ namespace App.Game
                 return 0;
             }
 
+            var dual = false;
+            var displaySuit = default(Suit);
+            if (HasMechanism(run, MechanismType.SpecialFlush) &&
+                (score.Type == HandType.Flush || score.Type == HandType.StraightFlush))
+            {
+                dual = HandEvaluator.TryColorFlushDisplaySuit(cards, out displaySuit);
+            }
+
             var count = 0;
             for (var i = 0; i < cards.Length; i++)
             {
-                if (cards[i].Suit == suit)
+                var real = cards[i].Suit;
+                if (real == suit)
+                {
+                    count++;
+                }
+                else if (dual && displaySuit == suit)
                 {
                     count++;
                 }
@@ -660,7 +673,8 @@ namespace App.Game
             return max;
         }
 
-        private static bool IsTwoThreeFive(Card[] cards)
+        /// <summary>亮出用牌恰好是 2+3+5，不依赖遗物改牌型。</summary>
+        public static bool IsNaturalTwoThreeFive(Card[] cards)
         {
             if (cards == null || cards.Length != GameBalance.OpenHandSize)
             {

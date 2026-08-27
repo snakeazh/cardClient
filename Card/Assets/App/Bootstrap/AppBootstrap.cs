@@ -6,6 +6,7 @@ using App.Game;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.Unlock;
 using App.Wallet;
 using App.UI;
 using App.UI.Splash;
@@ -53,6 +54,7 @@ namespace App.Bootstrap
             RegisterScore(_services);
             RegisterTalent(_services);
             RegisterWallet(_services);
+            RegisterUnlock(_services);
             LogConfigSmoke();
 
             _ui = UIFramework.Create(_services.Container);
@@ -140,6 +142,14 @@ namespace App.Bootstrap
             wallet.Load();
             services.Register(wallet);
             services.Register<IWalletService>(wallet);
+        }
+
+        private static void RegisterUnlock(AppServicesHost services)
+        {
+            var unlock = new UnlockConditionService(services.Resolve<ISaveService>());
+            unlock.Load();
+            services.Register(unlock);
+            services.Register<IUnlockConditionService>(unlock);
         }
 
         private static void LogConfigSmoke()

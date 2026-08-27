@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
@@ -670,7 +671,7 @@ namespace App.UI
                             return;
                         }
 
-                        FlipSeatCard(view, seat, cardIndex);
+                        FlipSeatCard(session, view, seat, cardIndex);
                     });
                     delay += RevealCardGap;
                 }
@@ -737,7 +738,7 @@ namespace App.UI
             _revealSeq = seq;
         }
 
-        private void FlipSeatCard(SeatView view, SeatState seat, int cardIndex)
+        private void FlipSeatCard(GameSession session, SeatView view, SeatState seat, int cardIndex)
         {
             if (view == null || seat == null || cardIndex < 0 || cardIndex >= view.Items.Length)
             {
@@ -750,7 +751,7 @@ namespace App.UI
                 return;
             }
 
-            var card = cardIndex < seat.Hand.Length ? seat.Hand[cardIndex] : default;
+            var card = ShownCard(seat, cardIndex, seat.IsPlayer, session);
             if (!item.Card.Equals(card))
             {
                 item.SetCard(card);
@@ -1055,7 +1056,7 @@ namespace App.UI
                     continue;
                 }
 
-                var card = i < seat.Hand.Length ? seat.Hand[i] : default;
+                var card = ShownCard(seat, i, player, session);
                 if (!item.Card.Equals(card))
                 {
                     item.SetCard(card);
@@ -1726,6 +1727,35 @@ namespace App.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 老花眼金花：已选三张同色时，少数花色贴图改成多数花色。手里牌数据不改。
+        /// </summary>
+        private static Card ShownCard(SeatState seat, int index, bool player, GameSession session)
+        {
+            if (seat?.Hand == null || index < 0 || index >= seat.Hand.Length)
+            {
+                return default;
+            }
+
+            var card = seat.Hand[index];
+            if (!player ||
+                session?.Run == null ||
+                !RelicMechanics.HasMechanism(session.Run, MechanismType.SpecialFlush) ||
+                seat.CountSelectedCards() != GameBalance.OpenHandSize ||
+                !seat.IsCardSelected(index))
+            {
+                return card;
+            }
+
+            var selected = HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
+            if (!HandEvaluator.TryColorFlushDisplaySuit(selected, out var displaySuit))
+            {
+                return card;
+            }
+
+            return HandEvaluator.WithSuit(card, displaySuit);
         }
 
         private static Color SuitTint(Suit suit)

@@ -5,6 +5,7 @@ using App.Config;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.Unlock;
 using Framework.Log;
 
 namespace App.Game
@@ -196,6 +197,7 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginChapter();
             }
 
+            UnlockSvc()?.BeginRun();
             StartStage(inheritPlayerHp: false);
         }
 
@@ -339,6 +341,7 @@ namespace App.Game
 
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
+            UnlockSvc()?.Report(ContidionType.ShuffleCard);
             if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
             {
                 Run.RubRelicMagForever += RelicMechanics.SumValue(Run, MechanismType.RubbingCardRelic);
@@ -1613,6 +1616,7 @@ namespace App.Game
             {
                 Run.FreeShopRefreshLeft--;
                 RollShopOffers();
+                UnlockSvc()?.Report(ContidionType.RefreshStore);
                 Log($"免费刷新商店（会员卡，下次 {ShopRefreshCost} 金币）");
                 Hint = Run.FreeShopRefreshLeft > 0
                     ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
@@ -1624,6 +1628,7 @@ namespace App.Game
             SpendGold(cost);
             Run.ShopRefreshCount++;
             RollShopOffers();
+            UnlockSvc()?.Report(ContidionType.RefreshStore);
             Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
             Hint = $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
             Notify();
@@ -1992,6 +1997,10 @@ namespace App.Game
             if (playerWon)
             {
                 ApplyPlayerWinGold(playerScore);
+                if (_rubbedThisHand)
+                {
+                    UnlockSvc()?.Report(ContidionType.ShuffleCardAndVictory);
+                }
             }
         }
 
@@ -2004,6 +2013,20 @@ namespace App.Game
 
             _playerCardsShownThisRound = true;
             Run.AddHandTypeShowCount(score.Type);
+            if (score.Type == HandType.Straight)
+            {
+                UnlockSvc()?.Report(ContidionType.Straight);
+            }
+
+            if (RelicMechanics.IsNaturalTwoThreeFive(score.UsedCards))
+            {
+                UnlockSvc()?.Report(ContidionType.TwoThreeFive);
+            }
+
+            if (HasShownSeven(score.UsedCards))
+            {
+                UnlockSvc()?.Report(ContidionType.Seven);
+            }
         }
 
         private void TryApplyPermanentCardBonuses(HandScore score)
@@ -3766,6 +3789,7 @@ namespace App.Game
                 {
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
+                    UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
             }
 
@@ -3804,6 +3828,7 @@ namespace App.Game
                     ai.Status = "斩杀";
                     ai.Banner = "濒死斩杀";
                     Log($"互助斩杀：{ai.Name} 血量不足继续，被你斩杀");
+                    UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
                 {
@@ -4513,6 +4538,11 @@ namespace App.Game
             return AppServices.IsReady ? AppServices.Resolve<ITalentService>() : null;
         }
 
+        private static IUnlockConditionService UnlockSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<IUnlockConditionService>() : null;
+        }
+
         private void ApplyTalentKillRewards()
         {
             var talent = TalentSvc();
@@ -4724,6 +4754,11 @@ namespace App.Game
                     continue;
                 }
 
+                if (!IsRelicInShopPool(relic.Id))
+                {
+                    continue;
+                }
+
                 pool.Add(relic);
             }
 
@@ -4777,7 +4812,34 @@ namespace App.Game
         {
             foreach (var relic in RelicConfig.All.Values)
             {
-                if (relic != null && !OwnsRelicConfig(relic.Id) && relic.RefreshProbability > 0f)
+                if (relic != null &&
+                    !OwnsRelicConfig(relic.Id) &&
+                    relic.RefreshProbability > 0f &&
+                    IsRelicInShopPool(relic.Id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsRelicInShopPool(int relicId)
+        {
+            var unlock = UnlockSvc();
+            return unlock == null || unlock.IsRelicInShopPool(relicId);
+        }
+
+        private static bool HasShownSeven(Card[] cards)
+        {
+            if (cards == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < cards.Length; i++)
+            {
+                if (cards[i].Rank == Rank.Seven)
                 {
                     return true;
                 }

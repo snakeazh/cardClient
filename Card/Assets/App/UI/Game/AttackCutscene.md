@@ -48,6 +48,29 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。
 
+`start` 片段、转向瞄准、后撤蓄力三者同时开始，共用 `StartDuration`；`start` 播完才接 `move` 冲撞。
+
+---
+
+## 参数配置
+
+时长和后撤距离在 `Assets/Res/SO/AttackTuning.asset`（`AttackTuningConfig`），策划直接在 Inspector 改，每个字段带中文 Tooltip。
+
+| 字段 | 含义 |
+|------|------|
+| `StartDuration` | 起手阶段时长，起手片段 / 瞄准 / 后撤共用 |
+| `MoveDuration` | 冲撞到目标的时长 |
+| `HitHoldDuration` | 命中后定格停留 |
+| `BackDuration` | 退回原位时长 |
+| `RetreatDistance` | 后撤蓄力距离（UI 像素） |
+| `HpTextHoldDuration` | 退回后伤害数字继续停留，过完才扣血 |
+
+低 / 中 / 三档各一组，对应 `AttackLevel` 的 1 / 2 / 3。
+
+加载：`AppBootstrap` 启动时 `await AttackTuningConfig.PreloadAsync(resources)` 预热一次，和 `CardShadowPool.PreloadAsync` 同级；`AttackCutscene` 直接读 `AttackTuningConfig.Instance`，不再逐次开界面加载。编辑器下走 AssetDatabase，改完重进游戏生效；出包要先跑一次 `Res/Build AssetBundles`。资产丢了或预热失败只打 Warning，`Instance` 退回字段默认值继续演出。
+
+`MoveDuration` / `BackDuration` 是固定时长而非固定速度，三个敌人槽位距离不同，远的槽位飞得更快。
+
 ---
 
 ## 伤害数字
@@ -70,3 +93,4 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 - `Kill` 会把冲出去的卡拽回 `PlayerRoot` 父节点；换手或关界面要 `Dispose`。
 - 不要把 `AttackFlight` 的缩放写成 1 后直接挂 `PlayerRoot`；飞行层必须跟原父节点（`PlayerItem` 的 0.78）对齐。
 - 槽位无效时跳过位移，仍走 onHit / onDone，避免卡死状态机。
+- 时长不要写回代码常量，一律加到 `AttackTuningConfig` 让策划调。

@@ -43,11 +43,36 @@
 
 `SetAttack(0)` 会关掉 `attack` 节点，`SetHp(0)` 会关掉 `heart`。未解锁英雄（LevelUI 预览 / HeroItem）两边都传 0，攻击和血量都不显示。配置值大于 0 才会显示。
 
+---
+
+## 头像
+
+配置表 `Icon` 是文件名前缀，再拼血量分档后缀。路径和缓存由 [`PortraitLoader.cs`](../UI/Game/PortraitLoader.cs) 统一管：
+
+- 启动：`PortraitLoader.PreloadAsync` 只预热全部英雄 / 怪物的 `_attack`
+- 局内：`EnsureBattleStatesAsync` 对上场玩家和本关怪物补 `_damage` / `_dead`；换关遇到新怪物再补
+- 取图：界面只调 `Get` / `GetRole` / `GetEnemy`，不要再各自 `LoadAsync`。受伤图还没到时先显示 `_attack`
+
+| 角色 | 配置 | 资源目录 | 例子 |
+|------|------|----------|------|
+| 玩家 | `HeroConfig.Icon` | `Textures/role/` | `Adventurer_attack` |
+| 怪物 | `MonsterConfig.Icon` | `Textures/enemy/` | `Monster1_attack` |
+
+| 分档 | 条件 | 后缀 |
+|------|------|------|
+| 健康 | `Hp * 2 >= MaxHp`（含恰好 50%） | `_attack` |
+| 受伤 | `0 < Hp` 且 `Hp * 2 < MaxHp` | `_damage` |
+| 死亡 | `Hp <= 0` 或 `MaxHp <= 0` | `_dead` |
+
+局内 `GameUIView` 在受击演出开始（`onHit`）调用 `ApplyPendingAttackHits` 扣血，随后 `RefreshPlayerItems` 按新的 `Hp / MaxHp` 取图，和卡上血量同一拍。局外（主页、选角、图鉴怪物）没有战斗血量，固定 `_attack`。图鉴收藏品仍走 `RoleIcon`（无后缀，如 `Adventurer1`），不要拼分档、也不进 `PortraitLoader`。
+
+怪物资源将从现有的 `enemy{n}_*` 改名为配置表 `Icon`（`Monster1_attack` 等）；改名前预热会 Warn 并缓存空图，不做旧名映射。
+
 局内绑法：
 
 ```csharp
-_playerItem.Bind(session.Player, portrait, session.Player.Attack);
-_enemyItems[slot].Bind(enemy, portrait, enemy.Attack, session.ActingAiId);
+_playerItem.Bind(session.Player, PortraitLoader.Get(session.Player), session.Player.Attack);
+_enemyItems[slot].Bind(enemy, PortraitLoader.Get(enemy), enemy.Attack, session.ActingAiId);
 ```
 
 ---
@@ -75,3 +100,4 @@ item.Bind(seat, portrait, attack, actingAiId);
 - 卡片底 / title / 圈的色值只改 [`ThemeColors.md`](../ThemeColors.md)，不要在本脚本写 hex。
 - 攻击力读配置，不要用血量换算。
 - 局内刷新走 `GameUIView.RefreshPlayerItems`，不要在别处改 `card_attackValue`。
+- 局内头像按 `SeatState.Icon` + 血量分档从 `PortraitLoader` 取图，不要写死 `enemy{n}_attack`，也不要在各界面自己加载。

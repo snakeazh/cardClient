@@ -238,6 +238,8 @@ namespace App.Game
         public bool IsBoss;
         /// <summary>本关是否上场。敌人座位固定 3 个，未上场的 Hp=0。</summary>
         public bool ActiveInStage;
+        /// <summary>头像配置名。玩家来自 HeroConfig.Icon，敌人来自 MonsterConfig.Icon。</summary>
+        public string Icon;
         /// <summary>当前血量。攻击结算才扣除；下注不扣血。</summary>
         public int Hp;
         public int MaxHp;

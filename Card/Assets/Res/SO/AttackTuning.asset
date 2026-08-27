@@ -18,16 +18,28 @@ MonoBehaviour:
     HitHoldDuration: 0.25
     BackDuration: 0.45
     RetreatDistance: 160
+    HitKnockbackDistance: 40
+    HitKnockbackDuration: 0.1
+    HitRecoverDuration: 0.22
   middle:
     StartDuration: 0.9
     MoveDuration: 0.18
     HitHoldDuration: 0.25
     BackDuration: 0.45
     RetreatDistance: 224
+    HitKnockbackDistance: 64
+    HitKnockbackDuration: 0.12
+    HitRecoverDuration: 0.28
   high:
     StartDuration: 1.25
     MoveDuration: 0.18
     HitHoldDuration: 0.33
     BackDuration: 0.55
     RetreatDistance: 288
+    HitKnockbackDistance: 96
+    HitKnockbackDuration: 0.16
+    HitRecoverDuration: 0.34
   hpTextHoldDuration: 0.85
+  deathDissolveDelay: 2
+  deathEffect: {fileID: 4988058555448458962, guid: 960f2c25212a01e468e1a655f350f30b, type: 3}
+  deathEffectDuration: 0.6

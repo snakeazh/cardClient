@@ -22,7 +22,6 @@ namespace App.UI
     {
         private readonly List<HeroItem> _heroItems = new List<HeroItem>();
         private readonly List<LevelItem> _levelItems = new List<LevelItem>();
-        private readonly Dictionary<int, Sprite> _portraits = new Dictionary<int, Sprite>();
         private PlayerItem _playerItem;
         private RectTransform _hor;
         private Tween _horTween;
@@ -71,11 +70,11 @@ namespace App.UI
             Binding.Add(ViewModel.SelectedDifficulty.Subscribe(_ => RefreshLevelItems(), emitCurrent: false));
         }
 
-        protected override async Task OnViewOpen()
+        protected override Task OnViewOpen()
         {
-            await LoadPortraits();
             RefreshHeroItems();
             RefreshPreview();
+            return Task.CompletedTask;
         }
 
         protected override Task OnViewClose()
@@ -219,8 +218,7 @@ namespace App.UI
             {
                 var item = _heroItems[i];
                 var hero = ViewModel.Heroes[i];
-                _portraits.TryGetValue(hero.Id, out var portrait);
-                item.Bind(hero, portrait, hero.Id == selected, ViewModel.IsHeroUnlocked(hero));
+                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, ViewModel.IsHeroUnlocked(hero));
             }
         }
 
@@ -248,7 +246,7 @@ namespace App.UI
             var unlocked = ViewModel.IsHeroUnlocked(hero);
             _playerItem.ApplyTheme(false);
             _playerItem.SetState(string.Empty);
-            _portraits.TryGetValue(hero != null ? hero.Id : 0, out var portrait);
+            var portrait = hero != null ? PortraitLoader.GetRole(hero.Icon) : null;
             if (unlocked && hero != null)
             {
                 _playerItem.SetName(hero.Name);
@@ -283,28 +281,6 @@ namespace App.UI
             }
 
             _horTween = _hor.DOAnchorPosX(x, 0.35f).SetEase(Ease.OutCubic);
-        }
-
-        private async Task LoadPortraits()
-        {
-            var heroes = ViewModel.Heroes;
-            for (var i = 0; i < heroes.Count; i++)
-            {
-                var hero = heroes[i];
-                var key = ResResourcePaths.RoleIcon(hero.Icon);
-                if (string.IsNullOrEmpty(key))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    _portraits[hero.Id] = await ViewModel.Resources.LoadAsync<Sprite>(key);
-                }
-                catch (System.Exception)
-                {
-                }
-            }
         }
     }
 }

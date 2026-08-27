@@ -260,6 +260,11 @@ namespace App.UI.Popup
         {
             for (var i = 0; i < entries.Count; i++)
             {
+                if (entries[i].Tab == IllustratedBookTab.Monster)
+                {
+                    continue;
+                }
+
                 var key = IconKey(entries[i]);
                 if (string.IsNullOrEmpty(key) || _icons.ContainsKey(key))
                 {
@@ -281,6 +286,11 @@ namespace App.UI.Popup
 
         private Sprite GetIcon(IllustratedBookEntry entry)
         {
+            if (entry != null && entry.Tab == IllustratedBookTab.Monster)
+            {
+                return PortraitLoader.GetEnemy(entry.Icon);
+            }
+
             var key = IconKey(entry);
             if (string.IsNullOrEmpty(key))
             {
@@ -349,7 +359,7 @@ namespace App.UI.Popup
                 case IllustratedBookTab.Relic:
                     return ResResourcePaths.RelicIcon(entry.Icon);
                 case IllustratedBookTab.Monster:
-                    return ResResourcePaths.EnemyAttack(EnemyPortraitIndex(entry.Id));
+                    return ResResourcePaths.EnemyPortrait(entry.Icon, ResResourcePaths.PortraitAttack);
                 default:
                     return null;
             }
@@ -369,26 +379,10 @@ namespace App.UI.Popup
                 case IllustratedBookTab.Relic:
                     return string.IsNullOrWhiteSpace(entry.Icon) ? null : "relic:" + entry.Icon.Trim();
                 case IllustratedBookTab.Monster:
-                    return ResResourcePaths.EnemyAttack(EnemyPortraitIndex(entry.Id));
+                    return ResResourcePaths.EnemyPortrait(entry.Icon, ResResourcePaths.PortraitAttack);
                 default:
                     return null;
             }
-        }
-
-        private static int EnemyPortraitIndex(int monsterId)
-        {
-            var index = monsterId % 1000;
-            if (index < 1)
-            {
-                return 1;
-            }
-
-            if (index > 9)
-            {
-                return (index - 1) % 9 + 1;
-            }
-
-            return index;
         }
 
         private async Task EnsureTip()

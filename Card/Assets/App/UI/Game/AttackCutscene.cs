@@ -11,6 +11,7 @@ namespace App.UI
     public sealed class AttackCutscene
     {
         private const string DefaultClip = "ani_default";
+        private const int DeathFxSortingOrder = 240;
 
         private Transform _hud;
         private RectTransform _playerRoot;
@@ -25,6 +26,11 @@ namespace App.UI
         private RectTransform _incomingRoot;
         private Transform _incomingHome;
         private Vector2 _incomingHomeAnchored;
+        private RectTransform _playerCardRect;
+        private readonly RectTransform[] _enemyCardRects = new RectTransform[3];
+        private RectTransform _hitRect;
+        private Vector2 _hitRectHome;
+        private GameObject _deathFx;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -36,6 +42,7 @@ namespace App.UI
             {
                 _enemyRoots[i] = null;
                 _enemyAnims[i] = null;
+                _enemyCardRects[i] = null;
             }
 
             for (var i = 0; i < count; i++)
@@ -129,10 +136,12 @@ namespace App.UI
                 }
 
                 RestoreIncoming();
+                RestoreHitTarget();
                 PlayClip(enemyAnim, DefaultClip);
                 onReturned?.Invoke();
             });
             _seq.AppendInterval(tuning.HpTextHoldDuration);
+            InsertHitKnockback(beat, _playerCardRect, homePos, hitPos);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -213,10 +222,12 @@ namespace App.UI
                 }
 
                 RestoreRoot(homeParent);
+                RestoreHitTarget();
                 PlayClip(_playerAnim, DefaultClip);
                 onReturned?.Invoke();
             });
             _seq.AppendInterval(tuning.HpTextHoldDuration);
+            InsertHitKnockback(beat, _enemyCardRects[visualSlot], homePos, hitPos);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -228,11 +239,45 @@ namespace App.UI
             });
         }
 
+        /// <summary>
+        /// 这一击把血量打到 0 时，在被打者当前位置补一个特效，和溶解同时发生。
+        /// 只有致死才播，所以不进攻击序列的时间轴，自己按配置时长计时销毁。
+        /// </summary>
+        public void PlayDeathEffect(Vector3 worldPos)
+        {
+            var tuning = AttackTuningConfig.Instance;
+            var prefab = tuning.DeathEffect;
+            if (prefab == null || _hud == null || worldPos == Vector3.zero)
+            {
+                return;
+            }
+
+            ClearDeathEffect();
+            var go = UnityEngine.Object.Instantiate(prefab, _hud, false);
+            go.transform.SetAsLastSibling();
+            go.transform.position = worldPos;
+            go.transform.localRotation = Quaternion.identity;
+            go.SetActive(true);
+            UiFx.ApplySorting(go, DeathFxSortingOrder);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
+            _deathFx = go;
+
+            var life = tuning.DeathEffectDuration;
+            if (life <= 0f)
+            {
+                return;
+            }
+
+            DOVirtual.DelayedCall(life, () => ClearDeathEffect(go), false).SetLink(go);
+        }
+
         public void Dispose()
         {
             Kill();
             RestoreRoot(_playerHome);
             RestoreIncoming();
+            RestoreHitTarget();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
         }
@@ -241,6 +286,7 @@ namespace App.UI
         {
             _playerRoot = player != null ? player.RootRect : null;
             _playerAnim = player != null ? player.RootAnimator : null;
+            _playerCardRect = player != null ? player.GetComponent<RectTransform>() : null;
             if (_playerRoot != null)
             {
                 _playerHome = _playerRoot.parent;
@@ -261,6 +307,7 @@ namespace App.UI
 
             _enemyRoots[index] = enemy.RootRect;
             _enemyAnims[index] = enemy.RootAnimator;
+            _enemyCardRects[index] = enemy.GetComponent<RectTransform>();
         }
 
         private void AttachRootToFlight(RectTransform root, Vector3 worldPos)
@@ -330,6 +377,39 @@ namespace App.UI
             }
         }
 
+        /// <summary>受击卡回到原位。位移做在卡根节点上，不动父子关系。</summary>
+        private void RestoreHitTarget()
+        {
+            if (_hitRect == null)
+            {
+                return;
+            }
+
+            _hitRect.anchoredPosition = _hitRectHome;
+            _hitRect = null;
+        }
+
+        private void ClearDeathEffect()
+        {
+            ClearDeathEffect(_deathFx);
+        }
+
+        private void ClearDeathEffect(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            if (_deathFx == go)
+            {
+                _deathFx = null;
+            }
+
+            go.transform.DOKill();
+            UnityEngine.Object.Destroy(go);
+        }
+
         private RectTransform EnsureFlight()
         {
             if (_flight != null)
@@ -373,6 +453,8 @@ namespace App.UI
             _seq = null;
             RestoreRoot(_playerHome);
             RestoreIncoming();
+            RestoreHitTarget();
+            ClearDeathEffect();
         }
 
         private void DestroyFlight()
@@ -415,6 +497,45 @@ namespace App.UI
             _seq.Join(_flight.DOLocalRotate(Vector3.zero, backDur).SetEase(Ease.OutCubic));
         }
 
+        /// <summary>
+        /// 冲撞命中那一刻起受击卡朝攻击方的反方向弹开，再回原位。位移做在卡根节点上，
+        /// hit 片段驱动的是它下面的 PlayerRoot，两者不抢同一个 transform。
+        /// 必须在主时间轴 Append 完之后再调用：Append 是接在序列当前总时长的末尾，
+        /// 先 Insert 会把总时长撑长，后面 Append 的冲撞位移就被推到击退之后了。
+        /// </summary>
+        private void InsertHitKnockback(
+            AttackTuningConfig.LevelTuning beat,
+            RectTransform hitRect,
+            Vector3 attackerWorldPos,
+            Vector3 targetWorldPos)
+        {
+            if (hitRect == null)
+            {
+                return;
+            }
+
+            var hitTime = beat.StartDuration + beat.MoveDuration;
+
+            _hitRect = hitRect;
+            _hitRectHome = hitRect.anchoredPosition;
+
+            var knockDir = KnockbackDir(hitRect, targetWorldPos - attackerWorldPos);
+            var knockAnchored = KnockbackPoint(_hitRectHome, knockDir, beat.HitKnockbackDistance);
+            _seq.Insert(
+                hitTime,
+                hitRect.DOAnchorPos(knockAnchored, beat.HitKnockbackDuration).SetEase(Ease.OutQuad));
+            _seq.Insert(
+                hitTime + beat.HitKnockbackDuration,
+                hitRect.DOAnchorPos(_hitRectHome, beat.HitRecoverDuration).SetEase(Ease.OutQuad));
+        }
+
+        /// <summary>攻击方指向受击方的世界方向换算到受击卡父节点的局部方向。</summary>
+        private static Vector2 KnockbackDir(RectTransform hitRect, Vector3 worldDir)
+        {
+            var parent = hitRect.parent;
+            return parent != null ? (Vector2)parent.InverseTransformDirection(worldDir) : (Vector2)worldDir;
+        }
+
         private Vector2 WorldToHudAnchored(Vector3 world)
         {
             var parent = _flight != null ? _flight.parent as RectTransform : _hud as RectTransform;
@@ -453,6 +574,16 @@ namespace App.UI
             }
 
             return from - dir.normalized * distance;
+        }
+
+        private static Vector2 KnockbackPoint(Vector2 from, Vector2 attackDir, float distance)
+        {
+            if (attackDir.sqrMagnitude < 0.0001f)
+            {
+                return from;
+            }
+
+            return from + attackDir.normalized * distance;
         }
 
         private static string Clip(int level, string phase)

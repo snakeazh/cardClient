@@ -943,7 +943,7 @@ namespace App.UI
             var text = num != null ? num.GetComponent<TMP_Text>() : null;
             if (text != null)
             {
-                Binding.BindText(text, ViewModel.GoldText);
+                Binding.BindRollingText(text, ViewModel.GoldText);
             }
         }
 

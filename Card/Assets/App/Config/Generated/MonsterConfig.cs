@@ -17,7 +17,7 @@ namespace App.Config
         public int MonsterId;
 
         /// <summary>
-        /// 怪物等级
+        /// 等级
         /// </summary>
         public int MonsterLevel;
 

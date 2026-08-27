@@ -69,6 +69,19 @@ namespace App.Resources
             return $"Textures/Relic/{icon.Trim()}";
         }
 
+        /// <summary>
+        /// <see cref="App.Config.TalentConfig.Icon"/> 对应 Assets/Res/Textures/Talent 下的文件名（无扩展名）。
+        /// </summary>
+        public static string TalentIcon(string icon)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+
+            return $"Textures/Talent/{icon.Trim()}";
+        }
+
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
 
         /// <summary>

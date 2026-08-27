@@ -16,7 +16,6 @@ namespace App.UI
     public sealed class HomeView : ViewBase<HomeViewModel>
     {
         private PlayerItem _playerItem;
-        private Sprite _portrait;
 
         protected override void OnBind()
         {
@@ -27,28 +26,10 @@ namespace App.UI
             BindHero();
         }
 
-        protected override async Task OnViewOpen()
+        protected override Task OnViewOpen()
         {
-            await LoadPortrait();
             BindHero();
-        }
-
-        private async Task LoadPortrait()
-        {
-            var hero = ViewModel.Hero;
-            var key = ResResourcePaths.RoleIcon(hero != null ? hero.Icon : null);
-            if (string.IsNullOrEmpty(key) || ViewModel.Resources == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _portrait = await ViewModel.Resources.LoadAsync<Sprite>(key);
-            }
-            catch (System.Exception)
-            {
-            }
+            return Task.CompletedTask;
         }
 
         private void BindHero()
@@ -74,7 +55,7 @@ namespace App.UI
             _playerItem.SetHp(hero.Hp);
             _playerItem.SetAttack(hero.HeroDamage);
             _playerItem.SetState(string.Empty);
-            _playerItem.SetPortrait(_portrait);
+            _playerItem.SetPortrait(PortraitLoader.GetRole(hero.Icon));
         }
     }
 }

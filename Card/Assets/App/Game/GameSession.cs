@@ -45,6 +45,7 @@ namespace App.Game
         private SeatState _pendingOpenTarget;
         private bool _pendingOpenerWins;
         private SeatState _pendingAttackTarget;
+        private bool _attackHitsApplied;
         private readonly List<SeatState> _compareQueue = new List<SeatState>();
         private int _compareCursor;
         private int _roundDamageDealt;
@@ -763,6 +764,18 @@ namespace App.Game
             BeginPlayerAttack(target);
         }
 
+        /// <summary>受击演出开始时扣血。没有演出时由 <see cref="CompletePlayerAttack"/> 兜底。</summary>
+        public void ApplyPendingAttackHits()
+        {
+            if (_attackHitsApplied || Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
+            {
+                return;
+            }
+
+            ResolvePendingAttackHits(_pendingAttackTarget);
+            Notify();
+        }
+
         public void CompletePlayerAttack()
         {
             if (Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
@@ -788,6 +801,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(target);
             AttackDamage = Math.Max(1, PendingAttackDamage);
             TakenDamage = AttackDamage;
+            _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -859,15 +873,13 @@ namespace App.Game
         private void FinishPlayerAttack(SeatState target)
         {
             IncomingAttack = false;
-            var damage = Math.Max(1, PendingAttackDamage);
-            PendingAttackDamage = 0;
-            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
-
-            if (!target.IsPlayer)
+            if (!_attackHitsApplied)
             {
-                _roundDamageDealt += scoreDamage;
-                ApplyBloodSucking(dealt);
+                ResolvePendingAttackHits(target);
             }
+
+            _attackHitsApplied = false;
+            PendingAttackDamage = 0;
 
             if (!_sequentialCompare)
             {
@@ -883,6 +895,18 @@ namespace App.Game
 
             _compareCursor++;
             RunNextCompare();
+        }
+
+        private void ResolvePendingAttackHits(SeatState target)
+        {
+            _attackHitsApplied = true;
+            var damage = Math.Max(1, PendingAttackDamage);
+            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
+            if (target != null && !target.IsPlayer)
+            {
+                _roundDamageDealt += scoreDamage;
+                ApplyBloodSucking(dealt);
+            }
         }
 
         private int ApplyPlayerAttackHits(SeatState target, int damage, out int scoreDamage)
@@ -963,6 +987,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(attacker);
             AttackDamage = Math.Max(1, PendingAttackDamage);
             TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage);
+            _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -4257,6 +4282,7 @@ namespace App.Game
             var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
             attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
             Player.Attack = Math.Max(0, attack);
+            Player.Icon = hero != null ? hero.Icon : null;
         }
 
         private void ApplyRelicMaxHpDelta(int delta)
@@ -4337,6 +4363,7 @@ namespace App.Game
                         seat.Name = monster.IsBoss ? "BOSS" : names[i];
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
+                        seat.Icon = monster.Icon;
                     }
                     else
                     {
@@ -4369,6 +4396,7 @@ namespace App.Game
                 var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
                 ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
                 seat.Attack = seat.ActiveInStage ? 10 : 0;
+                seat.Icon = null;
                 seat.Banner = string.Empty;
                 ClearRound(seat);
             }
@@ -4384,6 +4412,7 @@ namespace App.Game
             seat.Name = $"敌人{index + 1}";
             ApplySeatHp(seat, 0, 0);
             seat.Attack = 0;
+            seat.Icon = null;
         }
 
         private bool TryAdvanceLevel()

@@ -143,7 +143,7 @@
 | 买 / 卖 HeroHpMax | `BuyShopRelic` / `SellShopRelic` |
 | 进关重算上限 | `ApplyHeroToPlayer` |
 | 每手回血 | `AfterRound` → `ApplyEveryRoundHpUp` |
-| 吸血 | `FinishPlayerAttack` → `ApplyBloodSucking` |
+| 吸血 | `ApplyPendingAttackHits` → `ApplyBloodSucking` |
 | 235 / 老花眼 / 错峰 | `EvaluateSeat` / `SelectBestOpen` |
 | 圆盾 / 补偿金 / 工资卡 | `ApplyDamage` |
 | 白条 / 投资花费 | `BuyShopRelic` / `RefreshShopOffers` |

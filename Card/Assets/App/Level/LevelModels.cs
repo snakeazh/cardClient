@@ -60,7 +60,8 @@ namespace App.Level
             MonsterType type,
             int hp,
             int damage,
-            int monsterEntry)
+            int monsterEntry,
+            string icon)
         {
             GroupId = groupId;
             MonsterId = monsterId;
@@ -69,6 +70,7 @@ namespace App.Level
             Hp = hp;
             Damage = damage;
             MonsterEntry = monsterEntry;
+            Icon = icon;
         }
 
         public int GroupId { get; }
@@ -85,6 +87,9 @@ namespace App.Level
         public int Damage { get; }
 
         public int MonsterEntry { get; }
+
+        /// <summary>`MonsterConfig.Icon`，拼 `_attack` / `_damage` / `_dead` 加载头像。</summary>
+        public string Icon { get; }
 
         public bool IsBoss => Type == MonsterType.Boss;
     }

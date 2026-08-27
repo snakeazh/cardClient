@@ -66,6 +66,7 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Coroutine _aiDelay;
+        private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
 
         protected override void OnBind()
         {
@@ -129,6 +130,7 @@ namespace App.UI
             }
 
             StopAiDelay();
+            CancelAllDeathDissolves();
 
             if (_board != null)
             {
@@ -500,7 +502,8 @@ namespace App.UI
             {
                 if (session.Player != null && session.Player.Hp <= damage)
                 {
-                    _playerItem?.PlayDissolve();
+                    _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
+                    ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
                 }
 
                 return;
@@ -509,9 +512,80 @@ namespace App.UI
             var target = session.EnemyAtVisualSlot(session.AttackVisualSlot);
             if (target != null && target.Hp <= damage)
             {
-                var item = AttackItemAtSlot(session.AttackVisualSlot);
-                item?.PlayDissolve(-1f, () => HideEnemyItem(item));
+                _attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
+                ScheduleDeathDissolve(AttackItemAtSlot(session.AttackVisualSlot), hideWhenDone: true);
             }
+        }
+
+        /// <summary>
+        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。结算节奏不跟着等，
+        /// 所以延迟没走完扣血就已经发生，ShowEnemy 会先翻 false —— BindEnemyVisible
+        /// 得让位给这里，否则会抢在延迟结束前把卡溶掉，延迟等于没有。
+        /// 怪溶完要隐藏节点，玩家卡留着。
+        /// </summary>
+        private void ScheduleDeathDissolve(PlayerItem item, bool hideWhenDone)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            CancelDeathDissolve(item);
+            var delay = AttackTuningConfig.Instance.DeathDissolveDelay;
+            if (delay <= 0f)
+            {
+                PlayDeathDissolve(item, hideWhenDone);
+                return;
+            }
+
+            _deathDissolves[item] = DOVirtual
+                .DelayedCall(delay, () => PlayDeathDissolve(item, hideWhenDone), false)
+                .SetLink(item.gameObject);
+        }
+
+        private void PlayDeathDissolve(PlayerItem item, bool hideWhenDone)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            _deathDissolves.Remove(item);
+            if (!hideWhenDone)
+            {
+                item.PlayDissolve();
+                return;
+            }
+
+            item.PlayDissolve(-1f, () => HideEnemyItem(item));
+        }
+
+        private void CancelDeathDissolve(PlayerItem item)
+        {
+            if (item == null || !_deathDissolves.TryGetValue(item, out var tween))
+            {
+                return;
+            }
+
+            _deathDissolves.Remove(item);
+            if (tween != null && tween.IsActive())
+            {
+                tween.Kill();
+            }
+        }
+
+        private void CancelAllDeathDissolves()
+        {
+            foreach (var pair in _deathDissolves)
+            {
+                var tween = pair.Value;
+                if (tween != null && tween.IsActive())
+                {
+                    tween.Kill();
+                }
+            }
+
+            _deathDissolves.Clear();
         }
 
         private PlayerItem AttackItemAtSlot(int slot)
@@ -680,11 +754,17 @@ namespace App.UI
                 if (visible)
                 {
                     go.SetActive(true);
+                    CancelDeathDissolve(item);
                     item.ResetDissolve();
                     return;
                 }
 
                 if (go == null || !go.activeSelf)
+                {
+                    return;
+                }
+
+                if (_deathDissolves.ContainsKey(item))
                 {
                     return;
                 }

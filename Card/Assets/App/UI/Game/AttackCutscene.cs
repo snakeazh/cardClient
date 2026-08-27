@@ -11,6 +11,7 @@ namespace App.UI
     public sealed class AttackCutscene
     {
         private const string DefaultClip = "ani_default";
+        private const int DeathFxSortingOrder = 240;
 
         private Transform _hud;
         private RectTransform _playerRoot;
@@ -29,6 +30,7 @@ namespace App.UI
         private readonly RectTransform[] _enemyCardRects = new RectTransform[3];
         private RectTransform _hitRect;
         private Vector2 _hitRectHome;
+        private GameObject _deathFx;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -237,6 +239,39 @@ namespace App.UI
             });
         }
 
+        /// <summary>
+        /// 这一击把血量打到 0 时，在被打者当前位置补一个特效，和溶解同时发生。
+        /// 只有致死才播，所以不进攻击序列的时间轴，自己按配置时长计时销毁。
+        /// </summary>
+        public void PlayDeathEffect(Vector3 worldPos)
+        {
+            var tuning = AttackTuningConfig.Instance;
+            var prefab = tuning.DeathEffect;
+            if (prefab == null || _hud == null || worldPos == Vector3.zero)
+            {
+                return;
+            }
+
+            ClearDeathEffect();
+            var go = UnityEngine.Object.Instantiate(prefab, _hud, false);
+            go.transform.SetAsLastSibling();
+            go.transform.position = worldPos;
+            go.transform.localRotation = Quaternion.identity;
+            go.SetActive(true);
+            UiFx.ApplySorting(go, DeathFxSortingOrder);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
+            _deathFx = go;
+
+            var life = tuning.DeathEffectDuration;
+            if (life <= 0f)
+            {
+                return;
+            }
+
+            DOVirtual.DelayedCall(life, () => ClearDeathEffect(go), false).SetLink(go);
+        }
+
         public void Dispose()
         {
             Kill();
@@ -354,6 +389,27 @@ namespace App.UI
             _hitRect = null;
         }
 
+        private void ClearDeathEffect()
+        {
+            ClearDeathEffect(_deathFx);
+        }
+
+        private void ClearDeathEffect(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            if (_deathFx == go)
+            {
+                _deathFx = null;
+            }
+
+            go.transform.DOKill();
+            UnityEngine.Object.Destroy(go);
+        }
+
         private RectTransform EnsureFlight()
         {
             if (_flight != null)
@@ -398,6 +454,7 @@ namespace App.UI
             RestoreRoot(_playerHome);
             RestoreIncoming();
             RestoreHitTarget();
+            ClearDeathEffect();
         }
 
         private void DestroyFlight()

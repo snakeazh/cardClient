@@ -127,7 +127,25 @@ namespace App.UI
         [SerializeField]
         private float hpTextHoldDuration = 0.85f;
 
+        [Tooltip("这一击致死后，等多久才开始播溶解和致死特效（秒）。结算节奏不受影响，被打死的卡会先站着不动。")]
+        [SerializeField]
+        private float deathDissolveDelay = 2f;
+
+        [Tooltip("这一击把血量打到 0 时，在被打者卡片位置播放的特效。留空则不播。")]
+        [SerializeField]
+        private GameObject deathEffect;
+
+        [Tooltip("致死特效的存活时长（秒），到点销毁。填 0 则一直留到下一次攻击演出开始。")]
+        [SerializeField]
+        private float deathEffectDuration = 0.6f;
+
         public float HpTextHoldDuration => Mathf.Max(0f, hpTextHoldDuration);
+
+        public float DeathDissolveDelay => Mathf.Max(0f, deathDissolveDelay);
+
+        public GameObject DeathEffect => deathEffect;
+
+        public float DeathEffectDuration => Mathf.Max(0f, deathEffectDuration);
 
         /// <summary>取一档参数，level 为 1 低 / 2 中 / 3 高，越界按低档处理。</summary>
         public LevelTuning Level(int level)

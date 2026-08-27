@@ -42,13 +42,15 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `start` | 起手 |
 | `move` | 位移中 |
 | `end` | 命中 |
-| `hit` | 被打一方受击 |
+| `hit` | 被打一方受击，同时卡被击退再回位 |
 | `back` | 退回 |
 | `ani_default` | 复位 |
 
 位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。
 
 `start` 片段、转向瞄准、后撤蓄力三者同时开始，共用 `StartDuration`；`start` 播完才接 `move` 冲撞。
+
+受击方在命中那一刻播 `hit`，同时朝攻击方的反方向被击退，再回原位。击退位移做在受击卡的**根节点**（`PlayerItem` 的 RectTransform）上，`hit` 片段驱动的是它下面的 `PlayerRoot`，两者不抢同一个 transform，也不用挂飞行层——挪走 `PlayerRoot` 会让 `UiDissolve` 收集不到卡面图形，致死溶解就失效了。击退用 `Sequence.Insert` 插在命中时刻（`StartDuration + MoveDuration`），和定格、攻击方退回并行，不改变整段总时长。
 
 ---
 
@@ -63,6 +65,9 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `HitHoldDuration` | 命中后定格停留 |
 | `BackDuration` | 退回原位时长 |
 | `RetreatDistance` | 后撤蓄力距离（UI 像素） |
+| `HitKnockbackDistance` | 受击方被击退的距离（UI 像素） |
+| `HitKnockbackDuration` | 受击方被击退的时长 |
+| `HitRecoverDuration` | 受击方从击退位置回原位的时长 |
 | `HpTextHoldDuration` | 退回后伤害数字继续停留，过完才扣血 |
 
 低 / 中 / 三档各一组，对应 `AttackLevel` 的 1 / 2 / 3。
@@ -94,3 +99,5 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 - 不要把 `AttackFlight` 的缩放写成 1 后直接挂 `PlayerRoot`；飞行层必须跟原父节点（`PlayerItem` 的 0.78）对齐。
 - 槽位无效时跳过位移，仍走 onHit / onDone，避免卡死状态机。
 - 时长不要写回代码常量，一律加到 `AttackTuningConfig` 让策划调。
+- 受击击退不要挂飞行层、不要动 `PlayerRoot` 的父子关系，否则致死溶解会失效。
+- 击退 + 回位的总时长若超过 `HitHoldDuration + BackDuration + HpTextHoldDuration`，整段会被拉长，`onDone` 跟着延后。

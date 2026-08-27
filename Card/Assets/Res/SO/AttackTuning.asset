@@ -18,16 +18,25 @@ MonoBehaviour:
     HitHoldDuration: 0.25
     BackDuration: 0.45
     RetreatDistance: 160
+    HitKnockbackDistance: 40
+    HitKnockbackDuration: 0.1
+    HitRecoverDuration: 0.22
   middle:
     StartDuration: 0.9
     MoveDuration: 0.18
     HitHoldDuration: 0.25
     BackDuration: 0.45
     RetreatDistance: 224
+    HitKnockbackDistance: 64
+    HitKnockbackDuration: 0.12
+    HitRecoverDuration: 0.28
   high:
     StartDuration: 1.25
     MoveDuration: 0.18
     HitHoldDuration: 0.33
     BackDuration: 0.55
     RetreatDistance: 288
+    HitKnockbackDistance: 96
+    HitKnockbackDuration: 0.16
+    HitRecoverDuration: 0.34
   hpTextHoldDuration: 0.85

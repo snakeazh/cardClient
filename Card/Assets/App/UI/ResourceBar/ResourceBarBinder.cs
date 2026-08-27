@@ -62,7 +62,7 @@ namespace App.UI
             var text = num != null ? num.GetComponent<TMP_Text>() : null;
             if (text != null)
             {
-                binding.BindText(text, slot.Amount);
+                binding.BindRollingText(text, slot.Amount);
             }
 
             var icon = FindChild(item, "Icon");

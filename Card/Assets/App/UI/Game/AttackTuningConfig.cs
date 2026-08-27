@@ -69,6 +69,15 @@ namespace App.UI
 
             [Tooltip("后撤蓄力的距离，朝目标反方向拉开多少 UI 像素。")]
             public float RetreatDistance = 160f;
+
+            [Tooltip("受击方被击退的距离，朝攻击方的反方向弹开多少 UI 像素。")]
+            public float HitKnockbackDistance = 40f;
+
+            [Tooltip("受击方被击退的时长（秒）。与播 hit 片段同时开始。")]
+            public float HitKnockbackDuration = 0.1f;
+
+            [Tooltip("受击方从击退位置回到原位的时长（秒）。")]
+            public float HitRecoverDuration = 0.22f;
         }
 
         [Header("低（散牌 / 对子）")]
@@ -79,7 +88,10 @@ namespace App.UI
             MoveDuration = 0.18f,
             HitHoldDuration = 0.25f,
             BackDuration = 0.45f,
-            RetreatDistance = 160f
+            RetreatDistance = 160f,
+            HitKnockbackDistance = 40f,
+            HitKnockbackDuration = 0.1f,
+            HitRecoverDuration = 0.22f
         };
 
         [Header("中（顺子 / 金花）")]
@@ -90,7 +102,10 @@ namespace App.UI
             MoveDuration = 0.18f,
             HitHoldDuration = 0.25f,
             BackDuration = 0.45f,
-            RetreatDistance = 224f
+            RetreatDistance = 224f,
+            HitKnockbackDistance = 64f,
+            HitKnockbackDuration = 0.12f,
+            HitRecoverDuration = 0.28f
         };
 
         [Header("高（顺金 / 豹子）")]
@@ -101,7 +116,10 @@ namespace App.UI
             MoveDuration = 0.18f,
             HitHoldDuration = 0.33f,
             BackDuration = 0.55f,
-            RetreatDistance = 288f
+            RetreatDistance = 288f,
+            HitKnockbackDistance = 96f,
+            HitKnockbackDuration = 0.16f,
+            HitRecoverDuration = 0.34f
         };
 
         [Header("通用")]

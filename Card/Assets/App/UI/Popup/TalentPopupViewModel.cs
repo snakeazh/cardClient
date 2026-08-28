@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Config;
 using App.Resources;
 using App.Talent;
+using App.Wallet;
 using Framework.Assets;
 using Framework.Log;
 using Framework.UI;
@@ -26,27 +27,33 @@ namespace App.UI.Popup
 
     /// <summary>
     /// 天赋弹窗：列表读 ITalentService（未解锁显示 ???），点击条目打开天赋详情；
-    /// BuyBtn 显示抽天赋金币价（购买流程未接入，暂不响应点击）。
+    /// BuyBtn 按 GameConst.TalentChestNeedGold 扣金币随机抽一个天赋，弹详情展示结果，
+    /// 金币不足时 Toast 提示。
     /// </summary>
     public sealed class TalentPopupViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
         private readonly ITalentService _talent;
+        private readonly IWalletService _wallet;
         private readonly List<TalentItem> _items = new List<TalentItem>();
 
         public TalentPopupViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
             ITalentService talent,
+            IWalletService wallet,
             IResourceService resources)
         {
             _ui = ui;
             _navigation = navigation;
             _talent = talent;
+            _wallet = wallet;
             Resources = resources;
             CloseCommand = new RelayCommand(Dismiss);
+            BuyCommand = new RelayCommand(Buy);
             BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
+            ListVersion = new ObservableProperty<int>(0);
             RebuildItems();
         }
 
@@ -54,10 +61,15 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> BuyCostText { get; }
 
+        /// <summary>购买后自增，View 订阅后重建列表（新抽到的天赋解锁显示）。</summary>
+        public ObservableProperty<int> ListVersion { get; }
+
         /// <summary>供 View 异步加载条目图标（同图鉴 VM 暴露 Resources 的模式）。</summary>
         public IResourceService Resources { get; }
 
         public IRelayCommand CloseCommand { get; }
+
+        public IRelayCommand BuyCommand { get; }
 
         protected override Task OnOpen(object args)
         {
@@ -65,9 +77,14 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
-        public async Task OpenDetail(TalentItem item)
+        public Task OpenDetail(TalentItem item)
         {
-            if (item == null || !item.Snapshot.IsOwned)
+            return item == null ? Task.CompletedTask : OpenDetail(item.Snapshot.TalentId);
+        }
+
+        public async Task OpenDetail(int talentId)
+        {
+            if (_talent.GetLevel(talentId) <= 0)
             {
                 return;
             }
@@ -76,13 +93,39 @@ namespace App.UI.Popup
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
                 var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
-                vm.Setup(item.Snapshot.TalentId);
+                vm.Setup(talentId);
                 await _ui.Open(vm);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
             }
+        }
+
+        private void Buy()
+        {
+            if (!GameConst.IsLoaded)
+            {
+                return;
+            }
+
+            var cost = GameConst.Instance.TalentChestNeedGold;
+            var talentId = _talent.DrawRandomId();
+            if (cost <= 0 || talentId <= 0)
+            {
+                return;
+            }
+
+            if (!_wallet.TrySpend(cost))
+            {
+                Toast.Show("金币不足");
+                return;
+            }
+
+            _talent.Add(talentId);
+            RebuildItems();
+            ListVersion.Value++;
+            _ = OpenDetail(talentId);
         }
 
         private void RebuildItems()

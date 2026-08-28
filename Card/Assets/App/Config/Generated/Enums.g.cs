@@ -605,19 +605,199 @@ namespace App.Config
         MissDamagePer = 91,
 
         /// <summary>
-        /// 免疫伤害的概率
+        /// 每回合开始获得金币
         /// </summary>
-        MaxHp = 92,
+        EveryRoundGetGold = 92,
 
         /// <summary>
-        /// 免疫伤害的概率
+        /// 每回合结束概率获得金币
         /// </summary>
-        EveryRoundHpUp = 93,
+        EveryRoundEndingGetGoldPer = 93,
 
         /// <summary>
-        /// 235
+        /// 暴击叠加
         /// </summary>
-        TwoThreeFive = 94,
+        EveryRoundEndingGetCritical = 94,
+
+        /// <summary>
+        /// 亮牌大于所有人加攻击力
+        /// </summary>
+        SteppingStone = 95,
+
+        /// <summary>
+        /// 受到伤害反弹伤害
+        /// </summary>
+        BounceDamage = 96,
+
+        /// <summary>
+        /// 承伤或伤害降低为0的概率
+        /// </summary>
+        AllPeacePer = 97,
+
+        /// <summary>
+        /// 牌小获得攻击力
+        /// </summary>
+        DefeatGetAttack = 98,
+
+        /// <summary>
+        /// 牌小获得生命上限
+        /// </summary>
+        DefeatGetHpMax = 99,
+
+        /// <summary>
+        /// 未造成伤害获得金币
+        /// </summary>
+        DefeatAllGetGold = 100,
+
+        /// <summary>
+        /// 亮牌后获得金币
+        /// </summary>
+        IronRiceBowl = 101,
+
+        /// <summary>
+        /// 每回合开始获得生命上限
+        /// </summary>
+        EveryRoundGetHpMax = 102,
+
+        /// <summary>
+        /// 强行视敌人牌为同花
+        /// </summary>
+        LuckyFlush = 103,
+
+        /// <summary>
+        /// 闪避叠加
+        /// </summary>
+        EveryRoundEndingGetEvade = 104,
+
+        /// <summary>
+        /// 半血回血
+        /// </summary>
+        ThermosCup = 105,
+
+        /// <summary>
+        /// 利息
+        /// </summary>
+        Interest = 106,
+
+        /// <summary>
+        /// 搓牌次数换金币
+        /// </summary>
+        Abacus = 107,
+
+        /// <summary>
+        /// 牌小获得金币和回血
+        /// </summary>
+        DefeatAllGetGoldAndReplyHp = 108,
+
+        /// <summary>
+        /// 免疫第一次承伤
+        /// </summary>
+        MissFirstDamage = 109,
+
+        /// <summary>
+        /// 牌小获得倍率
+        /// </summary>
+        DefeatGetMagnification = 110,
+
+        /// <summary>
+        /// 强行视敌人牌为顺子
+        /// </summary>
+        LuckyStraight = 111,
+
+        /// <summary>
+        /// 反转结果的概率
+        /// </summary>
+        ReverseResult = 112,
+
+        /// <summary>
+        /// 回合内未进行击杀提高倍率
+        /// </summary>
+        NoKillMonsterGetMagnification = 113,
+
+        /// <summary>
+        /// 对赢过自己的怪物类型提高伤害
+        /// </summary>
+        Revenge = 114,
+
+        /// <summary>
+        /// 半血以上得金币
+        /// </summary>
+        NobleBadge = 115,
+
+        /// <summary>
+        /// 赢过自己的怪物类型降低伤害
+        /// </summary>
+        Trap = 116,
+
+        /// <summary>
+        /// 降级牌型概率
+        /// </summary>
+        DownGrade = 117,
+
+        /// <summary>
+        /// 额外攻击的次数
+        /// </summary>
+        AdmissionTicket = 118,
+
+        /// <summary>
+        /// 敌人伤害降低
+        /// </summary>
+        MonsterDamage = 119,
+
+        /// <summary>
+        /// 闪避反击
+        /// </summary>
+        MissGetDamage = 120,
+
+        /// <summary>
+        /// 强行视敌人牌为对子
+        /// </summary>
+        LuckyCouplet = 121,
+
+        /// <summary>
+        /// 每次失败提升伤害
+        /// </summary>
+        DefeatGetDamage = 122,
+
+        /// <summary>
+        /// 免死一次
+        /// </summary>
+        AstrawToClutchAt = 123,
+
+        /// <summary>
+        /// 孤立无援
+        /// </summary>
+        OneMonsterGetDamage = 124,
+
+        /// <summary>
+        /// 牌型升级
+        /// </summary>
+        CardUpGrade = 125,
+
+        /// <summary>
+        /// 敌人血量上限
+        /// </summary>
+        MonsterHpMax = 126,
+
+        /// <summary>
+        /// 暴击触发AOE
+        /// </summary>
+        CriticalAoe = 127,
+
+        /// <summary>
+        /// 透视次数
+        /// </summary>
+        PerspectiveNum = 128,
+
+        /// <summary>
+        /// 伤害转为金币
+        /// </summary>
+        DamageTurnToGold = 129,
+
+        /// <summary>
+        /// 差距胶囊
+        /// </summary>
+        GapDamage = 130,
 
     }
 

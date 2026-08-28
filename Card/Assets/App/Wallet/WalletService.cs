@@ -35,6 +35,19 @@ namespace App.Wallet
             Changed?.Invoke();
         }
 
+        public bool TrySpend(int amount)
+        {
+            if (amount <= 0 || _gold < amount)
+            {
+                return false;
+            }
+
+            _gold -= amount;
+            _dirty = true;
+            Changed?.Invoke();
+            return true;
+        }
+
         public void Load()
         {
             _gold = _save.GetInt(SaveKey, 0);

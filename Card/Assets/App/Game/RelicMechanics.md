@@ -7,7 +7,7 @@
 `RelicEntryConfig` 是商品效果词条（`MechanismType` + `Value`）。一件商品可挂多条（如小精灵 `20010` + `200101`）。  
 `Run.RelicConfigIds` 是已购商品 Id。锋芒禁用写在 `Run.DisabledRelicConfigId`（0 表示未禁用）。
 
-词条数值以 `RelicEntryConfig.Value` 为准（描述文案与表不一致时不改表）。
+词条数值以 `RelicEntryConfig.Value[]` 为准：主值 `Value[0]`，第二项用 `RelicMechanics.ValueAt(entry, 1)`（缺项为 0）。描述文案与表不一致时不改表。
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架卡：[`ShopItem.md`](../Item/ShopItem.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。
 
@@ -25,7 +25,7 @@
 
 买卖只走 `GameSession.BuyShopRelic` / `SellShopRelic`。最多 `GameBalance.MaxRelics`（3）件。没有第二套商品表。
 
-生成枚举里残留的 `MaxHp=11` / `EveryRoundHpUp=12` / `TwoThreeFive=14` 与 `HeadCardAttack` / `HeroHpMax` / `HeroAttack` 同值，**不要用这些旧名**。血上限用 `HeroHpMax`，回合回血用 `HeroHpReplyEveryRoundEnding`，235 用 `SpecialTwoThreeFive`。
+不要用已删除的枚举残留名 `MaxHp` / `EveryRoundHpUp` / `TwoThreeFive`。血上限用 `HeroHpMax`，回合回血用 `HeroHpReplyEveryRoundEnding`，235 用 `SpecialTwoThreeFive`。
 
 ---
 
@@ -97,6 +97,8 @@
 | RubbingCardRelic | 老搓家累计倍率（卖掉仍加） |
 | ProOfUpCardType | 天使已永久加上的该牌型倍率（卖掉仍加） |
 | SpecialSevenCard | 幸运七本手触发次数 × Value |
+| DefeatGetMagnification | 复盘笔记层数 × Value[1] |
+| NoKillMonsterGetMagnification | 练习卷累计倍率（卖掉仍加） |
 
 攻击加成 `SumAttackExtra`：
 
@@ -128,8 +130,42 @@
 | ProOfUpCardType | 本手亮牌结算后（每手一次） | Value 概率给当前牌型永久 +1 倍率 |
 | RubbingCardRelic | 成功搓牌时 | 永久倍率 +Value（卖掉仍保留已加部分） |
 | SpecialSevenCardPro | 伤害结算 | 每张亮出 7 按 Value 掷一次，同时决定攻击和倍率 |
+| HeroCritical / MissDamagePer | 暴击 / 闪避 | 与英雄词条相加。刺客秘籍、武林秘籍走这两条 |
+| EveryRoundGetGold | `StartRound` | +Value 金币 |
+| EveryRoundEndingGetGoldPer | `AfterRound` | Value[0] 概率 +Value[1] 金币 |
+| EveryRoundEndingGetCritical / Evade | `AfterRound` | 叠一层，上限 Value[1]，暴击/闪避率 += 层数 × Value[0] |
+| SteppingStone | 本回合比过的敌人全赢 | 永久攻击 +Value |
+| BounceDamage | 玩家实际扣血后 | 反弹 Value 给攻击者 |
+| AllPeacePer | 出伤 / 承伤各掷一次 | 该次伤害变为 0 |
+| DefeatGetAttack / DefeatGetHpMax | 每输掉一次比牌 | 永久攻击 / 血上限 |
+| DefeatAllGetGold | `AfterRound` 且本回合伤害为 0 | +Value 金币 |
+| IronRiceBowl | 本回合首次亮牌 | +Value 金币 |
+| EveryRoundGetHpMax | `StartRound` | 永久血上限 +Value（当前血也加） |
+| LuckyFlush / LuckyStraight / LuckyCouplet | `EvaluateSeat` 敌人 | 敌人牌型严格大于目标则压到该牌型 |
+| ThermosCup | `AfterRound` 且血量低于 Value[0] | 回 Value[1] 血 |
+| Interest | `AfterRound` | `floor(金币 / Value[0]) × Value[1]` |
+| Abacus | `AfterRound` | `floor(剩余搓牌 / Value[0]) × Value[1]` |
+| DefeatAllGetGoldAndReplyHp | 本回合比过的敌人全输 | +Value[0] 金币并回 Value[1] 血 |
+| MissFirstDamage | `ApplyDamage` 打玩家 | 本回合第一次承伤免疫（闪避成功不消耗） |
+| ReverseResult | 玩家将输时 | 按概率翻成赢，伤害仍按玩家牌型 |
+| NoKillMonsterGetMagnification | `AfterRound` 未击杀 | 永久倍率 +Value |
+| Revenge / Trap | 出伤 / 承伤 | 本局输过的 MonsterId：打这种怪加伤、被打减伤 |
+| NobleBadge | `StartRound` 且血量高于 Value[0] | +Value[1] 金币 |
+| DownGrade | `StartRound` | Value[0] 概率本回合敌人牌型 -Value[1] |
+| AdmissionTicket | `StartRound` | 对每个存活敌人打 `Attack × Value[1]`（缺省 ×1），次数 Value[0] |
+| MonsterDamage | 承伤百分比 | 敌人伤害 × (1+Value) |
+| MissGetDamage | 闪避成功 | 对攻击者打自身攻击力 × Value[1] |
+| DefeatGetDamage | 出伤百分比 | 小强层数 × Value[1] |
+| AstrawToClutchAt | 致命伤害 | 血量变为 1，下次造成伤害按本次伤害 × Value 回血，每关一次 |
+| OneMonsterGetDamage | 场上只剩 1 名敌人 | 出伤 × (1+Value) |
+| CardUpGrade | `EvaluateSeat` 玩家 | 牌型 +Value，封顶豹子 |
+| MonsterHpMax | 进关刷怪（非 BOSS） | 血上限 × (1+Value) |
+| CriticalAoe | 玩家暴击 | 对其他存活敌人打自身攻击力 × Value[1] |
+| PerspectiveNum | `ResetSkillCharges` | 透视次数 +Value |
+| DamageTurnToGold | `AfterRound` | 本回合伤害 × Value 转金币（与 GameConst 伤害换金分开） |
+| GapDamage | 出伤 / 承伤 | 牌型每差 Value[0] 级，对应 ±Value[1] |
 
-永久存在 `RunState`、只在 `StartNewRun` 清：训练点数攻击、天使牌型倍率、老搓家倍率、工资卡售价加成、投资累计花费、老千各牌型次数。
+永久存在 `RunState`、只在 `StartNewRun` 清：训练点数攻击、天使牌型倍率、老搓家倍率、工资卡售价加成、投资累计花费、老千各牌型次数、暴击/闪避层数、复盘/小强层数、练习卷倍率、输过的 MonsterId、永久攻击/血上限。
 
 锋芒禁用的那一件整件跳过（倍率、回血、吸血、235 都不生效）。`HeroHpMax` 已经写进血量，禁用不会当场扣血。已叠上的永久加成不因卖掉或禁用清零。
 
@@ -148,11 +184,17 @@
 | 圆盾 / 补偿金 / 工资卡 | `ApplyDamage` |
 | 白条 / 投资花费 | `BuyShopRelic` / `RefreshShopOffers` |
 | 会员卡 | `EnterShop` 写入免费刷新，`RefreshShopOffers` 先花免费 |
-| 周星星 / 双刃剑 | `ResetSkillCharges` |
-| 黄金面具 / 九霄云外 | 玩家赢的 `NotifyPlayerShowdown` |
+| 周星星 / 双刃剑 / 透视眼 | `ResetSkillCharges` |
+| 黄金面具 / 九霄云外 / 铁饭碗 | 玩家亮牌 `OnPlayerCardsShown` / 赢的结算 |
 | 训练 / 天使 / 老千次数 | 本手首次亮牌结算 |
 | 老搓家 | `RubCard` 成功替换时 |
 | 锋芒 | `ApplyEdgeAffix` 从 `RelicConfigIds` 随机禁一件 |
+| 小钱包 / 高贵徽章 / 永恒之心 / 入场券 / 好运来 | `StartRound` |
+| 记账本 / 幸运草 / 利息 / 小算盘 / 聚宝盆 / 保温杯 / 暴击拳套 / 运动鞋 / 练习卷 | `AfterRound` |
+| 变形魔方 / 幸运牌型 | `EvaluateSeat` |
+| 逆转沙漏 / 徽章 / 垫脚石 / 后备计划 / 复盘 / 小强 | 比牌结算 |
+| 和平鸽 / 护身符 / 条约 / 陷阱 / 差距胶囊 / 稻草 / 反击 / 闪避反击 / 暴击溅射 | `ApplyDamage` / `ComputeAttackDamage` |
+| 毒药 | `ApplyLevelEnemies` |
 
 ---
 

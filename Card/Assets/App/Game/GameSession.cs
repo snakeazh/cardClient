@@ -59,6 +59,16 @@ namespace App.Game
         private bool _rubbedThisHand;
         private bool _playerCardsShownThisRound;
         private bool _playerHandSettledThisRound;
+        private bool _amuletUsedThisRound;
+        private bool _ironRiceBowlGranted;
+        private int _enemyDowngradeSteps;
+        private int _roundCompareWins;
+        private int _roundCompareLosses;
+        private int _roundKills;
+        private bool _lastPlayerAttackCrit;
+        private SeatState _pendingDamageSource;
+        private HandScore _pendingPlayerScore;
+        private HandScore _pendingEnemyScore;
         /// <summary>跨手记录玩家弃/加/看/闷，供 AI 读线。</summary>
         public readonly PlayerHistory History = new PlayerHistory();
 
@@ -801,8 +811,9 @@ namespace App.Game
             }
 
             _pendingAttackTarget = target;
+            _pendingDamageSource = Player;
             AttackVisualSlot = FindVisualSlot(target);
-            AttackDamage = Math.Max(1, PendingAttackDamage);
+            AttackDamage = Math.Max(0, PendingAttackDamage);
             TakenDamage = AttackDamage;
             _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
@@ -923,7 +934,7 @@ namespace App.Game
             if (target.IsPlayer)
             {
                 scoreDamage = damage;
-                return ApplyDamage(target, damage, true);
+                return ApplyDamage(target, damage, true, _pendingDamageSource);
             }
 
             var dealt = 0;
@@ -938,7 +949,7 @@ namespace App.Game
                         continue;
                     }
 
-                    dealt += ApplyDamage(Enemies[i], aoeDmg, Enemies[i] == target);
+                    dealt += ApplyDamage(Enemies[i], aoeDmg, Enemies[i] == target, Player);
                     scoreDamage += aoeDmg;
                 }
 
@@ -946,7 +957,7 @@ namespace App.Game
             }
             else
             {
-                dealt = ApplyDamage(target, damage, true);
+                dealt = ApplyDamage(target, damage, true, Player);
                 scoreDamage = damage;
                 var splashRatio = (Run.SplashThisRound ? GameBalance.SplashRatio : 0f)
                     + HeroMechanics.SumValue(Run, MechanismType.VersatilePerson);
@@ -960,7 +971,7 @@ namespace App.Game
                         }
 
                         var splash = (int)Math.Round(damage * splashRatio);
-                        dealt += ApplyDamage(Enemies[i], splash, false);
+                        dealt += ApplyDamage(Enemies[i], splash, false, Player);
                         scoreDamage += splash;
                     }
                 }
@@ -968,13 +979,15 @@ namespace App.Game
                 Run.SplashThisRound = false;
             }
 
+            dealt += ApplyCriticalAoe(target);
             if (HeroMechanics.Roll(Run, MechanismType.ExtraAttackOneTime, _rng))
             {
-                dealt += ApplyDamage(target, damage, true);
+                dealt += ApplyDamage(target, damage, true, Player);
                 scoreDamage += damage;
                 Log("追击：额外攻击 1 次");
             }
 
+            TryApplyStrawHeal(dealt);
             return dealt;
         }
 
@@ -987,9 +1000,10 @@ namespace App.Game
 
             IncomingAttack = true;
             _pendingAttackTarget = Player;
+            _pendingDamageSource = attacker;
             AttackVisualSlot = FindVisualSlot(attacker);
-            AttackDamage = Math.Max(1, PendingAttackDamage);
-            TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage);
+            AttackDamage = Math.Max(0, PendingAttackDamage);
+            TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
             _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
@@ -1075,7 +1089,9 @@ namespace App.Game
             var targetScore = EvaluateSeat(enemy);
             _pendingOpener = Player;
             _pendingOpenTarget = enemy;
-            _pendingOpenerWins = OpenerWinsCompare(Player, openScore, enemy, targetScore);
+            _pendingPlayerScore = openScore;
+            _pendingEnemyScore = targetScore;
+            _pendingOpenerWins = ResolveCompareWithReverse(Player, openScore, enemy, targetScore);
             _pendingWinner = _pendingOpenerWins ? Player : enemy;
             _pendingBest = _pendingOpenerWins ? openScore : targetScore;
             BeginRevealPlay(RevealKind.OpenDuel, BuildDuelRevealOrder(Player, enemy), _pendingWinner);
@@ -1093,6 +1109,8 @@ namespace App.Game
                 AwardPlayerRoundScore(_roundDamageDealt);
                 GrantDamageGold(_roundDamageDealt);
             }
+
+            ApplyRoundCompareRelics();
 
             if (string.IsNullOrEmpty(LastResult))
             {
@@ -1120,7 +1138,14 @@ namespace App.Game
 
             var openScore = opener != null ? EvaluateSeat(opener) : default;
             var targetScore = target != null ? EvaluateSeat(target) : default;
+            _pendingPlayerScore = opener != null && opener.IsPlayer ? openScore : targetScore;
+            _pendingEnemyScore = opener != null && opener.IsPlayer ? targetScore : openScore;
             NotifyPlayerShowdown(openScore, _pendingOpenerWins);
+            var playerWonCompare = opener != null && opener.IsPlayer
+                ? _pendingOpenerWins
+                : !_pendingOpenerWins;
+            var enemySeat = opener != null && opener.IsPlayer ? target : opener;
+            RecordCompareOutcome(enemySeat, playerWonCompare);
             if (_pendingOpenerWins)
             {
                 var damage = ComputeAttackDamage(opener, openScore, target);
@@ -1145,14 +1170,14 @@ namespace App.Game
             TryApplyPermanentCardBonuses(openScore);
             PendingAttackDamage = loss;
             AttackLevel = MapAttackLevel(targetScore.Type);
-            var taken = IncomingDamageAfterMitigation(loss);
+            var taken = IncomingDamageAfterMitigation(loss, target);
             LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {taken} 伤害";
             Log(LastResult);
             Phase = GamePhase.WaitingAttack;
             BeginIncomingAttack(target);
             if (!AttackPlaying)
             {
-                ApplyDamage(Player, loss, true);
+                ApplyDamage(Player, loss, true, target);
                 PendingAttackDamage = 0;
                 if (Player.Hp <= 0)
                 {
@@ -1222,13 +1247,16 @@ namespace App.Game
                     Player,
                     CountAliveEnemies());
                 dmgPercent += HeroMechanics.SumValue(hero, MechanismType.Damage);
+                dmgPercent += RelicOutgoingDamagePercent(defender);
                 if (dmgPercent != 0f)
                 {
                     damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
                 }
 
                 var critRate = TalentMechanics.CriticalRate(talent, hero)
-                    + HeroMechanics.SumValue(hero, MechanismType.HeroCritical);
+                    + HeroMechanics.SumValue(hero, MechanismType.HeroCritical)
+                    + RelicMechanics.SumValue(Run, MechanismType.HeroCritical)
+                    + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetCritical, Run.CritStacks);
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero);
                 if (critRate > 0f && _rng.NextDouble() < critRate)
                 {
@@ -1256,6 +1284,13 @@ namespace App.Game
             }
 
             var talentDamage = attacker.IsPlayer ? damage - withoutTalent : 0;
+            _lastPlayerAttackCrit = attacker.IsPlayer && crit;
+            if (attacker.IsPlayer && RelicMechanics.Roll(Run, MechanismType.AllPeacePer, _rng))
+            {
+                Log("和平鸽：本次造成伤害变为 0");
+                damage = 0;
+            }
+
             LogAttackDamage(
                 attacker,
                 defender,
@@ -1278,11 +1313,16 @@ namespace App.Game
                 critMul,
                 chaseAdd,
                 execute);
+            if (damage <= 0)
+            {
+                return 0;
+            }
+
             return Math.Max(1, damage);
         }
 
-        /// <summary>打玩家前的减伤：先加遗物/天赋 HeroTakeDamage，再乘英雄 HeroTakeDamagePer。闪避仍在 ApplyDamage。</summary>
-        private int IncomingDamageAfterMitigation(int damage)
+        /// <summary>打玩家前的减伤：先加遗物/天赋 HeroTakeDamage，再乘百分比（英雄、条约、陷阱、差距胶囊）。闪避仍在 ApplyDamage。</summary>
+        private int IncomingDamageAfterMitigation(int damage, SeatState attacker = null)
         {
             var take = (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
@@ -1293,12 +1333,53 @@ namespace App.Game
             }
 
             var takePer = HeroMechanics.SumValue(Run, MechanismType.HeroTakeDamagePer);
+            takePer += RelicMechanics.SumValue(Run, MechanismType.MonsterDamage);
+            if (attacker != null && Run.LostToMonster(attacker.MonsterId))
+            {
+                takePer += RelicMechanics.SumValue(Run, MechanismType.Trap);
+            }
+
+            takePer += RelicMechanics.GapDamagePercent(
+                Run,
+                _pendingPlayerScore.Type,
+                _pendingEnemyScore.Type,
+                outgoing: false);
             if (takePer != 0f)
             {
-                damage = Math.Max(1, (int)Math.Round(damage * (1f + takePer)));
+                damage = Math.Max(0, (int)Math.Round(damage * (1f + takePer)));
+            }
+
+            if (damage <= 0)
+            {
+                return 0;
             }
 
             return Math.Max(1, damage);
+        }
+
+        private float RelicOutgoingDamagePercent(SeatState defender)
+        {
+            var percent = 0f;
+            if (CountAliveEnemies() <= 1)
+            {
+                percent += RelicMechanics.SumValue(Run, MechanismType.OneMonsterGetDamage);
+            }
+
+            if (defender != null && Run.LostToMonster(defender.MonsterId))
+            {
+                percent += RelicMechanics.SumValue(Run, MechanismType.Revenge);
+            }
+
+            percent += RelicMechanics.StackedValue(
+                Run,
+                MechanismType.DefeatGetDamage,
+                Run.DefeatDmgStacks);
+            percent += RelicMechanics.GapDamagePercent(
+                Run,
+                _pendingPlayerScore.Type,
+                _pendingEnemyScore.Type,
+                outgoing: true);
+            return percent;
         }
 
         private void LogAttackDamage(
@@ -1536,7 +1617,7 @@ namespace App.Game
 
             var score = EvaluateSeat(winner);
             var damage = HandEvaluator.ComputeDamage(score, ShowdownStake(), 1f);
-            ApplyDamage(Player, damage, true);
+            ApplyDamage(Player, damage, true, winner);
         }
 
         public SeatState EnemyAtVisualSlot(int visualSlot)
@@ -1959,9 +2040,18 @@ namespace App.Game
             GetScoreBan(out var banned, out var banFaces);
             var rules = GetHandEvalRules(seat);
             var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces, rules), banned, banFaces, rules);
-            if (seat != null && seat.IsPlayer && RelicMechanics.HasMechanism(Run, MechanismType.SpecialTwoThreeFive))
+            if (seat != null && seat.IsPlayer)
             {
-                score = RelicMechanics.ApplyTwoThreeFive(score);
+                if (RelicMechanics.HasMechanism(Run, MechanismType.SpecialTwoThreeFive))
+                {
+                    score = RelicMechanics.ApplyTwoThreeFive(score);
+                }
+
+                score = RelicMechanics.ApplyPlayerTypeRewrite(Run, score);
+            }
+            else if (seat != null && !seat.IsPlayer)
+            {
+                score = RelicMechanics.ApplyEnemyTypeRewrite(Run, score, _enemyDowngradeSteps);
             }
 
             if (Run.Affix == BossAffix.Flint)
@@ -2011,6 +2101,27 @@ namespace App.Game
             return cmp > 0;
         }
 
+        private bool ResolveCompareWithReverse(
+            SeatState opener,
+            HandScore openScore,
+            SeatState target,
+            HandScore targetScore)
+        {
+            var playerWins = OpenerWinsCompare(opener, openScore, target, targetScore);
+            if (opener == null || !opener.IsPlayer || playerWins)
+            {
+                return playerWins;
+            }
+
+            if (!RelicMechanics.Roll(Run, MechanismType.ReverseResult, _rng))
+            {
+                return false;
+            }
+
+            Log("逆转沙漏：比牌结果反转，伤害按自身牌型计算");
+            return true;
+        }
+
         private void NotifyPlayerShowdown(HandScore playerScore, bool playerWon)
         {
             if (playerScore.UsedCards == null || playerScore.UsedCards.Length == 0)
@@ -2037,6 +2148,7 @@ namespace App.Game
             }
 
             _playerCardsShownThisRound = true;
+            ApplyIronRiceBowl();
             Run.AddHandTypeShowCount(score.Type);
             if (score.Type == HandType.Straight)
             {
@@ -2081,7 +2193,7 @@ namespace App.Game
                     return;
                 }
 
-                if (_rng.NextDouble() < entry.Value)
+                if (_rng.NextDouble() < RelicMechanics.ValueAt(entry))
                 {
                     Run.AddHandTypeMagBonus(score.Type, 1f);
                     Log($"天使：{HandEvaluator.TypeName(score.Type)} 倍率永久 +1");
@@ -2133,7 +2245,7 @@ namespace App.Game
                     return;
                 }
 
-                var delta = (int)Math.Round(entry.Value);
+                var delta = (int)Math.Round(RelicMechanics.ValueAt(entry));
                 if (delta != 0)
                 {
                     Run.AddRelicSellPriceBonus(relic.Id, delta);
@@ -2158,7 +2270,8 @@ namespace App.Game
                 RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
                 HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
             Run.PeekGoodCharges = Math.Max(0, GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta);
-            Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges;
+            var xrayDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum));
+            Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges + xrayDelta;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
 
@@ -2168,6 +2281,8 @@ namespace App.Game
             Run.AdsLoanThisStage = 0;
             Run.AdsReviveThisStage = 0;
             Run.AdsExtraRubThisStage = 0;
+            Run.StrawUsedThisStage = false;
+            Run.StrawHealPending = 0f;
             Run.DoubleGoldThisStage = false;
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
@@ -2210,6 +2325,14 @@ namespace App.Game
             _rubbedThisHand = false;
             _playerCardsShownThisRound = false;
             _playerHandSettledThisRound = false;
+            _amuletUsedThisRound = false;
+            _ironRiceBowlGranted = false;
+            _enemyDowngradeSteps = 0;
+            _roundCompareWins = 0;
+            _roundCompareLosses = 0;
+            _roundKills = 0;
+            _lastPlayerAttackCrit = false;
+            _pendingDamageSource = null;
             LastRelicContext = RelicCombatContext.Empty;
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
@@ -2252,6 +2375,7 @@ namespace App.Game
             BeginRoundCourage();
             _deck = new Deck(_rng);
             DealAll();
+            ApplyRoundStartRelics();
             EnterOpenReady();
         }
 
@@ -3159,7 +3283,9 @@ namespace App.Game
             LockBestOpenCardsIfEnemy(target);
             var openScore = EvaluateSeat(opener);
             var targetScore = EvaluateSeat(target);
-            _pendingOpenerWins = OpenerWinsCompare(opener, openScore, target, targetScore);
+            _pendingPlayerScore = opener != null && opener.IsPlayer ? openScore : targetScore;
+            _pendingEnemyScore = opener != null && opener.IsPlayer ? targetScore : openScore;
+            _pendingOpenerWins = ResolveCompareWithReverse(opener, openScore, target, targetScore);
             _pendingOpener = opener;
             _pendingOpenTarget = target;
             _pendingWinner = _pendingOpenerWins ? opener : target;
@@ -3753,7 +3879,7 @@ namespace App.Game
             StartRound();
         }
 
-        private int ApplyDamage(SeatState target, int damage, bool main)
+        private int ApplyDamage(SeatState target, int damage, bool main, SeatState attacker = null)
         {
             if (target == null)
             {
@@ -3775,14 +3901,61 @@ namespace App.Game
 
             if (ReferenceEquals(target, Player))
             {
-                if (HeroMechanics.Roll(Run, MechanismType.MissDamagePer, _rng))
+                var miss = HeroMechanics.SumValue(Run, MechanismType.MissDamagePer)
+                    + RelicMechanics.SumValue(Run, MechanismType.MissDamagePer)
+                    + RelicMechanics.StackedValue(
+                        Run,
+                        MechanismType.EveryRoundEndingGetEvade,
+                        Run.EvadeStacks);
+                if (miss > 0f && _rng.NextDouble() < miss)
                 {
                     Log($"闪避：{target.Name} 免疫 {damage} 伤害");
                     target.Banner = "闪避";
+                    ApplyDodgeCounter(attacker);
                     return 0;
                 }
 
-                damage = IncomingDamageAfterMitigation(damage);
+                if (!_amuletUsedThisRound && RelicMechanics.HasMechanism(Run, MechanismType.MissFirstDamage))
+                {
+                    _amuletUsedThisRound = true;
+                    Log("护身符：免疫本回合第一次伤害");
+                    target.Banner = "护身符";
+                    return 0;
+                }
+
+                if (RelicMechanics.Roll(Run, MechanismType.AllPeacePer, _rng))
+                {
+                    Log("和平鸽：本次受到伤害变为 0");
+                    target.Banner = "和平鸽";
+                    return 0;
+                }
+
+                damage = IncomingDamageAfterMitigation(damage, attacker);
+                if (damage <= 0)
+                {
+                    return 0;
+                }
+
+                if (damage >= target.Hp &&
+                    !Run.StrawUsedThisStage &&
+                    RelicMechanics.HasMechanism(Run, MechanismType.AstrawToClutchAt))
+                {
+                    Run.StrawUsedThisStage = true;
+                    Run.StrawHealPending = RelicMechanics.SumValue(Run, MechanismType.AstrawToClutchAt);
+                    var survived = Math.Max(0, target.Hp - 1);
+                    target.Hp = 1;
+                    HpSvc()?.Damage(target.Id, survived);
+                    target.Banner = main ? $"-{survived}" : $"溅射 -{survived}";
+                    Log($"救命稻草：血量降至 1，下次造成伤害回复 {Run.StrawHealPending:P0}");
+                    ApplyBounce(attacker, survived);
+                    TryGrantTakeDamageGold(survived);
+                    return survived;
+                }
+            }
+
+            if (damage <= 0)
+            {
+                return 0;
             }
 
             var dealt = Math.Min(target.Hp, Math.Max(1, damage));
@@ -3797,12 +3970,8 @@ namespace App.Game
             Log($"攻击 {target.Name} {dealt}，剩余 HP {target.Hp}");
             if (ReferenceEquals(target, Player) && dealt > 0)
             {
-                var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TakeDamageGetFunds));
-                if (gold != 0)
-                {
-                    Run.Gold += gold;
-                    Log($"补偿金 +{gold} 金币（总金币 {Run.Gold}）");
-                }
+                TryGrantTakeDamageGold(dealt);
+                ApplyBounce(attacker, dealt);
             }
 
             if (target.Hp <= 0)
@@ -3812,6 +3981,7 @@ namespace App.Game
                 Log($"击杀 {target.Name}");
                 if (!target.IsPlayer)
                 {
+                    _roundKills++;
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
                     UnlockSvc()?.Report(ContidionType.KillMonster);
@@ -3819,6 +3989,400 @@ namespace App.Game
             }
 
             return dealt;
+        }
+
+        private void TryGrantTakeDamageGold(int dealt)
+        {
+            if (dealt <= 0)
+            {
+                return;
+            }
+
+            var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TakeDamageGetFunds));
+            if (gold != 0)
+            {
+                Run.Gold += gold;
+                Log($"补偿金 +{gold} 金币（总金币 {Run.Gold}）");
+            }
+        }
+
+        private void ApplyBounce(SeatState attacker, int dealt)
+        {
+            if (attacker == null || attacker.IsPlayer || !attacker.Alive || dealt <= 0)
+            {
+                return;
+            }
+
+            var bounce = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.BounceDamage));
+            if (bounce <= 0)
+            {
+                return;
+            }
+
+            Log($"反击拳套：反弹 {bounce} 伤害给 {attacker.Name}");
+            ApplyDamage(attacker, bounce, false, Player);
+        }
+
+        private void ApplyDodgeCounter(SeatState attacker)
+        {
+            if (attacker == null || attacker.IsPlayer || !attacker.Alive)
+            {
+                return;
+            }
+
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.MissGetDamage)
+                {
+                    return;
+                }
+
+                var dmg = RelicMechanics.AttackPowerDamage(entry, Player.Attack);
+                if (dmg <= 0)
+                {
+                    return;
+                }
+
+                Log($"武林秘籍：闪避反击 {dmg}");
+                ApplyDamage(attacker, dmg, false, Player);
+            });
+        }
+
+        private int ApplyCriticalAoe(SeatState mainTarget)
+        {
+            if (!_lastPlayerAttackCrit)
+            {
+                return 0;
+            }
+
+            var dealt = 0;
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.CriticalAoe)
+                {
+                    return;
+                }
+
+                var dmg = RelicMechanics.AttackPowerDamage(entry, Player.Attack);
+                if (dmg <= 0)
+                {
+                    return;
+                }
+
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    if (Enemies[i] == mainTarget || !Enemies[i].Alive)
+                    {
+                        continue;
+                    }
+
+                    Log($"刺客秘籍：暴击溅射 {Enemies[i].Name} {dmg}");
+                    dealt += ApplyDamage(Enemies[i], dmg, false, Player);
+                }
+            });
+            return dealt;
+        }
+
+        private void TryApplyStrawHeal(int dealt)
+        {
+            if (dealt <= 0 || Run.StrawHealPending <= 0f)
+            {
+                return;
+            }
+
+            var heal = HealPlayer((int)Math.Round(dealt * Run.StrawHealPending));
+            Run.StrawHealPending = 0f;
+            if (heal > 0)
+            {
+                Log($"救命稻草回血 +{heal} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            }
+        }
+
+        private void RecordCompareOutcome(SeatState enemy, bool playerWon)
+        {
+            if (enemy == null || enemy.IsPlayer)
+            {
+                return;
+            }
+
+            if (playerWon)
+            {
+                _roundCompareWins++;
+                return;
+            }
+
+            _roundCompareLosses++;
+            if (RelicMechanics.HasMechanism(Run, MechanismType.Revenge) ||
+                RelicMechanics.HasMechanism(Run, MechanismType.Trap))
+            {
+                Run.RememberLostTo(enemy.MonsterId);
+            }
+
+            if (RelicMechanics.HasMechanism(Run, MechanismType.DefeatGetMagnification))
+            {
+                Run.DefeatMagStacks++;
+            }
+
+            if (RelicMechanics.HasMechanism(Run, MechanismType.DefeatGetDamage))
+            {
+                Run.DefeatDmgStacks++;
+            }
+            ApplyDefeatBadges();
+        }
+
+        private void ApplyDefeatBadges()
+        {
+            var atk = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatGetAttack));
+            if (atk != 0)
+            {
+                Run.PermanentAttackBonus += atk;
+                Player.Attack = Math.Max(0, Player.Attack + atk);
+                Log($"勇气徽章：永久攻击 +{atk}");
+            }
+
+            var hp = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatGetHpMax));
+            if (hp != 0)
+            {
+                Run.PermanentMaxHpBonus += hp;
+                ApplyRelicMaxHpDelta(hp);
+                Log($"激励徽章：血上限 +{hp}");
+            }
+        }
+
+        private void ApplyRoundCompareRelics()
+        {
+            if (_roundCompareWins + _roundCompareLosses <= 0)
+            {
+                return;
+            }
+
+            if (_roundCompareLosses == 0)
+            {
+                var atk = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.SteppingStone));
+                if (atk != 0)
+                {
+                    Run.PermanentAttackBonus += atk;
+                    Player.Attack = Math.Max(0, Player.Attack + atk);
+                    Log($"垫脚石：永久攻击 +{atk}");
+                }
+            }
+
+            if (_roundCompareWins == 0)
+            {
+                var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGoldAndReplyHp));
+                var heal = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGoldAndReplyHp, 1));
+                if (gold != 0)
+                {
+                    Run.Gold += gold;
+                    Log($"后备计划 +{gold} 金币（总金币 {Run.Gold}）");
+                }
+
+                if (heal != 0)
+                {
+                    HealPlayer(heal);
+                    Log($"后备计划回复 {heal} HP");
+                }
+            }
+        }
+
+        private void ApplyIronRiceBowl()
+        {
+            if (_ironRiceBowlGranted)
+            {
+                return;
+            }
+
+            var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.IronRiceBowl));
+            if (gold == 0)
+            {
+                return;
+            }
+
+            _ironRiceBowlGranted = true;
+            Run.Gold += gold;
+            Log($"铁饭碗 +{gold} 金币（总金币 {Run.Gold}）");
+        }
+
+        private void ApplyRoundStartRelics()
+        {
+            var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundGetGold));
+            if (gold != 0)
+            {
+                Run.Gold += gold;
+                Log($"小钱包 +{gold} 金币（总金币 {Run.Gold}）");
+            }
+
+            var nobleHp = RelicMechanics.SumValue(Run, MechanismType.NobleBadge);
+            var nobleGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.NobleBadge, 1));
+            if (nobleGold != 0 && Player.MaxHp > 0 && Player.Hp > Player.MaxHp * nobleHp)
+            {
+                Run.Gold += nobleGold;
+                Log($"高贵徽章 +{nobleGold} 金币（总金币 {Run.Gold}）");
+            }
+
+            var hpMax = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundGetHpMax));
+            if (hpMax != 0)
+            {
+                Run.PermanentMaxHpBonus += hpMax;
+                ApplyRelicMaxHpDelta(hpMax);
+                Log($"永恒之心：血上限 +{hpMax}");
+            }
+
+            _enemyDowngradeSteps = 0;
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.DownGrade)
+                {
+                    return;
+                }
+
+                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                {
+                    return;
+                }
+
+                var steps = Math.Max(1, (int)Math.Round(RelicMechanics.ValueAt(entry, 1)));
+                _enemyDowngradeSteps += steps;
+                Log($"好运来：本回合敌人牌型 -{steps}");
+            });
+
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.AdmissionTicket)
+                {
+                    return;
+                }
+
+                var dmg = RelicMechanics.AttackPowerDamage(entry, Player.Attack);
+                if (dmg <= 0)
+                {
+                    return;
+                }
+
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    if (!Enemies[i].Alive)
+                    {
+                        continue;
+                    }
+
+                    Log($"入场券：对 {Enemies[i].Name} 造成 {dmg}");
+                    ApplyDamage(Enemies[i], dmg, true, Player);
+                }
+            });
+        }
+
+        private void ApplyRoundEndRelics()
+        {
+            if (_roundDamageDealt <= 0)
+            {
+                var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGold));
+                if (gold != 0)
+                {
+                    Run.Gold += gold;
+                    Log($"记账本 +{gold} 金币（总金币 {Run.Gold}）");
+                }
+            }
+
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.EveryRoundEndingGetGoldPer)
+                {
+                    return;
+                }
+
+                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                {
+                    return;
+                }
+
+                var gold = (int)Math.Round(RelicMechanics.ValueAt(entry, 1));
+                if (gold == 0)
+                {
+                    return;
+                }
+
+                Run.Gold += gold;
+                Log($"幸运草 +{gold} 金币（总金币 {Run.Gold}）");
+            });
+
+            var interestUnit = RelicMechanics.SumValue(Run, MechanismType.Interest);
+            var interestGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.Interest, 1));
+            if (interestUnit > 0f && interestGold != 0 && Run.Gold > 0)
+            {
+                var gain = (int)Math.Floor(Run.Gold / (double)interestUnit) * interestGold;
+                if (gain != 0)
+                {
+                    Run.Gold += gain;
+                    Log($"利息 +{gain} 金币（总金币 {Run.Gold}）");
+                }
+            }
+
+            var peekUnit = RelicMechanics.SumValue(Run, MechanismType.Abacus);
+            var peekGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.Abacus, 1));
+            if (peekUnit > 0f && peekGold != 0 && Run.PeekGoodCharges > 0)
+            {
+                var gain = (int)Math.Floor(Run.PeekGoodCharges / peekUnit) * peekGold;
+                if (gain != 0)
+                {
+                    Run.Gold += gain;
+                    Log($"小算盘 +{gain} 金币（总金币 {Run.Gold}）");
+                }
+            }
+
+            var potRatio = RelicMechanics.SumValue(Run, MechanismType.DamageTurnToGold);
+            if (potRatio > 0f && _roundDamageDealt > 0)
+            {
+                var gain = (int)Math.Floor(_roundDamageDealt * (double)potRatio);
+                if (gain != 0)
+                {
+                    Run.Gold += gain;
+                    Log($"聚宝盆 +{gain} 金币（总金币 {Run.Gold}）");
+                }
+            }
+
+            var thermoHp = RelicMechanics.SumValue(Run, MechanismType.ThermosCup);
+            var thermoHeal = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.ThermosCup, 1));
+            if (thermoHeal != 0 && Player.MaxHp > 0 && Player.Hp < Player.MaxHp * thermoHp)
+            {
+                HealPlayer(thermoHeal);
+                Log($"保温杯回复 {thermoHeal} HP");
+            }
+
+            TryAddCappedStack(MechanismType.EveryRoundEndingGetCritical, ref Run.CritStacks, "暴击拳套");
+            TryAddCappedStack(MechanismType.EveryRoundEndingGetEvade, ref Run.EvadeStacks, "运动鞋");
+
+            if (_roundKills <= 0 && RelicMechanics.HasMechanism(Run, MechanismType.NoKillMonsterGetMagnification))
+            {
+                var mag = RelicMechanics.SumValue(Run, MechanismType.NoKillMonsterGetMagnification);
+                if (mag != 0f)
+                {
+                    Run.PracticeMagForever += mag;
+                    Log($"练习卷：永久倍率 +{mag}");
+                }
+            }
+        }
+
+        private void TryAddCappedStack(MechanismType type, ref int stacks, string name)
+        {
+            if (!RelicMechanics.HasMechanism(Run, type))
+            {
+                return;
+            }
+
+            var cap = (int)Math.Round(RelicMechanics.SumValue(Run, type, 1));
+            if (cap <= 0)
+            {
+                cap = int.MaxValue;
+            }
+
+            if (stacks >= cap)
+            {
+                return;
+            }
+
+            stacks++;
+            Log($"{name}叠层 {stacks}/{cap}");
         }
 
         private void ApplyBankruptcy(bool playerWon, SeatState winner)
@@ -3882,6 +4446,7 @@ namespace App.Game
             }
 
             ApplyEveryRoundHpUp();
+            ApplyRoundEndRelics();
             ApplyTalentRoundGold();
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
@@ -4301,11 +4866,13 @@ namespace App.Game
             var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
             maxHp += (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.HeroHpMax) +
-                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax));
+                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax) +
+                Run.PermanentMaxHpBonus);
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
             ApplySeatHp(Player, hp, maxHp);
             var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
             attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
+            attack += Run.PermanentAttackBonus;
             Player.Attack = Math.Max(0, attack);
             Player.Icon = hero != null ? hero.Icon : null;
         }
@@ -4386,9 +4953,11 @@ namespace App.Game
                         seat.IsBoss = monster.IsBoss;
                         seat.Profile = monster.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
                         seat.Name = monster.IsBoss ? "BOSS" : names[i];
+                        seat.MonsterId = monster.MonsterId;
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
                         seat.Icon = monster.Icon;
+                        ApplyEnemySpawnRelics(seat);
                     }
                     else
                     {
@@ -4422,8 +4991,10 @@ namespace App.Game
                 ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
                 seat.Attack = seat.ActiveInStage ? 10 : 0;
                 seat.Icon = null;
+                seat.MonsterId = 0;
                 seat.Banner = string.Empty;
                 ClearRound(seat);
+                ApplyEnemySpawnRelics(seat);
             }
 
             return fallbackCount;
@@ -4438,6 +5009,24 @@ namespace App.Game
             ApplySeatHp(seat, 0, 0);
             seat.Attack = 0;
             seat.Icon = null;
+            seat.MonsterId = 0;
+        }
+
+        private void ApplyEnemySpawnRelics(SeatState seat)
+        {
+            if (seat == null || !seat.ActiveInStage || seat.IsBoss)
+            {
+                return;
+            }
+
+            var per = RelicMechanics.SumValue(Run, MechanismType.MonsterHpMax);
+            if (per == 0f)
+            {
+                return;
+            }
+
+            var maxHp = Math.Max(1, (int)Math.Round(seat.MaxHp * (1f + per)));
+            ApplySeatHp(seat, maxHp, maxHp);
         }
 
         private bool TryAdvanceLevel()

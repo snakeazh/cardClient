@@ -6,6 +6,7 @@ Shader "UI/WindSway"
         _Color ("Tint", Color) = (1,1,1,1)
 
         _WindStrength ("摆动幅度(局部单位)", Float) = 0.12
+        _BendStart ("弯曲起始高度(0树冠以下全固定)", Range(0, 0.95)) = 0.4
         _WindSpeed ("摆动频率", Float) = 1.6
         _WindPhaseGap ("树间相位差", Float) = 0.45
         _GustStrength ("阵风强度", Range(0, 1)) = 0.35
@@ -84,6 +85,7 @@ Shader "UI/WindSway"
             float4 _MainTex_ST;
 
             half _WindStrength;
+            half _BendStart;
             half _WindSpeed;
             half _WindPhaseGap;
             half _GustStrength;
@@ -100,8 +102,8 @@ Shader "UI/WindSway"
                 float phase = dot(worldPos.xy, float2(_WindPhaseGap, _WindPhaseGap * 0.73));
                 // 阵风:慢速波沿 x 方向扫过树林,调制摆动幅度
                 float gust = 1.0 + _GustStrength * sin(_Time.y * _GustSpeed - worldPos.x * 0.35);
-                // 弯曲权重取 uv.y 的平方:树底(uv.y=0)固定,树顶摆幅最大,呈弧形摆动
-                float bend = v.texcoord.y * v.texcoord.y;
+                // 弯曲权重:低于 _BendStart 的部分(树干/底座)固定,往上平滑过渡到树顶满幅
+                float bend = smoothstep(_BendStart, 1.0, v.texcoord.y);
 
                 v.vertex.x += sin(_Time.y * _WindSpeed + phase) * _WindStrength * gust * bend;
 

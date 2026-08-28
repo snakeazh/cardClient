@@ -119,6 +119,11 @@ namespace App.Talent
             return list;
         }
 
+        public int DrawRandomId()
+        {
+            return _ids.Length == 0 ? 0 : _ids[UnityEngine.Random.Range(0, _ids.Length)];
+        }
+
         public TalentAddResult Add(int talentId, int amount = 1)
         {
             if (amount <= 0)

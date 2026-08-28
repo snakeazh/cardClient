@@ -35,6 +35,9 @@ namespace App.Talent
 
         IReadOnlyList<TalentSnapshot> GetOwned();
 
+        /// <summary>Uniformly picks one configured TalentId. 0 when none configured.</summary>
+        int DrawRandomId();
+
         /// <summary>
         /// Adds obtained copies. Amount must be positive.
         /// Unknown TalentId: Warning, still stored.

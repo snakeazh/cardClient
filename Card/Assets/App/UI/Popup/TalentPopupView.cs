@@ -132,6 +132,21 @@ namespace App.UI.Popup
             {
                 Binding.BindText(text, ViewModel.BuyCostText);
             }
+
+            if (buyBtn != null)
+            {
+                var button = buyBtn.GetComponent<Button>();
+                if (button == null)
+                {
+                    button = buyBtn.AddComponent<Button>();
+                    button.transition = Selectable.Transition.None;
+                }
+
+                Binding.BindCommand(button, ViewModel.BuyCommand);
+            }
+
+            // 购买后刷新列表，让新天赋解除锁定显示；初始填充由 OnBind 的 FillList 负责
+            Binding.Add(ViewModel.ListVersion.Subscribe(_ => FillList(), false));
         }
 
         private void EnsureTemplate(RectTransform content)

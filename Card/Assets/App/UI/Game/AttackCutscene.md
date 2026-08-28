@@ -1,6 +1,6 @@
 # AttackCutscene 使用文档
 
-局内攻击演出。玩家打怪时人物卡冲向敌人；怪打玩家时敌人卡冲向人物。扣血数字由 GameUI 的 `hptext` 显示。
+局内攻击演出。玩家打怪时人物卡冲向敌人；怪打玩家时敌人卡冲向人物。扣血数字由 GameUI 的 `hptextdi` 显示（数字写在子节点 `hptext`，弹出动画 `ani_hptextdi`）。
 
 脚本：`Assets/App/UI/Game/AttackCutscene.cs`  
 调用：`GameUIView.TryPlayAttack`  

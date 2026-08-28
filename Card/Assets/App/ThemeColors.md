@@ -6,7 +6,7 @@
 卡片底、标题底、头像圈、装备槽底色都从这里取。**不要在界面脚本里再写 hex。**
 
 品质枚举：`QualityType`（`Enums.g.cs`，来自 EnumConfig.xlsx）。  
-人物卡：[`PlayerItem.md`](Item/PlayerItem.md) · 商店卡：[`ShopItem.md`](Item/ShopItem.md) · HUD 装备栏：[`GameUI.md`](UI/Game/GameUI.md)
+人物卡：[`PlayerItem.md`](Item/PlayerItem.md) · 商店装备格：[`EquipShopIcon.md`](Item/EquipShopIcon.md) · 商店卡：[`ShopItem.md`](Item/ShopItem.md) · HUD 装备栏：[`GameUI.md`](UI/Game/GameUI.md)
 
 ---
 
@@ -66,6 +66,7 @@ bgcolor.color = ThemeColors.EquipSlot(relic != null, relic != null ? relic.Type 
 
 | 界面 | 节点 | 取色 |
 |------|------|------|
+| `EquipShopIcon` | `bgcolor` | `EquipSlot`（品质底 / 空槽黑） |
 | `ShopItem` | `IconBG` / `IconTitleBG` / `card_Circle` | `RelicConfig.Type` |
 | `PlayerItem` | 同上 | 人物普通品质；敌人红 |
 | `GameUIView` 装备栏 | `equipN/bgcolor` | 品质底 / 空槽黑 |

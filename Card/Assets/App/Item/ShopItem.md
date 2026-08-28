@@ -1,6 +1,6 @@
 # ShopItem 使用文档
 
-商店货架 / 已拥有列表单卡。展示由 `Bind` 写入，点击和拖拽通过事件抛出。
+带名字和价格的商店卡。当前通关商店货架 / 已购改走 [`EquipShopIcon.md`](EquipShopIcon.md)，买卖在 ShopDetail；本卡脚本保留，不要再接到 BattleShopPop。
 
 脚本：`Assets/App/Item/ShopItem.cs`  
 预制体：`Assets/Res/UI/Icon/ShopItem.prefab`（资源键 `ResResourcePaths.ShopItem` = `UI/Icon/ShopItem`）  
@@ -31,27 +31,23 @@
 
 ## 绑法
 
-`BattleShopPopView` 货架和已拥有都走 `Bind(RelicConfig, icon, forSale)`：
-
 ```csharp
-item.Bind(relic, ViewModel.GetRelicIcon(relic), buyPrice: session.EffectiveBuyPrice(relic.Id)); // 货架，显示折后买入价
-item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false); // 已拥有，显示 SellingPrice
-```
-
-`Bind(RelicConfig)` 会按 `relic.Type` 给底 / title / 圈上色。`relic == null` 回退普通品质。
-
-```csharp
-item.ApplyQuality(QualityType.Rare);   // 只换色
+item.Bind(relic, icon, buyPrice: session.EffectiveBuyPrice(relic.Id)); // 显示折后买入价
+item.Bind(relic, icon, forSale: false); // 显示 SellingPrice
+item.ApplyQuality(QualityType.Rare);
 item.PlayChooseStart();
 item.PlayChooseEnd();
 ```
 
-点击：`BindClick` / `Clicked`。拖拽：`BindDrag` / `IBeginDragHandler` 等。
+`Bind(RelicConfig)` 会按 `relic.Type` 给底 / title / 圈上色。`relic == null` 回退普通品质。
+
+点击：`BindClick` / `Clicked`。拖拽：`BindDrag` / `IBeginDragHandler` 等（通关商店已不再用拖拽）。
 
 ---
 
 ## 注意
 
-- 商店商品只认 `RelicConfig`，不要再做第二套商品卡。
+- 商店商品只认 `RelicConfig`，不要再做第二套商品表。
+- 通关商店列表用 `EquipShopIcon`，详情用 `ShopDetail` 的 `ItemCard`。
 - 编辑器菜单 `Tools/Wire ShopItem Prefab` 会把节点挂到序列化字段。
 - 图鉴遗物页用的是 `ItemCard`，不是 `ShopItem`。

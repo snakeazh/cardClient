@@ -63,6 +63,7 @@ namespace App.UI
         private int _heldAttackValue;
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
+        private Animation _hpTextAnim;
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
 
@@ -231,25 +232,29 @@ namespace App.UI
                 Binding.BindActive(mask.gameObject, ViewModel.ShowMask);
             }
 
-            var hp = ResolveSlot("hptext");
-            if (hp == null)
+            var hpRoot = ResolveSlot("hptextdi") ?? ResolveSlot("hptext");
+            if (hpRoot == null)
             {
                 return;
             }
 
-            _hpTextRt = hp as RectTransform ?? hp.GetComponent<RectTransform>();
+            _hpTextRt = hpRoot as RectTransform ?? hpRoot.GetComponent<RectTransform>();
             if (_hpTextRt != null)
             {
                 _hpTextHome = _hpTextRt.anchoredPosition;
             }
 
-            var hpText = hp.GetComponent<TMP_Text>();
+            var animRoot = hpRoot.Find("ani_hptextdi") ?? FindDeep(hpRoot, "ani_hptextdi") ?? hpRoot;
+            _hpTextAnim = animRoot.GetComponent<Animation>();
+
+            var hpNum = ResolveSlot("hptext") ?? hpRoot;
+            var hpText = hpNum.GetComponent<TMP_Text>() ?? hpNum.GetComponentInChildren<TMP_Text>(true);
             if (hpText != null)
             {
                 Binding.BindText(hpText, ViewModel.HpText);
             }
 
-            Binding.BindActive(hp.gameObject, ViewModel.ShowHpText);
+            Binding.BindActive(hpRoot.gameObject, ViewModel.ShowHpText);
         }
 
         private void BindAttackFx()
@@ -620,42 +625,35 @@ namespace App.UI
 
         private void PlaceHpAtPlayer()
         {
-            if (_hpTextRt == null)
-            {
-                return;
-            }
-
-            var hit = _attackFx.HitPositionPlayer();
-            if (hit == Vector3.zero)
-            {
-                return;
-            }
-
-            _hpTextRt.SetAsLastSibling();
-            _hpTextRt.position = hit;
-            _hpTextRt.DOKill();
-            _hpTextRt.localScale = Vector3.one * 0.6f;
-            _hpTextRt.DOScale(1f, 0.18f).SetEase(Ease.OutBack);
+            PlaceHpAt(_attackFx.HitPositionPlayer());
         }
 
         private void PlaceHpAtTarget(int slot)
         {
-            if (_hpTextRt == null)
-            {
-                return;
-            }
+            PlaceHpAt(_attackFx.HitPosition(slot));
+        }
 
-            var hit = _attackFx.HitPosition(slot);
-            if (hit == Vector3.zero)
+        private void PlaceHpAt(Vector3 hit)
+        {
+            if (_hpTextRt == null || hit == Vector3.zero)
             {
                 return;
             }
 
             _hpTextRt.SetAsLastSibling();
             _hpTextRt.position = hit;
-            _hpTextRt.DOKill();
-            _hpTextRt.localScale = Vector3.one * 0.6f;
-            _hpTextRt.DOScale(1f, 0.18f).SetEase(Ease.OutBack);
+            PlayHpTextAnim();
+        }
+
+        private void PlayHpTextAnim()
+        {
+            if (_hpTextAnim == null)
+            {
+                return;
+            }
+
+            _hpTextAnim.Rewind();
+            _hpTextAnim.Play();
         }
 
         private void RestoreHpText()
@@ -665,7 +663,6 @@ namespace App.UI
                 return;
             }
 
-            _hpTextRt.DOKill();
             _hpTextRt.anchoredPosition = _hpTextHome;
             _hpTextRt.localScale = Vector3.one;
         }
@@ -1438,7 +1435,7 @@ namespace App.UI
             var owned = ViewModel.Session.Run.RelicConfigIds;
             var template = _equipSlots[0];
             var parent = template.parent;
-            while (_equipSlots.Count < owned.Count && _equipSlots.Count < GameBalance.MaxRelics)
+            while (_equipSlots.Count < owned.Count)
             {
                 var clone = Instantiate(template.gameObject, parent);
                 clone.name = $"equip{_equipSlots.Count + 1}";

@@ -1765,13 +1765,6 @@ namespace App.Game
                 return;
             }
 
-            if (Run.RelicConfigIds.Count >= GameBalance.MaxRelics)
-            {
-                Hint = $"遗物槽已满（最多 {GameBalance.MaxRelics} 件）";
-                Notify();
-                return;
-            }
-
             var price = EffectiveBuyPrice(relicId);
             if (!RelicMechanics.CanAfford(Run, price))
             {

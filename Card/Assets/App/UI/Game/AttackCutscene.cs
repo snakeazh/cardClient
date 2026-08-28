@@ -6,7 +6,7 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 攻击演出：PlayerRoot 播 clip，位移由 DOTween 驱动；mask / hptext 由 GameUI 绑定。
+    /// 攻击演出：PlayerRoot 播 clip，位移由 DOTween 驱动；mask / hptextdi 由 GameUI 绑定。
     /// </summary>
     public sealed class AttackCutscene
     {

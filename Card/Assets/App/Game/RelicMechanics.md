@@ -9,7 +9,7 @@
 
 词条数值以 `RelicEntryConfig.Value[]` 为准：主值 `Value[0]`，第二项用 `RelicMechanics.ValueAt(entry, 1)`（缺项为 0）。描述文案与表不一致时不改表。
 
-对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架卡：[`ShopItem.md`](../Item/ShopItem.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。
+对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架格：[`EquipShopIcon.md`](../Item/EquipShopIcon.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。
 
 ---
 
@@ -23,7 +23,7 @@
 
 访问：`RelicConfig.Get(id)` / `RelicEntryConfig.Get(id)`。Excel 源在仓库 `Config/`。
 
-买卖只走 `GameSession.BuyShopRelic` / `SellShopRelic`。最多 `GameBalance.MaxRelics`（3）件。没有第二套商品表。
+买卖只走 `GameSession.BuyShopRelic` / `SellShopRelic`。件数不设上限（同件仍不可重复购买）。没有第二套商品表。
 
 不要用已删除的枚举残留名 `MaxHp` / `EveryRoundHpUp` / `TwoThreeFive`。血上限用 `HeroHpMax`，回合回血用 `HeroHpReplyEveryRoundEnding`，235 用 `SpecialTwoThreeFive`。
 

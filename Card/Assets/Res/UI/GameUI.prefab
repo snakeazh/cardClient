@@ -2832,12 +2832,6 @@ MonoBehaviour:
   - Key: mask
     Component: {fileID: 6159340723122644000}
     Bind: {fileID: 8112000111222333444}
-  - Key: TopArea
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
-  - Key: ResourceItem
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
   - Key: backBtn
     Component: {fileID: 4241587606314405486}
     Bind: {fileID: 9139220926401662358}
@@ -2901,15 +2895,9 @@ MonoBehaviour:
   - Key: PlayerItem
     Component: {fileID: 745566361871129870}
     Bind: {fileID: 1381254947316415123}
-  - Key: arrow
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
   - Key: FoldBtn
     Component: {fileID: 3535895023969052495}
     Bind: {fileID: 1699283742777285391}
-  - Key: hptext
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
   - Key: roundInfo
     Component: {fileID: 8614226917568306788}
     Bind: {fileID: 7204670398031237484}
@@ -2928,6 +2916,12 @@ MonoBehaviour:
   - Key: cardtypeNum
     Component: {fileID: 6486083765762735929}
     Bind: {fileID: 4265869911091540590}
+  - Key: hptextdi
+    Component: {fileID: 280666013924321022}
+    Bind: {fileID: 6169483851308477791}
+  - Key: hptext
+    Component: {fileID: 4053902030646932085}
+    Bind: {fileID: 6260768174581729856}
 --- !u!114 &6253938113651715003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4536,13 +4530,14 @@ GameObject:
   m_Component:
   - component: {fileID: 3827116637919734106}
   - component: {fileID: 280666013924321022}
+  - component: {fileID: 6169483851308477791}
   m_Layer: 5
   m_Name: hptextdi
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3827116637919734106
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4571,6 +4566,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6291009174382596005}
   m_CullTransparentMesh: 1
+--- !u!114 &6169483851308477791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6291009174382596005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: hptextdi
+  _target: {fileID: 280666013924321022}
 --- !u!1 &6415793688390642565
 GameObject:
   m_ObjectHideFlags: 0

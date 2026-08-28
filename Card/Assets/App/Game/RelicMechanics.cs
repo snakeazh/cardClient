@@ -67,6 +67,11 @@ namespace App.Game
                 extra += run.HandTypeMagBonus(score.Type);
             }
 
+            if (!HasMechanism(run, MechanismType.NoKillMonsterGetMagnification) && run != null)
+            {
+                extra += run.PracticeMagForever;
+            }
+
             return extra;
         }
 
@@ -200,20 +205,20 @@ namespace App.Game
             return text ?? string.Empty;
         }
 
-        public static float SumValue(RunState run, MechanismType type)
+        public static float SumValue(RunState run, MechanismType type, int index = 0)
         {
             var sum = 0f;
             ForEachEntry(run, (_, entry) =>
             {
                 if (entry.Type == type)
                 {
-                    sum += entry.Value;
+                    sum += ValueAt(entry, index);
                 }
             });
             return sum;
         }
 
-        public static float SumValueForRelic(int relicId, MechanismType type)
+        public static float SumValueForRelic(int relicId, MechanismType type, int index = 0)
         {
             var relic = RelicConfig.Get(relicId);
             var sum = 0f;
@@ -221,8 +226,174 @@ namespace App.Game
             {
                 if (entry.Type == type)
                 {
-                    sum += entry.Value;
+                    sum += ValueAt(entry, index);
                 }
+            });
+            return sum;
+        }
+
+        /// <summary>词条 <c>Value</c> 已是数组；缺项或越界返回 0。</summary>
+        public static float ValueAt(RelicEntryConfig entry, int index = 0)
+        {
+            if (entry?.Value == null || index < 0 || index >= entry.Value.Length)
+            {
+                return 0f;
+            }
+
+            return entry.Value[index];
+        }
+
+        public static bool Roll(RunState run, MechanismType type, Random rng)
+        {
+            var chance = SumValue(run, type);
+            if (chance <= 0f || rng == null)
+            {
+                return false;
+            }
+
+            return rng.NextDouble() < chance;
+        }
+
+        public static HandScore WithType(HandScore score, HandType type)
+        {
+            if (score.Type == type)
+            {
+                return score;
+            }
+
+            return new HandScore(
+                type,
+                score.BaseChips,
+                HandEvaluator.TypeMultiplier(type),
+                score.Keys,
+                score.UsedCards,
+                HandEvaluator.TypeName(type),
+                score.BeatsAll);
+        }
+
+        public static HandType ClampType(HandType type)
+        {
+            if (type < HandType.HighCard)
+            {
+                return HandType.HighCard;
+            }
+
+            if (type > HandType.ThreeOfAKind)
+            {
+                return HandType.ThreeOfAKind;
+            }
+
+            return type;
+        }
+
+        public static HandType ShiftType(HandType type, int delta)
+        {
+            return ClampType((HandType)((int)type + delta));
+        }
+
+        public static HandScore ApplyPlayerTypeRewrite(RunState run, HandScore score)
+        {
+            var steps = (int)Math.Round(SumValue(run, MechanismType.CardUpGrade));
+            if (steps == 0)
+            {
+                return score;
+            }
+
+            return WithType(score, ShiftType(score.Type, steps));
+        }
+
+        public static HandScore ApplyEnemyTypeRewrite(RunState run, HandScore score, int downgradeSteps)
+        {
+            var type = score.Type;
+            if (downgradeSteps > 0)
+            {
+                type = ShiftType(type, -downgradeSteps);
+            }
+
+            if (HasMechanism(run, MechanismType.LuckyFlush) && type > HandType.Flush)
+            {
+                type = HandType.Flush;
+            }
+
+            if (HasMechanism(run, MechanismType.LuckyStraight) && type > HandType.Straight)
+            {
+                type = HandType.Straight;
+            }
+
+            if (HasMechanism(run, MechanismType.LuckyCouplet) && type > HandType.Pair)
+            {
+                type = HandType.Pair;
+            }
+
+            return WithType(score, type);
+        }
+
+        /// <summary>玩家相对敌人的牌型差：正数表示玩家更大。</summary>
+        public static int TypeGap(HandType playerType, HandType enemyType)
+        {
+            return (int)playerType - (int)enemyType;
+        }
+
+        public static float GapDamagePercent(RunState run, HandType playerType, HandType enemyType, bool outgoing)
+        {
+            var unit = SumValue(run, MechanismType.GapDamage);
+            var per = SumValue(run, MechanismType.GapDamage, 1);
+            if (unit <= 0f || per == 0f)
+            {
+                return 0f;
+            }
+
+            var ranks = TypeGap(playerType, enemyType) / unit;
+            return (outgoing ? ranks : -ranks) * per;
+        }
+
+        /// <summary>「自身攻击力」：次数 Value[0]，倍率缺省为 1。</summary>
+        public static int AttackPowerDamage(RelicEntryConfig entry, int attack)
+        {
+            var hits = Math.Max(0, (int)Math.Round(ValueAt(entry, 0)));
+            var factor = entry?.Value != null && entry.Value.Length > 1 ? ValueAt(entry, 1) : 1f;
+            if (hits <= 0 || attack <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(attack * factor * hits));
+        }
+
+        public static float StackedValue(RunState run, MechanismType type, int stacks)
+        {
+            if (run == null || stacks <= 0)
+            {
+                return 0f;
+            }
+
+            var sum = 0f;
+            ForEachEntry(run, (_, entry) =>
+            {
+                if (entry.Type != type)
+                {
+                    return;
+                }
+
+                var unit = ValueAt(entry);
+                if (unit <= 0f)
+                {
+                    unit = 1f;
+                }
+
+                var per = entry.Value != null && entry.Value.Length > 1 ? ValueAt(entry, 1) : unit;
+                var cap = entry.Value != null && entry.Value.Length > 1
+                    ? (int)Math.Round(ValueAt(entry, 1))
+                    : int.MaxValue;
+                if (type == MechanismType.EveryRoundEndingGetCritical ||
+                    type == MechanismType.EveryRoundEndingGetEvade)
+                {
+                    var used = Math.Min(stacks, cap > 0 ? cap : stacks);
+                    sum += used * unit;
+                    return;
+                }
+
+                sum += (float)Math.Floor(stacks / (double)unit) * per;
             });
             return sum;
         }
@@ -373,58 +544,63 @@ namespace App.Game
             RunState run,
             RelicCombatContext ctx)
         {
+            var value = ValueAt(entry);
             switch (entry.Type)
             {
                 case MechanismType.CardMagnification:
-                    return entry.Value;
+                    return value;
                 case MechanismType.SquarePlate:
-                    return CountSuit(score, Suit.Diamond, run) * entry.Value;
+                    return CountSuit(score, Suit.Diamond, run) * value;
                 case MechanismType.Spades:
-                    return CountSuit(score, Suit.Spade, run) * entry.Value;
+                    return CountSuit(score, Suit.Spade, run) * value;
                 case MechanismType.RedHeart:
-                    return CountSuit(score, Suit.Heart, run) * entry.Value;
+                    return CountSuit(score, Suit.Heart, run) * value;
                 case MechanismType.PlumBlossom:
-                    return CountSuit(score, Suit.Club, run) * entry.Value;
+                    return CountSuit(score, Suit.Club, run) * value;
                 case MechanismType.Couplet:
-                    return score.Type == HandType.Pair ? entry.Value : 0f;
+                    return score.Type == HandType.Pair ? value : 0f;
                 case MechanismType.Flush:
-                    return score.Type == HandType.Flush ? entry.Value : 0f;
+                    return score.Type == HandType.Flush ? value : 0f;
                 case MechanismType.Straight:
-                    return score.Type == HandType.Straight ? entry.Value : 0f;
+                    return score.Type == HandType.Straight ? value : 0f;
                 case MechanismType.StraightFlush:
-                    return score.Type == HandType.StraightFlush ? entry.Value : 0f;
+                    return score.Type == HandType.StraightFlush ? value : 0f;
                 case MechanismType.Leopard:
-                    return score.Type == HandType.ThreeOfAKind ? entry.Value : 0f;
+                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
                 case MechanismType.EvenNumberCard:
-                    return CountEven(score) * entry.Value;
+                    return CountEven(score) * value;
                 case MechanismType.OddNumberCard:
-                    return CountOdd(score) * entry.Value;
+                    return CountOdd(score) * value;
                 case MechanismType.HeadCard:
-                    return CountFace(score, ctx) * entry.Value;
+                    return CountFace(score, ctx) * value;
                 case MechanismType.SpecialACard:
-                    return CountRank(score, Rank.Ace) * entry.Value;
+                    return CountRank(score, Rank.Ace) * value;
                 case MechanismType.EveryRubbingNum:
-                    return ctx.PeekLeft * entry.Value;
+                    return ctx.PeekLeft * value;
                 case MechanismType.Camera:
-                    return CountUnshown(ctx, black: true) * entry.Value;
+                    return CountUnshown(ctx, black: true) * value;
                 case MechanismType.Cupid:
-                    return CountUnshown(ctx, black: false) * entry.Value;
+                    return CountUnshown(ctx, black: false) * value;
                 case MechanismType.EveryUseRubbingNum:
-                    return ctx.RubsUsedThisHand * entry.Value;
+                    return ctx.RubsUsedThisHand * value;
                 case MechanismType.NoSkill:
-                    return ctx.PeekLeft == 0 && ctx.XRayLeft == 0 && ctx.ReplaceLeft == 0 ? entry.Value : 0f;
+                    return ctx.PeekLeft == 0 && ctx.XRayLeft == 0 && ctx.ReplaceLeft == 0 ? value : 0f;
                 case MechanismType.EveryRelic:
-                    return (run?.RelicConfigIds != null ? run.RelicConfigIds.Count : 0) * entry.Value;
+                    return (run?.RelicConfigIds != null ? run.RelicConfigIds.Count : 0) * value;
                 case MechanismType.NoUseRubbingEveryRubbingNum:
-                    return ctx.RubbedThisHand ? 0f : ctx.PeekLeft * entry.Value;
+                    return ctx.RubbedThisHand ? 0f : ctx.PeekLeft * value;
                 case MechanismType.AccumulatedNumOfCardType:
-                    return (run != null ? run.HandTypeShowCount(score.Type) : 0) * entry.Value;
+                    return (run != null ? run.HandTypeShowCount(score.Type) : 0) * value;
                 case MechanismType.RubbingCardRelic:
                     return run != null ? run.RubRelicMagForever : 0f;
                 case MechanismType.ProOfUpCardType:
                     return run != null ? run.HandTypeMagBonus(score.Type) : 0f;
                 case MechanismType.SpecialSevenCard:
-                    return ctx.LuckySevenHits * entry.Value;
+                    return ctx.LuckySevenHits * value;
+                case MechanismType.DefeatGetMagnification:
+                    return StackedValue(run, MechanismType.DefeatGetMagnification, run != null ? run.DefeatMagStacks : 0);
+                case MechanismType.NoKillMonsterGetMagnification:
+                    return run != null ? run.PracticeMagForever : 0f;
                 default:
                     return 0f;
             }
@@ -436,49 +612,50 @@ namespace App.Game
             RunState run,
             RelicCombatContext ctx)
         {
+            var value = ValueAt(entry);
             switch (entry.Type)
             {
                 case MechanismType.SquarePlateAttack:
-                    return CountSuit(score, Suit.Diamond, run) * entry.Value;
+                    return CountSuit(score, Suit.Diamond, run) * value;
                 case MechanismType.SpadesAttack:
-                    return CountSuit(score, Suit.Spade, run) * entry.Value;
+                    return CountSuit(score, Suit.Spade, run) * value;
                 case MechanismType.RedHeartAttack:
-                    return CountSuit(score, Suit.Heart, run) * entry.Value;
+                    return CountSuit(score, Suit.Heart, run) * value;
                 case MechanismType.PlumBlossomAttack:
-                    return CountSuit(score, Suit.Club, run) * entry.Value;
+                    return CountSuit(score, Suit.Club, run) * value;
                 case MechanismType.CoupletAttack:
-                    return score.Type == HandType.Pair ? entry.Value : 0f;
+                    return score.Type == HandType.Pair ? value : 0f;
                 case MechanismType.StraightAttack:
-                    return score.Type == HandType.Straight ? entry.Value : 0f;
+                    return score.Type == HandType.Straight ? value : 0f;
                 case MechanismType.FlushAttack:
-                    return score.Type == HandType.Flush ? entry.Value : 0f;
+                    return score.Type == HandType.Flush ? value : 0f;
                 case MechanismType.StraightFlushAttack:
-                    return score.Type == HandType.StraightFlush ? entry.Value : 0f;
+                    return score.Type == HandType.StraightFlush ? value : 0f;
                 case MechanismType.LeopardAttack:
-                    return score.Type == HandType.ThreeOfAKind ? entry.Value : 0f;
+                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
                 case MechanismType.SpecialEightCard:
-                    return CountRank(score, Rank.Eight) * entry.Value;
+                    return CountRank(score, Rank.Eight) * value;
                 case MechanismType.DoubleCardAttack:
-                    return Math.Max(0, score.BaseChips) * entry.Value;
+                    return Math.Max(0, score.BaseChips) * value;
                 case MechanismType.HeadCardAttack:
-                    return CountFace(score, ctx) * entry.Value;
+                    return CountFace(score, ctx) * value;
                 case MechanismType.ACardAttack:
-                    return CountRank(score, Rank.Ace) * entry.Value;
+                    return CountRank(score, Rank.Ace) * value;
                 case MechanismType.TheSwordOfVictory:
                     var maxChip = MaxUnshownChip(ctx);
-                    var factor = entry.Value == 0f ? 1f : entry.Value;
+                    var factor = value == 0f ? 1f : value;
                     return maxChip * factor;
                 case MechanismType.ConsumeFundsGetAttack:
-                    if (run == null || entry.Value <= 0f)
+                    if (run == null || value <= 0f)
                     {
                         return 0f;
                     }
 
-                    return (float)Math.Floor(run.GoldSpentThisRun / (double)entry.Value);
+                    return (float)Math.Floor(run.GoldSpentThisRun / (double)value);
                 case MechanismType.EveryCardAttackForever:
                     return SumRankAttackForever(run, score);
                 case MechanismType.SpecialSevenCardAttack:
-                    return ctx.LuckySevenHits * entry.Value;
+                    return ctx.LuckySevenHits * value;
                 default:
                     return 0f;
             }

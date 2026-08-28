@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using App.Resources;
 using App.Talent;
+using Framework.Assets;
 using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
@@ -17,6 +19,9 @@ namespace App.UI.Popup
     {
         public TalentSnapshot Snapshot;
         public string Name;
+
+        /// <summary>图标资源 key（未解锁同样从 1 级行兜底），空表示配置未填。</summary>
+        public string IconKey;
     }
 
     /// <summary>
@@ -30,11 +35,16 @@ namespace App.UI.Popup
         private readonly ITalentService _talent;
         private readonly List<TalentItem> _items = new List<TalentItem>();
 
-        public TalentPopupViewModel(IUIManager ui, NavigationViewModel navigation, ITalentService talent)
+        public TalentPopupViewModel(
+            IUIManager ui,
+            NavigationViewModel navigation,
+            ITalentService talent,
+            IResourceService resources)
         {
             _ui = ui;
             _navigation = navigation;
             _talent = talent;
+            Resources = resources;
             CloseCommand = new RelayCommand(Dismiss);
             BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
             RebuildItems();
@@ -43,6 +53,9 @@ namespace App.UI.Popup
         public IReadOnlyList<TalentItem> Items => _items;
 
         public ObservableProperty<string> BuyCostText { get; }
+
+        /// <summary>供 View 异步加载条目图标（同图鉴 VM 暴露 Resources 的模式）。</summary>
+        public IResourceService Resources { get; }
 
         public IRelayCommand CloseCommand { get; }
 
@@ -79,22 +92,25 @@ namespace App.UI.Popup
             for (var i = 0; i < ids.Count; i++)
             {
                 var snapshot = _talent.GetCurrent(ids[i]);
+                var config = ResolveConfig(snapshot);
                 _items.Add(new TalentItem
                 {
                     Snapshot = snapshot,
-                    Name = ResolveName(snapshot)
+                    Name = config != null ? config.Name : null,
+                    IconKey = config != null ? ResResourcePaths.TalentIcon(config.Icon) : null,
                 });
             }
         }
 
-        private string ResolveName(TalentSnapshot snapshot)
+        /// <summary>当前级行；未解锁时快照无 Config，回退 1 级行取名字/图标。</summary>
+        private TalentConfig ResolveConfig(TalentSnapshot snapshot)
         {
             if (snapshot.Config != null)
             {
-                return snapshot.Config.Name;
+                return snapshot.Config;
             }
 
-            return _talent.TryGet(snapshot.TalentId, 1, out var row) ? row.Name : null;
+            return _talent.TryGet(snapshot.TalentId, 1, out var row) ? row : null;
         }
 
         private static string ResolveBuyCost()

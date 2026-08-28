@@ -22,7 +22,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 ## 何时播放
 
-`GameSession.AttackPlaySerial` 增加一次，播一段。结束回调 `CompletePlayerAttack()`，再结算伤害、进入下一对敌人。
+`GameSession.AttackPlaySerial` 增加一次，播一段。受击开始回调 `ApplyPendingAttackHits()` 扣血；结束回调 `CompletePlayerAttack()`，进入下一对敌人。
 
 | 情况 | 字段 | 方法 |
 |------|------|------|
@@ -58,7 +58,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 
 这一击把血量打到 0 时，命中那一刻立刻冒致死特效，溶解则延迟 `DeathDissolveDelay`（默认 2 秒）才开始。非致死两者都不播。
 
-判定在 `GameUIView.TryDissolveIfLethal`，它已经在 `onHit` 里做致死判断（比的是扣血前的 `Hp <= damage` 预判，真正扣血在整段演出结束的 `CompletePlayerAttack`）。玩家挨打和打怪两个分支各来一次，特效即时、溶解排队：
+判定在 `GameUIView.TryDissolveIfLethal`，在 `onHit` 里**先**按扣血前的 `Hp <= damage` 排队溶解，**再** `ApplyPendingAttackHits` 真正扣血。这样 `ShowEnemy` 翻 false 时 `_deathDissolves` 已经占位，不会被 `BindEnemyVisible` 抢着溶掉。玩家挨打和打怪两个分支各来一次，特效即时、溶解排队：
 
 ```csharp
 _attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
@@ -69,7 +69,7 @@ ScheduleDeathDissolve(AttackItemAtSlot(session.AttackVisualSlot), hideWhenDone: 
 
 延迟到点后 `PlayDeathDissolve` 才 `PlayerItem.PlayDissolve`，`hideWhenDone` 为真（怪）溶完 `HideEnemyItem` 隐藏节点，为假（玩家）留着。
 
-**结算节奏不跟着等。** 命中后 `HitHoldDuration + BackDuration + HpTextHoldDuration`（约 1.55 秒）就 `onDone` 结算扣血、进下一个对手，比 2 秒延迟更早。于是扣血后 `RefreshEnemies` 会把 `ShowEnemy[slot]` 翻成 false（`shown[slot] = enemy.Alive`），`BindEnemyVisible` 收到就想立刻溶解——它必须给延迟让位：
+**结算节奏不跟着等。** 命中时就已经扣血，`ShowEnemy` 会立刻翻 false；命中后再过 `HitHoldDuration + BackDuration + HpTextHoldDuration`（约 1.55 秒）才 `onDone` 进下一个对手。溶解默认还要再等 2 秒。`BindEnemyVisible` 必须给延迟让位：
 
 ```csharp
 if (_deathDissolves.ContainsKey(item))

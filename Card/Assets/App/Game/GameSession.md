@@ -41,7 +41,7 @@ StartNewRun / Continue
       先 ResetEnemyOpenSelection（清掉透视时的 5 张全选）
       再对当前敌人 LockBestOpenCardsIfEnemy（锁最大 3 张）
       RevealPlaySerial++ ，牌桌播翻牌
-  → WaitingAttack → 扣血
+  → WaitingAttack → 受击开始扣血 → 演出结束打下一个
   → 下一只敌人，或 RoundSettle / Shop / StageFail / RunComplete
 ```
 
@@ -62,7 +62,8 @@ StartNewRun / Continue
 | `TryXRayEnemySlot(slot)` | 点敌人或他的牌 | 见下节 |
 | `UseTiHuanGood()` | 替换 | 自己 5 张全部换成新牌 |
 | `RequestShowdown()` | 开牌 | 与存活敌人逐个比牌 |
-| `CompletePlayerAttack()` | 攻击演出结束 | 结算伤害，打下一个 |
+| `ApplyPendingAttackHits()` | 受击演出开始 | 扣血（溅射 / AOE / 追击一并结算） |
+| `CompletePlayerAttack()` | 攻击演出结束 | 若尚未扣血则补扣，然后打下一个 |
 | `Continue()` | 下一局 / 进商店后 | 下一手或下一关 |
 | `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖 RelicConfig 商品；最后一关 `LeaveShop` → `RunComplete` |
 | `RestartChallenge()` | 结算页再次挑战 | 回到当前难度第 1 关并 `StartNewRun` |

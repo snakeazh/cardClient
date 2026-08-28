@@ -5,6 +5,7 @@ using App.Config;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.Unlock;
 using Framework.Log;
 
 namespace App.Game
@@ -45,6 +46,7 @@ namespace App.Game
         private SeatState _pendingOpenTarget;
         private bool _pendingOpenerWins;
         private SeatState _pendingAttackTarget;
+        private bool _attackHitsApplied;
         private readonly List<SeatState> _compareQueue = new List<SeatState>();
         private int _compareCursor;
         private int _roundDamageDealt;
@@ -196,6 +198,7 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginChapter();
             }
 
+            UnlockSvc()?.BeginRun();
             StartStage(inheritPlayerHp: false);
         }
 
@@ -339,6 +342,7 @@ namespace App.Game
 
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
+            UnlockSvc()?.Report(ContidionType.ShuffleCard);
             if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
             {
                 Run.RubRelicMagForever += RelicMechanics.SumValue(Run, MechanismType.RubbingCardRelic);
@@ -763,6 +767,18 @@ namespace App.Game
             BeginPlayerAttack(target);
         }
 
+        /// <summary>受击演出开始时扣血。没有演出时由 <see cref="CompletePlayerAttack"/> 兜底。</summary>
+        public void ApplyPendingAttackHits()
+        {
+            if (_attackHitsApplied || Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
+            {
+                return;
+            }
+
+            ResolvePendingAttackHits(_pendingAttackTarget);
+            Notify();
+        }
+
         public void CompletePlayerAttack()
         {
             if (Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
@@ -788,6 +804,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(target);
             AttackDamage = Math.Max(1, PendingAttackDamage);
             TakenDamage = AttackDamage;
+            _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -859,15 +876,13 @@ namespace App.Game
         private void FinishPlayerAttack(SeatState target)
         {
             IncomingAttack = false;
-            var damage = Math.Max(1, PendingAttackDamage);
-            PendingAttackDamage = 0;
-            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
-
-            if (!target.IsPlayer)
+            if (!_attackHitsApplied)
             {
-                _roundDamageDealt += scoreDamage;
-                ApplyBloodSucking(dealt);
+                ResolvePendingAttackHits(target);
             }
+
+            _attackHitsApplied = false;
+            PendingAttackDamage = 0;
 
             if (!_sequentialCompare)
             {
@@ -883,6 +898,18 @@ namespace App.Game
 
             _compareCursor++;
             RunNextCompare();
+        }
+
+        private void ResolvePendingAttackHits(SeatState target)
+        {
+            _attackHitsApplied = true;
+            var damage = Math.Max(1, PendingAttackDamage);
+            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
+            if (target != null && !target.IsPlayer)
+            {
+                _roundDamageDealt += scoreDamage;
+                ApplyBloodSucking(dealt);
+            }
         }
 
         private int ApplyPlayerAttackHits(SeatState target, int damage, out int scoreDamage)
@@ -963,6 +990,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(attacker);
             AttackDamage = Math.Max(1, PendingAttackDamage);
             TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage);
+            _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -1613,6 +1641,7 @@ namespace App.Game
             {
                 Run.FreeShopRefreshLeft--;
                 RollShopOffers();
+                UnlockSvc()?.Report(ContidionType.RefreshStore);
                 Log($"免费刷新商店（会员卡，下次 {ShopRefreshCost} 金币）");
                 Hint = Run.FreeShopRefreshLeft > 0
                     ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
@@ -1624,6 +1653,7 @@ namespace App.Game
             SpendGold(cost);
             Run.ShopRefreshCount++;
             RollShopOffers();
+            UnlockSvc()?.Report(ContidionType.RefreshStore);
             Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
             Hint = $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
             Notify();
@@ -1992,6 +2022,10 @@ namespace App.Game
             if (playerWon)
             {
                 ApplyPlayerWinGold(playerScore);
+                if (_rubbedThisHand)
+                {
+                    UnlockSvc()?.Report(ContidionType.ShuffleCardAndVictory);
+                }
             }
         }
 
@@ -2004,6 +2038,20 @@ namespace App.Game
 
             _playerCardsShownThisRound = true;
             Run.AddHandTypeShowCount(score.Type);
+            if (score.Type == HandType.Straight)
+            {
+                UnlockSvc()?.Report(ContidionType.Straight);
+            }
+
+            if (RelicMechanics.IsNaturalTwoThreeFive(score.UsedCards))
+            {
+                UnlockSvc()?.Report(ContidionType.TwoThreeFive);
+            }
+
+            if (HasShownSeven(score.UsedCards))
+            {
+                UnlockSvc()?.Report(ContidionType.Seven);
+            }
         }
 
         private void TryApplyPermanentCardBonuses(HandScore score)
@@ -3766,6 +3814,7 @@ namespace App.Game
                 {
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
+                    UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
             }
 
@@ -3804,6 +3853,7 @@ namespace App.Game
                     ai.Status = "斩杀";
                     ai.Banner = "濒死斩杀";
                     Log($"互助斩杀：{ai.Name} 血量不足继续，被你斩杀");
+                    UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
                 {
@@ -4257,6 +4307,7 @@ namespace App.Game
             var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
             attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
             Player.Attack = Math.Max(0, attack);
+            Player.Icon = hero != null ? hero.Icon : null;
         }
 
         private void ApplyRelicMaxHpDelta(int delta)
@@ -4337,6 +4388,7 @@ namespace App.Game
                         seat.Name = monster.IsBoss ? "BOSS" : names[i];
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
+                        seat.Icon = monster.Icon;
                     }
                     else
                     {
@@ -4369,6 +4421,7 @@ namespace App.Game
                 var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
                 ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
                 seat.Attack = seat.ActiveInStage ? 10 : 0;
+                seat.Icon = null;
                 seat.Banner = string.Empty;
                 ClearRound(seat);
             }
@@ -4384,6 +4437,7 @@ namespace App.Game
             seat.Name = $"敌人{index + 1}";
             ApplySeatHp(seat, 0, 0);
             seat.Attack = 0;
+            seat.Icon = null;
         }
 
         private bool TryAdvanceLevel()
@@ -4511,6 +4565,11 @@ namespace App.Game
         private static ITalentService TalentSvc()
         {
             return AppServices.IsReady ? AppServices.Resolve<ITalentService>() : null;
+        }
+
+        private static IUnlockConditionService UnlockSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<IUnlockConditionService>() : null;
         }
 
         private void ApplyTalentKillRewards()
@@ -4724,6 +4783,11 @@ namespace App.Game
                     continue;
                 }
 
+                if (!IsRelicInShopPool(relic.Id))
+                {
+                    continue;
+                }
+
                 pool.Add(relic);
             }
 
@@ -4777,7 +4841,34 @@ namespace App.Game
         {
             foreach (var relic in RelicConfig.All.Values)
             {
-                if (relic != null && !OwnsRelicConfig(relic.Id) && relic.RefreshProbability > 0f)
+                if (relic != null &&
+                    !OwnsRelicConfig(relic.Id) &&
+                    relic.RefreshProbability > 0f &&
+                    IsRelicInShopPool(relic.Id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsRelicInShopPool(int relicId)
+        {
+            var unlock = UnlockSvc();
+            return unlock == null || unlock.IsRelicInShopPool(relicId);
+        }
+
+        private static bool HasShownSeven(Card[] cards)
+        {
+            if (cards == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < cards.Length; i++)
+            {
+                if (cards[i].Rank == Rank.Seven)
                 {
                     return true;
                 }

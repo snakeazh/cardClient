@@ -34,9 +34,9 @@
 | 大壮 | HeroTakeDamagePer | 挨打 | 先加遗物/天赋 `HeroTakeDamage`，再 `× (1 + Value)`。怪物攻击数字仍是减伤前；飘字 `TakenDamage` 和实际扣血是减伤后；未闪避时至少 1 |
 | 狠人 | Damage | `ComputeAttackDamage` | 并入 `dmgPercent`：`伤害 × (1 + 天赋百分比 + Value)` |
 | 狠人 / 武林高手 | HeroCritical | `ComputeAttackDamage` | 加在 `HeroConfig.Critical` 和天赋暴击率之后 |
-| 多面手 | VersatilePerson | `FinishPlayerAttack` | 主目标满伤，其余存活敌人 `round(伤害 × Value)`。与溅射斩比例叠加 |
-| 射手 | ExtraAttackOneTime | `FinishPlayerAttack` | Value 概率对同一主目标再打一刀满伤。第二刀不触发溅射/AOE；目标已死扣 0 |
-| 大嗓门 | AoeDamage | `FinishPlayerAttack` | 对所有存活敌人各打 `round(原伤害 × Value)`，主目标也不再吃 100%。有 AOE 时跳过溅射 |
+| 多面手 | VersatilePerson | `ApplyPendingAttackHits` | 主目标满伤，其余存活敌人 `round(伤害 × Value)`。与溅射斩比例叠加 |
+| 射手 | ExtraAttackOneTime | `ApplyPendingAttackHits` | Value 概率对同一主目标再打一刀满伤。第二刀不触发溅射/AOE；目标已死扣 0 |
+| 大嗓门 | AoeDamage | `ApplyPendingAttackHits` | 对所有存活敌人各打 `round(原伤害 × Value)`，主目标也不再吃 100%。有 AOE 时跳过溅射 |
 | 富豪 | InitialFunds | `StartNewRun` | 与天赋富裕相加 |
 | 武林高手 | MissDamagePer | `ApplyDamage` 打玩家 | Value 概率本击 0 伤（覆盖至少 1 的保底） |
 | 赌神 | RubbingCardsNum | `ResetSkillCharges` | 与遗物搓牌次数相加 |
@@ -54,7 +54,7 @@
 |------|------|
 | 开局金币 | `StartNewRun` |
 | 造成伤害百分比 / 暴击 | `ComputeAttackDamage` |
-| AOE / 溅射 / 额外一刀 | `FinishPlayerAttack` → `ApplyPlayerAttackHits` |
+| AOE / 溅射 / 额外一刀 | `ApplyPendingAttackHits`（受击开始）；无演出时 `FinishPlayerAttack` 兜底 |
 | 受伤百分比 | `ApplyDamage`；演出飘字读 `TakenDamage` |
 | 闪避 | `ApplyDamage` |
 | 搓牌次数 | `ResetSkillCharges` |

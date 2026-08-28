@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using App.Resources;
 using App.Talent;
+using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -17,12 +20,14 @@ namespace App.UI.Popup
         private readonly List<TalentSnapshot> _owned = new List<TalentSnapshot>();
         private TalentSnapshot _snapshot;
 
-        public TalentDetailViewModel(IUIManager ui, ITalentService talent)
+        public TalentDetailViewModel(IUIManager ui, ITalentService talent, IResourceService resources)
         {
             _ui = ui;
             _talent = talent;
+            Resources = resources;
             NameText = new ObservableProperty<string>();
             DescText = new ObservableProperty<string>();
+            IconKey = new ObservableProperty<string>(string.Empty);
             ShowSwitch = new ObservableProperty<bool>(false);
             PrevCommand = new RelayCommand(() => Shift(-1));
             NextCommand = new RelayCommand(() => Shift(1));
@@ -32,6 +37,12 @@ namespace App.UI.Popup
         public ObservableProperty<string> NameText { get; }
 
         public ObservableProperty<string> DescText { get; }
+
+        /// <summary>当前天赋图标资源 key（Textures/Talent 下），空表示配置未填或无选中。</summary>
+        public ObservableProperty<string> IconKey { get; }
+
+        /// <summary>供 View 异步加载图标（同列表页 VM 模式）。</summary>
+        public IResourceService Resources { get; }
 
         public ObservableProperty<bool> ShowSwitch { get; }
 
@@ -82,6 +93,9 @@ namespace App.UI.Popup
             DescText.Value = snapshot != null && snapshot.Config != null
                 ? snapshot.Config.Desc ?? string.Empty
                 : string.Empty;
+            IconKey.Value = snapshot?.Config == null
+                ? string.Empty
+                : ResResourcePaths.TalentIcon(snapshot.Config.Icon) ?? string.Empty;
         }
 
         private void Dismiss()

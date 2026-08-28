@@ -6,7 +6,6 @@ using App.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
-using Framework.Log;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -36,7 +35,6 @@ namespace App.UI
         private readonly Image[] _enemyCardTypeIcons = new Image[3];
         private readonly Image[] _enemyCardTypeLabels = new Image[3];
         private readonly TMP_Text[] _enemyCardTypeNums = new TMP_Text[3];
-        private readonly Sprite[] _enemyPortraits = new Sprite[3];
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
@@ -56,7 +54,7 @@ namespace App.UI
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
-        private Sprite _playerPortrait;
+        private int _portraitLoadSerial;
         private int _playedAttack;
         private TMP_Text _playerCardTypeNum;
         private TMP_Text _beilvNum;
@@ -101,7 +99,8 @@ namespace App.UI
             }
 
             _board.Attach(ViewModel);
-            await LoadPortraits();
+            await PortraitLoader.EnsureBattleStatesAsync(ViewModel.Session.Player, ViewModel.Session.Enemies);
+            RefreshPlayerItems();
             await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
@@ -174,10 +173,24 @@ namespace App.UI
         {
             RefreshShop();
             RefreshPlayerItems();
+            _ = EnsureBattlePortraits();
             RefreshCardInfos();
             RefreshEquips();
             TryPlayAttack();
             TryScheduleAiDelay();
+        }
+
+        private async Task EnsureBattlePortraits()
+        {
+            var serial = ++_portraitLoadSerial;
+            var session = ViewModel?.Session;
+            var loaded = await PortraitLoader.EnsureBattleStatesAsync(session?.Player, session?.Enemies);
+            if (serial != _portraitLoadSerial || ViewModel == null || !loaded)
+            {
+                return;
+            }
+
+            RefreshPlayerItems();
         }
 
         private void TryScheduleAiDelay()
@@ -466,6 +479,7 @@ namespace App.UI
                 }
 
                 TryDissolveIfLethal(session);
+                session.ApplyPendingAttackHits();
             };
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };
             Action onDone = () =>
@@ -518,9 +532,8 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。结算节奏不跟着等，
-        /// 所以延迟没走完扣血就已经发生，ShowEnemy 会先翻 false —— BindEnemyVisible
-        /// 得让位给这里，否则会抢在延迟结束前把卡溶掉，延迟等于没有。
+        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。受击开始就会扣血，
+        /// ShowEnemy 立刻翻 false —— BindEnemyVisible 得让位给这里，否则会抢在延迟结束前把卡溶掉。
         /// 怪溶完要隐藏节点，玩家卡留着。
         /// </summary>
         private void ScheduleDeathDissolve(PlayerItem item, bool hideWhenDone)
@@ -800,7 +813,10 @@ namespace App.UI
                     }
                 }
 
-                _playerItem.Bind(session.Player, _playerPortrait, AttackDisplay(_playerItem, session.Player.Attack));
+                _playerItem.Bind(
+                    session.Player,
+                    PortraitLoader.Get(session.Player),
+                    AttackDisplay(_playerItem, session.Player.Attack));
             }
 
             var activeCount = 0;
@@ -828,7 +844,11 @@ namespace App.UI
                     continue;
                 }
 
-                _enemyItems[slot].Bind(enemy, _enemyPortraits[i], AttackDisplay(_enemyItems[slot], enemy.Attack), session.ActingAiId);
+                _enemyItems[slot].Bind(
+                    enemy,
+                    PortraitLoader.Get(enemy),
+                    AttackDisplay(_enemyItems[slot], enemy.Attack),
+                    session.ActingAiId);
             }
         }
 
@@ -933,50 +953,6 @@ namespace App.UI
             }
 
             return enemyIndex;
-        }
-
-        private async Task LoadPortraits()
-        {
-            if (ViewModel == null)
-            {
-                return;
-            }
-
-            _playerPortrait = await LoadSprite(ResolvePlayerPortraitKey());
-            for (var i = 0; i < _enemyPortraits.Length; i++)
-            {
-                _enemyPortraits[i] = await LoadSprite(ResResourcePaths.EnemyAttack(i + 1));
-            }
-        }
-
-        private string ResolvePlayerPortraitKey()
-        {
-            var heroId = ViewModel.Progress != null ? ViewModel.Progress.LastHeroId : 0;
-            var hero = HeroConfig.Get(heroId);
-            if (hero == null)
-            {
-                hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
-            }
-
-            return ResResourcePaths.RoleIcon(hero != null ? hero.Icon : null);
-        }
-
-        private async Task<Sprite> LoadSprite(string key)
-        {
-            if (string.IsNullOrEmpty(key))
-            {
-                return null;
-            }
-
-            try
-            {
-                return await ViewModel.Resources.LoadAsync<Sprite>(key);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Warn(LogChannel.UI, $"Failed to load portrait '{key}': {ex.Message}");
-                return null;
-            }
         }
 
         private void BindHudChrome()

@@ -676,6 +676,74 @@ namespace App.Game
             return list;
         }
 
+        /// <summary>
+        /// 老花眼金花展示花色：同色三张里张数多的那门。张数不够或不是同一色则 false。
+        /// </summary>
+        public static bool TryColorFlushDisplaySuit(IReadOnlyList<Card> cards, out Suit displaySuit)
+        {
+            displaySuit = default;
+            if (cards == null)
+            {
+                return false;
+            }
+
+            var n = 0;
+            var color = -1;
+            var first = Suit.Heart;
+            var counts = new int[5];
+            for (var i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (!card.IsValid)
+                {
+                    continue;
+                }
+
+                var group = FlushColor(card.Suit);
+                if (n == 0)
+                {
+                    color = group;
+                    first = card.Suit;
+                }
+                else if (group != color)
+                {
+                    return false;
+                }
+
+                counts[(int)card.Suit]++;
+                n++;
+            }
+
+            if (n != GameBalance.OpenHandSize)
+            {
+                return false;
+            }
+
+            var best = 0;
+            var bestSuit = first;
+            for (var s = (int)Suit.Heart; s <= (int)Suit.Spade; s++)
+            {
+                if (counts[s] > best)
+                {
+                    best = counts[s];
+                    bestSuit = (Suit)s;
+                }
+            }
+
+            displaySuit = bestSuit;
+            return true;
+        }
+
+        public static Card WithSuit(Card card, Suit suit)
+        {
+            if (!card.IsValid || card.Suit == suit)
+            {
+                return card;
+            }
+
+            return new Card(suit, card.Rank);
+        }
+
         private static bool IsFlush(Suit a, Suit b, Suit c, bool colorFlush)
         {
             if (colorFlush)

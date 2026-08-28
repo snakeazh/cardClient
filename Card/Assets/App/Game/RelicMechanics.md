@@ -67,7 +67,7 @@
 
 | 遗物 | Type | 行为 |
 |------|------|------|
-| 老花眼 | SpecialFlush | 金花/同花顺：红桃=方片、黑桃=梅花。青铜项链等仍按真实花色计数 |
+| 老花眼 | SpecialFlush | 金花/同花顺：红桃=方片、黑桃=梅花。展示跟多数花色；被改的那张真实花色和展示花色的倍率/攻击都生效，没改的只算自己的花色 |
 | 错峰出行 | SpecialStraight | 三张排序后相邻点差为 1 或 2 即成顺子（2-4-6、2-3-5 算；2-5-8 不算）。A-2-3 保留 |
 | 近视眼 | AllCardIsHeadCard | 不改点数/牌型；人头相关遗物把每张亮出牌都当人头 |
 | 235 | SpecialTwoThreeFive | 散牌恰好 2+3+5 → 豹子且 `BeatsAll` |
@@ -81,7 +81,7 @@
 | Type | 何时加到倍率 |
 |------|----------------|
 | CardMagnification | 任意牌型 |
-| SquarePlate / Spades / RedHeart / PlumBlossom | 亮出牌按真实花色每张 |
+| SquarePlate / Spades / RedHeart / PlumBlossom | 亮出牌按花色每张；老花眼金花里被改花色的牌真实+展示都算 |
 | Couplet / Flush / Straight / StraightFlush / Leopard | 对应牌型 |
 | EvenNumberCard / OddNumberCard | 偶数 2/4/6/8/10；奇数 A/3/5/7/9 |
 | HeadCard | 人头（近视眼则每张亮出牌） |
@@ -102,7 +102,7 @@
 
 | Type | 行为 |
 |------|------|
-| 花色/牌型 Attack、SpecialEightCard、DoubleCardAttack | 与既有结算相同 |
+| 花色 Attack（老花眼金花被改花色的牌真实+展示都算）、牌型 Attack、SpecialEightCard、DoubleCardAttack | 与既有结算相同 |
 | HeadCardAttack / ACardAttack | 人头 / 每张 A |
 | TheSwordOfVictory | 未亮出 2 张里 `ChipValue` 最大的那张（表 Value=0 时按 ×1） |
 | ConsumeFundsGetAttack | `floor(本局花费金币 / Value)`（Value 为每 +1 攻击所需金币；卖掉不加也不扣花费） |
@@ -143,7 +143,7 @@
 | 买 / 卖 HeroHpMax | `BuyShopRelic` / `SellShopRelic` |
 | 进关重算上限 | `ApplyHeroToPlayer` |
 | 每手回血 | `AfterRound` → `ApplyEveryRoundHpUp` |
-| 吸血 | `FinishPlayerAttack` → `ApplyBloodSucking` |
+| 吸血 | `ApplyPendingAttackHits` → `ApplyBloodSucking` |
 | 235 / 老花眼 / 错峰 | `EvaluateSeat` / `SelectBestOpen` |
 | 圆盾 / 补偿金 / 工资卡 | `ApplyDamage` |
 | 白条 / 投资花费 | `BuyShopRelic` / `RefreshShopOffers` |

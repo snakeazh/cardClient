@@ -43,17 +43,50 @@ namespace App.Resources
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 
+        public const string PortraitAttack = "attack";
+        public const string PortraitDamage = "damage";
+        public const string PortraitDead = "dead";
+
         /// <summary>
-        /// <see cref="App.Config.HeroConfig.Icon"/> 对应 Assets/Res/Textures/role 下的文件名（无扩展名）。
+        /// 局内头像分档：Hp ≤ 0 或 MaxHp ≤ 0 为 dead；严格低于 50% 为 damage；其余（含恰好 50%）为 attack。
+        /// </summary>
+        public static string PortraitSuffix(int hp, int maxHp)
+        {
+            if (hp <= 0 || maxHp <= 0)
+            {
+                return PortraitDead;
+            }
+
+            if (hp * 2 < maxHp)
+            {
+                return PortraitDamage;
+            }
+
+            return PortraitAttack;
+        }
+
+        /// <summary>
+        /// 配置表 Icon 无后缀，给图鉴收藏品等独立文件名用（如 Adventurer1）。
         /// </summary>
         public static string RoleIcon(string icon)
         {
-            if (string.IsNullOrWhiteSpace(icon))
-            {
-                return null;
-            }
+            return ComposeIcon("Textures/role", icon, null);
+        }
 
-            return $"Textures/role/{icon.Trim()}";
+        /// <summary>
+        /// <see cref="App.Config.HeroConfig.Icon"/> + _attack / _damage / _dead。
+        /// </summary>
+        public static string RolePortrait(string icon, string suffix)
+        {
+            return ComposeIcon("Textures/role", icon, suffix);
+        }
+
+        /// <summary>
+        /// <see cref="App.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
+        /// </summary>
+        public static string EnemyPortrait(string icon, string suffix)
+        {
+            return ComposeIcon("Textures/enemy", icon, suffix);
         }
 
         /// <summary>
@@ -61,12 +94,20 @@ namespace App.Resources
         /// </summary>
         public static string RelicIcon(string icon)
         {
+            return ComposeIcon("Textures/Relic", icon, null);
+        }
+
+        /// <summary>
+        /// <see cref="App.Config.TalentConfig.Icon"/> 对应 Assets/Res/Textures/Talent 下的文件名（无扩展名）。
+        /// </summary>
+        public static string TalentIcon(string icon)
+        {
             if (string.IsNullOrWhiteSpace(icon))
             {
                 return null;
             }
 
-            return $"Textures/Relic/{icon.Trim()}";
+            return $"Textures/Talent/{icon.Trim()}";
         }
 
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
@@ -76,12 +117,23 @@ namespace App.Resources
         /// </summary>
         public static string CommonIcon(string icon)
         {
+            return ComposeIcon("Textures/Common", icon, null);
+        }
+
+        private static string ComposeIcon(string folder, string icon, string suffix)
+        {
             if (string.IsNullOrWhiteSpace(icon))
             {
                 return null;
             }
 
-            return $"Textures/Common/{icon.Trim()}";
+            var name = icon.Trim();
+            if (string.IsNullOrWhiteSpace(suffix))
+            {
+                return $"{folder}/{name}";
+            }
+
+            return $"{folder}/{name}_{suffix.Trim()}";
         }
     }
 }

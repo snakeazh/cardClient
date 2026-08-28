@@ -268,6 +268,8 @@ namespace App.Game
         public string PeekedType = string.Empty;
         /// <summary>敌人人格。玩家为 null。BOSS 关会覆盖成 Expert。</summary>
         public AiProfile Profile;
+        /// <summary>敌人 <see cref="App.Level.MonsterSpawn.MonsterId"/>。玩家为 0。</summary>
+        public int MonsterId;
 
         public int CountSelectedCards()
         {
@@ -362,6 +364,26 @@ namespace App.Game
         public readonly int[] HandTypeShowCounts = new int[6];
         /// <summary>会员卡：本店剩余免费刷新次数。</summary>
         public int FreeShopRefreshLeft;
+        /// <summary>垫脚石 / 勇气徽章永久攻击。卖掉不清，进关加在英雄攻击上。</summary>
+        public int PermanentAttackBonus;
+        /// <summary>永恒之心 / 激励徽章永久血上限。卖掉不清，进关加在英雄血上。</summary>
+        public int PermanentMaxHpBonus;
+        /// <summary>暴击拳套层数。</summary>
+        public int CritStacks;
+        /// <summary>运动鞋层数。</summary>
+        public int EvadeStacks;
+        /// <summary>复盘笔记层数（每输掉一次比牌 +1）。</summary>
+        public int DefeatMagStacks;
+        /// <summary>小强层数（每输掉一次比牌 +1）。</summary>
+        public int DefeatDmgStacks;
+        /// <summary>本局比牌输过的敌人 MonsterId。小本本 / 陷阱用。</summary>
+        public readonly HashSet<int> LostToMonsterIds = new HashSet<int>();
+        /// <summary>救命稻草本关是否已用。</summary>
+        public bool StrawUsedThisStage;
+        /// <summary>救命稻草：下次造成伤害时按该比例回血。0 表示没有待回。</summary>
+        public float StrawHealPending;
+        /// <summary>练习卷累计倍率。卖掉仍加。</summary>
+        public float PracticeMagForever;
         public readonly List<string> Log = new List<string>();
 
         public void ClearRunProgress()
@@ -369,10 +391,33 @@ namespace App.Game
             GoldSpentThisRun = 0;
             RubRelicMagForever = 0f;
             FreeShopRefreshLeft = 0;
+            PermanentAttackBonus = 0;
+            PermanentMaxHpBonus = 0;
+            CritStacks = 0;
+            EvadeStacks = 0;
+            DefeatMagStacks = 0;
+            DefeatDmgStacks = 0;
+            StrawUsedThisStage = false;
+            StrawHealPending = 0f;
+            PracticeMagForever = 0f;
+            LostToMonsterIds.Clear();
             Array.Clear(RankAttackForever, 0, RankAttackForever.Length);
             Array.Clear(HandTypeMagForever, 0, HandTypeMagForever.Length);
             Array.Clear(HandTypeShowCounts, 0, HandTypeShowCounts.Length);
             RelicSellBonus.Clear();
+        }
+
+        public bool LostToMonster(int monsterId)
+        {
+            return monsterId > 0 && LostToMonsterIds.Contains(monsterId);
+        }
+
+        public void RememberLostTo(int monsterId)
+        {
+            if (monsterId > 0)
+            {
+                LostToMonsterIds.Add(monsterId);
+            }
         }
 
         public int RankAttackBonus(Rank rank)

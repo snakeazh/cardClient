@@ -5,8 +5,8 @@
     "RefreshProbability": 0.8,
     "Name": "冒险证明",
     "Icon": "Sword1",
-    "Price": 45,
-    "SellingPrice": 22,
+    "Price": 20,
+    "SellingPrice": 10,
     "MechanismId": [
       10001
     ],
@@ -19,8 +19,8 @@
     "RefreshProbability": 0.8,
     "Name": "青铜项链",
     "Icon": "Necklace1",
-    "Price": 40,
-    "SellingPrice": 20,
+    "Price": 20,
+    "SellingPrice": 10,
     "MechanismId": [
       10002
     ],
@@ -33,8 +33,8 @@
     "RefreshProbability": 0.8,
     "Name": "青铜手镯",
     "Icon": "Bracelet1",
-    "Price": 40,
-    "SellingPrice": 20,
+    "Price": 20,
+    "SellingPrice": 10,
     "MechanismId": [
       10003
     ],
@@ -47,8 +47,8 @@
     "RefreshProbability": 0.8,
     "Name": "青铜耳环",
     "Icon": "Earrings1",
-    "Price": 40,
-    "SellingPrice": 20,
+    "Price": 20,
+    "SellingPrice": 10,
     "MechanismId": [
       10004
     ],
@@ -61,8 +61,8 @@
     "RefreshProbability": 0.8,
     "Name": "青铜戒指",
     "Icon": "Ring1",
-    "Price": 40,
-    "SellingPrice": 20,
+    "Price": 20,
+    "SellingPrice": 10,
     "MechanismId": [
       10005
     ],
@@ -75,8 +75,8 @@
     "RefreshProbability": 0.8,
     "Name": "木制长剑",
     "Icon": "Sword2",
-    "Price": 50,
-    "SellingPrice": 25,
+    "Price": 25,
+    "SellingPrice": 12,
     "MechanismId": [
       10006
     ],
@@ -89,8 +89,8 @@
     "RefreshProbability": 0.8,
     "Name": "木制法杖",
     "Icon": "Staff1",
-    "Price": 52,
-    "SellingPrice": 26,
+    "Price": 25,
+    "SellingPrice": 12,
     "MechanismId": [
       10007
     ],
@@ -103,8 +103,8 @@
     "RefreshProbability": 0.8,
     "Name": "木制长弓",
     "Icon": "Staff1",
-    "Price": 52,
-    "SellingPrice": 26,
+    "Price": 25,
+    "SellingPrice": 12,
     "MechanismId": [
       10008
     ],
@@ -117,8 +117,8 @@
     "RefreshProbability": 0.8,
     "Name": "木制长矛",
     "Icon": "Staff1",
-    "Price": 55,
-    "SellingPrice": 27,
+    "Price": 28,
+    "SellingPrice": 14,
     "MechanismId": [
       10009
     ],
@@ -131,8 +131,8 @@
     "RefreshProbability": 0.8,
     "Name": "木制长斧",
     "Icon": "Staff1",
-    "Price": 55,
-    "SellingPrice": 27,
+    "Price": 28,
+    "SellingPrice": 14,
     "MechanismId": [
       10010
     ],
@@ -145,13 +145,97 @@
     "RefreshProbability": 0.8,
     "Name": "木制圆盾",
     "Icon": "Staff1",
-    "Price": 60,
-    "SellingPrice": 30,
+    "Price": 30,
+    "SellingPrice": 15,
     "MechanismId": [
       10011
     ],
     "UnlockConditionId": 0,
     "Desc": "每次受到的伤害降低1点"
+  },
+  {
+    "Id": 112,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "小钱包",
+    "Icon": "Staff1",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10012
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合开始时,获得1金币"
+  },
+  {
+    "Id": 113,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "绷带",
+    "Icon": "Staff1",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10013
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合开始时,恢复2点生命"
+  },
+  {
+    "Id": 114,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "幸运草",
+    "Icon": "Staff1",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10014
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,有10%概率获得5金币"
+  },
+  {
+    "Id": 115,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "暴击拳套",
+    "Icon": "Staff1",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10015
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,提高1%暴击率,至多叠加20层"
+  },
+  {
+    "Id": 116,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "垫脚石",
+    "Icon": "Staff1",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10016
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每当你亮牌时大于场上所有敌人,就永久提供+1攻击力"
+  },
+  {
+    "Id": 117,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "反击拳套",
+    "Icon": "Staff1",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10017
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每当你受到伤害时,反弹2点伤害给攻击者"
   },
   {
     "Id": 201,
@@ -407,6 +491,160 @@
     "Desc": "每次受到伤害时,+10金币"
   },
   {
+    "Id": 219,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "和平鸽",
+    "Icon": "Staff1",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20019
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "有25%概率将自身造成的伤害或受到的伤害降低为0"
+  },
+  {
+    "Id": 220,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "勇气徽章",
+    "Icon": "Staff1",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20020
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌时,若牌型小于对方,则永久+1攻击力"
+  },
+  {
+    "Id": 221,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "激励徽章",
+    "Icon": "Staff1",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20021
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌时,若牌型小于对方,则永久+3血量上限"
+  },
+  {
+    "Id": 222,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "记账本",
+    "Icon": "Staff1",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20022
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束时,若本回合未造成任何伤害,则获得5金币"
+  },
+  {
+    "Id": 223,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁饭碗",
+    "Icon": "Staff1",
+    "Price": 120,
+    "SellingPrice": 60,
+    "MechanismId": [
+      20023
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌后无论胜负,均可获得1金币"
+  },
+  {
+    "Id": 224,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "永恒之心",
+    "Icon": "Staff1",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20024
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合开始时,永久+2血量上限"
+  },
+  {
+    "Id": 225,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "幸运同花",
+    "Icon": "Staff1",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20025
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
+  },
+  {
+    "Id": 226,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "运动鞋",
+    "Icon": "Staff1",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20026
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,提高1%闪避率,至多叠加20层"
+  },
+  {
+    "Id": 227,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "保温杯",
+    "Icon": "Staff1",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20027
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,若你的血量低于50%,则恢复6点生命"
+  },
+  {
+    "Id": 228,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "利息",
+    "Icon": "Staff1",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20028
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每拥有10金币,在回合结束后就会获得1金币"
+  },
+  {
+    "Id": 229,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "小算盘",
+    "Icon": "Staff1",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20029
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束时,每剩余1次搓牌次数就获得3金币"
+  },
+  {
     "Id": 301,
     "Type": 3,
     "RefreshProbability": 0.2,
@@ -587,6 +825,174 @@
     ],
     "UnlockConditionId": 0,
     "Desc": "亮出的每张9在结算时提供10金币"
+  },
+  {
+    "Id": 314,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "后备计划",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30014
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "如果本回合牌型小于所有敌人,则立即获得10金币并回复15点生命值"
+  },
+  {
+    "Id": 315,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "护身符",
+    "Icon": "Staff1",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      30015
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合受到的第1次伤害完全免疫"
+  },
+  {
+    "Id": 316,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "复盘笔记",
+    "Icon": "Staff1",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      30016
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每输1次敌人,结算时就永久提供+0.2倍率"
+  },
+  {
+    "Id": 317,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "幸运顺子",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30017
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌时,若敌人的牌型大于顺子,则会被强行视作顺子"
+  },
+  {
+    "Id": 318,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "逆转沙漏",
+    "Icon": "Staff1",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      30018
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "当牌型小于敌人时,有30%概率反转对比结果,但伤害按自身牌型计算"
+  },
+  {
+    "Id": 319,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "练习卷",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30019
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,若本回合你未击杀任何敌人,则永久提供+0.5倍率"
+  },
+  {
+    "Id": 320,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "小本本",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30020
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "本局内,对自己曾经输过的敌人造成伤害时,伤害+20%"
+  },
+  {
+    "Id": 321,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "高贵徽章",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30021
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合开始时,若生命值高于50%,获得10金币"
+  },
+  {
+    "Id": 322,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "陷阱",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30022
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "本局内,自己曾经输过的敌人在造成伤害时,伤害-20%"
+  },
+  {
+    "Id": 323,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "好运来",
+    "Icon": "Staff1",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      30023
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合有15%概率使本回合所有敌人亮出的牌型自动降一级"
+  },
+  {
+    "Id": 324,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "入场券",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30024
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合开始时,对所有敌人造成1次自身攻击力的伤害"
+  },
+  {
+    "Id": 325,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "条约",
+    "Icon": "Staff1",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      30025
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "所有敌人造成的伤害降低30%"
   },
   {
     "Id": 401,
@@ -787,5 +1193,161 @@
     ],
     "UnlockConditionId": 1008,
     "Desc": "亮出的每张7结算时有7%概率提供+77攻击力和+7倍率"
+  },
+  {
+    "Id": 415,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "武林秘籍",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40015,
+      400151
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "获得50%闪避率,且闪避成功时会对敌人造成1次自身攻击力200%的伤害"
+  },
+  {
+    "Id": 416,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "幸运对子",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40016
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "亮牌时,若敌人的牌型大于对子,则会被强行视作对子"
+  },
+  {
+    "Id": 417,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "小强",
+    "Icon": "Staff1",
+    "Price": 630,
+    "SellingPrice": 315,
+    "MechanismId": [
+      40017
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每输1次敌人,后续自身造成的所有伤害提高5%"
+  },
+  {
+    "Id": 418,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "救命稻草",
+    "Icon": "Staff1",
+    "Price": 630,
+    "SellingPrice": 315,
+    "MechanismId": [
+      40018
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "如果你受到了1次致命伤害,会将血量降低为1,且下次造成伤害的同时恢复本次伤害20%的血量,每关生效1次"
+  },
+  {
+    "Id": 419,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "专注",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40019
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "当场上只剩下一个敌人时,你对其造成的伤害+100%"
+  },
+  {
+    "Id": 420,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "变形魔方",
+    "Icon": "Staff1",
+    "Price": 630,
+    "SellingPrice": 315,
+    "MechanismId": [
+      40020
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合亮出的牌型强制提升一级"
+  },
+  {
+    "Id": 421,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "毒药",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40021
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "所有敌人血量降低30%[BOSS除外]"
+  },
+  {
+    "Id": 422,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "刺客秘籍",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40022,
+      400221
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "获得50%暴击率,且触发暴击时会对其他所有敌人造成1次自身攻击力的伤害"
+  },
+  {
+    "Id": 423,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "透视眼",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40023
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合透视次数+1"
+  },
+  {
+    "Id": 424,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "聚宝盆",
+    "Icon": "Staff1",
+    "Price": 600,
+    "SellingPrice": 300,
+    "MechanismId": [
+      40024
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "每回合结束后,本回合自身总伤害输出的2%转化为金币"
+  },
+  {
+    "Id": 425,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "差距胶囊",
+    "Icon": "Staff1",
+    "Price": 630,
+    "SellingPrice": 315,
+    "MechanismId": [
+      40025
+    ],
+    "UnlockConditionId": 0,
+    "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低15%"
   }
 ]

@@ -10,7 +10,7 @@
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。遗物：[`RelicMechanics.md`](RelicMechanics.md)。天赋：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
 
-不要用枚举残留名 `MaxHp` / `EveryRoundHpUp` / `TwoThreeFive`（当前值 92–94，注释是复制错的）。
+不要用已删除的枚举残留名 `MaxHp` / `EveryRoundHpUp` / `TwoThreeFive`。血上限用 `HeroHpMax`，回合回血用 `HeroHpReplyEveryRoundEnding`，235 用 `SpecialTwoThreeFive`。
 
 ---
 

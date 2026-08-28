@@ -799,6 +799,12 @@ namespace App.Config
         /// </summary>
         GapDamage = 130,
 
+        MaxHp = 92,
+
+        EveryRoundHpUp = 93,
+
+        TwoThreeFive = 94,
+
     }
 
     /// <summary>

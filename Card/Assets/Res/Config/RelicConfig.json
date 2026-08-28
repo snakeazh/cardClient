@@ -4,7 +4,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "冒险证明",
-    "Icon": "Sword1",
+    "Icon": "AdventureCertificate",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
@@ -18,7 +18,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "青铜项链",
-    "Icon": "Necklace1",
+    "Icon": "BronzeNecklace",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
@@ -32,7 +32,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "青铜手镯",
-    "Icon": "Bracelet1",
+    "Icon": "BronzeBracelet",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
@@ -46,7 +46,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "青铜耳环",
-    "Icon": "Earrings1",
+    "Icon": "BronzeEarrings",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
@@ -60,7 +60,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "青铜戒指",
-    "Icon": "Ring1",
+    "Icon": "BronzeRing",
     "Price": 20,
     "SellingPrice": 10,
     "MechanismId": [
@@ -74,7 +74,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长剑",
-    "Icon": "Sword2",
+    "Icon": "WoodenLongSword",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -88,7 +88,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制法杖",
-    "Icon": "Staff1",
+    "Icon": "WoodenStaff",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -102,7 +102,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长弓",
-    "Icon": "Staff1",
+    "Icon": "WoodenLongBow",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -116,7 +116,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长矛",
-    "Icon": "Staff1",
+    "Icon": "WoodenSpear",
     "Price": 28,
     "SellingPrice": 14,
     "MechanismId": [
@@ -130,7 +130,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长斧",
-    "Icon": "Staff1",
+    "Icon": "WoodenLongAxe",
     "Price": 28,
     "SellingPrice": 14,
     "MechanismId": [
@@ -144,7 +144,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制圆盾",
-    "Icon": "Staff1",
+    "Icon": "WoodenRoundShield",
     "Price": 30,
     "SellingPrice": 15,
     "MechanismId": [
@@ -158,7 +158,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "小钱包",
-    "Icon": "Staff1",
+    "Icon": "SmallWallet",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -172,7 +172,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "绷带",
-    "Icon": "Staff1",
+    "Icon": "Bandage",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -186,7 +186,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "幸运草",
-    "Icon": "Staff1",
+    "Icon": "LuckyClover",
     "Price": 25,
     "SellingPrice": 12,
     "MechanismId": [
@@ -200,7 +200,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "暴击拳套",
-    "Icon": "Staff1",
+    "Icon": "CritGlove",
     "Price": 30,
     "SellingPrice": 15,
     "MechanismId": [
@@ -214,7 +214,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "垫脚石",
-    "Icon": "Staff1",
+    "Icon": "SteppingStone",
     "Price": 30,
     "SellingPrice": 15,
     "MechanismId": [
@@ -228,7 +228,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "反击拳套",
-    "Icon": "Staff1",
+    "Icon": "CounterGlove",
     "Price": 30,
     "SellingPrice": 15,
     "MechanismId": [
@@ -242,7 +242,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "白银项链",
-    "Icon": "Staff1",
+    "Icon": "SilverNecklace",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -256,7 +256,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "白银手镯",
-    "Icon": "Staff1",
+    "Icon": "SilverBracelet",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -270,7 +270,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "白银耳环",
-    "Icon": "Staff1",
+    "Icon": "SilverEarrings",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -284,7 +284,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "白银戒指",
-    "Icon": "Staff1",
+    "Icon": "SilverRing",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -298,7 +298,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁制长剑",
-    "Icon": "Staff1",
+    "Icon": "IronLongSword",
     "Price": 130,
     "SellingPrice": 65,
     "MechanismId": [
@@ -312,7 +312,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁制法杖",
-    "Icon": "Staff1",
+    "Icon": "IronStaff",
     "Price": 135,
     "SellingPrice": 67,
     "MechanismId": [
@@ -326,7 +326,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁制长弓",
-    "Icon": "Staff1",
+    "Icon": "IronLongBow",
     "Price": 135,
     "SellingPrice": 67,
     "MechanismId": [
@@ -340,7 +340,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁制长矛",
-    "Icon": "Staff1",
+    "Icon": "IronSpear",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -354,7 +354,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁制长斧",
-    "Icon": "Staff1",
+    "Icon": "IronLongAxe",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -368,7 +368,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "小精灵",
-    "Icon": "Staff1",
+    "Icon": "Elf",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -383,7 +383,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "白条",
-    "Icon": "Staff1",
+    "Icon": "WhiteStrip",
     "Price": 100,
     "SellingPrice": 50,
     "MechanismId": [
@@ -397,7 +397,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "旗帜",
-    "Icon": "Staff1",
+    "Icon": "Flag",
     "Price": 130,
     "SellingPrice": 65,
     "MechanismId": [
@@ -411,7 +411,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "恐怖面具",
-    "Icon": "Staff1",
+    "Icon": "HorrorMask",
     "Price": 120,
     "SellingPrice": 60,
     "MechanismId": [
@@ -425,7 +425,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "黄金面具",
-    "Icon": "Staff1",
+    "Icon": "GoldMask",
     "Price": 130,
     "SellingPrice": 65,
     "MechanismId": [
@@ -439,7 +439,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "黑白相机",
-    "Icon": "Staff1",
+    "Icon": "BlackWhiteCamera",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -453,7 +453,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "丘比特",
-    "Icon": "Staff1",
+    "Icon": "Cupid",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -467,7 +467,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "投资",
-    "Icon": "Staff1",
+    "Icon": "Investment",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -481,7 +481,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "补偿金",
-    "Icon": "Staff1",
+    "Icon": "CompensationFund",
     "Price": 130,
     "SellingPrice": 65,
     "MechanismId": [
@@ -495,7 +495,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "和平鸽",
-    "Icon": "Staff1",
+    "Icon": "PeaceDove",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -509,7 +509,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "勇气徽章",
-    "Icon": "Staff1",
+    "Icon": "CourageBadge",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -523,7 +523,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "激励徽章",
-    "Icon": "Staff1",
+    "Icon": "InspireBadge",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -537,7 +537,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "记账本",
-    "Icon": "Staff1",
+    "Icon": "AccountBook",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -551,7 +551,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "铁饭碗",
-    "Icon": "Staff1",
+    "Icon": "IronBowl",
     "Price": 120,
     "SellingPrice": 60,
     "MechanismId": [
@@ -565,7 +565,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "永恒之心",
-    "Icon": "Staff1",
+    "Icon": "EternalHeart",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -579,7 +579,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "幸运同花",
-    "Icon": "Staff1",
+    "Icon": "LuckySameSuit",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -593,7 +593,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "运动鞋",
-    "Icon": "Staff1",
+    "Icon": "SportsShoes",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -607,7 +607,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "保温杯",
-    "Icon": "Staff1",
+    "Icon": "ThermalMug",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -621,7 +621,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "利息",
-    "Icon": "Staff1",
+    "Icon": "Interest",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -635,7 +635,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "小算盘",
-    "Icon": "Staff1",
+    "Icon": "LittleAbacus",
     "Price": 140,
     "SellingPrice": 70,
     "MechanismId": [
@@ -649,7 +649,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "疯狂面具",
-    "Icon": "Staff1",
+    "Icon": "MadMask",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -663,7 +663,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "回旋刃",
-    "Icon": "Staff1",
+    "Icon": "BoomerangBlade",
     "Price": 310,
     "SellingPrice": 155,
     "MechanismId": [
@@ -677,7 +677,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "致胜之剑",
-    "Icon": "Staff1",
+    "Icon": "WinningSword",
     "Price": 290,
     "SellingPrice": 145,
     "MechanismId": [
@@ -691,7 +691,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "搓牌能手",
-    "Icon": "Staff1",
+    "Icon": "CardMaster",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -705,7 +705,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "会员卡",
-    "Icon": "Staff1",
+    "Icon": "MemberCard",
     "Price": 320,
     "SellingPrice": 160,
     "MechanismId": [
@@ -719,7 +719,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "错峰出行",
-    "Icon": "Staff1",
+    "Icon": "StaggeredTravel",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -733,7 +733,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "致命黑八",
-    "Icon": "Staff1",
+    "Icon": "DeadlyBlackEight",
     "Price": 290,
     "SellingPrice": 145,
     "MechanismId": [
@@ -747,7 +747,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "偶数韵律",
-    "Icon": "Staff1",
+    "Icon": "EvenRhythm",
     "Price": 290,
     "SellingPrice": 145,
     "MechanismId": [
@@ -761,7 +761,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "奇数韵律",
-    "Icon": "Staff1",
+    "Icon": "OddRhythm",
     "Price": 290,
     "SellingPrice": 145,
     "MechanismId": [
@@ -775,7 +775,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "贵族",
-    "Icon": "Staff1",
+    "Icon": "Noble",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -789,7 +789,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "工资卡",
-    "Icon": "Staff1",
+    "Icon": "SalaryCard",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -803,7 +803,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "训练",
-    "Icon": "Staff1",
+    "Icon": "Training",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -817,7 +817,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "九霄云外",
-    "Icon": "Staff1",
+    "Icon": "BeyondTheClouds",
     "Price": 250,
     "SellingPrice": 125,
     "MechanismId": [
@@ -831,7 +831,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "后备计划",
-    "Icon": "Staff1",
+    "Icon": "BackupPlan",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -845,7 +845,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "护身符",
-    "Icon": "Staff1",
+    "Icon": "Amulet",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -859,7 +859,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "复盘笔记",
-    "Icon": "Staff1",
+    "Icon": "ReviewPlan",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -873,7 +873,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "幸运顺子",
-    "Icon": "Staff1",
+    "Icon": "LuckyStraight",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -887,7 +887,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "逆转沙漏",
-    "Icon": "Staff1",
+    "Icon": "ReverseHourglass",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -901,7 +901,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "练习卷",
-    "Icon": "Staff1",
+    "Icon": "PracticePaper",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -915,7 +915,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "小本本",
-    "Icon": "Staff1",
+    "Icon": "LittleNotebook",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -929,7 +929,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "高贵徽章",
-    "Icon": "Staff1",
+    "Icon": "NobleBadge",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -943,7 +943,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "陷阱",
-    "Icon": "Staff1",
+    "Icon": "Trap",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -957,7 +957,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "好运来",
-    "Icon": "Staff1",
+    "Icon": "LuckComes",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -971,7 +971,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "入场券",
-    "Icon": "Staff1",
+    "Icon": "AdmissionTicket",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -985,7 +985,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "条约",
-    "Icon": "Staff1",
+    "Icon": "Treaty",
     "Price": 300,
     "SellingPrice": 150,
     "MechanismId": [
@@ -1027,7 +1027,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "老花眼",
-    "Icon": "Staff1",
+    "Icon": "Presbyopia",
     "Price": 580,
     "SellingPrice": 290,
     "MechanismId": [
@@ -1041,7 +1041,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "周星星",
-    "Icon": "Staff1",
+    "Icon": "ZhouXingxing",
     "Price": 530,
     "SellingPrice": 265,
     "MechanismId": [
@@ -1055,7 +1055,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "穷途末路",
-    "Icon": "Staff1",
+    "Icon": "DeadEnd",
     "Price": 560,
     "SellingPrice": 280,
     "MechanismId": [
@@ -1069,7 +1069,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "收藏夹",
-    "Icon": "Staff1",
+    "Icon": "FavoriteFolder",
     "Price": 620,
     "SellingPrice": 310,
     "MechanismId": [
@@ -1083,7 +1083,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "奢侈品",
-    "Icon": "Staff1",
+    "Icon": "LuxuryGoods",
     "Price": 590,
     "SellingPrice": 295,
     "MechanismId": [
@@ -1097,7 +1097,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "近视眼",
-    "Icon": "Staff1",
+    "Icon": "Myopia",
     "Price": 640,
     "SellingPrice": 320,
     "MechanismId": [
@@ -1111,7 +1111,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "顶尖学者",
-    "Icon": "Staff1",
+    "Icon": "TopScholar",
     "Price": 610,
     "SellingPrice": 305,
     "MechanismId": [
@@ -1126,7 +1126,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "老千",
-    "Icon": "Staff1",
+    "Icon": "CheatPlayer",
     "Price": 580,
     "SellingPrice": 290,
     "MechanismId": [
@@ -1140,7 +1140,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "天使",
-    "Icon": "Staff1",
+    "Icon": "Angel",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1154,7 +1154,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "双刃剑",
-    "Icon": "Staff1",
+    "Icon": "DoubleEdgedSword",
     "Price": 550,
     "SellingPrice": 275,
     "MechanismId": [
@@ -1169,7 +1169,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "老搓家",
-    "Icon": "Staff1",
+    "Icon": "OldCardPlayer",
     "Price": 560,
     "SellingPrice": 280,
     "MechanismId": [
@@ -1183,7 +1183,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "幸运七",
-    "Icon": "Staff1",
+    "Icon": "LuckySeven",
     "Price": 630,
     "SellingPrice": 315,
     "MechanismId": [
@@ -1199,7 +1199,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "武林秘籍",
-    "Icon": "Staff1",
+    "Icon": "MartialSecretBook",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1214,7 +1214,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "幸运对子",
-    "Icon": "Staff1",
+    "Icon": "LuckyPair",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1228,7 +1228,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "小强",
-    "Icon": "Staff1",
+    "Icon": "LittleCockroach",
     "Price": 630,
     "SellingPrice": 315,
     "MechanismId": [
@@ -1242,7 +1242,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "救命稻草",
-    "Icon": "Staff1",
+    "Icon": "LifeSavingStraw",
     "Price": 630,
     "SellingPrice": 315,
     "MechanismId": [
@@ -1256,7 +1256,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "专注",
-    "Icon": "Staff1",
+    "Icon": "Concentration",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1270,7 +1270,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "变形魔方",
-    "Icon": "Staff1",
+    "Icon": "TransformCube",
     "Price": 630,
     "SellingPrice": 315,
     "MechanismId": [
@@ -1284,7 +1284,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "毒药",
-    "Icon": "Staff1",
+    "Icon": "Poison",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1298,7 +1298,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "刺客秘籍",
-    "Icon": "Staff1",
+    "Icon": "AssassinSecretBook",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1313,7 +1313,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "透视眼",
-    "Icon": "Staff1",
+    "Icon": "PerspectiveEye",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1327,7 +1327,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "聚宝盆",
-    "Icon": "Staff1",
+    "Icon": "TreasurePot",
     "Price": 600,
     "SellingPrice": 300,
     "MechanismId": [
@@ -1341,7 +1341,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "差距胶囊",
-    "Icon": "Staff1",
+    "Icon": "GapCapsule",
     "Price": 630,
     "SellingPrice": 315,
     "MechanismId": [

@@ -30,6 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _WindStrength: 0.06
+    - _BendStart: 0.4
     - _WindSpeed: 1.6
     - _WindPhaseGap: 0.45
     - _GustStrength: 0.35

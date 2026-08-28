@@ -1498,66 +1498,6 @@ MonoBehaviour:
     m_Scale: 1
     m_AtlasIndex: 0
     m_ClassDefinitionType: 0
-  - m_Index: 30501
-    m_Metrics:
-      m_Width: 6.40625
-      m_Height: 11.75
-      m_HorizontalBearingX: 28.578125
-      m_HorizontalBearingY: 31.21875
-      m_HorizontalAdvance: 36
-    m_GlyphRect:
-      m_X: 59
-      m_Y: 89
-      m_Width: 7
-      m_Height: 13
-    m_Scale: 1
-    m_AtlasIndex: 0
-    m_ClassDefinitionType: 0
-  - m_Index: 30502
-    m_Metrics:
-      m_Width: 6.40625
-      m_Height: 11.734375
-      m_HorizontalBearingX: 1.015625
-      m_HorizontalBearingY: 30.890625
-      m_HorizontalAdvance: 36
-    m_GlyphRect:
-      m_X: 87
-      m_Y: 606
-      m_Width: 7
-      m_Height: 12
-    m_Scale: 1
-    m_AtlasIndex: 0
-    m_ClassDefinitionType: 0
-  - m_Index: 30503
-    m_Metrics:
-      m_Width: 13.96875
-      m_Height: 11.75
-      m_HorizontalBearingX: 21.390625
-      m_HorizontalBearingY: 31.21875
-      m_HorizontalAdvance: 36
-    m_GlyphRect:
-      m_X: 33
-      m_Y: 751
-      m_Width: 15
-      m_Height: 13
-    m_Scale: 1
-    m_AtlasIndex: 0
-    m_ClassDefinitionType: 0
-  - m_Index: 30504
-    m_Metrics:
-      m_Width: 13.96875
-      m_Height: 11.734375
-      m_HorizontalBearingX: 0.640625
-      m_HorizontalBearingY: 30.890625
-      m_HorizontalAdvance: 36
-    m_GlyphRect:
-      m_X: 268
-      m_Y: 41
-      m_Width: 15
-      m_Height: 12
-    m_Scale: 1
-    m_AtlasIndex: 0
-    m_ClassDefinitionType: 0
   - m_Index: 471
     m_Metrics:
       m_Width: 30.46875
@@ -12718,21 +12658,6 @@ MonoBehaviour:
     m_Scale: 1
     m_AtlasIndex: 0
     m_ClassDefinitionType: 0
-  - m_Index: 30397
-    m_Metrics:
-      m_Width: 8.5
-      m_Height: 27.359375
-      m_HorizontalBearingX: 4.75
-      m_HorizontalBearingY: 26.921875
-      m_HorizontalAdvance: 36
-    m_GlyphRect:
-      m_X: 1346
-      m_Y: 443
-      m_Width: 10
-      m_Height: 28
-    m_Scale: 1
-    m_AtlasIndex: 0
-    m_ClassDefinitionType: 0
   - m_Index: 29735
     m_Metrics:
       m_Width: 11.203125
@@ -12778,6 +12703,21 @@ MonoBehaviour:
     m_Scale: 1
     m_AtlasIndex: 0
     m_ClassDefinitionType: 0
+  - m_Index: 30397
+    m_Metrics:
+      m_Width: 8.5
+      m_Height: 27.359375
+      m_HorizontalBearingX: 4.75
+      m_HorizontalBearingY: 26.921875
+      m_HorizontalAdvance: 36
+    m_GlyphRect:
+      m_X: 1346
+      m_Y: 443
+      m_Width: 10
+      m_Height: 28
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
   - m_Index: 30398
     m_Metrics:
       m_Width: 7.625
@@ -12820,6 +12760,66 @@ MonoBehaviour:
       m_Y: 200
       m_Width: 17
       m_Height: 29
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+  - m_Index: 30501
+    m_Metrics:
+      m_Width: 6.40625
+      m_Height: 11.75
+      m_HorizontalBearingX: 28.578125
+      m_HorizontalBearingY: 31.21875
+      m_HorizontalAdvance: 36
+    m_GlyphRect:
+      m_X: 59
+      m_Y: 89
+      m_Width: 7
+      m_Height: 13
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+  - m_Index: 30502
+    m_Metrics:
+      m_Width: 6.40625
+      m_Height: 11.734375
+      m_HorizontalBearingX: 1.015625
+      m_HorizontalBearingY: 30.890625
+      m_HorizontalAdvance: 36
+    m_GlyphRect:
+      m_X: 87
+      m_Y: 606
+      m_Width: 7
+      m_Height: 12
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+  - m_Index: 30503
+    m_Metrics:
+      m_Width: 13.96875
+      m_Height: 11.75
+      m_HorizontalBearingX: 21.390625
+      m_HorizontalBearingY: 31.21875
+      m_HorizontalAdvance: 36
+    m_GlyphRect:
+      m_X: 33
+      m_Y: 751
+      m_Width: 15
+      m_Height: 13
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+  - m_Index: 30504
+    m_Metrics:
+      m_Width: 13.96875
+      m_Height: 11.734375
+      m_HorizontalBearingX: 0.640625
+      m_HorizontalBearingY: 30.890625
+      m_HorizontalAdvance: 36
+    m_GlyphRect:
+      m_X: 268
+      m_Y: 41
+      m_Width: 15
+      m_Height: 12
     m_Scale: 1
     m_AtlasIndex: 0
     m_ClassDefinitionType: 0

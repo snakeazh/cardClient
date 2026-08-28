@@ -13,32 +13,32 @@ MonoBehaviour:
   m_Name: AttackTuning
   m_EditorClassIdentifier: 
   low:
-    StartDuration: 0.43
+    StartDuration: 0.4
     MoveDuration: 0.18
-    HitHoldDuration: 0.25
-    BackDuration: 0.45
-    RetreatDistance: 160
+    HitHoldDuration: 0.1
+    BackDuration: 0.3
+    RetreatDistance: 100
     HitKnockbackDistance: 40
-    HitKnockbackDuration: 0.1
+    HitKnockbackDuration: 0.12
     HitRecoverDuration: 0.22
   middle:
     StartDuration: 0.9
-    MoveDuration: 0.18
+    MoveDuration: 0.15
     HitHoldDuration: 0.25
     BackDuration: 0.45
-    RetreatDistance: 224
-    HitKnockbackDistance: 64
+    RetreatDistance: 350
+    HitKnockbackDistance: 100
     HitKnockbackDuration: 0.12
-    HitRecoverDuration: 0.28
+    HitRecoverDuration: 0.3
   high:
     StartDuration: 1.25
-    MoveDuration: 0.18
-    HitHoldDuration: 0.33
-    BackDuration: 0.55
-    RetreatDistance: 288
-    HitKnockbackDistance: 96
-    HitKnockbackDuration: 0.16
-    HitRecoverDuration: 0.34
+    MoveDuration: 0.1
+    HitHoldDuration: 0.4
+    BackDuration: 0.6
+    RetreatDistance: 550
+    HitKnockbackDistance: 220
+    HitKnockbackDuration: 0.2
+    HitRecoverDuration: 0.5
   hpTextHoldDuration: 0.85
   deathDissolveDelay: 2
   deathEffect: {fileID: 4988058555448458962, guid: 960f2c25212a01e468e1a655f350f30b, type: 3}

@@ -28,7 +28,6 @@ namespace App.UI
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
-            CollectCommand = new RelayCommand(() => _navigation.ShowIllustratedBook());
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -39,8 +38,6 @@ namespace App.UI
         public ObservableProperty<string> LastStageInfo { get; }
 
         public IRelayCommand StartCommand { get; }
-
-        public IRelayCommand CollectCommand { get; }
 
         protected override System.Threading.Tasks.Task OnOpen(object args)
         {

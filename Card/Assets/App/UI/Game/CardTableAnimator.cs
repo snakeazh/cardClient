@@ -592,14 +592,14 @@ namespace App.UI
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
-            var maxRound = GameBalance.PlayerCardsDealt;
+            var maxRound = Math.Max(GameBalance.EnemyCardsDealt, session.PlayerDealCount);
             for (var round = 0; round < maxRound; round++)
             {
                 for (var s = 0; s < seats.Count; s++)
                 {
                     var view = seats[s].View;
                     var seat = seats[s].Seat;
-                    if (round >= GameBalance.CardsDealt(seat.IsPlayer))
+                    if (round >= GameBalance.CardsDealt(seat.IsPlayer, session.Run))
                     {
                         continue;
                     }
@@ -704,7 +704,7 @@ namespace App.UI
                     ClearSeatSeeThrough(view);
                 }
 
-                var count = CardCount(view, seat);
+                var count = CardCount(view, seat, session);
                 for (var i = 0; i < count; i++)
                 {
                     if (SkipEnemyUnselectedFlip(seat, i))
@@ -752,7 +752,7 @@ namespace App.UI
 
             var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
             var winnerSeat = SeatById(session, session.RevealWinnerId);
-            var settleCount = CardCount(winnerView, winnerSeat);
+            var settleCount = CardCount(winnerView, winnerSeat, session);
             for (var i = 0; i < settleCount; i++)
             {
                 if (winnerSeat != null && !winnerSeat.IsCardSelected(i))
@@ -1424,14 +1424,14 @@ namespace App.UI
             }
         }
 
-        private static int CardCount(SeatView view, SeatState seat)
+        private static int CardCount(SeatView view, SeatState seat, GameSession session)
         {
             if (view == null)
             {
                 return 0;
             }
 
-            return GameBalance.CardsDealt(seat != null && seat.IsPlayer);
+            return GameBalance.CardsDealt(seat != null && seat.IsPlayer, session?.Run);
         }
 
         private static CardFaceState DesiredFace(GameSession session, SeatState seat, bool player, int cardIndex)

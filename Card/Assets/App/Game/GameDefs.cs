@@ -111,6 +111,11 @@ namespace App.Game
             return player ? PlayerCardsDealt : EnemyCardsDealt;
         }
 
+        public static int CardsDealt(bool player, RunState run)
+        {
+            return player ? BossMechanics.PlayerCardsDealt(run) : EnemyCardsDealt;
+        }
+
         /// <summary>普通关 3 名敌人，BOSS 关只留 1 名。</summary>
         public static int EnemyCountForStage(int stage)
         {
@@ -243,8 +248,10 @@ namespace App.Game
         /// <summary>当前血量。攻击结算才扣除；下注不扣血。</summary>
         public int Hp;
         public int MaxHp;
-        /// <summary>攻击力。玩家读 HeroConfig.HeroDamage，怪物读 MonsterConfig.MonsterDamage。</summary>
+        /// <summary>攻击力。玩家读 HeroConfig.HeroDamage，怪物读 MonsterConfig.MonsterDamage。狂暴增长会改 BOSS 的当前值。</summary>
         public int Attack;
+        /// <summary>进关时的基础攻击。狂暴 / 窃取在此之上加算，避免叠在已加成的 Attack 上。</summary>
+        public int BaseAttack;
         /// <summary>勇气值（筹码）。由本座位血量换算，下注从这里扣。</summary>
         public int Courage;
         /// <summary>本回合已下注、尚未结算的勇气值。</summary>
@@ -300,7 +307,7 @@ namespace App.Game
         }
     }
 
-    /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 词缀。</summary>
+    /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 机制。</summary>
     public sealed class RunState
     {
         public int Gold;
@@ -334,9 +341,16 @@ namespace App.Game
         public int AdsExtraRubThisStage;
         public int AdsDoubleGoldToday;
         public bool DoubleGoldThisStage;
-        public BossAffix Affix;
-        /// <summary>锋芒禁用的 RelicConfig Id，0 表示未禁用。</summary>
-        public int DisabledRelicConfigId;
+        /// <summary>本关随机抽中的 <see cref="App.Config.BossEntryConfig.Id"/>，0 表示无机制。</summary>
+        public int BossEntryId;
+        /// <summary>收藏禁用：本手失效的 RelicConfig Id。</summary>
+        public readonly HashSet<int> DisabledRelicIds = new HashSet<int>();
+        /// <summary>黑暗护盾剩余免疫次数。</summary>
+        public int BossShieldHitsLeft;
+        /// <summary>窃取指环累计从玩家转给 BOSS 的攻击力。</summary>
+        public int StolenAttack;
+        /// <summary>手牌烙印：不参与牌型的手牌下标，-1 表示没有。</summary>
+        public int HandBrandIndex = -1;
         public ConsumableId? DisabledConsumable;
         /// <summary>已购 RelicConfig Id。商店商品唯一持有列表。</summary>
         public readonly List<int> RelicConfigIds = new List<int>();

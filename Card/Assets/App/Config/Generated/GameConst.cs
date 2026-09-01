@@ -82,9 +82,9 @@ namespace App.Config
         public int KillMonsterGetGold;
 
         /// <summary>
-        /// 是否启用新手引导
+        /// 每通过1关后,英雄回复最大生命值的百分比(0为不生效)
         /// </summary>
-        public bool GuideEnabled;
+        public int HeroReplyHpPerLevelClear;
 
     }
 }

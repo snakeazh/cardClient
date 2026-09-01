@@ -109,6 +109,9 @@ namespace App.UI
         public ObservableProperty<string> PlayerBet { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> PlayerState { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> RoundInfo { get; } = new ObservableProperty<string>();
+        public ObservableProperty<string> RoundBuffName { get; } = new ObservableProperty<string>(string.Empty);
+        public ObservableProperty<string> RoundBuffDesc { get; } = new ObservableProperty<string>(string.Empty);
+        public ObservableProperty<bool> RoundBuffVisible { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<string> BetAmount { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> LogText { get; } = new ObservableProperty<string>();
         public ObservableProperty<bool> ShowActions { get; } = new ObservableProperty<bool>();
@@ -211,9 +214,15 @@ namespace App.UI
             }
 
             var run = Session.Run;
+            var bossEntry = BossMechanics.Resolve(run);
             Title.Value = run.HasBoss
-                ? $"第{run.Stage}关 BOSS {GameBalance.AffixName(run.Affix)}"
+                ? (bossEntry != null ? $"第{run.Stage}关 BOSS {bossEntry.Name}" : $"第{run.Stage}关 BOSS")
                 : $"第{run.Stage}关";
+            RoundBuffVisible.Value = bossEntry != null;
+            RoundBuffName.Value = bossEntry != null ? bossEntry.Name : string.Empty;
+            RoundBuffDesc.Value = bossEntry == null
+                ? string.Empty
+                : (string.IsNullOrEmpty(bossEntry.Desc) ? bossEntry.Name : bossEntry.Desc);
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = run.Gold.ToString();
             PotText.Value = string.Empty;

@@ -208,5 +208,950 @@
     "Id": 20103,
     "MonsterId": 1005,
     "MonsterLevel": 8
+  },
+  {
+    "Id": 30011,
+    "MonsterId": 1001,
+    "MonsterLevel": 9
+  },
+  {
+    "Id": 30021,
+    "MonsterId": 1002,
+    "MonsterLevel": 9
+  },
+  {
+    "Id": 30031,
+    "MonsterId": 1003,
+    "MonsterLevel": 9
+  },
+  {
+    "Id": 30041,
+    "MonsterId": 1004,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30042,
+    "MonsterId": 1005,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30051,
+    "MonsterId": 1001,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30052,
+    "MonsterId": 1002,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30061,
+    "MonsterId": 1003,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30062,
+    "MonsterId": 1004,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 30071,
+    "MonsterId": 1005,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30072,
+    "MonsterId": 1001,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30073,
+    "MonsterId": 1002,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30081,
+    "MonsterId": 1003,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30082,
+    "MonsterId": 1004,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30083,
+    "MonsterId": 1005,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30091,
+    "MonsterId": 1001,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30092,
+    "MonsterId": 1002,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30093,
+    "MonsterId": 1003,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 30101,
+    "MonsterId": 1004,
+    "MonsterLevel": 12
+  },
+  {
+    "Id": 30102,
+    "MonsterId": 2001,
+    "MonsterLevel": 3
+  },
+  {
+    "Id": 30103,
+    "MonsterId": 1005,
+    "MonsterLevel": 12
+  },
+  {
+    "Id": 40011,
+    "MonsterId": 1001,
+    "MonsterLevel": 13
+  },
+  {
+    "Id": 40021,
+    "MonsterId": 1002,
+    "MonsterLevel": 13
+  },
+  {
+    "Id": 40031,
+    "MonsterId": 1003,
+    "MonsterLevel": 13
+  },
+  {
+    "Id": 40041,
+    "MonsterId": 1004,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40042,
+    "MonsterId": 1005,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40051,
+    "MonsterId": 1001,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40052,
+    "MonsterId": 1002,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40061,
+    "MonsterId": 1003,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40062,
+    "MonsterId": 1004,
+    "MonsterLevel": 14
+  },
+  {
+    "Id": 40071,
+    "MonsterId": 1005,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40072,
+    "MonsterId": 1001,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40073,
+    "MonsterId": 1002,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40081,
+    "MonsterId": 1003,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40082,
+    "MonsterId": 1004,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40083,
+    "MonsterId": 1005,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40091,
+    "MonsterId": 1001,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40092,
+    "MonsterId": 1002,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40093,
+    "MonsterId": 1003,
+    "MonsterLevel": 15
+  },
+  {
+    "Id": 40101,
+    "MonsterId": 1004,
+    "MonsterLevel": 16
+  },
+  {
+    "Id": 40102,
+    "MonsterId": 2001,
+    "MonsterLevel": 4
+  },
+  {
+    "Id": 40103,
+    "MonsterId": 1005,
+    "MonsterLevel": 16
+  },
+  {
+    "Id": 50011,
+    "MonsterId": 1001,
+    "MonsterLevel": 17
+  },
+  {
+    "Id": 50021,
+    "MonsterId": 1002,
+    "MonsterLevel": 17
+  },
+  {
+    "Id": 50031,
+    "MonsterId": 1003,
+    "MonsterLevel": 17
+  },
+  {
+    "Id": 50041,
+    "MonsterId": 1004,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50042,
+    "MonsterId": 1005,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50051,
+    "MonsterId": 1001,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50052,
+    "MonsterId": 1002,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50061,
+    "MonsterId": 1003,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50062,
+    "MonsterId": 1004,
+    "MonsterLevel": 18
+  },
+  {
+    "Id": 50071,
+    "MonsterId": 1005,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50072,
+    "MonsterId": 1001,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50073,
+    "MonsterId": 1002,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50081,
+    "MonsterId": 1003,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50082,
+    "MonsterId": 1004,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50083,
+    "MonsterId": 1005,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50091,
+    "MonsterId": 1001,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50092,
+    "MonsterId": 1002,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50093,
+    "MonsterId": 1003,
+    "MonsterLevel": 19
+  },
+  {
+    "Id": 50101,
+    "MonsterId": 1004,
+    "MonsterLevel": 20
+  },
+  {
+    "Id": 50102,
+    "MonsterId": 2001,
+    "MonsterLevel": 5
+  },
+  {
+    "Id": 50103,
+    "MonsterId": 1005,
+    "MonsterLevel": 20
+  },
+  {
+    "Id": 60011,
+    "MonsterId": 1001,
+    "MonsterLevel": 21
+  },
+  {
+    "Id": 60021,
+    "MonsterId": 1002,
+    "MonsterLevel": 21
+  },
+  {
+    "Id": 60031,
+    "MonsterId": 1003,
+    "MonsterLevel": 21
+  },
+  {
+    "Id": 60041,
+    "MonsterId": 1004,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60042,
+    "MonsterId": 1005,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60051,
+    "MonsterId": 1001,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60052,
+    "MonsterId": 1002,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60061,
+    "MonsterId": 1003,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60062,
+    "MonsterId": 1004,
+    "MonsterLevel": 22
+  },
+  {
+    "Id": 60071,
+    "MonsterId": 1005,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60072,
+    "MonsterId": 1001,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60073,
+    "MonsterId": 1002,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60081,
+    "MonsterId": 1003,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60082,
+    "MonsterId": 1004,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60083,
+    "MonsterId": 1005,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60091,
+    "MonsterId": 1001,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60092,
+    "MonsterId": 1002,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60093,
+    "MonsterId": 1003,
+    "MonsterLevel": 23
+  },
+  {
+    "Id": 60101,
+    "MonsterId": 1004,
+    "MonsterLevel": 24
+  },
+  {
+    "Id": 60102,
+    "MonsterId": 2001,
+    "MonsterLevel": 6
+  },
+  {
+    "Id": 60103,
+    "MonsterId": 1005,
+    "MonsterLevel": 24
+  },
+  {
+    "Id": 70011,
+    "MonsterId": 1001,
+    "MonsterLevel": 25
+  },
+  {
+    "Id": 70021,
+    "MonsterId": 1002,
+    "MonsterLevel": 25
+  },
+  {
+    "Id": 70031,
+    "MonsterId": 1003,
+    "MonsterLevel": 25
+  },
+  {
+    "Id": 70041,
+    "MonsterId": 1004,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70042,
+    "MonsterId": 1005,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70051,
+    "MonsterId": 1001,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70052,
+    "MonsterId": 1002,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70061,
+    "MonsterId": 1003,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70062,
+    "MonsterId": 1004,
+    "MonsterLevel": 26
+  },
+  {
+    "Id": 70071,
+    "MonsterId": 1005,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70072,
+    "MonsterId": 1001,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70073,
+    "MonsterId": 1002,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70081,
+    "MonsterId": 1003,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70082,
+    "MonsterId": 1004,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70083,
+    "MonsterId": 1005,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70091,
+    "MonsterId": 1001,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70092,
+    "MonsterId": 1002,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70093,
+    "MonsterId": 1003,
+    "MonsterLevel": 27
+  },
+  {
+    "Id": 70101,
+    "MonsterId": 1004,
+    "MonsterLevel": 28
+  },
+  {
+    "Id": 70102,
+    "MonsterId": 2001,
+    "MonsterLevel": 7
+  },
+  {
+    "Id": 70103,
+    "MonsterId": 1005,
+    "MonsterLevel": 28
+  },
+  {
+    "Id": 80011,
+    "MonsterId": 1001,
+    "MonsterLevel": 29
+  },
+  {
+    "Id": 80021,
+    "MonsterId": 1002,
+    "MonsterLevel": 29
+  },
+  {
+    "Id": 80031,
+    "MonsterId": 1003,
+    "MonsterLevel": 29
+  },
+  {
+    "Id": 80041,
+    "MonsterId": 1004,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80042,
+    "MonsterId": 1005,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80051,
+    "MonsterId": 1001,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80052,
+    "MonsterId": 1002,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80061,
+    "MonsterId": 1003,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80062,
+    "MonsterId": 1004,
+    "MonsterLevel": 30
+  },
+  {
+    "Id": 80071,
+    "MonsterId": 1005,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80072,
+    "MonsterId": 1001,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80073,
+    "MonsterId": 1002,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80081,
+    "MonsterId": 1003,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80082,
+    "MonsterId": 1004,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80083,
+    "MonsterId": 1005,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80091,
+    "MonsterId": 1001,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80092,
+    "MonsterId": 1002,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80093,
+    "MonsterId": 1003,
+    "MonsterLevel": 31
+  },
+  {
+    "Id": 80101,
+    "MonsterId": 1004,
+    "MonsterLevel": 32
+  },
+  {
+    "Id": 80102,
+    "MonsterId": 2001,
+    "MonsterLevel": 8
+  },
+  {
+    "Id": 80103,
+    "MonsterId": 1005,
+    "MonsterLevel": 32
+  },
+  {
+    "Id": 90011,
+    "MonsterId": 1001,
+    "MonsterLevel": 33
+  },
+  {
+    "Id": 90021,
+    "MonsterId": 1002,
+    "MonsterLevel": 33
+  },
+  {
+    "Id": 90031,
+    "MonsterId": 1003,
+    "MonsterLevel": 33
+  },
+  {
+    "Id": 90041,
+    "MonsterId": 1004,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90042,
+    "MonsterId": 1005,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90051,
+    "MonsterId": 1001,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90052,
+    "MonsterId": 1002,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90061,
+    "MonsterId": 1003,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90062,
+    "MonsterId": 1004,
+    "MonsterLevel": 34
+  },
+  {
+    "Id": 90071,
+    "MonsterId": 1005,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90072,
+    "MonsterId": 1001,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90073,
+    "MonsterId": 1002,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90081,
+    "MonsterId": 1003,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90082,
+    "MonsterId": 1004,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90083,
+    "MonsterId": 1005,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90091,
+    "MonsterId": 1001,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90092,
+    "MonsterId": 1002,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90093,
+    "MonsterId": 1003,
+    "MonsterLevel": 35
+  },
+  {
+    "Id": 90101,
+    "MonsterId": 1004,
+    "MonsterLevel": 36
+  },
+  {
+    "Id": 90102,
+    "MonsterId": 2001,
+    "MonsterLevel": 9
+  },
+  {
+    "Id": 90103,
+    "MonsterId": 1005,
+    "MonsterLevel": 36
+  },
+  {
+    "Id": 100011,
+    "MonsterId": 1001,
+    "MonsterLevel": 37
+  },
+  {
+    "Id": 100021,
+    "MonsterId": 1002,
+    "MonsterLevel": 37
+  },
+  {
+    "Id": 100031,
+    "MonsterId": 1003,
+    "MonsterLevel": 37
+  },
+  {
+    "Id": 100041,
+    "MonsterId": 1004,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100042,
+    "MonsterId": 1005,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100051,
+    "MonsterId": 1001,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100052,
+    "MonsterId": 1002,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100061,
+    "MonsterId": 1003,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100062,
+    "MonsterId": 1004,
+    "MonsterLevel": 38
+  },
+  {
+    "Id": 100071,
+    "MonsterId": 1005,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100072,
+    "MonsterId": 1001,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100073,
+    "MonsterId": 1002,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100081,
+    "MonsterId": 1003,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100082,
+    "MonsterId": 1004,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100083,
+    "MonsterId": 1005,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100091,
+    "MonsterId": 1001,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100092,
+    "MonsterId": 1002,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100093,
+    "MonsterId": 1003,
+    "MonsterLevel": 39
+  },
+  {
+    "Id": 100101,
+    "MonsterId": 1004,
+    "MonsterLevel": 40
+  },
+  {
+    "Id": 100102,
+    "MonsterId": 2001,
+    "MonsterLevel": 10
+  },
+  {
+    "Id": 100103,
+    "MonsterId": 1005,
+    "MonsterLevel": 40
+  },
+  {
+    "Id": 110011,
+    "MonsterId": 1001,
+    "MonsterLevel": 41
+  },
+  {
+    "Id": 110021,
+    "MonsterId": 1002,
+    "MonsterLevel": 41
+  },
+  {
+    "Id": 110031,
+    "MonsterId": 1003,
+    "MonsterLevel": 41
+  },
+  {
+    "Id": 110041,
+    "MonsterId": 1004,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110042,
+    "MonsterId": 1005,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110051,
+    "MonsterId": 1001,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110052,
+    "MonsterId": 1002,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110061,
+    "MonsterId": 1003,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110062,
+    "MonsterId": 1004,
+    "MonsterLevel": 42
+  },
+  {
+    "Id": 110071,
+    "MonsterId": 1005,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110072,
+    "MonsterId": 1001,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110073,
+    "MonsterId": 1002,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110081,
+    "MonsterId": 1003,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110082,
+    "MonsterId": 1004,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110083,
+    "MonsterId": 1005,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110091,
+    "MonsterId": 1001,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110092,
+    "MonsterId": 1002,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110093,
+    "MonsterId": 1003,
+    "MonsterLevel": 43
+  },
+  {
+    "Id": 110101,
+    "MonsterId": 1004,
+    "MonsterLevel": 44
+  },
+  {
+    "Id": 110102,
+    "MonsterId": 2001,
+    "MonsterLevel": 11
+  },
+  {
+    "Id": 110103,
+    "MonsterId": 1005,
+    "MonsterLevel": 44
   }
 ]

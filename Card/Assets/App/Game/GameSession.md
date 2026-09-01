@@ -9,6 +9,7 @@
 数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）  
 商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)  
 英雄技能：[`HeroMechanics.md`](HeroMechanics.md)  
+BOSS 机制：[`BossMechanics.md`](BossMechanics.md)  
 天赋局内效果：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)
 
 ---
@@ -21,7 +22,7 @@
 |------|------|
 | `Changed` | 状态变化后通知 HUD / 牌桌 |
 | `Player` / `Enemies[3]` | 座位。敌人数组下标 0/1/2 是逻辑座，不是屏幕槽 |
-| `Run` | 整次闯关：金币、遗物、技能次数、透视标记 |
+| `Run` | 整次闯关：金币、遗物、技能次数、透视标记、`BossEntryId` |
 | `Phase` | 当前阶段 |
 | `DealSerial` | 发牌序号，牌桌动画用来重播发牌 |
 | `RevealPlaySerial` | 亮牌演出序号 |
@@ -60,7 +61,7 @@ StartNewRun / Continue
 | `RubCard(i)` / `SkipRub()` | 搓牌成功或取消 | 随机换一张，或跳过 |
 | `UseChaKanGood()` | 透视 | 开关 `SelectingXRayTarget` |
 | `TryXRayEnemySlot(slot)` | 点敌人或他的牌 | 见下节 |
-| `UseTiHuanGood()` | 替换 | 自己 5 张全部换成新牌 |
+| `UseTiHuanGood()` | 替换 | 自己已发手牌全部换成新牌（手牌压缩时为 4 张） |
 | `RequestShowdown()` | 开牌 | 与存活敌人逐个比牌 |
 | `ApplyPendingAttackHits()` | 受击演出开始 | 扣血（溅射 / AOE / 追击一并结算） |
 | `CompletePlayerAttack()` | 攻击演出结束 | 若尚未扣血则补扣，然后打下一个 |

@@ -58,7 +58,7 @@ namespace App.Guide
 
         public void TryStart(GuideTriggerType type, string param)
         {
-            if (IsRunning || !IsEnabled())
+            if (IsRunning)
             {
                 return;
             }
@@ -96,7 +96,7 @@ namespace App.Guide
 
         public void StartGroup(int groupId)
         {
-            if (IsRunning || !IsEnabled())
+            if (IsRunning)
             {
                 return;
             }
@@ -377,11 +377,6 @@ namespace App.Guide
             {
                 TryBindClickButton();
             }
-        }
-
-        private static bool IsEnabled()
-        {
-            return GameConst.IsLoaded && GameConst.Instance.GuideEnabled;
         }
 
         private static bool ParamEquals(string configured, string actual)

@@ -41,13 +41,13 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 按 RelicConfig / RelicEntryConfig 结算已购商品效果。锋芒禁用的商品整件跳过。
+    /// 按 RelicConfig / RelicEntryConfig 结算已购商品效果。收藏禁用的商品整件跳过。
     /// </summary>
     public static class RelicMechanics
     {
         public static bool IsDisabled(RunState run, int relicId)
         {
-            return run != null && relicId > 0 && run.DisabledRelicConfigId == relicId;
+            return run != null && relicId > 0 && run.DisabledRelicIds != null && run.DisabledRelicIds.Contains(relicId);
         }
 
         public static float SumMultiplierExtra(RunState run, HandScore score, RelicCombatContext ctx = default)

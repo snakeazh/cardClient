@@ -29,7 +29,7 @@
     "Id": 3,
     "Name": "狠人",
     "Hp": 200,
-    "HeroDamage": 5,
+    "HeroDamage": 6,
     "Critical": 0.05,
     "CriticalDamage": 2,
     "Icon": "Adventurer",
@@ -66,13 +66,13 @@
       10004
     ],
     "UnlockCondition": 4,
-    "Desc": "攻击时,有25%概率额外攻击1次"
+    "Desc": "攻击时,有30%概率额外攻击1次"
   },
   {
     "Id": 6,
     "Name": "大嗓门",
     "Hp": 180,
-    "HeroDamage": 5,
+    "HeroDamage": 6,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "Mage",
@@ -80,7 +80,7 @@
       10005
     ],
     "UnlockCondition": 5,
-    "Desc": "攻击时,对所有人造成30%的群体伤害"
+    "Desc": "攻击时,对所有人造成35%的群体伤害"
   },
   {
     "Id": 7,
@@ -94,7 +94,7 @@
       10006
     ],
     "UnlockCondition": 6,
-    "Desc": "初始额外拥有30金币"
+    "Desc": "初始额外拥有50金币"
   },
   {
     "Id": 8,

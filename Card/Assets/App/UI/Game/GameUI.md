@@ -6,7 +6,7 @@
 视图模型：`Assets/App/UI/Game/GameTableViewModel.cs`  
 色板：[`ThemeColors.md`](../../ThemeColors.md)（装备槽 `bgcolor`）  
 牌桌世界：[`GameBoardController.md`](GameBoardController.md)  
-规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md)
+规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md) · BOSS：[`BossMechanics.md`](../../Game/BossMechanics.md)
 
 `GameTableController` 是旧场景绑法，见 [`GameTableController.md`](GameTableController.md)。
 
@@ -25,10 +25,11 @@ GameUI
   horEquipBtns2           ← 已携带遗物（equip1/2/3）
   cardinfoItem            ← 结算时显示玩家牌型；敌人克隆到 cardInfoParent
   roundInfo               ← 第几轮
+  roundbuff               ← BOSS 机制名称，无机制时隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2`、`horEquipBtns2` 隐藏，发完再亮。`roundInfo` 局内一直显示第几轮。
+发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2`、`horEquipBtns2` 隐藏，发完再亮。`roundInfo` 局内一直显示第几轮。BOSS 关 `roundbuff` 显示机制 `Name`，点击弹出 `ItemTip` 出 `Desc`。
 
 `cardinfoItem` 只在结算（开牌比牌 / 攻击演出 / 本手结束）时显示：玩家用 HUD 上的原节点，敌人把同一套克隆到各自 `player1/2/3.cardInfoParent` 下。
 
@@ -100,6 +101,8 @@ GameUI
 ## 积分条
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
+
+`roundbuff`：当前 `BossEntryConfig.Name`。非 BOSS 关或未抽到机制时隐藏。
 
 ---
 

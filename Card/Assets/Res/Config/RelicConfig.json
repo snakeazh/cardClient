@@ -11,6 +11,7 @@
       10001
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算时提供+1倍率"
   },
   {
@@ -25,6 +26,7 @@
       10002
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张方片牌在结算时提供+1倍率"
   },
   {
@@ -39,6 +41,7 @@
       10003
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
   },
   {
@@ -53,6 +56,7 @@
       10004
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张红心牌在结算时提供+1倍率"
   },
   {
@@ -67,6 +71,7 @@
       10005
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
   },
   {
@@ -81,6 +86,7 @@
       10006
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的对子牌型在结算时提供+3倍率"
   },
   {
@@ -95,6 +101,7 @@
       10007
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的顺子牌型在结算时提供+3倍率"
   },
   {
@@ -109,6 +116,7 @@
       10008
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的同花牌型在结算时提供+3倍率"
   },
   {
@@ -123,6 +131,7 @@
       10009
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+5倍率"
   },
   {
@@ -137,6 +146,7 @@
       10010
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的豹子牌型在结算时提供+6倍率"
   },
   {
@@ -151,6 +161,7 @@
       10011
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每次受到的伤害降低1点"
   },
   {
@@ -165,6 +176,7 @@
       10012
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合开始时,获得1金币"
   },
   {
@@ -179,6 +191,7 @@
       10013
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合开始时,恢复2点生命"
   },
   {
@@ -193,6 +206,7 @@
       10014
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,有20%概率获得5金币"
   },
   {
@@ -207,6 +221,7 @@
       10015
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,提高1%暴击率,至多叠加20层"
   },
   {
@@ -221,6 +236,7 @@
       10016
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每关首次亮牌大于场上所有敌人时,永久+1攻击力"
   },
   {
@@ -235,7 +251,68 @@
       10017
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每当你受到伤害时,反弹3点伤害给攻击者"
+  },
+  {
+    "Id": 118,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "磨刀石",
+    "Icon": "Whetstone",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10018
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本次比牌你造成的伤害+50%"
+  },
+  {
+    "Id": 119,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "顺子心得",
+    "Icon": "StraightExperience",
+    "Price": 15,
+    "SellingPrice": 7,
+    "MechanismId": [
+      10019
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,顺子牌型提供的倍率永久+1"
+  },
+  {
+    "Id": 120,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "急救粉",
+    "Icon": "FirstAidPowder",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10020
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,立即恢复30%最大生命"
+  },
+  {
+    "Id": 121,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "复仇之刺",
+    "Icon": "RevengeThorn",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10021
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每输1次比牌,你造成的伤害+20%,至多+100%,输后一直保留"
   },
   {
     "Id": 201,
@@ -249,6 +326,7 @@
       20001
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张方片牌在结算时提供+40攻击力"
   },
   {
@@ -263,6 +341,7 @@
       20002
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+40攻击力"
   },
   {
@@ -277,6 +356,7 @@
       20003
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张红心牌在结算时提供+40攻击力"
   },
   {
@@ -291,6 +371,7 @@
       20004
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+40攻击力"
   },
   {
@@ -305,6 +386,7 @@
       20005
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的对子牌型在结算时提供+120攻击力"
   },
   {
@@ -319,6 +401,7 @@
       20006
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的顺子牌型在结算时提供+150攻击力"
   },
   {
@@ -333,6 +416,7 @@
       20007
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的同花牌型在结算时提供+150攻击力"
   },
   {
@@ -347,6 +431,7 @@
       20008
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+300攻击力"
   },
   {
@@ -361,6 +446,7 @@
       20009
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的豹子牌型在结算时提供+300攻击力"
   },
   {
@@ -376,6 +462,7 @@
       200101
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "获得30点生命值上限,每回合结束后恢复2点生命"
   },
   {
@@ -390,6 +477,7 @@
       20011
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "可以负债,最多-50金币"
   },
   {
@@ -404,6 +492,7 @@
       20012
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+1倍率"
   },
   {
@@ -418,6 +507,7 @@
       20013
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时提供+40攻击力"
   },
   {
@@ -432,6 +522,7 @@
       20014
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时获得2金币"
   },
   {
@@ -446,6 +537,7 @@
       20015
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+2倍率"
   },
   {
@@ -460,6 +552,7 @@
       20016
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+2倍率"
   },
   {
@@ -474,6 +567,7 @@
       20017
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每花费60金币,英雄永久+1攻击力"
   },
   {
@@ -488,6 +582,7 @@
       20018
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每次受到伤害时,+10金币"
   },
   {
@@ -502,6 +597,7 @@
       20019
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "有25%概率将自身造成的伤害或受到的伤害降低为0"
   },
   {
@@ -516,6 +612,7 @@
       20020
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,若牌型小于对方,则永久+1攻击力"
   },
   {
@@ -530,6 +627,7 @@
       20021
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,若牌型小于对方,则永久+3血量上限"
   },
   {
@@ -544,6 +642,7 @@
       20022
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束时,若本回合未造成任何伤害,则获得10金币"
   },
   {
@@ -558,6 +657,7 @@
       20023
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌后无论胜负,均可获得2金币"
   },
   {
@@ -572,6 +672,7 @@
       20024
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合开始时,永久+1血量上限"
   },
   {
@@ -586,6 +687,7 @@
       20025
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
   },
   {
@@ -600,6 +702,7 @@
       20026
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,提高1%闪避率,至多叠加20层"
   },
   {
@@ -614,6 +717,7 @@
       20027
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,若你的血量低于50%,则恢复6点生命"
   },
   {
@@ -628,6 +732,7 @@
       20028
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每通过1关时,每拥有15金币获得1金币,每关至多10金币"
   },
   {
@@ -642,7 +747,98 @@
       20029
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束时,每剩余1次搓牌次数就获得3金币"
+  },
+  {
+    "Id": 230,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "火药",
+    "Icon": "Gunpowder",
+    "Price": 90,
+    "SellingPrice": 45,
+    "MechanismId": [
+      20030
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本次比牌你造成的伤害翻倍"
+  },
+  {
+    "Id": 231,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "对子心得",
+    "Icon": "PairExperience",
+    "Price": 70,
+    "SellingPrice": 35,
+    "MechanismId": [
+      20031
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,对子牌型提供的倍率永久+3"
+  },
+  {
+    "Id": 232,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "黄金急救包",
+    "Icon": "GoldenFirstAidKit",
+    "Price": 145,
+    "SellingPrice": 72,
+    "MechanismId": [
+      20032
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,立即恢复60%最大生命"
+  },
+  {
+    "Id": 233,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "月光酒",
+    "Icon": "MoonlightWine",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20033
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每回合比牌获胜后,恢复3点生命"
+  },
+  {
+    "Id": 234,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "商人票据",
+    "Icon": "MerchantTicket",
+    "Price": 110,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20034
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,下一次进入商店时所有购买价格-50%"
+  },
+  {
+    "Id": 235,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "净化药水",
+    "Icon": "PurificationPotion",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20035
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,移除本关内的1条BOSS词缀效果"
   },
   {
     "Id": 301,
@@ -656,6 +852,7 @@
       30001
     ],
     "UnlockConditionId": 1001,
+    "UseType": 0,
     "Desc": "造成伤害时,获得5%的生命窃取"
   },
   {
@@ -670,6 +867,7 @@
       30002
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的牌点数提供的攻击力加成×3"
   },
   {
@@ -684,6 +882,7 @@
       30003
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算伤害时,将留在手牌上最大的牌点数×4转化为额外攻击力"
   },
   {
@@ -698,6 +897,7 @@
       30004
     ],
     "UnlockConditionId": 1002,
+    "UseType": 0,
     "Desc": "每回合内,每搓1次牌,结算时提供的倍率+1"
   },
   {
@@ -712,6 +912,7 @@
       30005
     ],
     "UnlockConditionId": 1003,
+    "UseType": 0,
     "Desc": "每次进入商店提供1次免费刷新的机会"
   },
   {
@@ -726,6 +927,7 @@
       30006
     ],
     "UnlockConditionId": 1004,
+    "UseType": 0,
     "Desc": "顺子牌型可以相隔1点组成"
   },
   {
@@ -740,6 +942,7 @@
       30007
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张8在结算时提供+200攻击力"
   },
   {
@@ -754,6 +957,7 @@
       30008
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+6倍率"
   },
   {
@@ -768,6 +972,7 @@
       30009
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+6倍率"
   },
   {
@@ -782,6 +987,7 @@
       30010
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时提供+5倍率"
   },
   {
@@ -796,6 +1002,7 @@
       30011
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每击杀1名敌人,该收藏品的出售价格+5金币"
   },
   {
@@ -810,6 +1017,7 @@
       30012
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合首次亮牌时,随机1张亮出牌点数的攻击力永久+1,至多累计+30"
   },
   {
@@ -824,6 +1032,7 @@
       30013
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张9在结算时提供15金币"
   },
   {
@@ -838,6 +1047,7 @@
       30014
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "如果本回合牌型小于所有敌人,则立即获得15金币并回复20点生命值"
   },
   {
@@ -852,6 +1062,7 @@
       30015
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每关受到的第1次伤害完全免疫"
   },
   {
@@ -866,6 +1077,7 @@
       30016
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每输1次敌人,结算时就永久提供+0.2倍率"
   },
   {
@@ -880,6 +1092,7 @@
       30017
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,若敌人的牌型大于顺子,则会被强行视作顺子"
   },
   {
@@ -894,6 +1107,7 @@
       30018
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "当牌型小于敌人时,有30%概率反转对比结果,但伤害按自身牌型计算"
   },
   {
@@ -908,6 +1122,7 @@
       30019
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,若本回合你未击杀任何敌人,则永久提供+0.2倍率,至多+6"
   },
   {
@@ -922,6 +1137,7 @@
       30020
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "本局内,对自己曾经输过的敌人造成伤害时,伤害+20%"
   },
   {
@@ -936,6 +1152,7 @@
       30021
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每关开始时,若生命值高于50%,获得15金币"
   },
   {
@@ -950,6 +1167,7 @@
       30022
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "本局内,自己曾经输过的敌人在造成伤害时,伤害-20%"
   },
   {
@@ -964,6 +1182,7 @@
       30023
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合有15%概率使本回合所有敌人亮出的牌型自动降1级"
   },
   {
@@ -978,6 +1197,7 @@
       30024
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每关开始时,对所有敌人造成2次自身攻击力的伤害"
   },
   {
@@ -992,7 +1212,83 @@
       30025
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "所有敌人造成的伤害降低30%"
+  },
+  {
+    "Id": 326,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "同花心得",
+    "Icon": "FlushExperience",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30026
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,同花牌型提供的倍率永久+8"
+  },
+  {
+    "Id": 327,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "豹子精髓",
+    "Icon": "LeopardEssence",
+    "Price": 160,
+    "SellingPrice": 80,
+    "MechanismId": [
+      30027
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,本局内你首次亮出豹子时,额外获得300金币"
+  },
+  {
+    "Id": 328,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "时之沙",
+    "Icon": "SandOfTime",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30028
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本关内你比牌获胜时的伤害+30%"
+  },
+  {
+    "Id": 329,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "巨人药剂",
+    "Icon": "GiantPotion",
+    "Price": 170,
+    "SellingPrice": 85,
+    "MechanismId": [
+      30029
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本关内生命上限+80,并立即恢复80点生命"
+  },
+  {
+    "Id": 330,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "丰收图腾",
+    "Icon": "HarvestTotem",
+    "Price": 180,
+    "SellingPrice": 90,
+    "MechanismId": [
+      30030
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每通过1关时,获得25金币"
   },
   {
     "Id": 401,
@@ -1006,6 +1302,7 @@
       40001
     ],
     "UnlockConditionId": 1005,
+    "UseType": 0,
     "Desc": "散排235牌型等同于豹子牌型,并且可以战胜所有牌型"
   },
   {
@@ -1020,6 +1317,7 @@
       40002
     ],
     "UnlockConditionId": 1006,
+    "UseType": 0,
     "Desc": "获得500点生命值上限"
   },
   {
@@ -1034,6 +1332,7 @@
       40003
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "红桃和方片视为同一花色,黑桃和梅花视为同一花色"
   },
   {
@@ -1048,6 +1347,7 @@
       40004
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合搓牌次数+1"
   },
   {
@@ -1062,6 +1362,7 @@
       40005
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算时,所有技能都无剩余使用次数,则提供+12倍率"
   },
   {
@@ -1076,6 +1377,7 @@
       40006
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每有1个收藏品,结算时提供+1倍率"
   },
   {
@@ -1090,6 +1392,7 @@
       40007
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "结算时,若未使用过搓牌,每个搓牌次数提供+3倍率"
   },
   {
@@ -1104,6 +1407,7 @@
       40008
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "所有牌均视为人头牌"
   },
   {
@@ -1119,6 +1423,7 @@
       400091
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮出的每张A在结算伤害时提供+400攻击力和+8倍率"
   },
   {
@@ -1133,6 +1438,7 @@
       40010
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,该牌型本局内每重复亮出1次提供+0.5倍率,至多+10"
   },
   {
@@ -1147,6 +1453,7 @@
       40011
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,有25%概率将该牌型提供的倍率永久+1"
   },
   {
@@ -1162,6 +1469,7 @@
       400121
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合失去2次搓牌机会,但结算时提供+10倍率"
   },
   {
@@ -1176,6 +1484,7 @@
       40013
     ],
     "UnlockConditionId": 1007,
+    "UseType": 0,
     "Desc": "每使用1次搓牌,结算时该收藏品永久提供+0.1倍率"
   },
   {
@@ -1192,6 +1501,7 @@
       400142
     ],
     "UnlockConditionId": 1008,
+    "UseType": 0,
     "Desc": "亮出的每张7结算时有25%概率提供+77攻击力和+7倍率"
   },
   {
@@ -1207,6 +1517,7 @@
       400151
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "获得50%闪避率,且闪避成功时会对敌人造成1次自身攻击力200%的伤害"
   },
   {
@@ -1221,6 +1532,7 @@
       40016
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "亮牌时,若敌人的牌型大于对子,则会被强行视作对子"
   },
   {
@@ -1235,6 +1547,7 @@
       40017
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每输1次敌人,后续自身造成的所有伤害提高5%"
   },
   {
@@ -1249,6 +1562,7 @@
       40018
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "受到致命伤害时血量降为1,且下次造成伤害后回复该伤害20%的血量,每关生效1次"
   },
   {
@@ -1263,6 +1577,7 @@
       40019
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "当场上只剩下一个敌人时,你对其造成的伤害+100%"
   },
   {
@@ -1277,6 +1592,7 @@
       40020
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合亮出的牌型强制提升一级"
   },
   {
@@ -1291,6 +1607,7 @@
       40021
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "所有敌人血量降低30%[BOSS除外]"
   },
   {
@@ -1306,6 +1623,7 @@
       400221
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "获得50%暴击率,且触发暴击时会对其他所有敌人造成1次自身攻击力的伤害"
   },
   {
@@ -1320,6 +1638,7 @@
       40023
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合透视次数+1"
   },
   {
@@ -1334,6 +1653,7 @@
       40024
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "每回合结束后,本回合自身总伤害输出的15%转化为金币"
   },
   {
@@ -1348,6 +1668,82 @@
       40025
     ],
     "UnlockConditionId": 0,
+    "UseType": 0,
     "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
+  },
+  {
+    "Id": 426,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "神之左手",
+    "Icon": "GodLeftHand",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40026
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本次比牌你造成的伤害固定为500点"
+  },
+  {
+    "Id": 427,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "凤凰羽毛",
+    "Icon": "PhoenixFeather",
+    "Price": 330,
+    "SellingPrice": 165,
+    "MechanismId": [
+      40027
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 1,
+    "Desc": "使用后,本次比牌你受到的所有伤害变为0,并立即恢复30%最大生命"
+  },
+  {
+    "Id": 428,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "时光宝盒",
+    "Icon": "TimeTreasureBox",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      40028
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,随机3种牌型的倍率永久+5"
+  },
+  {
+    "Id": 429,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "龙心",
+    "Icon": "DragonHeart",
+    "Price": 270,
+    "SellingPrice": 135,
+    "MechanismId": [
+      40029
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 2,
+    "Desc": "使用后,永久获得120点生命上限,并立即恢复120点生命"
+  },
+  {
+    "Id": 430,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "贪欲之冠",
+    "Icon": "GreedCrown",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      40030
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每拥有40金币,你造成的伤害+8%,至多+100%"
   }
 ]

@@ -928,11 +928,91 @@ namespace App.Config
         /// </summary>
         GapDamage = 130,
 
-        MaxHp = 131,
+        /// <summary>
+        /// 消耗品:本次比牌造成的伤害提高(倍率)
+        /// </summary>
+        UseDamageMul = 131,
 
-        EveryRoundHpUp = 132,
+        /// <summary>
+        /// 消耗品:本次比牌造成的固定伤害
+        /// </summary>
+        UseDamageFixed = 132,
 
-        TwoThreeFive = 133,
+        /// <summary>
+        /// 消耗品:指定牌型的倍率永久提高(参数:牌型|数值)
+        /// </summary>
+        HandTypeMagUp = 133,
+
+        /// <summary>
+        /// 消耗品:随机若干牌型的倍率永久提高(参数:数值|数量)
+        /// </summary>
+        RandomHandTypeMagUp = 134,
+
+        /// <summary>
+        /// 消耗品:立即回复百分比最大生命
+        /// </summary>
+        HealHpPercent = 135,
+
+        /// <summary>
+        /// 消耗品:永久提高生命上限并立即回复同量生命
+        /// </summary>
+        MaxHpUpAndHeal = 136,
+
+        /// <summary>
+        /// 每输1次比牌提高伤害,有上限
+        /// </summary>
+        LossRampDamage = 137,
+
+        /// <summary>
+        /// 比牌获胜后回复生命
+        /// </summary>
+        WinHeal = 138,
+
+        /// <summary>
+        /// 消耗品:下一次商店所有商品折扣
+        /// </summary>
+        NextShopDiscount = 139,
+
+        /// <summary>
+        /// 消耗品:移除本关1条BOSS词缀
+        /// </summary>
+        RemoveBossEntry = 140,
+
+        /// <summary>
+        /// 本局首次亮出豹子时获得金币
+        /// </summary>
+        FirstLeopardGold = 141,
+
+        /// <summary>
+        /// 本关内比牌获胜伤害提高
+        /// </summary>
+        LevelWinDamageUp = 142,
+
+        /// <summary>
+        /// 本关内生命上限提高并立即回复
+        /// </summary>
+        LevelHpMaxUp = 143,
+
+        /// <summary>
+        /// 每通过1关获得固定金币
+        /// </summary>
+        GoldPerLevelClear = 144,
+
+        /// <summary>
+        /// 消耗品:本次比牌受到的伤害为0并回复生命(参数:免伤标记|回复%)
+        /// </summary>
+        UseRoundNullify = 145,
+
+        /// <summary>
+        /// 按持有金币提高伤害(参数:每N金|+M%|上限%)
+        /// </summary>
+        GoldDamageScale = 146,
+
+        MaxHp = 1111,
+
+        EveryRoundHpUp = 1112,
+
+        TwoThreeFive = 1113,
 
     }
 

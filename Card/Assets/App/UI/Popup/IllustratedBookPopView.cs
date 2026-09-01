@@ -403,7 +403,22 @@ namespace App.UI.Popup
 
                 _tip = Instantiate(prefab, transform, false);
                 _tip.name = "ItemTip";
-                _tipText = _tip.GetComponentInChildren<TMP_Text>(true);
+                var ui = _tip.GetComponent<UIReference>();
+                if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
+                {
+                    _tipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
+                }
+
+                if (_tipText == null)
+                {
+                    _tipText = _tip.GetComponentInChildren<TMP_Text>(true);
+                }
+
+                if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
+                {
+                    useNode.gameObject.SetActive(false);
+                }
+
                 var group = _tip.GetComponent<CanvasGroup>();
                 if (group == null)
                 {

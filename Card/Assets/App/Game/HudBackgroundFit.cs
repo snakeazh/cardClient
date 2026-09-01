@@ -3,7 +3,7 @@ using UnityEngine;
 namespace App.Game
 {
     /// <summary>
-    /// 将 GameHud.bg 的 Y 缩放到正交相机可视高度，使背景上下铺满。
+    /// 将 GameHud.bg 等比缩放到铺满正交相机可视范围（cover：取宽高缩放的较大值）。
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(SpriteRenderer))]
@@ -55,8 +55,8 @@ namespace App.Game
                 return;
             }
 
-            float spriteHeight = _renderer.sprite.bounds.size.y;
-            if (spriteHeight <= 0f)
+            Vector2 spriteSize = _renderer.sprite.bounds.size;
+            if (spriteSize.x <= 0f || spriteSize.y <= 0f)
             {
                 return;
             }
@@ -74,8 +74,11 @@ namespace App.Game
             _lastHeight = Screen.height;
 
             float viewHeight = camera.orthographicSize * 2f;
+            float viewWidth = viewHeight * camera.aspect;
+            float uniform = Mathf.Max(viewWidth / spriteSize.x, viewHeight / spriteSize.y);
             var scale = transform.localScale;
-            scale.y = viewHeight / spriteHeight;
+            scale.x = uniform;
+            scale.y = uniform;
             transform.localScale = scale;
         }
     }

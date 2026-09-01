@@ -8,6 +8,7 @@ using App.Game;
 using App.Guide;
 using App.Resources;
 using DG.Tweening;
+using Framework.UI.Binding;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -47,6 +48,8 @@ namespace App.UI
         private int _prefabEquipCount;
         private GameObject _equipTip;
         private TMP_Text _equipTipText;
+        private GameObject _equipTipUse;
+        private Button _equipTipUseBtn;
         private GameObject _equipTipCatcher;
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
@@ -168,6 +171,9 @@ namespace App.UI
             {
                 Destroy(_equipTip);
                 _equipTip = null;
+                _equipTipText = null;
+                _equipTipUse = null;
+                _equipTipUseBtn = null;
             }
 
             if (_equipTipCatcher != null)
@@ -1318,6 +1324,7 @@ namespace App.UI
             HideEquipTip();
             _shownRoundBuff = true;
             _equipTipAnchor = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
+            SetEquipTipUseVisible(false);
             if (_equipTipText != null)
             {
                 var desc = ViewModel.RoundBuffDesc.Value;
@@ -1363,15 +1370,15 @@ namespace App.UI
 
                 _equipTip = Instantiate(prefab, transform, false);
                 _equipTip.name = "ItemTip";
-                _equipTipText = _equipTip.GetComponentInChildren<TMP_Text>(true);
+                BindEquipTipNodes(_equipTip);
                 var group = _equipTip.GetComponent<CanvasGroup>();
                 if (group == null)
                 {
                     group = _equipTip.AddComponent<CanvasGroup>();
                 }
 
-                group.blocksRaycasts = false;
-                group.interactable = false;
+                group.blocksRaycasts = true;
+                group.interactable = true;
                 _equipTip.SetActive(false);
                 _hudCanvas = GetComponentInParent<Canvas>();
             }
@@ -1395,6 +1402,8 @@ namespace App.UI
             {
                 _equipTipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
             }
+
+            SetEquipTipUseVisible(RelicMechanics.IsConsumable(relic));
 
             EnsureEquipTipCatcher();
             if (_equipTipCatcher != null)
@@ -1453,6 +1462,53 @@ namespace App.UI
             button.onClick.AddListener(HideEquipTip);
             go.SetActive(false);
             _equipTipCatcher = go;
+        }
+
+        private void BindEquipTipNodes(GameObject tip)
+        {
+            _equipTipText = null;
+            _equipTipUse = null;
+            _equipTipUseBtn = null;
+            var ui = tip != null ? tip.GetComponent<UIReference>() : null;
+            if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
+            {
+                _equipTipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (_equipTipText == null && tip != null)
+            {
+                _equipTipText = tip.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
+            {
+                _equipTipUse = useNode.gameObject;
+                _equipTipUseBtn = useNode.GetComponent<Button>() ?? useNode.GetComponentInChildren<Button>(true);
+            }
+
+            if (_equipTipUseBtn != null)
+            {
+                _equipTipUseBtn.onClick.RemoveAllListeners();
+                _equipTipUseBtn.onClick.AddListener(OnEquipTipUseClicked);
+            }
+        }
+
+        private void SetEquipTipUseVisible(bool visible)
+        {
+            if (_equipTipUse != null)
+            {
+                _equipTipUse.SetActive(visible);
+            }
+        }
+
+        private void OnEquipTipUseClicked()
+        {
+            if (_shownEquipRelicId <= 0 || ViewModel?.Session == null)
+            {
+                return;
+            }
+
+            ViewModel.Session.UseRelic(_shownEquipRelicId);
         }
 
         private void PositionItemTip(Transform slot, bool placeRight)

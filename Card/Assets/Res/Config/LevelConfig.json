@@ -13,7 +13,8 @@
     "Difficulty": 1,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      10021,
+      10102
     ],
     "GetGold": 80
   },
@@ -98,7 +99,7 @@
       10102,
       10103
     ],
-    "GetGold": 0
+    "GetGold": 240
   },
   {
     "Id": 2001,
@@ -107,7 +108,7 @@
     "MonsterGroup": [
       20011
     ],
-    "GetGold": 60
+    "GetGold": 70
   },
   {
     "Id": 2002,
@@ -116,7 +117,7 @@
     "MonsterGroup": [
       20021
     ],
-    "GetGold": 80
+    "GetGold": 90
   },
   {
     "Id": 2003,
@@ -125,7 +126,7 @@
     "MonsterGroup": [
       20031
     ],
-    "GetGold": 100
+    "GetGold": 115
   },
   {
     "Id": 2004,
@@ -135,7 +136,7 @@
       20041,
       20042
     ],
-    "GetGold": 120
+    "GetGold": 140
   },
   {
     "Id": 2005,
@@ -145,7 +146,7 @@
       20051,
       20052
     ],
-    "GetGold": 140
+    "GetGold": 160
   },
   {
     "Id": 2006,
@@ -155,7 +156,7 @@
       20061,
       20062
     ],
-    "GetGold": 160
+    "GetGold": 185
   },
   {
     "Id": 2007,
@@ -166,7 +167,7 @@
       20072,
       20073
     ],
-    "GetGold": 180
+    "GetGold": 205
   },
   {
     "Id": 2008,
@@ -177,7 +178,7 @@
       20082,
       20083
     ],
-    "GetGold": 200
+    "GetGold": 230
   },
   {
     "Id": 2009,
@@ -188,7 +189,7 @@
       20092,
       20093
     ],
-    "GetGold": 220
+    "GetGold": 255
   },
   {
     "Id": 2010,
@@ -199,713 +200,915 @@
       20102,
       20103
     ],
-    "GetGold": 0
+    "GetGold": 275
   },
   {
     "Id": 3001,
     "Difficulty": 3,
     "Level": 1,
     "MonsterGroup": [
-      10011
+      30011
     ],
-    "GetGold": 60
+    "GetGold": 80
   },
   {
     "Id": 3002,
     "Difficulty": 3,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      30021
     ],
-    "GetGold": 80
+    "GetGold": 105
   },
   {
     "Id": 3003,
     "Difficulty": 3,
     "Level": 3,
     "MonsterGroup": [
-      10031
+      30031
     ],
-    "GetGold": 100
+    "GetGold": 130
   },
   {
     "Id": 3004,
     "Difficulty": 3,
     "Level": 4,
     "MonsterGroup": [
-      10041,
-      10042
+      30041,
+      30042
     ],
-    "GetGold": 120
+    "GetGold": 155
   },
   {
     "Id": 3005,
     "Difficulty": 3,
     "Level": 5,
     "MonsterGroup": [
-      10051,
-      10052
+      30051,
+      30052
     ],
-    "GetGold": 140
+    "GetGold": 180
   },
   {
     "Id": 3006,
     "Difficulty": 3,
     "Level": 6,
     "MonsterGroup": [
-      10061,
-      10062
+      30061,
+      30062
     ],
-    "GetGold": 160
+    "GetGold": 210
   },
   {
     "Id": 3007,
     "Difficulty": 3,
     "Level": 7,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      30071,
+      30072,
+      30073
     ],
-    "GetGold": 180
+    "GetGold": 235
   },
   {
     "Id": 3008,
     "Difficulty": 3,
     "Level": 8,
     "MonsterGroup": [
-      10081,
-      10082,
-      10083
+      30081,
+      30082,
+      30083
     ],
-    "GetGold": 200
+    "GetGold": 260
   },
   {
     "Id": 3009,
     "Difficulty": 3,
     "Level": 9,
     "MonsterGroup": [
-      10091,
-      10092,
-      10093
+      30091,
+      30092,
+      30093
     ],
-    "GetGold": 220
+    "GetGold": 285
   },
   {
     "Id": 3010,
     "Difficulty": 3,
     "Level": 10,
     "MonsterGroup": [
-      10101,
-      10102,
-      10103
+      30101,
+      30102,
+      30103
     ],
-    "GetGold": 0
+    "GetGold": 310
   },
   {
     "Id": 4001,
     "Difficulty": 4,
     "Level": 1,
     "MonsterGroup": [
-      20011
+      40011
     ],
-    "GetGold": 60
+    "GetGold": 85
   },
   {
     "Id": 4002,
     "Difficulty": 4,
     "Level": 2,
     "MonsterGroup": [
-      20021
+      40021
     ],
-    "GetGold": 80
+    "GetGold": 115
   },
   {
     "Id": 4003,
     "Difficulty": 4,
     "Level": 3,
     "MonsterGroup": [
-      20031
+      40031
     ],
-    "GetGold": 100
+    "GetGold": 145
   },
   {
     "Id": 4004,
     "Difficulty": 4,
     "Level": 4,
     "MonsterGroup": [
-      20041,
-      20042
+      40041,
+      40042
     ],
-    "GetGold": 120
+    "GetGold": 175
   },
   {
     "Id": 4005,
     "Difficulty": 4,
     "Level": 5,
     "MonsterGroup": [
-      20051,
-      20052
+      40051,
+      40052
     ],
-    "GetGold": 140
+    "GetGold": 205
   },
   {
     "Id": 4006,
     "Difficulty": 4,
     "Level": 6,
     "MonsterGroup": [
-      20061,
-      20062
+      40061,
+      40062
     ],
-    "GetGold": 160
+    "GetGold": 230
   },
   {
     "Id": 4007,
     "Difficulty": 4,
     "Level": 7,
     "MonsterGroup": [
-      20071,
-      20072,
-      20073
+      40071,
+      40072,
+      40073
     ],
-    "GetGold": 180
+    "GetGold": 260
   },
   {
     "Id": 4008,
     "Difficulty": 4,
     "Level": 8,
     "MonsterGroup": [
-      20081,
-      20082,
-      20083
+      40081,
+      40082,
+      40083
     ],
-    "GetGold": 200
+    "GetGold": 290
   },
   {
     "Id": 4009,
     "Difficulty": 4,
     "Level": 9,
     "MonsterGroup": [
-      20091,
-      20092,
-      20093
+      40091,
+      40092,
+      40093
     ],
-    "GetGold": 220
+    "GetGold": 320
   },
   {
     "Id": 4010,
     "Difficulty": 4,
     "Level": 10,
     "MonsterGroup": [
-      20101,
-      20102,
-      20103
+      40101,
+      40102,
+      40103
     ],
-    "GetGold": 0
+    "GetGold": 350
   },
   {
     "Id": 5001,
     "Difficulty": 5,
     "Level": 1,
     "MonsterGroup": [
-      10011
+      50011
     ],
-    "GetGold": 60
+    "GetGold": 95
   },
   {
     "Id": 5002,
     "Difficulty": 5,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      50021
     ],
-    "GetGold": 80
+    "GetGold": 130
   },
   {
     "Id": 5003,
     "Difficulty": 5,
     "Level": 3,
     "MonsterGroup": [
-      10031
+      50031
     ],
-    "GetGold": 100
+    "GetGold": 160
   },
   {
     "Id": 5004,
     "Difficulty": 5,
     "Level": 4,
     "MonsterGroup": [
-      10041,
-      10042
+      50041,
+      50042
     ],
-    "GetGold": 120
+    "GetGold": 190
   },
   {
     "Id": 5005,
     "Difficulty": 5,
     "Level": 5,
     "MonsterGroup": [
-      10051,
-      10052
+      50051,
+      50052
     ],
-    "GetGold": 140
+    "GetGold": 225
   },
   {
     "Id": 5006,
     "Difficulty": 5,
     "Level": 6,
     "MonsterGroup": [
-      10061,
-      10062
+      50061,
+      50062
     ],
-    "GetGold": 160
+    "GetGold": 255
   },
   {
     "Id": 5007,
     "Difficulty": 5,
     "Level": 7,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      50071,
+      50072,
+      50073
     ],
-    "GetGold": 180
+    "GetGold": 290
   },
   {
     "Id": 5008,
     "Difficulty": 5,
     "Level": 8,
     "MonsterGroup": [
-      10081,
-      10082,
-      10083
+      50081,
+      50082,
+      50083
     ],
-    "GetGold": 200
+    "GetGold": 320
   },
   {
     "Id": 5009,
     "Difficulty": 5,
     "Level": 9,
     "MonsterGroup": [
-      10091,
-      10092,
-      10093
+      50091,
+      50092,
+      50093
     ],
-    "GetGold": 220
+    "GetGold": 350
   },
   {
     "Id": 5010,
     "Difficulty": 5,
     "Level": 10,
     "MonsterGroup": [
-      10101,
-      10102,
-      10103
+      50101,
+      50102,
+      50103
     ],
-    "GetGold": 0
+    "GetGold": 385
   },
   {
     "Id": 6001,
     "Difficulty": 6,
     "Level": 1,
     "MonsterGroup": [
-      20011
+      60011
     ],
-    "GetGold": 60
+    "GetGold": 105
   },
   {
     "Id": 6002,
     "Difficulty": 6,
     "Level": 2,
     "MonsterGroup": [
-      20021
+      60021
     ],
-    "GetGold": 80
+    "GetGold": 140
   },
   {
     "Id": 6003,
     "Difficulty": 6,
     "Level": 3,
     "MonsterGroup": [
-      20031
+      60031
     ],
-    "GetGold": 100
+    "GetGold": 175
   },
   {
     "Id": 6004,
     "Difficulty": 6,
     "Level": 4,
     "MonsterGroup": [
-      20041,
-      20042
+      60041,
+      60042
     ],
-    "GetGold": 120
+    "GetGold": 210
   },
   {
     "Id": 6005,
     "Difficulty": 6,
     "Level": 5,
     "MonsterGroup": [
-      20051,
-      20052
+      60051,
+      60052
     ],
-    "GetGold": 140
+    "GetGold": 245
   },
   {
     "Id": 6006,
     "Difficulty": 6,
     "Level": 6,
     "MonsterGroup": [
-      20061,
-      20062
+      60061,
+      60062
     ],
-    "GetGold": 160
+    "GetGold": 280
   },
   {
     "Id": 6007,
     "Difficulty": 6,
     "Level": 7,
     "MonsterGroup": [
-      20071,
-      20072,
-      20073
+      60071,
+      60072,
+      60073
     ],
-    "GetGold": 180
+    "GetGold": 315
   },
   {
     "Id": 6008,
     "Difficulty": 6,
     "Level": 8,
     "MonsterGroup": [
-      20081,
-      20082,
-      20083
+      60081,
+      60082,
+      60083
     ],
-    "GetGold": 200
+    "GetGold": 350
   },
   {
     "Id": 6009,
     "Difficulty": 6,
     "Level": 9,
     "MonsterGroup": [
-      20091,
-      20092,
-      20093
+      60091,
+      60092,
+      60093
     ],
-    "GetGold": 220
+    "GetGold": 385
   },
   {
     "Id": 6010,
     "Difficulty": 6,
     "Level": 10,
     "MonsterGroup": [
-      20101,
-      20102,
-      20103
+      60101,
+      60102,
+      60103
     ],
-    "GetGold": 0
+    "GetGold": 420
   },
   {
     "Id": 7001,
     "Difficulty": 7,
     "Level": 1,
     "MonsterGroup": [
-      10011
+      70011
     ],
-    "GetGold": 60
+    "GetGold": 115
   },
   {
     "Id": 7002,
     "Difficulty": 7,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      70021
     ],
-    "GetGold": 80
+    "GetGold": 150
   },
   {
     "Id": 7003,
     "Difficulty": 7,
     "Level": 3,
     "MonsterGroup": [
-      10031
+      70031
     ],
-    "GetGold": 100
+    "GetGold": 190
   },
   {
     "Id": 7004,
     "Difficulty": 7,
     "Level": 4,
     "MonsterGroup": [
-      10041,
-      10042
+      70041,
+      70042
     ],
-    "GetGold": 120
+    "GetGold": 230
   },
   {
     "Id": 7005,
     "Difficulty": 7,
     "Level": 5,
     "MonsterGroup": [
-      10051,
-      10052
+      70051,
+      70052
     ],
-    "GetGold": 140
+    "GetGold": 265
   },
   {
     "Id": 7006,
     "Difficulty": 7,
     "Level": 6,
     "MonsterGroup": [
-      10061,
-      10062
+      70061,
+      70062
     ],
-    "GetGold": 160
+    "GetGold": 305
   },
   {
     "Id": 7007,
     "Difficulty": 7,
     "Level": 7,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      70071,
+      70072,
+      70073
     ],
-    "GetGold": 180
+    "GetGold": 340
   },
   {
     "Id": 7008,
     "Difficulty": 7,
     "Level": 8,
     "MonsterGroup": [
-      10081,
-      10082,
-      10083
+      70081,
+      70082,
+      70083
     ],
-    "GetGold": 200
+    "GetGold": 380
   },
   {
     "Id": 7009,
     "Difficulty": 7,
     "Level": 9,
     "MonsterGroup": [
-      10091,
-      10092,
-      10093
+      70091,
+      70092,
+      70093
     ],
-    "GetGold": 220
+    "GetGold": 420
   },
   {
     "Id": 7010,
     "Difficulty": 7,
     "Level": 10,
     "MonsterGroup": [
-      10101,
-      10102,
-      10103
+      70101,
+      70102,
+      70103
     ],
-    "GetGold": 0
+    "GetGold": 455
   },
   {
     "Id": 8001,
     "Difficulty": 8,
     "Level": 1,
     "MonsterGroup": [
-      20011
+      80011
     ],
-    "GetGold": 60
+    "GetGold": 125
   },
   {
     "Id": 8002,
     "Difficulty": 8,
     "Level": 2,
     "MonsterGroup": [
-      20021
+      80021
     ],
-    "GetGold": 80
+    "GetGold": 165
   },
   {
     "Id": 8003,
     "Difficulty": 8,
     "Level": 3,
     "MonsterGroup": [
-      20031
+      80031
     ],
-    "GetGold": 100
+    "GetGold": 205
   },
   {
     "Id": 8004,
     "Difficulty": 8,
     "Level": 4,
     "MonsterGroup": [
-      20041,
-      20042
+      80041,
+      80042
     ],
-    "GetGold": 120
+    "GetGold": 245
   },
   {
     "Id": 8005,
     "Difficulty": 8,
     "Level": 5,
     "MonsterGroup": [
-      20051,
-      20052
+      80051,
+      80052
     ],
-    "GetGold": 140
+    "GetGold": 285
   },
   {
     "Id": 8006,
     "Difficulty": 8,
     "Level": 6,
     "MonsterGroup": [
-      20061,
-      20062
+      80061,
+      80062
     ],
-    "GetGold": 160
+    "GetGold": 330
   },
   {
     "Id": 8007,
     "Difficulty": 8,
     "Level": 7,
     "MonsterGroup": [
-      20071,
-      20072,
-      20073
+      80071,
+      80072,
+      80073
     ],
-    "GetGold": 180
+    "GetGold": 370
   },
   {
     "Id": 8008,
     "Difficulty": 8,
     "Level": 8,
     "MonsterGroup": [
-      20081,
-      20082,
-      20083
+      80081,
+      80082,
+      80083
     ],
-    "GetGold": 200
+    "GetGold": 410
   },
   {
     "Id": 8009,
     "Difficulty": 8,
     "Level": 9,
     "MonsterGroup": [
-      20091,
-      20092,
-      20093
+      80091,
+      80092,
+      80093
     ],
-    "GetGold": 220
+    "GetGold": 450
   },
   {
     "Id": 8010,
     "Difficulty": 8,
     "Level": 10,
     "MonsterGroup": [
-      20101,
-      20102,
-      20103
+      80101,
+      80102,
+      80103
     ],
-    "GetGold": 0
+    "GetGold": 490
   },
   {
     "Id": 9001,
     "Difficulty": 9,
     "Level": 1,
     "MonsterGroup": [
-      10011
+      90011
     ],
-    "GetGold": 60
+    "GetGold": 130
   },
   {
     "Id": 9002,
     "Difficulty": 9,
     "Level": 2,
     "MonsterGroup": [
-      10021
+      90021
     ],
-    "GetGold": 80
+    "GetGold": 175
   },
   {
     "Id": 9003,
     "Difficulty": 9,
     "Level": 3,
     "MonsterGroup": [
-      10031
+      90031
     ],
-    "GetGold": 100
+    "GetGold": 220
   },
   {
     "Id": 9004,
     "Difficulty": 9,
     "Level": 4,
     "MonsterGroup": [
-      10041,
-      10042
+      90041,
+      90042
     ],
-    "GetGold": 120
+    "GetGold": 265
   },
   {
     "Id": 9005,
     "Difficulty": 9,
     "Level": 5,
     "MonsterGroup": [
-      10051,
-      10052
+      90051,
+      90052
     ],
-    "GetGold": 140
+    "GetGold": 310
   },
   {
     "Id": 9006,
     "Difficulty": 9,
     "Level": 6,
     "MonsterGroup": [
-      10061,
-      10062
+      90061,
+      90062
     ],
-    "GetGold": 160
+    "GetGold": 350
   },
   {
     "Id": 9007,
     "Difficulty": 9,
     "Level": 7,
     "MonsterGroup": [
-      10071,
-      10072,
-      10073
+      90071,
+      90072,
+      90073
     ],
-    "GetGold": 180
+    "GetGold": 395
   },
   {
     "Id": 9008,
     "Difficulty": 9,
     "Level": 8,
     "MonsterGroup": [
-      10081,
-      10082,
-      10083
+      90081,
+      90082,
+      90083
     ],
-    "GetGold": 200
+    "GetGold": 440
   },
   {
     "Id": 9009,
     "Difficulty": 9,
     "Level": 9,
     "MonsterGroup": [
-      10091,
-      10092,
-      10093
+      90091,
+      90092,
+      90093
     ],
-    "GetGold": 220
+    "GetGold": 485
   },
   {
     "Id": 9010,
     "Difficulty": 9,
     "Level": 10,
     "MonsterGroup": [
-      10101,
-      10102,
-      10103
+      90101,
+      90102,
+      90103
     ],
-    "GetGold": 0
+    "GetGold": 530
+  },
+  {
+    "Id": 10001,
+    "Difficulty": 10,
+    "Level": 1,
+    "MonsterGroup": [
+      100011
+    ],
+    "GetGold": 140
+  },
+  {
+    "Id": 10002,
+    "Difficulty": 10,
+    "Level": 2,
+    "MonsterGroup": [
+      100021
+    ],
+    "GetGold": 190
+  },
+  {
+    "Id": 10003,
+    "Difficulty": 10,
+    "Level": 3,
+    "MonsterGroup": [
+      100031
+    ],
+    "GetGold": 235
+  },
+  {
+    "Id": 10004,
+    "Difficulty": 10,
+    "Level": 4,
+    "MonsterGroup": [
+      100041,
+      100042
+    ],
+    "GetGold": 280
+  },
+  {
+    "Id": 10005,
+    "Difficulty": 10,
+    "Level": 5,
+    "MonsterGroup": [
+      100051,
+      100052
+    ],
+    "GetGold": 330
+  },
+  {
+    "Id": 10006,
+    "Difficulty": 10,
+    "Level": 6,
+    "MonsterGroup": [
+      100061,
+      100062
+    ],
+    "GetGold": 375
+  },
+  {
+    "Id": 10007,
+    "Difficulty": 10,
+    "Level": 7,
+    "MonsterGroup": [
+      100071,
+      100072,
+      100073
+    ],
+    "GetGold": 425
+  },
+  {
+    "Id": 10008,
+    "Difficulty": 10,
+    "Level": 8,
+    "MonsterGroup": [
+      100081,
+      100082,
+      100083
+    ],
+    "GetGold": 470
+  },
+  {
+    "Id": 10009,
+    "Difficulty": 10,
+    "Level": 9,
+    "MonsterGroup": [
+      100091,
+      100092,
+      100093
+    ],
+    "GetGold": 515
+  },
+  {
+    "Id": 10010,
+    "Difficulty": 10,
+    "Level": 10,
+    "MonsterGroup": [
+      100101,
+      100102,
+      100103
+    ],
+    "GetGold": 565
+  },
+  {
+    "Id": 11001,
+    "Difficulty": 11,
+    "Level": 1,
+    "MonsterGroup": [
+      110011
+    ],
+    "GetGold": 150
+  },
+  {
+    "Id": 11002,
+    "Difficulty": 11,
+    "Level": 2,
+    "MonsterGroup": [
+      110021
+    ],
+    "GetGold": 200
+  },
+  {
+    "Id": 11003,
+    "Difficulty": 11,
+    "Level": 3,
+    "MonsterGroup": [
+      110031
+    ],
+    "GetGold": 250
+  },
+  {
+    "Id": 11004,
+    "Difficulty": 11,
+    "Level": 4,
+    "MonsterGroup": [
+      110041,
+      110042
+    ],
+    "GetGold": 300
+  },
+  {
+    "Id": 11005,
+    "Difficulty": 11,
+    "Level": 5,
+    "MonsterGroup": [
+      110051,
+      110052
+    ],
+    "GetGold": 350
+  },
+  {
+    "Id": 11006,
+    "Difficulty": 11,
+    "Level": 6,
+    "MonsterGroup": [
+      110061,
+      110062
+    ],
+    "GetGold": 400
+  },
+  {
+    "Id": 11007,
+    "Difficulty": 11,
+    "Level": 7,
+    "MonsterGroup": [
+      110071,
+      110072,
+      110073
+    ],
+    "GetGold": 450
+  },
+  {
+    "Id": 11008,
+    "Difficulty": 11,
+    "Level": 8,
+    "MonsterGroup": [
+      110081,
+      110082,
+      110083
+    ],
+    "GetGold": 500
+  },
+  {
+    "Id": 11009,
+    "Difficulty": 11,
+    "Level": 9,
+    "MonsterGroup": [
+      110091,
+      110092,
+      110093
+    ],
+    "GetGold": 550
+  },
+  {
+    "Id": 11010,
+    "Difficulty": 11,
+    "Level": 10,
+    "MonsterGroup": [
+      110101,
+      110102,
+      110103
+    ],
+    "GetGold": 600
   }
 ]

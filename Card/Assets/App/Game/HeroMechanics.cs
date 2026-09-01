@@ -4,7 +4,7 @@ using App.Config;
 namespace App.Game
 {
     /// <summary>
-    /// 按当前英雄 <see cref="HeroConfig.HeroEntryId"/> 结算局内技能。锋芒不禁用英雄词条。
+    /// 按当前英雄 <see cref="HeroConfig.HeroEntryId"/> 结算局内技能。收藏禁用不禁用英雄词条。
     /// </summary>
     public static class HeroMechanics
     {

@@ -50,6 +50,7 @@ namespace App.UI
         private GameObject _equipTipCatcher;
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
+        private bool _shownRoundBuff;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -75,6 +76,7 @@ namespace App.UI
         protected override void OnBind()
         {
             BindPlayerInfo();
+            BindRoundBuff();
             SpawnEnemyInfos();
             BindPhaseButtons();
             BindCardInfo();
@@ -707,6 +709,41 @@ namespace App.UI
             }
         }
 
+        private void BindRoundBuff()
+        {
+            var root = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
+            if (root == null)
+            {
+                return;
+            }
+
+            Binding.BindActive(root.gameObject, ViewModel.RoundBuffVisible);
+            var textSlot = ResolveSlot("roundbuffText");
+            var text = textSlot != null
+                ? textSlot.GetComponent<TMP_Text>()
+                : root.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.RoundBuffName);
+            }
+
+            var button = root.GetComponent<Button>();
+            if (button == null)
+            {
+                button = root.gameObject.AddComponent<Button>();
+            }
+
+            var image = root.GetComponent<Image>();
+            if (image != null)
+            {
+                button.targetGraphic = image;
+            }
+
+            button.transition = Selectable.Transition.None;
+            button.onClick.RemoveListener(OnRoundBuffClicked);
+            button.onClick.AddListener(OnRoundBuffClicked);
+        }
+
         private PlayerItem ResolvePlayerItem()
         {
             var slot = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
@@ -1253,6 +1290,62 @@ namespace App.UI
             _ = ShowEquipTip(_equipSlots[index], relic);
         }
 
+        private void OnRoundBuffClicked()
+        {
+            if (ViewModel == null || !ViewModel.RoundBuffVisible.Value)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_shownRoundBuff && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowRoundBuffTip();
+        }
+
+        private async Task ShowRoundBuffTip()
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null || ViewModel == null)
+            {
+                return;
+            }
+
+            HideEquipTip();
+            _shownRoundBuff = true;
+            _equipTipAnchor = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
+            if (_equipTipText != null)
+            {
+                var desc = ViewModel.RoundBuffDesc.Value;
+                _equipTipText.text = string.IsNullOrEmpty(desc) ? ViewModel.RoundBuffName.Value : desc;
+            }
+
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _equipTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _equipTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _equipTip.transform.SetAsLastSibling();
+            if (_equipTipAnchor != null)
+            {
+                PositionItemTip(_equipTipAnchor, placeRight: false);
+            }
+        }
+
         private async Task EnsureEquipTip()
         {
             if (_equipTip != null || ViewModel == null || ViewModel.Resources == null)
@@ -1296,6 +1389,7 @@ namespace App.UI
             }
 
             _shownEquipRelicId = relic.Id;
+            _shownRoundBuff = false;
             _equipTipAnchor = slot;
             if (_equipTipText != null)
             {
@@ -1324,6 +1418,7 @@ namespace App.UI
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
+            _shownRoundBuff = false;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {

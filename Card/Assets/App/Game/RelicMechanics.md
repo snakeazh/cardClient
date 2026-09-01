@@ -5,11 +5,11 @@
 
 `RelicConfig` **就是商店商品表**。货架、已拥有、装备栏、图鉴都只认这张表。  
 `RelicEntryConfig` 是商品效果词条（`MechanismType` + `Value`）。一件商品可挂多条（如小精灵 `20010` + `200101`）。  
-`Run.RelicConfigIds` 是已购商品 Id。锋芒禁用写在 `Run.DisabledRelicConfigId`（0 表示未禁用）。
+`Run.RelicConfigIds` 是已购商品 Id。收藏禁用写在 `Run.DisabledRelicIds`（每手随机，见 [`BossMechanics.md`](BossMechanics.md)）。
 
 词条数值以 `RelicEntryConfig.Value[]` 为准：主值 `Value[0]`，第二项用 `RelicMechanics.ValueAt(entry, 1)`（缺项为 0）。描述文案与表不一致时不改表。
 
-对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架格：[`EquipShopIcon.md`](../Item/EquipShopIcon.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。
+对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。HUD 装备栏：[`GameUI.md`](../UI/Game/GameUI.md)。商店货架格：[`EquipShopIcon.md`](../Item/EquipShopIcon.md)。品质色：[`ThemeColors.md`](../ThemeColors.md)。BOSS 机制：[`BossMechanics.md`](BossMechanics.md)。
 
 ---
 
@@ -43,7 +43,7 @@
 - 攻击力：`SeatState.Attack`（英雄 `HeroDamage` / 怪物 `MonsterDamage`）。
 - `BaseChips`：亮出三张 `ChipValue` 之和（A=11，J/Q/K=10，2～10 为面值）。
 - 遗物加成是 **加在牌型倍率上**，不是再乘一层。金花 3.5、白银法杖 +2 → `30 × (3.5+2) = 165`，不是 `30 × 3.5 × 3`。
-- 燧石：总倍率 ×0.5。怪物没有遗物加成，只吃燧石。
+- 燧石：总倍率 `× (1 + BossEntry Value[0])`（当前表为 ×0.5）。怪物没有遗物加成，只吃燧石。只改倍率，不改 `BaseChips`。
 - 结果 `Math.Round` 后至少为 1。
 
 牌型基础倍率：
@@ -167,7 +167,7 @@
 
 永久存在 `RunState`、只在 `StartNewRun` 清：训练点数攻击、天使牌型倍率、老搓家倍率、工资卡售价加成、投资累计花费、老千各牌型次数、暴击/闪避层数、复盘/小强层数、练习卷倍率、输过的 MonsterId、永久攻击/血上限。
 
-锋芒禁用的那一件整件跳过（倍率、回血、吸血、235 都不生效）。`HeroHpMax` 已经写进血量，禁用不会当场扣血。已叠上的永久加成不因卖掉或禁用清零。
+收藏禁用的遗物整件跳过（倍率、回血、吸血、235 都不生效）。`HeroHpMax` 已经写进血量，禁用不会当场扣血。已叠上的永久加成不因卖掉或禁用清零。
 
 ---
 
@@ -188,7 +188,7 @@
 | 黄金面具 / 九霄云外 / 铁饭碗 | 玩家亮牌 `OnPlayerCardsShown` / 赢的结算 |
 | 训练 / 天使 / 老千次数 | 本手首次亮牌结算 |
 | 老搓家 | `RubCard` 成功替换时 |
-| 锋芒 | `ApplyEdgeAffix` 从 `RelicConfigIds` 随机禁一件 |
+| 收藏禁用 | `StartRound` → `ApplyRelicDisable` 从 `RelicConfigIds` 随机禁 N 件 |
 | 小钱包 / 高贵徽章 / 永恒之心 / 入场券 / 好运来 | `StartRound` |
 | 记账本 / 幸运草 / 利息 / 小算盘 / 聚宝盆 / 保温杯 / 暴击拳套 / 运动鞋 / 练习卷 | `AfterRound` |
 | 变形魔方 / 幸运牌型 | `EvaluateSeat` |

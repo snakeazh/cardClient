@@ -81,6 +81,11 @@ namespace App.Config
         /// </summary>
         public int KillMonsterGetGold;
 
+        /// <summary>
+        /// 每通过1关后,英雄回复最大生命值的百分比(0为不生效)
+        /// </summary>
+        public int HeroReplyHpPerLevelClear;
+
     }
 }
 

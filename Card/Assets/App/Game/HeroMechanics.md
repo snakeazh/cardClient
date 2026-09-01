@@ -4,7 +4,7 @@
 命名空间：`App.Game`
 
 `HeroConfig.HeroEntryId` 指向 `HeroEntryConfig` 词条（`MechanismType` + `Value`）。一个英雄可挂多条（如狠人 `10002` + `100021`）。  
-数据源是开局写入的 `Run.HeroId`，不要另读选角进度。锋芒只禁遗物，英雄词条始终生效。
+数据源是开局写入的 `Run.HeroId`，不要另读选角进度。收藏禁用只禁遗物，英雄词条始终生效。
 
 词条数值以 `HeroEntryConfig.Value` 为准（描述文案与表不一致时不改表）。狠人 / 武林高手暴击 = `HeroConfig.Critical` + 词条 `HeroCritical`（当前 5% + 15% = 20%）。
 

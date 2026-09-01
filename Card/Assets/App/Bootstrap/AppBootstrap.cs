@@ -3,6 +3,7 @@ using App.Atlas;
 using App.Bag;
 using App.Config;
 using App.Game;
+using App.Guide;
 using App.Level;
 using App.Score;
 using App.Talent;
@@ -62,6 +63,7 @@ namespace App.Bootstrap
 
             // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
             _services.Container.AddSingleton<ToastService>();
+            RegisterGuide(_services);
 
             if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
@@ -151,6 +153,25 @@ namespace App.Bootstrap
             unlock.Load();
             services.Register(unlock);
             services.Register<IUnlockConditionService>(unlock);
+        }
+
+        private static void RegisterGuide(AppServicesHost services)
+        {
+            var targets = new GuideTargetRegistry();
+            services.Register(targets);
+
+            var progress = new GuideProgressService(services.Resolve<ISaveService>());
+            progress.Load();
+            services.Register(progress);
+            services.Register<IGuideProgressService>(progress);
+
+            var guide = new GuideService(
+                services.Resolve<IUIManager>(),
+                progress,
+                services.Resolve<GameSession>(),
+                targets);
+            services.Register(guide);
+            services.Register<IGuideService>(guide);
         }
 
         private static void LogConfigSmoke()

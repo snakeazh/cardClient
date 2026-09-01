@@ -105,6 +105,8 @@ namespace App.Game
         public int BettingRound => _bettingRound;
         /// <summary>本关第几手，从 1 起。</summary>
         public int StageRoundIndex => _stageBetRound < 1 ? 1 : _stageBetRound;
+        /// <summary>玩家本手发牌张数。手牌压缩可降到 4。</summary>
+        public int PlayerDealCount => BossMechanics.PlayerCardsDealt(Run);
         public int RoundBaseBet => _roundBaseBet;
         public int CurrentCallUnits => CurrentRoundUnits();
         public int PlayerCallCost => CostToReach(CurrentRoundUnits());
@@ -136,6 +138,7 @@ namespace App.Game
         public readonly List<int> RevealSeatIds = new List<int>();
         public bool SelectingOpenTarget { get; private set; }
         public bool SelectingXRayTarget { get; private set; }
+        public bool SelectingRubTarget { get; private set; }
         public bool AiActing { get; private set; }
         public int ActingAiId { get; private set; } = -1;
         public const float AiActionDelay = 1f;
@@ -145,13 +148,26 @@ namespace App.Game
             !Player.Looked &&
             !Player.Folded;
         public bool PlayerMayCancelLookOrRub => false;
-        /// <summary>开牌阶段且还有搓牌次数时，可长按手牌进入搓牌。</summary>
+        /// <summary>开牌阶段且还有搓牌次数时，可点选手牌搓牌。</summary>
         public bool PlayerMayHoldRub =>
             !AiActing &&
             !Player.Folded &&
             Player.Looked &&
             Phase == GamePhase.WaitingOpen &&
-            Run.PeekGoodCharges > 0;
+            Run.PeekGoodCharges > 0 &&
+            !BossMechanics.SkillsDisabled(Run);
+        /// <summary>该难度已无下一关。</summary>
+        public bool IsLastLevel
+        {
+            get
+            {
+                var levels = LevelSvc();
+                var current = levels?.Current;
+                return levels != null &&
+                       current != null &&
+                       !levels.TryGetNext(current.Difficulty, current.Level, out _);
+            }
+        }
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
@@ -232,7 +248,7 @@ namespace App.Game
 
         public void SelectRubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= PlayerDealCount)
             {
                 return;
             }
@@ -245,13 +261,14 @@ namespace App.Game
         /// <summary>长按手牌进入搓牌：翻到背面后拖拽，松手不够则取消。</summary>
         public bool TryBeginHoldRub(int index)
         {
-            if (!PlayerMayHoldRub || index < 0 || index >= GameBalance.PlayerCardsDealt)
+            if (!PlayerMayHoldRub || index < 0 || index >= PlayerDealCount)
             {
                 return false;
             }
 
             Player.Status = "已看牌";
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             Run.RubsLeft = 1;
             _pendingRubIndex = index;
             Phase = GamePhase.WaitingRub;
@@ -329,22 +346,69 @@ namespace App.Game
 
         public void RubCard(int index)
         {
-            if (Phase != GamePhase.WaitingRub || index < 0 || index >= GameBalance.PlayerCardsDealt || Run.RubsLeft <= 0)
+            if (Phase != GamePhase.WaitingRub || index < 0 || index >= PlayerDealCount || Run.RubsLeft <= 0)
             {
                 return;
             }
 
+            if (!ApplyRubReplace(index, out var message))
+            {
+                return;
+            }
+
+            ReturnToOpenReady(Run.PeekGoodCharges > 0
+                ? $"{message}。还可点选手牌搓牌 {Run.PeekGoodCharges} 次"
+                : message);
+        }
+
+        /// <summary>点选手牌立刻搓牌替换，不进入拖拽阶段。</summary>
+        public bool TryRubPlayerCard(int index)
+        {
+            if (!SelectingRubTarget ||
+                AiActing ||
+                Player.Folded ||
+                !Player.Looked ||
+                Phase != GamePhase.WaitingOpen ||
+                Run.PeekGoodCharges <= 0 ||
+                BossMechanics.SkillsDisabled(Run) ||
+                index < 0 ||
+                index >= PlayerDealCount)
+            {
+                return false;
+            }
+
+            if (!ApplyRubReplace(index, out var message))
+            {
+                return false;
+            }
+
+            SelectingRubTarget = false;
+            Hint = Run.PeekGoodCharges > 0
+                ? $"{message}。再点搓牌可继续替换（剩余 {Run.PeekGoodCharges}）"
+                : message;
+
+            Notify();
+            return true;
+        }
+
+        private bool ApplyRubReplace(int index, out string message)
+        {
+            message = null;
             var old = Player.Hand[index];
             var next = DrawRubCard(old);
             if (!next.IsValid || next.Equals(old))
             {
                 Hint = "没有可换的新牌";
                 Notify();
-                return;
+                return false;
             }
 
             Player.Hand[index] = next;
-            Run.RubsLeft--;
+            if (Run.RubsLeft > 0)
+            {
+                Run.RubsLeft--;
+            }
+
             if (Run.PeekGoodCharges > 0)
             {
                 Run.PeekGoodCharges--;
@@ -361,9 +425,8 @@ namespace App.Game
             _pendingRubIndex = -1;
             Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
-            ReturnToOpenReady(Run.PeekGoodCharges > 0
-                ? $"{Run.LastRubMessage}。还可长按搓牌 {Run.PeekGoodCharges} 次"
-                : Run.LastRubMessage);
+            message = Run.LastRubMessage;
+            return true;
         }
 
         public void CancelLookOrRub()
@@ -390,7 +453,7 @@ namespace App.Game
                 return;
             }
 
-            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
+            if (index < 0 || index >= PlayerDealCount)
             {
                 return;
             }
@@ -424,12 +487,12 @@ namespace App.Game
                 return;
             }
 
-            if (Phase != GamePhase.WaitingOpen)
+            if (Phase != GamePhase.WaitingOpen || SelectingRubTarget)
             {
                 return;
             }
 
-            if (index < 0 || index >= GameBalance.PlayerCardsDealt)
+            if (index < 0 || index >= PlayerDealCount)
             {
                 return;
             }
@@ -531,16 +594,19 @@ namespace App.Game
             PlayerMayUseItems &&
             Player.Looked &&
             Run.PeekGoodCharges > 0 &&
-            Phase != GamePhase.WaitingRub;
+            Phase != GamePhase.WaitingRub &&
+            !BossMechanics.SkillsDisabled(Run);
 
         public bool PlayerMayUseChaKanGood =>
             PlayerMayUseItems &&
-            Run.ChaKanGoodCharges > 0;
+            Run.ChaKanGoodCharges > 0 &&
+            !BossMechanics.SkillsDisabled(Run);
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
             Run.TiHuanGoodCharges > 0 &&
-            _deck != null;
+            _deck != null &&
+            !BossMechanics.SkillsDisabled(Run);
 
         /// <summary>把剩余勇气值推进底池。全下后若还有人能下注，对手继续打边池。</summary>
         public void AllIn()
@@ -570,7 +636,7 @@ namespace App.Game
             ResolveAiStreet();
         }
 
-        /// <summary>点击搓牌按钮：不进入搓牌阶段，由 HUD 弹出长按提示。</summary>
+        /// <summary>点击搓牌按钮：进入或取消点选手牌替换。</summary>
         public void UsePeekGood()
         {
             if (!PlayerMayUsePeekGood)
@@ -578,7 +644,11 @@ namespace App.Game
                 return;
             }
 
-            Hint = "长按牌即可拖拽来搓牌";
+            SelectingXRayTarget = false;
+            SelectingRubTarget = !SelectingRubTarget;
+            Hint = SelectingRubTarget
+                ? $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌替换"
+                : "已取消搓牌";
             Notify();
         }
 
@@ -589,6 +659,7 @@ namespace App.Game
                 return;
             }
 
+            SelectingRubTarget = false;
             SelectingXRayTarget = !SelectingXRayTarget;
             Hint = SelectingXRayTarget
                 ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名敌人透视其手牌"
@@ -617,8 +688,10 @@ namespace App.Game
                 return;
             }
 
+            SelectingRubTarget = false;
+            SelectingXRayTarget = false;
             SyncDeckWithTable();
-            var nextCards = new Card[GameBalance.PlayerCardsDealt];
+            var nextCards = new Card[PlayerDealCount];
             for (var i = 0; i < nextCards.Length; i++)
             {
                 if (!_deck.TryDraw(out nextCards[i]) || !nextCards[i].IsValid)
@@ -630,9 +703,9 @@ namespace App.Game
                 }
             }
 
-            for (var i = 0; i < nextCards.Length; i++)
+            for (var i = 0; i < Player.Hand.Length; i++)
             {
-                Player.Hand[i] = nextCards[i];
+                Player.Hand[i] = i < nextCards.Length ? nextCards[i] : default;
             }
 
             Player.PeekedType = string.Empty;
@@ -645,7 +718,7 @@ namespace App.Game
             }
             else
             {
-                Hint = $"已替换 {GameBalance.PlayerCardsDealt} 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
+                Hint = $"已替换 {PlayerDealCount} 张手牌（未看牌，剩余 {Run.TiHuanGoodCharges}）";
                 Log("替换手牌（未看牌）");
             }
 
@@ -671,7 +744,7 @@ namespace App.Game
                 return;
             }
 
-            var count = GameBalance.CardsDealt(seat.IsPlayer);
+            var count = CardsDealtFor(seat);
             for (var i = 0; i < count; i++)
             {
                 SetSpyReveal(seat.Id, i, true);
@@ -734,6 +807,8 @@ namespace App.Game
             }
 
             SelectingOpenTarget = false;
+            SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             StartSequentialCompare();
         }
 
@@ -1017,12 +1092,14 @@ namespace App.Game
 
         private void StartSequentialCompare()
         {
+            Run.HandBrandIndex = -1;
             _sequentialCompare = true;
             _compareQueue.Clear();
             _compareCursor = 0;
             _roundDamageDealt = 0;
             IncomingAttack = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             for (var i = 0; i < Enemies.Length; i++)
             {
                 if (Enemies[i].Alive)
@@ -1039,6 +1116,7 @@ namespace App.Game
 
             Player.Status = "开牌";
             Log("开牌，与敌人逐一比牌");
+            PickHandBrand();
             ResetEnemyOpenSelection();
             RunNextCompare();
         }
@@ -1223,11 +1301,12 @@ namespace App.Game
                 : 0;
             var extra = relicExtra + talentMag;
             var attackExtra = relicAttack + talentAttack;
-            var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
+            var flint = BossMechanics.FlintMultiplier(Run);
             var totalMag = (mag + extra) * flint;
             var relicMag = (mag + relicExtra) * flint;
+            var atk = attacker.Attack + attackExtra;
             // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
-            var damage = HandEvaluator.ComputeAttackDamage(attacker.Attack + attackExtra, score.BaseChips, totalMag);
+            var damage = HandEvaluator.ComputeAttackDamage(atk, score.BaseChips, totalMag);
             var formulaDamage = damage;
             var withoutTalent = HandEvaluator.ComputeAttackDamage(
                 attacker.Attack + relicAttack,
@@ -1248,6 +1327,7 @@ namespace App.Game
                     CountAliveEnemies());
                 dmgPercent += HeroMechanics.SumValue(hero, MechanismType.Damage);
                 dmgPercent += RelicOutgoingDamagePercent(defender);
+                dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
                 if (dmgPercent != 0f)
                 {
                     damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
@@ -1285,6 +1365,17 @@ namespace App.Game
 
             var talentDamage = attacker.IsPlayer ? damage - withoutTalent : 0;
             _lastPlayerAttackCrit = attacker.IsPlayer && crit;
+            if (!attacker.IsPlayer)
+            {
+                var monsterPer = BossMechanics.MonsterOutgoingDamagePercent(Run);
+                if (monsterPer != 0f)
+                {
+                    damage = Math.Max(1, (int)Math.Round(damage * (1f + monsterPer)));
+                }
+
+                damage += BossMechanics.GoldThornExtra(Run);
+            }
+
             if (attacker.IsPlayer && RelicMechanics.Roll(Run, MechanismType.AllPeacePer, _rng))
             {
                 Log("和平鸽：本次造成伤害变为 0");
@@ -1344,6 +1435,7 @@ namespace App.Game
                 _pendingPlayerScore.Type,
                 _pendingEnemyScore.Type,
                 outgoing: false);
+            takePer += BossMechanics.IncomingDamagePercent(Run);
             if (takePer != 0f)
             {
                 damage = Math.Max(0, (int)Math.Round(damage * (1f + takePer)));
@@ -1993,20 +2085,19 @@ namespace App.Game
         {
             var extra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext) +
                         TalentMechanics.SumMultiplierExtra(TalentSvc(), _stageBetRound == 1);
-            var flint = Run.Affix == BossAffix.Flint ? 0.5f : 1f;
+            var flint = BossMechanics.FlintMultiplier(Run);
             return (1f + extra) * flint;
         }
 
-        private void GetScoreBan(out Suit? banned, out bool banFaces)
+        /// <summary>玩家失效花色过滤。敌人不受禁红/禁黑影响。</summary>
+        private void GetScoreBan(SeatState seat, out Suit? banned, out Suit? banned2, out bool banFaces)
         {
             banned = null;
-            banFaces = Run.Affix == BossAffix.BanScoreFace;
-            switch (Run.Affix)
+            banned2 = null;
+            banFaces = false;
+            if (seat != null && seat.IsPlayer)
             {
-                case BossAffix.BanScoreHeart: banned = Suit.Heart; break;
-                case BossAffix.BanScoreSpade: banned = Suit.Spade; break;
-                case BossAffix.BanScoreDiamond: banned = Suit.Diamond; break;
-                case BossAffix.BanScoreClub: banned = Suit.Club; break;
+                BossMechanics.GetScoreBan(Run, out banned, out banned2, out banFaces);
             }
         }
 
@@ -2018,21 +2109,28 @@ namespace App.Game
                 return;
             }
 
-            GetScoreBan(out var banned, out var banFaces);
+            GetScoreBan(seat, out var banned, out var banned2, out var banFaces);
             HandEvaluator.SelectBestOpen(
                 seat.Hand,
                 seat.CardSelected,
-                GameBalance.CardsDealt(false),
+                CardsDealtFor(seat),
                 banned,
-                banFaces);
+                banFaces,
+                GetHandEvalRules(seat),
+                banned2);
         }
 
-        /// <summary>评估座位牌型。BOSS 禁用花色/人头会先过滤，燧石减半筹码和倍率。</summary>
+        /// <summary>评估座位牌型。BOSS 失效花色会先过滤玩家手牌。</summary>
         public HandScore EvaluateSeat(SeatState seat)
         {
-            GetScoreBan(out var banned, out var banFaces);
+            GetScoreBan(seat, out var banned, out var banned2, out var banFaces);
             var rules = GetHandEvalRules(seat);
-            var score = HandEvaluator.Evaluate(CollectEvalCards(seat, banned, banFaces, rules), banned, banFaces, rules);
+            var score = HandEvaluator.Evaluate(
+                CollectEvalCards(seat, banned, banFaces, rules, banned2),
+                banned,
+                banFaces,
+                rules,
+                banned2);
             if (seat != null && seat.IsPlayer)
             {
                 if (RelicMechanics.HasMechanism(Run, MechanismType.SpecialTwoThreeFive))
@@ -2045,18 +2143,6 @@ namespace App.Game
             else if (seat != null && !seat.IsPlayer)
             {
                 score = RelicMechanics.ApplyEnemyTypeRewrite(Run, score, _enemyDowngradeSteps);
-            }
-
-            if (Run.Affix == BossAffix.Flint)
-            {
-                score = new HandScore(
-                    score.Type,
-                    Math.Max(1, score.BaseChips / 2),
-                    score.Multiplier * 0.5f,
-                    score.Keys,
-                    score.UsedCards,
-                    score.Label + "（燧石）",
-                    score.BeatsAll);
             }
 
             return score;
@@ -2268,7 +2354,7 @@ namespace App.Game
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
 
-        /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。BOSS 人格改为 Expert 并随机词缀。</summary>
+        /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。BOSS 关从表随机一条机制。</summary>
         private void StartStage(bool inheritPlayerHp)
         {
             Run.AdsLoanThisStage = 0;
@@ -2280,13 +2366,16 @@ namespace App.Game
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
-            Run.DisabledRelicConfigId = 0;
+            Run.DisabledRelicIds.Clear();
             Run.DisabledConsumable = null;
             Run.ExtraRubCharges = 0;
-            Run.Affix = BossAffix.None;
+            Run.StolenAttack = 0;
+            Run.HandBrandIndex = -1;
+            Run.BossShieldHitsLeft = 0;
             _stageBetRound = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
+            PickBossEntry();
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IScoreService>().BeginStage();
@@ -2295,16 +2384,25 @@ namespace App.Game
             ApplyHeroToPlayer(inheritPlayerHp);
             var enemyCount = ApplyLevelEnemies();
 
+            var entry = BossMechanics.Resolve(Run);
             var title = Run.HasBoss
-                ? $"第 {Run.Stage} 关 BOSS · {GameBalance.AffixName(Run.Affix)}"
+                ? $"第 {Run.Stage} 关 BOSS · {(entry != null ? entry.Name : "无")}"
                 : $"第 {Run.Stage} 关 · {enemyCount} 名敌人";
             Log(title);
-            if (Run.HasBoss)
+            if (entry != null && !string.IsNullOrEmpty(entry.Desc))
             {
-                Log(GameBalance.AffixDesc(Run.Affix));
+                Log(entry.Desc);
             }
 
             StartRound();
+        }
+
+        private void PickBossEntry()
+        {
+            var snapshot = LevelSvc()?.Current;
+            Run.HasBoss = snapshot != null ? snapshot.HasBoss : GameBalance.IsBossStage(Run.Stage);
+            Run.BossEntryId = Run.HasBoss ? BossMechanics.PickRandomId(_rng) : 0;
+            Run.BossShieldHitsLeft = BossMechanics.ShieldHits(Run);
         }
 
         /// <summary>重置本手状态并发牌，然后直接看牌进入开牌阶段。技能次数每手重置。</summary>
@@ -2313,6 +2411,11 @@ namespace App.Game
             CardsRevealed = false;
             Pot = 0;
             AdvanceStageBetRound();
+            if (TryFailRoundLimit())
+            {
+                return;
+            }
+
             ResetSkillCharges();
             _rubsUsedThisHand = 0;
             _rubbedThisHand = false;
@@ -2327,6 +2430,7 @@ namespace App.Game
             _lastPlayerAttackCrit = false;
             _pendingDamageSource = null;
             LastRelicContext = RelicCombatContext.Empty;
+            Run.HandBrandIndex = -1;
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
@@ -2336,6 +2440,7 @@ namespace App.Game
             Run.RubsLeft = 0;
             SelectingOpenTarget = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             RevealWinnerId = -1;
             RevealSeatIds.Clear();
             _revealKind = RevealKind.None;
@@ -2366,13 +2471,15 @@ namespace App.Game
             }
 
             BeginRoundCourage();
+            ApplyRelicDisable();
+            ApplyAttackSteal();
             _deck = new Deck(_rng);
             DealAll();
             ApplyRoundStartRelics();
             EnterOpenReady();
         }
 
-        /// <summary>每人发牌。玩家和敌人都发 5 张。未上场的敌人不发。一副牌不重复。</summary>
+        /// <summary>每人发牌。玩家默认 5 张，手牌压缩可降到 4。未上场的敌人不发。一副牌不重复。</summary>
         private void DealAll()
         {
             DealSerial++;
@@ -2389,7 +2496,7 @@ namespace App.Game
                     continue;
                 }
 
-                var count = GameBalance.CardsDealt(seat.IsPlayer);
+                var count = CardsDealtFor(seat);
                 for (var i = 0; i < seat.Hand.Length; i++)
                 {
                     if (i >= count)
@@ -2432,15 +2539,7 @@ namespace App.Game
         private Card DrawRubCard(Card original)
         {
             SyncDeckWithTable();
-            Suit? bannedSuit = null;
-            var banFaces = Run.Affix == BossAffix.BanRubFace;
-            switch (Run.Affix)
-            {
-                case BossAffix.BanRubHeart: bannedSuit = Suit.Heart; break;
-                case BossAffix.BanRubSpade: bannedSuit = Suit.Spade; break;
-                case BossAffix.BanRubDiamond: bannedSuit = Suit.Diamond; break;
-                case BossAffix.BanRubClub: bannedSuit = Suit.Club; break;
-            }
+            BossMechanics.GetRubBan(Run, out var bannedSuit, out var banFaces);
 
             if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, false), out var next))
             {
@@ -2495,7 +2594,7 @@ namespace App.Game
                     continue;
                 }
 
-                var count = GameBalance.CardsDealt(seat.IsPlayer);
+                var count = CardsDealtFor(seat);
                 for (var i = 0; i < count && i < seat.Hand.Length; i++)
                 {
                     var card = seat.Hand[i];
@@ -2566,6 +2665,7 @@ namespace App.Game
 
         private void LeaveRubIfNeeded()
         {
+            SelectingRubTarget = false;
             if (Phase != GamePhase.WaitingRub)
             {
                 return;
@@ -2607,6 +2707,7 @@ namespace App.Game
 
             SelectingOpenTarget = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
 
             var units = raise ? RaiseUnits(raiseMult) : CurrentRoundUnits();
             units = Clamp(units, _roundBaseBet, MaxBetUnits());
@@ -3249,11 +3350,6 @@ namespace App.Game
 
             units = Math.Max(units, seat.StreetUnits);
             var cost = CostFor(seat, units) - CostFor(seat, seat.StreetUnits);
-            if (Run.Affix == BossAffix.AntiRaise && seat.IsPlayer)
-            {
-                cost = (int)Math.Ceiling(cost * 1.5f);
-            }
-
             return cost;
         }
 
@@ -3413,12 +3509,6 @@ namespace App.Game
 
             Phase = GamePhase.Showdown;
             SelectingOpenTarget = false;
-
-            if (Run.Affix == BossAffix.XRay)
-            {
-                var peek = EvaluateSeat(Player);
-                Log($"透视眼：BOSS 偷看了你的牌型「{peek.Label}」");
-            }
 
             SeatState winner = null;
             HandScore best = default;
@@ -3638,7 +3728,12 @@ namespace App.Game
             return seat != null && seat.Hand != null && seat.Hand.Length > 0;
         }
 
-        private static Card[] CollectEvalCards(SeatState seat, Suit? banned, bool banFaces, HandEvalRules rules)
+        private Card[] CollectEvalCards(
+            SeatState seat,
+            Suit? banned,
+            bool banFaces,
+            HandEvalRules rules,
+            Suit? banned2)
         {
             if (seat == null || seat.Hand == null)
             {
@@ -3647,6 +3742,11 @@ namespace App.Game
 
             if (seat.CountSelectedCards() == GameBalance.OpenHandSize)
             {
+                if (seat.IsPlayer && Run.HandBrandIndex >= 0)
+                {
+                    return CopySelectedExcept(seat, Run.HandBrandIndex);
+                }
+
                 return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
             }
 
@@ -3654,13 +3754,36 @@ namespace App.Game
             {
                 return HandEvaluator.CopyBestOpenCards(
                     seat.Hand,
-                    GameBalance.CardsDealt(false),
+                    CardsDealtFor(seat),
                     banned,
                     banFaces,
-                    rules);
+                    rules,
+                    banned2);
             }
 
             return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
+        }
+
+        private static Card[] CopySelectedExcept(SeatState seat, int skipIndex)
+        {
+            if (seat?.Hand == null || seat.CardSelected == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            var picked = new List<Card>(GameBalance.OpenHandSize);
+            var limit = Math.Min(seat.Hand.Length, seat.CardSelected.Length);
+            for (var i = 0; i < limit; i++)
+            {
+                if (i == skipIndex || !seat.CardSelected[i])
+                {
+                    continue;
+                }
+
+                picked.Add(seat.Hand[i]);
+            }
+
+            return picked.ToArray();
         }
 
         private Card[] CollectUnshownCards(SeatState seat)
@@ -3671,7 +3794,7 @@ namespace App.Game
             }
 
             var picked = new List<Card>(2);
-            var dealt = Math.Min(GameBalance.CardsDealt(seat.IsPlayer), seat.Hand.Length);
+            var dealt = Math.Min(CardsDealtFor(seat), seat.Hand.Length);
             var selected = seat.CardSelected;
             for (var i = 0; i < dealt; i++)
             {
@@ -3691,7 +3814,7 @@ namespace App.Game
 
         private string FormatPlayerHand()
         {
-            var parts = new string[GameBalance.PlayerCardsDealt];
+            var parts = new string[PlayerDealCount];
             for (var i = 0; i < parts.Length; i++)
             {
                 parts[i] = Player.Hand[i].DisplayName;
@@ -3864,6 +3987,12 @@ namespace App.Game
 
             if (!AnyEnemyAlive())
             {
+                if (IsLastLevel)
+                {
+                    CompleteLastLevel();
+                    return;
+                }
+
                 EnterShop();
                 return;
             }
@@ -3891,6 +4020,24 @@ namespace App.Game
                 damage = Math.Max(damage, target.Hp);
             }
 #endif
+
+            if (!target.IsPlayer && attacker != null && attacker.IsPlayer)
+            {
+                if (TryBossTimidImmune(target))
+                {
+                    return 0;
+                }
+
+                if (TryMonsterEvade(target, attacker))
+                {
+                    return 0;
+                }
+
+                if (TryBossShieldImmune(target))
+                {
+                    return 0;
+                }
+            }
 
             if (ReferenceEquals(target, Player))
             {
@@ -3979,6 +4126,16 @@ namespace App.Game
                     ApplyTalentKillRewards();
                     UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
+            }
+
+            if (target.IsBoss)
+            {
+                RefreshBossRageAttack(target);
+            }
+
+            if (main && attacker != null && attacker.IsPlayer && !target.IsPlayer)
+            {
+                ApplyCurseBodySelfDamage();
             }
 
             return dealt;
@@ -4380,7 +4537,7 @@ namespace App.Game
 
         private void ApplyBankruptcy(bool playerWon, SeatState winner)
         {
-            var ratio = Run.Affix == BossAffix.Stingy ? GameBalance.StingyRescueRatio : GameBalance.RescueRatio;
+            var ratio = GameBalance.RescueRatio;
             for (var i = 0; i < Enemies.Length; i++)
             {
                 var ai = Enemies[i];
@@ -4444,7 +4601,9 @@ namespace App.Game
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
             {
-                Hint = LastResult + "\n已击杀全部敌人，点击进入商店";
+                Hint = LastResult + (IsLastLevel
+                    ? "\n已击杀全部敌人，点击进入总结算"
+                    : "\n已击杀全部敌人，点击进入商店");
             }
             else
             {
@@ -4457,6 +4616,37 @@ namespace App.Game
         private void EnterShop()
         {
             ApplyTalentStageEndHeal();
+            var gold = GrantStageGold();
+            Phase = GamePhase.Shop;
+            Run.ShopRefreshCount = 0;
+            Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
+            RollShopOffers();
+            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
+            LastResult = Hint;
+            Notify();
+        }
+
+        private void CompleteLastLevel()
+        {
+            ApplyTalentStageEndHeal();
+            GrantStageGold();
+            if (!TryAdvanceLevel())
+            {
+                Phase = GamePhase.RunComplete;
+                if (string.IsNullOrEmpty(Hint) || Hint.Contains("关卡胜利") || Hint.Contains("兑换"))
+                {
+                    Hint = "你已打完该难度全部关卡！";
+                }
+
+                Notify();
+                return;
+            }
+
+            StartStage(inheritPlayerHp: true);
+        }
+
+        private int GrantStageGold()
+        {
             var score = ScoreSvc();
             var current = LevelSvc()?.Current;
             var gold = current != null ? Math.Max(0, current.GetGold) : 0;
@@ -4477,13 +4667,7 @@ namespace App.Game
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
             Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
-            Phase = GamePhase.Shop;
-            Run.ShopRefreshCount = 0;
-            Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
-            RollShopOffers();
-            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
-            LastResult = Hint;
-            Notify();
+            return gold;
         }
 
         private void TryAutoLoanOrFail()
@@ -4516,16 +4700,11 @@ namespace App.Game
             StartRound();
         }
 
-        /// <summary>从勇气值扣下注。看过牌的座位付双倍；反加注词缀再让玩家 ×1.5。</summary>
+        /// <summary>从勇气值扣下注。看过牌的座位付双倍。</summary>
         private bool TryCommitUnits(SeatState seat, int units, out int paid)
         {
             units = Math.Max(units, seat.StreetUnits);
             var cost = CostFor(seat, units) - CostFor(seat, seat.StreetUnits);
-            if (Run.Affix == BossAffix.AntiRaise && seat.IsPlayer)
-            {
-                cost = (int)Math.Ceiling(cost * 1.5f);
-            }
-
             paid = cost;
             if (cost <= 0)
             {
@@ -4583,11 +4762,6 @@ namespace App.Game
         private int UnitsAffordable(SeatState seat)
         {
             var denom = PaysDouble(seat) ? 2 : 1;
-            if (Run.Affix == BossAffix.AntiRaise && seat.IsPlayer)
-            {
-                denom = Math.Max(1, (int)Math.Ceiling(denom * 1.5f));
-            }
-
             return AlignBet(seat.Courage / denom);
         }
 
@@ -4862,6 +5036,13 @@ namespace App.Game
                 TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax) +
                 Run.PermanentMaxHpBonus);
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
+            var fragile = BossMechanics.FragileBodyMaxHpPercent(Run);
+            if (fragile != 0f)
+            {
+                maxHp = Math.Max(1, (int)Math.Round(maxHp * (1f + fragile)));
+                hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
+            }
+
             ApplySeatHp(Player, hp, maxHp);
             var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
             attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
@@ -4914,6 +5095,11 @@ namespace App.Game
                 return 0;
             }
 
+            if (BossMechanics.HealBlocked(Run))
+            {
+                return 0;
+            }
+
             var before = Player.Hp;
             var hp = Math.Min(Player.MaxHp, Player.Hp + amount);
             ApplySeatHp(Player, hp, Player.MaxHp);
@@ -4929,12 +5115,6 @@ namespace App.Game
                 Run.LevelId = snapshot.Id;
                 Run.Stage = snapshot.Level;
                 Run.HasBoss = snapshot.HasBoss;
-                if (snapshot.HasBoss)
-                {
-                    Run.Affix = RandomAffix();
-                    ApplyEdgeAffix();
-                }
-
                 var count = Math.Min(snapshot.Monsters.Count, Enemies.Length);
                 for (var i = 0; i < Enemies.Length; i++)
                 {
@@ -4949,6 +5129,7 @@ namespace App.Game
                         seat.MonsterId = monster.MonsterId;
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
+                        seat.BaseAttack = seat.Attack;
                         seat.Icon = monster.Icon;
                         ApplyEnemySpawnRelics(seat);
                     }
@@ -4969,8 +5150,6 @@ namespace App.Game
             if (Run.HasBoss)
             {
                 names[0] = "BOSS";
-                Run.Affix = RandomAffix();
-                ApplyEdgeAffix();
             }
 
             for (var i = 0; i < Enemies.Length; i++)
@@ -4983,6 +5162,7 @@ namespace App.Game
                 var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
                 ApplySeatHp(seat, seat.ActiveInStage ? maxHp : 0, maxHp);
                 seat.Attack = seat.ActiveInStage ? 10 : 0;
+                seat.BaseAttack = seat.Attack;
                 seat.Icon = null;
                 seat.MonsterId = 0;
                 seat.Banner = string.Empty;
@@ -5001,6 +5181,7 @@ namespace App.Game
             seat.Name = $"敌人{index + 1}";
             ApplySeatHp(seat, 0, 0);
             seat.Attack = 0;
+            seat.BaseAttack = 0;
             seat.Icon = null;
             seat.MonsterId = 0;
         }
@@ -5260,58 +5441,241 @@ namespace App.Game
             return GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.KillMonsterGetGold) : 0;
         }
 
-        private void ApplyEdgeAffix()
+        private int CardsDealtFor(SeatState seat)
         {
-            if (Run.Affix != BossAffix.Edge)
+            return GameBalance.CardsDealt(seat != null && seat.IsPlayer, Run);
+        }
+
+        private bool AnyBossAlive()
+        {
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (enemy != null && enemy.IsBoss && enemy.Alive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool AnyNonBossAlive()
+        {
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (enemy != null && !enemy.IsBoss && enemy.Alive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryFailRoundLimit()
+        {
+            if (!BossMechanics.RoundLimitExceeded(Run, _stageBetRound) || !AnyBossAlive())
+            {
+                return false;
+            }
+
+            if (Player != null && Player.Hp > 0)
+            {
+                var remain = Player.Hp;
+                Player.Hp = 0;
+                HpSvc()?.Damage(Player.Id, remain);
+                Player.Status = "阵亡";
+            }
+
+            LastResult = "回合制约：未能在限定回合内击杀 BOSS";
+            Log(LastResult);
+            Phase = GamePhase.StageFail;
+            Hint = LastResult + "\n生命耗尽。可看广告复活，或重开本关。";
+            Notify();
+            return true;
+        }
+
+        private void PickHandBrand()
+        {
+            Run.HandBrandIndex = -1;
+            if (!BossMechanics.Has(Run, BossEntryType.HandBrand) || Player == null)
             {
                 return;
             }
 
-            if (Run.RelicConfigIds.Count > 0 && _rng.Next(2) == 0)
+            var selected = new List<int>(GameBalance.OpenHandSize);
+            var limit = Math.Min(Player.Hand.Length, Player.CardSelected.Length);
+            for (var i = 0; i < limit; i++)
             {
-                Run.DisabledRelicConfigId = Run.RelicConfigIds[_rng.Next(Run.RelicConfigIds.Count)];
-                var relic = RelicConfig.Get(Run.DisabledRelicConfigId);
-                var name = relic != null ? relic.Name : Run.DisabledRelicConfigId.ToString();
-                Log($"锋芒：本局禁用遗物 {name}");
+                if (Player.CardSelected[i])
+                {
+                    selected.Add(i);
+                }
+            }
+
+            if (selected.Count == 0)
+            {
                 return;
             }
 
-            var options = new List<ConsumableId>();
-            if (Run.SplashThisRound)
+            Run.HandBrandIndex = selected[_rng.Next(selected.Count)];
+            Log($"手牌烙印：第 {Run.HandBrandIndex + 1} 张不参与牌型");
+        }
+
+        private void ApplyRelicDisable()
+        {
+            Run.DisabledRelicIds.Clear();
+            var count = BossMechanics.RelicDisableCount(Run);
+            if (count <= 0 || Run.RelicConfigIds.Count == 0)
             {
-                options.Add(ConsumableId.SplashSlash);
+                return;
             }
 
-            if (Run.MagnifierThisRound)
+            var pool = new List<int>(Run.RelicConfigIds.Count);
+            for (var i = 0; i < Run.RelicConfigIds.Count; i++)
             {
-                options.Add(ConsumableId.Magnifier);
-            }
-
-            if (Run.LoanTicket)
-            {
-                options.Add(ConsumableId.LoanTicket);
-            }
-
-            if (options.Count > 0)
-            {
-                Run.DisabledConsumable = options[_rng.Next(options.Count)];
-                Log($"锋芒：本局禁用道具 {Run.DisabledConsumable}");
-                if (Run.DisabledConsumable == ConsumableId.SplashSlash)
+                var id = Run.RelicConfigIds[i];
+                if (id > 0)
                 {
-                    Run.SplashThisRound = false;
+                    pool.Add(id);
+                }
+            }
+
+            var n = Math.Min(count, pool.Count);
+            for (var i = 0; i < n; i++)
+            {
+                var pick = _rng.Next(pool.Count);
+                var id = pool[pick];
+                pool.RemoveAt(pick);
+                if (!Run.DisabledRelicIds.Add(id))
+                {
+                    continue;
                 }
 
-                if (Run.DisabledConsumable == ConsumableId.Magnifier)
-                {
-                    Run.MagnifierThisRound = false;
-                }
+                var relic = RelicConfig.Get(id);
+                var name = relic != null ? relic.Name : id.ToString();
+                Log($"收藏禁用：本手失效 {name}");
             }
         }
 
-        private BossAffix RandomAffix()
+        private void ApplyAttackSteal()
         {
-            var values = (BossAffix[])Enum.GetValues(typeof(BossAffix));
-            return values[_rng.Next(1, values.Length)];
+            var ratio = BossMechanics.AttackStealRatio(Run);
+            if (ratio <= 0f || Player == null)
+            {
+                return;
+            }
+
+            var steal = (int)Math.Round(Player.Attack * ratio);
+            if (steal <= 0)
+            {
+                return;
+            }
+
+            Player.Attack = Math.Max(0, Player.Attack - steal);
+            Run.StolenAttack += steal;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                RefreshBossRageAttack(Enemies[i]);
+            }
+
+            Log($"窃取指环：BOSS 偷取攻击 {steal}（玩家 {Player.Attack}）");
+        }
+
+        private void RefreshBossRageAttack(SeatState seat)
+        {
+            if (seat == null || !seat.IsBoss || !seat.ActiveInStage || seat.Hp <= 0)
+            {
+                return;
+            }
+
+            var core = Math.Max(0, seat.BaseAttack + Run.StolenAttack);
+            var rage = BossMechanics.RageAttackBonus(Run, seat, core);
+            var next = core + rage;
+            if (next != seat.Attack && rage > 0)
+            {
+                var lost = seat.MaxHp > 0 ? 1f - seat.Hp / (float)seat.MaxHp : 0f;
+                Log($"狂暴增长：攻击 {seat.Attack} → {next}（已损失 {lost:P0}）");
+            }
+
+            seat.Attack = next;
+        }
+
+        private bool TryBossTimidImmune(SeatState target)
+        {
+            if (target == null || !target.IsBoss || !BossMechanics.Has(Run, BossEntryType.BossTimid))
+            {
+                return false;
+            }
+
+            if (!AnyNonBossAlive())
+            {
+                return false;
+            }
+
+            Log($"胆小首领：{target.Name} 在随从存活时免疫伤害");
+            target.Banner = "免疫";
+            return true;
+        }
+
+        private bool TryBossShieldImmune(SeatState target)
+        {
+            if (target == null || !target.IsBoss || Run.BossShieldHitsLeft <= 0)
+            {
+                return false;
+            }
+
+            Run.BossShieldHitsLeft--;
+            Log($"黑暗护盾：免疫伤害（剩余 {Run.BossShieldHitsLeft}）");
+            target.Banner = "护盾";
+            return true;
+        }
+
+        private bool TryMonsterEvade(SeatState target, SeatState attacker)
+        {
+            var chance = BossMechanics.MonsterEvadeChance(Run);
+            if (chance <= 0f || target == null || _rng.NextDouble() >= chance)
+            {
+                return false;
+            }
+
+            Log($"灵活身姿：{target.Name} 闪避攻击");
+            target.Banner = "闪避";
+            var factor = BossMechanics.MonsterEvadeCounterFactor(Run);
+            var counter = (int)Math.Round(target.Attack * factor);
+            if (counter > 0 && Player != null && Player.Alive)
+            {
+                Log($"灵活身姿：反击 {counter}");
+                ApplyDamage(Player, counter, false, target);
+            }
+
+            return true;
+        }
+
+        private void ApplyCurseBodySelfDamage()
+        {
+            if (Player == null || Player.Hp <= 0)
+            {
+                return;
+            }
+
+            var dmg = BossMechanics.CurseBodySelfDamage(Run, Player.Hp);
+            if (dmg <= 0)
+            {
+                return;
+            }
+
+            var dealt = Math.Min(Player.Hp, dmg);
+            Player.Hp -= dealt;
+            HpSvc()?.Damage(Player.Id, dealt);
+            Log($"诅咒之躯：自损 {dealt} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            if (Player.Hp <= 0)
+            {
+                Player.Hp = 0;
+                Player.Status = "阵亡";
+            }
         }
 
         /// <summary>

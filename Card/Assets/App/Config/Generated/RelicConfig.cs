@@ -52,6 +52,11 @@ namespace App.Config
         public int UnlockConditionId;
 
         /// <summary>
+        /// 使用类型(0被动/1即时消耗/2永久消耗)
+        /// </summary>
+        public int UseType;
+
+        /// <summary>
         /// 描述
         /// </summary>
         public string Desc;

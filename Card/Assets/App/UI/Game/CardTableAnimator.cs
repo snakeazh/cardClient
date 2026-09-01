@@ -72,6 +72,23 @@ namespace App.UI
         public int RubLockIndex => _rubLockIndex;
         public event System.Action DealFinished;
 
+        public bool TryGetPlayerCard(int index, out CardItem item)
+        {
+            item = null;
+            if (_player == null || index < 0 || index >= _player.Items.Length)
+            {
+                return false;
+            }
+
+            if (!_player.Landed[index])
+            {
+                return false;
+            }
+
+            item = _player.Items[index];
+            return item != null;
+        }
+
         private sealed class SeatView
         {
             public Transform Node;
@@ -238,6 +255,32 @@ namespace App.UI
             {
                 sr.color = color;
             }
+        }
+
+        public void BeginInstantRub(int index)
+        {
+            if (_player == null || index < 0 || index >= CardsPerHand)
+            {
+                return;
+            }
+
+            var item = _player.Items[index];
+            if (item == null || !_player.Landed[index] || _player.Points[index] == null)
+            {
+                return;
+            }
+
+            if (_rubLockIndex >= 0 && _rubLockIndex != index)
+            {
+                CancelRubPreview();
+            }
+
+            _rubLockIndex = index;
+            _rubShakeReady = true;
+            _rubRestWorldPos = _player.Points[index].position;
+            BringRubCardToFront(index);
+            item.SetFace(CardFaceState.Back);
+            TintPlayerCard(index, Color.white);
         }
 
         /// <summary>长按搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
@@ -444,7 +487,13 @@ namespace App.UI
                 return;
             }
 
+            var selected = _session != null && _session.Player != null && _session.Player.IsCardSelected(index);
             var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
+            if (selected)
+            {
+                dest += SelectOffset(_player);
+            }
+
             RestoreRubCardLayer(index);
             item.SetDragEffectVisible(false);
             if (_rubSuccessFxShown)
@@ -463,7 +512,7 @@ namespace App.UI
                 {
                     if (_rubLockIndex != index)
                     {
-                        SyncSlotShadow(_player, index, false);
+                        SyncSlotShadow(_player, index, selected);
                     }
                 });
             item.FlipTo(CardFaceState.Front, FlipDuration);
@@ -543,14 +592,14 @@ namespace App.UI
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
-            var maxRound = GameBalance.PlayerCardsDealt;
+            var maxRound = Math.Max(GameBalance.EnemyCardsDealt, session.PlayerDealCount);
             for (var round = 0; round < maxRound; round++)
             {
                 for (var s = 0; s < seats.Count; s++)
                 {
                     var view = seats[s].View;
                     var seat = seats[s].Seat;
-                    if (round >= GameBalance.CardsDealt(seat.IsPlayer))
+                    if (round >= GameBalance.CardsDealt(seat.IsPlayer, session.Run))
                     {
                         continue;
                     }
@@ -655,7 +704,7 @@ namespace App.UI
                     ClearSeatSeeThrough(view);
                 }
 
-                var count = CardCount(view, seat);
+                var count = CardCount(view, seat, session);
                 for (var i = 0; i < count; i++)
                 {
                     if (SkipEnemyUnselectedFlip(seat, i))
@@ -703,7 +752,7 @@ namespace App.UI
 
             var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
             var winnerSeat = SeatById(session, session.RevealWinnerId);
-            var settleCount = CardCount(winnerView, winnerSeat);
+            var settleCount = CardCount(winnerView, winnerSeat, session);
             for (var i = 0; i < settleCount; i++)
             {
                 if (winnerSeat != null && !winnerSeat.IsCardSelected(i))
@@ -1375,14 +1424,14 @@ namespace App.UI
             }
         }
 
-        private static int CardCount(SeatView view, SeatState seat)
+        private static int CardCount(SeatView view, SeatState seat, GameSession session)
         {
             if (view == null)
             {
                 return 0;
             }
 
-            return GameBalance.CardsDealt(seat != null && seat.IsPlayer);
+            return GameBalance.CardsDealt(seat != null && seat.IsPlayer, session?.Run);
         }
 
         private static CardFaceState DesiredFace(GameSession session, SeatState seat, bool player, int cardIndex)

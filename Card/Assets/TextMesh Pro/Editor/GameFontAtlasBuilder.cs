@@ -11,7 +11,7 @@ namespace TMPro.EditorUtilities
     public static class GameFontAtlasBuilder
     {
         public const string FontAssetPath = "Assets/TextMesh Pro/Fonts/GameFont SDF.asset";
-        public const string SourceFontPath = "Assets/TextMesh Pro/Fonts/GameFont.otf";
+        public const string SourceFontPath = "Assets/TextMesh Pro/Fonts/LeMi.ttf";
 
         public sealed class BuildResult
         {

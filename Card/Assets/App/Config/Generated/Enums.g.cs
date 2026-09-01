@@ -63,6 +63,91 @@ namespace App.Config
         /// </summary>
         StraightDamage = 11,
 
+        /// <summary>
+        /// 玩家受到的伤害提高,且攻击时自损当前生命
+        /// </summary>
+        CurseBody = 12,
+
+        /// <summary>
+        /// 玩家造成的伤害降低
+        /// </summary>
+        PlayerDamageDown = 13,
+
+        /// <summary>
+        /// 玩家无法使用任何技能
+        /// </summary>
+        SkillDisable = 14,
+
+        /// <summary>
+        /// 玩家亮出手牌中随机1张不参与牌型构成
+        /// </summary>
+        HandBrand = 15,
+
+        /// <summary>
+        /// 敌人获得闪避率,闪避成功时反击
+        /// </summary>
+        MonsterEvade = 16,
+
+        /// <summary>
+        /// 敌人造成的伤害提高
+        /// </summary>
+        MonsterDamageUp = 17,
+
+        /// <summary>
+        /// 每回合随机失效玩家的收藏品
+        /// </summary>
+        RelicDisable = 18,
+
+        /// <summary>
+        /// 敌人伤害附加玩家已消耗金币比例的额外伤害
+        /// </summary>
+        GoldThorn = 19,
+
+        /// <summary>
+        /// 玩家生命上限降低且无法恢复生命
+        /// </summary>
+        FragileBody = 20,
+
+        /// <summary>
+        /// 玩家每回合手牌数量降低
+        /// </summary>
+        HandCompress = 21,
+
+        /// <summary>
+        /// BOSS损失生命后攻击力提升
+        /// </summary>
+        BossRage = 22,
+
+        /// <summary>
+        /// BOSS免疫前N次伤害
+        /// </summary>
+        BossShield = 23,
+
+        /// <summary>
+        /// 限制回合数,超时玩家直接死亡
+        /// </summary>
+        RoundLimit = 24,
+
+        /// <summary>
+        /// BOSS每回合偷取玩家当前攻击力
+        /// </summary>
+        AttackSteal = 25,
+
+        /// <summary>
+        /// 非BOSS敌人存活时BOSS免疫伤害
+        /// </summary>
+        BossTimid = 26,
+
+        /// <summary>
+        /// 玩家的方片和红桃牌失效
+        /// </summary>
+        DisableRedSuit = 27,
+
+        /// <summary>
+        /// 玩家的黑桃和梅花牌失效
+        /// </summary>
+        DisableBlackSuit = 28,
+
     }
 
     /// <summary>
@@ -104,6 +189,50 @@ namespace App.Config
         /// 亮出数字牌7
         /// </summary>
         Seven = 7,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 GuideStepType 枚举。
+    /// </summary>
+    public enum GuideStepType
+    {
+        /// <summary>
+        /// 点击高亮目标后推进
+        /// </summary>
+        Click = 1,
+
+        /// <summary>
+        /// 等待代码处理器完成后推进
+        /// </summary>
+        Wait = 2,
+
+        /// <summary>
+        /// 点击气泡下一步后推进
+        /// </summary>
+        Dialog = 3,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 GuideTriggerType 枚举。
+    /// </summary>
+    public enum GuideTriggerType
+    {
+        /// <summary>
+        /// 界面打开时触发
+        /// </summary>
+        ScreenOpen = 1,
+
+        /// <summary>
+        /// 对局阶段变化时触发
+        /// </summary>
+        GamePhase = 2,
+
+        /// <summary>
+        /// 代码手动触发
+        /// </summary>
+        Manual = 3,
 
     }
 
@@ -799,11 +928,91 @@ namespace App.Config
         /// </summary>
         GapDamage = 130,
 
-        MaxHp = 92,
+        /// <summary>
+        /// 消耗品:本次比牌造成的伤害提高(倍率)
+        /// </summary>
+        UseDamageMul = 131,
 
-        EveryRoundHpUp = 93,
+        /// <summary>
+        /// 消耗品:本次比牌造成的固定伤害
+        /// </summary>
+        UseDamageFixed = 132,
 
-        TwoThreeFive = 94,
+        /// <summary>
+        /// 消耗品:指定牌型的倍率永久提高(参数:牌型|数值)
+        /// </summary>
+        HandTypeMagUp = 133,
+
+        /// <summary>
+        /// 消耗品:随机若干牌型的倍率永久提高(参数:数值|数量)
+        /// </summary>
+        RandomHandTypeMagUp = 134,
+
+        /// <summary>
+        /// 消耗品:立即回复百分比最大生命
+        /// </summary>
+        HealHpPercent = 135,
+
+        /// <summary>
+        /// 消耗品:永久提高生命上限并立即回复同量生命
+        /// </summary>
+        MaxHpUpAndHeal = 136,
+
+        /// <summary>
+        /// 每输1次比牌提高伤害,有上限
+        /// </summary>
+        LossRampDamage = 137,
+
+        /// <summary>
+        /// 比牌获胜后回复生命
+        /// </summary>
+        WinHeal = 138,
+
+        /// <summary>
+        /// 消耗品:下一次商店所有商品折扣
+        /// </summary>
+        NextShopDiscount = 139,
+
+        /// <summary>
+        /// 消耗品:移除本关1条BOSS词缀
+        /// </summary>
+        RemoveBossEntry = 140,
+
+        /// <summary>
+        /// 本局首次亮出豹子时获得金币
+        /// </summary>
+        FirstLeopardGold = 141,
+
+        /// <summary>
+        /// 本关内比牌获胜伤害提高
+        /// </summary>
+        LevelWinDamageUp = 142,
+
+        /// <summary>
+        /// 本关内生命上限提高并立即回复
+        /// </summary>
+        LevelHpMaxUp = 143,
+
+        /// <summary>
+        /// 每通过1关获得固定金币
+        /// </summary>
+        GoldPerLevelClear = 144,
+
+        /// <summary>
+        /// 消耗品:本次比牌受到的伤害为0并回复生命(参数:免伤标记|回复%)
+        /// </summary>
+        UseRoundNullify = 145,
+
+        /// <summary>
+        /// 按持有金币提高伤害(参数:每N金|+M%|上限%)
+        /// </summary>
+        GoldDamageScale = 146,
+
+        MaxHp = 1111,
+
+        EveryRoundHpUp = 1112,
+
+        TwoThreeFive = 1113,
 
     }
 

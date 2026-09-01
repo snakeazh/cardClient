@@ -17,6 +17,9 @@ namespace App.UI
         private TalentPopupViewModel _talent;
         private bool _busy;
 
+        /// <summary>导航栏主动关闭弹窗期间置位：抑制弹窗 OnClose 回调里的"回主页"重置，避免覆盖新页签状态。</summary>
+        private bool _suppressCloseNotify;
+
         public NavigationViewModel(IUIManager ui)
         {
             _ui = ui;
@@ -74,25 +77,8 @@ namespace App.UI
                 AdventureOn.Value = true;
                 CollectOn.Value = false;
                 TalentOn.Value = false;
-                if (_book != null)
-                {
-                    var book = _book;
-                    _book = null;
-                    if (book.IsOpen)
-                    {
-                        await _ui.Close(book);
-                    }
-                }
-
-                if (_talent != null)
-                {
-                    var talent = _talent;
-                    _talent = null;
-                    if (talent.IsOpen)
-                    {
-                        await _ui.Close(talent);
-                    }
-                }
+                await CloseBook();
+                await CloseTalent();
             }
             finally
             {
@@ -164,9 +150,16 @@ namespace App.UI
             }
         }
 
+        /// <summary>图鉴关闭回调（OnClose）。弹窗自行关闭（点遮罩/关闭按钮）时回主页；
+        /// 由导航栏切页主动关闭时被抑制，保持新页签的选中状态。</summary>
         public void NotifyBookClosed()
         {
             _book = null;
+            if (_suppressCloseNotify)
+            {
+                return;
+            }
+
             AdventureOn.Value = true;
             CollectOn.Value = false;
             TalentOn.Value = false;
@@ -183,7 +176,7 @@ namespace App.UI
             _book = null;
             if (book.IsOpen)
             {
-                await _ui.Close(book);
+                await CloseByNavigation(book);
             }
         }
 
@@ -198,7 +191,20 @@ namespace App.UI
             _talent = null;
             if (talent.IsOpen)
             {
-                await _ui.Close(talent);
+                await CloseByNavigation(talent);
+            }
+        }
+
+        private async Task CloseByNavigation(ViewModelBase viewModel)
+        {
+            _suppressCloseNotify = true;
+            try
+            {
+                await _ui.Close(viewModel);
+            }
+            finally
+            {
+                _suppressCloseNotify = false;
             }
         }
 

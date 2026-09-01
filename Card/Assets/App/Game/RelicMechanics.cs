@@ -521,7 +521,48 @@ namespace App.Game
             }
         }
 
-        private static void ForEachRelicEntry(RelicConfig relic, Action<RelicEntryConfig> action)
+        public static RelicUseType UseTypeOf(RelicConfig relic)
+        {
+            if (relic == null)
+            {
+                return RelicUseType.Passive;
+            }
+
+            switch (relic.UseType)
+            {
+                case (int)RelicUseType.InstantConsume:
+                    return RelicUseType.InstantConsume;
+                case (int)RelicUseType.PermanentConsume:
+                    return RelicUseType.PermanentConsume;
+                default:
+                    return RelicUseType.Passive;
+            }
+        }
+
+        public static bool IsConsumable(RelicConfig relic)
+        {
+            var type = UseTypeOf(relic);
+            return type == RelicUseType.InstantConsume || type == RelicUseType.PermanentConsume;
+        }
+
+        public static bool RequiresComparePhase(RelicConfig relic)
+        {
+            var required = false;
+            ForEachRelicEntry(relic, entry =>
+            {
+                switch (entry.Type)
+                {
+                    case MechanismType.UseDamageMul:
+                    case MechanismType.UseDamageFixed:
+                    case MechanismType.UseRoundNullify:
+                        required = true;
+                        break;
+                }
+            });
+            return required;
+        }
+
+        public static void ForEachRelicEntry(RelicConfig relic, Action<RelicEntryConfig> action)
         {
             if (relic?.MechanismId == null || action == null)
             {

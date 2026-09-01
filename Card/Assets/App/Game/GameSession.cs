@@ -590,6 +590,21 @@ namespace App.Game
             (Phase == GamePhase.WaitingOpen ||
              Phase == GamePhase.WaitingRub);
 
+        private bool PlayerMayUseConsumable(bool thisHand)
+        {
+            if (Player == null || Player.Folded || AiActing)
+            {
+                return false;
+            }
+
+            if (Phase == GamePhase.WaitingOpen || Phase == GamePhase.WaitingRub)
+            {
+                return true;
+            }
+
+            return !thisHand && Phase == GamePhase.Shop;
+        }
+
         public bool PlayerMayUsePeekGood =>
             PlayerMayUseItems &&
             Player.Looked &&
@@ -1376,6 +1391,11 @@ namespace App.Game
                 damage += BossMechanics.GoldThornExtra(Run);
             }
 
+            if (attacker.IsPlayer && Run.UseDamageFixed > 0)
+            {
+                damage = Run.UseDamageFixed;
+            }
+
             if (attacker.IsPlayer && RelicMechanics.Roll(Run, MechanismType.AllPeacePer, _rng))
             {
                 Log("和平鸽：本次造成伤害变为 0");
@@ -1415,6 +1435,11 @@ namespace App.Game
         /// <summary>打玩家前的减伤：先加遗物/天赋 HeroTakeDamage，再乘百分比（英雄、条约、陷阱、差距胶囊）。闪避仍在 ApplyDamage。</summary>
         private int IncomingDamageAfterMitigation(int damage, SeatState attacker = null)
         {
+            if (Run.UseNullifyIncoming)
+            {
+                return 0;
+            }
+
             var take = (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
                 TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
@@ -1471,6 +1496,8 @@ namespace App.Game
                 _pendingPlayerScore.Type,
                 _pendingEnemyScore.Type,
                 outgoing: true);
+            percent += Run.UseDamageMulAdd;
+            percent += Run.LevelWinDamageUp;
             return percent;
         }
 
@@ -1700,6 +1727,27 @@ namespace App.Game
             }
         }
 
+        private static HandType FromConfigHandType(int configId)
+        {
+            if (configId == (int)App.Config.HandType.Couplet)
+            {
+                return HandType.Pair;
+            }
+
+            if (configId == (int)App.Config.HandType.Leopard)
+            {
+                return HandType.ThreeOfAKind;
+            }
+
+            var mapped = (HandType)(configId - 1);
+            if (mapped < HandType.HighCard || mapped > HandType.ThreeOfAKind)
+            {
+                return HandType.HighCard;
+            }
+
+            return mapped;
+        }
+
         private void DealPlayerLossDamage(SeatState winner)
         {
             if (winner == null || winner.IsPlayer)
@@ -1778,7 +1826,21 @@ namespace App.Game
 
         public int EffectiveSellPrice(int relicId) => RelicMechanics.SellPrice(Run, relicId);
 
-        public int EffectiveBuyPrice(int relicId) => HeroMechanics.BuyPrice(Run, RelicConfig.Get(relicId));
+        public int EffectiveBuyPrice(int relicId)
+        {
+            var price = HeroMechanics.BuyPrice(Run, RelicConfig.Get(relicId));
+            if (Run.ShopBuyDiscount <= 0f)
+            {
+                return price;
+            }
+
+            if (Run.ShopBuyDiscount >= 1f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(price * (1f - Run.ShopBuyDiscount)));
+        }
 
         public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
 
@@ -1903,6 +1965,198 @@ namespace App.Game
             Log($"出售遗物 {relic.Name}，获得 {sell} 金币");
             Hint = $"已出售 {relic.Name}";
             Notify();
+        }
+
+        public void UseRelic(int relicId)
+        {
+            if (!OwnsRelicConfig(relicId) || RelicMechanics.IsDisabled(Run, relicId))
+            {
+                Hint = "未拥有该遗物";
+                Notify();
+                return;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null || !RelicMechanics.IsConsumable(relic))
+            {
+                Hint = "该装备无法使用";
+                Notify();
+                return;
+            }
+
+            var thisHand = RelicMechanics.RequiresComparePhase(relic);
+            if (!PlayerMayUseConsumable(thisHand))
+            {
+                Hint = thisHand ? "当前无法在比牌前使用" : "当前无法使用该装备";
+                Notify();
+                return;
+            }
+
+            if (!CanApplyConsumable(relic, out var failHint))
+            {
+                Hint = failHint;
+                Notify();
+                return;
+            }
+
+            RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
+            Run.RelicConfigIds.Remove(relicId);
+            Log($"使用遗物 {relic.Name}");
+            Hint = $"已使用 {relic.Name}";
+            Notify();
+        }
+
+        private bool CanApplyConsumable(RelicConfig relic, out string failHint)
+        {
+            failHint = null;
+            if (relic?.MechanismId == null)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < relic.MechanismId.Length; i++)
+            {
+                var entry = RelicEntryConfig.Get(relic.MechanismId[i]);
+                if (entry != null &&
+                    entry.Type == MechanismType.RemoveBossEntry &&
+                    Run.BossEntryId <= 0)
+                {
+                    failHint = "本关没有可移除的BOSS词缀";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void ApplyConsumableEntry(RelicEntryConfig entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            var inShop = Phase == GamePhase.Shop;
+            var value = RelicMechanics.ValueAt(entry);
+            switch (entry.Type)
+            {
+                case MechanismType.UseDamageMul:
+                    Run.UseDamageMulAdd += value;
+                    Log($"消耗品：本次比牌伤害 +{value:P0}");
+                    break;
+                case MechanismType.UseDamageFixed:
+                    Run.UseDamageFixed = Math.Max(Run.UseDamageFixed, (int)Math.Round(value));
+                    Log($"消耗品：本次比牌伤害固定为 {Run.UseDamageFixed}");
+                    break;
+                case MechanismType.HandTypeMagUp:
+                {
+                    var handType = FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
+                    var mag = RelicMechanics.ValueAt(entry, 1);
+                    Run.AddHandTypeMagBonus(handType, mag);
+                    Log($"消耗品：{HandEvaluator.TypeName(handType)} 倍率永久 +{mag}");
+                    break;
+                }
+                case MechanismType.RandomHandTypeMagUp:
+                    ApplyRandomHandTypeMagUp(
+                        RelicMechanics.ValueAt(entry, 0),
+                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1)));
+                    break;
+                case MechanismType.HealHpPercent:
+                {
+                    var healed = HealPlayer((int)Math.Round(Player.MaxHp * value));
+                    Log($"消耗品：回复 {healed} HP");
+                    break;
+                }
+                case MechanismType.MaxHpUpAndHeal:
+                {
+                    var maxHp = (int)Math.Round(value);
+                    Run.PermanentMaxHpBonus += maxHp;
+                    ApplyRelicMaxHpDelta(maxHp);
+                    Log($"消耗品：永久生命上限 +{maxHp}");
+                    break;
+                }
+                case MechanismType.NextShopDiscount:
+                    Run.NextShopDiscount = Math.Max(Run.NextShopDiscount, value);
+                    Log($"消耗品：下次商店购买折扣 {value:P0}");
+                    break;
+                case MechanismType.RemoveBossEntry:
+                    Run.BossEntryId = 0;
+                    Log("消耗品：已移除本关 BOSS 词缀");
+                    break;
+                case MechanismType.FirstLeopardGold:
+                    Run.FirstLeopardGoldPending += (int)Math.Round(value);
+                    Log($"消耗品：本局首次豹子额外金币 {value}");
+                    break;
+                case MechanismType.LevelWinDamageUp:
+                    if (inShop)
+                    {
+                        Run.PendingLevelWinDamageUp += value;
+                    }
+                    else
+                    {
+                        Run.LevelWinDamageUp += value;
+                    }
+
+                    Log($"消耗品：本关获胜伤害 +{value:P0}");
+                    break;
+                case MechanismType.LevelHpMaxUp:
+                {
+                    var hpBonus = (int)Math.Round(value);
+                    ApplyRelicMaxHpDelta(hpBonus);
+                    if (inShop)
+                    {
+                        Run.PendingLevelHpMaxBonus += hpBonus;
+                    }
+                    else
+                    {
+                        Run.LevelHpMaxBonus += hpBonus;
+                    }
+
+                    Log($"消耗品：本关生命上限 +{hpBonus}");
+                    break;
+                }
+                case MechanismType.UseRoundNullify:
+                {
+                    Run.UseNullifyIncoming = RelicMechanics.ValueAt(entry, 0) != 0f;
+                    var nullifyHeal = HealPlayer((int)Math.Round(Player.MaxHp * RelicMechanics.ValueAt(entry, 1)));
+                    Log($"消耗品：本次比牌免疫伤害，回复 {nullifyHeal} HP");
+                    break;
+                }
+                default:
+                    Log($"消耗品：未处理的机制 {entry.Type}");
+                    break;
+            }
+        }
+
+        private void ApplyRandomHandTypeMagUp(float mag, int count)
+        {
+            var types = new[]
+            {
+                HandType.HighCard,
+                HandType.Pair,
+                HandType.Straight,
+                HandType.Flush,
+                HandType.StraightFlush,
+                HandType.ThreeOfAKind
+            };
+            var remain = types.Length;
+            var take = Math.Min(Math.Max(0, count), remain);
+            for (var i = 0; i < take; i++)
+            {
+                var pick = _rng.Next(i, remain);
+                var tmp = types[i];
+                types[i] = types[pick];
+                types[pick] = tmp;
+                Run.AddHandTypeMagBonus(types[i], mag);
+                Log($"消耗品：{HandEvaluator.TypeName(types[i])} 倍率永久 +{mag}");
+            }
+        }
+
+        private void ClearThisHandConsumables()
+        {
+            Run.UseDamageMulAdd = 0f;
+            Run.UseDamageFixed = 0;
+            Run.UseNullifyIncoming = false;
         }
 
         public void LeaveShop()
@@ -2229,6 +2483,13 @@ namespace App.Game
             _playerCardsShownThisRound = true;
             ApplyIronRiceBowl();
             Run.AddHandTypeShowCount(score.Type);
+            if (score.Type == HandType.ThreeOfAKind && Run.FirstLeopardGoldPending > 0)
+            {
+                var gold = Run.FirstLeopardGoldPending;
+                Run.FirstLeopardGoldPending = 0;
+                Run.Gold += gold;
+                Log($"豹子精髓 +{gold} 金币（总金币 {Run.Gold}）");
+            }
             if (score.Type == HandType.Straight)
             {
                 UnlockSvc()?.Report(ContidionType.Straight);
@@ -2372,6 +2633,12 @@ namespace App.Game
             Run.StolenAttack = 0;
             Run.HandBrandIndex = -1;
             Run.BossShieldHitsLeft = 0;
+            Run.ShopBuyDiscount = 0f;
+            Run.LevelWinDamageUp = Run.PendingLevelWinDamageUp;
+            Run.PendingLevelWinDamageUp = 0f;
+            Run.LevelHpMaxBonus = Run.PendingLevelHpMaxBonus;
+            Run.PendingLevelHpMaxBonus = 0;
+            ClearThisHandConsumables();
             _stageBetRound = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
@@ -4041,6 +4308,13 @@ namespace App.Game
 
             if (ReferenceEquals(target, Player))
             {
+                if (Run.UseNullifyIncoming)
+                {
+                    Log("消耗品：本次比牌免疫伤害");
+                    target.Banner = "免疫";
+                    return 0;
+                }
+
                 var miss = HeroMechanics.SumValue(Run, MechanismType.MissDamagePer)
                     + RelicMechanics.SumValue(Run, MechanismType.MissDamagePer)
                     + RelicMechanics.StackedValue(
@@ -4587,6 +4861,7 @@ namespace App.Game
             PendingAttackDamage = 0;
             IncomingAttack = false;
             AttackLevel = 1;
+            ClearThisHandConsumables();
             if (Player.Hp <= 0)
             {
                 Phase = GamePhase.StageFail;
@@ -4620,6 +4895,16 @@ namespace App.Game
             Phase = GamePhase.Shop;
             Run.ShopRefreshCount = 0;
             Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
+            if (Run.NextShopDiscount > 0f)
+            {
+                Run.ShopBuyDiscount = Run.NextShopDiscount;
+                Run.NextShopDiscount = 0f;
+                Log($"商店折扣：购买价格 -{Run.ShopBuyDiscount:P0}");
+            }
+            else
+            {
+                Run.ShopBuyDiscount = 0f;
+            }
             RollShopOffers();
             Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
@@ -5035,6 +5320,7 @@ namespace App.Game
                 RelicMechanics.SumValue(Run, MechanismType.HeroHpMax) +
                 TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax) +
                 Run.PermanentMaxHpBonus);
+            maxHp += Run.LevelHpMaxBonus;
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
             var fragile = BossMechanics.FragileBodyMaxHpPercent(Run);
             if (fragile != 0f)

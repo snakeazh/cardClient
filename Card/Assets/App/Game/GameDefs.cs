@@ -34,6 +34,14 @@ namespace App.Game
         ReplaceCharge = 5
     }
 
+    /// <summary>RelicConfig.UseType：被动持有 / 用完即删的即时效果 / 用完即删的永久效果。</summary>
+    public enum RelicUseType
+    {
+        Passive = 0,
+        InstantConsume = 1,
+        PermanentConsume = 2
+    }
+
     /// <summary>BOSS 关随机词缀。禁搓/禁计分改牌面，其余改经济或对局规则。</summary>
     public enum BossAffix
     {
@@ -368,14 +376,34 @@ namespace App.Game
         public int GoldSpentThisRun;
         /// <summary>训练：点数 → 永久额外攻击。下标为 <see cref="Rank"/>，卖掉不清。</summary>
         public readonly int[] RankAttackForever = new int[14];
-        /// <summary>天使：牌型永久额外倍率。卖掉不清。</summary>
-        public readonly float[] HandTypeMagForever = new float[6];
+        /// <summary>天使 / 消耗品：牌型永久额外倍率。下标为 <see cref="HandType"/>（0–5），长度 7 避免豹子越界。</summary>
+        public readonly float[] HandTypeMagForever = new float[7];
         /// <summary>老搓家累计倍率。卖掉不清。</summary>
         public float RubRelicMagForever;
         /// <summary>工资卡：遗物 Id → 售价加成。卖掉后再买仍用。</summary>
         public readonly Dictionary<int, int> RelicSellBonus = new Dictionary<int, int>();
-        /// <summary>老千：各牌型本局亮出次数。卖掉不清。</summary>
-        public readonly int[] HandTypeShowCounts = new int[6];
+        /// <summary>老千：各牌型本局亮出次数。下标为 <see cref="HandType"/>。</summary>
+        public readonly int[] HandTypeShowCounts = new int[7];
+        /// <summary>消耗品：本次比牌造成伤害提高（加在百分比上，0.5 = +50%）。</summary>
+        public float UseDamageMulAdd;
+        /// <summary>消耗品：本次比牌造成的固定伤害。0 表示没有。</summary>
+        public int UseDamageFixed;
+        /// <summary>消耗品：本次比牌受到伤害为 0。</summary>
+        public bool UseNullifyIncoming;
+        /// <summary>消耗品：下一次进入商店时的购买折扣（0.5 = 五折）。</summary>
+        public float NextShopDiscount;
+        /// <summary>当前商店已生效的购买折扣。</summary>
+        public float ShopBuyDiscount;
+        /// <summary>消耗品：本局首次亮出豹子获得的金币。0 表示没有或已触发。</summary>
+        public int FirstLeopardGoldPending;
+        /// <summary>消耗品：本关比牌获胜时伤害提高。</summary>
+        public float LevelWinDamageUp;
+        /// <summary>商店里使用的本关伤害加成，进下一关再武装。</summary>
+        public float PendingLevelWinDamageUp;
+        /// <summary>消耗品：本关临时生命上限。</summary>
+        public int LevelHpMaxBonus;
+        /// <summary>商店里使用的本关生命上限，进下一关再武装。</summary>
+        public int PendingLevelHpMaxBonus;
         /// <summary>会员卡：本店剩余免费刷新次数。</summary>
         public int FreeShopRefreshLeft;
         /// <summary>垫脚石 / 勇气徽章永久攻击。卖掉不清，进关加在英雄攻击上。</summary>
@@ -414,6 +442,16 @@ namespace App.Game
             StrawUsedThisStage = false;
             StrawHealPending = 0f;
             PracticeMagForever = 0f;
+            UseDamageMulAdd = 0f;
+            UseDamageFixed = 0;
+            UseNullifyIncoming = false;
+            NextShopDiscount = 0f;
+            ShopBuyDiscount = 0f;
+            FirstLeopardGoldPending = 0;
+            LevelWinDamageUp = 0f;
+            PendingLevelWinDamageUp = 0f;
+            LevelHpMaxBonus = 0;
+            PendingLevelHpMaxBonus = 0;
             LostToMonsterIds.Clear();
             Array.Clear(RankAttackForever, 0, RankAttackForever.Length);
             Array.Clear(HandTypeMagForever, 0, HandTypeMagForever.Length);

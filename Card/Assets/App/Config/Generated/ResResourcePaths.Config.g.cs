@@ -8,6 +8,8 @@ namespace App.Resources
         public const string BossEntryConfig = "Config/BossEntryConfig";
         public const string CollectionConfig = "Config/CollectionConfig";
         public const string GameConst = "Config/GameConst";
+        public const string GuideGroupConfig = "Config/GuideGroupConfig";
+        public const string GuideStepConfig = "Config/GuideStepConfig";
         public const string HandScoreConfig = "Config/HandScoreConfig";
         public const string HeroConfig = "Config/HeroConfig";
         public const string HeroEntryConfig = "Config/HeroEntryConfig";

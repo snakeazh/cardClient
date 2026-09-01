@@ -1,0 +1,67 @@
+[
+  {
+    "Id": 1,
+    "GroupId": 1,
+    "Order": 1,
+    "StepType": 2,
+    "TargetId": "",
+    "Text": "",
+    "WaitHandler": "DealFinished",
+    "WaitParam": "",
+    "ShowMask": false,
+    "ShowFinger": false,
+    "Padding": 0
+  },
+  {
+    "Id": 2,
+    "GroupId": 1,
+    "Order": 2,
+    "StepType": 2,
+    "TargetId": "Board.PlayerHand",
+    "Text": "点选 3 张牌组成牌型",
+    "WaitHandler": "SelectCards",
+    "WaitParam": "3",
+    "ShowMask": true,
+    "ShowFinger": true,
+    "Padding": 24
+  },
+  {
+    "Id": 3,
+    "GroupId": 1,
+    "Order": 3,
+    "StepType": 1,
+    "TargetId": "GameUI.CompareBtn",
+    "Text": "点开牌与敌人比大小",
+    "WaitHandler": "",
+    "WaitParam": "",
+    "ShowMask": true,
+    "ShowFinger": true,
+    "Padding": 16
+  },
+  {
+    "Id": 4,
+    "GroupId": 1,
+    "Order": 4,
+    "StepType": 2,
+    "TargetId": "",
+    "Text": "",
+    "WaitHandler": "GamePhase",
+    "WaitParam": "RoundSettle",
+    "ShowMask": false,
+    "ShowFinger": false,
+    "Padding": 0
+  },
+  {
+    "Id": 5,
+    "GroupId": 1,
+    "Order": 5,
+    "StepType": 1,
+    "TargetId": "GameUI.NextRoundBtn",
+    "Text": "点下一局继续",
+    "WaitHandler": "",
+    "WaitParam": "",
+    "ShowMask": true,
+    "ShowFinger": true,
+    "Padding": 16
+  }
+]

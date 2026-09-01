@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Config;
 using App.Game;
+using App.Guide;
 using App.Resources;
 using DG.Tweening;
 using Framework.UI.Core;
@@ -48,8 +50,6 @@ namespace App.UI
         private GameObject _equipTipCatcher;
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
-        private bool _shownPeekTip;
-        private Button _peekGoodBtn;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -66,6 +66,11 @@ namespace App.UI
         private Animation _hpTextAnim;
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
+        private readonly List<string> _guideTargetIds = new List<string>(4);
+        private GuideTargetRegistry _guideTargets;
+        private IDisposable _peekGoodArmedSub;
+        private Button _peekGoodBtn;
+        private ColorBlock _peekGoodColors;
 
         protected override void OnBind()
         {
@@ -79,8 +84,6 @@ namespace App.UI
             BindSettleFx();
             BindBeilvNum();
             BindHudChrome();
-            ViewModel.PeekGoodTipRequested -= OnPeekGoodTipRequested;
-            ViewModel.PeekGoodTipRequested += OnPeekGoodTipRequested;
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
@@ -125,8 +128,18 @@ namespace App.UI
         {
             if (ViewModel != null)
             {
-                ViewModel.PeekGoodTipRequested -= OnPeekGoodTipRequested;
                 ViewModel.Session.Changed -= OnSessionChanged;
+            }
+
+            UnregisterGuideTargets();
+
+            _peekGoodArmedSub?.Dispose();
+            _peekGoodArmedSub = null;
+            if (_peekGoodBtn != null)
+            {
+                _peekGoodBtn.colors = _peekGoodColors;
+                _peekGoodBtn.transform.localScale = Vector3.one;
+                _peekGoodBtn = null;
             }
 
             StopAiDelay();
@@ -1044,7 +1057,7 @@ namespace App.UI
             BindBtn("CompareBtn", ViewModel.OpenCommand, ViewModel.ShowCompare);
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
-            _peekGoodBtn = FindBtn("PeekGood");
+            BindPeekGoodArmed();
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
             BindBtn("TiHuanGood", ViewModel.TiHuanGoodCommand);
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
@@ -1063,6 +1076,7 @@ namespace App.UI
             var template = FindBtn("BlindBtn");
             if (template == null)
             {
+                RegisterGuideTargets();
                 return;
             }
 
@@ -1075,6 +1089,7 @@ namespace App.UI
             EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
             EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
+            RegisterGuideTargets();
         }
 
         private void BindDealHidden(string name)
@@ -1238,52 +1253,6 @@ namespace App.UI
             _ = ShowEquipTip(_equipSlots[index], relic);
         }
 
-        private void OnPeekGoodTipRequested()
-        {
-            if (_shownPeekTip && _equipTip != null && _equipTip.activeSelf)
-            {
-                HideEquipTip();
-                return;
-            }
-
-            _ = ShowPeekGoodTip();
-        }
-
-        private async Task ShowPeekGoodTip()
-        {
-            await EnsureEquipTip();
-            if (_equipTip == null || _peekGoodBtn == null)
-            {
-                return;
-            }
-
-            _shownPeekTip = true;
-            _shownEquipRelicId = 0;
-            _equipTipAnchor = _peekGoodBtn.transform;
-            if (_equipTipText != null)
-            {
-                _equipTipText.text = "长按牌即可拖拽来搓牌";
-            }
-
-            EnsureEquipTipCatcher();
-            if (_equipTipCatcher != null)
-            {
-                _equipTipCatcher.SetActive(true);
-                _equipTipCatcher.transform.SetAsLastSibling();
-            }
-
-            _equipTip.SetActive(true);
-            Canvas.ForceUpdateCanvases();
-            var tipRt = _equipTip.GetComponent<RectTransform>();
-            if (tipRt != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
-            }
-
-            _equipTip.transform.SetAsLastSibling();
-            PositionItemTip(_peekGoodBtn.transform, placeRight: true);
-        }
-
         private async Task EnsureEquipTip()
         {
             if (_equipTip != null || ViewModel == null || ViewModel.Resources == null)
@@ -1327,7 +1296,6 @@ namespace App.UI
             }
 
             _shownEquipRelicId = relic.Id;
-            _shownPeekTip = false;
             _equipTipAnchor = slot;
             if (_equipTipText != null)
             {
@@ -1356,7 +1324,6 @@ namespace App.UI
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
-            _shownPeekTip = false;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -1539,6 +1506,76 @@ namespace App.UI
             Binding.BindCommand(button, command);
         }
 
+        private void BindPeekGoodArmed()
+        {
+            _peekGoodArmedSub?.Dispose();
+            _peekGoodBtn = FindBtn("PeekGood");
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            _peekGoodColors = _peekGoodBtn.colors;
+            var glow = EnsureSkillArmedGlow(_peekGoodBtn.transform);
+            Binding.BindActive(glow, ViewModel.PeekGoodArmed);
+            _peekGoodArmedSub = ViewModel.PeekGoodArmed.Subscribe(ApplyPeekGoodArmedVisual);
+        }
+
+        private void ApplyPeekGoodArmedVisual(bool armed)
+        {
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            var colors = _peekGoodColors;
+            if (armed)
+            {
+                var gold = new Color(1f, 0.86f, 0.38f, 1f);
+                colors.normalColor = gold;
+                colors.highlightedColor = gold;
+                colors.selectedColor = gold;
+                colors.pressedColor = new Color(0.9f, 0.7f, 0.2f, 1f);
+                _peekGoodBtn.transform.localScale = new Vector3(1.1f, 1.1f, 1f);
+            }
+            else
+            {
+                _peekGoodBtn.transform.localScale = Vector3.one;
+            }
+
+            _peekGoodBtn.colors = colors;
+        }
+
+        private static GameObject EnsureSkillArmedGlow(Transform button)
+        {
+            var existing = button.Find("ArmedGlow");
+            if (existing != null)
+            {
+                return existing.gameObject;
+            }
+
+            var go = new GameObject("ArmedGlow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(button, false);
+            rt.SetAsFirstSibling();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = new Vector2(-10f, -10f);
+            rt.offsetMax = new Vector2(10f, 10f);
+            var image = go.GetComponent<Image>();
+            var src = button.GetComponent<Image>();
+            if (src != null)
+            {
+                image.sprite = src.sprite;
+                image.type = src.type;
+            }
+
+            image.color = new Color(1f, 0.82f, 0.25f, 0.85f);
+            image.raycastTarget = false;
+            go.SetActive(false);
+            return go;
+        }
+
         private void BindBtn(string name, IRelayCommand command, ObservableProperty<bool> visible)
         {
             var button = FindBtn(name);
@@ -1681,6 +1718,42 @@ namespace App.UI
             }
 
             return node != null ? node.GetComponent<Button>() : null;
+        }
+
+        private void RegisterGuideTargets()
+        {
+            UnregisterGuideTargets();
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            _guideTargets = AppServices.Resolve<GuideTargetRegistry>();
+            RegisterGuideBtn(GuideTargetIds.CompareBtn, "CompareBtn");
+            RegisterGuideBtn(GuideTargetIds.PeekGood, "PeekGood");
+            RegisterGuideBtn(GuideTargetIds.NextRoundBtn, "NextRoundBtn");
+        }
+
+        private void RegisterGuideBtn(string id, string name)
+        {
+            var button = FindBtn(name);
+            if (button == null || _guideTargets == null)
+            {
+                return;
+            }
+
+            _guideTargets.RegisterUi(id, (RectTransform)button.transform);
+            _guideTargetIds.Add(id);
+        }
+
+        private void UnregisterGuideTargets()
+        {
+            if (_guideTargets != null && _guideTargetIds.Count > 0)
+            {
+                _guideTargets.UnregisterAll(_guideTargetIds);
+            }
+
+            _guideTargetIds.Clear();
         }
 
         private static void HideChild(Transform root, string name)

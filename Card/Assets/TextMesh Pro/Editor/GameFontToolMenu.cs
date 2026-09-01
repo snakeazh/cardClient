@@ -86,6 +86,7 @@ namespace TMPro.EditorUtilities
                     $"收集: Prefab={collectResult.PrefabCount}, JSON={collectResult.JsonFileCount}, " +
                     $"源码={collectResult.ScriptFileCount}, 字符数={collectResult.CharacterCount}\n" +
                     $"生成: {buildResult.IncludedCharacterCount}/{buildResult.RequestedCharacterCount}，" +
+                    $"回退={buildResult.FallbackCharacterCount}，" +
                     $"未写入={buildResult.MissingCharacterCount}，图集数={buildResult.AtlasTextureCount}";
 
                 if (buildResult.Success)

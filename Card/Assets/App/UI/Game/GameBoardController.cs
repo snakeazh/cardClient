@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using App.Bootstrap;
 using App.Game;
+using App.Guide;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -11,20 +13,14 @@ namespace App.UI
     /// </summary>
     public sealed class GameBoardController : MonoBehaviour
     {
-        private const float RubLongPress = 0.1f;
-
         private GameTableViewModel _vm;
         private readonly CardTableAnimator _cards = new CardTableAnimator();
         private Camera _camera;
         private bool _bound;
-        private int _rubPreviewIndex = -1;
-        private bool _rubHolding;
-        private bool _rubGrabArmed;
-        private Vector3 _lastMouse;
         private bool _rubCompleting;
-        private int _pressCard = -1;
-        private float _pressTime;
-        private bool _pressPending;
+        private GuideTargetRegistry _guideTargets;
+        private readonly List<Transform> _playerCardTransforms = new List<Transform>(GameBalance.MaxCardsPerSeat);
+        private readonly List<string> _guideTargetIds = new List<string>(8);
 
         public void Attach(GameTableViewModel viewModel)
         {
@@ -43,7 +39,13 @@ namespace App.UI
 
             _vm.Session.Changed += OnSessionChanged;
             _cards.DealFinished += OnDealFinished;
+            if (AppServices.IsReady)
+            {
+                _guideTargets = AppServices.Resolve<GuideTargetRegistry>();
+            }
+
             OnSessionChanged();
+            RefreshGuideTargets();
         }
 
         public void CollectSelectedCards(SeatState seat, List<CardItem> dest)
@@ -59,8 +61,8 @@ namespace App.UI
                 _vm.Session.Changed -= OnSessionChanged;
             }
 
-            ClearRubDrag(cancelPreview: true);
-            ClearPress();
+            CancelRubPreviewIfNeeded();
+            UnregisterGuideTargets();
             _vm = null;
             enabled = false;
         }
@@ -69,19 +71,6 @@ namespace App.UI
         {
             if (_vm == null || _cards.IsBusy)
             {
-                return;
-            }
-
-            // 搓牌按住拖拽时即使滑到 UI 上也继续累计。
-            if (_rubHolding)
-            {
-                UpdateRubHold();
-                return;
-            }
-
-            if (_pressPending)
-            {
-                UpdateCardPress();
                 return;
             }
 
@@ -100,20 +89,22 @@ namespace App.UI
                 }
             }
 
+            if (_vm.Session.SelectingRubTarget && Input.GetMouseButtonDown(0))
+            {
+                var pick = _cards.HitPlayerCard(_camera);
+                if (pick >= 0)
+                {
+                    ApplyInstantRub(pick);
+                    return;
+                }
+            }
+
             if (_vm.Session.Phase == GamePhase.WaitingOpen && Input.GetMouseButtonDown(0))
             {
                 var pick = _cards.HitPlayerCard(_camera);
                 if (pick >= 0)
                 {
-                    if (_vm.Session.PlayerMayHoldRub)
-                    {
-                        BeginCardPress(pick);
-                    }
-                    else
-                    {
-                        HandleOpenClick(pick);
-                    }
-
+                    HandleOpenClick(pick);
                     return;
                 }
             }
@@ -136,54 +127,7 @@ namespace App.UI
                 {
                     _vm.Session.AttackEnemyAtSlot(slot);
                 }
-
-                return;
             }
-
-            if (_vm.Session.Phase != GamePhase.WaitingRub)
-            {
-                return;
-            }
-
-            if (Input.GetMouseButtonDown(0))
-            {
-                var index = _cards.HitPlayerCard(_camera);
-                if (index >= 0)
-                {
-                    BeginRubSelect(index);
-                }
-            }
-        }
-
-        private void BeginCardPress(int index)
-        {
-            _pressCard = index;
-            _pressTime = Time.time;
-            _pressPending = true;
-        }
-
-        private void UpdateCardPress()
-        {
-            if (!_pressPending)
-            {
-                return;
-            }
-
-            if (Input.GetMouseButton(0))
-            {
-                if (_vm.Session.PlayerMayHoldRub && Time.time - _pressTime >= RubLongPress)
-                {
-                    var index = _pressCard;
-                    ClearPress();
-                    BeginHoldRub(index);
-                }
-
-                return;
-            }
-
-            var clickIndex = _pressCard;
-            ClearPress();
-            HandleOpenClick(clickIndex);
         }
 
         private void HandleOpenClick(int index)
@@ -202,123 +146,22 @@ namespace App.UI
             _vm.Session.TogglePlayerCard(index);
         }
 
-        private void BeginHoldRub(int index)
+        private void ApplyInstantRub(int index)
         {
-            // 先锁面再 Notify，避免 Sync 按 Looked 把牌翻回正面。
-            _cards.BeginRubPreview(index);
-            _rubPreviewIndex = index;
-            if (!_vm.Session.TryBeginHoldRub(index))
-            {
-                ClearRubDrag(cancelPreview: true);
-                return;
-            }
-
-            _rubHolding = true;
-            _rubGrabArmed = false;
-            _lastMouse = Input.mousePosition;
-        }
-
-        private void BeginRubSelect(int index)
-        {
-            // 先锁面再 Notify，避免 Sync 按 Looked 把牌翻回正面。
-            if (_rubPreviewIndex != index)
-            {
-                if (_rubPreviewIndex >= 0)
-                {
-                    _cards.CancelRubPreview();
-                }
-
-                _cards.BeginRubPreview(index);
-                if (_vm.Session.PendingRubIndex != index)
-                {
-                    _vm.Session.SelectRubCard(index);
-                }
-
-                _rubPreviewIndex = index;
-            }
-
-            _rubHolding = true;
-            _rubGrabArmed = false;
-            _lastMouse = Input.mousePosition;
-        }
-
-        private void UpdateRubHold()
-        {
-            if (!_rubHolding)
-            {
-                return;
-            }
-
-            if (Input.GetMouseButton(0))
-            {
-                var mouse = Input.mousePosition;
-                if (_cards.IsRubShakeReady)
-                {
-                    if (!_rubGrabArmed)
-                    {
-                        _cards.BeginRubDrag(_camera, mouse);
-                        _rubGrabArmed = true;
-                    }
-
-                    _cards.DragRubCard(_camera, mouse);
-                }
-
-                _lastMouse = mouse;
-                return;
-            }
-
-            FinishRubHold();
-        }
-
-        private void FinishRubHold()
-        {
-            if (!_rubHolding)
-            {
-                return;
-            }
-
-            _rubHolding = false;
-            var index = _rubPreviewIndex;
-            if (index < 0)
-            {
-                return;
-            }
-
-            var enoughOffset = _cards.RubPeakOffset >= CardTableAnimator.MinRubOffset;
-            var enoughTime = _cards.RubDragElapsed >= CardTableAnimator.MinRubDuration;
-            var enough = _cards.IsRubShakeReady && enoughOffset && enoughTime;
-            if (!enough)
-            {
-                var weak = _cards.IsRubShakeReady;
-                var tooWeak = weak && !enoughOffset;
-                ClearRubDrag(cancelPreview: true);
-                if (tooWeak)
-                {
-                    _vm.Session.CancelHoldRub("搓牌幅度不够，请再长按拖一次");
-                }
-                else if (weak)
-                {
-                    _vm.Session.CancelHoldRub("搓牌时间不够，请再搓久一点");
-                }
-                else
-                {
-                    _vm.Session.CancelHoldRub(null);
-                }
-
-                return;
-            }
-
             _rubCompleting = true;
             try
             {
-                _vm.Session.RubCard(index);
+                _cards.BeginInstantRub(index);
+                if (!_vm.Session.TryRubPlayerCard(index))
+                {
+                    _cards.CancelRubPreview();
+                    return;
+                }
+
                 if (_cards.IsRubPreviewActive)
                 {
                     _cards.CompleteRubFlip();
                 }
-
-                _rubPreviewIndex = -1;
-                _rubGrabArmed = false;
             }
             finally
             {
@@ -326,18 +169,9 @@ namespace App.UI
             }
         }
 
-        private void ClearPress()
+        private void CancelRubPreviewIfNeeded()
         {
-            _pressPending = false;
-            _pressCard = -1;
-        }
-
-        private void ClearRubDrag(bool cancelPreview)
-        {
-            _rubHolding = false;
-            _rubGrabArmed = false;
-            _rubPreviewIndex = -1;
-            if (cancelPreview && _cards.IsRubPreviewActive)
+            if (_cards.IsRubPreviewActive)
             {
                 _cards.CancelRubPreview();
             }
@@ -356,13 +190,13 @@ namespace App.UI
                 return;
             }
 
-            if (_vm.Session.Phase != GamePhase.WaitingRub && !_rubCompleting)
+            if (!_rubCompleting)
             {
-                ClearPress();
-                ClearRubDrag(cancelPreview: true);
+                CancelRubPreviewIfNeeded();
             }
 
             _cards.Sync(_vm.Session);
+            RefreshGuideTargets();
         }
 
         private void OnDealFinished()
@@ -371,6 +205,47 @@ namespace App.UI
             {
                 _vm.NotifyDealReady();
             }
+
+            RefreshGuideTargets();
+        }
+
+        private void RefreshGuideTargets()
+        {
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            UnregisterGuideTargets();
+            _playerCardTransforms.Clear();
+            for (var i = 0; i < GameBalance.MaxCardsPerSeat; i++)
+            {
+                if (!_cards.TryGetPlayerCard(i, out var item) || item == null)
+                {
+                    continue;
+                }
+
+                var id = GuideTargetIds.PlayerCard(i);
+                _guideTargets.RegisterWorld(id, item.transform);
+                _guideTargetIds.Add(id);
+                _playerCardTransforms.Add(item.transform);
+            }
+
+            if (_playerCardTransforms.Count > 0)
+            {
+                _guideTargets.RegisterWorldGroup(GuideTargetIds.PlayerHand, _playerCardTransforms);
+                _guideTargetIds.Add(GuideTargetIds.PlayerHand);
+            }
+        }
+
+        private void UnregisterGuideTargets()
+        {
+            if (_guideTargets != null && _guideTargetIds.Count > 0)
+            {
+                _guideTargets.UnregisterAll(_guideTargetIds);
+            }
+
+            _guideTargetIds.Clear();
         }
 
         private void BindScene()

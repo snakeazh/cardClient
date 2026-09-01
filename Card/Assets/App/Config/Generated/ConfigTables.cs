@@ -24,6 +24,8 @@ namespace App.Config
             var bossEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BossEntryConfig);
             var collectionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.CollectionConfig);
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
+            var guideGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideGroupConfig);
+            var guideStepConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideStepConfig);
             var handScoreConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HandScoreConfig);
             var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
             var heroEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEntryConfig);
@@ -41,6 +43,8 @@ namespace App.Config
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
+            GuideGroupConfig.Load(ConfigJson.FromArrayJson<GuideGroupConfig>(guideGroupConfigAsset.text));
+            GuideStepConfig.Load(ConfigJson.FromArrayJson<GuideStepConfig>(guideStepConfigAsset.text));
             HandScoreConfig.Load(ConfigJson.FromArrayJson<HandScoreConfig>(handScoreConfigAsset.text));
             HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));
             HeroEntryConfig.Load(ConfigJson.FromArrayJson<HeroEntryConfig>(heroEntryConfigAsset.text));

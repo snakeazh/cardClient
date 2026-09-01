@@ -108,6 +108,50 @@ namespace App.Config
     }
 
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 GuideStepType 枚举。
+    /// </summary>
+    public enum GuideStepType
+    {
+        /// <summary>
+        /// 点击高亮目标后推进
+        /// </summary>
+        Click = 1,
+
+        /// <summary>
+        /// 等待代码处理器完成后推进
+        /// </summary>
+        Wait = 2,
+
+        /// <summary>
+        /// 点击气泡下一步后推进
+        /// </summary>
+        Dialog = 3,
+
+    }
+
+    /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 GuideTriggerType 枚举。
+    /// </summary>
+    public enum GuideTriggerType
+    {
+        /// <summary>
+        /// 界面打开时触发
+        /// </summary>
+        ScreenOpen = 1,
+
+        /// <summary>
+        /// 对局阶段变化时触发
+        /// </summary>
+        GamePhase = 2,
+
+        /// <summary>
+        /// 代码手动触发
+        /// </summary>
+        Manual = 3,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 HandType 枚举。
     /// </summary>
     public enum HandType
@@ -798,12 +842,6 @@ namespace App.Config
         /// 差距胶囊
         /// </summary>
         GapDamage = 130,
-
-        MaxHp = 92,
-
-        EveryRoundHpUp = 93,
-
-        TwoThreeFive = 94,
 
     }
 

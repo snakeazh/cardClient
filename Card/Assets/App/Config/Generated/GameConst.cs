@@ -81,6 +81,11 @@ namespace App.Config
         /// </summary>
         public int KillMonsterGetGold;
 
+        /// <summary>
+        /// 是否启用新手引导
+        /// </summary>
+        public bool GuideEnabled;
+
     }
 }
 

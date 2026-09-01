@@ -1,0 +1,10 @@
+[
+  {
+    "Id": 1,
+    "Name": "FirstBattle",
+    "TriggerType": 1,
+    "TriggerParam": "App.GameUI",
+    "Skipable": true,
+    "Enabled": true
+  }
+]

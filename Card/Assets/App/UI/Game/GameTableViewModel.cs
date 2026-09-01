@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Game;
+using App.Guide;
 using App.Level;
 using App.Resources;
 using App.UI.Popup;
@@ -20,6 +21,7 @@ namespace App.UI
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
+        private readonly IGuideService _guide;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -32,7 +34,8 @@ namespace App.UI
             NavigationViewModel navigation,
             MainResourceViewModel mainResource,
             ILevelProgressService progress,
-            IAtlasService atlas)
+            IAtlasService atlas,
+            IGuideService guide)
         {
             Session = session;
             Resources = resources;
@@ -41,6 +44,7 @@ namespace App.UI
             _ui = ui;
             _navigation = navigation;
             _mainResource = mainResource ?? throw new ArgumentNullException(nameof(mainResource));
+            _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -57,7 +61,7 @@ namespace App.UI
                 () => Session.RequestShowdown(),
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
-            PeekGoodCommand = new RelayCommand(OnPeekGoodClicked, () => Session.PlayerMayUsePeekGood);
+            PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
             ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
             XRayPlayerCommand = new RelayCommand(
                 () => Session.TryXRayPlayer(),
@@ -119,6 +123,7 @@ namespace App.UI
         public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
         public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
         public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("搓牌 3");
+        public ObservableProperty<bool> PeekGoodArmed { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("透视 1");
         public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("替换 1");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
@@ -168,8 +173,6 @@ namespace App.UI
         public IRelayCommand FoldCommand { get; }
         public IRelayCommand OpenCommand { get; }
         public IRelayCommand AllInCommand { get; }
-        public event Action PeekGoodTipRequested;
-
         public IRelayCommand PeekGoodCommand { get; }
         public IRelayCommand ChaKanGoodCommand { get; }
         public IRelayCommand XRayPlayerCommand { get; }
@@ -192,6 +195,7 @@ namespace App.UI
         public void NotifyDealReady()
         {
             ShowTableButtons.Value = true;
+            GuideSignals.NotifyDealFinished(Session.DealSerial);
             Refresh();
         }
 
@@ -222,6 +226,7 @@ namespace App.UI
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
             PeekGoodLabel.Value = $"搓牌 {Session.Run.PeekGoodCharges}";
+            PeekGoodArmed.Value = Session.SelectingRubTarget;
             ChaKanGoodLabel.Value = $"透视 {Session.Run.ChaKanGoodCharges}";
             TiHuanGoodLabel.Value = $"替换 {Session.Run.TiHuanGoodCharges}";
             ShowLook.Value = false;
@@ -302,11 +307,13 @@ namespace App.UI
             Session.Changed += Refresh;
             Refresh();
             _mainResource.SetInRun(true);
+            _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
             return Task.CompletedTask;
         }
 
         protected override Task OnClose()
         {
+            _guide.Abort();
             _mainResource.SetInRun(false);
             return Task.CompletedTask;
         }
@@ -314,12 +321,6 @@ namespace App.UI
         protected override void OnDispose()
         {
             Session.Changed -= Refresh;
-        }
-
-        private void OnPeekGoodClicked()
-        {
-            Session.UsePeekGood();
-            PeekGoodTipRequested?.Invoke();
         }
 
         private async void TryPresentFailPopup()
@@ -373,26 +374,33 @@ namespace App.UI
             _shopPopupOpen = true;
             try
             {
-                if (!_settleShownThisShop)
+                if (Session.IsLastLevel)
                 {
-                    _settleShownThisShop = true;
-                    try
-                    {
-                        var settleReg = _ui.Registry.GetByViewModelType(typeof(BattleSettleUpPopViewModel));
-                        var settle = (BattleSettleUpPopViewModel)_ui.Registry.CreateViewModel(settleReg);
-                        await _ui.Dialogs.ShowCustomAsync<BattleSettleUpPopViewModel, bool>(settle);
-                    }
-                    catch (Exception ex)
-                    {
-                        AppLog.Exception(LogChannel.UI, ex);
-                    }
+                    Session.LeaveShop();
                 }
-
-                while (IsOpen && Session.Phase == GamePhase.Shop)
+                else
                 {
-                    var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
-                    var popup = (BattleShopPopViewModel)_ui.Registry.CreateViewModel(registration);
-                    await _ui.Dialogs.ShowCustomAsync<BattleShopPopViewModel, bool>(popup);
+                    if (!_settleShownThisShop)
+                    {
+                        _settleShownThisShop = true;
+                        try
+                        {
+                            var settleReg = _ui.Registry.GetByViewModelType(typeof(BattleSettleUpPopViewModel));
+                            var settle = (BattleSettleUpPopViewModel)_ui.Registry.CreateViewModel(settleReg);
+                            await _ui.Dialogs.ShowCustomAsync<BattleSettleUpPopViewModel, bool>(settle);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLog.Exception(LogChannel.UI, ex);
+                        }
+                    }
+
+                    while (IsOpen && Session.Phase == GamePhase.Shop)
+                    {
+                        var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
+                        var popup = (BattleShopPopViewModel)_ui.Registry.CreateViewModel(registration);
+                        await _ui.Dialogs.ShowCustomAsync<BattleShopPopViewModel, bool>(popup);
+                    }
                 }
             }
             catch (Exception ex)

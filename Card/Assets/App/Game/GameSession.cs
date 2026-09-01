@@ -136,6 +136,7 @@ namespace App.Game
         public readonly List<int> RevealSeatIds = new List<int>();
         public bool SelectingOpenTarget { get; private set; }
         public bool SelectingXRayTarget { get; private set; }
+        public bool SelectingRubTarget { get; private set; }
         public bool AiActing { get; private set; }
         public int ActingAiId { get; private set; } = -1;
         public const float AiActionDelay = 1f;
@@ -145,13 +146,25 @@ namespace App.Game
             !Player.Looked &&
             !Player.Folded;
         public bool PlayerMayCancelLookOrRub => false;
-        /// <summary>开牌阶段且还有搓牌次数时，可长按手牌进入搓牌。</summary>
+        /// <summary>开牌阶段且还有搓牌次数时，可点选手牌搓牌。</summary>
         public bool PlayerMayHoldRub =>
             !AiActing &&
             !Player.Folded &&
             Player.Looked &&
             Phase == GamePhase.WaitingOpen &&
             Run.PeekGoodCharges > 0;
+        /// <summary>该难度已无下一关。</summary>
+        public bool IsLastLevel
+        {
+            get
+            {
+                var levels = LevelSvc();
+                var current = levels?.Current;
+                return levels != null &&
+                       current != null &&
+                       !levels.TryGetNext(current.Difficulty, current.Level, out _);
+            }
+        }
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
@@ -252,6 +265,7 @@ namespace App.Game
 
             Player.Status = "已看牌";
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             Run.RubsLeft = 1;
             _pendingRubIndex = index;
             Phase = GamePhase.WaitingRub;
@@ -334,17 +348,63 @@ namespace App.Game
                 return;
             }
 
+            if (!ApplyRubReplace(index, out var message))
+            {
+                return;
+            }
+
+            ReturnToOpenReady(Run.PeekGoodCharges > 0
+                ? $"{message}。还可点选手牌搓牌 {Run.PeekGoodCharges} 次"
+                : message);
+        }
+
+        /// <summary>点选手牌立刻搓牌替换，不进入拖拽阶段。</summary>
+        public bool TryRubPlayerCard(int index)
+        {
+            if (!SelectingRubTarget ||
+                AiActing ||
+                Player.Folded ||
+                !Player.Looked ||
+                Phase != GamePhase.WaitingOpen ||
+                Run.PeekGoodCharges <= 0 ||
+                index < 0 ||
+                index >= GameBalance.PlayerCardsDealt)
+            {
+                return false;
+            }
+
+            if (!ApplyRubReplace(index, out var message))
+            {
+                return false;
+            }
+
+            SelectingRubTarget = false;
+            Hint = Run.PeekGoodCharges > 0
+                ? $"{message}。再点搓牌可继续替换（剩余 {Run.PeekGoodCharges}）"
+                : message;
+
+            Notify();
+            return true;
+        }
+
+        private bool ApplyRubReplace(int index, out string message)
+        {
+            message = null;
             var old = Player.Hand[index];
             var next = DrawRubCard(old);
             if (!next.IsValid || next.Equals(old))
             {
                 Hint = "没有可换的新牌";
                 Notify();
-                return;
+                return false;
             }
 
             Player.Hand[index] = next;
-            Run.RubsLeft--;
+            if (Run.RubsLeft > 0)
+            {
+                Run.RubsLeft--;
+            }
+
             if (Run.PeekGoodCharges > 0)
             {
                 Run.PeekGoodCharges--;
@@ -361,9 +421,8 @@ namespace App.Game
             _pendingRubIndex = -1;
             Run.LastRubMessage = $"第 {index + 1} 张换成 {next.DisplayName}";
             Log(Run.LastRubMessage);
-            ReturnToOpenReady(Run.PeekGoodCharges > 0
-                ? $"{Run.LastRubMessage}。还可长按搓牌 {Run.PeekGoodCharges} 次"
-                : Run.LastRubMessage);
+            message = Run.LastRubMessage;
+            return true;
         }
 
         public void CancelLookOrRub()
@@ -424,7 +483,7 @@ namespace App.Game
                 return;
             }
 
-            if (Phase != GamePhase.WaitingOpen)
+            if (Phase != GamePhase.WaitingOpen || SelectingRubTarget)
             {
                 return;
             }
@@ -570,7 +629,7 @@ namespace App.Game
             ResolveAiStreet();
         }
 
-        /// <summary>点击搓牌按钮：不进入搓牌阶段，由 HUD 弹出长按提示。</summary>
+        /// <summary>点击搓牌按钮：进入或取消点选手牌替换。</summary>
         public void UsePeekGood()
         {
             if (!PlayerMayUsePeekGood)
@@ -578,7 +637,11 @@ namespace App.Game
                 return;
             }
 
-            Hint = "长按牌即可拖拽来搓牌";
+            SelectingXRayTarget = false;
+            SelectingRubTarget = !SelectingRubTarget;
+            Hint = SelectingRubTarget
+                ? $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌替换"
+                : "已取消搓牌";
             Notify();
         }
 
@@ -589,6 +652,7 @@ namespace App.Game
                 return;
             }
 
+            SelectingRubTarget = false;
             SelectingXRayTarget = !SelectingXRayTarget;
             Hint = SelectingXRayTarget
                 ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名敌人透视其手牌"
@@ -617,6 +681,8 @@ namespace App.Game
                 return;
             }
 
+            SelectingRubTarget = false;
+            SelectingXRayTarget = false;
             SyncDeckWithTable();
             var nextCards = new Card[GameBalance.PlayerCardsDealt];
             for (var i = 0; i < nextCards.Length; i++)
@@ -734,6 +800,8 @@ namespace App.Game
             }
 
             SelectingOpenTarget = false;
+            SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             StartSequentialCompare();
         }
 
@@ -1023,6 +1091,7 @@ namespace App.Game
             _roundDamageDealt = 0;
             IncomingAttack = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             for (var i = 0; i < Enemies.Length; i++)
             {
                 if (Enemies[i].Alive)
@@ -2336,6 +2405,7 @@ namespace App.Game
             Run.RubsLeft = 0;
             SelectingOpenTarget = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
             RevealWinnerId = -1;
             RevealSeatIds.Clear();
             _revealKind = RevealKind.None;
@@ -2566,6 +2636,7 @@ namespace App.Game
 
         private void LeaveRubIfNeeded()
         {
+            SelectingRubTarget = false;
             if (Phase != GamePhase.WaitingRub)
             {
                 return;
@@ -2607,6 +2678,7 @@ namespace App.Game
 
             SelectingOpenTarget = false;
             SelectingXRayTarget = false;
+            SelectingRubTarget = false;
 
             var units = raise ? RaiseUnits(raiseMult) : CurrentRoundUnits();
             units = Clamp(units, _roundBaseBet, MaxBetUnits());
@@ -3864,6 +3936,12 @@ namespace App.Game
 
             if (!AnyEnemyAlive())
             {
+                if (IsLastLevel)
+                {
+                    CompleteLastLevel();
+                    return;
+                }
+
                 EnterShop();
                 return;
             }
@@ -4444,7 +4522,9 @@ namespace App.Game
             Phase = GamePhase.RoundSettle;
             if (!AnyEnemyAlive())
             {
-                Hint = LastResult + "\n已击杀全部敌人，点击进入商店";
+                Hint = LastResult + (IsLastLevel
+                    ? "\n已击杀全部敌人，点击进入总结算"
+                    : "\n已击杀全部敌人，点击进入商店");
             }
             else
             {
@@ -4457,6 +4537,37 @@ namespace App.Game
         private void EnterShop()
         {
             ApplyTalentStageEndHeal();
+            var gold = GrantStageGold();
+            Phase = GamePhase.Shop;
+            Run.ShopRefreshCount = 0;
+            Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
+            RollShopOffers();
+            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
+            LastResult = Hint;
+            Notify();
+        }
+
+        private void CompleteLastLevel()
+        {
+            ApplyTalentStageEndHeal();
+            GrantStageGold();
+            if (!TryAdvanceLevel())
+            {
+                Phase = GamePhase.RunComplete;
+                if (string.IsNullOrEmpty(Hint) || Hint.Contains("关卡胜利") || Hint.Contains("兑换"))
+                {
+                    Hint = "你已打完该难度全部关卡！";
+                }
+
+                Notify();
+                return;
+            }
+
+            StartStage(inheritPlayerHp: true);
+        }
+
+        private int GrantStageGold()
+        {
             var score = ScoreSvc();
             var current = LevelSvc()?.Current;
             var gold = current != null ? Math.Max(0, current.GetGold) : 0;
@@ -4477,13 +4588,7 @@ namespace App.Game
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
             Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
-            Phase = GamePhase.Shop;
-            Run.ShopRefreshCount = 0;
-            Run.FreeShopRefreshLeft = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.FreeShopRefresh));
-            RollShopOffers();
-            Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
-            LastResult = Hint;
-            Notify();
+            return gold;
         }
 
         private void TryAutoLoanOrFail()

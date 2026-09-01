@@ -200,6 +200,11 @@ namespace Framework.UI.Navigation
 
         private UILayer FindTopMostLayerWithScreens()
         {
+            if (_stacks[UILayer.Guide].Count > 0)
+            {
+                return UILayer.Guide;
+            }
+
             if (_stacks[UILayer.TopMost].Count > 0)
             {
                 return UILayer.TopMost;

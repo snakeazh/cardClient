@@ -13,12 +13,20 @@ namespace TMPro.EditorUtilities
         public const string FontAssetPath = "Assets/TextMesh Pro/Fonts/GameFont SDF.asset";
         public const string SourceFontPath = "Assets/TextMesh Pro/Fonts/LeMi.ttf";
 
+        /// <summary>回退源字体：LeMi 缺字时补字形（覆盖全部中英文符号）。</summary>
+        public const string FallbackSourceFontPath = "Assets/TextMesh Pro/Fonts/GameFont.otf";
+
+        public const string FallbackFontAssetPath = "Assets/TextMesh Pro/Fonts/GameFont SDF Fallback.asset";
+
+        private const int FallbackAtlasSize = 512;
+
         public sealed class BuildResult
         {
             public bool Success;
             public int RequestedCharacterCount;
             public int IncludedCharacterCount;
             public int MissingCharacterCount;
+            public int FallbackCharacterCount;
             public int AtlasTextureCount;
             public string Message;
         }
@@ -62,7 +70,7 @@ namespace TMPro.EditorUtilities
 
             fontAsset.ClearFontAssetData();
 
-            var allAdded = fontAsset.TryAddCharacters(uniqueCharacters, out var missingCharacters);
+            fontAsset.TryAddCharacters(uniqueCharacters, out var missingCharacters);
             fontAsset.ReadFontAssetDefinition();
 
             fontAsset.creationSettings = BuildCreationSettings(fontAsset, characterSequence);
@@ -78,15 +86,19 @@ namespace TMPro.EditorUtilities
                 EditorUtility.SetDirty(fontAsset.atlasTexture);
             }
 
+            // 主字体缺字 → 用 GameFont.otf 重建回退字体并挂入 Fallback 表；无缺字则移除
+            var fallbackCount = EnsureFallbackFontAsset(fontAsset, missingCharacters);
+
             AssetDatabase.SaveAssets();
             TMPro_EventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
 
             var missingCount = CountCharacters(missingCharacters);
+            var unresolvedCount = missingCount - fallbackCount;
             var message =
                 $"GameFont 生成完成。字符 {fontAsset.characterTable.Count}/{uniqueCharacters.Length}，" +
-                $"未写入 {missingCount}，图集数量 {fontAsset.atlasTextureCount}。";
+                $"回退 {fallbackCount}，未写入 {unresolvedCount}，图集数量 {fontAsset.atlasTextureCount}。";
 
-            if (missingCount > 0)
+            if (unresolvedCount > 0)
             {
                 Debug.LogWarning(BuildMissingReport(message, missingCharacters), fontAsset);
             }
@@ -97,10 +109,11 @@ namespace TMPro.EditorUtilities
 
             return new BuildResult
             {
-                Success = allAdded && missingCount == 0,
+                Success = unresolvedCount == 0,
                 RequestedCharacterCount = uniqueCharacters.Length,
                 IncludedCharacterCount = fontAsset.characterTable.Count,
-                MissingCharacterCount = missingCount,
+                MissingCharacterCount = unresolvedCount,
+                FallbackCharacterCount = fallbackCount,
                 AtlasTextureCount = fontAsset.atlasTextureCount,
                 Message = message
             };
@@ -162,6 +175,106 @@ namespace TMPro.EditorUtilities
             settings.referencedFontAssetGUID = AssetDatabase.AssetPathToGUID(FontAssetPath);
             settings.referencedTextAssetGUID = AssetDatabase.AssetPathToGUID(GameFontCharacterCollector.LangZhAssetPath);
             return settings;
+        }
+
+        /// <summary>
+        /// 主字体缺字时，用 GameFont.otf 重建回退字体资产（只含当前缺字，烘焙后转 Static），
+        /// 挂入主字体 Fallback 表；无缺字则移除旧回退，保持工程干净。
+        /// 返回成功写入回退字体的字符数。
+        /// </summary>
+        private static int EnsureFallbackFontAsset(TMP_FontAsset mainFont, string missingCharacters)
+        {
+            RemoveFallback(mainFont);
+
+            if (string.IsNullOrEmpty(missingCharacters))
+            {
+                return 0;
+            }
+
+            var sourceFont = AssetDatabase.LoadAssetAtPath<Font>(FallbackSourceFontPath);
+            if (sourceFont == null)
+            {
+                Debug.LogWarning(
+                    $"[GameFont] 缺字 {CountCharacters(missingCharacters)} 个，但回退源字体不存在: {FallbackSourceFontPath}",
+                    mainFont);
+                return 0;
+            }
+
+            // 采样参数与主字体一致，保证回退字形渲染观感接近
+            var fallback = TMP_FontAsset.CreateFontAsset(
+                sourceFont,
+                mainFont.faceInfo.pointSize,
+                mainFont.atlasPadding,
+                mainFont.atlasRenderMode,
+                FallbackAtlasSize,
+                FallbackAtlasSize,
+                AtlasPopulationMode.Dynamic,
+                false);
+            if (fallback == null)
+            {
+                Debug.LogWarning("[GameFont] 回退字体创建失败（源字体无法加载字形）。", mainFont);
+                return 0;
+            }
+
+            fallback.name = "GameFont SDF Fallback";
+            fallback.material.name = "GameFont SDF Fallback Material";
+            fallback.atlasTexture.name = "GameFont SDF Fallback Atlas";
+
+            AssetDatabase.CreateAsset(fallback, FallbackFontAssetPath);
+            AssetDatabase.AddObjectToAsset(fallback.atlasTexture, fallback);
+            AssetDatabase.AddObjectToAsset(fallback.material, fallback);
+
+            fallback.TryAddCharacters(missingCharacters, out var unresolved);
+            fallback.ReadFontAssetDefinition();
+            fallback.atlasPopulationMode = AtlasPopulationMode.Static;
+
+            EditorUtility.SetDirty(fallback);
+            if (fallback.atlasTexture != null)
+            {
+                EditorUtility.SetDirty(fallback.atlasTexture);
+            }
+
+            var table = mainFont.fallbackFontAssetTable;
+            if (table == null)
+            {
+                table = new List<TMP_FontAsset>();
+                mainFont.fallbackFontAssetTable = table;
+            }
+
+            table.Add(fallback);
+            EditorUtility.SetDirty(mainFont);
+
+            var unresolvedCount = CountCharacters(unresolved);
+            if (unresolvedCount > 0)
+            {
+                Debug.LogWarning(
+                    $"[GameFont] 以下 {unresolvedCount} 个字符主字体与回退字体均缺字，需更换回退源字体：\n{unresolved}",
+                    mainFont);
+            }
+
+            return CountCharacters(missingCharacters) - unresolvedCount;
+        }
+
+        /// <summary>移除并删除旧的回退字体资产；保留用户手工挂的其它 Fallback。</summary>
+        private static void RemoveFallback(TMP_FontAsset mainFont)
+        {
+            var table = mainFont.fallbackFontAssetTable;
+            if (table != null)
+            {
+                for (var i = table.Count - 1; i >= 0; i--)
+                {
+                    var entry = table[i];
+                    if (entry == null || AssetDatabase.GetAssetPath(entry) == FallbackFontAssetPath)
+                    {
+                        table.RemoveAt(i);
+                    }
+                }
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FallbackFontAssetPath) != null)
+            {
+                AssetDatabase.DeleteAsset(FallbackFontAssetPath);
+            }
         }
 
         private static string BuildUniqueCharacterSequence(string characterSequence)

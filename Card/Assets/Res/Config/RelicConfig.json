@@ -956,7 +956,7 @@
     "MechanismId": [
       30008
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1009,
     "UseType": 0,
     "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+6倍率"
   },
@@ -986,7 +986,7 @@
     "MechanismId": [
       30010
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1013,
     "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时提供+5倍率"
   },
@@ -1031,7 +1031,7 @@
     "MechanismId": [
       30013
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1010,
     "UseType": 0,
     "Desc": "亮出的每张9在结算时提供15金币"
   },
@@ -1121,7 +1121,7 @@
     "MechanismId": [
       30019
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1011,
     "UseType": 0,
     "Desc": "每回合结束后,若本回合你未击杀任何敌人,则永久提供+0.2倍率,至多+6"
   },
@@ -1196,7 +1196,7 @@
     "MechanismId": [
       30024
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1012,
     "UseType": 0,
     "Desc": "每关开始时,对所有敌人造成2次自身攻击力的伤害"
   },
@@ -1226,7 +1226,7 @@
     "MechanismId": [
       30026
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1013,
     "UseType": 2,
     "Desc": "使用后,同花牌型提供的倍率永久+8"
   },
@@ -1361,7 +1361,7 @@
     "MechanismId": [
       40005
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1014,
     "UseType": 0,
     "Desc": "结算时,所有技能都无剩余使用次数,则提供+12倍率"
   },
@@ -1406,7 +1406,7 @@
     "MechanismId": [
       40008
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1015,
     "UseType": 0,
     "Desc": "所有牌均视为人头牌"
   },
@@ -1468,7 +1468,7 @@
       40012,
       400121
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1016,
     "UseType": 0,
     "Desc": "每回合失去2次搓牌机会,但结算时提供+10倍率"
   },
@@ -1531,7 +1531,7 @@
     "MechanismId": [
       40016
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1017,
     "UseType": 0,
     "Desc": "亮牌时,若敌人的牌型大于对子,则会被强行视作对子"
   },
@@ -1591,7 +1591,7 @@
     "MechanismId": [
       40020
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1018,
     "UseType": 0,
     "Desc": "每回合亮出的牌型强制提升一级"
   },
@@ -1652,7 +1652,7 @@
     "MechanismId": [
       40024
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 1020,
     "UseType": 0,
     "Desc": "每回合结束后,本回合自身总伤害输出的15%转化为金币"
   },

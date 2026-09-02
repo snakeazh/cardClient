@@ -190,6 +190,26 @@ namespace App.Config
         /// </summary>
         Seven = 7,
 
+        /// <summary>
+        /// 亮出同花
+        /// </summary>
+        Flush = 8,
+
+        /// <summary>
+        /// 通关指定难度
+        /// </summary>
+        ClearDifficulty = 9,
+
+        /// <summary>
+        /// 累计获得金币
+        /// </summary>
+        AccumulateGold = 10,
+
+        /// <summary>
+        /// 单次比牌造成伤害达到指定值
+        /// </summary>
+        SingleDamage = 11,
+
     }
 
     /// <summary>

@@ -54,5 +54,89 @@
     "StackedValue": 1,
     "Value": 50,
     "Desc": "亮出50次数字牌7后解锁"
+  },
+  {
+    "Id": 1009,
+    "Type": 8,
+    "StackedValue": 1,
+    "Value": 20,
+    "Desc": "亮出20次同花后解锁"
+  },
+  {
+    "Id": 1010,
+    "Type": 10,
+    "StackedValue": 1,
+    "Value": 2000,
+    "Desc": "累计获得2000金币后解锁"
+  },
+  {
+    "Id": 1011,
+    "Type": 3,
+    "StackedValue": 1,
+    "Value": 40,
+    "Desc": "刷新40次商店后解锁"
+  },
+  {
+    "Id": 1012,
+    "Type": 1,
+    "StackedValue": 1,
+    "Value": 150,
+    "Desc": "击杀150只敌人后解锁"
+  },
+  {
+    "Id": 1013,
+    "Type": 8,
+    "StackedValue": 1,
+    "Value": 35,
+    "Desc": "亮出35次同花后解锁"
+  },
+  {
+    "Id": 1014,
+    "Type": 6,
+    "StackedValue": 1,
+    "Value": 200,
+    "Desc": "使用搓牌并战胜200次敌人后解锁"
+  },
+  {
+    "Id": 1015,
+    "Type": 8,
+    "StackedValue": 1,
+    "Value": 60,
+    "Desc": "亮出60次同花后解锁"
+  },
+  {
+    "Id": 1016,
+    "Type": 11,
+    "StackedValue": 1,
+    "Value": 300,
+    "Desc": "单次比牌造成300点伤害后解锁"
+  },
+  {
+    "Id": 1017,
+    "Type": 4,
+    "StackedValue": 1,
+    "Value": 60,
+    "Desc": "亮出60次顺子后解锁"
+  },
+  {
+    "Id": 1018,
+    "Type": 2,
+    "StackedValue": 1,
+    "Value": 300,
+    "Desc": "使用300次搓牌后解锁"
+  },
+  {
+    "Id": 1019,
+    "Type": 9,
+    "StackedValue": 1,
+    "Value": 3,
+    "Desc": "通关难度3后解锁"
+  },
+  {
+    "Id": 1020,
+    "Type": 10,
+    "StackedValue": 1,
+    "Value": 5000,
+    "Desc": "累计获得5000金币后解锁"
   }
 ]

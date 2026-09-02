@@ -86,6 +86,26 @@ namespace App.Config
         /// </summary>
         public int HeroReplyHpPerLevelClear;
 
+        /// <summary>
+        /// 体力上限(每日回满到此值)
+        /// </summary>
+        public int EnergyMax;
+
+        /// <summary>
+        /// 每局消耗体力
+        /// </summary>
+        public int EnergyCostPerRun;
+
+        /// <summary>
+        /// 每日体力重置时刻(凌晨X点跨日)
+        /// </summary>
+        public int EnergyDailyResetHour;
+
+        /// <summary>
+        /// 每日看广告补充体力次数
+        /// </summary>
+        public int EnergyAdRefillDailyLimit;
+
     }
 }
 

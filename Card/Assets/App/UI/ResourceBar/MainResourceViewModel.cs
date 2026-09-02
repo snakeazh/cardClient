@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using App.Config;
+using App.Energy;
 using App.Game;
-using App.Resources;
 using App.Wallet;
-using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -15,32 +13,35 @@ namespace App.UI
 {
     /// <summary>
     /// 常驻资源栏。挂 Resource 层，进 Home 后 EnsureShown，之后不关闭。
-    /// 第一项局外钱包金币，第二项局内闯关金币；局内只显示局内，局外只显示局外。
+    /// 局外显示钱包金币与体力，局内只显示局内闯关金币。
+    /// 图标由 MainResourceView 手动引用后经 SetIcons 注入（Common 目录不打图集）。
     /// </summary>
     public sealed class MainResourceViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
         private readonly IWalletService _wallet;
+        private readonly IEnergyService _energy;
         private readonly GameSession _session;
-        private readonly IResourceService _resources;
         private readonly ResourceSlot _gold;
+        private readonly ResourceSlot _energySlot;
         private readonly ResourceSlot _runGold;
         private readonly ResourceSlot[] _slots;
 
         public MainResourceViewModel(
             IUIManager ui,
             IWalletService wallet,
-            GameSession session,
-            IResourceService resources)
+            IEnergyService energy,
+            GameSession session)
         {
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
             _wallet = wallet ?? throw new ArgumentNullException(nameof(wallet));
+            _energy = energy ?? throw new ArgumentNullException(nameof(energy));
             _session = session ?? throw new ArgumentNullException(nameof(session));
-            _resources = resources ?? throw new ArgumentNullException(nameof(resources));
             _gold = new ResourceSlot(ResourceKind.Gold);
+            _energySlot = new ResourceSlot(ResourceKind.Energy);
             _runGold = new ResourceSlot(ResourceKind.RunGold);
             _runGold.Visible.Value = false;
-            _slots = new[] { _gold, _runGold };
+            _slots = new[] { _gold, _energySlot, _runGold };
         }
 
         public IReadOnlyList<ResourceSlot> Slots => _slots;
@@ -55,19 +56,22 @@ namespace App.UI
             SetLayerVisible(true);
         }
 
-        protected override async Task OnOpen(object args)
+        protected override Task OnOpen(object args)
         {
             _wallet.Changed += OnWalletChanged;
+            _energy.Changed += OnEnergyChanged;
             _session.Changed += OnSessionChanged;
             RefreshGold();
+            RefreshEnergy();
             RefreshRunGold();
             SetInRun(false);
-            await LoadGoldIcon();
+            return Task.CompletedTask;
         }
 
         public void SetInRun(bool inRun)
         {
             _gold.Visible.Value = !inRun;
+            _energySlot.Visible.Value = !inRun;
             _runGold.Visible.Value = inRun;
         }
 
@@ -85,12 +89,18 @@ namespace App.UI
         private void Unsubscribe()
         {
             _wallet.Changed -= OnWalletChanged;
+            _energy.Changed -= OnEnergyChanged;
             _session.Changed -= OnSessionChanged;
         }
 
         private void OnWalletChanged()
         {
             RefreshGold();
+        }
+
+        private void OnEnergyChanged()
+        {
+            RefreshEnergy();
         }
 
         private void OnSessionChanged()
@@ -103,41 +113,28 @@ namespace App.UI
             _gold.Amount.Value = _wallet.Gold.ToString();
         }
 
+        private void RefreshEnergy()
+        {
+            _energySlot.Amount.Value = _energy.Current.ToString();
+        }
+
         private void RefreshRunGold()
         {
             _runGold.Amount.Value = _session.Run.Gold.ToString();
         }
 
-        private async Task LoadGoldIcon()
+        /// <summary>View 在 OnBind 时注入手动引用的图标（Common 目录不打图集，不走运行时加载）。</summary>
+        public void SetIcons(Sprite goldIcon, Sprite energyIcon)
         {
-            var iconName = GameConst.Instance != null ? GameConst.Instance.GoldIcon : null;
-            var sprite = await TryLoadSprite(ResResourcePaths.CommonIcon(iconName));
-            if (sprite == null)
+            if (goldIcon != null)
             {
-                sprite = await TryLoadSprite(ResResourcePaths.CommonIcon("gold"));
+                _gold.Icon.Value = goldIcon;
+                _runGold.Icon.Value = goldIcon;
             }
 
-            if (sprite != null)
+            if (energyIcon != null)
             {
-                _gold.Icon.Value = sprite;
-                _runGold.Icon.Value = sprite;
-            }
-        }
-
-        private async Task<Sprite> TryLoadSprite(string key)
-        {
-            if (string.IsNullOrEmpty(key) || _resources == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return await _resources.LoadAsync<Sprite>(key);
-            }
-            catch (Exception)
-            {
-                return null;
+                _energySlot.Icon.Value = energyIcon;
             }
         }
 

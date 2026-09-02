@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Config;
+using App.Energy;
 using App.Game;
 using App.Level;
+using App.UI.Popup;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -30,6 +33,7 @@ namespace App.UI
         private readonly GameTableViewModel _tableVm;
         private readonly ILevelService _levels;
         private readonly ILevelProgressService _progress;
+        private readonly IEnergyService _energy;
         private readonly List<HeroConfig> _heroes = new List<HeroConfig>();
         private readonly List<LevelSnapshot> _stages = new List<LevelSnapshot>();
 
@@ -40,6 +44,7 @@ namespace App.UI
             GameTableViewModel tableVm,
             ILevelService levels,
             ILevelProgressService progress,
+            IEnergyService energy,
             IResourceService resources)
         {
             _ui = ui;
@@ -48,6 +53,7 @@ namespace App.UI
             _tableVm = tableVm;
             _levels = levels;
             _progress = progress;
+            _energy = energy;
             Resources = resources;
 
             CollectHeroes();
@@ -349,9 +355,33 @@ namespace App.UI
             _progress.SetLastHero(SelectedHeroId.Value);
             _progress.SetLastLevel(SelectedLevelId.Value);
             _progress.SetLastDifficulty(SelectedDifficulty.Value);
+            if (!await TrySpendEnergyWithPopupAsync())
+            {
+                return;
+            }
+
             _session.StartNewRun();
             await _ui.Close(this);
             await _ui.Open(_tableVm);
+        }
+
+        /// <summary>扣开局体力。不足时弹补充弹窗，看广告补满后继续开局；返回是否可开局。</summary>
+        private async Task<bool> TrySpendEnergyWithPopupAsync()
+        {
+            if (_energy.TrySpendRunCost())
+            {
+                return true;
+            }
+
+            var refilled = await PresentEnergyPopupAsync();
+            return refilled && _energy.TrySpendRunCost();
+        }
+
+        private async Task<bool> PresentEnergyPopupAsync()
+        {
+            var registration = _ui.Registry.GetByViewModelType(typeof(EnergyPopupViewModel));
+            var popup = (EnergyPopupViewModel)_ui.Registry.CreateViewModel(registration);
+            return await _ui.Dialogs.ShowCustomAsync<EnergyPopupViewModel, bool>(popup);
         }
 
         private void RefreshHeroPanel()

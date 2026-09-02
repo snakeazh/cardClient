@@ -6,7 +6,8 @@ namespace App.UI
     public enum ResourceKind
     {
         Gold = 0,
-        RunGold = 1
+        RunGold = 1,
+        Energy = 2
     }
 
     public sealed class ResourceSlot

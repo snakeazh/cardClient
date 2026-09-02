@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using App.Atlas;
 using App.Bag;
 using App.Config;
+using App.Energy;
 using App.Game;
 using App.Guide;
 using App.Level;
@@ -56,6 +57,7 @@ namespace App.Bootstrap
             RegisterScore(_services);
             RegisterTalent(_services);
             RegisterWallet(_services);
+            RegisterEnergy(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
@@ -145,6 +147,14 @@ namespace App.Bootstrap
             wallet.Load();
             services.Register(wallet);
             services.Register<IWalletService>(wallet);
+        }
+
+        private static void RegisterEnergy(AppServicesHost services)
+        {
+            var energy = new EnergyService(services.Resolve<ISaveService>());
+            energy.Load();
+            services.Register(energy);
+            services.Register<IEnergyService>(energy);
         }
 
         private static void RegisterUnlock(AppServicesHost services)

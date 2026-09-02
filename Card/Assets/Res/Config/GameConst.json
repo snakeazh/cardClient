@@ -16,5 +16,9 @@
     1
   ],
   "KillMonsterGetGold": 8,
-  "HeroReplyHpPerLevelClear": 8
+  "HeroReplyHpPerLevelClear": 8,
+  "EnergyMax": 5,
+  "EnergyCostPerRun": 1,
+  "EnergyDailyResetHour": 5,
+  "EnergyAdRefillDailyLimit": 3
 }

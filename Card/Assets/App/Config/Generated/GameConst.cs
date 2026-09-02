@@ -111,6 +111,11 @@ namespace App.Config
         /// </summary>
         public string[] TalentDesc;
 
+        /// <summary>
+        /// 初始默认可携带圣物最大数量
+        /// </summary>
+        public int DefaultRelicNumMax;
+
     }
 }
 

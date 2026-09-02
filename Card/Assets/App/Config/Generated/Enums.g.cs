@@ -1028,6 +1028,21 @@ namespace App.Config
         /// </summary>
         GoldDamageScale = 146,
 
+        /// <summary>
+        /// 商店中出现史诗品质圣物的概率提高
+        /// </summary>
+        EpicRelicPro = 147,
+
+        /// <summary>
+        /// 商店中出现传说品质圣物的概率提高
+        /// </summary>
+        LegendRelicPro = 148,
+
+        /// <summary>
+        /// 允许携带的圣物容量提高
+        /// </summary>
+        RelicNumMax = 149,
+
         MaxHp = 1111,
 
         EveryRoundHpUp = 1112,

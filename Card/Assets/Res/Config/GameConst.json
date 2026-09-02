@@ -20,5 +20,10 @@
   "EnergyMax": 5,
   "EnergyCostPerRun": 1,
   "EnergyDailyResetHour": 5,
-  "EnergyAdRefillDailyLimit": 3
+  "EnergyAdRefillDailyLimit": 3,
+  "TalentDesc": [
+    "1.每次抽卡需要消耗金币",
+    "2.品质概率分布:普通-80%,稀有-40%,史诗-20%,传说-10%",
+    "3.每个天赋卡会有等级上限,重复抽取后可以提升等级"
+  ]
 }

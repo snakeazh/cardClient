@@ -106,6 +106,11 @@ namespace App.Config
         /// </summary>
         public int EnergyAdRefillDailyLimit;
 
+        /// <summary>
+        /// 天赋页面规则描述
+        /// </summary>
+        public string[] TalentDesc;
+
     }
 }
 

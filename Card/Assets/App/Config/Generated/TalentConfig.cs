@@ -27,6 +27,11 @@ namespace App.Config
         public QualityType Type;
 
         /// <summary>
+        /// 概率
+        /// </summary>
+        public float ChestProbability;
+
+        /// <summary>
         /// icon
         /// </summary>
         public string Icon;

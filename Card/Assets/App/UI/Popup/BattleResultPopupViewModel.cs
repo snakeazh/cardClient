@@ -38,7 +38,6 @@ namespace App.UI.Popup
             CoinNum = new ObservableProperty<string>("0");
             BackCommand = new RelayCommand(Back);
             AgainCommand = new RelayCommand(Again, () => ShowAgain.Value);
-            CloseCommand = new RelayCommand(Back);
         }
 
         public GameSession Session { get; }
@@ -54,8 +53,6 @@ namespace App.UI.Popup
         public IRelayCommand BackCommand { get; }
 
         public IRelayCommand AgainCommand { get; }
-
-        public IRelayCommand CloseCommand { get; }
 
         protected override Task OnOpen(object args)
         {

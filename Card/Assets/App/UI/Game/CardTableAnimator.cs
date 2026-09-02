@@ -11,8 +11,8 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 从 GameHud.dealpoint 发牌到 mineNode / PlayerNode1–3。
-    /// PlayerNode1/2/3 对应 GameUI 的 player1/2/3。
+    /// 从 GameHud.dealpoint 发牌到 mineNode / otherNode。
+    /// otherNode 只展示 <see cref="GameSession.DisplayedEnemy"/> 的 5 张牌。
     /// </summary>
     public sealed class CardTableAnimator
     {
@@ -28,7 +28,6 @@ namespace App.UI
         private const float SettleClipDuration = 0.3f;
         private const float SelectLift = 0.28f;
         private const float SelectLiftDuration = 0.12f;
-        private static readonly string[] EnemyNodeNames = { "PlayerNode1", "PlayerNode2", "PlayerNode3" };
 
         private IResourceService _resources;
         private GameObject _prefab;
@@ -38,10 +37,11 @@ namespace App.UI
         private Transform _dealPoint;
         private CardDealPoint _dealPile;
         private SeatView _player;
-        private readonly SeatView[] _enemies = new SeatView[3];
+        private SeatView _other;
         private Sequence _dealSeq;
         private Sequence _revealSeq;
         private int _shownDeal = -1;
+        private int _shownEnemyId = int.MinValue;
         private int _shownReveal;
         private int _dealToken;
         private int _revealToken;
@@ -123,13 +123,7 @@ namespace App.UI
             _player = BuildSeat(mine, true);
             BindEnemySlots(hud);
             HideLegacyIcons(mine);
-            for (var i = 0; i < _enemies.Length; i++)
-            {
-                if (_enemies[i] != null)
-                {
-                    HideLegacyIcons(_enemies[i].Node);
-                }
-            }
+            HideLegacyIcons(_other != null ? _other.Node : null);
         }
 
         public void Sync(GameSession session)
@@ -158,6 +152,8 @@ namespace App.UI
             {
                 return;
             }
+
+            EnsureDisplayedEnemy(session);
 
             if (session.RevealPlaySerial > 0 && session.RevealPlaySerial != _shownReveal)
             {
@@ -222,26 +218,22 @@ namespace App.UI
             }
 
             var hitGo = hit.collider.gameObject;
-            for (var slot = 0; slot < _enemies.Length; slot++)
+            if (_other == null)
             {
-                var view = _enemies[slot];
-                if (view == null)
+                return -1;
+            }
+
+            for (var i = 0; i < _other.Items.Length; i++)
+            {
+                var item = _other.Items[i];
+                if (item == null || !_other.Landed[i])
                 {
                     continue;
                 }
 
-                for (var i = 0; i < view.Items.Length; i++)
+                if (hitGo == item.gameObject || hitGo.transform.IsChildOf(item.transform))
                 {
-                    var item = view.Items[i];
-                    if (item == null || !view.Landed[i])
-                    {
-                        continue;
-                    }
-
-                    if (hitGo == item.gameObject || hitGo.transform.IsChildOf(item.transform))
-                    {
-                        return slot;
-                    }
+                    return _session != null ? _session.DisplayedEnemyVisualSlot : -1;
                 }
             }
 
@@ -582,6 +574,7 @@ namespace App.UI
             _rubLockIndex = -1;
             _rubShakeReady = false;
             _shownDeal = session.DealSerial;
+            _shownEnemyId = session.DisplayedEnemy != null ? session.DisplayedEnemy.Id : int.MinValue;
             _shownReveal = session.RevealPlaySerial;
             var token = ++_dealToken;
             _seeThroughToken++;
@@ -920,15 +913,13 @@ namespace App.UI
                 return _player;
             }
 
-            SeatView view = null;
-            ForEachActiveEnemy(session, (enemy, slot) =>
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null && displayed.Id == seat.Id)
             {
-                if (view == null && enemy.Id == seat.Id)
-                {
-                    view = EnemyViewAt(slot);
-                }
-            });
-            return view;
+                return _other;
+            }
+
+            return null;
         }
 
         private static SeatState SeatById(GameSession session, int id)
@@ -1084,10 +1075,11 @@ namespace App.UI
             }
 
             SyncSeatFaces(_player, session.Player, true, session);
-            ForEachActiveEnemy(session, (enemy, slot) =>
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null)
             {
-                SyncSeatFaces(EnemyViewAt(slot), enemy, false, session);
-            });
+                SyncSeatFaces(_other, displayed, false, session);
+            }
         }
 
         private void SyncSeatFaces(SeatView view, SeatState seat, bool player, GameSession session)
@@ -1154,22 +1146,10 @@ namespace App.UI
             }
 
             LiftSeat(_player, session.Player, SelectOffset(_player));
-            if (session.Enemies == null)
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null)
             {
-                return;
-            }
-
-            for (var i = 0; i < session.Enemies.Length; i++)
-            {
-                var enemy = session.Enemies[i];
-                if (enemy == null || !enemy.ActiveInStage)
-                {
-                    continue;
-                }
-
-                var view = ViewOf(session, enemy);
-                // 开牌翻面不抬敌人选中牌；透视阶段仍抬起。
-                LiftSeat(view, enemy, SelectOffset(view), EnemyUsesSelectLift(session, enemy));
+                LiftSeat(_other, displayed, SelectOffset(_other), EnemyUsesSelectLift(session, displayed));
             }
         }
 
@@ -1183,10 +1163,11 @@ namespace App.UI
 
             var token = ++_seeThroughToken;
             ApplySeatSeeThrough(_player, session.Player, true, session, token);
-            ForEachActiveEnemy(session, (enemy, slot) =>
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null)
             {
-                ApplySeatSeeThrough(EnemyViewAt(slot), enemy, false, session, token);
-            });
+                ApplySeatSeeThrough(_other, displayed, false, session, token);
+            }
         }
 
         private void ApplySeatSeeThrough(
@@ -1248,23 +1229,13 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 选中牌朝玩家方向挪开：玩家向上，上方敌人向下，左边敌人向右，右边敌人向左。
+        /// 选中牌朝玩家方向挪开：玩家向上，敌人（上方 otherNode）向下。
         /// </summary>
         private Vector3 SelectOffset(SeatView view)
         {
             if (view == null || view.IsPlayer)
             {
                 return Vector3.up * SelectLift;
-            }
-
-            if (view == _enemies[0])
-            {
-                return Vector3.right * SelectLift;
-            }
-
-            if (view == _enemies[2])
-            {
-                return Vector3.left * SelectLift;
             }
 
             return Vector3.down * SelectLift;
@@ -1490,29 +1461,11 @@ namespace App.UI
 
         private void ApplySeatVisibility(GameSession session)
         {
-            for (var slot = 0; slot < _enemies.Length; slot++)
+            if (_other != null && _other.Node != null)
             {
-                if (_enemies[slot] == null || _enemies[slot].Node == null)
-                {
-                    continue;
-                }
-
-                _enemies[slot].Node.gameObject.SetActive(false);
+                var displayed = session != null ? session.DisplayedEnemy : null;
+                _other.Node.gameObject.SetActive(displayed != null && displayed.Alive);
             }
-
-            ForEachActiveEnemy(session, (enemy, slot) =>
-            {
-                if (!enemy.Alive)
-                {
-                    return;
-                }
-
-                var view = EnemyViewAt(slot);
-                if (view != null && view.Node != null)
-                {
-                    view.Node.gameObject.SetActive(true);
-                }
-            });
 
             if (_player != null && _player.Node != null)
             {
@@ -1528,61 +1481,71 @@ namespace App.UI
                 list.Add((_player, session.Player));
             }
 
-            ForEachActiveEnemy(session, (enemy, slot) =>
+            var displayed = session.DisplayedEnemy;
+            if (_other != null && displayed != null && displayed.Alive)
             {
-                if (!enemy.Alive)
-                {
-                    return;
-                }
-
-                var view = EnemyViewAt(slot);
-                if (view != null)
-                {
-                    list.Add((view, enemy));
-                }
-            });
+                list.Add((_other, displayed));
+            }
 
             return list;
         }
 
-        /// <summary>
-        /// 上场敌人（含阵亡）按原视觉槽遍历。阵亡仍占位，不能按存活人数压缩，
-        /// 否则发牌会落到别人座位，开牌按原槽去翻就翻空。
-        /// </summary>
-        private void ForEachActiveEnemy(GameSession session, Action<SeatState, int> fn)
+        private void EnsureDisplayedEnemy(GameSession session)
         {
-            if (session?.Enemies == null || fn == null)
+            var displayed = session != null ? session.DisplayedEnemy : null;
+            var id = displayed != null ? displayed.Id : int.MinValue;
+            if (id == _shownEnemyId)
             {
                 return;
             }
 
-            var activeCount = CountActive(session);
-            var placed = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
+            _shownEnemyId = id;
+            if (displayed == null || !displayed.Alive)
             {
-                var enemy = session.Enemies[i];
-                if (enemy == null || !enemy.ActiveInStage)
+                ClearSeatItems(_other);
+                return;
+            }
+
+            PlaceEnemyHand(_other, displayed, session);
+        }
+
+        private void PlaceEnemyHand(SeatView view, SeatState seat, GameSession session)
+        {
+            ClearSeatItems(view);
+            if (view == null || seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            var count = GameBalance.CardsDealt(false, session != null ? session.Run : null);
+            for (var i = 0; i < count && i < view.Points.Length; i++)
+            {
+                var point = view.Points[i];
+                if (point == null)
                 {
                     continue;
                 }
 
-                var slot = VisualSlot(placed, activeCount);
-                placed++;
-                fn(enemy, slot);
-            }
-        }
+                var card = i < seat.Hand.Length ? seat.Hand[i] : default;
+                var item = SpawnLooseDealCard(card);
+                if (item == null)
+                {
+                    continue;
+                }
 
-        private SeatView EnemyViewAt(int slot)
-        {
-            return slot >= 0 && slot < _enemies.Length ? _enemies[slot] : null;
+                item.gameObject.name = "EnemyCard" + (i + 1);
+                item.SetSpritesVisible(true);
+                EnsureCollider(item);
+                SnapToPoint(item, point);
+                view.Items[i] = item;
+                view.Landed[i] = true;
+                ApplyFace(item, DesiredFace(session, seat, false, i), false);
+            }
         }
 
         private void BindEnemySlots(Transform hud)
         {
-            for (var i = 0; i < EnemyNodeNames.Length && i < _enemies.Length; i++)
-            {
-                _enemies[i] = BuildSeat(FindChild(hud, EnemyNodeNames[i]), false);
-            }
+            _other = BuildSeat(FindChild(hud, "otherNode"), false);
         }
 
         private static SeatView BuildSeat(Transform node, bool player)
@@ -1636,10 +1599,8 @@ namespace App.UI
         {
             _dealPile?.Clear();
             ClearSeatItems(_player);
-            for (var i = 0; i < _enemies.Length; i++)
-            {
-                ClearSeatItems(_enemies[i]);
-            }
+            ClearSeatItems(_other);
+            _shownEnemyId = int.MinValue;
         }
 
         private void ClearSeatItems(SeatView view)
@@ -1697,35 +1658,6 @@ namespace App.UI
 
             var item = _player.Items[index];
             return item != null ? item.CurrentRenderer : null;
-        }
-
-        private static int CountActive(GameSession session)
-        {
-            var n = 0;
-            for (var i = 0; i < session.Enemies.Length; i++)
-            {
-                if (session.Enemies[i].ActiveInStage)
-                {
-                    n++;
-                }
-            }
-
-            return n;
-        }
-
-        private static int VisualSlot(int enemyIndex, int activeCount)
-        {
-            if (activeCount <= 1)
-            {
-                return 1;
-            }
-
-            if (activeCount == 2)
-            {
-                return enemyIndex == 0 ? 0 : 2;
-            }
-
-            return enemyIndex;
         }
 
         private GameObject LoadPrefab()

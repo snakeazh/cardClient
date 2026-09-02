@@ -18,8 +18,8 @@
 
 | 结果 | 时机 | 显示 |
 |------|------|------|
-| 成功 | `GamePhase.RunComplete`（打完该难度全部关卡，商店点下一关） | `logosuccess` / `sucessTextInfo` |
-| 失败 | 关卡失败弹窗选择放弃 | `logofail` / `failTextInfo` |
+| 成功 | `GamePhase.RunComplete`（打完该难度全部关卡，商店点下一关） | `logosuccess` / `logosuccess2` |
+| 失败 | 关卡失败弹窗选择放弃 | `logofail` / `logofail2` |
 
 关卡失败仍先出 `BattleFailPopup`（广告复活 / 放弃）。放弃之后才进本页。
 
@@ -31,7 +31,6 @@
 |------|------|------|------|
 | `BackBtn` | 显示 | 显示 | 回主界面 |
 | `AgainBtn` | 隐藏 | 显示 | `RestartChallenge()`：当前难度第 1 关重开 |
-| `CloseBtn` | 显示 | 显示 | 同 `BackBtn` |
 
 ---
 
@@ -43,12 +42,11 @@
 |----|------|
 | `logosuccess` | 成功立绘 |
 | `logofail` | 失败立绘 |
-| `sucessTextInfo` | 「挑战成功」（预制体键名少一个 c） |
-| `failTextInfo` | 「挑战失败」 |
+| `logosuccess2` | 成功角标（挑战成功图） |
+| `logofail2` | 失败角标（挑战失败图） |
 | `coinNum` | 本局兑入的局外货币 |
 | `BackBtn` | 回到主界面 |
 | `AgainBtn` | 再次挑战 |
-| `CloseBtn` | 关闭 |
 
 ---
 

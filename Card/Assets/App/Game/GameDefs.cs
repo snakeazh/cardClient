@@ -360,7 +360,7 @@ namespace App.Game
         /// <summary>手牌烙印：不参与牌型的手牌下标，-1 表示没有。</summary>
         public int HandBrandIndex = -1;
         public ConsumableId? DisabledConsumable;
-        /// <summary>已购 RelicConfig Id。商店商品唯一持有列表。</summary>
+        /// <summary>当前持有的 RelicConfig Id。消耗或卖掉后会移除，商店可再次刷出。</summary>
         public readonly List<int> RelicConfigIds = new List<int>();
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();

@@ -1,4 +1,5 @@
 using System;
+using App.Config;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +26,9 @@ namespace App.Item
         [SerializeField] private Button button;
         [SerializeField] private RectTransform itemRoot;
         [SerializeField] private Animator itemAnimator;
+
+        public const string SelectAnim = "ani_shop_onchoose";
+        public const string DefaultAnim = "ani_shop_default";
 
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂。</summary>
         public event Action<ItemCard> Clicked;
@@ -66,6 +70,8 @@ namespace App.Item
         private Color _defaultCircle;
         private bool _colorsCached;
         private bool _selected;
+        private bool _hasSelectAnim;
+        private bool _selectAnimOn;
 
         private void Awake()
         {
@@ -166,16 +172,115 @@ namespace App.Item
         }
 
         /// <summary>
+        /// 按遗物品质给 IconBG / card_Circle 上色（无 IconTitleBG）。
+        /// 同时刷新选中态回退色，避免之后 SetSelected(false) 打回预制体原色。
+        /// </summary>
+        public void ApplyQuality(QualityType type)
+        {
+            EnsureRefs();
+            ThemeColors.ApplyCard(type, iconBg, null, cardCircle);
+            if (iconBg != null)
+            {
+                _defaultBg = iconBg.color;
+            }
+
+            if (cardCircle != null)
+            {
+                _defaultCircle = cardCircle.color;
+            }
+
+            _colorsCached = true;
+        }
+
+        /// <summary>
+        /// 选中抬卡。取消选中关掉 Animator 并把 card Y 打回 0（默认 clip 不写该曲线）。
+        /// 与 <see cref="SetSelected"/> 的换色/缩放分开，图鉴列表不受影响。
+        /// </summary>
+        public void PlaySelected(bool selected, bool force = false)
+        {
+            if (!force && _hasSelectAnim && _selectAnimOn == selected)
+            {
+                return;
+            }
+
+            _hasSelectAnim = true;
+            _selectAnimOn = selected;
+            SetSelectLift(selected);
+        }
+
+        /// <summary>
         /// 播放 ItemRoot 上 Animator 的指定状态。预制体挂的是商店共用的
-        /// ShopRoot.controller（无参数，靠状态名播放），现有状态：ani_shop_default、ani_shop_choose_start。
+        /// ShopRoot.controller（无参数，靠状态名播放）。
         /// </summary>
         public void PlayAnimation(string stateName, int layer = 0, float normalizedTime = 0f)
         {
             EnsureRefs();
-            if (itemAnimator != null && !string.IsNullOrEmpty(stateName))
+            if (itemAnimator == null || string.IsNullOrEmpty(stateName))
             {
-                itemAnimator.Play(stateName, layer, normalizedTime);
+                return;
             }
+
+            itemAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            itemAnimator.enabled = true;
+            itemAnimator.speed = 1f;
+            itemAnimator.Play(stateName, layer, normalizedTime);
+            itemAnimator.Update(0f);
+        }
+
+        private void SetSelectLift(bool selected)
+        {
+            EnsureRefs();
+            var card = ResolveAnimatedCard();
+            if (itemAnimator == null)
+            {
+                SetAnchoredY(card, 0f);
+                return;
+            }
+
+            itemAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            itemAnimator.speed = 1f;
+            if (!selected)
+            {
+                itemAnimator.enabled = false;
+                SetAnchoredY(card, 0f);
+                return;
+            }
+
+            itemAnimator.enabled = true;
+            itemAnimator.Play(DefaultAnim, 0, 0f);
+            itemAnimator.Update(0f);
+            SetAnchoredY(card, 0f);
+            itemAnimator.Play(SelectAnim, 0, 0f);
+            itemAnimator.Update(0f);
+        }
+
+        private RectTransform ResolveAnimatedCard()
+        {
+            EnsureRefs();
+            if (cardIcon != null)
+            {
+                return cardIcon.rectTransform.parent as RectTransform;
+            }
+
+            if (itemRoot == null)
+            {
+                return null;
+            }
+
+            var frame = itemRoot.Find("cardFrame");
+            return frame != null ? frame.Find("card") as RectTransform : null;
+        }
+
+        private static void SetAnchoredY(RectTransform rect, float y)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            var pos = rect.anchoredPosition;
+            pos.y = y;
+            rect.anchoredPosition = pos;
         }
 
         public void SetAnimationEnabled(bool enabled)

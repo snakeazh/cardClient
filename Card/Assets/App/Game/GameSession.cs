@@ -123,6 +123,103 @@ namespace App.Game
         public RelicCombatContext LastRelicContext { get; private set; }
         public int AttackPlaySerial { get; private set; }
         public int AttackVisualSlot { get; private set; } = -1;
+
+        /// <summary>
+        /// 牌桌 otherNode 当前展示的敌人：比牌/攻击跟当前对手，透视跟已透视座位，否则第一个存活敌人。
+        /// </summary>
+        public SeatState DisplayedEnemy
+        {
+            get
+            {
+                if (_pendingOpenTarget != null && _pendingOpenTarget.ActiveInStage)
+                {
+                    return _pendingOpenTarget;
+                }
+
+                if (AttackVisualSlot >= 0)
+                {
+                    var attacking = EnemyAtVisualSlot(AttackVisualSlot);
+                    if (attacking != null && attacking.ActiveInStage)
+                    {
+                        return attacking;
+                    }
+                }
+
+                SeatState peeked = null;
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    var enemy = Enemies[i];
+                    if (enemy != null &&
+                        enemy.ActiveInStage &&
+                        enemy.Alive &&
+                        !string.IsNullOrEmpty(enemy.PeekedType))
+                    {
+                        peeked = enemy;
+                    }
+                }
+
+                if (peeked != null)
+                {
+                    return peeked;
+                }
+
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    var enemy = Enemies[i];
+                    if (enemy != null && enemy.ActiveInStage && enemy.Alive)
+                    {
+                        return enemy;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public int DisplayedEnemyVisualSlot => FindVisualSlot(DisplayedEnemy);
+
+        /// <summary>
+        /// 站在 player1 中心的敌人：只剩 1 个活人就站中间；2 个时第一个开牌的站中间；
+        /// 3 个拼牌时当前对手站中间。
+        /// </summary>
+        public SeatState CenterStandEnemy
+        {
+            get
+            {
+                var alive = CountAliveEnemies();
+                if (alive <= 1)
+                {
+                    return FirstAliveEnemy();
+                }
+
+                if (alive == 2)
+                {
+                    if (_sequentialCompare ||
+                        Phase == GamePhase.Showdown ||
+                        Phase == GamePhase.WaitingAttack ||
+                        Phase == GamePhase.RoundSettle)
+                    {
+                        var current = DisplayedEnemy;
+                        return current != null && current.Alive ? current : FirstAliveEnemy();
+                    }
+
+                    return FirstAliveEnemy();
+                }
+
+                if (_sequentialCompare ||
+                    Phase == GamePhase.Showdown ||
+                    Phase == GamePhase.WaitingAttack ||
+                    Phase == GamePhase.RoundSettle)
+                {
+                    var current = DisplayedEnemy;
+                    return current != null && current.Alive ? current : null;
+                }
+
+                return null;
+            }
+        }
+
+        public int CenterStandVisualSlot => FindVisualSlot(CenterStandEnemy);
         public int AttackDamage { get; private set; }
         /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于 <see cref="AttackDamage"/>。</summary>
         public int TakenDamage { get; private set; }
@@ -1790,19 +1887,33 @@ namespace App.Game
             return null;
         }
 
-        private static int TableVisualSlot(int enemyIndex, int activeCount)
+        /// <summary>
+        /// 上场敌人视觉槽：player1 是中心。1 人站 player1；2 人站 player2/player3；
+        /// 3 人左中右为 player2 / player1 / player3。拼牌时当前对手再站到 player1。
+        /// </summary>
+        public static int TableVisualSlot(int enemyIndex, int activeCount)
         {
             if (activeCount <= 1)
             {
-                return 1;
+                return 0;
             }
 
             if (activeCount == 2)
             {
-                return enemyIndex == 0 ? 0 : 2;
+                return enemyIndex == 0 ? 1 : 2;
             }
 
-            return enemyIndex;
+            if (enemyIndex == 0)
+            {
+                return 1;
+            }
+
+            if (enemyIndex == 1)
+            {
+                return 0;
+            }
+
+            return 2;
         }
 
         /// <summary>
@@ -2000,7 +2111,12 @@ namespace App.Game
             }
 
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
-            Run.RelicConfigIds.Remove(relicId);
+            Run.RelicConfigIds.RemoveAll(id => id == relicId);
+            if (Phase == GamePhase.Shop)
+            {
+                FillShopOffers();
+            }
+
             Log($"使用遗物 {relic.Name}");
             Hint = $"已使用 {relic.Name}";
             Notify();
@@ -6007,24 +6123,14 @@ namespace App.Game
         private void RollShopOffers()
         {
             Run.ShopOfferIds.Clear();
-            var pool = new List<RelicConfig>();
-            foreach (var relic in RelicConfig.All.Values)
-            {
-                if (relic == null || OwnsRelicConfig(relic.Id) || relic.RefreshProbability <= 0f)
-                {
-                    continue;
-                }
+            FillShopOffers();
+        }
 
-                if (!IsRelicInShopPool(relic.Id))
-                {
-                    continue;
-                }
-
-                pool.Add(relic);
-            }
-
-            var slots = Math.Min(GameBalance.ShopOfferCount, pool.Count);
-            for (var n = 0; n < slots; n++)
+        /// <summary>把货架补到上限。只排除当前持有的，消耗品用掉后可以再进池。</summary>
+        private void FillShopOffers()
+        {
+            var pool = BuildShopOfferPool();
+            while (Run.ShopOfferIds.Count < GameBalance.ShopOfferCount)
             {
                 var pick = PickWeightedRelic(pool);
                 if (pick == null)
@@ -6035,6 +6141,37 @@ namespace App.Game
                 Run.ShopOfferIds.Add(pick.Id);
                 pool.Remove(pick);
             }
+        }
+
+        private List<RelicConfig> BuildShopOfferPool()
+        {
+            var pool = new List<RelicConfig>();
+            foreach (var relic in RelicConfig.All.Values)
+            {
+                if (!CanAppearInShop(relic) || Run.ShopOfferIds.Contains(relic.Id))
+                {
+                    continue;
+                }
+
+                pool.Add(relic);
+            }
+
+            return pool;
+        }
+
+        private bool CanAppearInShop(RelicConfig relic)
+        {
+            if (relic == null || relic.RefreshProbability <= 0f)
+            {
+                return false;
+            }
+
+            if (!IsRelicInShopPool(relic.Id))
+            {
+                return false;
+            }
+
+            return !OwnsRelicConfig(relic.Id);
         }
 
         private RelicConfig PickWeightedRelic(List<RelicConfig> pool)
@@ -6073,10 +6210,7 @@ namespace App.Game
         {
             foreach (var relic in RelicConfig.All.Values)
             {
-                if (relic != null &&
-                    !OwnsRelicConfig(relic.Id) &&
-                    relic.RefreshProbability > 0f &&
-                    IsRelicInShopPool(relic.Id))
+                if (CanAppearInShop(relic))
                 {
                     return true;
                 }

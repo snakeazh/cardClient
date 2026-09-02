@@ -677,18 +677,18 @@
   },
   {
     "Id": 225,
-    "Type": 2,
+    "Type": 3,
     "RefreshProbability": 0.4,
-    "Name": "幸运同花",
-    "Icon": "LuckySameSuit",
-    "Price": 70,
-    "SellingPrice": 35,
+    "Name": "幸运顺子",
+    "Icon": "LuckyStraight",
+    "Price": 90,
+    "SellingPrice": 45,
     "MechanismId": [
       20025
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
+    "Desc": "亮牌时,若敌人的牌型大于顺子,则会被强行视作顺子"
   },
   {
     "Id": 226,
@@ -1082,18 +1082,18 @@
   },
   {
     "Id": 317,
-    "Type": 3,
+    "Type": 2,
     "RefreshProbability": 0.2,
-    "Name": "幸运顺子",
-    "Icon": "LuckyStraight",
-    "Price": 175,
-    "SellingPrice": 87,
+    "Name": "幸运同花",
+    "Icon": "LuckySameSuit",
+    "Price": 200,
+    "SellingPrice": 100,
     "MechanismId": [
       30017
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮牌时,若敌人的牌型大于顺子,则会被强行视作顺子"
+    "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
   },
   {
     "Id": 318,

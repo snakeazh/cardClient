@@ -254,12 +254,12 @@ namespace App.Config
         /// <summary>
         /// 顺子
         /// </summary>
-        Straight = 3,
+        Straight = 4,
 
         /// <summary>
         /// 同花
         /// </summary>
-        Flush = 4,
+        Flush = 3,
 
         /// <summary>
         /// 同花顺

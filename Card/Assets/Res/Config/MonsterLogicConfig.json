@@ -41,7 +41,7 @@
   },
   {
     "Id": 301,
-    "Type1": 3,
+    "Type1": 4,
     "Type2": 1,
     "FoldPro": 0,
     "FollowPro": 40,
@@ -51,7 +51,7 @@
   },
   {
     "Id": 302,
-    "Type1": 3,
+    "Type1": 4,
     "Type2": 2,
     "FoldPro": 0,
     "FollowPro": 45,
@@ -61,7 +61,7 @@
   },
   {
     "Id": 401,
-    "Type1": 4,
+    "Type1": 3,
     "Type2": 1,
     "FoldPro": 0,
     "FollowPro": 30,
@@ -71,7 +71,7 @@
   },
   {
     "Id": 402,
-    "Type1": 4,
+    "Type1": 3,
     "Type2": 2,
     "FoldPro": 0,
     "FollowPro": 20,

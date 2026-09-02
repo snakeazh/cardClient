@@ -23,6 +23,9 @@ namespace App.UI.Popup
 
         /// <summary>图标资源 key（未解锁同样从 1 级行兜底），空表示配置未填。</summary>
         public string IconKey;
+
+        /// <summary>品质（取自当前行，未解锁按 1 级行兜底），View 据此分区。</summary>
+        public QualityType Type;
     }
 
     /// <summary>
@@ -141,6 +144,7 @@ namespace App.UI.Popup
                     Snapshot = snapshot,
                     Name = config != null ? config.Name : null,
                     IconKey = config != null ? ResResourcePaths.TalentIcon(config.Icon) : null,
+                    Type = config != null ? config.Type : QualityType.Ordinary,
                 });
             }
         }

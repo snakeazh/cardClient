@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Config;
 using App.Item;
 using App.Resources;
 using Framework.UI.Binding;
@@ -20,6 +21,13 @@ namespace App.UI.Popup
     public sealed class TalentPopupView : ViewBase<TalentPopupViewModel>
     {
         private const string TemplateName = "Item";
+        private const string UltimateBannerName = "TitleBg";
+        private const string UltimateGridName = "UltimateGrid";
+        private const string NormalBannerName = "NormalBanner";
+        private const string NormalGridName = "NormalGrid";
+
+        /// <summary>终极区收史诗/传说品质，其余进普通区；调整分组只改这里。</summary>
+        private static readonly QualityType[] UltimateTypes = { QualityType.Epic, QualityType.Legend };
 
         private readonly List<ItemCard> _cards = new List<ItemCard>();
         private readonly Dictionary<ItemCard, TalentItem> _entries =
@@ -67,11 +75,47 @@ namespace App.UI.Popup
                 return;
             }
 
+            var ultimate = new List<TalentItem>();
+            var normal = new List<TalentItem>();
             var items = ViewModel.Items;
             for (var i = 0; i < items.Count; i++)
             {
+                (IsUltimate(items[i]) ? ultimate : normal).Add(items[i]);
+            }
+
+            FillSection(content.Find(UltimateBannerName), content.Find(UltimateGridName), ultimate);
+            FillSection(content.Find(NormalBannerName), content.Find(NormalGridName), normal);
+        }
+
+        private static bool IsUltimate(TalentItem item)
+        {
+            return Array.IndexOf(UltimateTypes, item.Type) >= 0;
+        }
+
+        /// <summary>对应品质没有天赋时连横幅一起隐藏；有则把卡牌克隆进该网格。</summary>
+        private void FillSection(Transform banner, Transform grid, List<TalentItem> items)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            var visible = items.Count > 0;
+            if (banner != null)
+            {
+                banner.gameObject.SetActive(visible);
+            }
+
+            grid.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            for (var i = 0; i < items.Count; i++)
+            {
                 var item = items[i];
-                var go = Instantiate(_template, content, false);
+                var go = Instantiate(_template, grid, false);
                 go.name = "Talent_" + item.Snapshot.TalentId;
                 go.SetActive(true);
                 var bind = go.GetComponent<UIBind>();
@@ -128,10 +172,10 @@ namespace App.UI.Popup
             var buyBtn = UI.GetGameObject("BuyBtn");
             var num = buyBtn != null ? buyBtn.transform.Find("Num") : null;
             var text = num != null ? num.GetComponent<TMP_Text>() : null;
-            if (text != null)
-            {
-                Binding.BindText(text, ViewModel.BuyCostText);
-            }
+                if (text != null)
+                {
+                    Binding.BindText(text, ViewModel.BuyCostText, value => $"×{value}");
+                }
 
             if (buyBtn != null)
             {

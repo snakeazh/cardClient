@@ -14,8 +14,8 @@ Canvas HUD 在 [`GameUI.md`](GameUI.md)。对局状态在 [`GameSession.md`](../
 
 | | 谁 |
 |--|--|
-| `GameUIView` | 按钮、人物卡、装备、ResourceBar、cardinfo、箭头 |
-| `GameBoardController` | `GameHud` 世界空间：`dealpoint`、`mineNode`、`PlayerNode1/2/3` 上的牌 |
+| `GameUIView` | 按钮、人物卡、遗物列表、cardinfo、BOSS 书 |
+| `GameBoardController` | `GameHud` 世界空间：`dealpoint`、`mineNode`、`otherNode` 上的牌 |
 
 `GameUIView.OnViewOpen` 加载 `GameHud` 预制体，找不到组件就 `AddComponent<GameBoardController>()`，再 `Attach(ViewModel)`。
 
@@ -27,7 +27,7 @@ Canvas HUD 在 [`GameUI.md`](GameUI.md)。对局状态在 [`GameSession.md`](../
 Attach(viewModel)
   → BindScene：Camera.main + CardTableAnimator.Bind(GameHud)
   → Session.Changed → _cards.Sync(session)
-  → DealFinished → ViewModel.NotifyDealReady()   // HUD 才显示开牌/技能
+  → DealFinished → ViewModel.NotifyDealReady()   // HUD 才显示开战/技能
 
 Detach / OnDestroy
   → 取消订阅，Dispose 牌动画
@@ -43,12 +43,12 @@ Detach / OnDestroy
 
 | 条件 | 点击 | 调用 |
 |------|------|------|
-| `SelectingXRayTarget` | 敌人槽上的牌 | `TryXRayEnemySlot(slot)`（不能透视自己） |
+| `SelectingXRayTarget` | otherNode 上的牌 | `TryXRayEnemySlot(DisplayedEnemyVisualSlot)`（不能透视自己） |
 | `WaitingOpen` | 自己的牌 | 短按：放大镜未用则 `PeekMagnifier`，否则 `TogglePlayerCard`；有搓牌次数时长按进入搓牌拖拽 |
 | `WaitingAttack` / `SelectingOpenTarget` | 敌人牌 | `AttackEnemyAtSlot`（当前主流程开牌后自动打，一般用不到） |
 | `WaitingRub` | 自己的牌 | 已长按：翻到背面，拖拽抖动达标后松手换牌并翻回 |
 
-敌人槽 0/1/2 = `player1` / `player2` / `player3`。点空地、点人物卡不走这里；敌人人物卡透视由 `GameUIView` 绑敌人槽点击（`AttackEnemyAtSlot` 在透视中会转去 `TryXRayEnemySlot`）。
+人物卡槽 `player1` / `player2` / `player3` 仍在 Canvas 上。点空地、点人物卡不走这里；敌人人物卡透视由 `GameUIView` 绑敌人槽点击（`AttackEnemyAtSlot` 在透视中会转去 `TryXRayEnemySlot`）。
 
 ---
 
@@ -60,17 +60,20 @@ Detach / OnDestroy
 GameHud
   dealpoint          ← CardDealPoint，52 张洗牌
   mineNode           ← 玩家 carpoint1–5
-  PlayerNode1/2/3    ← 敌人，对应 HUD player1/2/3
+  otherNode          ← 当前 DisplayedEnemy 的 carpoint1–5
 ```
+
+三人仍各有一手数据。`DisplayedEnemy`：比牌/攻击跟当前对手，透视跟已透视座位，否则第一个存活敌人。展示对象变了但未重新发牌时，把 otherNode 上 5 张换成新座位的牌，不整桌重发。
 
 `Sync(session)` 顺序：
 
-1. 座位显隐（按 `ActiveInStage`，死人仍占原槽）
-2. `DealSerial` 变了 → 洗牌 + 飞牌，结束发 `DealFinished`
-3. `RevealPlaySerial` 变了 → 玩家选中牌保持抬起；敌人不抬，只翻已锁定的 3 张，再播结算 clip
-4. 平时：同步正反面 → **先抬选中牌** → **透视的牌抬完再 `SetBackSeeThrough`**
+1. `otherNode` 有当前存活对手才显示
+2. `DealSerial` 变了 → 洗牌 + 飞牌到玩家与当前敌人，结束发 `DealFinished`
+3. 展示敌人变了 → `PlaceEnemyHand` 就地换牌
+4. `RevealPlaySerial` 变了 → 玩家选中牌保持抬起；敌人不抬，只翻已锁定的 3 张，再播结算 clip
+5. 平时：同步正反面 → **先抬选中牌** → **透视的牌抬完再 `SetBackSeeThrough`**
 
-选中位移：玩家向上，左敌向右，上敌向下，右敌向左。
+选中位移：玩家向上，敌人（上方 otherNode）向下。
 
 透视不要在 `SyncSeatFaces` 里立刻透牌，否则会和抬牌同时播。关掉透视、真正开牌翻面时立刻 `SetBackSeeThrough(false)`。
 
@@ -79,5 +82,5 @@ GameHud
 ## 注意
 
 - 主路径只用这一套，不要在 `GameUIView` 里再自己 Instantiate 牌。
-- `HitPlayerCard` / `HitEnemySlot` 用 `Physics2D`，牌上要有 Collider（发牌时 `EnsureCollider`）。
+- `HitPlayerCard` / `HitEnemySlot` 用 `Physics2D`，牌上要有 Collider（发牌时 `EnsureCollider`）。点到 otherNode 返回 `DisplayedEnemyVisualSlot`。
 - 发牌没结束不要让玩家点透视/选牌：`IsBusy` 会挡住 `Update`。

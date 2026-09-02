@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using App.Game;
 using App.Item;
 using App.Resources;
-using DG.Tweening;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -21,23 +20,19 @@ namespace App.UI
     public sealed class LevelUIView : ViewBase<LevelUIViewModel>
     {
         private readonly List<HeroItem> _heroItems = new List<HeroItem>();
-        private readonly List<LevelItem> _levelItems = new List<LevelItem>();
+        private readonly List<ItemCard> _levelItems = new List<ItemCard>();
         private PlayerItem _playerItem;
-        private RectTransform _hor;
-        private Tween _horTween;
 
         protected override void OnBind()
         {
-            _hor = UI.Get<RectTransform>("hor");
-            _playerItem = _hor != null ? _hor.GetComponentInChildren<PlayerItem>(true) : null;
+            _playerItem = UI.GetGameObject("PlayerItem").GetComponentInChildren<PlayerItem>(true);
 
             Binding.BindText(GetNode<TMP_Text>("skillName"), ViewModel.SkillName);
             Binding.BindText(GetNode<TMP_Text>("skillinfo"), ViewModel.SkillInfo);
-            Binding.BindText(GetNode<TMP_Text>("unlockInfo"), ViewModel.UnlockInfo);
-            Binding.BindActive(GetNode<TMP_Text>("unlockInfo").gameObject, ViewModel.ShowUnlockInfo);
+            Binding.BindText(GetNode<TMP_Text>("unlockHerotip"), ViewModel.UnlockInfo);
             Binding.BindText(GetNode<TMP_Text>("stageNum"), ViewModel.StageNum);
             Binding.BindText(GetNode<TMP_Text>("stageInfoText"), ViewModel.StageInfoText);
-            BindDifficultyTip();
+            Binding.BindText(GetNode<TMP_Text>("stageInfotip"), ViewModel.DifficultyText);
 
             Binding.BindActive(UI.GetGameObject("heroSelect"), ViewModel.ShowHeroSelect);
             Binding.BindActive(UI.GetGameObject("stageInfo"), ViewModel.ShowStageInfo);
@@ -55,12 +50,25 @@ namespace App.UI
 
             SpawnHeroItems();
             SpawnLevelItems();
-            ApplyHor(immediate: true);
             RefreshHeroItems();
             RefreshLevelItems();
             RefreshPreview();
 
-            Binding.Add(ViewModel.HorX.Subscribe(_ => ApplyHor(immediate: false), emitCurrent: false));
+            Binding.Add(ViewModel.ShowHeroSelect.Subscribe(show =>
+            {
+                if (show)
+                {
+                    RefreshHeroItems(forceSelect: true);
+                    RefreshPreview();
+                }
+            }, emitCurrent: false));
+            Binding.Add(ViewModel.ShowLevelSelect.Subscribe(show =>
+            {
+                if (show)
+                {
+                    RefreshLevelItems(forceSelect: true);
+                }
+            }, emitCurrent: false));
             Binding.Add(ViewModel.SelectedHeroId.Subscribe(_ =>
             {
                 RefreshHeroItems();
@@ -74,13 +82,6 @@ namespace App.UI
         {
             RefreshHeroItems();
             RefreshPreview();
-            return Task.CompletedTask;
-        }
-
-        protected override Task OnViewClose()
-        {
-            _horTween?.Kill();
-            _horTween = null;
             return Task.CompletedTask;
         }
 
@@ -117,49 +118,9 @@ namespace App.UI
             RebuildListLayout(parent);
         }
 
-        private void BindDifficultyTip()
-        {
-            var tip = FindNamed(transform, "stageTip");
-            if (tip == null)
-            {
-                return;
-            }
-
-            var text = tip.GetComponent<TMP_Text>();
-            if (text != null)
-            {
-                Binding.BindText(text, ViewModel.DifficultyText);
-            }
-
-        }
-
-        private static Transform FindNamed(Transform root, string nodeName)
-        {
-            if (root == null)
-            {
-                return null;
-            }
-
-            if (root.name == nodeName)
-            {
-                return root;
-            }
-
-            for (var i = 0; i < root.childCount; i++)
-            {
-                var found = FindNamed(root.GetChild(i), nodeName);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-
-            return null;
-        }
-
         private void SpawnLevelItems()
         {
-            var template = UI.GetGameObject("levelItem").GetComponent<LevelItem>();
+            var template = UI.GetGameObject("levelItem").GetComponent<ItemCard>();
             template.gameObject.SetActive(false);
             _levelItems.Clear();
 
@@ -177,8 +138,9 @@ namespace App.UI
                     Object.Destroy(bind);
                 }
 
-                var item = go.GetComponent<LevelItem>();
-                item.BindClick(clicked => ViewModel.SelectLevel(clicked.Data.Id));
+                var item = go.GetComponent<ItemCard>();
+                var levelId = stage.Id;
+                item.Clicked += _ => ViewModel.SelectLevel(levelId);
                 _levelItems.Add(item);
             }
 
@@ -211,18 +173,18 @@ namespace App.UI
             }
         }
 
-        private void RefreshHeroItems()
+        private void RefreshHeroItems(bool forceSelect = false)
         {
             var selected = ViewModel.SelectedHeroId.Value;
             for (var i = 0; i < _heroItems.Count; i++)
             {
                 var item = _heroItems[i];
                 var hero = ViewModel.Heroes[i];
-                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, ViewModel.IsHeroUnlocked(hero));
+                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, ViewModel.IsHeroUnlocked(hero), forceSelect);
             }
         }
 
-        private void RefreshLevelItems()
+        private void RefreshLevelItems(bool forceSelect = false)
         {
             var selected = ViewModel.SelectedLevelId.Value;
             var stages = ViewModel.Stages;
@@ -231,7 +193,14 @@ namespace App.UI
             {
                 var item = _levelItems[i];
                 var stage = stages[i];
-                item.Bind(stage, ViewModel.IsLevelUnlocked(stage), stage.Id == selected);
+                var unlocked = ViewModel.IsLevelUnlocked(stage);
+                item.SetUnlocked(unlocked);
+                if (unlocked)
+                {
+                    item.SetName($"难度{stage.Difficulty}");
+                }
+
+                item.PlaySelected(stage.Id == selected, forceSelect);
             }
         }
 
@@ -261,26 +230,6 @@ namespace App.UI
                 _playerItem.SetAttack(0);
                 _playerItem.SetPortrait(portrait, locked: true);
             }
-        }
-
-        private void ApplyHor(bool immediate)
-        {
-            if (_hor == null)
-            {
-                return;
-            }
-
-            _horTween?.Kill();
-            var x = ViewModel.HorX.Value;
-            if (immediate)
-            {
-                var pos = _hor.anchoredPosition;
-                pos.x = x;
-                _hor.anchoredPosition = pos;
-                return;
-            }
-
-            _horTween = _hor.DOAnchorPosX(x, 0.35f).SetEase(Ease.OutCubic);
         }
     }
 }

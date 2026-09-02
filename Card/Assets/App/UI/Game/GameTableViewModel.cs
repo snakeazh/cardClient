@@ -88,6 +88,7 @@ namespace App.UI
             RestartCommand = new RelayCommand(() => Session.RestartStage(), () => Session.Phase == GamePhase.StageFail);
             ExtraRubAdCommand = new RelayCommand(() => Session.WatchAdExtraRub());
             DoubleGoldAdCommand = new RelayCommand(() => Session.WatchAdDoubleGold(), () => Session.Phase == GamePhase.Shop);
+            OpenRemainListCommand = new RelayCommand(OpenRemainList);
             AttackCommands = new IRelayCommand[3];
             for (var i = 0; i < AttackCommands.Length; i++)
             {
@@ -129,10 +130,10 @@ namespace App.UI
         public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("x2下注");
         public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
         public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
-        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("搓牌 3");
+        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("(3/3)");
         public ObservableProperty<bool> PeekGoodArmed { get; } = new ObservableProperty<bool>(false);
-        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("透视 1");
-        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("替换 1");
+        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
+        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowFold { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCompare { get; } = new ObservableProperty<bool>();
@@ -196,6 +197,7 @@ namespace App.UI
         public IRelayCommand RestartCommand { get; }
         public IRelayCommand ExtraRubAdCommand { get; }
         public IRelayCommand DoubleGoldAdCommand { get; }
+        public IRelayCommand OpenRemainListCommand { get; }
         public IRelayCommand[] AttackCommands { get; }
         private int _seenDealSerial = -1;
 
@@ -238,10 +240,21 @@ namespace App.UI
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
-            PeekGoodLabel.Value = $"搓牌 {Session.Run.PeekGoodCharges}";
+            PeekGoodLabel.Value = FormatCharges(
+                Session.Run.PeekGoodCharges,
+                SkillChargeMax(
+                    GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
+                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum)));
             PeekGoodArmed.Value = Session.SelectingRubTarget;
-            ChaKanGoodLabel.Value = $"透视 {Session.Run.ChaKanGoodCharges}";
-            TiHuanGoodLabel.Value = $"替换 {Session.Run.TiHuanGoodCharges}";
+            ChaKanGoodLabel.Value = FormatCharges(
+                Session.Run.ChaKanGoodCharges,
+                SkillChargeMax(
+                    GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
+                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
+            TiHuanGoodLabel.Value = FormatCharges(
+                Session.Run.TiHuanGoodCharges,
+                GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges);
             ShowLook.Value = false;
             ShowBlind.Value = false;
             ShowActions.Value = false;
@@ -517,6 +530,18 @@ namespace App.UI
             }
 
             var shown = new bool[ShowEnemy.Length];
+            var comparing = ShouldShowCardInfo(Session);
+            var displayedSlot = comparing ? Session.DisplayedEnemyVisualSlot : -1;
+            var aliveCount = 0;
+            for (var i = 0; i < Session.Enemies.Length; i++)
+            {
+                if (Session.Enemies[i].Alive)
+                {
+                    aliveCount++;
+                }
+            }
+
+            var hideOthers = comparing && aliveCount >= 3;
             var placed = 0;
             for (var i = 0; i < Session.Enemies.Length; i++)
             {
@@ -533,7 +558,7 @@ namespace App.UI
                     continue;
                 }
 
-                shown[slot] = enemy.Alive;
+                shown[slot] = enemy.Alive && (!hideOthers || slot == displayedSlot);
                 EnemyChips[slot].Value = $"勇气 {enemy.Courage}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);
@@ -593,23 +618,13 @@ namespace App.UI
 
         private static int VisualSlot(int enemyIndex, int activeCount)
         {
-            if (activeCount <= 1)
-            {
-                return 1;
-            }
-
-            if (activeCount == 2)
-            {
-                return enemyIndex == 0 ? 0 : 2;
-            }
-
-            return enemyIndex;
+            return GameSession.TableVisualSlot(enemyIndex, activeCount);
         }
 
         private void RefreshCardInfo()
         {
             IsHandSettling = ShouldShowCardInfo(Session);
-            if (!IsHandSettling || Session.Player == null || Session.IncomingAttack)
+            if (!IsHandSettling || Session.Player == null)
             {
                 ShowCardInfo.Value = false;
                 if (!IsHandSettling)
@@ -722,6 +737,35 @@ namespace App.UI
             }
 
             return $"+{rounded:0.##}";
+        }
+
+        private static string FormatCharges(int current, int max)
+        {
+            return $"({Math.Max(0, current)}/{Math.Max(0, max)})";
+        }
+
+        private static int SkillChargeMax(int baseline, float extra)
+        {
+            return Math.Max(0, baseline + (int)Math.Round(extra));
+        }
+
+        private async void OpenRemainList()
+        {
+            if (_ui == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(RemainListPopViewModel));
+                var popup = (RemainListPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(popup);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
     }
 }

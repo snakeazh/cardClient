@@ -315,17 +315,7 @@ namespace App.UI
 
         private static int VisualSlot(int enemyIndex, int activeCount)
         {
-            if (activeCount <= 1)
-            {
-                return 1;
-            }
-
-            if (activeCount == 2)
-            {
-                return enemyIndex == 0 ? 0 : 2;
-            }
-
-            return enemyIndex;
+            return GameSession.TableVisualSlot(enemyIndex, activeCount);
         }
 
         private void RefreshSeatCards(SpriteRenderer[] renders, TextMesh[] labels, SeatState seat, bool player)

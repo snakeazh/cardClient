@@ -3,6 +3,7 @@ using App.Atlas;
 using App.Config;
 using App.Game;
 using App.Resources;
+using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -11,18 +12,22 @@ using UnityEngine;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 遗物列表弹窗：读 Session.Run.RelicConfigIds 展示本局持有的遗物（上限 GameBalance.MaxRelics，
-    /// 空余格子由 RemainItem 显示"空"）。Session.Changed 后 ListVersion 自增驱动 View 刷新，
-    /// 金币随 ResourceBar 显示。
+    /// 遗物列表弹窗：读 Session.Run.RelicConfigIds 只展示本局已持有的装备卡。
+    /// Session.Changed 后 ListVersion 自增驱动 View 刷新，金币随 ResourceBar 显示。
     /// </summary>
     public sealed class RemainListPopViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
 
-        public RemainListPopViewModel(GameSession session, IUIManager ui, IAtlasService atlas)
+        public RemainListPopViewModel(
+            GameSession session,
+            IUIManager ui,
+            IAtlasService atlas,
+            IResourceService resources)
         {
             Session = session;
             Atlas = atlas;
+            Resources = resources;
             _ui = ui;
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ListVersion = new ObservableProperty<int>();
@@ -32,6 +37,9 @@ namespace App.UI.Popup
         public GameSession Session { get; }
 
         public IAtlasService Atlas { get; }
+
+        /// <summary>供 View 加载 ItemTip 预制体。</summary>
+        public IResourceService Resources { get; }
 
         public ObservableProperty<string> GoldText { get; }
 

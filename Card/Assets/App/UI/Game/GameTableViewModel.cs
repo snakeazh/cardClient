@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Energy;
 using App.Game;
 using App.Guide;
 using App.Level;
@@ -22,6 +23,7 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
         private readonly IGuideService _guide;
+        private readonly IEnergyService _energy;
         private bool _failPopupOpen;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -35,7 +37,8 @@ namespace App.UI
             MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IAtlasService atlas,
-            IGuideService guide)
+            IGuideService guide,
+            IEnergyService energy)
         {
             Session = session;
             Resources = resources;
@@ -45,6 +48,7 @@ namespace App.UI
             _navigation = navigation;
             _mainResource = mainResource ?? throw new ArgumentNullException(nameof(mainResource));
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
+            _energy = energy ?? throw new ArgumentNullException(nameof(energy));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -469,6 +473,18 @@ namespace App.UI
             var action = await ShowBattleResultAsync();
             if (action == BattleResultAction.Again)
             {
+                if (!_energy.TrySpendRunCost())
+                {
+                    var registration = _ui.Registry.GetByViewModelType(typeof(EnergyPopupViewModel));
+                    var popup = (EnergyPopupViewModel)_ui.Registry.CreateViewModel(registration);
+                    var refilled = await _ui.Dialogs.ShowCustomAsync<EnergyPopupViewModel, bool>(popup);
+                    if (!refilled || !_energy.TrySpendRunCost())
+                    {
+                        await LeaveToHome();
+                        return;
+                    }
+                }
+
                 Session.RestartChallenge();
                 return;
             }

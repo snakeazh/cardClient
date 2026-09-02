@@ -190,6 +190,26 @@ namespace App.Config
         /// </summary>
         Seven = 7,
 
+        /// <summary>
+        /// 亮出同花
+        /// </summary>
+        Flush = 8,
+
+        /// <summary>
+        /// 通关指定难度
+        /// </summary>
+        ClearDifficulty = 9,
+
+        /// <summary>
+        /// 累计获得金币
+        /// </summary>
+        AccumulateGold = 10,
+
+        /// <summary>
+        /// 单次比牌造成伤害达到指定值
+        /// </summary>
+        SingleDamage = 11,
+
     }
 
     /// <summary>
@@ -254,12 +274,12 @@ namespace App.Config
         /// <summary>
         /// 顺子
         /// </summary>
-        Straight = 3,
+        Straight = 4,
 
         /// <summary>
         /// 同花
         /// </summary>
-        Flush = 4,
+        Flush = 3,
 
         /// <summary>
         /// 同花顺
@@ -1007,6 +1027,21 @@ namespace App.Config
         /// 按持有金币提高伤害(参数:每N金|+M%|上限%)
         /// </summary>
         GoldDamageScale = 146,
+
+        /// <summary>
+        /// 商店中出现史诗品质圣物的概率提高
+        /// </summary>
+        EpicRelicPro = 147,
+
+        /// <summary>
+        /// 商店中出现传说品质圣物的概率提高
+        /// </summary>
+        LegendRelicPro = 148,
+
+        /// <summary>
+        /// 允许携带的圣物容量提高
+        /// </summary>
+        RelicNumMax = 149,
 
         MaxHp = 1111,
 

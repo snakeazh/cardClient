@@ -8,6 +8,10 @@ namespace App.UI
     [AutoScreen(AppScreenIds.MainResource, UILayer.Resource, ResResourcePaths.MainResource)]
     public sealed class MainResourceView : ViewBase<MainResourceViewModel>
     {
+        /// <summary>Common 目录不打图集，图标在 Inspector 手动引用。</summary>
+        [SerializeField] private Sprite _goldIcon;
+        [SerializeField] private Sprite _energyIcon;
+
         protected override void OnBind()
         {
             var top = ResolveTopArea();
@@ -17,6 +21,7 @@ namespace App.UI
             }
 
             ResourceBarBinder.Bind(Binding, top, ViewModel.Slots);
+            ViewModel.SetIcons(_goldIcon, _energyIcon);
         }
 
         private Transform ResolveTopArea()

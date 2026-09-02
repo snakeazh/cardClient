@@ -21,8 +21,10 @@ namespace App.Resources
         public const string IllustratedBookPop = "UI/Popup/IllustratedBookPop";
         public const string TalentPopup = "UI/Popup/TalentPopup";
         public const string TalentDetail = "UI/Popup/TalentDetail";
+        public const string TalentRulesPop = "UI/Popup/TalentRulesPop";
         public const string ShopDetail = "UI/Top/ShopDetail";
         public const string RemainListPop = "UI/Popup/RemainListPop";
+        public const string EnergyPopup = "UI/Popup/EnergyPopup";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";

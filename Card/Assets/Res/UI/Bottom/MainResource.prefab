@@ -88,9 +88,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8e4f1a27b3d4e6a9c0d5f8b1a2e3c47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _ui: {fileID: 0}
+  _goldIcon: {fileID: 21300000, guid: 848daa69d107de541ae4104bc1dc75e6, type: 3}
+  _energyIcon: {fileID: 21300000, guid: 64c12094511a0994a8b41d1401140985, type: 3}
 --- !u!114 &3278660836781131713
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using App.Config;
+using App.Energy;
 using App.Level;
 using Framework.Assets;
 using Framework.UI;
@@ -27,6 +29,7 @@ namespace App.UI
             _progress = progress;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
+            StaminaText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
@@ -37,12 +40,21 @@ namespace App.UI
 
         public ObservableProperty<string> LastStageInfo { get; }
 
+        /// <summary>开始按钮上的每局体力消耗标注，如 "x1"。当前体力在顶部资源栏显示。</summary>
+        public ObservableProperty<string> StaminaText { get; }
+
         public IRelayCommand StartCommand { get; }
 
-        protected override System.Threading.Tasks.Task OnOpen(object args)
+        protected override Task OnOpen(object args)
         {
             RefreshLastStage();
-            return System.Threading.Tasks.Task.CompletedTask;
+            RefreshStamina();
+            return Task.CompletedTask;
+        }
+
+        private void RefreshStamina()
+        {
+            StaminaText.Value = $"x{EnergyBalance.CostPerRun}";
         }
 
         private void RefreshLastStage()

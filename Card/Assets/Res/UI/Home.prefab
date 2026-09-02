@@ -1300,6 +1300,7 @@ GameObject:
   - component: {fileID: 7602789132997455661}
   - component: {fileID: 2829336064115750507}
   - component: {fileID: 3834796405203751619}
+  - component: {fileID: 8100000000000000001}
   m_Layer: 0
   m_Name: StaminaNum
   m_TagString: Untagged
@@ -1324,7 +1325,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 270.2866, y: -42.50405}
-  m_SizeDelta: {x: 0, y: 52}
+  m_SizeDelta: {x: 35.72, y: 52}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7602789132997455661
 CanvasRenderer:
@@ -1354,7 +1355,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: x999
+  m_text: x1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 156412da13ac86f4e8342406c60be42d, type: 2}
   m_sharedMaterial: {fileID: 4959200930923700274, guid: 156412da13ac86f4e8342406c60be42d, type: 2}
@@ -1437,6 +1438,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 0
+--- !u!114 &8100000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3396932156154074262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: StaminaNum
+  _target: {fileID: 2829336064115750507}
 --- !u!1 &3403637681543767017
 GameObject:
   m_ObjectHideFlags: 0
@@ -3320,6 +3335,9 @@ MonoBehaviour:
   - Key: LastStageInfo
     Component: {fileID: 8124940821818168813}
     Bind: {fileID: 7154176706447549560}
+  - Key: StaminaNum
+    Component: {fileID: 2829336064115750507}
+    Bind: {fileID: 8100000000000000001}
   - Key: startBtn
     Component: {fileID: 1221527738609495919}
     Bind: {fileID: 1511804437596951104}

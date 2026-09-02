@@ -358,6 +358,7 @@ GameObject:
   - component: {fileID: 5373480913689851346}
   - component: {fileID: 6652421127280175970}
   - component: {fileID: 3278660836781131713}
+  - component: {fileID: 8576341209817345687}
   m_Layer: 0
   m_Name: TalentRulesPop
   m_TagString: Untagged
@@ -440,6 +441,9 @@ MonoBehaviour:
   - Key: Mask
     Component: {fileID: 3064225358594955517}
     Bind: {fileID: 8553706457650605606}
+  - Key: DetailedInformation
+    Component: {fileID: 864342617929137592}
+    Bind: {fileID: 941222104679040896}
 --- !u!1 &8031584222952007590
 GameObject:
   m_ObjectHideFlags: 0
@@ -451,6 +455,7 @@ GameObject:
   - component: {fileID: 8825968097957570081}
   - component: {fileID: 6764196977455419354}
   - component: {fileID: 864342617929137592}
+  - component: {fileID: 941222104679040896}
   m_Layer: 0
   m_Name: DetailedInformation
   m_TagString: Untagged
@@ -574,3 +579,30 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &941222104679040896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8031584222952007590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _key: DetailedInformation
+  _target: {fileID: 864342617929137592}
+--- !u!114 &8576341209817345687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6175134540057785447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fcc4817596a49e1bb3f3bf24cdd114b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _ui: {fileID: 3278660836781131713}

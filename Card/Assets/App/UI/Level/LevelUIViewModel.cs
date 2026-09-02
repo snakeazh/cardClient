@@ -23,8 +23,6 @@ namespace App.UI
     /// </summary>
     public sealed class LevelUIViewModel : ViewModelBase
     {
-        public const float HeroHorX = -72f;
-        public const float StageHorX = -200f;
         public const string LockedText = "???";
 
         private readonly IUIManager _ui;
@@ -63,9 +61,7 @@ namespace App.UI
 
             LastBtnCommand = new RelayCommand(OnLast);
             UseHeroCommand = new RelayCommand(EnterStageSelect, () => IsSelectedHeroUnlocked());
-            UnlockHeroCommand = new RelayCommand(
-                UnlockSelectedHero,
-                () => false);
+            UnlockHeroCommand = new RelayCommand(UnlockSelectedHero);
             StartGameCommand = new RelayCommand(StartGame, () =>
                 Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
             UnlockLevelCommand = new RelayCommand(
@@ -87,8 +83,6 @@ namespace App.UI
 
         public ObservableProperty<int> SelectedDifficulty { get; } = new ObservableProperty<int>();
 
-        public ObservableProperty<float> HorX { get; } = new ObservableProperty<float>(HeroHorX);
-
         public ObservableProperty<bool> ShowHeroSelect { get; } = new ObservableProperty<bool>(true);
 
         public ObservableProperty<bool> ShowStageInfo { get; } = new ObservableProperty<bool>(false);
@@ -108,8 +102,6 @@ namespace App.UI
         public ObservableProperty<string> SkillInfo { get; } = new ObservableProperty<string>();
 
         public ObservableProperty<string> UnlockInfo { get; } = new ObservableProperty<string>();
-
-        public ObservableProperty<bool> ShowUnlockInfo { get; } = new ObservableProperty<bool>();
 
         public ObservableProperty<string> StageNum { get; } = new ObservableProperty<string>();
 
@@ -225,6 +217,7 @@ namespace App.UI
             }
 
             SelectedHeroId.Value = heroId;
+            _progress.SetLastHero(heroId);
             RefreshHeroPanel();
         }
 
@@ -254,7 +247,6 @@ namespace App.UI
         private void EnterHeroSelect(bool applyDefault)
         {
             Phase.Value = LevelUiPhase.Hero;
-            HorX.Value = HeroHorX;
             ShowHeroSelect.Value = true;
             ShowStageInfo.Value = false;
             ShowLevelSelect.Value = false;
@@ -284,7 +276,6 @@ namespace App.UI
 
             _progress.SetLastHero(SelectedHeroId.Value);
             Phase.Value = LevelUiPhase.Stage;
-            HorX.Value = StageHorX;
             ShowHeroSelect.Value = false;
             ShowStageInfo.Value = true;
             ShowLevelSelect.Value = true;
@@ -388,20 +379,17 @@ namespace App.UI
         {
             var hero = HeroConfig.Get(SelectedHeroId.Value);
             var unlocked = IsHeroUnlocked(hero);
-            var hasCondition = HasUnlockCondition(hero);
             if (unlocked)
             {
                 SkillName.Value = hero != null ? hero.Name : string.Empty;
                 SkillInfo.Value = hero != null ? hero.Desc : string.Empty;
                 UnlockInfo.Value = string.Empty;
-                ShowUnlockInfo.Value = false;
             }
             else
             {
                 SkillName.Value = LockedText;
                 SkillInfo.Value = LockedText;
                 UnlockInfo.Value = GetUnlockCondition(hero);
-                ShowUnlockInfo.Value = hasCondition;
             }
 
             var inHeroPhase = Phase.Value == LevelUiPhase.Hero;
@@ -430,9 +418,8 @@ namespace App.UI
 
             var inStagePhase = Phase.Value == LevelUiPhase.Stage;
             ShowStartGameBtn.Value = inStagePhase && unlocked;
-            ShowUnlockLevelBtn.Value = inStagePhase && !unlocked;
+            ShowUnlockLevelBtn.Value = false;
             StartGameCommand.RaiseCanExecuteChanged();
-            UnlockLevelCommand.RaiseCanExecuteChanged();
             SelectedLevelId.ForceNotify();
             SelectedDifficulty.ForceNotify();
         }

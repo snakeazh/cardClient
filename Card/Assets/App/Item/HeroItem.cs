@@ -7,23 +7,28 @@ using UnityEngine.UI;
 namespace App.Item
 {
     /// <summary>
-    /// 选角列表单卡。选中时显示 heroonselect，内容走内部 PlayerItem。
+    /// 选角列表单卡。内容走内部 PlayerItem；选中播 aini_card_select。
     /// </summary>
     public sealed class HeroItem : MonoBehaviour
     {
-        [SerializeField] private GameObject selectFrame;
+        public const string SelectAnim = "aini_card_select";
+        public const string DefaultAnim = "ani_default";
+
         [SerializeField] private PlayerItem playerItem;
         [SerializeField] private Button button;
+
+        private bool _hasSelectAnim;
+        private bool _selectAnimOn;
 
         public HeroConfig Data { get; private set; }
 
         public event Action<HeroItem> Clicked;
 
-        public void Bind(HeroConfig hero, Sprite portrait, bool selected, bool unlocked)
+        public void Bind(HeroConfig hero, Sprite portrait, bool selected, bool unlocked, bool forceSelect = false)
         {
             Data = hero;
             EnsureRefs();
-            SetSelected(selected);
+            SetSelected(selected, forceSelect);
             if (playerItem == null)
             {
                 return;
@@ -37,13 +42,28 @@ namespace App.Item
             playerItem.SetPortrait(portrait, locked: !unlocked);
         }
 
-        public void SetSelected(bool selected)
+        public void SetSelected(bool selected, bool force = false)
         {
             EnsureRefs();
-            if (selectFrame != null)
+            if (!force && _hasSelectAnim && _selectAnimOn == selected)
             {
-                selectFrame.SetActive(selected);
+                return;
             }
+
+            _hasSelectAnim = true;
+            _selectAnimOn = selected;
+            ApplySelectAnim();
+        }
+
+        private void ApplySelectAnim()
+        {
+            EnsureRefs();
+            if (playerItem == null)
+            {
+                return;
+            }
+
+            playerItem.SetSelectLift(_selectAnimOn, SelectAnim, DefaultAnim);
         }
 
         public void BindClick(Action<HeroItem> onClick)
@@ -89,15 +109,6 @@ namespace App.Item
 
         private void EnsureRefs()
         {
-            if (selectFrame == null)
-            {
-                var node = transform.Find("heroonselect");
-                if (node != null)
-                {
-                    selectFrame = node.gameObject;
-                }
-            }
-
             if (playerItem == null)
             {
                 playerItem = GetComponentInChildren<PlayerItem>(true);

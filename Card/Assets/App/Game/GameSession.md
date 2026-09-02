@@ -27,8 +27,10 @@ BOSS 机制：[`BossMechanics.md`](BossMechanics.md)
 | `DealSerial` | 发牌序号，牌桌动画用来重播发牌 |
 | `RevealPlaySerial` | 亮牌演出序号 |
 | `SelectingXRayTarget` | 已点透视、等待点选角色 |
+| `AttackVisualSlot` | 当前攻击/比牌敌人的视觉槽 |
+| `DisplayedEnemy` | 牌桌 otherNode 当前展示的敌人 |
 
-逻辑座 → 屏幕槽（`player1` / `player2` / `player3` = 槽 0 / 1 / 2）：1 人居中（1），2 人左右（0 和 2），3 人全亮。阵亡后仍占原槽，不把活人往中间挤。`TryXRayEnemySlot` / `AttackEnemyAtSlot` 用的是这个视觉槽。
+逻辑座 → 屏幕槽（`player1` 中心 / `player2` 左 / `player3` 右）：上场 1 人站 `player1`；2 人左右；3 人左中右。只剩 1 个活人会站到中间；2 个时第一个开牌的站中间。阵亡后原槽仍留给 FindVisualSlot。`TryXRayEnemySlot` / `AttackEnemyAtSlot` 用的是这个视觉槽。
 
 ---
 

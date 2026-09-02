@@ -55,6 +55,7 @@ namespace App.UI.Popup
             Resources = resources;
             CloseCommand = new RelayCommand(Dismiss);
             BuyCommand = new RelayCommand(Buy);
+            OpenRulesCommand = new RelayCommand(OpenRules);
             BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
             ListVersion = new ObservableProperty<int>(0);
             RebuildItems();
@@ -73,6 +74,9 @@ namespace App.UI.Popup
         public IRelayCommand CloseCommand { get; }
 
         public IRelayCommand BuyCommand { get; }
+
+        /// <summary>打开天赋规则说明弹窗（DetailBtn）。</summary>
+        public IRelayCommand OpenRulesCommand { get; }
 
         protected override Task OnOpen(object args)
         {
@@ -97,6 +101,21 @@ namespace App.UI.Popup
                 var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
                 var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
                 vm.Setup(talentId);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+        }
+
+        /// <summary>打开天赋规则说明弹窗（DetailBtn，GameConst.TalentDesc 文案）。</summary>
+        private async void OpenRules()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TalentRulesPopViewModel));
+                var vm = (TalentRulesPopViewModel)_ui.Registry.CreateViewModel(registration);
                 await _ui.Open(vm);
             }
             catch (Exception ex)

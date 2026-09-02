@@ -60,6 +60,88 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 播放 PlayerRoot 上 Animator 的指定状态。预制体挂 PlayerRoot.controller（无参数，靠状态名播放）。
+        /// </summary>
+        public void PlayAnimation(string stateName, int layer = 0, float normalizedTime = 0f)
+        {
+            EnsureRefs();
+            if (playerAnimator == null || string.IsNullOrEmpty(stateName))
+            {
+                return;
+            }
+
+            playerAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            playerAnimator.enabled = true;
+            playerAnimator.speed = 1f;
+            playerAnimator.Play(stateName, layer, normalizedTime);
+            playerAnimator.Update(0f);
+        }
+
+        /// <summary>
+        /// 选角抬卡。取消选中必须关掉 Animator 再把 card Y 打回 0：默认 clip 不写该曲线，
+        /// 且 Play 同一状态不会重头播，否则会一直停在抬起高度。
+        /// </summary>
+        public void SetSelectLift(bool selected, string selectState, string idleState)
+        {
+            EnsureRefs();
+            var card = ResolveAnimatedCard();
+            if (playerAnimator == null)
+            {
+                SetAnchoredY(card, 0f);
+                return;
+            }
+
+            playerAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            playerAnimator.speed = 1f;
+            if (!selected)
+            {
+                playerAnimator.enabled = false;
+                SetAnchoredY(card, 0f);
+                return;
+            }
+
+            playerAnimator.enabled = true;
+            if (!string.IsNullOrEmpty(idleState))
+            {
+                playerAnimator.Play(idleState, 0, 0f);
+                playerAnimator.Update(0f);
+            }
+
+            SetAnchoredY(card, 0f);
+            playerAnimator.Play(selectState, 0, 0f);
+            playerAnimator.Update(0f);
+        }
+
+        private RectTransform ResolveAnimatedCard()
+        {
+            EnsureRefs();
+            if (cardIcon != null)
+            {
+                return cardIcon.rectTransform.parent as RectTransform;
+            }
+
+            if (playerRoot == null)
+            {
+                return null;
+            }
+
+            var frame = playerRoot.Find("cardFrame");
+            return frame != null ? frame.Find("card") as RectTransform : null;
+        }
+
+        private static void SetAnchoredY(RectTransform rect, float y)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            var pos = rect.anchoredPosition;
+            pos.y = y;
+            rect.anchoredPosition = pos;
+        }
+
         public RectTransform AttackValueRect
         {
             get

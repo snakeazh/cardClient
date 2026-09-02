@@ -38,6 +38,7 @@ namespace App.UI.Popup
         {
             BindOverlayClose();
             BindBuyCost();
+            BindRulesOpen();
             FillList();
         }
 
@@ -165,6 +166,28 @@ namespace App.UI.Popup
 
             card.SetIcon(sprite);
             card.SetUnlocked(unlocked);
+        }
+
+        private void BindRulesOpen()
+        {
+            // DetailBtn 在预制体挂了 Button + UIBind；缺引用时退回按路径查找并补 Button。
+            if (!UI.TryGet<Button>("DetailBtn", out var rulesBtn))
+            {
+                var node = transform.Find("Bg/TalentSCView/Viewport/Content/TitleBg/DetailBtn");
+                if (node == null)
+                {
+                    return;
+                }
+
+                rulesBtn = node.GetComponent<Button>();
+                if (rulesBtn == null)
+                {
+                    rulesBtn = node.gameObject.AddComponent<Button>();
+                    rulesBtn.transition = Selectable.Transition.None;
+                }
+            }
+
+            Binding.BindCommand(rulesBtn, ViewModel.OpenRulesCommand);
         }
 
         private void BindBuyCost()

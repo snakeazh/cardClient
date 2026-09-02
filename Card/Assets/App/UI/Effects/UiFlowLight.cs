@@ -26,6 +26,7 @@ namespace App.UI
         private static Shader _cachedShader;
 
         [SerializeField] private Shader flowLightShader;
+        [SerializeField] private bool autoPlay;
         [SerializeField] private float frequency = 0.4f;
         [SerializeField] [Range(0f, 4f)] private float intensity = 1.4f;
         [SerializeField] [Range(0.01f, 0.5f)] private float width = 0.12f;
@@ -96,6 +97,14 @@ namespace App.UI
 
             Advance();
             PushAll();
+        }
+
+        private void OnEnable()
+        {
+            if (autoPlay)
+            {
+                Play();
+            }
         }
 
         private void OnDisable()

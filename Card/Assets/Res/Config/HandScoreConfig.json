@@ -2,36 +2,42 @@
   {
     "Id": 1,
     "Name": "高牌",
+    "Level": 1,
     "Type": 1,
     "BasicMagnification": 1
   },
   {
     "Id": 2,
     "Name": "对子",
+    "Level": 2,
     "Type": 2,
     "BasicMagnification": 2
   },
   {
     "Id": 3,
     "Name": "同花",
+    "Level": 3,
     "Type": 3,
     "BasicMagnification": 2.5
   },
   {
     "Id": 4,
     "Name": "顺子",
+    "Level": 4,
     "Type": 4,
     "BasicMagnification": 3.5
   },
   {
     "Id": 5,
     "Name": "同花顺",
+    "Level": 5,
     "Type": 5,
     "BasicMagnification": 5
   },
   {
     "Id": 6,
     "Name": "豹子",
+    "Level": 6,
     "Type": 6,
     "BasicMagnification": 6
   }

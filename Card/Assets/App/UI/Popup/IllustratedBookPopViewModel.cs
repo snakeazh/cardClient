@@ -60,6 +60,7 @@ namespace App.UI.Popup
             ShowMonster = new ObservableProperty<bool>(false);
             ShowTip = new ObservableProperty<bool>(false);
             CurItemNum = new ObservableProperty<string>("0/0");
+            TipTitle = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>();
             CloseCommand = new RelayCommand(Close);
             BuildEntries();
@@ -95,6 +96,8 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowTip { get; }
 
         public ObservableProperty<string> CurItemNum { get; }
+
+        public ObservableProperty<string> TipTitle { get; }
 
         public ObservableProperty<string> TipText { get; }
 
@@ -133,6 +136,9 @@ namespace App.UI.Popup
             }
 
             SelectedId = entry.Id;
+            TipTitle.Value = entry.Unlocked
+                ? (entry.Name ?? string.Empty)
+                : "？？？";
             TipText.Value = entry.Unlocked
                 ? (entry.Desc ?? string.Empty)
                 : (string.IsNullOrEmpty(entry.UnlockTip) ? "尚未解锁" : entry.UnlockTip);
@@ -143,6 +149,7 @@ namespace App.UI.Popup
         {
             SelectedId = 0;
             ShowTip.Value = false;
+            TipTitle.Value = string.Empty;
             TipText.Value = string.Empty;
         }
 

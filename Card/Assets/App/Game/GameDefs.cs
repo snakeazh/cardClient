@@ -91,7 +91,7 @@ namespace App.Game
         public const int BaseBetStep = 10;
         public const int RaiseLowMult = 2;
         public const int RaiseHighMult = 4;
-        /// <summary>遗物列表初始容量；购买件数不设上限，HUD 按持有数克隆 yiwuBtn。</summary>
+        /// <summary>遗物列表初始容量；购买件数不设上限。</summary>
         public const int MaxRelics = 3;
         /// <summary>通关商店货架格子数，对应 BattleShopPop.sellHor。</summary>
         public const int ShopOfferCount = 5;
@@ -315,7 +315,7 @@ namespace App.Game
         }
     }
 
-    /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、BOSS 机制。</summary>
+    /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、关卡机制。</summary>
     public sealed class RunState
     {
         public int Gold;
@@ -349,8 +349,8 @@ namespace App.Game
         public int AdsExtraRubThisStage;
         public int AdsDoubleGoldToday;
         public bool DoubleGoldThisStage;
-        /// <summary>本关随机抽中的 <see cref="App.Config.BossEntryConfig.Id"/>，0 表示无机制。</summary>
-        public int BossEntryId;
+        /// <summary>本关随机抽中的 <see cref="App.Config.BossEntryConfig.Id"/>，数量来自 <c>LevelConfig.LevelEntryNum</c>。</summary>
+        public readonly List<int> LevelEntryIds = new List<int>();
         /// <summary>收藏禁用：本手失效的 RelicConfig Id。</summary>
         public readonly HashSet<int> DisabledRelicIds = new HashSet<int>();
         /// <summary>黑暗护盾剩余免疫次数。</summary>

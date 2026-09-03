@@ -6,7 +6,7 @@
 视图模型：`Assets/App/UI/Game/GameTableViewModel.cs`  
 色板：[`ThemeColors.md`](../../ThemeColors.md)  
 牌桌世界：[`GameBoardController.md`](GameBoardController.md)  
-规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md) · BOSS：[`BossMechanics.md`](../../Game/BossMechanics.md)
+规则：[`GameLogic.md`](../../Game/GameLogic.md) · 状态机：[`GameSession.md`](../../Game/GameSession.md) · 遗物：[`RelicMechanics.md`](../../Game/RelicMechanics.md) · 关卡机制：[`BossMechanics.md`](../../Game/BossMechanics.md)
 
 `GameTableController` 是旧场景绑法，见 [`GameTableController.md`](GameTableController.md)。
 
@@ -17,21 +17,23 @@
 ```
 GameUI
   backBtn                 ← 返回主页
-  PlayerItem              ← 玩家卡，显示 HeroDamage / Hp
-  player1/2/3             ← 敌人人物卡槽（player1 中心；运行时克隆 PlayerItem）
+  PlayerItem              ← 玩家卡，显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
+  player1/2/3             ← 敌人人物卡槽（player1 中心；运行时克隆 PlayerItem）；平时点击弹出 ItemTip
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
-  horEquipBtns2           ← 已持有遗物竖排（yiwuBtn 模板克隆，一直显示）
+  horEquipBtns2           ← 遗物列表，打开 RemainListPop（一直可点）
   cardinfoItem            ← 亮牌后玩家牌型图标
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
   cardtypeEnemyNum        ← 敌人倍率数字
   roundInfo               ← 第几轮
-  roundbuff               ← BOSS 词条图标（蓝书），无机制时隐藏
+  roundbuff               ← 关卡机制图标（蓝书），无机制时隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。BOSS 关 `roundbuff` 显示，点击弹出 `ItemTip` 出机制 `Desc`。
+发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时 `roundbuff` 显示，点击弹出 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`（多条拼接）。
+
+`ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 
 `cardinfoItem` / `cardinfoEnemyItem` 只在亮牌/比牌/攻击/本手结束时显示。透视未亮牌不显示。
 
@@ -44,7 +46,7 @@ GameUI
 | `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType` |
 | `cardtypeEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue` |
 
-`horEquipBtns2` 里的 `yiwuBtn` 是遗物槽模板：按 `Run.RelicConfigIds` 克隆，图标读 `Altas/Relic`。无遗物时隐藏；点击在该槽左侧弹出 `ItemTip`，可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`，也不再从这里打开 `RemainListPop`。结算遗物跳动没有槽位 Animator 时只改数字。
+`horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算遗物跳动没有槽位 Animator 时只改数字。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。  
 **不要再创建或绑定 `arrow`。** 当前行动对象指示已去掉。
@@ -59,7 +61,7 @@ GameUI
 |------|------|----------|
 | `CompareBtn` | 开战 | `WaitingOpen`，且已选 3 张 |
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | `(n/max)` | 始终在 `horBtns2`，没次数则禁用 |
-| `yiwuBtn` | 已持有遗物图标 | 有遗物才显示，克隆铺满 |
+| `yiwuBtn` | 遗物列表 | 一直显示，点开 `RemainListPop` |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 
 `n` 为当前剩余次数，`max` 为 `GameBalance.Skill*Uses + Bonus*` 再加遗物/英雄加成。次数配置仍是搓牌 3 / 透视 1 / 替换 1。
@@ -109,7 +111,7 @@ GameUI
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
 
-`roundbuff`：BOSS 词条图标。非 BOSS 关或未抽到机制时隐藏；点击出 `BossEntryConfig.Desc`。
+`roundbuff`：关卡机制图标。`LevelEntryNum` 为 0 或未抽到时隐藏；点击出 `BossEntryConfig.Desc`。多条时名称用顿号拼接。
 
 ---
 
@@ -118,5 +120,5 @@ GameUI
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。
-- 敌人人物卡点击只用于透视，不用于选攻击目标。
+- 敌人人物卡平时点击弹出 `ItemTip`；透视中点敌人走透视，不用于选攻击目标。
 - `player1` 是中心：只剩 1 个敌人就站中间；2 个时第一个开牌的站中间；3 个拼牌时当前对手站中间。

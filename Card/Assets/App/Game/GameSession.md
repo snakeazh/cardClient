@@ -9,7 +9,7 @@
 数值：`GameDefs.cs`（`GamePhase` / `SeatState` / `RunState` / `GameBalance`）  
 商店商品效果：[`RelicMechanics.md`](RelicMechanics.md)  
 英雄技能：[`HeroMechanics.md`](HeroMechanics.md)  
-BOSS 机制：[`BossMechanics.md`](BossMechanics.md)  
+关卡机制：[`BossMechanics.md`](BossMechanics.md)  
 天赋局内效果：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)
 
 ---
@@ -22,7 +22,7 @@ BOSS 机制：[`BossMechanics.md`](BossMechanics.md)
 |------|------|
 | `Changed` | 状态变化后通知 HUD / 牌桌 |
 | `Player` / `Enemies[3]` | 座位。敌人数组下标 0/1/2 是逻辑座，不是屏幕槽 |
-| `Run` | 整次闯关：金币、遗物、技能次数、透视标记、`BossEntryId` |
+| `Run` | 整次闯关：金币、遗物、技能次数、透视标记、`LevelEntryIds` |
 | `Phase` | 当前阶段 |
 | `DealSerial` | 发牌序号，牌桌动画用来重播发牌 |
 | `RevealPlaySerial` | 亮牌演出序号 |

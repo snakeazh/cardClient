@@ -129,7 +129,7 @@
 玩家攻击把遗物加成加进牌型倍率，再乘燧石（有 Flint 机制时 `× (1 + Value[0])`，当前表为 ×0.5）；怪物攻击只吃燧石。  
 积分：本手玩家打出的**攻击数值**记入本轮（公式结果，不被怪物剩余血量截断）。扣血仍按剩余 HP 封顶。
 
-实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`，英雄技能读 `HeroMechanics`，BOSS 机制读 `BossMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)、[`HeroMechanics.md`](HeroMechanics.md)、[`BossMechanics.md`](BossMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
+实现：`HandEvaluator.ComputeAttackDamage`，倍率读 `HandScoreConfig`，遗物读 `RelicMechanics`，英雄技能读 `HeroMechanics`，关卡机制读 `BossMechanics`。细则见 [`RelicMechanics.md`](RelicMechanics.md)、[`HeroMechanics.md`](HeroMechanics.md)、[`BossMechanics.md`](BossMechanics.md)。公式拆解打在 `AppLog.Info(LogChannel.Game)`。
 
 ---
 
@@ -166,7 +166,7 @@
 - 额外搓牌：本关最多 2 次
 - 双倍金币：每天最多 3 次
 
-BOSS 关从 `BossEntryConfig` 随机一条机制（禁搓花色、燧石、收藏禁用、手牌压缩等）。HUD `roundbuff` 显示名称。详见 [`BossMechanics.md`](BossMechanics.md)。
+每关按 `LevelConfig.LevelEntryNum` 从 `BossEntryConfig` 随机若干条机制（禁搓花色、燧石、收藏禁用、手牌压缩等）。HUD `roundbuff` 显示名称。详见 [`BossMechanics.md`](BossMechanics.md)。
 
 ---
 
@@ -177,7 +177,7 @@ BOSS 关从 `BossEntryConfig` 随机一条机制（禁搓花色、燧石、收�
 | `App/Game/GameSession.cs` | 状态机、开牌队列、逐个比牌、攻击 |
 | `App/Game/GameDefs.cs` | 阶段、平衡、座位 |
 | `App/Game/RelicMechanics.cs` | RelicConfig 商品效果，说明见 [`RelicMechanics.md`](RelicMechanics.md) |
-| `App/Game/BossMechanics.cs` | BOSS 机制，说明见 [`BossMechanics.md`](BossMechanics.md) |
+| `App/Game/BossMechanics.cs` | 关卡机制，说明见 [`BossMechanics.md`](BossMechanics.md) |
 | `App/Game/CardModel.cs` | 牌、牌型、伤害公式 |
 | `App/UI/Game/GameUIView.cs` | HUD 绑定，说明见 [`GameUI.md`](../UI/Game/GameUI.md) |
 | `App/UI/Game/GameTableViewModel.cs` | 文案、按钮、弹出失败/商店/结算 |

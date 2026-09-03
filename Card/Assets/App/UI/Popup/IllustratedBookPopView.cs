@@ -27,6 +27,7 @@ namespace App.UI.Popup
         private readonly Vector3[] _corners = new Vector3[4];
         private GameObject _itemPrefab;
         private GameObject _tip;
+        private TMP_Text _tipTitle;
         private TMP_Text _tipText;
         private GameObject _tipCatcher;
         private ItemCard _tipAnchor;
@@ -55,6 +56,7 @@ namespace App.UI.Popup
             FillList(UI.Get<ScrollRect>("RelicSCView"), ViewModel.RelicEntries, _relicCards);
             FillList(UI.Get<ScrollRect>("MonsterSCView"), ViewModel.MonsterEntries, _monsterCards);
             Binding.Add(ViewModel.ShowTip.Subscribe(_ => ApplyTip(), emitCurrent: true));
+            Binding.Add(ViewModel.TipTitle.Subscribe(OnTipTitle, emitCurrent: true));
             Binding.Add(ViewModel.TipText.Subscribe(OnTipText, emitCurrent: true));
         }
 
@@ -404,6 +406,11 @@ namespace App.UI.Popup
                 _tip = Instantiate(prefab, transform, false);
                 _tip.name = "ItemTip";
                 var ui = _tip.GetComponent<UIReference>();
+                if (ui != null && ui.TryGet<Component>("title", out var title) && title != null)
+                {
+                    _tipTitle = title.GetComponent<TMP_Text>() ?? title.GetComponentInChildren<TMP_Text>(true);
+                }
+
                 if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
                 {
                     _tipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
@@ -411,7 +418,17 @@ namespace App.UI.Popup
 
                 if (_tipText == null)
                 {
-                    _tipText = _tip.GetComponentInChildren<TMP_Text>(true);
+                    var texts = _tip.GetComponentsInChildren<TMP_Text>(true);
+                    for (var i = 0; i < texts.Length; i++)
+                    {
+                        if (texts[i] == _tipTitle)
+                        {
+                            continue;
+                        }
+
+                        _tipText = texts[i];
+                        break;
+                    }
                 }
 
                 if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
@@ -431,6 +448,14 @@ namespace App.UI.Popup
             }
             catch (Exception)
             {
+            }
+        }
+
+        private void OnTipTitle(string text)
+        {
+            if (_tipTitle != null)
+            {
+                _tipTitle.text = text ?? string.Empty;
             }
         }
 
@@ -469,6 +494,11 @@ namespace App.UI.Popup
             if (!show)
             {
                 return;
+            }
+
+            if (_tipTitle != null)
+            {
+                _tipTitle.text = ViewModel.TipTitle.Value ?? string.Empty;
             }
 
             if (_tipText != null)

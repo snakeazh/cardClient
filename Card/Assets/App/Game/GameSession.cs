@@ -2087,9 +2087,9 @@ namespace App.Game
                 var entry = RelicEntryConfig.Get(relic.MechanismId[i]);
                 if (entry != null &&
                     entry.Type == MechanismType.RemoveBossEntry &&
-                    Run.BossEntryId <= 0)
+                    Run.LevelEntryIds.Count <= 0)
                 {
-                    failHint = "本关没有可移除的BOSS词缀";
+                    failHint = "本关没有可移除的词缀";
                     return false;
                 }
             }
@@ -2148,8 +2148,9 @@ namespace App.Game
                     Log($"消耗品：下次商店购买折扣 {value:P0}");
                     break;
                 case MechanismType.RemoveBossEntry:
-                    Run.BossEntryId = 0;
-                    Log("消耗品：已移除本关 BOSS 词缀");
+                    Run.LevelEntryIds.Clear();
+                    Run.BossShieldHitsLeft = 0;
+                    Log("消耗品：已移除本关词缀");
                     break;
                 case MechanismType.FirstLeopardGold:
                     Run.FirstLeopardGoldPending += (int)Math.Round(value);
@@ -2684,7 +2685,7 @@ namespace App.Game
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
 
-        /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。BOSS 关从表随机一条机制。</summary>
+        /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。按 <c>LevelEntryNum</c> 随机机制。</summary>
         private void StartStage(bool inheritPlayerHp)
         {
             Run.AdsLoanThisStage = 0;
@@ -2711,7 +2712,7 @@ namespace App.Game
             _stageBetRound = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
-            PickBossEntry();
+            PickLevelEntries();
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IScoreService>().BeginStage();
@@ -2720,25 +2721,50 @@ namespace App.Game
             ApplyHeroToPlayer(inheritPlayerHp);
             var enemyCount = ApplyLevelEnemies();
 
-            var entry = BossMechanics.Resolve(Run);
+            var entries = BossMechanics.ResolveAll(Run);
             var title = Run.HasBoss
-                ? $"第 {Run.Stage} 关 BOSS · {(entry != null ? entry.Name : "无")}"
+                ? $"第 {Run.Stage} 关 BOSS"
                 : $"第 {Run.Stage} 关 · {enemyCount} 名敌人";
-            Log(title);
-            if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+            if (entries.Count > 0)
             {
-                Log(entry.Desc);
+                title += " · " + JoinEntryNames(entries);
+            }
+
+            Log(title);
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(entries[i].Desc))
+                {
+                    Log(entries[i].Desc);
+                }
             }
 
             StartRound();
         }
 
-        private void PickBossEntry()
+        private void PickLevelEntries()
         {
             var snapshot = LevelSvc()?.Current;
             Run.HasBoss = snapshot != null ? snapshot.HasBoss : GameBalance.IsBossStage(Run.Stage);
-            Run.BossEntryId = Run.HasBoss ? BossMechanics.PickRandomId(_rng) : 0;
+            var count = snapshot != null ? snapshot.LevelEntryNum : 0;
+            BossMechanics.PickRandomIds(_rng, count, Run.LevelEntryIds);
             Run.BossShieldHitsLeft = BossMechanics.ShieldHits(Run);
+        }
+
+        private static string JoinEntryNames(List<BossEntryConfig> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var names = new string[entries.Count];
+            for (var i = 0; i < entries.Count; i++)
+            {
+                names[i] = entries[i] != null ? entries[i].Name : string.Empty;
+            }
+
+            return string.Join("、", names);
         }
 
         /// <summary>重置本手状态并发牌，然后直接看牌进入开牌阶段。技能次数每手重置。</summary>
@@ -2875,9 +2901,7 @@ namespace App.Game
         private Card DrawRubCard(Card original)
         {
             SyncDeckWithTable();
-            BossMechanics.GetRubBan(Run, out var bannedSuit, out var banFaces);
-
-            if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, bannedSuit, banFaces, false), out var next))
+            if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, false), out var next))
             {
                 return next;
             }
@@ -2885,24 +2909,14 @@ namespace App.Game
             return _deck.TryDraw(out next) ? next : original;
         }
 
-        private static bool RubCardAllowed(
-            Card card,
-            Card original,
-            Suit? bannedSuit,
-            bool banFaces,
-            bool keepSuit)
+        private bool RubCardAllowed(Card card, Card original, bool keepSuit)
         {
             if (!card.IsValid || card.Equals(original))
             {
                 return false;
             }
 
-            if (bannedSuit.HasValue && card.Suit == bannedSuit.Value)
-            {
-                return false;
-            }
-
-            if (banFaces && card.IsFace)
+            if (BossMechanics.IsRubBanned(Run, card))
             {
                 return false;
             }
@@ -5481,7 +5495,7 @@ namespace App.Game
                         seat.ActiveInStage = true;
                         seat.IsBoss = monster.IsBoss;
                         seat.Profile = monster.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
-                        seat.Name = monster.IsBoss ? "BOSS" : names[i];
+                        seat.Name = EnemyDisplayName(monster, i);
                         seat.MonsterId = monster.MonsterId;
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
@@ -5527,6 +5541,22 @@ namespace App.Game
             }
 
             return fallbackCount;
+        }
+
+        private static string EnemyDisplayName(LevelMonster monster, int index)
+        {
+            if (monster != null && !string.IsNullOrEmpty(monster.Name))
+            {
+                return monster.Name;
+            }
+
+            if (monster != null && monster.IsBoss)
+            {
+                return "BOSS";
+            }
+
+            var fallback = new[] { "敌人A", "敌人B", "敌人C" };
+            return index >= 0 && index < fallback.Length ? fallback[index] : $"敌人{index + 1}";
         }
 
         private void DeactivateEnemy(SeatState seat, int index)
@@ -5832,7 +5862,7 @@ namespace App.Game
 
         private bool TryFailRoundLimit()
         {
-            if (!BossMechanics.RoundLimitExceeded(Run, _stageBetRound) || !AnyBossAlive())
+            if (!BossMechanics.RoundLimitExceeded(Run, _stageBetRound) || !AnyEnemyAlive())
             {
                 return false;
             }
@@ -5845,7 +5875,7 @@ namespace App.Game
                 Player.Status = "阵亡";
             }
 
-            LastResult = "回合制约：未能在限定回合内击杀 BOSS";
+            LastResult = "回合制约：未能在限定回合内击杀所有敌人";
             Log(LastResult);
             Phase = GamePhase.StageFail;
             Hint = LastResult + "\n生命耗尽。可看广告复活，或重开本关。";
@@ -5942,7 +5972,12 @@ namespace App.Game
 
         private void RefreshBossRageAttack(SeatState seat)
         {
-            if (seat == null || !seat.IsBoss || !seat.ActiveInStage || seat.Hp <= 0)
+            if (seat == null || seat.IsPlayer || !seat.ActiveInStage || seat.Hp <= 0)
+            {
+                return;
+            }
+
+            if (!BossMechanics.Has(Run, BossEntryType.MonsterRage) && !seat.IsBoss)
             {
                 return;
             }

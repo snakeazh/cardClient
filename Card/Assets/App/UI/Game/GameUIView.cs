@@ -25,7 +25,7 @@ namespace App.UI
     public sealed class GameUIView : ViewBase<GameTableViewModel>
     {
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
-        private static readonly string[] EquipSlotKeys = { "yiwuBtn" };
+        private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -46,6 +46,7 @@ namespace App.UI
         private readonly List<RelicBonusPart> _relicBonuses = new List<RelicBonusPart>(GameBalance.MaxRelics);
         private readonly List<SettlePointCutscene.BonusBeat> _bonusBeats = new List<SettlePointCutscene.BonusBeat>(GameBalance.MaxRelics * 2);
         private GameObject _equipTip;
+        private TMP_Text _equipTipTitle;
         private TMP_Text _equipTipText;
         private GameObject _equipTipUse;
         private Button _equipTipUseBtn;
@@ -53,6 +54,8 @@ namespace App.UI
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
         private bool _shownRoundBuff;
+        private bool _shownPlayerTip;
+        private int _shownEnemySlot = -1;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -170,6 +173,7 @@ namespace App.UI
             {
                 Destroy(_equipTip);
                 _equipTip = null;
+                _equipTipTitle = null;
                 _equipTipText = null;
                 _equipTipUse = null;
                 _equipTipUseBtn = null;
@@ -685,6 +689,11 @@ namespace App.UI
         private void BindPlayerInfo()
         {
             _playerItem = ResolvePlayerItem();
+            if (_playerItem != null)
+            {
+                BindSeatClick(_playerItem.gameObject, new RelayCommand(OnPlayerClicked, () => true));
+            }
+
             BindRoundInfo();
             RefreshPlayerItems();
         }
@@ -804,7 +813,8 @@ namespace App.UI
                 item.ApplyTheme(true);
                 item.SetAttack(0);
                 BindEnemyVisible(i, clone, item);
-                BindSeatClick(clone, ViewModel.AttackCommands[i]);
+                var visualSlot = i;
+                BindSeatClick(clone, new RelayCommand(() => OnEnemyClicked(visualSlot), () => true));
                 _enemyItems[i] = item;
                 _enemyInfos[i] = clone;
                 _enemyHomes[i] = slot;
@@ -1144,6 +1154,7 @@ namespace App.UI
 
             Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
             BindDealHidden("horBtns2");
+            BindRemainList();
             BindEquips();
 
             BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
@@ -1258,6 +1269,30 @@ namespace App.UI
             }));
         }
 
+        private void BindRemainList()
+        {
+            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
+            if (node != null)
+            {
+                node.gameObject.SetActive(true);
+            }
+
+            var slot = ResolveSlot("yiwuBtn");
+            if (slot == null)
+            {
+                return;
+            }
+
+            slot.gameObject.SetActive(true);
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            Binding.BindCommand(button, ViewModel.OpenRemainListCommand);
+        }
+
         private void BindEquips()
         {
             _equipSlots.Clear();
@@ -1322,6 +1357,53 @@ namespace App.UI
             _ = ShowEquipTip(_equipSlots[index], relic);
         }
 
+        private void OnPlayerClicked()
+        {
+            if (ViewModel?.Session?.Player == null || !ViewModel.Session.Player.Alive)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_shownPlayerTip && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowPlayerTip();
+        }
+
+        private void OnEnemyClicked(int slot)
+        {
+            var session = ViewModel?.Session;
+            if (session == null)
+            {
+                return;
+            }
+
+            if (session.CanAttackSlot(slot))
+            {
+                session.AttackEnemyAtSlot(slot);
+                return;
+            }
+
+            var enemy = session.EnemyAtVisualSlot(slot);
+            if (enemy == null || !enemy.Alive)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_shownEnemySlot == slot && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowEnemyTip(slot);
+        }
+
         private void OnRoundBuffClicked()
         {
             if (ViewModel == null || !ViewModel.RoundBuffVisible.Value)
@@ -1347,36 +1429,23 @@ namespace App.UI
                 return;
             }
 
-            HideEquipTip();
+            _shownEquipRelicId = 0;
             _shownRoundBuff = true;
-            _equipTipAnchor = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
-            SetEquipTipUseVisible(false);
-            if (_equipTipText != null)
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            var name = ViewModel.RoundBuffName.Value;
+            var desc = ViewModel.RoundBuffDesc.Value;
+            if (string.Equals(desc, name, StringComparison.Ordinal))
             {
-                var desc = ViewModel.RoundBuffDesc.Value;
-                _equipTipText.text = string.IsNullOrEmpty(desc) ? ViewModel.RoundBuffName.Value : desc;
+                desc = string.Empty;
             }
 
-            EnsureEquipTipCatcher();
-            if (_equipTipCatcher != null)
-            {
-                _equipTipCatcher.SetActive(true);
-                _equipTipCatcher.transform.SetAsLastSibling();
-            }
-
-            _equipTip.SetActive(true);
-            Canvas.ForceUpdateCanvases();
-            var tipRt = _equipTip.GetComponent<RectTransform>();
-            if (tipRt != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
-            }
-
-            _equipTip.transform.SetAsLastSibling();
-            if (_equipTipAnchor != null)
-            {
-                PositionItemTip(_equipTipAnchor, placeRight: false);
-            }
+            await PresentItemTip(
+                ResolveSlot("roundbuff") ?? transform.Find("roundbuff"),
+                name,
+                desc,
+                showUse: false,
+                placeRight: false);
         }
 
         private async Task EnsureEquipTip()
@@ -1423,14 +1492,58 @@ namespace App.UI
 
             _shownEquipRelicId = relic.Id;
             _shownRoundBuff = false;
-            _equipTipAnchor = slot;
-            if (_equipTipText != null)
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            await PresentItemTip(slot, relic.Name, relic.Desc, RelicMechanics.IsConsumable(relic), placeRight: false);
+        }
+
+        private async Task ShowPlayerTip()
+        {
+            var hero = HeroMechanics.Resolve(ViewModel?.Session?.Run);
+            if (hero == null || _playerItem == null)
             {
-                _equipTipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
+                return;
             }
 
-            SetEquipTipUseVisible(RelicMechanics.IsConsumable(relic));
+            _shownEquipRelicId = 0;
+            _shownRoundBuff = false;
+            _shownPlayerTip = true;
+            _shownEnemySlot = -1;
+            await PresentItemTip(_playerItem.transform, hero.Name, BuildHeroTipBody(hero), showUse: false, placeRight: true);
+        }
 
+        private async Task ShowEnemyTip(int slot)
+        {
+            var enemy = ViewModel?.Session?.EnemyAtVisualSlot(slot);
+            var anchor = slot >= 0 && slot < _enemyInfos.Length ? _enemyInfos[slot] : null;
+            if (enemy == null || !enemy.Alive || anchor == null)
+            {
+                return;
+            }
+
+            _shownEquipRelicId = 0;
+            _shownRoundBuff = false;
+            _shownPlayerTip = false;
+            _shownEnemySlot = slot;
+            await PresentItemTip(
+                anchor.transform,
+                EnemyDisplayName(enemy),
+                BuildEnemyTipBody(enemy),
+                showUse: false,
+                placeRight: false);
+        }
+
+        private async Task PresentItemTip(Transform slot, string title, string body, bool showUse, bool placeRight)
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null)
+            {
+                return;
+            }
+
+            _equipTipAnchor = slot;
+            SetEquipTipTexts(title, body);
+            SetEquipTipUseVisible(showUse);
             EnsureEquipTipCatcher();
             if (_equipTipCatcher != null)
             {
@@ -1447,13 +1560,18 @@ namespace App.UI
             }
 
             _equipTip.transform.SetAsLastSibling();
-            PositionItemTip(slot, placeRight: false);
+            if (slot != null)
+            {
+                PositionItemTip(slot, placeRight);
+            }
         }
 
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
             _shownRoundBuff = false;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -1492,10 +1610,16 @@ namespace App.UI
 
         private void BindEquipTipNodes(GameObject tip)
         {
+            _equipTipTitle = null;
             _equipTipText = null;
             _equipTipUse = null;
             _equipTipUseBtn = null;
             var ui = tip != null ? tip.GetComponent<UIReference>() : null;
+            if (ui != null && ui.TryGet<Component>("title", out var title) && title != null)
+            {
+                _equipTipTitle = title.GetComponent<TMP_Text>() ?? title.GetComponentInChildren<TMP_Text>(true);
+            }
+
             if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
             {
                 _equipTipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
@@ -1503,7 +1627,17 @@ namespace App.UI
 
             if (_equipTipText == null && tip != null)
             {
-                _equipTipText = tip.GetComponentInChildren<TMP_Text>(true);
+                var texts = tip.GetComponentsInChildren<TMP_Text>(true);
+                for (var i = 0; i < texts.Length; i++)
+                {
+                    if (texts[i] == _equipTipTitle)
+                    {
+                        continue;
+                    }
+
+                    _equipTipText = texts[i];
+                    break;
+                }
             }
 
             if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
@@ -1519,12 +1653,113 @@ namespace App.UI
             }
         }
 
+        private void SetEquipTipTexts(string title, string body)
+        {
+            if (_equipTipTitle != null)
+            {
+                _equipTipTitle.text = title ?? string.Empty;
+            }
+
+            if (_equipTipText != null)
+            {
+                _equipTipText.text = body ?? string.Empty;
+            }
+        }
+
         private void SetEquipTipUseVisible(bool visible)
         {
             if (_equipTipUse != null)
             {
                 _equipTipUse.SetActive(visible);
             }
+        }
+
+        private static string BuildHeroTipBody(HeroConfig hero)
+        {
+            if (hero == null)
+            {
+                return string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(hero.Desc))
+            {
+                return hero.Desc;
+            }
+
+            var parts = new List<string>();
+            HeroMechanics.ForEachEntry(hero, entry =>
+            {
+                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                {
+                    parts.Add(entry.Desc);
+                }
+            });
+            return string.Join("\n", parts);
+        }
+
+        private static string EnemyDisplayName(SeatState enemy)
+        {
+            return enemy != null ? enemy.Name ?? string.Empty : string.Empty;
+        }
+
+        private string BuildEnemyTipBody(SeatState enemy)
+        {
+            if (enemy == null)
+            {
+                return string.Empty;
+            }
+
+            if (enemy.IsBoss)
+            {
+                var desc = ViewModel != null ? ViewModel.RoundBuffDesc.Value : null;
+                var name = ViewModel != null ? ViewModel.RoundBuffName.Value : null;
+                if (!string.IsNullOrEmpty(desc) && !string.Equals(desc, name, StringComparison.Ordinal))
+                {
+                    return desc;
+                }
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
+            }
+
+            var monster = FindMonster(enemy.MonsterId);
+            if (monster != null && monster.MonsterEntry > 0)
+            {
+                var entry = RelicEntryConfig.Get(monster.MonsterEntry);
+                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                {
+                    return entry.Desc;
+                }
+            }
+
+            return $"生命 {enemy.Hp}/{enemy.MaxHp}\n攻击 {enemy.Attack}";
+        }
+
+        private static MonsterConfig FindMonster(int monsterId)
+        {
+            if (monsterId <= 0)
+            {
+                return null;
+            }
+
+            MonsterConfig best = null;
+            foreach (var kv in MonsterConfig.All)
+            {
+                var row = kv.Value;
+                if (row == null || row.MonsterId != monsterId)
+                {
+                    continue;
+                }
+
+                if (best == null || row.MonsterLevel < best.MonsterLevel)
+                {
+                    best = row;
+                }
+            }
+
+            return best;
         }
 
         private void OnEquipTipUseClicked()

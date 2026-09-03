@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Game;
@@ -215,15 +216,13 @@ namespace App.UI
             }
 
             var run = Session.Run;
-            var bossEntry = BossMechanics.Resolve(run);
+            var entries = BossMechanics.ResolveAll(run);
             Title.Value = run.HasBoss
-                ? (bossEntry != null ? $"第{run.Stage}关 BOSS {bossEntry.Name}" : $"第{run.Stage}关 BOSS")
+                ? $"第{run.Stage}关 BOSS"
                 : $"第{run.Stage}关";
-            RoundBuffVisible.Value = bossEntry != null;
-            RoundBuffName.Value = bossEntry != null ? bossEntry.Name : string.Empty;
-            RoundBuffDesc.Value = bossEntry == null
-                ? string.Empty
-                : (string.IsNullOrEmpty(bossEntry.Desc) ? bossEntry.Name : bossEntry.Desc);
+            RoundBuffVisible.Value = entries.Count > 0;
+            RoundBuffName.Value = FormatEntryNames(entries);
+            RoundBuffDesc.Value = FormatEntryDescs(entries);
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = run.Gold.ToString();
             PotText.Value = string.Empty;
@@ -685,6 +684,48 @@ namespace App.UI
         private static string FormatCharges(int current, int max)
         {
             return $"({Math.Max(0, current)}/{Math.Max(0, max)})";
+        }
+
+        private static string FormatEntryNames(List<App.Config.BossEntryConfig> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var parts = new string[entries.Count];
+            for (var i = 0; i < entries.Count; i++)
+            {
+                parts[i] = entries[i] != null ? entries[i].Name : string.Empty;
+            }
+
+            return string.Join("、", parts);
+        }
+
+        private static string FormatEntryDescs(List<App.Config.BossEntryConfig> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>(entries.Count);
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                var desc = string.IsNullOrEmpty(entry.Desc) ? entry.Name : entry.Desc;
+                if (!string.IsNullOrEmpty(desc))
+                {
+                    parts.Add(desc);
+                }
+            }
+
+            return string.Join("\n", parts);
         }
 
         private static int SkillChargeMax(int baseline, float extra)

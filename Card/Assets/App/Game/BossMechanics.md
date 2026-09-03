@@ -1,13 +1,13 @@
-# BossMechanics · BOSS 机制
+# BossMechanics · 关卡机制
 
 路径：`Card/Assets/App/Game/BossMechanics.cs`  
 命名空间：`App.Game`
 
-BOSS 关从 `BossEntryConfig.All` 随机抽一条（`StartStage` → `PickBossEntry`），写入 `Run.BossEntryId`。非 BOSS 关为 0。  
+每关从 `BossEntryConfig.All` 随机抽 `LevelConfig.LevelEntryNum` 条（`StartStage` → `PickLevelEntries`），写入 `Run.LevelEntryIds`。数量为 0 时本关无机制。同 `Type` 不重复抽取。  
 不读 `MonsterConfig.MonsterEntry`。表里没有行的 `Edge` / `AllIn` 不会被抽到。
 
-数值一律读 `BossEntryConfig.Value[]`：主值 `Value[0]`，第二项 `BossMechanics.ValueAt(run, 1)`。  
-HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示 `Name`，点击 `ItemTip` 出 `Desc`。
+数值一律读对应 `BossEntryConfig.Value[]`：主值 `Value[0]`，第二项 `BossMechanics.ValueAt(run, type, 1)`。  
+HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示名称（多条用顿号拼接），点击 `ItemTip` 出 `Desc`。
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。遗物：[`RelicMechanics.md`](RelicMechanics.md)。
 
@@ -18,8 +18,9 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示 `Name`，点击
 | 表 | 路径 | 用途 |
 |----|------|------|
 | BossEntryConfig | `Res/Config/BossEntryConfig.json` | 机制：`Name`、`Type`（`BossEntryType`）、`Value[]`、`Desc` |
+| LevelConfig | `Res/Config/LevelConfig.json` | `LevelEntryNum`：本关抽几条 |
 
-访问：`BossEntryConfig.Get(id)` / `BossMechanics.Resolve(run)`。Excel 源在仓库 `Config/`。
+访问：`BossEntryConfig.Get(id)` / `BossMechanics.Find(run, type)` / `BossMechanics.ResolveAll(run)`。Excel 源在仓库 `Config/`。
 
 `Run` 关卡临时：`BossShieldHitsLeft`、`StolenAttack`、`HandBrandIndex`、`DisabledRelicIds`。进下一关在 `StartStage` 清。
 
@@ -32,7 +33,7 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示 `Name`，点击
 | DisableHeart / Spade / Diamond / PlumBlossom | `DrawRubCard` | 搓出牌禁该花色 |
 | DisableHead | `DrawRubCard` | 搓出牌禁 J/Q/K |
 | Flint | `ComputeAttackDamage` | 总倍率 `× (1 + Value[0])`。只改倍率，不改 `BaseChips` |
-| FlushDamage / FlushStraightDamage / StraightDamage | 玩家出伤 | 对应牌型 `× (1 + Value[0])` |
+| FlushDamage / CoupletDamage / StraightDamage | 玩家出伤 | 对应牌型 `× (1 + Value[0])` |
 | CurseBody | 入伤 + 对怪主刀后 | 玩家受伤 `× (1 + Value[0])`；每次对怪主刀再扣自身当前 HP 的 `\|Value[1]\|` |
 | PlayerDamageDown | 玩家出伤 | `× (1 + Value[0])` |
 | SkillDisable | 技能按钮 / 长按搓牌 | 搓牌、透视、替换全部禁用 |
@@ -43,8 +44,8 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示 `Name`，点击
 | GoldThorn | 敌人出伤 | 额外 `round(GoldSpentThisRun × Value[0])` |
 | FragileBody | `ApplyHeroToPlayer` / `HealPlayer` | 血上限 `× (1 + Value[0])`；局内回血全拦。广告复活仍回满 |
 | HandCompress | 发牌 / 替换 / 动画 | 玩家发 `Value[0]` 张（默认 4），仍选 3 张开牌 |
-| BossRage | BOSS 扣血后 | `floor(已损失HP比例 / Value[0]) × Value[1]` 加在 `SeatState.Attack` 上，人物卡立刻显示。层数用进关基础攻 + 窃取，不叠乘已加成的 Attack |
-| BossShield | `ApplyDamage` 目标是 BOSS | 前 `Value[0]` 次伤害（含溅射/AOE）免疫 |
+| MonsterRage | 敌人扣血后 | `floor(已损失HP比例 / Value[0]) × Value[1]` 加在 `SeatState.Attack` 上，人物卡立刻显示。层数用进关基础攻 + 窃取，不叠乘已加成的 Attack |
+| MonsterShield | `ApplyDamage` 目标是 BOSS | 前 `Value[0]` 次伤害（含溅射/AOE）免疫 |
 | RoundLimit | `StartRound` 递增手数后 | 超过 `Value[0]` 手且 BOSS 仍在，玩家 HP 清 0 |
 | AttackSteal | `StartRound` | 每手开始把玩家当前攻击 `× Value[0]` 转给 BOSS |
 | BossTimid | `ApplyDamage` 目标是 BOSS | 场上还有非 BOSS 存活时 BOSS 免疫 |
@@ -58,7 +59,7 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示 `Name`，点击
 
 | 时机 | 方法 |
 |------|------|
-| 抽机制 | `StartStage` → `PickBossEntry` |
+| 抽机制 | `StartStage` → `PickLevelEntries`（条数 = `LevelEntryNum`） |
 | 血上限 | `ApplyHeroToPlayer` |
 | 每手开始 | `StartRound`：回合制约、收藏禁用、窃取指环 |
 | 搓牌 | `DrawRubCard` |

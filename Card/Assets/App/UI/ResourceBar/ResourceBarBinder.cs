@@ -1,14 +1,20 @@
+using System;
 using System.Collections.Generic;
 using Framework.UI.Binding;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityObject = UnityEngine.Object;
 
 namespace App.UI
 {
     internal static class ResourceBarBinder
     {
-        public static void Bind(BindingContext binding, Transform topArea, IReadOnlyList<ResourceSlot> slots)
+        public static void Bind(
+            BindingContext binding,
+            Transform topArea,
+            IReadOnlyList<ResourceSlot> slots,
+            Action<Transform, ResourceSlot> onItemBound = null)
         {
             if (binding == null || topArea == null || slots == null || slots.Count == 0)
             {
@@ -24,12 +30,12 @@ namespace App.UI
 
             while (items.Count < slots.Count)
             {
-                var clone = Object.Instantiate(template.gameObject, topArea);
+                var clone = UnityObject.Instantiate(template.gameObject, topArea);
                 clone.name = "ResourceItem";
                 var bind = clone.GetComponent<UIBind>();
                 if (bind != null)
                 {
-                    Object.Destroy(bind);
+                    UnityObject.Destroy(bind);
                 }
 
                 items.Add(clone.transform);
@@ -50,6 +56,7 @@ namespace App.UI
                 }
 
                 BindItem(binding, item, slots[i]);
+                onItemBound?.Invoke(item, slots[i]);
             }
         }
 

@@ -24,6 +24,9 @@ namespace App.Energy
         /// <summary>扣除开局消耗。体力不足返回 false 且不改动。</summary>
         bool TrySpendRunCost();
 
+        /// <summary>直接增加体力（广告商店购买等），可超过上限。</summary>
+        void Add(int amount);
+
         /// <summary>看广告补充体力（当前为模拟发放），回满。超出每日次数返回 false。</summary>
         bool TryRefillByAd();
 

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using App.AdShop;
 using App.Atlas;
 using App.Bag;
 using App.Config;
@@ -58,6 +59,7 @@ namespace App.Bootstrap
             RegisterTalent(_services);
             RegisterWallet(_services);
             RegisterEnergy(_services);
+            RegisterAdShop(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
@@ -155,6 +157,17 @@ namespace App.Bootstrap
             energy.Load();
             services.Register(energy);
             services.Register<IEnergyService>(energy);
+        }
+
+        private static void RegisterAdShop(AppServicesHost services)
+        {
+            var shop = new AdShopService(
+                services.Resolve<ISaveService>(),
+                services.Resolve<IEnergyService>(),
+                services.Resolve<IWalletService>());
+            shop.Load();
+            services.Register(shop);
+            services.Register<IAdShopService>(shop);
         }
 
         private static void RegisterUnlock(AppServicesHost services)

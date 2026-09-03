@@ -2,6 +2,7 @@ using App.Resources;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace App.UI
 {
@@ -20,8 +21,30 @@ namespace App.UI
                 return;
             }
 
-            ResourceBarBinder.Bind(Binding, top, ViewModel.Slots);
+            ResourceBarBinder.Bind(Binding, top, ViewModel.Slots, BindShopEntry);
             ViewModel.SetIcons(_goldIcon, _energyIcon);
+        }
+
+        /// <summary>资源格上的 AddBtn 打开广告商店；局内金币格（RunGold）不显示入口。</summary>
+        private void BindShopEntry(Transform item, ResourceSlot slot)
+        {
+            var addBtn = item.Find("AddBtn");
+            if (addBtn == null)
+            {
+                return;
+            }
+
+            if (slot.Kind == ResourceKind.RunGold)
+            {
+                addBtn.gameObject.SetActive(false);
+                return;
+            }
+
+            var button = addBtn.GetComponent<Button>();
+            if (button != null)
+            {
+                Binding.BindCommand(button, ViewModel.OpenShopCommand);
+            }
         }
 
         private Transform ResolveTopArea()

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Energy;
 using App.Game;
+using App.UI.Popup;
 using App.Wallet;
+using Framework.Log;
 using Framework.UI;
+using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using UnityEngine;
@@ -26,6 +29,7 @@ namespace App.UI
         private readonly ResourceSlot _energySlot;
         private readonly ResourceSlot _runGold;
         private readonly ResourceSlot[] _slots;
+        private StaminaPurchasePopViewModel _shopPop;
 
         public MainResourceViewModel(
             IUIManager ui,
@@ -42,9 +46,13 @@ namespace App.UI
             _runGold = new ResourceSlot(ResourceKind.RunGold);
             _runGold.Visible.Value = false;
             _slots = new[] { _gold, _energySlot, _runGold };
+            OpenShopCommand = new RelayCommand(OpenShop);
         }
 
         public IReadOnlyList<ResourceSlot> Slots => _slots;
+
+        /// <summary>资源栏 AddBtn：打开广告商店（体力/金币限购）。</summary>
+        public IRelayCommand OpenShopCommand { get; }
 
         public async Task EnsureShown()
         {
@@ -121,6 +129,25 @@ namespace App.UI
         private void RefreshRunGold()
         {
             _runGold.Amount.Value = _session.Run.Gold.ToString();
+        }
+
+        /// <summary>打开广告商店弹窗（体力/金币限购）。VM 复用，弹窗自身关闭后可再次打开。</summary>
+        private async void OpenShop()
+        {
+            try
+            {
+                if (_shopPop == null)
+                {
+                    var registration = _ui.Registry.GetByViewModelType(typeof(StaminaPurchasePopViewModel));
+                    _shopPop = (StaminaPurchasePopViewModel)_ui.Registry.CreateViewModel(registration);
+                }
+
+                await _ui.Open(_shopPop);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
 
         /// <summary>View 在 OnBind 时注入手动引用的图标（Common 目录不打图集，不走运行时加载）。</summary>

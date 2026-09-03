@@ -1620,6 +1620,7 @@ namespace App.UI
                 : new Vector2(
                     local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
                     local.y + (0.5f - tipRt.pivot.y) * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 
         private void RefreshEquips()

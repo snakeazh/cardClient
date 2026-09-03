@@ -1,4 +1,5 @@
 using System;
+using App.Atlas;
 using App.Config;
 using TMPro;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace App.Item
     /// 图鉴/收集类单卡显示控制，挂在预制体 <c>Res/UI/Icon/Item</c> 根节点上。
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
     /// 界面结构：Item(Button) / ItemRoot(Animator) / IconShdow + cardFrame(IconBG + card(card_Name、card_Circle、card_icon))。
+    /// card 节点 Image 为品质外边框，ApplyQuality 时按品质从 Altas/ItemBg 图集取图。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
     {
@@ -19,6 +21,7 @@ namespace App.Item
         private static readonly Color SelectedCircle = ParseHex("FFD98A");
 
         [SerializeField] private Image iconBg;
+        [SerializeField] private Image cardImage;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
@@ -77,6 +80,7 @@ namespace App.Item
         {
             EnsureRefs();
             CacheThemeColors();
+            EnsureDefaultFrame();
 
             if (button != null)
             {
@@ -172,13 +176,17 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 按遗物品质给 IconBG / card_Circle 上色（无 IconTitleBG）。
+        /// 按遗物品质给 IconBG / card_Circle 上色（无 IconTitleBG），并把 card 节点边框图
+        /// 切成对应品质（Altas/ItemBg）。目标品质缺图时回退普通品质边框，图集整体不可用
+        /// 时保留当前图（预制体默认即 OrdinaryCardFrame）。
         /// 同时刷新选中态回退色，避免之后 SetSelected(false) 打回预制体原色。
         /// </summary>
         public void ApplyQuality(QualityType type)
         {
             EnsureRefs();
             ThemeColors.ApplyCard(type, iconBg, null, cardCircle);
+            ApplyFrame(type);
+
             if (iconBg != null)
             {
                 _defaultBg = iconBg.color;
@@ -190,6 +198,37 @@ namespace App.Item
             }
 
             _colorsCached = true;
+        }
+
+        /// <summary>品质边框图；目标品质缺图时回退普通品质，图集整体不可用时不动当前图。</summary>
+        private void ApplyFrame(QualityType type)
+        {
+            if (cardImage == null)
+            {
+                return;
+            }
+
+            var frame = ItemBgSpriteLibrary.GetCardFrame(type);
+            if (frame == null && type != QualityType.Ordinary)
+            {
+                frame = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
+            }
+
+            if (frame != null)
+            {
+                cardImage.sprite = frame;
+            }
+        }
+
+        /// <summary>防护：card 引用丢失/被清成 null 时补普通品质边框，保证卡面始终有默认背景。</summary>
+        private void EnsureDefaultFrame()
+        {
+            if (cardImage == null || cardImage.sprite != null)
+            {
+                return;
+            }
+
+            cardImage.sprite = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
         }
 
         /// <summary>
@@ -329,6 +368,11 @@ namespace App.Item
             if (iconBg == null)
             {
                 iconBg = FindImage("IconBG");
+            }
+
+            if (cardImage == null)
+            {
+                cardImage = FindImage("card");
             }
 
             if (cardName == null)

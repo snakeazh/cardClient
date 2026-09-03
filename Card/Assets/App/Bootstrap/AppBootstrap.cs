@@ -95,6 +95,7 @@ namespace App.Bootstrap
             services.Register(atlas);
             services.Register<IAtlasService>(atlas);
             CardSpriteLibrary.Bind(atlas);
+            ItemBgSpriteLibrary.Bind(atlas);
         }
 
         private static void RegisterBag(AppServicesHost services)

@@ -48,6 +48,8 @@ namespace App.Resources
         public const string CardTypeValueAtlas = "Altas/cardTypeValue";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Relic.spriteatlasv2.</summary>
         public const string RelicAtlas = "Altas/Relic";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/ItemBg.spriteatlasv2（源图 Assets/Sprites/ItemBg）。</summary>
+        public const string ItemBgAtlas = "Altas/ItemBg";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 

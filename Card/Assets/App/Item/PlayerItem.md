@@ -17,14 +17,14 @@
 
 | 节点 | 用途 |
 |------|------|
-| `IconBG` | 卡片底。人物普通品质，敌人红。色值见 [`ThemeColors.md`](../ThemeColors.md) |
-| `IconTitleBG` | 标题底。人物普通品质 title，敌人深红 |
-| `card_Circle` | 头像圈，跟 title 同色 |
+| `cardMask` | 卡面遮罩图（`BlackBaseFrameMask`），美术摆位 |
+| `IconTitleBG` | 标题底，纯色，颜色以预制体为准（代码不染色） |
+| `card` | 品质卡面图，预制体默认 `OrdinaryCardFrame` |
 | `card_icon` | 头像 Image |
 | `card_Name` | 名字 |
 | `card_attackValue` | 攻击力数字 |
 | `card_attackHeart` | 当前血量 |
-| `attack` | 攻击力整块；值为 0 时隐藏。底图：人物 `FrameSlection1`，敌人 `FrameSlection2` |
+| `attack` | 攻击力整块；值为 0 时隐藏。底图按品质取 `Altas/ItemBg` 的 `{品质}RectangleFrame` |
 | `heart` | 血量整块；值为 0 时隐藏。底图与 `attack` 相同 |
 | `state` | 敌人状态 / 透视牌型 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
@@ -80,7 +80,7 @@ _enemyItems[slot].Bind(enemy, PortraitLoader.Get(enemy), enemy.Attack, session.A
 ## API
 
 ```csharp
-item.ApplyTheme(enemy: false);          // 人物普通品质底/title；敌人红。attack/heart 底图另换
+item.ApplyTheme();                      // 品质底图：attack/heart 切 {品质}RectangleFrame；不染色，敌人同规则
 item.SetName("平凡之人");
 item.SetHp(1000);
 item.SetAttack(10);

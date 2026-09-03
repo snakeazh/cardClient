@@ -40,7 +40,7 @@ namespace App.UI
             }
 
             var hero = ViewModel.Hero;
-            _playerItem.ApplyTheme(false);
+            _playerItem.ApplyTheme();
             if (hero == null)
             {
                 _playerItem.SetName(string.Empty);

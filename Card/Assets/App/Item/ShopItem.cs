@@ -117,10 +117,18 @@ namespace App.Game
             gold.enabled = true;
         }
 
+        /// <summary>
+        /// 品质通过内嵌 ItemCard 换品质卡面图（Altas/ItemBg），与图鉴/天赋一致；
+        /// 未内嵌 ItemCard 的货架卡不做品质处理。
+        /// </summary>
         public void ApplyQuality(QualityType type)
         {
-            EnsureQualityRefs();
-            ThemeColors.ApplyCard(type, iconBg, iconTitleBg, cardCircle);
+            if (_innerCard == null)
+            {
+                HookInnerCard();
+            }
+
+            _innerCard?.ApplyQuality(type);
         }
 
         public void BindClick(Action<ShopItem> onClick)
@@ -295,24 +303,6 @@ namespace App.Game
                 {
                     return;
                 }
-            }
-        }
-
-        private void EnsureQualityRefs()
-        {
-            if (iconBg == null)
-            {
-                iconBg = FindNamed<Image>("IconBG");
-            }
-
-            if (iconTitleBg == null)
-            {
-                iconTitleBg = FindNamed<Image>("IconTitleBG");
-            }
-
-            if (cardCircle == null)
-            {
-                cardCircle = FindNamed<Image>("card_Circle");
             }
         }
 

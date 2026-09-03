@@ -824,7 +824,7 @@ namespace App.UI
                 }
 
                 var item = clone.GetComponent<PlayerItem>() ?? clone.AddComponent<PlayerItem>();
-                item.ApplyTheme(true);
+                item.ApplyTheme();
                 item.SetAttack(0);
                 BindEnemyVisible(i, clone, item);
                 var visualSlot = i;

@@ -10,8 +10,8 @@ namespace App.Item
     /// <summary>
     /// 图鉴/收集类单卡显示控制，挂在预制体 <c>Res/UI/Icon/Item</c> 根节点上。
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
-    /// 界面结构：Item(Button) / ItemRoot(Animator) / IconShdow + cardFrame(IconBG + card(card_Name、card_Circle、card_icon))。
-    /// card 节点 Image 为品质外边框，ApplyQuality 时按品质从 Altas/ItemBg 图集取图。
+    /// 界面结构：Item(Button) / ItemRoot(Animator) / cardFrame(IconBG + Mask + card(card_Name、card_icon))。
+    /// card 节点 Image 为品质卡面图，ApplyQuality 时按品质从 Altas/ItemBg 图集取图；Mask 为未解锁遮罩，SetUnlocked 控制。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
     {
@@ -22,6 +22,7 @@ namespace App.Item
 
         [SerializeField] private Image iconBg;
         [SerializeField] private Image cardImage;
+        [SerializeField] private GameObject lockMask;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
@@ -71,7 +72,8 @@ namespace App.Item
 
         private Color _defaultBg;
         private Color _defaultCircle;
-        private bool _colorsCached;
+        private bool _bgCached;
+        private bool _circleCached;
         private bool _selected;
         private bool _hasSelectAnim;
         private bool _selectAnimOn;
@@ -133,14 +135,14 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 解锁态：card_icon 染回本色（白）；未解锁：染黑表示未收集剪影，名字占位为 ？？？。
+        /// 解锁态：隐藏 Mask 遮罩、图标原色；未解锁：激活 Mask 遮罩（不染黑卡面组件），名字占位为 ？？？。
         /// </summary>
         public void SetUnlocked(bool unlocked)
         {
             EnsureRefs();
-            if (cardIcon != null)
+            if (lockMask != null)
             {
-                cardIcon.color = unlocked ? Color.white : Color.black;
+                lockMask.SetActive(!unlocked);
             }
 
             if (!unlocked)
@@ -176,28 +178,14 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 按遗物品质给 IconBG / card_Circle 上色（无 IconTitleBG），并把 card 节点边框图
-        /// 切成对应品质（Altas/ItemBg）。目标品质缺图时回退普通品质边框，图集整体不可用
-        /// 时保留当前图（预制体默认即 OrdinaryCardFrame）。
-        /// 同时刷新选中态回退色，避免之后 SetSelected(false) 打回预制体原色。
+        /// 按品质切换 card 节点卡面图（Altas/ItemBg）。目标品质缺图时回退普通品质，
+        /// 图集整体不可用时保留当前图（预制体默认即 OrdinaryCardFrame）。
+        /// 品质完全由卡面图表达，不改任何节点颜色；选中态高亮仍走 SetSelected。
         /// </summary>
         public void ApplyQuality(QualityType type)
         {
             EnsureRefs();
-            ThemeColors.ApplyCard(type, iconBg, null, cardCircle);
             ApplyFrame(type);
-
-            if (iconBg != null)
-            {
-                _defaultBg = iconBg.color;
-            }
-
-            if (cardCircle != null)
-            {
-                _defaultCircle = cardCircle.color;
-            }
-
-            _colorsCached = true;
         }
 
         /// <summary>品质边框图；目标品质缺图时回退普通品质，图集整体不可用时不动当前图。</summary>
@@ -220,15 +208,22 @@ namespace App.Item
             }
         }
 
-        /// <summary>防护：card 引用丢失/被清成 null 时补普通品质边框，保证卡面始终有默认背景。</summary>
+        /// <summary>
+        /// 防护：初始化时把 card 边框统一切到图集版普通品质帧。源图已入 ItemBg 图集，
+        /// prefab 对源图的直引在图集绑定完成前的窗口会渲染空白（丢背景），运行时以图集 sprite 为准。
+        /// </summary>
         private void EnsureDefaultFrame()
         {
-            if (cardImage == null || cardImage.sprite != null)
+            if (cardImage == null)
             {
                 return;
             }
 
-            cardImage.sprite = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
+            var frame = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
+            if (frame != null)
+            {
+                cardImage.sprite = frame;
+            }
         }
 
         /// <summary>
@@ -351,16 +346,23 @@ namespace App.Item
             }
         }
 
+        /// <summary>
+        /// 各自独立缓存：card_Circle 节点美术侧可删（当前 prefab 已无），缺失不能连坐 IconBG 的回退色缓存，
+        /// 否则 _defaultBg 保持 (0,0,0,0)，SetSelected(false) 会把 IconBG 打成全透明（透出黑 Mask，卡面发黑）。
+        /// </summary>
         private void CacheThemeColors()
         {
-            if (_colorsCached || iconBg == null || cardCircle == null)
+            if (iconBg != null && !_bgCached)
             {
-                return;
+                _defaultBg = iconBg.color;
+                _bgCached = true;
             }
 
-            _defaultBg = iconBg.color;
-            _defaultCircle = cardCircle.color;
-            _colorsCached = true;
+            if (cardCircle != null && !_circleCached)
+            {
+                _defaultCircle = cardCircle.color;
+                _circleCached = true;
+            }
         }
 
         private void EnsureRefs()
@@ -373,6 +375,12 @@ namespace App.Item
             if (cardImage == null)
             {
                 cardImage = FindImage("card");
+            }
+
+            if (lockMask == null)
+            {
+                var maskNode = FindDeep(transform, "Mask");
+                lockMask = maskNode != null ? maskNode.gameObject : null;
             }
 
             if (cardName == null)

@@ -69,8 +69,8 @@ StartNewRun / Continue
 | `CompletePlayerAttack()` | 攻击演出结束 | 若尚未扣血则补扣，然后打下一个 |
 | `Continue()` | 下一局 / 进商店后 | 下一手或下一关 |
 | `LeaveShop()` / `BuyShopRelic` / `SellShopRelic` | 商店 | 买卖 RelicConfig 商品；最后一关 `LeaveShop` → `RunComplete` |
-| `RestartChallenge()` | 结算页再次挑战 | 回到当前难度第 1 关并 `StartNewRun` |
-| `WatchAdRevive()` | 失败弹窗再试试 | HP 回满，本关继续 |
+| `RestartChallenge()` | 从当前难度第 1 关重开 | 回到当前难度第 1 关并 `StartNewRun` |
+| `WatchAdRevive()` | 结算失败页 AgainBtn | HP 回满，本关继续 |
 | `AnnounceSeatRevealed` / `FinishRevealPlay` | 牌桌动画回调 | 亮牌演出步进 |
 
 旧下注接口（`BlindBet` / `LookCards` / `RaiseBet` / `Fold` / `AllIn`）还在，主循环不再进 `WaitingLookChoice` / `Betting`。
@@ -99,5 +99,5 @@ StartNewRun / Continue
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
 - 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
 - 天赋养成走 `ITalentService`；局内效果走 `TalentMechanics`（`Value × 等级`）。见 [`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
-- 打完该难度或放弃挑战走 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)，不要在 HUD 上另做一套结算。
+- 打完该难度或阵亡走 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)，不要在 HUD 上另做一套结算。
 - 牌堆抽牌走 `Deck.TryDraw`，空堆不会把桌上的牌再发出来。

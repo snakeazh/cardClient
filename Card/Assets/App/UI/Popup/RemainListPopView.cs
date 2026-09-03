@@ -407,6 +407,7 @@ namespace App.UI.Popup
             tipRt.anchoredPosition = new Vector2(
                 local.x + (0.5f - tipRt.pivot.x) * tipWidth,
                 local.y + 8f + tipRt.pivot.y * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 
         private static Transform FindDeep(Transform root, string name)

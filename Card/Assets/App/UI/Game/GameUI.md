@@ -89,7 +89,7 @@ GameUI
 每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或松手未达标回到开牌阶段。
 
 人物卡攻击力 / 血量见 [`PlayerItem.md`](../../Item/PlayerItem.md)。  
-通关商店货架 / 已购见 [`EquipShopIcon.md`](../../Item/EquipShopIcon.md)，买卖在 ShopDetail。  
+通关商店货架 / 已购见 [`ShopItem.md`](../../Item/ShopItem.md)，买卖在 ShopDetail。  
 攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。  
 闯关结算见 [`BattleResultPopup.md`](../Popup/BattleResultPopup.md)。
 
@@ -97,10 +97,9 @@ GameUI
 
 | 阶段 | 弹窗 | 说明 |
 |------|------|------|
-| `StageFail` | `BattleFailPopup` | 广告复活或放弃 |
+| `StageFail` | `BattleResultPopup` 失败 | `AgainBtn` 广告复活；`BackBtn` 放弃回主页 |
 | `Shop` | `BattleSettleUpPop` 一次，然后 `BattleShopPop` | 本关积分与本关掉落金币，再买遗物 |
 | `RunComplete` | `BattleResultPopup` 成功 | 只显示 BackBtn |
-| 放弃挑战后 | `BattleResultPopup` 失败 | BackBtn + AgainBtn |
 
 ---
 

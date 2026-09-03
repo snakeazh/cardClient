@@ -537,6 +537,7 @@ namespace App.UI.Popup
 
             var tipHeight = tipRt.rect.height;
             tipRt.anchoredPosition = new Vector2(local.x, local.y + 28.35828f - (1f - tipRt.pivot.y) * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
     }
 }

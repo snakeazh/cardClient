@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 闯关结算弹窗。成功 / 失败显示不同立绘与角标，节点通过 UIReference / UIBind 解析。
+    /// 闯关结算弹窗。成功 / 失败显示不同立绘与角标；失败时 AgainBtn 广告复活。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleResultPopup, UILayer.Popup, ResResourcePaths.BattleResultPopup)]
     public sealed class BattleResultPopupView : ViewBase<BattleResultPopupViewModel>

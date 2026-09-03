@@ -1,5 +1,6 @@
 using System;
 using App.Config;
+using App.Item;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,6 +28,8 @@ namespace App.Game
 
         public ShopItemDef Data { get; private set; }
 
+        public int RelicConfigId => Data != null ? Data.RelicConfigId : 0;
+
         public event Action<ShopItem> Clicked;
         public event Action<ShopItem, PointerEventData> DragBegan;
         public event Action<ShopItem, PointerEventData> DragMoved;
@@ -34,6 +37,7 @@ namespace App.Game
 
         private Sprite _defaultIcon;
         private bool _suppressClick;
+        private ItemCard _innerCard;
 
         public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null)
         {
@@ -90,6 +94,7 @@ namespace App.Game
 
         public void SetGoldNum(int price)
         {
+            EnsurePriceText();
             if (goldNum != null)
             {
                 goldNum.text = Mathf.Max(0, price).ToString();
@@ -192,12 +197,14 @@ namespace App.Game
 
         private void Awake()
         {
+            EnsurePriceText();
             if (cardIcon != null)
             {
                 _defaultIcon = cardIcon.sprite;
             }
 
             HookClick();
+            HookInnerCard();
         }
 
         private void OnDestroy()
@@ -205,6 +212,12 @@ namespace App.Game
             if (button != null)
             {
                 button.onClick.RemoveListener(HandleClick);
+            }
+
+            if (_innerCard != null)
+            {
+                _innerCard.Clicked -= HandleInnerClick;
+                _innerCard = null;
             }
 
             Clicked = null;
@@ -233,6 +246,33 @@ namespace App.Game
             }
 
             Clicked?.Invoke(this);
+        }
+
+        private void HookInnerCard()
+        {
+            _innerCard = GetComponentInChildren<ItemCard>(true);
+            if (_innerCard == null)
+            {
+                return;
+            }
+
+            _innerCard.Clicked -= HandleInnerClick;
+            _innerCard.Clicked += HandleInnerClick;
+        }
+
+        private void HandleInnerClick(ItemCard _)
+        {
+            HandleClick();
+        }
+
+        private void EnsurePriceText()
+        {
+            if (goldNum != null)
+            {
+                return;
+            }
+
+            goldNum = FindNamed<TMP_Text>("priceValue") ?? FindNamed<TMP_Text>("goldNum");
         }
 
         private void EnsureAnimator()
@@ -330,7 +370,7 @@ namespace App.Game
 
             if (goldNum == null)
             {
-                goldNum = FindNamed<TMP_Text>("goldNum");
+                goldNum = FindNamed<TMP_Text>("priceValue") ?? FindNamed<TMP_Text>("goldNum");
             }
 
             if (gold == null)

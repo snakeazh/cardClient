@@ -33,11 +33,11 @@ namespace App.UI.Popup
             _ui = ui;
             _dialogs = dialogs;
             RefreshGoldNum = new ObservableProperty<string>(session.EffectiveShopRefreshCost.ToString());
+            RefreshNum = new ObservableProperty<string>(session.Run.ShopRefreshCount.ToString());
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ShopRevision = new ObservableProperty<int>();
             RefreshCommand = new RelayCommand(() => Session.RefreshShopOffers(), () => Session.CanRefreshShop);
             NextStageCommand = new RelayCommand(Leave);
-            CloseCommand = new RelayCommand(Leave);
         }
 
         public GameSession Session { get; }
@@ -46,6 +46,8 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> RefreshGoldNum { get; }
 
+        public ObservableProperty<string> RefreshNum { get; }
+
         public ObservableProperty<string> GoldText { get; }
 
         public ObservableProperty<int> ShopRevision { get; }
@@ -53,8 +55,6 @@ namespace App.UI.Popup
         public IRelayCommand RefreshCommand { get; }
 
         public IRelayCommand NextStageCommand { get; }
-
-        public IRelayCommand CloseCommand { get; }
 
         public Sprite GetRelicIcon(RelicConfig relic)
         {
@@ -135,6 +135,7 @@ namespace App.UI.Popup
         private void Refresh()
         {
             RefreshGoldNum.Value = Session.EffectiveShopRefreshCost.ToString();
+            RefreshNum.Value = Session.Run.ShopRefreshCount.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
             RefreshCommand.RaiseCanExecuteChanged();
             ShopRevision.Value++;

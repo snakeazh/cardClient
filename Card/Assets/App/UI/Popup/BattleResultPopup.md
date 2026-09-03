@@ -19,9 +19,9 @@
 | 结果 | 时机 | 显示 |
 |------|------|------|
 | 成功 | `GamePhase.RunComplete`（打完该难度全部关卡，商店点下一关） | `logosuccess` / `logosuccess2` |
-| 失败 | 关卡失败弹窗选择放弃 | `logofail` / `logofail2` |
+| 失败 | `GamePhase.StageFail`（阵亡） | `logofail` / `logofail2` |
 
-关卡失败仍先出 `BattleFailPopup`（广告复活 / 放弃）。放弃之后才进本页。
+不再弹出独立的 `BattleFailPopup`（预制体与脚本保留，暂不使用）。阵亡直接出本页。
 
 ---
 
@@ -29,8 +29,8 @@
 
 | 按钮 | 成功 | 失败 | 行为 |
 |------|------|------|------|
-| `BackBtn` | 显示 | 显示 | 回主界面 |
-| `AgainBtn` | 隐藏 | 显示 | `RestartChallenge()`：当前难度第 1 关重开 |
+| `BackBtn` | 显示 | 显示 | 回主界面；失败时放弃本局并兑入局外货币 |
+| `AgainBtn` | 隐藏 | 本关尚未复活时显示 | `WatchAdRevive()`：HP 回满，本关继续。每关最多 1 次 |
 
 ---
 
@@ -46,7 +46,7 @@
 | `logofail2` | 失败角标（挑战失败图） |
 | `coinNum` | 本局兑入的局外货币 |
 | `BackBtn` | 回到主界面 |
-| `AgainBtn` | 再次挑战 |
+| `AgainBtn` | 广告复活 |
 
 ---
 
@@ -54,7 +54,7 @@
 
 `coinNum` = `ScoreBalance.PointsToGold(Total)` = 总积分 / `GameConst.ExchangePointsForGoldCoins`（当前 10:1，向下取整）。
 
-打开弹窗时把该数额 `IWalletService.Add` 一次，落盘 `wallet.gold.v1`。这是局外资金，不是商店用的 `Run.Gold`。
+打开弹窗时先显示 `coinNum`。成功（`RunComplete`）当场兑入；失败点 `BackBtn` 放弃时才兑入。复活不兑入。
 
 ```csharp
 var funds = ScoreBalance.PointsToGold(session.Score.Total);

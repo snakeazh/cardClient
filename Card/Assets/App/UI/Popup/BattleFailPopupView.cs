@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 失败弹窗。节点通过 UIReference / UIBind 解析。
+    /// 失败弹窗。资源保留，当前阵亡改走 <see cref="BattleResultPopupView"/>，本页暂不弹出。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleFailPopup, UILayer.Popup, ResResourcePaths.BattleFailPopup)]
     public sealed class BattleFailPopupView : ViewBase<BattleFailPopupViewModel>

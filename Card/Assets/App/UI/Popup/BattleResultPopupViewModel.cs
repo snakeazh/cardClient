@@ -16,6 +16,7 @@ namespace App.UI.Popup
 
     /// <summary>
     /// 闯关结算：成功 / 失败两套节点。coinNum 为局外货币，积分按 10:1 兑换资金。
+    /// 失败时 AgainBtn 为广告复活；放弃或通关才兑入局外货币。
     /// </summary>
     public sealed class BattleResultPopupViewModel : ViewModelBase
     {
@@ -34,10 +35,10 @@ namespace App.UI.Popup
             var success = session.Phase == GamePhase.RunComplete;
             ShowSuccess = new ObservableProperty<bool>(success);
             ShowFail = new ObservableProperty<bool>(!success);
-            ShowAgain = new ObservableProperty<bool>(!success);
+            ShowAgain = new ObservableProperty<bool>(CanRevive());
             CoinNum = new ObservableProperty<string>("0");
             BackCommand = new RelayCommand(Back);
-            AgainCommand = new RelayCommand(Again, () => ShowAgain.Value);
+            AgainCommand = new RelayCommand(Again, CanRevive);
         }
 
         public GameSession Session { get; }
@@ -59,12 +60,21 @@ namespace App.UI.Popup
             var success = Session.Phase == GamePhase.RunComplete;
             ShowSuccess.Value = success;
             ShowFail.Value = !success;
-            ShowAgain.Value = !success;
+            ShowAgain.Value = CanRevive();
             var funds = ScoreBalance.PointsToGold(Session.Score.Total);
             CoinNum.Value = funds.ToString();
-            GrantOutGameGold(funds);
+            if (success)
+            {
+                GrantOutGameGold(funds);
+            }
+
             AgainCommand.RaiseCanExecuteChanged();
             return Task.CompletedTask;
+        }
+
+        private bool CanRevive()
+        {
+            return Session.Phase == GamePhase.StageFail && Session.Run.AdsReviveThisStage < 1;
         }
 
         private void GrantOutGameGold(int funds)
@@ -80,16 +90,24 @@ namespace App.UI.Popup
 
         private void Back()
         {
+            if (!_granted)
+            {
+                GrantOutGameGold(ScoreBalance.PointsToGold(Session.Score.Total));
+            }
+
             _ = _dialogs.CloseWithResult(BattleResultAction.Back);
         }
 
         private void Again()
         {
-            if (!ShowAgain.Value)
+            if (!CanRevive())
             {
+                ShowAgain.Value = false;
+                AgainCommand.RaiseCanExecuteChanged();
                 return;
             }
 
+            Session.WatchAdRevive();
             _ = _dialogs.CloseWithResult(BattleResultAction.Again);
         }
     }

@@ -21,8 +21,11 @@ GameUI
   player1/2/3             ← 敌人人物卡槽（player1 中心；运行时克隆 PlayerItem）
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
-  horEquipBtns2           ← 遗物列表，打开 RemainListPop（一直可点）
-  cardinfoItem            ← 亮牌后玩家牌型条，盖在自己牌排上
+  horEquipBtns2           ← 已持有遗物竖排（yiwuBtn 模板克隆，一直显示）
+  cardinfoItem            ← 亮牌后玩家牌型图标
+  cardtypeNum             ← 玩家倍率数字
+  cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
+  cardtypeEnemyNum        ← 敌人倍率数字
   roundInfo               ← 第几轮
   roundbuff               ← BOSS 词条图标（蓝书），无机制时隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
@@ -30,17 +33,18 @@ GameUI
 
 发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。BOSS 关 `roundbuff` 显示，点击弹出 `ItemTip` 出机制 `Desc`。
 
-`cardinfoItem` 只在亮牌/比牌/攻击/本手结束时显示：玩家用 HUD 上的原节点；敌人再克隆一条，对齐 `GameHud.otherNode` 当前对手牌排。透视未亮牌不显示。
+`cardinfoItem` / `cardinfoEnemyItem` 只在亮牌/比牌/攻击/本手结束时显示。透视未亮牌不显示。
 
 世界牌在 `GameHud`：`mineNode` 玩家 5 张，`otherNode` 只画 `GameSession.DisplayedEnemy` 的 5 张（三人仍各有一手数据）。
 
 | 节点 | 用途 |
 |------|------|
-| `cardtype` | 牌型图标，读 `Altas/CardType`（`HighCardIcon` / `PairIcon` / `StraightIcon` / `SameSuitIcon` / `FlushIcon` / `LeopardIcon`） |
-| `cardtype2` | 牌型名称图（`HighCard` / `Pair` / `Straight` / `SameSuit` / `Flush` / `Leopard`） |
-| `cardtypeNum` | 倍率文案，格式 `xn`，n 来自 `HandScoreConfig.BasicMagnification` |
+| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType` |
+| `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup` |
+| `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType` |
+| `cardtypeEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue` |
 
-点 `horEquipBtns2` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：横向装备卡列表（只显示已持有），点击在该卡上方弹出 `ItemTip`。HUD 上不再排 `equip1`～`equip3`。结算遗物跳动没有槽位 Animator 时只改数字。
+`horEquipBtns2` 里的 `yiwuBtn` 是遗物槽模板：按 `Run.RelicConfigIds` 克隆，图标读 `Altas/Relic`。无遗物时隐藏；点击在该槽左侧弹出 `ItemTip`，可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`，也不再从这里打开 `RemainListPop`。结算遗物跳动没有槽位 Animator 时只改数字。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。  
 **不要再创建或绑定 `arrow`。** 当前行动对象指示已去掉。
@@ -55,7 +59,7 @@ GameUI
 |------|------|----------|
 | `CompareBtn` | 开战 | `WaitingOpen`，且已选 3 张 |
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | `(n/max)` | 始终在 `horBtns2`，没次数则禁用 |
-| `horEquipBtns2` | 遗物列表 | 一直可点 |
+| `yiwuBtn` | 已持有遗物图标 | 有遗物才显示，克隆铺满 |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 
 `n` 为当前剩余次数，`max` 为 `GameBalance.Skill*Uses + Bonus*` 再加遗物/英雄加成。次数配置仍是搓牌 3 / 透视 1 / 替换 1。
@@ -63,8 +67,6 @@ GameUI
 以下节点仍在预制体里，当前流程**隐藏**：
 
 `BlindBtn`（闷注）、`LookBtn`（看牌）、`RaiseBtn` / `RaiseHighBtn`、`AllInBtn`、`FoldBtn`、`CancelBtn`。
-
-`horEquipBtns2` 里有一个误名为 `PeekGood` 的按钮，绑定遗物列表时不要把它当成搓牌。
 
 ---
 

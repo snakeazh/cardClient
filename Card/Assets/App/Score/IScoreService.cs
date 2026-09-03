@@ -18,6 +18,9 @@ namespace App.Score
         /// <summary>本关每回合积分，BeginStage / BeginChapter 时清空。</summary>
         IReadOnlyList<int> StageRoundScores { get; }
 
+        /// <summary>本关每回合击杀数，与 <see cref="StageRoundScores"/> 一一对应，清空时机相同。</summary>
+        IReadOnlyList<int> StageRoundKills { get; }
+
         /// <summary>
         /// floor(总积分 / GameConst.ExchangePointsForGoldCoins)。预览可兑局外货币，不改积分。
         /// 对局不再用此发局内金币。
@@ -44,6 +47,9 @@ namespace App.Score
         /// 换算后 &lt;= 0 则本轮为 0，不向上累加。不按怪物剩余血量截断。
         /// </summary>
         void AwardRoundScore(int chipsWon);
+
+        /// <summary>记一次击杀：本回合积分已入账则归最后一行，否则挂下一行（由 AwardRoundScore 补齐积分行）。</summary>
+        void TrackStageKill();
 
         /// <summary>
         /// 旧局内金币差额发放（CollectableGold - GrantedGold）。积分不清空。

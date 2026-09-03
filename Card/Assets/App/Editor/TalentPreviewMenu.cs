@@ -47,6 +47,28 @@ namespace App.Editor
             AppServices.Resolve<NavigationViewModel>().ShowIllustratedBook();
         }
 
+        /// <summary>Play 模式下快捷键打开关卡结算弹窗，供 UI 走查（Ctrl+Alt+S）。</summary>
+        [MenuItem("Tools/打开结算弹窗 %&s")]
+        public static void OpenBattleSettleUp()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogWarning("[TalentPreview] 需在 Play 模式下使用");
+                return;
+            }
+
+            if (!AppServices.IsReady)
+            {
+                Debug.LogWarning("[TalentPreview] AppServices 未就绪");
+                return;
+            }
+
+            var ui = AppServices.Resolve<IUIManager>();
+            var registration = ui.Registry.GetByViewModelType(typeof(BattleSettleUpPopViewModel));
+            var vm = (BattleSettleUpPopViewModel)ui.Registry.CreateViewModel(registration);
+            _ = ui.Open(vm);
+        }
+
         [MenuItem("Tools/打开天赋规则 %&r")]
         public static void OpenTalentRules()
         {

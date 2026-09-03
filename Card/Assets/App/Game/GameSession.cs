@@ -118,6 +118,9 @@ namespace App.Game
         /// <summary>本关每回合积分，进下一关 BeginStage 后清空。</summary>
         public IReadOnlyList<int> StageRoundScores =>
             ScoreSvc()?.StageRoundScores ?? Array.Empty<int>();
+        /// <summary>本关每回合击杀数，与 <see cref="StageRoundScores"/> 一一对应。</summary>
+        public IReadOnlyList<int> StageRoundKills =>
+            ScoreSvc()?.StageRoundKills ?? Array.Empty<int>();
         public int PendingAttackDamage { get; private set; }
         /// <summary>最近一次玩家伤害结算的遗物上下文，HUD 装备加成动画复用同一份掷骰。</summary>
         public RelicCombatContext LastRelicContext { get; private set; }
@@ -4512,6 +4515,7 @@ namespace App.Game
                 if (!target.IsPlayer)
                 {
                     _roundKills++;
+                    ScoreSvc()?.TrackStageKill();
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
                     UnlockSvc()?.Report(ContidionType.KillMonster);

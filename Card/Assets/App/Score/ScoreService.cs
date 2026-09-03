@@ -15,11 +15,13 @@ namespace App.Score
 
         private readonly ISaveService _save;
         private readonly List<int> _stageRoundScores = new List<int>();
+        private readonly List<int> _stageRoundKills = new List<int>();
         private int _total;
         private int _stage;
         private int _round;
         private int _grantedGold;
         private bool _dirty;
+        private bool _roundScoreAwarded;
 
         public ScoreService(ISaveService save)
         {
@@ -32,6 +34,22 @@ namespace App.Score
 
         public IReadOnlyList<int> StageRoundScores => _stageRoundScores;
 
+        public IReadOnlyList<int> StageRoundKills => _stageRoundKills;
+
+        public void TrackStageKill()
+        {
+            // 比牌流：击杀先于本回合积分入账 → 挂下一行，AwardRoundScore 补齐对应积分行；
+            // 亮牌/无人争夺流：攻击阶段在入账之后 → 挂最后一行。
+            var index = _roundScoreAwarded ? _stageRoundScores.Count - 1 : _stageRoundScores.Count;
+            while (_stageRoundKills.Count <= index)
+            {
+                _stageRoundKills.Add(0);
+            }
+
+            _stageRoundKills[index]++;
+            _dirty = true;
+        }
+
         public int CollectableGold => ScoreBalance.PointsToGold(_total);
 
         public int GrantedGold => _grantedGold;
@@ -39,6 +57,7 @@ namespace App.Score
         public void BeginChapter()
         {
             _stageRoundScores.Clear();
+            _stageRoundKills.Clear();
             if (_total == 0 && _stage == 0 && _round == 0 && _grantedGold == 0)
             {
                 return;
@@ -54,6 +73,7 @@ namespace App.Score
         public void BeginStage()
         {
             _stageRoundScores.Clear();
+            _stageRoundKills.Clear();
             if (_stage == 0 && _round == 0)
             {
                 return;
@@ -66,6 +86,7 @@ namespace App.Score
 
         public void BeginRound()
         {
+            _roundScoreAwarded = false;
             if (_round == 0)
             {
                 return;
@@ -81,7 +102,9 @@ namespace App.Score
             if (points <= 0)
             {
                 _stageRoundScores.Add(0);
+                PadRoundKills();
                 BeginRound();
+                _roundScoreAwarded = true;
                 return;
             }
 
@@ -89,7 +112,18 @@ namespace App.Score
             _stage += points;
             _total += points;
             _stageRoundScores.Add(points);
+            PadRoundKills();
+            _roundScoreAwarded = true;
             _dirty = true;
+        }
+
+        /// <summary>回合无击杀时补 0，保证与 <see cref="_stageRoundScores"/> 一一对应。</summary>
+        private void PadRoundKills()
+        {
+            while (_stageRoundKills.Count < _stageRoundScores.Count)
+            {
+                _stageRoundKills.Add(0);
+            }
         }
 
         public int CollectGoldDelta()

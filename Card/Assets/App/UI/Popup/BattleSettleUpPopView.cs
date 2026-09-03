@@ -24,10 +24,14 @@ namespace App.UI.Popup
             Binding.BindText(GetNode<TMP_Text>("TotalScoreNum"), ViewModel.TotalScoreNum);
             Binding.BindText(GetNode<TMP_Text>("CoinNum"), ViewModel.CoinNum);
             Binding.BindText(GetNode<TMP_Text>("Num"), ViewModel.WithdrawNum);
+            Binding.BindText(GetNode<TMP_Text>("FormulaText"), ViewModel.FormulaText);
             Binding.BindCommand(GetNode<Button>("WithDrawBtn"), ViewModel.ContinueCommand);
+            Binding.BindCommand(GetNode<Button>("DoubleBtn"), ViewModel.DoubleCommand);
+            // OnBind 先于 VM.OnOpen 执行，此时 RoundRows 还是空的，
+            // 须订阅版本号等 Refresh 后再重建行列表。
+            Binding.Add(ViewModel.RoundRevision.Subscribe(_ => RefreshRoundList()));
             BindResourceBar();
             BindOverlayClose();
-            RefreshRoundList();
         }
 
         protected override Task OnViewClose()
@@ -133,14 +137,14 @@ namespace App.UI.Popup
                 return;
             }
 
-            var scores = ViewModel.Session.StageRoundScores;
-            for (var i = 0; i < scores.Count; i++)
+            var rows = ViewModel.RoundRows;
+            for (var i = 0; i < rows.Count; i++)
             {
                 var row = Instantiate(_roundTemplate, _roundTemplate.transform.parent);
                 row.SetActive(true);
-                row.name = $"Round_{i + 1}";
+                row.name = $"Round_{rows[i].Round}";
                 row.transform.SetSiblingIndex(_roundTemplate.transform.GetSiblingIndex() + 1 + i);
-                ApplyRoundRow(row, i + 1, scores[i]);
+                ApplyRoundRow(row, rows[i]);
                 _roundRows.Add(row);
             }
         }
@@ -159,18 +163,24 @@ namespace App.UI.Popup
             }
         }
 
-        private static void ApplyRoundRow(GameObject row, int round, int score)
+        private static void ApplyRoundRow(GameObject row, SettleRoundRow data)
         {
             var roundText = FindChildText(row.transform, "Round");
             if (roundText != null)
             {
-                roundText.text = $"第{round}回合";
+                roundText.text = data.Round.ToString();
+            }
+
+            var killsText = FindChildText(row.transform, "Kills");
+            if (killsText != null)
+            {
+                killsText.text = data.Kills.ToString();
             }
 
             var scoreText = FindChildText(row.transform, "Score");
             if (scoreText != null)
             {
-                scoreText.text = score.ToString();
+                scoreText.text = data.Damage.ToString();
             }
         }
 

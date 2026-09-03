@@ -13,7 +13,7 @@ namespace App.UI.Popup
     }
 
     /// <summary>
-    /// 关卡失败弹窗：再试试（广告复活）或放弃挑战返回主页。
+    /// 关卡失败弹窗：再试试（广告复活）或放弃挑战返回主页。当前未接入弹出。
     /// </summary>
     public sealed class BattleFailPopupViewModel : ViewModelBase
     {

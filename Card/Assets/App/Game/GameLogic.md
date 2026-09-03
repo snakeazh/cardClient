@@ -23,7 +23,7 @@
       输：该怪物按 (攻击力 + 牌面点数) × 牌型倍率 打玩家
   → 打完所有存活敌人
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
-  → 打完该难度：BattleResultPopup 成功；放弃挑战：BattleResultPopup 失败
+  → 打完该难度：BattleResultPopup 成功；阵亡：BattleResultPopup 失败（可复活）
 ```
 
 主路径 UI：见 [`GameUI.md`](../UI/Game/GameUI.md) + [`GameBoardController.md`](../UI/Game/GameBoardController.md)。  
@@ -153,10 +153,10 @@
 
 商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，件数不设上限。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 
-打完该难度全部关卡（`LeaveShop` → `RunComplete`）或关卡失败后放弃 → [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)：
+打完该难度全部关卡（`LeaveShop` → `RunComplete`）或关卡失败（`StageFail`）→ [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)：
 
 - 成功：只显示 BackBtn
-- 失败：BackBtn + AgainBtn（再次挑战从当前难度第 1 关重开）
+- 失败：BackBtn 放弃；AgainBtn 广告复活（每关 1 次，用完后隐藏）
 - `coinNum`：局外货币 = 总积分 / 10
 
 广告（按钮模拟）：

@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using App.Atlas;
-using App.Energy;
 using App.Game;
 using App.Guide;
 using App.Level;
@@ -23,8 +22,6 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
         private readonly IGuideService _guide;
-        private readonly IEnergyService _energy;
-        private bool _failPopupOpen;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
         private bool _settleShownThisShop;
@@ -37,8 +34,7 @@ namespace App.UI
             MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IAtlasService atlas,
-            IGuideService guide,
-            IEnergyService energy)
+            IGuideService guide)
         {
             Session = session;
             Resources = resources;
@@ -48,7 +44,6 @@ namespace App.UI
             _navigation = navigation;
             _mainResource = mainResource ?? throw new ArgumentNullException(nameof(mainResource));
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
-            _energy = energy ?? throw new ArgumentNullException(nameof(energy));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -275,7 +270,6 @@ namespace App.UI
                 _settleShownThisShop = false;
             }
 
-            TryPresentFailPopup();
             TryPresentShopPopup();
             TryPresentResultPopup();
             ShowAttack.Value = !Session.SequentialCompare &&
@@ -349,36 +343,25 @@ namespace App.UI
             Session.Changed -= Refresh;
         }
 
-        private async void TryPresentFailPopup()
+        private async void TryPresentResultPopup()
         {
-            if (!IsOpen || Session.Phase != GamePhase.StageFail || _failPopupOpen || _ui == null)
+            if (!IsOpen ||
+                _resultPopupOpen ||
+                _shopPopupOpen ||
+                _ui == null)
             {
                 return;
             }
 
-            _failPopupOpen = true;
+            if (Session.Phase != GamePhase.RunComplete && Session.Phase != GamePhase.StageFail)
+            {
+                return;
+            }
+
+            _resultPopupOpen = true;
             try
             {
-                while (IsOpen && Session.Phase == GamePhase.StageFail)
-                {
-                    var registration = _ui.Registry.GetByViewModelType(typeof(BattleFailPopupViewModel));
-                    var popup = (BattleFailPopupViewModel)_ui.Registry.CreateViewModel(registration);
-                    var result = await _ui.Dialogs.ShowCustomAsync<BattleFailPopupViewModel, BattleFailResult>(popup);
-                    if (result == BattleFailResult.Abandon)
-                    {
-                        _resultPopupOpen = true;
-                        try
-                        {
-                            await PresentResultThenLeaveOrRetry();
-                        }
-                        finally
-                        {
-                            _resultPopupOpen = false;
-                        }
-
-                        return;
-                    }
-                }
+                await PresentResultThenLeaveOrRetry();
             }
             catch (Exception ex)
             {
@@ -386,8 +369,19 @@ namespace App.UI
             }
             finally
             {
-                _failPopupOpen = false;
+                _resultPopupOpen = false;
             }
+        }
+
+        private async Task PresentResultThenLeaveOrRetry()
+        {
+            var action = await ShowBattleResultAsync();
+            if (action == BattleResultAction.Again)
+            {
+                return;
+            }
+
+            await LeaveToHome();
         }
 
         private async void TryPresentShopPopup()
@@ -439,57 +433,6 @@ namespace App.UI
             }
 
             TryPresentResultPopup();
-        }
-
-        private async void TryPresentResultPopup()
-        {
-            if (!IsOpen ||
-                Session.Phase != GamePhase.RunComplete ||
-                _resultPopupOpen ||
-                _shopPopupOpen ||
-                _failPopupOpen ||
-                _ui == null)
-            {
-                return;
-            }
-
-            _resultPopupOpen = true;
-            try
-            {
-                await PresentResultThenLeaveOrRetry();
-            }
-            catch (Exception ex)
-            {
-                AppLog.Exception(LogChannel.UI, ex);
-            }
-            finally
-            {
-                _resultPopupOpen = false;
-            }
-        }
-
-        private async Task PresentResultThenLeaveOrRetry()
-        {
-            var action = await ShowBattleResultAsync();
-            if (action == BattleResultAction.Again)
-            {
-                if (!_energy.TrySpendRunCost())
-                {
-                    var registration = _ui.Registry.GetByViewModelType(typeof(EnergyPopupViewModel));
-                    var popup = (EnergyPopupViewModel)_ui.Registry.CreateViewModel(registration);
-                    var refilled = await _ui.Dialogs.ShowCustomAsync<EnergyPopupViewModel, bool>(popup);
-                    if (!refilled || !_energy.TrySpendRunCost())
-                    {
-                        await LeaveToHome();
-                        return;
-                    }
-                }
-
-                Session.RestartChallenge();
-                return;
-            }
-
-            await LeaveToHome();
         }
 
         private async Task<BattleResultAction> ShowBattleResultAsync()

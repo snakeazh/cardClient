@@ -22,6 +22,7 @@ namespace App.UI
         public const string ShopDetail = "App.ShopDetail";
         public const string RemainListPop = "App.RemainListPop";
         public const string EnergyPopup = "App.EnergyPopup";
+        public const string StaminaPurchasePop = "App.StaminaPurchasePop";
         public const string LevelUI = "App.LevelUI";
         public const string ToastPanel = "App.ToastPanel";
         public const string GuideOverlay = "App.GuideOverlay";

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Atlas;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
@@ -64,7 +65,8 @@ namespace App.UI
             IReadOnlyList<CardItem> cards,
             PlayerItem attackItem,
             TMP_Text beilvNum,
-            TMP_Text cardTypeNum,
+            Transform cardTypeNum,
+            IAtlasService atlas,
             IReadOnlyList<BonusBeat> bonusBeats,
             int baseAttack,
             int cardPoints,
@@ -147,7 +149,7 @@ namespace App.UI
                         return;
                     }
 
-                    ApplyBonusBeat(_beats[index], attackItem, beilvNum, cardTypeNum, onAttackNumber);
+                    ApplyBonusBeat(_beats[index], attackItem, beilvNum, cardTypeNum, atlas, onAttackNumber);
                 });
                 _seq.AppendInterval(BonusStepDuration);
             }
@@ -182,7 +184,7 @@ namespace App.UI
                     attackItem.PlayAttackNumberShake(false, false);
                 }
 
-                PlayNumberShake(cardTypeNum, false, false);
+                PlayNumberShake(cardTypeNum != null ? cardTypeNum.GetComponent<Animator>() : null, false, false);
                 ResetBonusEquips();
                 RestoreBeilv();
                 IsPlaying = false;
@@ -208,21 +210,22 @@ namespace App.UI
             onAttackNumber?.Invoke(value);
         }
 
-        private static void PlayNumberShake(TMP_Text text, bool low, bool high)
+        private static void PlayNumberShake(Component target, bool low, bool high)
         {
-            if (text == null)
+            if (target == null)
             {
                 return;
             }
 
-            PlayNumberShake(text.GetComponent<Animator>(), low, high);
+            PlayNumberShake(target.GetComponent<Animator>(), low, high);
         }
 
         private void ApplyBonusBeat(
             BonusBeat beat,
             PlayerItem attackItem,
             TMP_Text beilvNum,
-            TMP_Text cardTypeNum,
+            Transform cardTypeNum,
+            IAtlasService atlas,
             Action<int> onAttackNumber)
         {
             PlayNumberShake(beat.EquipAnimator, true, false);
@@ -240,8 +243,8 @@ namespace App.UI
 
             if (cardTypeNum != null && !string.IsNullOrEmpty(beat.CardTypeText))
             {
-                cardTypeNum.text = beat.CardTypeText;
-                PlayNumberShake(cardTypeNum, true, false);
+                CardTypeValueSprites.Apply(atlas, cardTypeNum, beat.CardTypeText);
+                PlayNumberShake(cardTypeNum.GetComponent<Animator>(), true, false);
             }
         }
 

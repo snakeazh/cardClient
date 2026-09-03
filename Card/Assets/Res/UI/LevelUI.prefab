@@ -420,8 +420,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278218429
-  m_fontColor: {r: 0.7411765, g: 0.43137255, b: 0, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -539,6 +539,7 @@ GameObject:
   - component: {fileID: 2931226498289948709}
   - component: {fileID: 8257695833879549051}
   - component: {fileID: 3571947424981672185}
+  - component: {fileID: 585838394390441856}
   m_Layer: 0
   m_Name: StartGameBtn
   m_TagString: Untagged
@@ -662,6 +663,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: StartGameBtn
   _target: {fileID: 5223633381007591275}
+--- !u!114 &585838394390441856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1420544400104130999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &1579228637495065633
 GameObject:
   m_ObjectHideFlags: 0
@@ -736,8 +755,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278218429
-  m_fontColor: {r: 0.7411765, g: 0.43137255, b: 0, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2737,6 +2756,7 @@ GameObject:
   - component: {fileID: 5055537682412421506}
   - component: {fileID: 6952110925069305556}
   - component: {fileID: 7994565072916839838}
+  - component: {fileID: 3185934887331384373}
   m_Layer: 0
   m_Name: unlockHeroBtn
   m_TagString: Untagged
@@ -2862,6 +2882,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: unlockHeroBtn
   _target: {fileID: 7427398773783160299}
+--- !u!114 &3185934887331384373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6504931315784928770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &6845968130783850891
 GameObject:
   m_ObjectHideFlags: 0
@@ -2936,8 +2974,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278218429
-  m_fontColor: {r: 0.7411765, g: 0.43137255, b: 0, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -3030,10 +3068,10 @@ RectTransform:
   - {fileID: 1176318383722736755}
   m_Father: {fileID: 2972045168004389575}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 150, y: -208}
+  m_SizeDelta: {x: 310, y: 360}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4508013229324914713
 MonoBehaviour:
@@ -3120,6 +3158,7 @@ GameObject:
   - component: {fileID: 56892967337403249}
   - component: {fileID: 5035395702009881770}
   - component: {fileID: 3359482964304082685}
+  - component: {fileID: 7726845545536422077}
   m_Layer: 0
   m_Name: LastBtn
   m_TagString: Untagged
@@ -3243,6 +3282,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: LastBtn
   _target: {fileID: 7008183716865837875}
+--- !u!114 &7726845545536422077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8439456099576358408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &8643447265249730549
 GameObject:
   m_ObjectHideFlags: 0
@@ -3346,6 +3403,7 @@ GameObject:
   - component: {fileID: 8380927614536846500}
   - component: {fileID: 1200106784554193779}
   - component: {fileID: 8144501075074822544}
+  - component: {fileID: 201172358064790460}
   m_Layer: 0
   m_Name: useHeroBtn
   m_TagString: Untagged
@@ -3469,6 +3527,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: useHeroBtn
   _target: {fileID: 3970468048992714314}
+--- !u!114 &201172358064790460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8694881912892736172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1001 &2615973882599561008
 PrefabInstance:
   m_ObjectHideFlags: 0

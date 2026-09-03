@@ -29,6 +29,7 @@ namespace App.UI.Popup
         private Transform _content;
         private GameObject _template;
         private GameObject _tip;
+        private TMP_Text _tipTitle;
         private TMP_Text _tipText;
         private GameObject _tipUse;
         private Button _tipUseBtn;
@@ -36,6 +37,7 @@ namespace App.UI.Popup
         private ItemCard _tipAnchor;
         private int _shownRelicId;
         private Canvas _canvas;
+        private GameObject _nohave;
 
         protected override void OnBind()
         {
@@ -46,6 +48,7 @@ namespace App.UI.Popup
             }
 
             BindResourceBar();
+            BindNohave();
             EnsureTemplate();
             Binding.Add(ViewModel.ListVersion.Subscribe(_ => RefreshItems(), emitCurrent: true));
         }
@@ -68,6 +71,7 @@ namespace App.UI.Popup
             {
                 Destroy(_tip);
                 _tip = null;
+                _tipTitle = null;
                 _tipText = null;
                 _tipUse = null;
                 _tipUseBtn = null;
@@ -94,6 +98,21 @@ namespace App.UI.Popup
             if (text != null)
             {
                 Binding.BindRollingText(text, ViewModel.GoldText);
+            }
+        }
+
+        private void BindNohave()
+        {
+            if (UI != null && UI.TryGet<Component>("nohave", out var node) && node != null)
+            {
+                _nohave = node.gameObject;
+                return;
+            }
+
+            var found = FindDeep(transform, "nohave");
+            if (found != null)
+            {
+                _nohave = found.gameObject;
             }
         }
 
@@ -172,6 +191,11 @@ namespace App.UI.Popup
                 _items[i].gameObject.SetActive(false);
             }
 
+            if (_nohave != null)
+            {
+                _nohave.SetActive(slot == 0);
+            }
+
             if (_shownRelicId > 0)
             {
                 ItemCard match = null;
@@ -238,11 +262,7 @@ namespace App.UI.Popup
 
             _shownRelicId = relic.Id;
             _tipAnchor = card;
-            if (_tipText != null)
-            {
-                _tipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
-            }
-
+            SetTipTexts(relic.Name, relic.Desc);
             SetTipUseVisible(RelicMechanics.IsConsumable(relic));
             EnsureTipCatcher();
             if (_tipCatcher != null)
@@ -299,10 +319,16 @@ namespace App.UI.Popup
 
         private void BindTipNodes(GameObject tip)
         {
+            _tipTitle = null;
             _tipText = null;
             _tipUse = null;
             _tipUseBtn = null;
             var ui = tip != null ? tip.GetComponent<UIReference>() : null;
+            if (ui != null && ui.TryGet<Component>("title", out var title) && title != null)
+            {
+                _tipTitle = title.GetComponent<TMP_Text>() ?? title.GetComponentInChildren<TMP_Text>(true);
+            }
+
             if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
             {
                 _tipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
@@ -310,7 +336,17 @@ namespace App.UI.Popup
 
             if (_tipText == null && tip != null)
             {
-                _tipText = tip.GetComponentInChildren<TMP_Text>(true);
+                var texts = tip.GetComponentsInChildren<TMP_Text>(true);
+                for (var i = 0; i < texts.Length; i++)
+                {
+                    if (texts[i] == _tipTitle)
+                    {
+                        continue;
+                    }
+
+                    _tipText = texts[i];
+                    break;
+                }
             }
 
             if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
@@ -323,6 +359,19 @@ namespace App.UI.Popup
             {
                 _tipUseBtn.onClick.RemoveAllListeners();
                 _tipUseBtn.onClick.AddListener(OnTipUseClicked);
+            }
+        }
+
+        private void SetTipTexts(string title, string body)
+        {
+            if (_tipTitle != null)
+            {
+                _tipTitle.text = title ?? string.Empty;
+            }
+
+            if (_tipText != null)
+            {
+                _tipText.text = body ?? string.Empty;
             }
         }
 

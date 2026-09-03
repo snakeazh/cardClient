@@ -25,6 +25,7 @@ namespace App.Resources
         public const string ShopDetail = "UI/Top/ShopDetail";
         public const string RemainListPop = "UI/Popup/RemainListPop";
         public const string EnergyPopup = "UI/Popup/EnergyPopup";
+        public const string StaminaPurchasePop = "UI/Popup/StaminaPurchasePop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
@@ -43,6 +44,8 @@ namespace App.Resources
         public const string CardAtlas = "Altas/Card";
         /// <summary>SpriteAtlas under Assets/Res/Altas/CardType.spriteatlasv2.</summary>
         public const string CardTypeAtlas = "Altas/CardType";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/cardTypeValue.spriteatlasv2.</summary>
+        public const string CardTypeValueAtlas = "Altas/cardTypeValue";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Relic.spriteatlasv2.</summary>
         public const string RelicAtlas = "Altas/Relic";
 

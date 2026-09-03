@@ -56,7 +56,7 @@ namespace App.Config
         /// <summary>
         /// 同花顺牌型在攻击时,伤害降低
         /// </summary>
-        FlushStraightDamage = 10,
+        CoupletDamage = 10,
 
         /// <summary>
         /// 顺子牌型在攻击时,伤害降低
@@ -114,14 +114,14 @@ namespace App.Config
         HandCompress = 21,
 
         /// <summary>
-        /// BOSS损失生命后攻击力提升
+        /// 敌人损失生命后攻击力提升
         /// </summary>
-        BossRage = 22,
+        MonsterRage = 22,
 
         /// <summary>
-        /// BOSS免疫前N次伤害
+        /// 敌人免疫前N次伤害
         /// </summary>
-        BossShield = 23,
+        MonsterShield = 23,
 
         /// <summary>
         /// 限制回合数,超时玩家直接死亡
@@ -147,6 +147,86 @@ namespace App.Config
         /// 玩家的黑桃和梅花牌失效
         /// </summary>
         DisableBlackSuit = 28,
+
+        /// <summary>
+        /// 本关内搓牌时,无法出现偶数点数的牌
+        /// </summary>
+        DisableEven = 29,
+
+        /// <summary>
+        /// 本关内搓牌时,无法出现A
+        /// </summary>
+        DisableAce = 30,
+
+        /// <summary>
+        /// 本关内人头牌[J/Q/K]伤害点数按5计算,比牌大小不变
+        /// </summary>
+        FaceDevalue = 31,
+
+        /// <summary>
+        /// 本关内A的伤害点数由11降为1,比牌大小不变
+        /// </summary>
+        AceDown = 32,
+
+        /// <summary>
+        /// 本关内搓牌次数减少1次
+        /// </summary>
+        RubDown = 33,
+
+        /// <summary>
+        /// 本关内无法使用换牌技能
+        /// </summary>
+        SwapLock = 34,
+
+        /// <summary>
+        /// 本关内每次搓牌需要消耗50金币,金币不足时无法搓牌
+        /// </summary>
+        RubFee = 35,
+
+        /// <summary>
+        /// 本关内所有敌人每回合开始时回复10%的生命值
+        /// </summary>
+        MonsterRegen = 36,
+
+        /// <summary>
+        /// 本关内所有敌人每回合结束时攻击力+2
+        /// </summary>
+        MonsterGrow = 37,
+
+        /// <summary>
+        /// 本关内玩家每次攻击敌人后,自身会受到该伤害15%的伤害
+        /// </summary>
+        ThornShell = 38,
+
+        /// <summary>
+        /// 本关内敌人死亡后,会使玩家的攻击力永久降低2点
+        /// </summary>
+        VengefulSoul = 39,
+
+        /// <summary>
+        /// 本关内玩家受到的所有治疗与回复效果降低50%
+        /// </summary>
+        HealBan = 40,
+
+        /// <summary>
+        /// 本关内比牌时双方牌型顺位一致时,敌人将获胜
+        /// </summary>
+        TieLose = 41,
+
+        /// <summary>
+        /// 本关内敌人生命值首次低于50%时,攻击力+50%,并获得2次伤害免疫
+        /// </summary>
+        PhaseRage = 42,
+
+        /// <summary>
+        /// 本关内敌人被击败时,将以30%的生命值复活一次
+        /// </summary>
+        SecondWind = 43,
+
+        /// <summary>
+        /// 本关内敌人攻击玩家时,按造成伤害的50%回复自身生命值
+        /// </summary>
+        LifeSiphon = 44,
 
     }
 

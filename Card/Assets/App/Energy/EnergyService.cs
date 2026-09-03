@@ -63,6 +63,19 @@ namespace App.Energy
             return true;
         }
 
+        public void Add(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            EnsureDailyReset();
+            _current += amount;
+            _dirty = true;
+            Changed?.Invoke();
+        }
+
         public bool TryRefillByAd()
         {
             EnsureDailyReset();
@@ -93,7 +106,7 @@ namespace App.Energy
                     var data = JsonUtility.FromJson<EnergySaveData>(json);
                     if (data != null)
                     {
-                        _current = ClampToRange(data.Current);
+                        _current = ClampToNonNegative(data.Current);
                         _gameDay = data.GameDay;
                         _adRefillCount = Math.Max(0, data.AdRefillCount);
                     }
@@ -152,14 +165,10 @@ namespace App.Energy
             return (int)(shifted.Date - new DateTime(2020, 1, 1)).TotalDays;
         }
 
-        private static int ClampToRange(int value)
+        /// <summary>仅防负数；商店购买可超上限，加载时不按 Max 截断。</summary>
+        private static int ClampToNonNegative(int value)
         {
-            if (value < 0)
-            {
-                return 0;
-            }
-
-            return value > EnergyBalance.Max ? EnergyBalance.Max : value;
+            return value < 0 ? 0 : value;
         }
     }
 }

@@ -116,6 +116,26 @@ namespace App.Config
         /// </summary>
         public int DefaultRelicNumMax;
 
+        /// <summary>
+        /// 广告商店每次购买获得体力
+        /// </summary>
+        public int AdShopStaminaPerBuy;
+
+        /// <summary>
+        /// 广告商店每日可购买体力次数
+        /// </summary>
+        public int AdShopStaminaDailyLimit;
+
+        /// <summary>
+        /// 广告商店每次购买获得金币
+        /// </summary>
+        public int AdShopGoldPerBuy;
+
+        /// <summary>
+        /// 广告商店每日可购买金币次数
+        /// </summary>
+        public int AdShopGoldDailyLimit;
+
     }
 }
 

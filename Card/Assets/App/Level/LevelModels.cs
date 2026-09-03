@@ -14,12 +14,14 @@ namespace App.Level
             int difficulty,
             int level,
             int getGold,
+            int levelEntryNum,
             IReadOnlyList<LevelMonster> monsters)
         {
             Id = id;
             Difficulty = difficulty;
             Level = level;
             GetGold = getGold < 0 ? 0 : getGold;
+            LevelEntryNum = levelEntryNum < 0 ? 0 : levelEntryNum;
             Monsters = monsters ?? Array.Empty<LevelMonster>();
             var hasBoss = false;
             for (var i = 0; i < Monsters.Count; i++)
@@ -43,6 +45,9 @@ namespace App.Level
         /// <summary>通关发放的局内金币，来自 <see cref="LevelConfig.GetGold"/>。</summary>
         public int GetGold { get; }
 
+        /// <summary>本关随机机制条数，来自 <see cref="LevelConfig.LevelEntryNum"/>。</summary>
+        public int LevelEntryNum { get; }
+
         public bool HasBoss { get; }
 
         public IReadOnlyList<LevelMonster> Monsters { get; }
@@ -61,7 +66,8 @@ namespace App.Level
             int hp,
             int damage,
             int monsterEntry,
-            string icon)
+            string icon,
+            string name)
         {
             GroupId = groupId;
             MonsterId = monsterId;
@@ -71,6 +77,7 @@ namespace App.Level
             Damage = damage;
             MonsterEntry = monsterEntry;
             Icon = icon;
+            Name = name ?? string.Empty;
         }
 
         public int GroupId { get; }
@@ -90,6 +97,9 @@ namespace App.Level
 
         /// <summary>`MonsterConfig.Icon`，拼 `_attack` / `_damage` / `_dead` 加载头像。</summary>
         public string Icon { get; }
+
+        /// <summary>`MonsterConfig.Name`。</summary>
+        public string Name { get; }
 
         public bool IsBoss => Type == MonsterType.Boss;
     }

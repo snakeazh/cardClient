@@ -37,8 +37,7 @@ namespace App.UI
         private GameObject _playerCardInfo;
         private GameObject _enemyCardInfo;
         private Image _enemyCardTypeIcon;
-        private Image _enemyCardTypeLabel;
-        private TMP_Text _enemyCardTypeNum;
+        private Transform _enemyCardTypeNum;
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
@@ -46,8 +45,8 @@ namespace App.UI
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
         private readonly List<RelicBonusPart> _relicBonuses = new List<RelicBonusPart>(GameBalance.MaxRelics);
         private readonly List<SettlePointCutscene.BonusBeat> _bonusBeats = new List<SettlePointCutscene.BonusBeat>(GameBalance.MaxRelics * 2);
-        private int _prefabEquipCount;
         private GameObject _equipTip;
+        private TMP_Text _equipTipTitle;
         private TMP_Text _equipTipText;
         private GameObject _equipTipUse;
         private Button _equipTipUseBtn;
@@ -55,13 +54,15 @@ namespace App.UI
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
         private bool _shownRoundBuff;
+        private bool _shownPlayerTip;
+        private int _shownEnemySlot = -1;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
         private int _portraitLoadSerial;
         private int _playedAttack;
-        private TMP_Text _playerCardTypeNum;
+        private Transform _playerCardTypeNum;
         private TMP_Text _beilvNum;
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
@@ -92,6 +93,7 @@ namespace App.UI
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
+            RefreshEquips();
         }
 
         protected override async Task OnViewOpen()
@@ -109,7 +111,7 @@ namespace App.UI
             _board.Attach(ViewModel);
             await PortraitLoader.EnsureBattleStatesAsync(ViewModel.Session.Player, ViewModel.Session.Enemies);
             RefreshPlayerItems();
-            PositionEnemyCardInfo();
+            RefreshEquips();
             await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
@@ -171,6 +173,7 @@ namespace App.UI
             {
                 Destroy(_equipTip);
                 _equipTip = null;
+                _equipTipTitle = null;
                 _equipTipText = null;
                 _equipTipUse = null;
                 _equipTipUseBtn = null;
@@ -197,6 +200,7 @@ namespace App.UI
             RefreshPlayerItems();
             _ = EnsureBattlePortraits();
             RefreshCardInfos();
+            RefreshEquips();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -360,6 +364,7 @@ namespace App.UI
                 attackItem,
                 _beilvNum,
                 cardTypeNum,
+                ViewModel.Atlas,
                 _bonusBeats,
                 baseAttack,
                 score.BaseChips,
@@ -427,7 +432,7 @@ namespace App.UI
             }
         }
 
-        private TMP_Text AttackerCardTypeNum(GameSession session, SeatState attacker)
+        private Transform AttackerCardTypeNum(GameSession session, SeatState attacker)
         {
             if (attacker == null)
             {
@@ -684,6 +689,11 @@ namespace App.UI
         private void BindPlayerInfo()
         {
             _playerItem = ResolvePlayerItem();
+            if (_playerItem != null)
+            {
+                BindSeatClick(_playerItem.gameObject, new RelayCommand(OnPlayerClicked, () => true));
+            }
+
             BindRoundInfo();
             RefreshPlayerItems();
         }
@@ -803,7 +813,8 @@ namespace App.UI
                 item.ApplyTheme(true);
                 item.SetAttack(0);
                 BindEnemyVisible(i, clone, item);
-                BindSeatClick(clone, ViewModel.AttackCommands[i]);
+                var visualSlot = i;
+                BindSeatClick(clone, new RelayCommand(() => OnEnemyClicked(visualSlot), () => true));
                 _enemyItems[i] = item;
                 _enemyInfos[i] = clone;
                 _enemyHomes[i] = slot;
@@ -1039,20 +1050,19 @@ namespace App.UI
             }
 
             _enemyCardInfo.SetActive(true);
-            PositionEnemyCardInfo();
             if (_enemyCardTypeIcon != null)
             {
                 _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(score.Type);
-            }
-
-            if (_enemyCardTypeLabel != null)
-            {
-                _enemyCardTypeLabel.sprite = ViewModel.GetCardTypeLabel(score.Type);
+                _enemyCardTypeIcon.enabled = _enemyCardTypeIcon.sprite != null;
+                _enemyCardTypeIcon.preserveAspect = true;
             }
 
             if (_enemyCardTypeNum != null)
             {
-                _enemyCardTypeNum.text = GameTableViewModel.FormatHandMultiplier(score.Type);
+                CardTypeValueSprites.Apply(
+                    ViewModel.Atlas,
+                    _enemyCardTypeNum,
+                    GameTableViewModel.FormatHandMultiplier(score.Type));
             }
         }
 
@@ -1145,6 +1155,7 @@ namespace App.UI
             Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
             BindDealHidden("horBtns2");
             BindRemainList();
+            BindEquips();
 
             BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
@@ -1182,9 +1193,6 @@ namespace App.UI
             BindBtnLabel("ChaKanGood", ViewModel.ChaKanGoodLabel);
             BindBtnLabel("TiHuanGood", ViewModel.TiHuanGoodLabel);
             OrderActionButtons();
-            EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
-            EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
-            EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
             RegisterGuideTargets();
         }
 
@@ -1197,24 +1205,6 @@ namespace App.UI
             }
         }
 
-        private void BindRemainList()
-        {
-            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
-            if (node == null)
-            {
-                return;
-            }
-
-            node.gameObject.SetActive(true);
-            var button = node.GetComponent<Button>() ?? node.GetComponentInChildren<Button>(true);
-            if (button == null)
-            {
-                return;
-            }
-
-            Binding.BindCommand(button, ViewModel.OpenRemainListCommand);
-        }
-
         private void BindCardInfo()
         {
             var root = ResolveSlot("cardinfoItem");
@@ -1225,82 +1215,40 @@ namespace App.UI
                 Binding.BindActive(_playerCardInfo, ViewModel.ShowCardInfo);
             }
 
-            BindImage("cardtype", ViewModel.CardTypeIcon);
-            BindImage("cardtype2", ViewModel.CardTypeLabel);
+            BindImage("cardinfoItem", ViewModel.CardTypeIcon);
             var num = ResolveSlot("cardtypeNum");
-            var text = num != null ? num.GetComponent<TMP_Text>() : null;
-            _playerCardTypeNum = text;
-            if (text != null)
+            _playerCardTypeNum = num;
+            if (num != null)
             {
-                Binding.BindText(text, ViewModel.CardTypeNum);
+                CardTypeValueSprites.Prepare(num);
+                Binding.Add(ViewModel.CardTypeNum.Subscribe(
+                    text => CardTypeValueSprites.Apply(ViewModel.Atlas, num, text),
+                    emitCurrent: true));
             }
 
-            SpawnEnemyCardInfo(root);
+            BindEnemyCardInfo();
         }
 
-        private void SpawnEnemyCardInfo(Transform template)
+        private void BindEnemyCardInfo()
         {
-            if (template == null)
+            var root = ResolveSlot("cardinfoEnemyItem");
+            if (root != null)
             {
-                return;
+                _enemyCardInfo = root.gameObject;
+                _enemyCardInfo.SetActive(false);
+                _enemyCardTypeIcon = root.GetComponent<Image>();
             }
 
-            var clone = Instantiate(template.gameObject, transform, false);
-            clone.name = "cardinfoItem_enemy";
-            clone.SetActive(false);
-            StripBindKeys(clone);
-            var rt = clone.GetComponent<RectTransform>();
-            if (rt != null)
+            var num = ResolveSlot("cardtypeEnemyNum");
+            if (num == null && root != null)
             {
-                rt.localRotation = Quaternion.identity;
-                rt.localScale = template.localScale;
+                num = root.Find("cardtypeEnemyNum") ?? FindDeep(root, "cardtypeEnemyNum");
             }
 
-            _enemyCardInfo = clone;
-            _enemyCardTypeIcon = FindUiImage(clone.transform, "cardtype");
-            _enemyCardTypeLabel = FindUiImage(clone.transform, "cardtype2");
-            _enemyCardTypeNum = FindUiText(clone.transform, "cardtypeNum");
-        }
-
-        private void PositionEnemyCardInfo()
-        {
-            var tipRt = _enemyCardInfo != null ? _enemyCardInfo.GetComponent<RectTransform>() : null;
-            var parent = transform as RectTransform;
-            if (tipRt == null || parent == null || _gameHud == null)
+            _enemyCardTypeNum = num;
+            if (num != null)
             {
-                return;
-            }
-
-            var other = FindDeep(_gameHud.transform, "otherNode");
-            if (other == null)
-            {
-                return;
-            }
-
-            if (_hudCanvas == null)
-            {
-                _hudCanvas = GetComponentInParent<Canvas>();
-            }
-
-            var worldCam = Camera.main;
-            var canvasCam = _hudCanvas != null && _hudCanvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? _hudCanvas.worldCamera
-                : null;
-            var screen = RectTransformUtility.WorldToScreenPoint(worldCam, other.position);
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, canvasCam, out var local))
-            {
-                return;
-            }
-
-            tipRt.anchoredPosition = local;
-        }
-
-        private static void StripBindKeys(GameObject root)
-        {
-            var binds = root.GetComponentsInChildren<Framework.UI.Binding.UIBind>(true);
-            for (var i = 0; i < binds.Length; i++)
-            {
-                Destroy(binds[i]);
+                CardTypeValueSprites.Prepare(num);
             }
         }
 
@@ -1313,25 +1261,59 @@ namespace App.UI
                 return;
             }
 
-            Binding.BindImageSprite(image, source);
+            Binding.Add(source.Subscribe(sprite =>
+            {
+                image.sprite = sprite;
+                image.enabled = sprite != null;
+                image.preserveAspect = true;
+            }));
+        }
+
+        private void BindRemainList()
+        {
+            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
+            if (node != null)
+            {
+                node.gameObject.SetActive(true);
+            }
+
+            var slot = ResolveSlot("yiwuBtn");
+            if (slot == null)
+            {
+                return;
+            }
+
+            slot.gameObject.SetActive(true);
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            Binding.BindCommand(button, ViewModel.OpenRemainListCommand);
         }
 
         private void BindEquips()
         {
             _equipSlots.Clear();
             _equipRelicIds.Clear();
+            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
+            if (node != null)
+            {
+                node.gameObject.SetActive(true);
+            }
+
             for (var i = 0; i < EquipSlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EquipSlotKeys[i]);
                 if (slot != null)
                 {
+                    HideChild(slot, "Text (TMP)");
                     HookEquipClick(slot, _equipSlots.Count);
                     _equipSlots.Add(slot);
                     _equipRelicIds.Add(0);
                 }
             }
-
-            _prefabEquipCount = _equipSlots.Count;
         }
 
         private void HookEquipClick(Transform slot, int index)
@@ -1375,6 +1357,53 @@ namespace App.UI
             _ = ShowEquipTip(_equipSlots[index], relic);
         }
 
+        private void OnPlayerClicked()
+        {
+            if (ViewModel?.Session?.Player == null || !ViewModel.Session.Player.Alive)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_shownPlayerTip && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowPlayerTip();
+        }
+
+        private void OnEnemyClicked(int slot)
+        {
+            var session = ViewModel?.Session;
+            if (session == null)
+            {
+                return;
+            }
+
+            if (session.CanAttackSlot(slot))
+            {
+                session.AttackEnemyAtSlot(slot);
+                return;
+            }
+
+            var enemy = session.EnemyAtVisualSlot(slot);
+            if (enemy == null || !enemy.Alive)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            if (_shownEnemySlot == slot && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowEnemyTip(slot);
+        }
+
         private void OnRoundBuffClicked()
         {
             if (ViewModel == null || !ViewModel.RoundBuffVisible.Value)
@@ -1400,36 +1429,23 @@ namespace App.UI
                 return;
             }
 
-            HideEquipTip();
+            _shownEquipRelicId = 0;
             _shownRoundBuff = true;
-            _equipTipAnchor = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
-            SetEquipTipUseVisible(false);
-            if (_equipTipText != null)
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            var name = ViewModel.RoundBuffName.Value;
+            var desc = ViewModel.RoundBuffDesc.Value;
+            if (string.Equals(desc, name, StringComparison.Ordinal))
             {
-                var desc = ViewModel.RoundBuffDesc.Value;
-                _equipTipText.text = string.IsNullOrEmpty(desc) ? ViewModel.RoundBuffName.Value : desc;
+                desc = string.Empty;
             }
 
-            EnsureEquipTipCatcher();
-            if (_equipTipCatcher != null)
-            {
-                _equipTipCatcher.SetActive(true);
-                _equipTipCatcher.transform.SetAsLastSibling();
-            }
-
-            _equipTip.SetActive(true);
-            Canvas.ForceUpdateCanvases();
-            var tipRt = _equipTip.GetComponent<RectTransform>();
-            if (tipRt != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
-            }
-
-            _equipTip.transform.SetAsLastSibling();
-            if (_equipTipAnchor != null)
-            {
-                PositionItemTip(_equipTipAnchor, placeRight: false);
-            }
+            await PresentItemTip(
+                ResolveSlot("roundbuff") ?? transform.Find("roundbuff"),
+                name,
+                desc,
+                showUse: false,
+                placeRight: false);
         }
 
         private async Task EnsureEquipTip()
@@ -1476,14 +1492,58 @@ namespace App.UI
 
             _shownEquipRelicId = relic.Id;
             _shownRoundBuff = false;
-            _equipTipAnchor = slot;
-            if (_equipTipText != null)
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            await PresentItemTip(slot, relic.Name, relic.Desc, RelicMechanics.IsConsumable(relic), placeRight: false);
+        }
+
+        private async Task ShowPlayerTip()
+        {
+            var hero = HeroMechanics.Resolve(ViewModel?.Session?.Run);
+            if (hero == null || _playerItem == null)
             {
-                _equipTipText.text = string.IsNullOrEmpty(relic.Desc) ? relic.Name : relic.Desc;
+                return;
             }
 
-            SetEquipTipUseVisible(RelicMechanics.IsConsumable(relic));
+            _shownEquipRelicId = 0;
+            _shownRoundBuff = false;
+            _shownPlayerTip = true;
+            _shownEnemySlot = -1;
+            await PresentItemTip(_playerItem.transform, hero.Name, BuildHeroTipBody(hero), showUse: false, placeRight: true);
+        }
 
+        private async Task ShowEnemyTip(int slot)
+        {
+            var enemy = ViewModel?.Session?.EnemyAtVisualSlot(slot);
+            var anchor = slot >= 0 && slot < _enemyInfos.Length ? _enemyInfos[slot] : null;
+            if (enemy == null || !enemy.Alive || anchor == null)
+            {
+                return;
+            }
+
+            _shownEquipRelicId = 0;
+            _shownRoundBuff = false;
+            _shownPlayerTip = false;
+            _shownEnemySlot = slot;
+            await PresentItemTip(
+                anchor.transform,
+                EnemyDisplayName(enemy),
+                BuildEnemyTipBody(enemy),
+                showUse: false,
+                placeRight: false);
+        }
+
+        private async Task PresentItemTip(Transform slot, string title, string body, bool showUse, bool placeRight)
+        {
+            await EnsureEquipTip();
+            if (_equipTip == null)
+            {
+                return;
+            }
+
+            _equipTipAnchor = slot;
+            SetEquipTipTexts(title, body);
+            SetEquipTipUseVisible(showUse);
             EnsureEquipTipCatcher();
             if (_equipTipCatcher != null)
             {
@@ -1500,13 +1560,18 @@ namespace App.UI
             }
 
             _equipTip.transform.SetAsLastSibling();
-            PositionItemTip(slot, placeRight: false);
+            if (slot != null)
+            {
+                PositionItemTip(slot, placeRight);
+            }
         }
 
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
             _shownRoundBuff = false;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -1545,10 +1610,16 @@ namespace App.UI
 
         private void BindEquipTipNodes(GameObject tip)
         {
+            _equipTipTitle = null;
             _equipTipText = null;
             _equipTipUse = null;
             _equipTipUseBtn = null;
             var ui = tip != null ? tip.GetComponent<UIReference>() : null;
+            if (ui != null && ui.TryGet<Component>("title", out var title) && title != null)
+            {
+                _equipTipTitle = title.GetComponent<TMP_Text>() ?? title.GetComponentInChildren<TMP_Text>(true);
+            }
+
             if (ui != null && ui.TryGet<Component>("tipContext", out var context) && context != null)
             {
                 _equipTipText = context.GetComponent<TMP_Text>() ?? context.GetComponentInChildren<TMP_Text>(true);
@@ -1556,7 +1627,17 @@ namespace App.UI
 
             if (_equipTipText == null && tip != null)
             {
-                _equipTipText = tip.GetComponentInChildren<TMP_Text>(true);
+                var texts = tip.GetComponentsInChildren<TMP_Text>(true);
+                for (var i = 0; i < texts.Length; i++)
+                {
+                    if (texts[i] == _equipTipTitle)
+                    {
+                        continue;
+                    }
+
+                    _equipTipText = texts[i];
+                    break;
+                }
             }
 
             if (ui != null && ui.TryGet<Component>("use", out var useNode) && useNode != null)
@@ -1572,12 +1653,113 @@ namespace App.UI
             }
         }
 
+        private void SetEquipTipTexts(string title, string body)
+        {
+            if (_equipTipTitle != null)
+            {
+                _equipTipTitle.text = title ?? string.Empty;
+            }
+
+            if (_equipTipText != null)
+            {
+                _equipTipText.text = body ?? string.Empty;
+            }
+        }
+
         private void SetEquipTipUseVisible(bool visible)
         {
             if (_equipTipUse != null)
             {
                 _equipTipUse.SetActive(visible);
             }
+        }
+
+        private static string BuildHeroTipBody(HeroConfig hero)
+        {
+            if (hero == null)
+            {
+                return string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(hero.Desc))
+            {
+                return hero.Desc;
+            }
+
+            var parts = new List<string>();
+            HeroMechanics.ForEachEntry(hero, entry =>
+            {
+                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                {
+                    parts.Add(entry.Desc);
+                }
+            });
+            return string.Join("\n", parts);
+        }
+
+        private static string EnemyDisplayName(SeatState enemy)
+        {
+            return enemy != null ? enemy.Name ?? string.Empty : string.Empty;
+        }
+
+        private string BuildEnemyTipBody(SeatState enemy)
+        {
+            if (enemy == null)
+            {
+                return string.Empty;
+            }
+
+            if (enemy.IsBoss)
+            {
+                var desc = ViewModel != null ? ViewModel.RoundBuffDesc.Value : null;
+                var name = ViewModel != null ? ViewModel.RoundBuffName.Value : null;
+                if (!string.IsNullOrEmpty(desc) && !string.Equals(desc, name, StringComparison.Ordinal))
+                {
+                    return desc;
+                }
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
+            }
+
+            var monster = FindMonster(enemy.MonsterId);
+            if (monster != null && monster.MonsterEntry > 0)
+            {
+                var entry = RelicEntryConfig.Get(monster.MonsterEntry);
+                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                {
+                    return entry.Desc;
+                }
+            }
+
+            return $"生命 {enemy.Hp}/{enemy.MaxHp}\n攻击 {enemy.Attack}";
+        }
+
+        private static MonsterConfig FindMonster(int monsterId)
+        {
+            if (monsterId <= 0)
+            {
+                return null;
+            }
+
+            MonsterConfig best = null;
+            foreach (var kv in MonsterConfig.All)
+            {
+                var row = kv.Value;
+                if (row == null || row.MonsterId != monsterId)
+                {
+                    continue;
+                }
+
+                if (best == null || row.MonsterLevel < best.MonsterLevel)
+                {
+                    best = row;
+                }
+            }
+
+            return best;
         }
 
         private void OnEquipTipUseClicked()
@@ -1644,6 +1826,7 @@ namespace App.UI
                 }
 
                 HookEquipClick(clone.transform, _equipSlots.Count);
+                HideChild(clone.transform, "Text (TMP)");
                 _equipSlots.Add(clone.transform);
                 _equipRelicIds.Add(0);
             }
@@ -1651,6 +1834,19 @@ namespace App.UI
             while (_equipRelicIds.Count < _equipSlots.Count)
             {
                 _equipRelicIds.Add(0);
+            }
+
+            if (_beilvNum != null)
+            {
+                _beilvNum.transform.SetAsLastSibling();
+            }
+            else
+            {
+                var beilv = ResolveSlot("beilvNum");
+                if (beilv != null)
+                {
+                    beilv.SetAsLastSibling();
+                }
             }
 
             var atlas = ViewModel.Atlas;
@@ -1704,8 +1900,7 @@ namespace App.UI
                     nohave.gameObject.SetActive(relic == null);
                 }
 
-                var keepEmptyFrame = i < _prefabEquipCount;
-                slot.gameObject.SetActive(keepEmptyFrame || sprite != null);
+                slot.gameObject.SetActive(relic != null);
             }
 
             if (_shownEquipRelicId > 0 && !shownStillOwned)

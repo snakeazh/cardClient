@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Config;
 
 namespace App.Game
 {
@@ -29,7 +30,7 @@ namespace App.Game
         King = 13
     }
 
-    /// <summary>炸金花牌型，数值越大越强。豹子 > 顺金 > 金花 > 顺子 > 对子 > 散牌。</summary>
+    /// <summary>牌型身份。比大小用 <see cref="HandScoreConfig.Level"/>，不是本枚举数值。</summary>
     public enum HandType
     {
         HighCard = 0,
@@ -275,22 +276,34 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 牌型评估结果。Type 决定大小，Keys 拆同分；BaseChips 为牌面点数，参与攻击力结算。
+    /// 牌型评估结果。Level 决定大小，Type 只是牌型身份，Keys 拆同分；BaseChips 为牌面点数，参与攻击力结算。
     /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
-        public HandScore(HandType type, int baseChips, float multiplier, int[] keys, Card[] usedCards, string label, bool beatsAll = false)
+        public HandScore(
+            HandType type,
+            int baseChips,
+            float multiplier,
+            int[] keys,
+            Card[] usedCards,
+            string label,
+            bool beatsAll = false,
+            int compareLevelBonus = 0)
         {
             Type = type;
+            Level = HandEvaluator.TypeLevel(type);
             BaseChips = baseChips;
             Multiplier = multiplier;
             Keys = keys ?? Array.Empty<int>();
             UsedCards = usedCards ?? Array.Empty<Card>();
             Label = label ?? string.Empty;
             BeatsAll = beatsAll;
+            CompareLevelBonus = compareLevelBonus;
         }
 
         public HandType Type { get; }
+        /// <summary>来自 <see cref="HandScoreConfig.Level"/>，数值越大越强。</summary>
+        public int Level { get; }
         public int BaseChips { get; }
         public float Multiplier { get; }
         public int[] Keys { get; }
@@ -298,6 +311,20 @@ namespace App.Game
         public string Label { get; }
         /// <summary>散牌 235 遗物：比牌时胜过任何未通杀的牌型。</summary>
         public bool BeatsAll { get; }
+        /// <summary>比牌顺位修正（降低）。不改 <see cref="Type"/> / <see cref="Level"/> / 倍率。</summary>
+        public int CompareLevelBonus { get; }
+        /// <summary>比牌用的 Level，含顺位修正，夹到配置最小/最大。</summary>
+        public int CompareLevel => HandEvaluator.ClampLevel(Level + CompareLevelBonus);
+
+        public HandScore WithCompareLevelBonus(int bonus)
+        {
+            if (bonus == CompareLevelBonus)
+            {
+                return this;
+            }
+
+            return new HandScore(Type, BaseChips, Multiplier, Keys, UsedCards, Label, BeatsAll, bonus);
+        }
 
         public int CompareTo(HandScore other)
         {
@@ -306,10 +333,10 @@ namespace App.Game
                 return BeatsAll ? 1 : -1;
             }
 
-            var type = Type.CompareTo(other.Type);
-            if (type != 0)
+            var level = CompareLevel.CompareTo(other.CompareLevel);
+            if (level != 0)
             {
-                return type;
+                return level;
             }
 
             var n = Math.Max(Keys.Length, other.Keys.Length);
@@ -363,14 +390,210 @@ namespace App.Game
 
         public static float TypeMultiplier(HandType type)
         {
+            if (TryGetConfig(type, out var row) && row.BasicMagnification > 0f)
+            {
+                return row.BasicMagnification;
+            }
+
+            return FallbackMultiplier(type);
+        }
+
+        /// <summary>配置 <see cref="HandScoreConfig.Level"/>，缺表时回退到与 JSON 一致的硬编码。</summary>
+        public static int TypeLevel(HandType type)
+        {
+            if (TryGetConfig(type, out var row) && row.Level > 0)
+            {
+                return row.Level;
+            }
+
+            return FallbackLevel(type);
+        }
+
+        /// <summary>把 Level 夹到配置最小/最大。</summary>
+        public static int ClampLevel(int level)
+        {
+            var min = MinLevel();
+            var max = MaxLevel();
+            if (level < min)
+            {
+                return min;
+            }
+
+            if (level > max)
+            {
+                return max;
+            }
+
+            return level;
+        }
+
+        /// <summary>按 Level 反查牌型；越界夹到配置最小/最大 Level。</summary>
+        public static HandType TypeByLevel(int level)
+        {
+            level = ClampLevel(level);
+
+            if (TryGetTypeByLevel(level, out var type))
+            {
+                return type;
+            }
+
+            return FallbackTypeByLevel(level);
+        }
+
+        public static App.Config.HandType ToConfigHandType(HandType type)
+        {
             switch (type)
             {
-                case HandType.ThreeOfAKind: return 6f;
-                case HandType.StraightFlush: return 4f;
+                case HandType.Pair:
+                    return App.Config.HandType.Couplet;
+                case HandType.Flush:
+                    return App.Config.HandType.Flush;
+                case HandType.Straight:
+                    return App.Config.HandType.Straight;
+                case HandType.StraightFlush:
+                    return App.Config.HandType.StraightFlush;
+                case HandType.ThreeOfAKind:
+                    return App.Config.HandType.Leopard;
+                default:
+                    return App.Config.HandType.HighCard;
+            }
+        }
+
+        public static HandType FromConfigHandType(int configId)
+        {
+            if (configId == (int)App.Config.HandType.Couplet)
+            {
+                return HandType.Pair;
+            }
+
+            if (configId == (int)App.Config.HandType.Flush)
+            {
+                return HandType.Flush;
+            }
+
+            if (configId == (int)App.Config.HandType.Straight)
+            {
+                return HandType.Straight;
+            }
+
+            if (configId == (int)App.Config.HandType.StraightFlush)
+            {
+                return HandType.StraightFlush;
+            }
+
+            if (configId == (int)App.Config.HandType.Leopard)
+            {
+                return HandType.ThreeOfAKind;
+            }
+
+            return HandType.HighCard;
+        }
+
+        public static bool TryGetConfig(HandType type, out HandScoreConfig row)
+        {
+            row = null;
+            var configType = ToConfigHandType(type);
+            foreach (var candidate in HandScoreConfig.All.Values)
+            {
+                if (candidate != null && candidate.Type == configType)
+                {
+                    row = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryGetTypeByLevel(int level, out HandType type)
+        {
+            type = HandType.HighCard;
+            foreach (var candidate in HandScoreConfig.All.Values)
+            {
+                if (candidate != null && candidate.Level == level)
+                {
+                    type = FromConfigHandType((int)candidate.Type);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int MinLevel()
+        {
+            var min = 0;
+            foreach (var row in HandScoreConfig.All.Values)
+            {
+                if (row == null || row.Level <= 0)
+                {
+                    continue;
+                }
+
+                if (min == 0 || row.Level < min)
+                {
+                    min = row.Level;
+                }
+            }
+
+            return min > 0 ? min : 1;
+        }
+
+        private static int MaxLevel()
+        {
+            var max = 0;
+            foreach (var row in HandScoreConfig.All.Values)
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+
+                if (row.Level > max)
+                {
+                    max = row.Level;
+                }
+            }
+
+            return max > 0 ? max : 6;
+        }
+
+        private static int FallbackLevel(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.Pair: return 2;
+                case HandType.Flush: return 3;
+                case HandType.Straight: return 4;
+                case HandType.StraightFlush: return 5;
+                case HandType.ThreeOfAKind: return 6;
+                default: return 1;
+            }
+        }
+
+        private static float FallbackMultiplier(HandType type)
+        {
+            switch (type)
+            {
+                case HandType.Pair: return 2f;
                 case HandType.Flush: return 2.5f;
-                case HandType.Straight: return 2f;
-                case HandType.Pair: return 1.5f;
+                case HandType.Straight: return 3.5f;
+                case HandType.StraightFlush: return 5f;
+                case HandType.ThreeOfAKind: return 6f;
                 default: return 1f;
+            }
+        }
+
+        private static HandType FallbackTypeByLevel(int level)
+        {
+            switch (level)
+            {
+                case 2: return HandType.Pair;
+                case 3: return HandType.Flush;
+                case 4: return HandType.Straight;
+                case 5: return HandType.StraightFlush;
+                case 6: return HandType.ThreeOfAKind;
+                default: return HandType.HighCard;
             }
         }
 
@@ -384,7 +607,7 @@ namespace App.Game
             var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2);
             if (filtered.Count == 0)
             {
-                return new HandScore(HandType.HighCard, 0, 1f, new[] { 0 }, Array.Empty<Card>(), "无有效牌");
+                return new HandScore(HandType.HighCard, 0, TypeMultiplier(HandType.HighCard), new[] { 0 }, Array.Empty<Card>(), "无有效牌");
             }
 
             filtered.Sort((a, b) => RankKey(b.Rank).CompareTo(RankKey(a.Rank)));
@@ -395,7 +618,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.HighCard,
                     only.ChipValue,
-                    1f,
+                    TypeMultiplier(HandType.HighCard),
                     new[] { RankKey(only.Rank) },
                     filtered.ToArray(),
                     $"散牌 {only.DisplayName}");
@@ -409,7 +632,7 @@ namespace App.Game
                     return new HandScore(
                         HandType.Pair,
                         chips,
-                        1.5f,
+                        TypeMultiplier(HandType.Pair),
                         new[] { RankKey(filtered[0].Rank) },
                         filtered.ToArray(),
                         $"对子 {Card.RankName(filtered[0].Rank)}");
@@ -432,7 +655,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.ThreeOfAKind,
                     chips,
-                    6f,
+                    TypeMultiplier(HandType.ThreeOfAKind),
                     new[] { RankKey(a.Rank) },
                     filtered.ToArray(),
                     $"豹子 {Card.RankName(a.Rank)}");
@@ -444,7 +667,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.StraightFlush,
                     chips,
-                    4f,
+                    TypeMultiplier(HandType.StraightFlush),
                     new[] { straightHigh },
                     filtered.ToArray(),
                     $"顺金 {straightHigh}");
@@ -456,7 +679,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.Flush,
                     chips,
-                    2.5f,
+                    TypeMultiplier(HandType.Flush),
                     new[] { RankKey(a.Rank), RankKey(b.Rank), RankKey(c.Rank) },
                     filtered.ToArray(),
                     $"金花 {a.DisplayName}");
@@ -468,7 +691,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.Straight,
                     chips,
-                    2f,
+                    TypeMultiplier(HandType.Straight),
                     new[] { straightHigh },
                     filtered.ToArray(),
                     $"顺子 {straightHigh}");
@@ -498,7 +721,7 @@ namespace App.Game
                 return new HandScore(
                     HandType.Pair,
                     chips,
-                    1.5f,
+                    TypeMultiplier(HandType.Pair),
                     new[] { RankKey(pairRank), RankKey(kicker) },
                     filtered.ToArray(),
                     $"对子 {Card.RankName(pairRank)}");
@@ -646,7 +869,7 @@ namespace App.Game
             return new HandScore(
                 HandType.HighCard,
                 chips,
-                1f,
+                TypeMultiplier(HandType.HighCard),
                 keys,
                 filtered.ToArray(),
                 $"散牌 {filtered[0].DisplayName}");

@@ -19,7 +19,7 @@
 |----|------|------|
 | RelicConfig | `Res/Config/RelicConfig.json` | 商品：价格、图标、刷新权重、`MechanismId[]` |
 | RelicEntryConfig | `Res/Config/RelicEntryConfig.json` | 词条：`Type` + `Value` |
-| HandScoreConfig | `Res/Config/HandScoreConfig.json` | 牌型基础倍率 |
+| HandScoreConfig | `Res/Config/HandScoreConfig.json` | 牌型 Level（比牌）与 BasicMagnification（赔率） |
 
 访问：`RelicConfig.Get(id)` / `RelicEntryConfig.Get(id)`。Excel 源在仓库 `Config/`。
 
@@ -42,28 +42,28 @@
 
 - 攻击力：`SeatState.Attack`（英雄 `HeroDamage` / 怪物 `MonsterDamage`）。
 - `BaseChips`：亮出三张 `ChipValue` 之和（A=11，J/Q/K=10，2～10 为面值）。
-- 遗物加成是 **加在牌型倍率上**，不是再乘一层。金花 3.5、白银法杖 +2 → `30 × (3.5+2) = 165`，不是 `30 × 3.5 × 3`。
+- 遗物加成是 **加在牌型倍率上**，不是再乘一层。金花 2.5、白银法杖 +2 → `30 × (2.5+2) = 135`，不是 `30 × 2.5 × 3`。
 - 燧石：总倍率 `× (1 + BossEntry Value[0])`（当前表为 ×0.5）。怪物没有遗物加成，只吃燧石。只改倍率，不改 `BaseChips`。
 - 结果 `Math.Round` 后至少为 1。
 
-牌型基础倍率：
+牌型基础倍率（`HandScoreConfig.BasicMagnification`，比牌用 `Level`）：
 
-| 牌型 | 配置 Type | 基础倍率 |
-|------|-----------|----------|
-| 散牌 | HighCard | 1 |
-| 对子 | Couplet | 2 |
-| 顺子 | Straight | 3 |
-| 金花 | Flush | 3.5 |
-| 顺金 | StraightFlush | 5 |
-| 豹子 | Leopard | 6 |
+| 牌型 | 配置 Type | Level | 基础倍率 |
+|------|-----------|-------|----------|
+| 散牌 | HighCard | 1 | 1 |
+| 对子 | Couplet | 2 | 2 |
+| 金花 | Flush | 3 | 2.5 |
+| 顺子 | Straight | 4 | 3.5 |
+| 顺金 | StraightFlush | 5 | 5 |
+| 豹子 | Leopard | 6 | 6 |
 
 ---
 
 ## 3. 比牌规则
 
-玩家 vs 敌人：`CompareTo >= 0` 算玩家赢（平局玩家赢）。敌人当开牌方时必须严格大于才算敌人赢。
+玩家 vs 敌人：`CompareTo >= 0` 算玩家赢（平局玩家赢）。敌人当开牌方时必须严格大于才算敌人赢。比牌先比 `HandScoreConfig.Level`（豹子 ＞ 顺金 ＞ 顺子 ＞ 金花 ＞ 对子 ＞ 散牌），同 Level 再比点数。
 
-老花眼 / 错峰出行 / 235 / 近视眼只作用在玩家座位。敌人选最大 3 张、比牌、伤害都不吃玩家遗物。
+老花眼 / 错峰出行 / 235 / 近视眼只作用在玩家座位。敌人选最大 3 张时不吃这些遗物。升职改玩家实际牌型；降低只改敌人比牌顺位。
 
 | 遗物 | Type | 行为 |
 |------|------|------|
@@ -71,6 +71,8 @@
 | 错峰出行 | SpecialStraight | 三张排序后相邻点差为 1 或 2 即成顺子（2-4-6、2-3-5 算；2-5-8 不算）。A-2-3 保留 |
 | 近视眼 | AllCardIsHeadCard | 不改点数/牌型；人头相关遗物把每张亮出牌都当人头 |
 | 235 | SpecialTwoThreeFive | 散牌恰好 2+3+5 → 豹子且 `BeatsAll` |
+| 升职 | UpLevel | 玩家牌型按 Level +Value（与变形魔方叠加）。展示名称、伤害倍率、比牌一起变，封顶豹子 |
+| 降低 | ReduceLevel | 只改敌人比牌顺位 `CompareLevel`（表 Value=-1）。展示和出伤仍按原牌型。散牌再降无效 |
 
 ---
 
@@ -158,7 +160,9 @@
 | DefeatGetDamage | 出伤百分比 | 小强层数 × Value[1] |
 | AstrawToClutchAt | 致命伤害 | 血量变为 1，下次造成伤害按本次伤害 × Value 回血，每关一次 |
 | OneMonsterGetDamage | 场上只剩 1 名敌人 | 出伤 × (1+Value) |
-| CardUpGrade | `EvaluateSeat` 玩家 | 牌型 +Value，封顶豹子 |
+| CardUpGrade | `EvaluateSeat` 玩家 | 按 Level +Value（对子→金花→顺子→顺金→豹子），封顶豹子 |
+| UpLevel | `EvaluateSeat` 玩家 | 与 CardUpGrade 叠加，同样改写牌型/倍率/比牌 |
+| ReduceLevel | `EvaluateSeat` 敌人 | 只改比牌顺位，展示和伤害不变。须在好运来等牌型改写之后 |
 | MonsterHpMax | 进关刷怪（非 BOSS） | 血上限 × (1+Value) |
 | CriticalAoe | 玩家暴击 | 对其他存活敌人打自身攻击力 × Value[1] |
 | PerspectiveNum | `ResetSkillCharges` | 透视次数 +Value |
@@ -191,7 +195,7 @@
 | 收藏禁用 | `StartRound` → `ApplyRelicDisable` 从 `RelicConfigIds` 随机禁 N 件 |
 | 小钱包 / 高贵徽章 / 永恒之心 / 入场券 / 好运来 | `StartRound` |
 | 记账本 / 幸运草 / 利息 / 小算盘 / 聚宝盆 / 保温杯 / 暴击拳套 / 运动鞋 / 练习卷 | `AfterRound` |
-| 变形魔方 / 幸运牌型 | `EvaluateSeat` |
+| 变形魔方 / 升职 / 幸运牌型 / 降低 | `EvaluateSeat` |
 | 逆转沙漏 / 徽章 / 垫脚石 / 后备计划 / 复盘 / 小强 | 比牌结算 |
 | 和平鸽 / 护身符 / 条约 / 陷阱 / 差距胶囊 / 稻草 / 反击 / 闪避反击 / 暴击溅射 | `ApplyDamage` / `ComputeAttackDamage` |
 | 毒药 | `ApplyLevelEnemies` |
@@ -206,10 +210,10 @@
 
 ```
 [Game] 伤害 平凡之人→敌人A | 金花 梅花10梅花7梅花6
-  攻击7 + 遗物攻8 (致胜之剑+8) + 天赋攻3 (2点精通+3) + 点数23 = 41 | 牌型x3.5 + 遗物+2 (白银法杖+2) 天赋+0.2 (好兆头+0.2) | 燧石x1 | 倍率x5.7
+  攻击7 + 遗物攻8 (致胜之剑+8) + 天赋攻3 (2点精通+3) + 点数23 = 41 | 牌型x2.5 + 遗物+2 (白银法杖+2) 天赋+0.2 (好兆头+0.2) | 燧石x1 | 倍率x4.7
   未亮出 红桃A黑桃2 | 搓牌已用1 剩余2 透视1 替换1 | 幸运七x0
   天赋伤害+18 (2点精通+3, 好兆头+0.2)
-  41 x 5.7 = 234 | 天赋伤害+18
+  41 x 4.7 = 193 | 天赋伤害+18
 ```
 
 另外只在有情况时打：

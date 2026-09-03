@@ -91,7 +91,7 @@ namespace App.Game
         public const int BaseBetStep = 10;
         public const int RaiseLowMult = 2;
         public const int RaiseHighMult = 4;
-        /// <summary>HUD 预制体空槽数（equip1～equip3），购买件数不设上限。</summary>
+        /// <summary>遗物列表初始容量；购买件数不设上限，HUD 按持有数克隆 yiwuBtn。</summary>
         public const int MaxRelics = 3;
         /// <summary>通关商店货架格子数，对应 BattleShopPop.sellHor。</summary>
         public const int ShopOfferCount = 5;

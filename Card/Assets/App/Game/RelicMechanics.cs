@@ -273,33 +273,37 @@ namespace App.Game
 
         public static HandType ClampType(HandType type)
         {
-            if (type < HandType.HighCard)
-            {
-                return HandType.HighCard;
-            }
-
-            if (type > HandType.ThreeOfAKind)
-            {
-                return HandType.ThreeOfAKind;
-            }
-
-            return type;
+            return HandEvaluator.TypeByLevel(HandEvaluator.TypeLevel(type));
         }
 
         public static HandType ShiftType(HandType type, int delta)
         {
-            return ClampType((HandType)((int)type + delta));
+            return HandEvaluator.TypeByLevel(HandEvaluator.TypeLevel(type) + delta);
         }
 
         public static HandScore ApplyPlayerTypeRewrite(RunState run, HandScore score)
         {
-            var steps = (int)Math.Round(SumValue(run, MechanismType.CardUpGrade));
+            var steps = (int)Math.Round(
+                SumValue(run, MechanismType.CardUpGrade) +
+                SumValue(run, MechanismType.UpLevel));
             if (steps == 0)
             {
                 return score;
             }
 
             return WithType(score, ShiftType(score.Type, steps));
+        }
+
+        /// <summary>只改比牌顺位，不改展示牌型和伤害倍率。须在牌型改写之后调用。</summary>
+        public static HandScore ApplyCompareRankBonus(RunState run, HandScore score)
+        {
+            var bonus = (int)Math.Round(SumValue(run, MechanismType.ReduceLevel));
+            if (bonus == 0)
+            {
+                return score;
+            }
+
+            return score.WithCompareLevelBonus(bonus);
         }
 
         public static HandScore ApplyEnemyTypeRewrite(RunState run, HandScore score, int downgradeSteps)
@@ -310,17 +314,20 @@ namespace App.Game
                 type = ShiftType(type, -downgradeSteps);
             }
 
-            if (HasMechanism(run, MechanismType.LuckyFlush) && type > HandType.Flush)
+            if (HasMechanism(run, MechanismType.LuckyFlush) &&
+                HandEvaluator.TypeLevel(type) > HandEvaluator.TypeLevel(HandType.Flush))
             {
                 type = HandType.Flush;
             }
 
-            if (HasMechanism(run, MechanismType.LuckyStraight) && type > HandType.Straight)
+            if (HasMechanism(run, MechanismType.LuckyStraight) &&
+                HandEvaluator.TypeLevel(type) > HandEvaluator.TypeLevel(HandType.Straight))
             {
                 type = HandType.Straight;
             }
 
-            if (HasMechanism(run, MechanismType.LuckyCouplet) && type > HandType.Pair)
+            if (HasMechanism(run, MechanismType.LuckyCouplet) &&
+                HandEvaluator.TypeLevel(type) > HandEvaluator.TypeLevel(HandType.Pair))
             {
                 type = HandType.Pair;
             }
@@ -328,10 +335,10 @@ namespace App.Game
             return WithType(score, type);
         }
 
-        /// <summary>玩家相对敌人的牌型差：正数表示玩家更大。</summary>
+        /// <summary>玩家相对敌人的牌型差：正数表示玩家更大。差值为配置 Level。</summary>
         public static int TypeGap(HandType playerType, HandType enemyType)
         {
-            return (int)playerType - (int)enemyType;
+            return HandEvaluator.TypeLevel(playerType) - HandEvaluator.TypeLevel(enemyType);
         }
 
         public static float GapDamagePercent(RunState run, HandType playerType, HandType enemyType, bool outgoing)

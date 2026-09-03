@@ -451,7 +451,7 @@ namespace App.Game
             }
 
             var made = HandEvaluator.Evaluate(cards);
-            if (made.Type >= HandType.Flush)
+            if (made.Level >= HandEvaluator.TypeLevel(HandType.Flush))
             {
                 return false;
             }
@@ -680,20 +680,20 @@ namespace App.Game
             }
         }
 
-        /// <summary>同花顺/高胜率→超强；金花→强；对子→中；其余弱。门槛随激进和 SPR 浮动。</summary>
+        /// <summary>顺金/豹子/高胜率→超强；金花或以上（含顺子）→强；对子→中；其余弱。门槛随激进和 SPR 浮动。</summary>
         private static HandBand ClassifyHand(HandScore score, float wr, float high, float mid)
         {
-            if (score.Type >= HandType.StraightFlush || wr >= 0.78f)
+            if (score.Level >= HandEvaluator.TypeLevel(HandType.StraightFlush) || wr >= 0.78f)
             {
                 return HandBand.Super;
             }
 
-            if (wr >= high || score.Type >= HandType.Flush)
+            if (wr >= high || score.Level >= HandEvaluator.TypeLevel(HandType.Flush))
             {
                 return HandBand.Strong;
             }
 
-            if (wr >= mid || score.Type >= HandType.Pair)
+            if (wr >= mid || score.Level >= HandEvaluator.TypeLevel(HandType.Pair))
             {
                 return HandBand.Medium;
             }

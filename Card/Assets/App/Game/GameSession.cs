@@ -1794,58 +1794,7 @@ namespace App.Game
 
         public static float HandTypeMagnification(HandType type)
         {
-            var configType = ToConfigHandType(type);
-            foreach (var row in HandScoreConfig.All.Values)
-            {
-                if (row != null && row.Type == configType)
-                {
-                    return row.BasicMagnification > 0f ? row.BasicMagnification : 1f;
-                }
-            }
-
-            switch (type)
-            {
-                case HandType.Pair: return 2f;
-                case HandType.Straight: return 3f;
-                case HandType.Flush: return 3.5f;
-                case HandType.StraightFlush: return 5f;
-                case HandType.ThreeOfAKind: return 6f;
-                default: return 1f;
-            }
-        }
-
-        private static App.Config.HandType ToConfigHandType(HandType type)
-        {
-            switch (type)
-            {
-                case HandType.Pair:
-                    return App.Config.HandType.Couplet;
-                case HandType.ThreeOfAKind:
-                    return App.Config.HandType.Leopard;
-                default:
-                    return (App.Config.HandType)((int)type + 1);
-            }
-        }
-
-        private static HandType FromConfigHandType(int configId)
-        {
-            if (configId == (int)App.Config.HandType.Couplet)
-            {
-                return HandType.Pair;
-            }
-
-            if (configId == (int)App.Config.HandType.Leopard)
-            {
-                return HandType.ThreeOfAKind;
-            }
-
-            var mapped = (HandType)(configId - 1);
-            if (mapped < HandType.HighCard || mapped > HandType.ThreeOfAKind)
-            {
-                return HandType.HighCard;
-            }
-
-            return mapped;
+            return HandEvaluator.TypeMultiplier(type);
         }
 
         private void DealPlayerLossDamage(SeatState winner)
@@ -2169,7 +2118,7 @@ namespace App.Game
                     break;
                 case MechanismType.HandTypeMagUp:
                 {
-                    var handType = FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
+                    var handType = HandEvaluator.FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
                     var mag = RelicMechanics.ValueAt(entry, 1);
                     Run.AddHandTypeMagBonus(handType, mag);
                     Log($"消耗品：{HandEvaluator.TypeName(handType)} 倍率永久 +{mag}");
@@ -2516,6 +2465,7 @@ namespace App.Game
             else if (seat != null && !seat.IsPlayer)
             {
                 score = RelicMechanics.ApplyEnemyTypeRewrite(Run, score, _enemyDowngradeSteps);
+                score = RelicMechanics.ApplyCompareRankBonus(Run, score);
             }
 
             return score;

@@ -25,7 +25,7 @@ namespace App.UI
     public sealed class GameUIView : ViewBase<GameTableViewModel>
     {
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
-        private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
+        private static readonly string[] EquipSlotKeys = { "yiwuBtn" };
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -37,8 +37,7 @@ namespace App.UI
         private GameObject _playerCardInfo;
         private GameObject _enemyCardInfo;
         private Image _enemyCardTypeIcon;
-        private Image _enemyCardTypeLabel;
-        private TMP_Text _enemyCardTypeNum;
+        private Transform _enemyCardTypeNum;
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
@@ -46,7 +45,6 @@ namespace App.UI
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
         private readonly List<RelicBonusPart> _relicBonuses = new List<RelicBonusPart>(GameBalance.MaxRelics);
         private readonly List<SettlePointCutscene.BonusBeat> _bonusBeats = new List<SettlePointCutscene.BonusBeat>(GameBalance.MaxRelics * 2);
-        private int _prefabEquipCount;
         private GameObject _equipTip;
         private TMP_Text _equipTipText;
         private GameObject _equipTipUse;
@@ -61,7 +59,7 @@ namespace App.UI
         private PlayerItem _playerItem;
         private int _portraitLoadSerial;
         private int _playedAttack;
-        private TMP_Text _playerCardTypeNum;
+        private Transform _playerCardTypeNum;
         private TMP_Text _beilvNum;
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
@@ -92,6 +90,7 @@ namespace App.UI
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
+            RefreshEquips();
         }
 
         protected override async Task OnViewOpen()
@@ -109,7 +108,7 @@ namespace App.UI
             _board.Attach(ViewModel);
             await PortraitLoader.EnsureBattleStatesAsync(ViewModel.Session.Player, ViewModel.Session.Enemies);
             RefreshPlayerItems();
-            PositionEnemyCardInfo();
+            RefreshEquips();
             await EnsureEquipTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
@@ -197,6 +196,7 @@ namespace App.UI
             RefreshPlayerItems();
             _ = EnsureBattlePortraits();
             RefreshCardInfos();
+            RefreshEquips();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -360,6 +360,7 @@ namespace App.UI
                 attackItem,
                 _beilvNum,
                 cardTypeNum,
+                ViewModel.Atlas,
                 _bonusBeats,
                 baseAttack,
                 score.BaseChips,
@@ -427,7 +428,7 @@ namespace App.UI
             }
         }
 
-        private TMP_Text AttackerCardTypeNum(GameSession session, SeatState attacker)
+        private Transform AttackerCardTypeNum(GameSession session, SeatState attacker)
         {
             if (attacker == null)
             {
@@ -1039,20 +1040,19 @@ namespace App.UI
             }
 
             _enemyCardInfo.SetActive(true);
-            PositionEnemyCardInfo();
             if (_enemyCardTypeIcon != null)
             {
                 _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(score.Type);
-            }
-
-            if (_enemyCardTypeLabel != null)
-            {
-                _enemyCardTypeLabel.sprite = ViewModel.GetCardTypeLabel(score.Type);
+                _enemyCardTypeIcon.enabled = _enemyCardTypeIcon.sprite != null;
+                _enemyCardTypeIcon.preserveAspect = true;
             }
 
             if (_enemyCardTypeNum != null)
             {
-                _enemyCardTypeNum.text = GameTableViewModel.FormatHandMultiplier(score.Type);
+                CardTypeValueSprites.Apply(
+                    ViewModel.Atlas,
+                    _enemyCardTypeNum,
+                    GameTableViewModel.FormatHandMultiplier(score.Type));
             }
         }
 
@@ -1144,7 +1144,7 @@ namespace App.UI
 
             Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
             BindDealHidden("horBtns2");
-            BindRemainList();
+            BindEquips();
 
             BindBtn("BlindBtn", ViewModel.BlindBetCommand, ViewModel.ShowBlind);
             BindBtn("LookBtn", ViewModel.LookCommand, ViewModel.ShowLook);
@@ -1182,9 +1182,6 @@ namespace App.UI
             BindBtnLabel("ChaKanGood", ViewModel.ChaKanGoodLabel);
             BindBtnLabel("TiHuanGood", ViewModel.TiHuanGoodLabel);
             OrderActionButtons();
-            EnsureBtn(template, "ExtraRubBtn", "广告+1搓牌", ViewModel.ExtraRubAdCommand, ViewModel.ShowShop);
-            EnsureBtn(template, "DoubleGoldBtn", "广告双倍金币", ViewModel.DoubleGoldAdCommand, ViewModel.ShowShop);
-            EnsureBtn(template, "LeaveShopBtn", "离开商店", ViewModel.LeaveShopCommand, ViewModel.ShowShop);
             RegisterGuideTargets();
         }
 
@@ -1197,24 +1194,6 @@ namespace App.UI
             }
         }
 
-        private void BindRemainList()
-        {
-            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
-            if (node == null)
-            {
-                return;
-            }
-
-            node.gameObject.SetActive(true);
-            var button = node.GetComponent<Button>() ?? node.GetComponentInChildren<Button>(true);
-            if (button == null)
-            {
-                return;
-            }
-
-            Binding.BindCommand(button, ViewModel.OpenRemainListCommand);
-        }
-
         private void BindCardInfo()
         {
             var root = ResolveSlot("cardinfoItem");
@@ -1225,82 +1204,40 @@ namespace App.UI
                 Binding.BindActive(_playerCardInfo, ViewModel.ShowCardInfo);
             }
 
-            BindImage("cardtype", ViewModel.CardTypeIcon);
-            BindImage("cardtype2", ViewModel.CardTypeLabel);
+            BindImage("cardinfoItem", ViewModel.CardTypeIcon);
             var num = ResolveSlot("cardtypeNum");
-            var text = num != null ? num.GetComponent<TMP_Text>() : null;
-            _playerCardTypeNum = text;
-            if (text != null)
+            _playerCardTypeNum = num;
+            if (num != null)
             {
-                Binding.BindText(text, ViewModel.CardTypeNum);
+                CardTypeValueSprites.Prepare(num);
+                Binding.Add(ViewModel.CardTypeNum.Subscribe(
+                    text => CardTypeValueSprites.Apply(ViewModel.Atlas, num, text),
+                    emitCurrent: true));
             }
 
-            SpawnEnemyCardInfo(root);
+            BindEnemyCardInfo();
         }
 
-        private void SpawnEnemyCardInfo(Transform template)
+        private void BindEnemyCardInfo()
         {
-            if (template == null)
+            var root = ResolveSlot("cardinfoEnemyItem");
+            if (root != null)
             {
-                return;
+                _enemyCardInfo = root.gameObject;
+                _enemyCardInfo.SetActive(false);
+                _enemyCardTypeIcon = root.GetComponent<Image>();
             }
 
-            var clone = Instantiate(template.gameObject, transform, false);
-            clone.name = "cardinfoItem_enemy";
-            clone.SetActive(false);
-            StripBindKeys(clone);
-            var rt = clone.GetComponent<RectTransform>();
-            if (rt != null)
+            var num = ResolveSlot("cardtypeEnemyNum");
+            if (num == null && root != null)
             {
-                rt.localRotation = Quaternion.identity;
-                rt.localScale = template.localScale;
+                num = root.Find("cardtypeEnemyNum") ?? FindDeep(root, "cardtypeEnemyNum");
             }
 
-            _enemyCardInfo = clone;
-            _enemyCardTypeIcon = FindUiImage(clone.transform, "cardtype");
-            _enemyCardTypeLabel = FindUiImage(clone.transform, "cardtype2");
-            _enemyCardTypeNum = FindUiText(clone.transform, "cardtypeNum");
-        }
-
-        private void PositionEnemyCardInfo()
-        {
-            var tipRt = _enemyCardInfo != null ? _enemyCardInfo.GetComponent<RectTransform>() : null;
-            var parent = transform as RectTransform;
-            if (tipRt == null || parent == null || _gameHud == null)
+            _enemyCardTypeNum = num;
+            if (num != null)
             {
-                return;
-            }
-
-            var other = FindDeep(_gameHud.transform, "otherNode");
-            if (other == null)
-            {
-                return;
-            }
-
-            if (_hudCanvas == null)
-            {
-                _hudCanvas = GetComponentInParent<Canvas>();
-            }
-
-            var worldCam = Camera.main;
-            var canvasCam = _hudCanvas != null && _hudCanvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? _hudCanvas.worldCamera
-                : null;
-            var screen = RectTransformUtility.WorldToScreenPoint(worldCam, other.position);
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, canvasCam, out var local))
-            {
-                return;
-            }
-
-            tipRt.anchoredPosition = local;
-        }
-
-        private static void StripBindKeys(GameObject root)
-        {
-            var binds = root.GetComponentsInChildren<Framework.UI.Binding.UIBind>(true);
-            for (var i = 0; i < binds.Length; i++)
-            {
-                Destroy(binds[i]);
+                CardTypeValueSprites.Prepare(num);
             }
         }
 
@@ -1313,25 +1250,35 @@ namespace App.UI
                 return;
             }
 
-            Binding.BindImageSprite(image, source);
+            Binding.Add(source.Subscribe(sprite =>
+            {
+                image.sprite = sprite;
+                image.enabled = sprite != null;
+                image.preserveAspect = true;
+            }));
         }
 
         private void BindEquips()
         {
             _equipSlots.Clear();
             _equipRelicIds.Clear();
+            var node = ResolveSlot("horEquipBtns2") ?? transform.Find("horEquipBtns2");
+            if (node != null)
+            {
+                node.gameObject.SetActive(true);
+            }
+
             for (var i = 0; i < EquipSlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EquipSlotKeys[i]);
                 if (slot != null)
                 {
+                    HideChild(slot, "Text (TMP)");
                     HookEquipClick(slot, _equipSlots.Count);
                     _equipSlots.Add(slot);
                     _equipRelicIds.Add(0);
                 }
             }
-
-            _prefabEquipCount = _equipSlots.Count;
         }
 
         private void HookEquipClick(Transform slot, int index)
@@ -1644,6 +1591,7 @@ namespace App.UI
                 }
 
                 HookEquipClick(clone.transform, _equipSlots.Count);
+                HideChild(clone.transform, "Text (TMP)");
                 _equipSlots.Add(clone.transform);
                 _equipRelicIds.Add(0);
             }
@@ -1651,6 +1599,19 @@ namespace App.UI
             while (_equipRelicIds.Count < _equipSlots.Count)
             {
                 _equipRelicIds.Add(0);
+            }
+
+            if (_beilvNum != null)
+            {
+                _beilvNum.transform.SetAsLastSibling();
+            }
+            else
+            {
+                var beilv = ResolveSlot("beilvNum");
+                if (beilv != null)
+                {
+                    beilv.SetAsLastSibling();
+                }
             }
 
             var atlas = ViewModel.Atlas;
@@ -1704,8 +1665,7 @@ namespace App.UI
                     nohave.gameObject.SetActive(relic == null);
                 }
 
-                var keepEmptyFrame = i < _prefabEquipCount;
-                slot.gameObject.SetActive(keepEmptyFrame || sprite != null);
+                slot.gameObject.SetActive(relic != null);
             }
 
             if (_shownEquipRelicId > 0 && !shownStillOwned)

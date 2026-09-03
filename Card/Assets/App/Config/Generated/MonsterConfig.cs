@@ -47,6 +47,16 @@ namespace App.Config
         public string Icon;
 
         /// <summary>
+        /// 怪物底图
+        /// </summary>
+        public string BaseMap;
+
+        /// <summary>
+        /// 怪物血条
+        /// </summary>
+        public string HealthBar;
+
+        /// <summary>
         /// 怪物机制
         /// </summary>
         public int MonsterEntry;

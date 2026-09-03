@@ -132,7 +132,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的同花顺牌型在结算时提供+5倍率"
+    "Desc": "亮出的同花顺牌型在结算时提供+5倍率(触发较为罕见)"
   },
   {
     "Id": 110,
@@ -147,7 +147,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+6倍率"
+    "Desc": "亮出的豹子牌型在结算时提供+6倍率(触发较为罕见)"
   },
   {
     "Id": 111,
@@ -402,7 +402,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的顺子牌型在结算时提供+150攻击力"
+    "Desc": "亮出的顺子牌型在结算时提供+200攻击力"
   },
   {
     "Id": 207,
@@ -432,7 +432,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的同花顺牌型在结算时提供+300攻击力"
+    "Desc": "亮出的同花顺牌型在结算时提供+300攻击力(触发较为罕见)"
   },
   {
     "Id": 209,
@@ -447,7 +447,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+300攻击力"
+    "Desc": "亮出的豹子牌型在结算时提供+300攻击力(触发较为罕见)"
   },
   {
     "Id": 210,
@@ -486,8 +486,8 @@
     "RefreshProbability": 0.4,
     "Name": "旗帜",
     "Icon": "Flag",
-    "Price": 105,
-    "SellingPrice": 52,
+    "Price": 130,
+    "SellingPrice": 65,
     "MechanismId": [
       20012
     ],
@@ -677,7 +677,7 @@
   },
   {
     "Id": 225,
-    "Type": 3,
+    "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "幸运顺子",
     "Icon": "LuckyStraight",
@@ -891,8 +891,8 @@
     "RefreshProbability": 0.2,
     "Name": "搓牌能手",
     "Icon": "CardMaster",
-    "Price": 185,
-    "SellingPrice": 92,
+    "Price": 160,
+    "SellingPrice": 80,
     "MechanismId": [
       30004
     ],
@@ -1082,7 +1082,7 @@
   },
   {
     "Id": 317,
-    "Type": 2,
+    "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "幸运同花",
     "Icon": "LuckySameSuit",
@@ -1393,7 +1393,7 @@
     ],
     "UnlockConditionId": 1014,
     "UseType": 0,
-    "Desc": "结算时,所有技能都无剩余使用次数,则提供+12倍率"
+    "Desc": "结算时,所有技能都无剩余使用次数,则提供+6倍率"
   },
   {
     "Id": 406,
@@ -1408,7 +1408,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每有1个收藏品,结算时提供+1倍率"
+    "Desc": "每有1个收藏品,结算时提供+0.5倍率"
   },
   {
     "Id": 407,
@@ -1423,7 +1423,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "结算时,若未使用过搓牌,每个搓牌次数提供+3倍率"
+    "Desc": "结算时,若未使用过搓牌,每个搓牌次数提供+2倍率"
   },
   {
     "Id": 408,
@@ -1454,7 +1454,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张A在结算伤害时提供+400攻击力和+8倍率"
+    "Desc": "亮出的每张A在结算伤害时提供+200攻击力和+8倍率"
   },
   {
     "Id": 410,
@@ -1484,7 +1484,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮牌时,有25%概率将该牌型提供的倍率永久+1"
+    "Desc": "亮牌时,有35%概率将该牌型提供的倍率永久+1"
   },
   {
     "Id": 412,
@@ -1500,7 +1500,7 @@
     ],
     "UnlockConditionId": 1016,
     "UseType": 0,
-    "Desc": "每回合失去2次搓牌机会,但结算时提供+10倍率"
+    "Desc": "每回合失去2次搓牌机会,但结算时提供+8倍率"
   },
   {
     "Id": 413,
@@ -1662,8 +1662,8 @@
     "RefreshProbability": 0.1,
     "Name": "透视眼",
     "Icon": "PerspectiveEye",
-    "Price": 450,
-    "SellingPrice": 225,
+    "Price": 320,
+    "SellingPrice": 160,
     "MechanismId": [
       40023
     ],

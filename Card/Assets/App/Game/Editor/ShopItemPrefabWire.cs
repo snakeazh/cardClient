@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 namespace App.Game.Editor
 {
     /// <summary>
-    /// 把 ShopItem 预制体上的 card_Name / card_icon / IconBG / IconTitleBG / card_Circle / goldNum / gold / Button 直接挂到序列化字段。
+    /// 把 ShopItem 预制体上的 card_Name / card_icon / IconBG / IconTitleBG / card_Circle / priceValue(goldNum) / gold / Button 直接挂到序列化字段。
     /// </summary>
     public static class ShopItemPrefabWire
     {
@@ -62,7 +62,11 @@ namespace App.Game.Editor
                 changed |= Assign(so, "iconBg", FindNamed<Image>(root.transform, "IconBG"), force);
                 changed |= Assign(so, "iconTitleBg", FindNamed<Image>(root.transform, "IconTitleBG"), force);
                 changed |= Assign(so, "cardCircle", FindNamed<Image>(root.transform, "card_Circle"), force);
-                changed |= Assign(so, "goldNum", FindNamed<TMP_Text>(root.transform, "goldNum"), force);
+                changed |= Assign(
+                    so,
+                    "goldNum",
+                    FindNamed<TMP_Text>(root.transform, "priceValue") ?? FindNamed<TMP_Text>(root.transform, "goldNum"),
+                    force);
                 changed |= Assign(so, "gold", FindNamed<Image>(root.transform, "gold"), force);
                 changed |= Assign(so, "button", item.GetComponent<Button>(), force);
                 if (!changed)

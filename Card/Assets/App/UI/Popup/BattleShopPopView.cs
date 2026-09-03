@@ -13,22 +13,23 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 通关商店弹窗。sellHor 展示货架，MineHor 展示已购装备，点击弹出 ShopDetail 购买或出售。
+    /// 通关商店弹窗。sellItem / mineItem 是隐藏模板，克隆到 sellHor 与 MineHor。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleShopPop, UILayer.Popup, ResResourcePaths.BattleShopPop)]
     public sealed class BattleShopPopView : ViewBase<BattleShopPopViewModel>
     {
-        private readonly List<EquipShopIcon> _sellItems = new List<EquipShopIcon>();
-        private readonly List<EquipShopIcon> _mineItems = new List<EquipShopIcon>();
-        private EquipShopIcon _sellTemplate;
-        private EquipShopIcon _mineTemplate;
+        private readonly List<ShopItem> _sellItems = new List<ShopItem>();
+        private readonly List<ShopItem> _mineItems = new List<ShopItem>();
+        private GameObject _sellTemplate;
+        private GameObject _mineTemplate;
+        private Transform _mineContent;
 
         protected override void OnBind()
         {
             Binding.BindText(GetNode<TMP_Text>("RefreshGooldNum"), ViewModel.RefreshGoldNum);
+            Binding.BindText(GetNode<TMP_Text>("refreshNum"), ViewModel.RefreshNum);
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
-            Binding.BindCommand(GetNode<Button>("CloseBtn"), ViewModel.CloseCommand);
             BindResourceBar();
 
             EnsureSellItems();
@@ -114,14 +115,9 @@ namespace App.UI.Popup
 
         private void EnsureSellItems()
         {
+            _sellTemplate = UI.GetGameObject("sellItem");
+            _sellTemplate.SetActive(false);
             var root = UI.GetGameObject("sellHor").transform;
-            _sellTemplate = root.GetComponentInChildren<EquipShopIcon>(true);
-            if (_sellTemplate == null)
-            {
-                return;
-            }
-
-            _sellTemplate.gameObject.SetActive(false);
             _sellItems.Clear();
             for (var i = 0; i < GameBalance.ShopOfferCount; i++)
             {
@@ -131,37 +127,57 @@ namespace App.UI.Popup
 
         private void EnsureMineItems()
         {
-            var root = UI.GetGameObject("MineHor").transform;
-            _mineTemplate = root.GetComponentInChildren<EquipShopIcon>(true);
-            if (_mineTemplate == null)
-            {
-                return;
-            }
-
-            _mineTemplate.gameObject.SetActive(false);
+            _mineTemplate = UI.GetGameObject("mineItem");
+            _mineTemplate.SetActive(false);
+            var mineHor = UI.GetGameObject("MineHor").transform;
+            _mineContent = FindMineContent(mineHor);
         }
 
-        private EquipShopIcon CloneItem(
-            EquipShopIcon template,
-            Transform parent,
-            string name,
-            Action<EquipShopIcon> onClick)
+        private static Transform FindMineContent(Transform mineHor)
         {
-            var go = UnityEngine.Object.Instantiate(template.gameObject, parent, false);
-            go.name = name;
-            go.SetActive(false);
-            var bind = go.GetComponent<UIBind>();
-            if (bind != null)
+            var scroll = mineHor.GetComponent<ScrollRect>();
+            if (scroll != null && scroll.content != null)
             {
-                UnityEngine.Object.Destroy(bind);
+                return scroll.content;
             }
 
-            var item = go.GetComponent<EquipShopIcon>();
+            var named = FindDeep(mineHor, "Content");
+            return named != null ? named : mineHor;
+        }
+
+        private ShopItem CloneItem(
+            GameObject template,
+            Transform parent,
+            string name,
+            Action<ShopItem> onClick,
+            bool wrapForGrid = false)
+        {
+            var host = parent;
+            if (wrapForGrid)
+            {
+                var slot = new GameObject(name, typeof(RectTransform));
+                slot.layer = parent.gameObject.layer;
+                var rt = slot.GetComponent<RectTransform>();
+                rt.SetParent(parent, false);
+                rt.localScale = Vector3.one;
+                host = rt;
+            }
+
+            var go = UnityEngine.Object.Instantiate(template, host, false);
+            go.name = wrapForGrid ? template.name : name;
+            go.SetActive(false);
+            var binds = go.GetComponentsInChildren<UIBind>(true);
+            for (var i = 0; i < binds.Length; i++)
+            {
+                UnityEngine.Object.Destroy(binds[i]);
+            }
+
+            var item = go.GetComponentInChildren<ShopItem>(true);
             item.BindClick(onClick);
             return item;
         }
 
-        private void OnSellClicked(EquipShopIcon item)
+        private void OnSellClicked(ShopItem item)
         {
             if (item == null || item.RelicConfigId <= 0)
             {
@@ -171,7 +187,7 @@ namespace App.UI.Popup
             _ = ViewModel.OpenDetail(item.RelicConfigId, buying: true);
         }
 
-        private void OnMineClicked(EquipShopIcon item)
+        private void OnMineClicked(ShopItem item)
         {
             if (item == null || item.RelicConfigId <= 0)
             {
@@ -195,35 +211,34 @@ namespace App.UI.Popup
                 var item = _sellItems[i];
                 if (i >= offers.Count)
                 {
-                    item.gameObject.SetActive(false);
+                    SetSlotActive(item, false);
                     continue;
                 }
 
                 var relic = RelicConfig.Get(offers[i]);
                 if (relic == null)
                 {
-                    item.gameObject.SetActive(false);
+                    SetSlotActive(item, false);
                     continue;
                 }
 
-                item.gameObject.SetActive(true);
-                item.Bind(relic, ViewModel.GetRelicIcon(relic));
+                SetSlotActive(item, true);
+                item.Bind(relic, ViewModel.GetRelicIcon(relic), buyPrice: ViewModel.Session.EffectiveBuyPrice(relic.Id));
             }
         }
 
         private void RefreshMineItems()
         {
-            if (_mineTemplate == null)
+            if (_mineTemplate == null || _mineContent == null)
             {
                 return;
             }
 
             var owned = ViewModel.Session.Run.RelicConfigIds;
             var shown = owned.Count;
-            var root = _mineTemplate.transform.parent;
             while (_mineItems.Count < shown)
             {
-                _mineItems.Add(CloneItem(_mineTemplate, root, $"mineItem_{_mineItems.Count}", OnMineClicked));
+                _mineItems.Add(CloneItem(_mineTemplate, _mineContent, $"mineItem_{_mineItems.Count}", OnMineClicked, wrapForGrid: true));
             }
 
             for (var i = 0; i < _mineItems.Count; i++)
@@ -231,19 +246,45 @@ namespace App.UI.Popup
                 var item = _mineItems[i];
                 if (i >= shown)
                 {
-                    item.gameObject.SetActive(false);
+                    SetSlotActive(item, false, _mineContent);
                     continue;
                 }
 
                 var relic = RelicConfig.Get(owned[i]);
                 if (relic == null)
                 {
-                    item.gameObject.SetActive(false);
+                    SetSlotActive(item, false, _mineContent);
                     continue;
                 }
 
-                item.gameObject.SetActive(true);
-                item.Bind(relic, ViewModel.GetRelicIcon(relic));
+                SetSlotActive(item, true, _mineContent);
+                item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
+            }
+        }
+
+        private static void SetSlotActive(ShopItem item, bool active, Transform layoutRoot = null)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            var t = item.transform;
+            while (t != null && t != layoutRoot)
+            {
+                t.gameObject.SetActive(active);
+                var parent = t.parent;
+                if (parent == null || parent == layoutRoot)
+                {
+                    break;
+                }
+
+                t = parent;
+                if (layoutRoot == null)
+                {
+                    t.gameObject.SetActive(active);
+                    break;
+                }
             }
         }
     }

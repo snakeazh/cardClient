@@ -1043,6 +1043,16 @@ namespace App.Config
         /// </summary>
         RelicNumMax = 149,
 
+        /// <summary>
+        /// 比牌时,对方的牌型顺位降低
+        /// </summary>
+        ReduceLevel = 150,
+
+        /// <summary>
+        /// 比牌时,自己的牌型顺位提高
+        /// </summary>
+        UpLevel = 151,
+
         MaxHp = 1111,
 
         EveryRoundHpUp = 1112,

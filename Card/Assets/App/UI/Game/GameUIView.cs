@@ -15,6 +15,7 @@ using Framework.UI.View;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using HandType = App.Game.HandType;
 
 namespace App.UI
 {
@@ -56,6 +57,10 @@ namespace App.UI
         private bool _shownRoundBuff;
         private bool _shownPlayerTip;
         private int _shownEnemySlot = -1;
+        private GameObject _winTip;
+        private Transform _winTipTemplate;
+        private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
+        private bool _shownWinTip;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -113,6 +118,7 @@ namespace App.UI
             RefreshPlayerItems();
             RefreshEquips();
             await EnsureEquipTip();
+            await EnsureWinTip();
             ViewModel.Session.Changed += OnSessionChanged;
         }
 
@@ -169,6 +175,14 @@ namespace App.UI
             }
 
             HideEquipTip();
+            if (_winTip != null)
+            {
+                Destroy(_winTip);
+                _winTip = null;
+                _winTipTemplate = null;
+            }
+
+            _winTipRows.Clear();
             if (_equipTip != null)
             {
                 Destroy(_equipTip);
@@ -1075,6 +1089,7 @@ namespace App.UI
         {
             BindBtn("backBtn", ViewModel.BackCommand);
             BindResourceBar();
+            BindRuleBtn();
         }
 
         private void BindResourceBar()
@@ -1293,6 +1308,25 @@ namespace App.UI
             Binding.BindCommand(button, ViewModel.OpenRemainListCommand);
         }
 
+        private void BindRuleBtn()
+        {
+            var slot = ResolveSlot("ruleBtn") ?? transform.Find("ruleBtn") ?? FindDeep(transform, "ruleBtn");
+            if (slot == null)
+            {
+                return;
+            }
+
+            slot.gameObject.SetActive(true);
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            button.onClick.RemoveListener(OnRuleClicked);
+            button.onClick.AddListener(OnRuleClicked);
+        }
+
         private void BindEquips()
         {
             _equipSlots.Clear();
@@ -1421,6 +1455,18 @@ namespace App.UI
             _ = ShowRoundBuffTip();
         }
 
+        private void OnRuleClicked()
+        {
+            if (_shownWinTip && _winTip != null && _winTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            HideEquipTip();
+            _ = ShowWinTip();
+        }
+
         private async Task ShowRoundBuffTip()
         {
             await EnsureEquipTip();
@@ -1446,6 +1492,203 @@ namespace App.UI
                 desc,
                 showUse: false,
                 placeRight: false);
+        }
+
+        private async Task ShowWinTip()
+        {
+            await EnsureWinTip();
+            if (_winTip == null)
+            {
+                return;
+            }
+
+            FillWinTipRows();
+            _shownWinTip = true;
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _winTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _winTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _winTip.transform.SetAsLastSibling();
+            var slot = ResolveSlot("ruleBtn") ?? transform.Find("ruleBtn") ?? FindDeep(transform, "ruleBtn");
+            if (slot != null)
+            {
+                PositionTip(_winTip, slot, placeRight: false);
+            }
+        }
+
+        private async Task EnsureWinTip()
+        {
+            if (_winTip != null || ViewModel == null || ViewModel.Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.WinTip);
+                if (prefab == null)
+                {
+                    return;
+                }
+
+                _winTip = Instantiate(prefab, transform, false);
+                _winTip.name = "WinTip";
+                var ui = _winTip.GetComponent<UIReference>();
+                if (ui != null && ui.TryGet<Component>("cardinfoEnemyItem", out var item) && item != null)
+                {
+                    _winTipTemplate = item.transform;
+                }
+
+                if (_winTipTemplate == null)
+                {
+                    _winTipTemplate = _winTip.transform.childCount > 0 ? _winTip.transform.GetChild(0) : null;
+                }
+
+                if (_winTipTemplate != null)
+                {
+                    _winTipTemplate.gameObject.SetActive(false);
+                }
+
+                var group = _winTip.GetComponent<CanvasGroup>();
+                if (group == null)
+                {
+                    group = _winTip.AddComponent<CanvasGroup>();
+                }
+
+                group.blocksRaycasts = true;
+                group.interactable = true;
+                _winTip.SetActive(false);
+                _hudCanvas = GetComponentInParent<Canvas>();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private void FillWinTipRows()
+        {
+            if (_winTip == null || _winTipTemplate == null || ViewModel == null)
+            {
+                return;
+            }
+
+            var types = CollectWinTipHandTypes();
+            while (_winTipRows.Count < types.Count)
+            {
+                var clone = Instantiate(_winTipTemplate.gameObject, _winTip.transform, false);
+                clone.name = $"cardinfoItem{_winTipRows.Count + 1}";
+                var binds = clone.GetComponentsInChildren<Framework.UI.Binding.UIBind>(true);
+                for (var b = 0; b < binds.Length; b++)
+                {
+                    Destroy(binds[b]);
+                }
+
+                clone.SetActive(true);
+                _winTipRows.Add(clone);
+            }
+
+            for (var i = 0; i < _winTipRows.Count; i++)
+            {
+                var row = _winTipRows[i];
+                if (row == null)
+                {
+                    continue;
+                }
+
+                if (i >= types.Count)
+                {
+                    row.SetActive(false);
+                    continue;
+                }
+
+                row.SetActive(true);
+                ApplyWinTipRow(row.transform, types[i]);
+            }
+        }
+
+        private static List<HandType> CollectWinTipHandTypes()
+        {
+            var types = new List<HandType>(6);
+            var rows = new List<HandScoreConfig>(6);
+            foreach (var kv in HandScoreConfig.All)
+            {
+                if (kv.Value != null)
+                {
+                    rows.Add(kv.Value);
+                }
+            }
+
+            rows.Sort((a, b) => b.Level.CompareTo(a.Level));
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var type = HandEvaluator.FromConfigHandType((int)rows[i].Type);
+                if (!types.Contains(type))
+                {
+                    types.Add(type);
+                }
+            }
+
+            if (types.Count > 0)
+            {
+                return types;
+            }
+
+            types.Add(HandType.ThreeOfAKind);
+            types.Add(HandType.StraightFlush);
+            types.Add(HandType.Flush);
+            types.Add(HandType.Straight);
+            types.Add(HandType.Pair);
+            types.Add(HandType.HighCard);
+            return types;
+        }
+
+        private void ApplyWinTipRow(Transform row, HandType type)
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            var icon = row.GetComponent<Image>();
+            if (icon != null)
+            {
+                icon.sprite = ViewModel.GetCardTypeIcon(type);
+                icon.enabled = icon.sprite != null;
+                icon.preserveAspect = true;
+            }
+
+            var num = row.Find("cardtypeEnemyNum") ?? FindDeep(row, "cardtypeEnemyNum");
+            if (num == null)
+            {
+                return;
+            }
+
+            var anim = num.GetComponent<Animator>();
+            if (anim != null)
+            {
+                anim.enabled = false;
+            }
+
+            var mag = HandEvaluator.TypeMultiplier(type);
+            var run = ViewModel.Session != null ? ViewModel.Session.Run : null;
+            if (run != null)
+            {
+                mag += run.HandTypeMagBonus(type);
+            }
+
+            CardTypeValueSprites.Prepare(num);
+            CardTypeValueSprites.Apply(ViewModel.Atlas, num, GameTableViewModel.FormatMultiplier(mag));
         }
 
         private async Task EnsureEquipTip()
@@ -1541,6 +1784,7 @@ namespace App.UI
                 return;
             }
 
+            HideWinTip();
             _equipTipAnchor = slot;
             SetEquipTipTexts(title, body);
             SetEquipTipUseVisible(showUse);
@@ -1562,7 +1806,7 @@ namespace App.UI
             _equipTip.transform.SetAsLastSibling();
             if (slot != null)
             {
-                PositionItemTip(slot, placeRight);
+                PositionTip(_equipTip, slot, placeRight);
             }
         }
 
@@ -1578,9 +1822,19 @@ namespace App.UI
                 _equipTip.SetActive(false);
             }
 
+            HideWinTip();
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(false);
+            }
+        }
+
+        private void HideWinTip()
+        {
+            _shownWinTip = false;
+            if (_winTip != null)
+            {
+                _winTip.SetActive(false);
             }
         }
 
@@ -1606,6 +1860,39 @@ namespace App.UI
             button.onClick.AddListener(HideEquipTip);
             go.SetActive(false);
             _equipTipCatcher = go;
+        }
+
+        private void PositionTip(GameObject tip, Transform slot, bool placeRight)
+        {
+            var tipRt = tip != null ? tip.GetComponent<RectTransform>() : null;
+            var itemRt = slot != null ? slot.transform as RectTransform : null;
+            var parent = transform as RectTransform;
+            if (tipRt == null || itemRt == null || parent == null)
+            {
+                return;
+            }
+
+            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
+            itemRt.GetWorldCorners(_equipTipCorners);
+            var edge = placeRight
+                ? (_equipTipCorners[2] + _equipTipCorners[3]) * 0.5f
+                : (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, edge);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
+            {
+                return;
+            }
+
+            var tipWidth = tipRt.rect.width;
+            var tipHeight = tipRt.rect.height;
+            tipRt.anchoredPosition = placeRight
+                ? new Vector2(
+                    local.x + 8f + tipRt.pivot.x * tipWidth,
+                    local.y + (0.5f - tipRt.pivot.y) * tipHeight)
+                : new Vector2(
+                    local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
+                    local.y + (0.5f - tipRt.pivot.y) * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 
         private void BindEquipTipNodes(GameObject tip)
@@ -1770,39 +2057,6 @@ namespace App.UI
             }
 
             ViewModel.Session.UseRelic(_shownEquipRelicId);
-        }
-
-        private void PositionItemTip(Transform slot, bool placeRight)
-        {
-            var tipRt = _equipTip != null ? _equipTip.GetComponent<RectTransform>() : null;
-            var itemRt = slot != null ? slot.transform as RectTransform : null;
-            var parent = transform as RectTransform;
-            if (tipRt == null || itemRt == null || parent == null)
-            {
-                return;
-            }
-
-            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
-            itemRt.GetWorldCorners(_equipTipCorners);
-            var edge = placeRight
-                ? (_equipTipCorners[2] + _equipTipCorners[3]) * 0.5f
-                : (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
-            var screen = RectTransformUtility.WorldToScreenPoint(cam, edge);
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
-            {
-                return;
-            }
-
-            var tipWidth = tipRt.rect.width;
-            var tipHeight = tipRt.rect.height;
-            tipRt.anchoredPosition = placeRight
-                ? new Vector2(
-                    local.x + 8f + tipRt.pivot.x * tipWidth,
-                    local.y + (0.5f - tipRt.pivot.y) * tipHeight)
-                : new Vector2(
-                    local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
-                    local.y + (0.5f - tipRt.pivot.y) * tipHeight);
-            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 
         private void RefreshEquips()

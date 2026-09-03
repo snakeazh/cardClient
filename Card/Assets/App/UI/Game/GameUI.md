@@ -21,7 +21,7 @@ GameUI
   player1/2/3             ← 敌人人物卡槽（player1 中心；运行时克隆 PlayerItem）；平时点击弹出 ItemTip
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
-  horEquipBtns2           ← 遗物列表，打开 RemainListPop（一直可点）
+  horEquipBtns2           ← yiwuBtn 遗物列表；ruleBtn 点出 WinTip 赔率表（一直可点）
   cardinfoItem            ← 亮牌后玩家牌型图标
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
@@ -48,6 +48,8 @@ GameUI
 
 `horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算遗物跳动没有槽位 Animator 时只改数字。
 
+`ruleBtn` 一直显示。点击在按钮左侧弹出 `WinTip`：按 `HandScoreConfig` 从高到低克隆一行牌型图标 + 倍率（`BasicMagnification`，再加本局 `HandTypeMagBonus`）。关闭逻辑与 `ItemTip` 相同：全屏透明 Catcher，点空白关闭；再点 `ruleBtn` 也关闭。
+
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。  
 **不要再创建或绑定 `arrow`。** 当前行动对象指示已去掉。
 
@@ -62,6 +64,7 @@ GameUI
 | `CompareBtn` | 开战 | `WaitingOpen`，且已选 3 张 |
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | `(n/max)` | 始终在 `horBtns2`，没次数则禁用 |
 | `yiwuBtn` | 遗物列表 | 一直显示，点开 `RemainListPop` |
+| `ruleBtn` | 规则 | 一直显示，点开 `WinTip` 赔率表 |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 
 `n` 为当前剩余次数，`max` 为 `GameBalance.Skill*Uses + Bonus*` 再加遗物/英雄加成。次数配置仍是搓牌 3 / 透视 1 / 替换 1。

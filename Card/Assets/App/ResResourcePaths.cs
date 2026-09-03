@@ -29,6 +29,7 @@ namespace App.Resources
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
+        public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";
         public const string CardIcon = "Game/CardIcon";
         public const string CardShadow = "UI/Icon/CardShadow";

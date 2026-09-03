@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BendStart: 0.7
+    - _BendStart: 0.4
     - _ColorMask: 15
     - _GustSpeed: 0.5
     - _GustStrength: 0.209

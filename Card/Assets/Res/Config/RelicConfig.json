@@ -1291,6 +1291,36 @@
     "Desc": "每通过1关时,获得25金币"
   },
   {
+    "Id": 331,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "降低",
+    "Icon": "ReduceLevel",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30031
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时,对方的牌型顺位降低1级"
+  },
+  {
+    "Id": 332,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "升职",
+    "Icon": "UpLevel",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30032
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时,自己的牌型顺位提高1级"
+  },
+  {
     "Id": 401,
     "Type": 4,
     "RefreshProbability": 0.1,

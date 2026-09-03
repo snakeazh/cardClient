@@ -17,6 +17,11 @@ namespace App.Config
         public string Name;
 
         /// <summary>
+        /// 牌型顺位
+        /// </summary>
+        public int Level;
+
+        /// <summary>
         /// 牌型
         /// </summary>
         public HandType Type;

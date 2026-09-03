@@ -3,6 +3,7 @@
     "Id": 1001,
     "Difficulty": 1,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       10011
     ],
@@ -12,6 +13,7 @@
     "Id": 1002,
     "Difficulty": 1,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       10021
     ],
@@ -21,6 +23,7 @@
     "Id": 1003,
     "Difficulty": 1,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       10031
     ],
@@ -30,6 +33,7 @@
     "Id": 1004,
     "Difficulty": 1,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       10041,
       10042
@@ -40,6 +44,7 @@
     "Id": 1005,
     "Difficulty": 1,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       10051,
       10052
@@ -50,6 +55,7 @@
     "Id": 1006,
     "Difficulty": 1,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       10061,
       10062
@@ -60,6 +66,7 @@
     "Id": 1007,
     "Difficulty": 1,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       10071,
       10072,
@@ -71,6 +78,7 @@
     "Id": 1008,
     "Difficulty": 1,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       10081,
       10082,
@@ -82,6 +90,7 @@
     "Id": 1009,
     "Difficulty": 1,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       10091,
       10092,
@@ -93,6 +102,7 @@
     "Id": 1010,
     "Difficulty": 1,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       10101,
       10102,
@@ -104,6 +114,7 @@
     "Id": 2001,
     "Difficulty": 2,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       20011
     ],
@@ -113,6 +124,7 @@
     "Id": 2002,
     "Difficulty": 2,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       20021
     ],
@@ -122,6 +134,7 @@
     "Id": 2003,
     "Difficulty": 2,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       20031
     ],
@@ -131,6 +144,7 @@
     "Id": 2004,
     "Difficulty": 2,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       20041,
       20042
@@ -141,6 +155,7 @@
     "Id": 2005,
     "Difficulty": 2,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       20051,
       20052
@@ -151,6 +166,7 @@
     "Id": 2006,
     "Difficulty": 2,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       20061,
       20062
@@ -161,6 +177,7 @@
     "Id": 2007,
     "Difficulty": 2,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       20071,
       20072,
@@ -172,6 +189,7 @@
     "Id": 2008,
     "Difficulty": 2,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       20081,
       20082,
@@ -183,6 +201,7 @@
     "Id": 2009,
     "Difficulty": 2,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       20091,
       20092,
@@ -194,6 +213,7 @@
     "Id": 2010,
     "Difficulty": 2,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       20101,
       20102,
@@ -205,6 +225,7 @@
     "Id": 3001,
     "Difficulty": 3,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       30011
     ],
@@ -214,6 +235,7 @@
     "Id": 3002,
     "Difficulty": 3,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       30021
     ],
@@ -223,6 +245,7 @@
     "Id": 3003,
     "Difficulty": 3,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       30031
     ],
@@ -232,6 +255,7 @@
     "Id": 3004,
     "Difficulty": 3,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       30041,
       30042
@@ -242,6 +266,7 @@
     "Id": 3005,
     "Difficulty": 3,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       30051,
       30052
@@ -252,6 +277,7 @@
     "Id": 3006,
     "Difficulty": 3,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       30061,
       30062
@@ -262,6 +288,7 @@
     "Id": 3007,
     "Difficulty": 3,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       30071,
       30072,
@@ -273,6 +300,7 @@
     "Id": 3008,
     "Difficulty": 3,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       30081,
       30082,
@@ -284,6 +312,7 @@
     "Id": 3009,
     "Difficulty": 3,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       30091,
       30092,
@@ -295,6 +324,7 @@
     "Id": 3010,
     "Difficulty": 3,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       30101,
       30102,
@@ -306,6 +336,7 @@
     "Id": 4001,
     "Difficulty": 4,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       40011
     ],
@@ -315,6 +346,7 @@
     "Id": 4002,
     "Difficulty": 4,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       40021
     ],
@@ -324,6 +356,7 @@
     "Id": 4003,
     "Difficulty": 4,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       40031
     ],
@@ -333,6 +366,7 @@
     "Id": 4004,
     "Difficulty": 4,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       40041,
       40042
@@ -343,6 +377,7 @@
     "Id": 4005,
     "Difficulty": 4,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       40051,
       40052
@@ -353,6 +388,7 @@
     "Id": 4006,
     "Difficulty": 4,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       40061,
       40062
@@ -363,6 +399,7 @@
     "Id": 4007,
     "Difficulty": 4,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       40071,
       40072,
@@ -374,6 +411,7 @@
     "Id": 4008,
     "Difficulty": 4,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       40081,
       40082,
@@ -385,6 +423,7 @@
     "Id": 4009,
     "Difficulty": 4,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       40091,
       40092,
@@ -396,6 +435,7 @@
     "Id": 4010,
     "Difficulty": 4,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       40101,
       40102,
@@ -407,6 +447,7 @@
     "Id": 5001,
     "Difficulty": 5,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       50011
     ],
@@ -416,6 +457,7 @@
     "Id": 5002,
     "Difficulty": 5,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       50021
     ],
@@ -425,6 +467,7 @@
     "Id": 5003,
     "Difficulty": 5,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       50031
     ],
@@ -434,6 +477,7 @@
     "Id": 5004,
     "Difficulty": 5,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       50041,
       50042
@@ -444,6 +488,7 @@
     "Id": 5005,
     "Difficulty": 5,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       50051,
       50052
@@ -454,6 +499,7 @@
     "Id": 5006,
     "Difficulty": 5,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       50061,
       50062
@@ -464,6 +510,7 @@
     "Id": 5007,
     "Difficulty": 5,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       50071,
       50072,
@@ -475,6 +522,7 @@
     "Id": 5008,
     "Difficulty": 5,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       50081,
       50082,
@@ -486,6 +534,7 @@
     "Id": 5009,
     "Difficulty": 5,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       50091,
       50092,
@@ -497,6 +546,7 @@
     "Id": 5010,
     "Difficulty": 5,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       50101,
       50102,
@@ -508,6 +558,7 @@
     "Id": 6001,
     "Difficulty": 6,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       60011
     ],
@@ -517,6 +568,7 @@
     "Id": 6002,
     "Difficulty": 6,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       60021
     ],
@@ -526,6 +578,7 @@
     "Id": 6003,
     "Difficulty": 6,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       60031
     ],
@@ -535,6 +588,7 @@
     "Id": 6004,
     "Difficulty": 6,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       60041,
       60042
@@ -545,6 +599,7 @@
     "Id": 6005,
     "Difficulty": 6,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       60051,
       60052
@@ -555,6 +610,7 @@
     "Id": 6006,
     "Difficulty": 6,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       60061,
       60062
@@ -565,6 +621,7 @@
     "Id": 6007,
     "Difficulty": 6,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       60071,
       60072,
@@ -576,6 +633,7 @@
     "Id": 6008,
     "Difficulty": 6,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       60081,
       60082,
@@ -587,6 +645,7 @@
     "Id": 6009,
     "Difficulty": 6,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       60091,
       60092,
@@ -598,6 +657,7 @@
     "Id": 6010,
     "Difficulty": 6,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       60101,
       60102,
@@ -609,6 +669,7 @@
     "Id": 7001,
     "Difficulty": 7,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       70011
     ],
@@ -618,6 +679,7 @@
     "Id": 7002,
     "Difficulty": 7,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       70021
     ],
@@ -627,6 +689,7 @@
     "Id": 7003,
     "Difficulty": 7,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       70031
     ],
@@ -636,6 +699,7 @@
     "Id": 7004,
     "Difficulty": 7,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       70041,
       70042
@@ -646,6 +710,7 @@
     "Id": 7005,
     "Difficulty": 7,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       70051,
       70052
@@ -656,6 +721,7 @@
     "Id": 7006,
     "Difficulty": 7,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       70061,
       70062
@@ -666,6 +732,7 @@
     "Id": 7007,
     "Difficulty": 7,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       70071,
       70072,
@@ -677,6 +744,7 @@
     "Id": 7008,
     "Difficulty": 7,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       70081,
       70082,
@@ -688,6 +756,7 @@
     "Id": 7009,
     "Difficulty": 7,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       70091,
       70092,
@@ -699,6 +768,7 @@
     "Id": 7010,
     "Difficulty": 7,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       70101,
       70102,
@@ -710,6 +780,7 @@
     "Id": 8001,
     "Difficulty": 8,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       80011
     ],
@@ -719,6 +790,7 @@
     "Id": 8002,
     "Difficulty": 8,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       80021
     ],
@@ -728,6 +800,7 @@
     "Id": 8003,
     "Difficulty": 8,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       80031
     ],
@@ -737,6 +810,7 @@
     "Id": 8004,
     "Difficulty": 8,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       80041,
       80042
@@ -747,6 +821,7 @@
     "Id": 8005,
     "Difficulty": 8,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       80051,
       80052
@@ -757,6 +832,7 @@
     "Id": 8006,
     "Difficulty": 8,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       80061,
       80062
@@ -767,6 +843,7 @@
     "Id": 8007,
     "Difficulty": 8,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       80071,
       80072,
@@ -778,6 +855,7 @@
     "Id": 8008,
     "Difficulty": 8,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       80081,
       80082,
@@ -789,6 +867,7 @@
     "Id": 8009,
     "Difficulty": 8,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       80091,
       80092,
@@ -800,6 +879,7 @@
     "Id": 8010,
     "Difficulty": 8,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       80101,
       80102,
@@ -811,6 +891,7 @@
     "Id": 9001,
     "Difficulty": 9,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       90011
     ],
@@ -820,6 +901,7 @@
     "Id": 9002,
     "Difficulty": 9,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       90021
     ],
@@ -829,6 +911,7 @@
     "Id": 9003,
     "Difficulty": 9,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       90031
     ],
@@ -838,6 +921,7 @@
     "Id": 9004,
     "Difficulty": 9,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       90041,
       90042
@@ -848,6 +932,7 @@
     "Id": 9005,
     "Difficulty": 9,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       90051,
       90052
@@ -858,6 +943,7 @@
     "Id": 9006,
     "Difficulty": 9,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       90061,
       90062
@@ -868,6 +954,7 @@
     "Id": 9007,
     "Difficulty": 9,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       90071,
       90072,
@@ -879,6 +966,7 @@
     "Id": 9008,
     "Difficulty": 9,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       90081,
       90082,
@@ -890,6 +978,7 @@
     "Id": 9009,
     "Difficulty": 9,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       90091,
       90092,
@@ -901,6 +990,7 @@
     "Id": 9010,
     "Difficulty": 9,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       90101,
       90102,
@@ -912,6 +1002,7 @@
     "Id": 10001,
     "Difficulty": 10,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       100011
     ],
@@ -921,6 +1012,7 @@
     "Id": 10002,
     "Difficulty": 10,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       100021
     ],
@@ -930,6 +1022,7 @@
     "Id": 10003,
     "Difficulty": 10,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       100031
     ],
@@ -939,6 +1032,7 @@
     "Id": 10004,
     "Difficulty": 10,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       100041,
       100042
@@ -949,6 +1043,7 @@
     "Id": 10005,
     "Difficulty": 10,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       100051,
       100052
@@ -959,6 +1054,7 @@
     "Id": 10006,
     "Difficulty": 10,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       100061,
       100062
@@ -969,6 +1065,7 @@
     "Id": 10007,
     "Difficulty": 10,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       100071,
       100072,
@@ -980,6 +1077,7 @@
     "Id": 10008,
     "Difficulty": 10,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       100081,
       100082,
@@ -991,6 +1089,7 @@
     "Id": 10009,
     "Difficulty": 10,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       100091,
       100092,
@@ -1002,6 +1101,7 @@
     "Id": 10010,
     "Difficulty": 10,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       100101,
       100102,
@@ -1013,6 +1113,7 @@
     "Id": 11001,
     "Difficulty": 11,
     "Level": 1,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       110011
     ],
@@ -1022,6 +1123,7 @@
     "Id": 11002,
     "Difficulty": 11,
     "Level": 2,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       110021
     ],
@@ -1031,6 +1133,7 @@
     "Id": 11003,
     "Difficulty": 11,
     "Level": 3,
+    "LevelEntryNum": 0,
     "MonsterGroup": [
       110031
     ],
@@ -1040,6 +1143,7 @@
     "Id": 11004,
     "Difficulty": 11,
     "Level": 4,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       110041,
       110042
@@ -1050,6 +1154,7 @@
     "Id": 11005,
     "Difficulty": 11,
     "Level": 5,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       110051,
       110052
@@ -1060,6 +1165,7 @@
     "Id": 11006,
     "Difficulty": 11,
     "Level": 6,
+    "LevelEntryNum": 1,
     "MonsterGroup": [
       110061,
       110062
@@ -1070,6 +1176,7 @@
     "Id": 11007,
     "Difficulty": 11,
     "Level": 7,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       110071,
       110072,
@@ -1081,6 +1188,7 @@
     "Id": 11008,
     "Difficulty": 11,
     "Level": 8,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       110081,
       110082,
@@ -1092,6 +1200,7 @@
     "Id": 11009,
     "Difficulty": 11,
     "Level": 9,
+    "LevelEntryNum": 2,
     "MonsterGroup": [
       110091,
       110092,
@@ -1103,6 +1212,7 @@
     "Id": 11010,
     "Difficulty": 11,
     "Level": 10,
+    "LevelEntryNum": 3,
     "MonsterGroup": [
       110101,
       110102,

@@ -22,6 +22,11 @@ namespace App.Config
         public int Level;
 
         /// <summary>
+        /// 机制数量
+        /// </summary>
+        public int LevelEntryNum;
+
+        /// <summary>
         /// 怪物组id
         /// </summary>
         public int[] MonsterGroup;

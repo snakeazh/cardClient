@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using App.Item;
 using App.Resources;
 using Framework.UI.Navigation;
@@ -19,9 +18,6 @@ namespace App.UI.Popup
     public sealed class TalentDetailView : ViewBase<TalentDetailViewModel>
     {
         private ItemCard _card;
-
-        /// <summary>图标加载请求序号，快速切换天赋时丢弃过期回填。</summary>
-        private int _iconRequestId;
 
         protected override void OnBind()
         {
@@ -46,36 +42,18 @@ namespace App.UI.Popup
             BindMaskClose();
         }
 
+        /// <summary>图标在 Altas/Talent 图集（sprite 名=TalentConfig.Icon）；缺图保留预制体默认图。</summary>
         private void LoadDetailIcon(string key)
         {
-            if (_card == null || string.IsNullOrEmpty(key))
+            if (_card == null || string.IsNullOrEmpty(key) || ViewModel.Atlas == null)
             {
                 return;
             }
 
-            var request = ++_iconRequestId;
-            _ = LoadIconAsync(request, key);
-        }
-
-        private async Task LoadIconAsync(int request, string key)
-        {
-            Sprite sprite;
-            try
+            if (ViewModel.Atlas.TryGetSprite(ResResourcePaths.TalentAtlas, key, out var sprite) && sprite != null)
             {
-                sprite = await ViewModel.Resources.LoadAsync<Sprite>(key);
+                _card.SetIcon(sprite);
             }
-            catch (Exception)
-            {
-                return;
-            }
-
-            // 过期请求（期间又切换了天赋）或页面已关闭则丢弃。
-            if (request != _iconRequestId || sprite == null || _card == null)
-            {
-                return;
-            }
-
-            _card.SetIcon(sprite);
         }
 
         private void BindMaskClose()

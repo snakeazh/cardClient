@@ -51,6 +51,8 @@ namespace App.Resources
         public const string RelicAtlas = "Altas/Relic";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ItemBg.spriteatlasv2（源图 Assets/Sprites/ItemBg）。</summary>
         public const string ItemBgAtlas = "Altas/ItemBg";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
+        public const string TalentAtlas = "Altas/Talent";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 
@@ -106,19 +108,6 @@ namespace App.Resources
         public static string RelicIcon(string icon)
         {
             return ComposeIcon("Textures/Relic", icon, null);
-        }
-
-        /// <summary>
-        /// <see cref="App.Config.TalentConfig.Icon"/> 对应 Assets/Res/Textures/Talent 下的文件名（无扩展名）。
-        /// </summary>
-        public static string TalentIcon(string icon)
-        {
-            if (string.IsNullOrWhiteSpace(icon))
-            {
-                return null;
-            }
-
-            return $"Textures/Talent/{icon.Trim()}";
         }
 
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";

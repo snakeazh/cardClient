@@ -135,12 +135,12 @@ namespace App.UI.Popup
                 card.SetAnimationEnabled(false);
                 // 品质染色 + card 节点品质边框（Altas/ItemBg），未解锁 Type 按 1 级行兜底
                 card.ApplyQuality(item.Type);
-                // 不清 card_icon：无配置 Icon 时保留预制体默认图，未解锁由 SetUnlocked 染黑
+                // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 card.SetName(item.Name);
                 card.SetUnlocked(item.Snapshot.IsOwned);
                 if (!string.IsNullOrEmpty(item.IconKey))
                 {
-                    _ = LoadCardIcon(card, item.Snapshot.IsOwned, item.IconKey);
+                    ApplyCardIcon(card, item.IconKey);
                 }
                 card.Clicked += OnCardClicked;
                 _entries[card] = item;
@@ -148,26 +148,18 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>按配置 key 异步加载图标回填；页面关闭后卡已销毁，直接丢弃。</summary>
-        private async Task LoadCardIcon(ItemCard card, bool unlocked, string key)
+        /// <summary>图标在 Altas/Talent 图集（sprite 名=TalentConfig.Icon）；图集未就绪或缺图保留预制体默认图。</summary>
+        private void ApplyCardIcon(ItemCard card, string key)
         {
-            Sprite sprite;
-            try
-            {
-                sprite = await ViewModel.Resources.LoadAsync<Sprite>(key);
-            }
-            catch (Exception)
+            if (card == null || ViewModel.Atlas == null)
             {
                 return;
             }
 
-            if (card == null)
+            if (ViewModel.Atlas.TryGetSprite(ResResourcePaths.TalentAtlas, key, out var sprite) && sprite != null)
             {
-                return;
+                card.SetIcon(sprite);
             }
-
-            card.SetIcon(sprite);
-            card.SetUnlocked(unlocked);
         }
 
         private void BindRulesOpen()

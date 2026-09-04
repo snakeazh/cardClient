@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Atlas;
 using App.Config;
 using App.Resources;
 using App.Talent;
@@ -21,7 +22,7 @@ namespace App.UI.Popup
         public TalentSnapshot Snapshot;
         public string Name;
 
-        /// <summary>图标资源 key（未解锁同样从 1 级行兜底），空表示配置未填。</summary>
+        /// <summary>Altas/Talent 图集内 sprite 名（未解锁同样从 1 级行兜底），空表示配置未填。</summary>
         public string IconKey;
 
         /// <summary>品质（取自当前行，未解锁按 1 级行兜底），View 据此分区。</summary>
@@ -46,13 +47,15 @@ namespace App.UI.Popup
             NavigationViewModel navigation,
             ITalentService talent,
             IWalletService wallet,
-            IResourceService resources)
+            IResourceService resources,
+            IAtlasService atlas)
         {
             _ui = ui;
             _navigation = navigation;
             _talent = talent;
             _wallet = wallet;
             Resources = resources;
+            Atlas = atlas;
             CloseCommand = new RelayCommand(Dismiss);
             BuyCommand = new RelayCommand(Buy);
             OpenRulesCommand = new RelayCommand(OpenRules);
@@ -70,6 +73,9 @@ namespace App.UI.Popup
 
         /// <summary>供 View 异步加载条目图标（同图鉴 VM 暴露 Resources 的模式）。</summary>
         public IResourceService Resources { get; }
+
+        /// <summary>取 Altas/Talent 天赋图标 sprite（TalentConfig.Icon 为 sprite 名）。</summary>
+        public IAtlasService Atlas { get; }
 
         public IRelayCommand CloseCommand { get; }
 
@@ -162,7 +168,9 @@ namespace App.UI.Popup
                 {
                     Snapshot = snapshot,
                     Name = config != null ? config.Name : null,
-                    IconKey = config != null ? ResResourcePaths.TalentIcon(config.Icon) : null,
+                    IconKey = config != null && !string.IsNullOrWhiteSpace(config.Icon)
+                        ? config.Icon.Trim()
+                        : null,
                     Type = config != null ? config.Type : QualityType.Ordinary,
                 });
             }

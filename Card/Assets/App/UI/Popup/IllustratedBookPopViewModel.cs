@@ -26,8 +26,6 @@ namespace App.UI.Popup
         public string Icon;
         public bool Unlocked;
         public string UnlockTip;
-        public int Hp;
-        public int Attack;
     }
 
     /// <summary>
@@ -36,6 +34,7 @@ namespace App.UI.Popup
     public sealed class IllustratedBookPopViewModel : ViewModelBase
     {
         private readonly NavigationViewModel _navigation;
+        private readonly MainResourceViewModel _mainResource;
         private readonly ILevelProgressService _progress;
         private readonly IUnlockConditionService _unlock;
         private readonly List<IllustratedBookEntry> _collect = new List<IllustratedBookEntry>();
@@ -44,12 +43,14 @@ namespace App.UI.Popup
 
         public IllustratedBookPopViewModel(
             NavigationViewModel navigation,
+            MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IUnlockConditionService unlock,
             IResourceService resources,
             IAtlasService atlas)
         {
             _navigation = navigation;
+            _mainResource = mainResource;
             _progress = progress;
             _unlock = unlock;
             Resources = resources;
@@ -137,9 +138,9 @@ namespace App.UI.Popup
             }
 
             SelectedId = entry.Id;
-            TipTitle.Value = entry.Unlocked
-                ? (entry.Name ?? string.Empty)
-                : "？？？";
+            TipTitle.Value = entry.Tab == IllustratedBookTab.Monster
+                ? string.Empty
+                : (entry.Unlocked ? (entry.Name ?? string.Empty) : "？？？");
             TipText.Value = entry.Unlocked
                 ? (entry.Desc ?? string.Empty)
                 : (string.IsNullOrEmpty(entry.UnlockTip) ? "尚未解锁" : entry.UnlockTip);
@@ -170,13 +171,22 @@ namespace App.UI.Popup
             HideTip();
             BuildEntries();
             ApplyTab(IllustratedBookTab.Relic, force: true);
+            // 整屏页签：打开期间藏顶部资源栏，关闭恢复（资源栏 VM 为 DI 单例，同实例）
+            _mainResource?.HideBar();
             return Task.CompletedTask;
         }
 
         protected override Task OnClose()
         {
+            _mainResource?.ShowBar();
             _navigation.NotifyBookClosed();
             return Task.CompletedTask;
+        }
+
+        protected override void OnDispose()
+        {
+            // 不走 OnClose 的销毁路径兜底恢复，避免资源栏层一直隐藏
+            _mainResource?.ShowBar();
         }
 
         private void ApplyTab(IllustratedBookTab tab, bool force)
@@ -299,12 +309,9 @@ namespace App.UI.Popup
                     Tab = IllustratedBookTab.Monster,
                     Id = row.MonsterId,
                     Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
-                    Desc = (isBoss ? "BOSS" : "普通敌人") +
-                           "\n生命 " + row.MonsterHp + "  攻击 " + row.MonsterDamage,
+                    Desc = row.Desc ?? string.Empty,
                     Icon = row.Icon,
-                    Unlocked = true,
-                    Hp = row.MonsterHp,
-                    Attack = row.MonsterDamage
+                    Unlocked = true
                 });
             }
 

@@ -242,25 +242,50 @@ namespace App.Game
             return Has(run, BossEntryType.DisablePlumBlossom) && card.Suit == Suit.Club;
         }
 
-        public static void GetScoreBan(RunState run, out Suit? banned, out Suit? banned2, out bool banFaces)
+        public static void GetScoreBan(
+            RunState run,
+            out Suit? banned,
+            out Suit? banned2,
+            out bool banFaces,
+            out Suit? banned3)
         {
             banned = null;
             banned2 = null;
-            banFaces = false;
-            if (Has(run, BossEntryType.DisableRedSuit))
+            banned3 = null;
+            banFaces = Has(run, BossEntryType.DisableHeadUesd);
+            var suits = new List<Suit>(4);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableRedSuit, Suit.Diamond);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableRedSuit, Suit.Heart);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableBlackSuit, Suit.Spade);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableBlackSuit, Suit.Club);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableHeartUesd, Suit.Heart);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableSpadeUesd, Suit.Spade);
+            AddScoreBanSuit(suits, run, BossEntryType.DisableDiamonUesdd, Suit.Diamond);
+            AddScoreBanSuit(suits, run, BossEntryType.DisablePlumBlossomUesd, Suit.Club);
+            if (suits.Count > 0)
             {
-                banned = Suit.Diamond;
-                banned2 = Suit.Heart;
+                banned = suits[0];
             }
 
-            if (Has(run, BossEntryType.DisableBlackSuit))
+            if (suits.Count > 1)
             {
-                if (!banned.HasValue)
-                {
-                    banned = Suit.Spade;
-                    banned2 = Suit.Club;
-                }
+                banned2 = suits[1];
             }
+
+            if (suits.Count > 2)
+            {
+                banned3 = suits[2];
+            }
+        }
+
+        private static void AddScoreBanSuit(List<Suit> suits, RunState run, BossEntryType type, Suit suit)
+        {
+            if (suits == null || !Has(run, type) || suits.Contains(suit))
+            {
+                return;
+            }
+
+            suits.Add(suit);
         }
 
         public static bool SkillsDisabled(RunState run)
@@ -322,6 +347,208 @@ namespace App.Game
         public static float AttackStealRatio(RunState run)
         {
             return Has(run, BossEntryType.AttackSteal) ? ValueAt(run, BossEntryType.AttackSteal) : 0f;
+        }
+
+        public static int ChipValueOf(RunState run, Card card)
+        {
+            if (!card.IsValid)
+            {
+                return 0;
+            }
+
+            if (card.Rank == Rank.Ace && Has(run, BossEntryType.AceDown))
+            {
+                return Math.Max(0, (int)Math.Round(ValueAt(run, BossEntryType.AceDown)));
+            }
+
+            if (card.IsFace && Has(run, BossEntryType.FaceDevalue))
+            {
+                return Math.Max(0, (int)Math.Round(ValueAt(run, BossEntryType.FaceDevalue)));
+            }
+
+            return card.ChipValue;
+        }
+
+        public static HandScore ApplyChipOverride(RunState run, HandScore score)
+        {
+            if (!Has(run, BossEntryType.FaceDevalue) && !Has(run, BossEntryType.AceDown))
+            {
+                return score;
+            }
+
+            var used = score.UsedCards;
+            if (used == null || used.Length == 0)
+            {
+                return score;
+            }
+
+            var chips = 0;
+            for (var i = 0; i < used.Length; i++)
+            {
+                chips += ChipValueOf(run, used[i]);
+            }
+
+            return score.WithBaseChips(chips);
+        }
+
+        public static int RubChargeDelta(RunState run)
+        {
+            if (!Has(run, BossEntryType.RubDown))
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(ValueAt(run, BossEntryType.RubDown)));
+        }
+
+        public static bool SwapLocked(RunState run)
+        {
+            return Has(run, BossEntryType.SwapLock);
+        }
+
+        public static int RubFeeGold(RunState run)
+        {
+            if (!Has(run, BossEntryType.RubFee))
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(ValueAt(run, BossEntryType.RubFee)));
+        }
+
+        public static bool CanAffordRub(RunState run)
+        {
+            var fee = RubFeeGold(run);
+            return fee <= 0 || (run != null && run.Gold >= fee);
+        }
+
+        public static float MonsterRegenRatio(RunState run)
+        {
+            return Has(run, BossEntryType.MonsterRegen) ? ValueAt(run, BossEntryType.MonsterRegen) : 0f;
+        }
+
+        public static int MonsterGrowAttack(RunState run)
+        {
+            if (!Has(run, BossEntryType.MonsterGrow))
+            {
+                return 0;
+            }
+
+            return (int)Math.Round(ValueAt(run, BossEntryType.MonsterGrow));
+        }
+
+        public static int ThornShellSelfDamage(RunState run, int dealt)
+        {
+            if (!Has(run, BossEntryType.ThornShell) || dealt <= 0)
+            {
+                return 0;
+            }
+
+            var ratio = ValueAt(run, BossEntryType.ThornShell);
+            if (ratio <= 0f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(dealt * ratio));
+        }
+
+        public static int VengefulSoulAttackDelta(RunState run)
+        {
+            if (!Has(run, BossEntryType.VengefulSoul))
+            {
+                return 0;
+            }
+
+            return (int)Math.Round(ValueAt(run, BossEntryType.VengefulSoul));
+        }
+
+        public static float HealMultiplier(RunState run)
+        {
+            if (!Has(run, BossEntryType.HealBan))
+            {
+                return 1f;
+            }
+
+            return Math.Max(0f, 1f + ValueAt(run, BossEntryType.HealBan));
+        }
+
+        public static bool TieLoses(RunState run)
+        {
+            return Has(run, BossEntryType.TieLose);
+        }
+
+        public static bool ShouldTriggerPhaseRage(RunState run, SeatState enemy)
+        {
+            if (!Has(run, BossEntryType.PhaseRage) ||
+                enemy == null ||
+                enemy.IsPlayer ||
+                enemy.PhaseRageTriggered ||
+                enemy.MaxHp <= 0 ||
+                enemy.Hp <= 0)
+            {
+                return false;
+            }
+
+            var threshold = ValueAt(run, BossEntryType.PhaseRage);
+            if (threshold <= 0f)
+            {
+                return false;
+            }
+
+            return enemy.Hp / (float)enemy.MaxHp < threshold;
+        }
+
+        public static int PhaseRageAttackBonus(RunState run, int baseAttack)
+        {
+            if (!Has(run, BossEntryType.PhaseRage) || baseAttack <= 0)
+            {
+                return 0;
+            }
+
+            var bonus = ValueAt(run, BossEntryType.PhaseRage, 1);
+            if (bonus <= 0f)
+            {
+                return 0;
+            }
+
+            return (int)Math.Round(baseAttack * bonus);
+        }
+
+        public static bool CanSecondWind(RunState run, SeatState enemy)
+        {
+            return Has(run, BossEntryType.SecondWind) &&
+                   enemy != null &&
+                   !enemy.IsPlayer &&
+                   !enemy.SecondWindUsed &&
+                   enemy.MaxHp > 0;
+        }
+
+        public static int SecondWindHp(RunState run, int maxHp)
+        {
+            if (maxHp <= 0)
+            {
+                return 1;
+            }
+
+            var ratio = ValueAt(run, BossEntryType.SecondWind);
+            return Math.Max(1, (int)Math.Round(maxHp * Math.Max(0f, ratio)));
+        }
+
+        public static int LifeSiphonHeal(RunState run, int dealt)
+        {
+            if (!Has(run, BossEntryType.LifeSiphon) || dealt <= 0)
+            {
+                return 0;
+            }
+
+            var ratio = ValueAt(run, BossEntryType.LifeSiphon);
+            if (ratio <= 0f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(dealt * ratio));
         }
     }
 }

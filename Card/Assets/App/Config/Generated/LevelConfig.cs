@@ -36,6 +36,11 @@ namespace App.Config
         /// </summary>
         public int GetGold;
 
+        /// <summary>
+        /// 敌人最大牌型顺位限制
+        /// </summary>
+        public int MonsterCardHandScoreLevelLimit;
+
     }
 }
 

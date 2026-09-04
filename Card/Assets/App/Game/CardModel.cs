@@ -326,6 +326,16 @@ namespace App.Game
             return new HandScore(Type, BaseChips, Multiplier, Keys, UsedCards, Label, BeatsAll, bonus);
         }
 
+        public HandScore WithBaseChips(int chips)
+        {
+            if (chips == BaseChips)
+            {
+                return this;
+            }
+
+            return new HandScore(Type, chips, Multiplier, Keys, UsedCards, Label, BeatsAll, CompareLevelBonus);
+        }
+
         public int CompareTo(HandScore other)
         {
             if (BeatsAll != other.BeatsAll)
@@ -371,7 +381,7 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 三张牌炸金花评估。BOSS 失效花色通过 bannedSuit / bannedSuit2 / banFaces 过滤后再比牌。
+    /// 三张牌炸金花评估。BOSS 失效花色通过 bannedSuit / bannedSuit2 / bannedSuit3 / banFaces 过滤后再比牌。
     /// </summary>
     public static class HandEvaluator
     {
@@ -602,9 +612,10 @@ namespace App.Game
             Suit? bannedSuit = null,
             bool banFaces = false,
             HandEvalRules rules = default,
-            Suit? bannedSuit2 = null)
+            Suit? bannedSuit2 = null,
+            Suit? bannedSuit3 = null)
         {
-            var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2);
+            var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2, bannedSuit3);
             if (filtered.Count == 0)
             {
                 return new HandScore(HandType.HighCard, 0, TypeMultiplier(HandType.HighCard), new[] { 0 }, Array.Empty<Card>(), "无有效牌");
@@ -738,7 +749,8 @@ namespace App.Game
             Suit? bannedSuit = null,
             bool banFaces = false,
             HandEvalRules rules = default,
-            Suit? bannedSuit2 = null)
+            Suit? bannedSuit2 = null,
+            Suit? bannedSuit3 = null)
         {
             if (selected != null)
             {
@@ -750,13 +762,13 @@ namespace App.Game
 
             if (hand == null)
             {
-                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2);
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
             }
 
             dealt = Math.Min(dealt, hand.Length);
             if (dealt < 3)
             {
-                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2);
+                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
             }
 
             var trio = new Card[3];
@@ -774,7 +786,7 @@ namespace App.Game
                         trio[0] = hand[i];
                         trio[1] = hand[j];
                         trio[2] = hand[k];
-                        var score = Evaluate(trio, bannedSuit, banFaces, rules, bannedSuit2);
+                        var score = Evaluate(trio, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
                         if (!any || score.CompareTo(best) > 0)
                         {
                             best = score;
@@ -805,7 +817,7 @@ namespace App.Game
                 }
             }
 
-            return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2);
+            return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
         }
 
         public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
@@ -834,10 +846,11 @@ namespace App.Game
             Suit? bannedSuit = null,
             bool banFaces = false,
             HandEvalRules rules = default,
-            Suit? bannedSuit2 = null)
+            Suit? bannedSuit2 = null,
+            Suit? bannedSuit3 = null)
         {
             var flags = new bool[GameBalance.MaxCardsPerSeat];
-            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2);
+            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
             return CopySelectedCards(hand, flags);
         }
 
@@ -879,7 +892,8 @@ namespace App.Game
             IReadOnlyList<Card> cards,
             Suit? bannedSuit,
             bool banFaces,
-            Suit? bannedSuit2 = null)
+            Suit? bannedSuit2 = null,
+            Suit? bannedSuit3 = null)
         {
             var list = new List<Card>(3);
             if (cards == null)
@@ -896,6 +910,11 @@ namespace App.Game
                 }
 
                 if (bannedSuit2.HasValue && card.Suit == bannedSuit2.Value)
+                {
+                    continue;
+                }
+
+                if (bannedSuit3.HasValue && card.Suit == bannedSuit3.Value)
                 {
                     continue;
                 }

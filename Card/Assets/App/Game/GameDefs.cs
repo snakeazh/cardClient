@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Config;
 
 namespace App.Game
 {
@@ -91,20 +92,32 @@ namespace App.Game
         public const int BaseBetStep = 10;
         public const int RaiseLowMult = 2;
         public const int RaiseHighMult = 4;
-        /// <summary>遗物列表初始容量；购买件数不设上限。</summary>
-        public const int MaxRelics = 3;
+        /// <summary>默认可携带圣物数量，读 GameConst.DefaultRelicNumMax，未加载时按 3。</summary>
+        public static int MaxRelics =>
+            GameConst.IsLoaded && GameConst.Instance.DefaultRelicNumMax > 0
+                ? GameConst.Instance.DefaultRelicNumMax
+                : 3;
         /// <summary>通关商店货架格子数，对应 BattleShopPop.sellHor。</summary>
-        public const int ShopOfferCount = 5;
+        public const int ShopOfferCount = 4;
         public const float RescueRatio = 0.15f;
         public const float StingyRescueRatio = 0.05f;
         public const float SplashRatio = 0.3f;
         public const int DailyDoubleGoldAds = 3;
-        /// <summary>每手搓牌技能基础次数。</summary>
-        public const int SkillRubUses = 3;
-        /// <summary>每手透视技能基础次数。</summary>
-        public const int SkillXRayUses = 1;
-        /// <summary>每手替换技能基础次数。</summary>
-        public const int SkillReplaceUses = 1;
+        /// <summary>每关搓牌技能基础次数，读 GameConst.DefaultSkillShuffleNum。</summary>
+        public static int SkillRubUses =>
+            GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
+                ? GameConst.Instance.DefaultSkillShuffleNum
+                : 3;
+        /// <summary>每关透视技能基础次数，读 GameConst.DefaultSkillPerspectiveNum。</summary>
+        public static int SkillXRayUses =>
+            GameConst.IsLoaded && GameConst.Instance.DefaultSkillPerspectiveNum >= 0
+                ? GameConst.Instance.DefaultSkillPerspectiveNum
+                : 1;
+        /// <summary>每关替换技能基础次数，读 GameConst.DefaultSkillReplaceNum。</summary>
+        public static int SkillReplaceUses =>
+            GameConst.IsLoaded && GameConst.Instance.DefaultSkillReplaceNum >= 0
+                ? GameConst.Instance.DefaultSkillReplaceNum
+                : 1;
         /// <summary>座位手牌数组容量。玩家和敌人都发 5 张。</summary>
         public const int MaxCardsPerSeat = 5;
         /// <summary>玩家每手发牌张数。</summary>
@@ -285,6 +298,10 @@ namespace App.Game
         public AiProfile Profile;
         /// <summary>敌人 <see cref="App.Level.MonsterSpawn.MonsterId"/>。玩家为 0。</summary>
         public int MonsterId;
+        /// <summary>背水一战：本关是否已触发过首次低于阈值加攻。</summary>
+        public bool PhaseRageTriggered;
+        /// <summary>不灭传说：本关是否已复活过一次。</summary>
+        public bool SecondWindUsed;
 
         public int CountSelectedCards()
         {

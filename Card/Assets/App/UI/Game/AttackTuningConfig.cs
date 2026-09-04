@@ -127,7 +127,7 @@ namespace App.UI
         [SerializeField]
         private float hpTextHoldDuration = 0.85f;
 
-        [Tooltip("这一击致死后，等多久才开始播溶解和致死特效（秒）。结算节奏不受影响，被打死的卡会先站着不动。")]
+        [Tooltip("这一击致死后，等多久才开始播溶解和致死特效（秒）。致死时等溶解结束才结算下一个对手，被打死的卡会先站着不动。")]
         [SerializeField]
         private float deathDissolveDelay = 2f;
 

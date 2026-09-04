@@ -7,9 +7,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -20,9 +21,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -33,9 +35,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -46,9 +49,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -59,9 +63,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -72,9 +77,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -85,9 +91,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -98,9 +105,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -111,9 +119,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -124,9 +133,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -137,9 +147,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -150,9 +161,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -163,9 +175,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -176,9 +189,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -189,9 +203,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -202,9 +217,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -215,9 +231,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -228,9 +245,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -241,9 +259,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -254,9 +273,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -267,9 +287,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -280,9 +301,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -293,9 +315,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -306,9 +329,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -319,9 +343,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -332,9 +357,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -345,9 +371,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -358,9 +385,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -371,9 +399,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -384,9 +413,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -397,9 +427,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -410,9 +441,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -423,9 +455,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -436,9 +469,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -449,9 +483,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -462,9 +497,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -475,9 +511,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -488,9 +525,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -501,9 +539,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -514,9 +553,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -527,9 +567,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -540,9 +581,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -553,9 +595,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -566,9 +609,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "屎莱姆",
+    "Desc": "黏糊糊的,身板脆弱",
     "Icon": "enemy1",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -579,9 +623,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -592,9 +637,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -605,9 +651,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -618,9 +665,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -631,9 +679,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -644,9 +693,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -657,9 +707,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -670,9 +721,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -683,9 +735,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -696,9 +749,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -709,9 +763,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -722,9 +777,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -735,9 +791,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -748,9 +805,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -761,9 +819,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -774,9 +833,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -787,9 +847,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -800,9 +861,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -813,9 +875,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -826,9 +889,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -839,9 +903,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -852,9 +917,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -865,9 +931,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -878,9 +945,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -891,9 +959,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -904,9 +973,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -917,9 +987,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -930,9 +1001,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -943,9 +1015,10 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -956,9 +1029,10 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -969,9 +1043,10 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -982,9 +1057,10 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -995,9 +1071,10 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1008,9 +1085,10 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1021,9 +1099,10 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1034,9 +1113,10 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1047,9 +1127,10 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1060,9 +1141,10 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1073,9 +1155,10 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1086,9 +1169,10 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1099,9 +1183,10 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1112,9 +1197,10 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1125,9 +1211,10 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1138,9 +1225,10 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "狼哥",
+    "Desc": "喜欢看电影,最爱看港片[赌神]",
     "Icon": "enemy2",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1151,6 +1239,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1164,6 +1253,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1177,6 +1267,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1190,6 +1281,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1203,6 +1295,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1216,6 +1309,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1229,6 +1323,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1242,6 +1337,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1255,6 +1351,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1268,6 +1365,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1281,6 +1379,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1294,6 +1393,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1307,6 +1407,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1320,6 +1421,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1333,6 +1435,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1346,6 +1449,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1359,6 +1463,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1372,6 +1477,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1385,6 +1491,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1398,6 +1505,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1411,6 +1519,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1424,6 +1533,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1437,6 +1547,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1450,6 +1561,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1463,6 +1575,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1476,6 +1589,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1489,6 +1603,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1502,6 +1617,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1515,6 +1631,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1528,6 +1645,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1541,6 +1659,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1554,6 +1673,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1567,6 +1687,7 @@
     "MonsterDamage": 13,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1580,6 +1701,7 @@
     "MonsterDamage": 13,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1593,6 +1715,7 @@
     "MonsterDamage": 13,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1606,6 +1729,7 @@
     "MonsterDamage": 13,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1619,6 +1743,7 @@
     "MonsterDamage": 15,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1632,6 +1757,7 @@
     "MonsterDamage": 15,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1645,6 +1771,7 @@
     "MonsterDamage": 15,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1658,6 +1785,7 @@
     "MonsterDamage": 15,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1671,6 +1799,7 @@
     "MonsterDamage": 16,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1684,6 +1813,7 @@
     "MonsterDamage": 16,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1697,6 +1827,7 @@
     "MonsterDamage": 16,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1710,6 +1841,7 @@
     "MonsterDamage": 16,
     "Type": 1,
     "Name": "蛙弟",
+    "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1723,6 +1855,7 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1736,6 +1869,7 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1749,6 +1883,7 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1762,6 +1897,7 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1775,6 +1911,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1788,6 +1925,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1801,6 +1939,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1814,6 +1953,7 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1827,6 +1967,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1840,6 +1981,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1853,6 +1995,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1866,6 +2009,7 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1879,6 +2023,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1892,6 +2037,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1905,6 +2051,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1918,6 +2065,7 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1931,6 +2079,7 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1944,6 +2093,7 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1957,6 +2107,7 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1970,6 +2121,7 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1983,6 +2135,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -1996,6 +2149,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2009,6 +2163,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2022,6 +2177,7 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2035,6 +2191,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2048,6 +2205,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2061,6 +2219,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2074,6 +2233,7 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2087,6 +2247,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2100,6 +2261,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2113,6 +2275,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2126,6 +2289,7 @@
     "MonsterDamage": 9,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2139,6 +2303,7 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2152,6 +2317,7 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2165,6 +2331,7 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2178,6 +2345,7 @@
     "MonsterDamage": 10,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2191,6 +2359,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2204,6 +2373,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2217,6 +2387,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2230,6 +2401,7 @@
     "MonsterDamage": 11,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2243,6 +2415,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2256,6 +2429,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2269,6 +2443,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2282,6 +2457,7 @@
     "MonsterDamage": 12,
     "Type": 1,
     "Name": "小蜜蜂",
+    "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
@@ -2295,9 +2471,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2308,9 +2485,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2321,9 +2499,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2334,9 +2513,10 @@
     "MonsterDamage": 1,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2347,9 +2527,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2360,9 +2541,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2373,9 +2555,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2386,9 +2569,10 @@
     "MonsterDamage": 2,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2399,9 +2583,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2412,9 +2597,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2425,9 +2611,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2438,9 +2625,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2451,9 +2639,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2464,9 +2653,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2477,9 +2667,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2490,9 +2681,10 @@
     "MonsterDamage": 3,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2503,9 +2695,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2516,9 +2709,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2529,9 +2723,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2542,9 +2737,10 @@
     "MonsterDamage": 4,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2555,9 +2751,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2568,9 +2765,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2581,9 +2779,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2594,9 +2793,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2607,9 +2807,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2620,9 +2821,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2633,9 +2835,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2646,9 +2849,10 @@
     "MonsterDamage": 5,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2659,9 +2863,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2672,9 +2877,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2685,9 +2891,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2698,9 +2905,10 @@
     "MonsterDamage": 6,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2711,9 +2919,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2724,9 +2933,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2737,9 +2947,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2750,9 +2961,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2763,9 +2975,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2776,9 +2989,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2789,9 +3003,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2802,9 +3017,10 @@
     "MonsterDamage": 7,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2815,9 +3031,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2828,9 +3045,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2841,9 +3059,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2854,9 +3073,10 @@
     "MonsterDamage": 8,
     "Type": 1,
     "Name": "蘑菇人",
+    "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2867,9 +3087,10 @@
     "MonsterDamage": 4,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2880,9 +3101,10 @@
     "MonsterDamage": 6,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2893,9 +3115,10 @@
     "MonsterDamage": 8,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2906,9 +3129,10 @@
     "MonsterDamage": 10,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2919,9 +3143,10 @@
     "MonsterDamage": 12,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2932,9 +3157,10 @@
     "MonsterDamage": 14,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2945,9 +3171,10 @@
     "MonsterDamage": 16,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2958,9 +3185,10 @@
     "MonsterDamage": 18,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2971,9 +3199,10 @@
     "MonsterDamage": 20,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2984,9 +3213,10 @@
     "MonsterDamage": 22,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2997,9 +3227,10 @@
     "MonsterDamage": 24,
     "Type": 2,
     "Name": "大眼仔",
+    "Desc": "首领之一,颇具杀伤力",
     "Icon": "enemy6",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "RedMonsterBaseFrame",
+    "HealthBar": "RedMonsterBaseFrameBox",
     "MonsterEntry": 0
   }
 ]

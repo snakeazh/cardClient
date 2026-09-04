@@ -12,11 +12,12 @@ using UnityEngine.UI;
 namespace App.UI
 {
     /// <summary>
-    /// Toast 提示面板。注册在 TopMost 层：首次调用 Toast.Show 时由 ToastService 懒打开，
-    /// 之后常驻；同时只显示一个 Toast，新的会立即替换旧的。
+    /// Toast 提示面板。注册在独立 Toast 层（TopMost 之上）：首次调用 Toast.Show 时由
+    /// ToastService 懒打开，之后常驻。与商店详情等同层弹窗分栈，避免被藏起来。
+    /// 同时只显示一个 Toast，新的会立即替换旧的。
     /// ToastPrefab 引用外部 ToastItem 预制体（可后续从旧工程补齐）；为空时运行时构建条目。
     /// </summary>
-    [AutoScreen(AppScreenIds.ToastPanel, UILayer.TopMost, ResResourcePaths.ToastPanel)]
+    [AutoScreen(AppScreenIds.ToastPanel, UILayer.Toast, ResResourcePaths.ToastPanel)]
     public sealed class ToastPanel : ViewBase<ToastViewModel>
     {
         #region UI组件

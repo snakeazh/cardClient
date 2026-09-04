@@ -210,6 +210,8 @@ namespace Framework.UI.Navigation
                 return UILayer.TopMost;
             }
 
+            // Toast 层常驻，不作为 Close() 的目标。
+
             if (_stacks[UILayer.Loading].Count > 0)
             {
                 return UILayer.Loading;

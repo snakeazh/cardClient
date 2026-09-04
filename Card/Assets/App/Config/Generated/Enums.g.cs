@@ -39,7 +39,7 @@ namespace App.Config
         Flint = 6,
 
         /// <summary>
-        /// 本局内你的随机一种遗物将失效
+        /// 本局内你的随机一种圣物将失效
         /// </summary>
         Edge = 7,
 
@@ -54,7 +54,7 @@ namespace App.Config
         FlushDamage = 9,
 
         /// <summary>
-        /// 同花顺牌型在攻击时,伤害降低
+        /// 对子牌型在攻击时,伤害降低
         /// </summary>
         CoupletDamage = 10,
 
@@ -94,7 +94,7 @@ namespace App.Config
         MonsterDamageUp = 17,
 
         /// <summary>
-        /// 每回合随机失效玩家的收藏品
+        /// 每回合随机失效玩家的圣物
         /// </summary>
         RelicDisable = 18,
 
@@ -227,6 +227,31 @@ namespace App.Config
         /// 本关内敌人攻击玩家时,按造成伤害的50%回复自身生命值
         /// </summary>
         LifeSiphon = 44,
+
+        /// <summary>
+        /// 本局亮牌时,红心花色失效
+        /// </summary>
+        DisableHeartUesd = 45,
+
+        /// <summary>
+        /// 本局亮牌时,黑桃色失效
+        /// </summary>
+        DisableSpadeUesd = 46,
+
+        /// <summary>
+        /// 本局亮牌时,方片花色失效
+        /// </summary>
+        DisableDiamonUesdd = 47,
+
+        /// <summary>
+        /// 本局亮牌时,梅花花色失效
+        /// </summary>
+        DisablePlumBlossomUesd = 48,
+
+        /// <summary>
+        /// 本局亮牌时,人头牌失效
+        /// </summary>
+        DisableHeadUesd = 49,
 
     }
 
@@ -704,7 +729,7 @@ namespace App.Config
         HeadCard = 65,
 
         /// <summary>
-        /// 击杀敌人,收藏品出售价格提高
+        /// 击杀敌人,圣物出售价格提高
         /// </summary>
         KillAfterSellingPrice = 66,
 
@@ -739,7 +764,7 @@ namespace App.Config
         NoSkill = 72,
 
         /// <summary>
-        /// 每有1个收藏品,结算时提供倍率
+        /// 每有1个圣物,结算时提供倍率
         /// </summary>
         EveryRelic = 73,
 
@@ -769,7 +794,7 @@ namespace App.Config
         ProOfUpCardType = 78,
 
         /// <summary>
-        /// 每使用1次搓牌,结算时该收藏品永久提供倍率
+        /// 每使用1次搓牌,结算时该圣物永久提供倍率
         /// </summary>
         RubbingCardRelic = 79,
 
@@ -814,12 +839,12 @@ namespace App.Config
         AoeDamage = 87,
 
         /// <summary>
-        /// 史诗/传说的收藏品概率提高
+        /// 史诗/传说的圣物概率提高
         /// </summary>
         EpicLegendRelicProUp = 88,
 
         /// <summary>
-        /// 收藏品价格百分比
+        /// 圣物价格百分比
         /// </summary>
         RelicPricePer = 89,
 

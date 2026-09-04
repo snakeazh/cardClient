@@ -81,6 +81,8 @@ namespace App.UI
         private Animation _hpTextAnim;
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
+        private bool _attackCutsceneDone;
+        private PlayerItem _waitLethalItem;
         private readonly List<string> _guideTargetIds = new List<string>(4);
         private GuideTargetRegistry _guideTargets;
         private IDisposable _peekGoodArmedSub;
@@ -162,6 +164,12 @@ namespace App.UI
 
             StopAiDelay();
             CancelAllDeathDissolves();
+            _waitLethalItem = null;
+            if (_attackCutsceneDone && ViewModel != null)
+            {
+                _attackCutsceneDone = false;
+                ViewModel.Session.CompletePlayerAttack();
+            }
 
             if (_board != null)
             {
@@ -507,6 +515,8 @@ namespace App.UI
                 mask.SetAsLastSibling();
             }
 
+            _attackCutsceneDone = false;
+            _waitLethalItem = null;
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
             Action onHit = () =>
@@ -532,10 +542,8 @@ namespace App.UI
                 ViewModel.ShowHpText.Value = false;
                 RestoreHpText();
                 ClearAttackHold();
-                if (ViewModel != null)
-                {
-                    ViewModel.Session.CompletePlayerAttack();
-                }
+                _attackCutsceneDone = true;
+                FinishAttackIfReady();
             };
             if (session.IncomingAttack)
             {
@@ -571,8 +579,13 @@ namespace App.UI
             var target = session.EnemyAtVisualSlot(session.AttackVisualSlot);
             if (target != null && target.Hp <= damage)
             {
+                var item = AttackItemAtSlot(session.AttackVisualSlot);
                 _attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
-                ScheduleDeathDissolve(AttackItemAtSlot(session.AttackVisualSlot), hideWhenDone: true);
+                if (item != null)
+                {
+                    _waitLethalItem = item;
+                    ScheduleDeathDissolve(item, hideWhenDone: true);
+                }
             }
         }
 
@@ -605,6 +618,7 @@ namespace App.UI
         {
             if (item == null)
             {
+                FinishAttackIfReady();
                 return;
             }
 
@@ -615,7 +629,49 @@ namespace App.UI
                 return;
             }
 
-            item.PlayDissolve(-1f, () => HideEnemyItem(item));
+            item.PlayDissolve(-1f, () =>
+            {
+                HideEnemyItem(item);
+                FinishAttackIfReady();
+            });
+        }
+
+        private void FinishAttackIfReady()
+        {
+            if (!_attackCutsceneDone)
+            {
+                return;
+            }
+
+            if (IsWaitingLethalDissolve())
+            {
+                return;
+            }
+
+            _attackCutsceneDone = false;
+            _waitLethalItem = null;
+            if (ViewModel != null)
+            {
+                ViewModel.Session.CompletePlayerAttack();
+            }
+        }
+
+        private bool IsWaitingLethalDissolve()
+        {
+            if (_waitLethalItem == null)
+            {
+                return false;
+            }
+
+            if (_deathDissolves.TryGetValue(_waitLethalItem, out var tween) &&
+                tween != null &&
+                tween.IsActive())
+            {
+                return true;
+            }
+
+            var dissolve = _waitLethalItem.GetComponent<UiDissolve>();
+            return dissolve != null && dissolve.IsPlaying;
         }
 
         private void CancelDeathDissolve(PlayerItem item)
@@ -937,51 +993,8 @@ namespace App.UI
                     return;
                 }
 
-                if (SkipDissolveOnHide(slot))
-                {
-                    go.SetActive(false);
-                    return;
-                }
-
                 item.PlayDissolve(-1f, () => HideEnemyItem(item));
             }));
-        }
-
-        /// <summary>3 人拼牌时把还活着的非当前对手藏起来，不要走阵亡溶解。</summary>
-        private bool SkipDissolveOnHide(int slot)
-        {
-            var session = ViewModel?.Session;
-            if (session == null || !GameTableViewModel.ShouldShowCardInfo(session))
-            {
-                return false;
-            }
-
-            if (CountAlive(session) < 3)
-            {
-                return false;
-            }
-
-            var enemy = session.EnemyAtVisualSlot(slot);
-            return enemy != null && enemy.Alive;
-        }
-
-        private static int CountAlive(GameSession session)
-        {
-            var n = 0;
-            if (session?.Enemies == null)
-            {
-                return 0;
-            }
-
-            for (var i = 0; i < session.Enemies.Length; i++)
-            {
-                if (session.Enemies[i] != null && session.Enemies[i].Alive)
-                {
-                    n++;
-                }
-            }
-
-            return n;
         }
 
         private static void HideEnemyItem(PlayerItem item)
@@ -1055,7 +1068,10 @@ namespace App.UI
         {
             var centerSlot = session.CenterStandVisualSlot;
             var center = ResolveSlot("player1");
-            var standAlive = session.CenterStandEnemy != null && session.CenterStandEnemy.Alive;
+            var occupyCenter = session.CenterStandEnemy != null;
+            var vacatedSide = occupyCenter && centerSlot > 0 && centerSlot < _enemyHomes.Length
+                ? _enemyHomes[centerSlot]
+                : null;
             for (var i = 0; i < _enemyItems.Length; i++)
             {
                 var item = _enemyItems[i];
@@ -1070,30 +1086,38 @@ namespace App.UI
                     continue;
                 }
 
-                var home = _enemyHomes[i];
-                if (standAlive && i == centerSlot && center != null)
+                if (occupyCenter && i == centerSlot && center != null)
                 {
-                    if (rt.parent != center)
-                    {
-                        rt.SetParent(center, false);
-                    }
-
-                    rt.anchorMin = new Vector2(0.5f, 0.5f);
-                    rt.anchorMax = new Vector2(0.5f, 0.5f);
-                    rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = Vector2.zero;
+                    PlaceEnemyAt(rt, center);
                     continue;
                 }
 
-                if (home != null && rt.parent != home)
+                if (vacatedSide != null && i == 0)
                 {
-                    rt.SetParent(home, false);
-                    rt.anchorMin = new Vector2(0.5f, 0.5f);
-                    rt.anchorMax = new Vector2(0.5f, 0.5f);
-                    rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = Vector2.zero;
+                    PlaceEnemyAt(rt, vacatedSide);
+                    continue;
                 }
+
+                PlaceEnemyAt(rt, _enemyHomes[i]);
             }
+        }
+
+        private static void PlaceEnemyAt(RectTransform rt, Transform parent)
+        {
+            if (rt == null || parent == null)
+            {
+                return;
+            }
+
+            if (rt.parent != parent)
+            {
+                rt.SetParent(parent, false);
+            }
+
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
         }
 
         private void RefreshCardInfos()
@@ -1853,7 +1877,7 @@ namespace App.UI
             _shownEnemySlot = slot;
             await PresentItemTip(
                 anchor.transform,
-                EnemyDisplayName(enemy),
+                string.Empty,
                 BuildEnemyTipBody(enemy),
                 showUse: false,
                 placeRight: false);
@@ -2027,7 +2051,9 @@ namespace App.UI
         {
             if (_equipTipTitle != null)
             {
-                _equipTipTitle.text = title ?? string.Empty;
+                var text = title ?? string.Empty;
+                _equipTipTitle.text = text;
+                _equipTipTitle.gameObject.SetActive(!string.IsNullOrEmpty(text));
             }
 
             if (_equipTipText != null)
@@ -2067,44 +2093,15 @@ namespace App.UI
             return string.Join("\n", parts);
         }
 
-        private static string EnemyDisplayName(SeatState enemy)
-        {
-            return enemy != null ? enemy.Name ?? string.Empty : string.Empty;
-        }
-
-        private string BuildEnemyTipBody(SeatState enemy)
+        private static string BuildEnemyTipBody(SeatState enemy)
         {
             if (enemy == null)
             {
                 return string.Empty;
             }
 
-            if (enemy.IsBoss)
-            {
-                var desc = ViewModel != null ? ViewModel.RoundBuffDesc.Value : null;
-                var name = ViewModel != null ? ViewModel.RoundBuffName.Value : null;
-                if (!string.IsNullOrEmpty(desc) && !string.Equals(desc, name, StringComparison.Ordinal))
-                {
-                    return desc;
-                }
-
-                if (!string.IsNullOrEmpty(name))
-                {
-                    return name;
-                }
-            }
-
             var monster = FindMonster(enemy.MonsterId);
-            if (monster != null && monster.MonsterEntry > 0)
-            {
-                var entry = RelicEntryConfig.Get(monster.MonsterEntry);
-                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
-                {
-                    return entry.Desc;
-                }
-            }
-
-            return $"生命 {enemy.Hp}/{enemy.MaxHp}\n攻击 {enemy.Attack}";
+            return monster != null ? monster.Desc ?? string.Empty : string.Empty;
         }
 
         private static MonsterConfig FindMonster(int monsterId)

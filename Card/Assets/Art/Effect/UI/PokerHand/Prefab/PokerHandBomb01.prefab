@@ -4864,7 +4864,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 203
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 3
@@ -9831,7 +9831,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 19
+  m_SortingOrder: 205
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -14721,7 +14721,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 201
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -19641,7 +19641,7 @@ ParticleSystemRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 2
+  m_SortingOrder: 202
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0

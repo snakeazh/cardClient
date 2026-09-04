@@ -38,7 +38,6 @@ namespace App.Item
             playerItem.SetName(unlocked && hero != null ? hero.Name : "???");
             playerItem.SetHp(unlocked && hero != null ? hero.Hp : 0);
             playerItem.SetAttack(unlocked && hero != null ? hero.HeroDamage : 0);
-            playerItem.SetState(string.Empty);
             playerItem.SetPortrait(portrait, locked: !unlocked);
         }
 

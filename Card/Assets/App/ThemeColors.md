@@ -43,7 +43,7 @@ ThemeColors.ApplyCard(QualityType.Ordinary, iconBg, titleBg, circle);     // 人
 ThemeColors.ApplyCard(ThemeColors.Enemy, ThemeColors.EnemyTitle, ...);   // 敌人
 ```
 
-`PlayerItem.ApplyTheme(enemy)` 内部就是这两套。攻击/血量底图（`FrameSlection1` / `FrameSlection2`）不走色板，见 [`PlayerItem.md`](Item/PlayerItem.md)。
+`PlayerItem` 不再走这套染色：人物/敌人分 `card` / `enemycard` 节点，底图见图集与 `MonsterConfig`，见 [`PlayerItem.md`](Item/PlayerItem.md)。其它卡片仍可用上面的 `ApplyCard`。
 
 ---
 
@@ -68,7 +68,7 @@ bgcolor.color = ThemeColors.EquipSlot(relic != null, relic != null ? relic.Type 
 |------|------|------|
 | `EquipShopIcon` | `bgcolor` | `EquipSlot`（品质底 / 空槽黑） |
 | `ShopItem` | `IconBG` / `IconTitleBG` / `card_Circle` | `RelicConfig.Type` |
-| `PlayerItem` | 同上 | 人物普通品质；敌人红 |
+| `PlayerItem` | 不染色 | 人物 `card` + 品质框；敌人 `enemycard` + BaseMap/HealthBar |
 | `GameUIView` 装备栏 | `equipN/bgcolor` | 品质底 / 空槽黑 |
 
 图鉴 `ItemCard` 目前还用选中橙，没有接这张表。

@@ -1045,8 +1045,7 @@ namespace App.UI
                 _enemyItems[slot].Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    AttackDisplay(_enemyItems[slot], enemy.Attack),
-                    session.ActingAiId);
+                    AttackDisplay(_enemyItems[slot], enemy.Attack));
             }
 
             SyncEnemyCompareStand(session);

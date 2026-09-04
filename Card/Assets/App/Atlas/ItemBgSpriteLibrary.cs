@@ -38,6 +38,17 @@ namespace App.Atlas
             return GetSprite(BaseMaskSpriteName);
         }
 
+        /// <summary>按图集内 sprite 名取图（怪物 BaseMap / HealthBar 等）。缺名或缺图返回 null。</summary>
+        public static Sprite Get(string spriteName)
+        {
+            if (string.IsNullOrEmpty(spriteName))
+            {
+                return null;
+            }
+
+            return GetSprite(spriteName);
+        }
+
         private static string QualityPrefix(QualityType type)
         {
             switch (type)

@@ -46,7 +46,6 @@ namespace App.UI
                 _playerItem.SetName(string.Empty);
                 _playerItem.SetHp(0);
                 _playerItem.SetAttack(0);
-                _playerItem.SetState(string.Empty);
                 _playerItem.SetPortrait(null);
                 return;
             }
@@ -54,7 +53,6 @@ namespace App.UI
             _playerItem.SetName(hero.Name);
             _playerItem.SetHp(hero.Hp);
             _playerItem.SetAttack(hero.HeroDamage);
-            _playerItem.SetState(string.Empty);
             _playerItem.SetPortrait(PortraitLoader.GetRole(hero.Icon));
         }
     }

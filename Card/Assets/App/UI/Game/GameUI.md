@@ -17,8 +17,8 @@
 ```
 GameUI
   backBtn                 ← 返回主页
-  PlayerItem              ← 玩家卡，显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
-  player1/2/3             ← 敌人人物卡槽（player1 中心；运行时克隆 PlayerItem）；平时点击弹出 ItemTip
+  PlayerItem              ← 玩家卡（card），显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
+  player1/2/3             ← 敌人卡槽（player1 中心；运行时克隆 PlayerItem 并切到 enemycard）；平时点击弹出 ItemTip
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
   horEquipBtns2           ← yiwuBtn 遗物列表；ruleBtn 点出 WinTip 赔率表（一直可点）

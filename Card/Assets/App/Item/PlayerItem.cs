@@ -10,8 +10,9 @@ using UnityEngine.UI;
 namespace App.Game
 {
     /// <summary>
-    /// 局内角色/敌人信息卡。人物与敌人共用同一套节点，头像与数值在 <see cref="Bind"/> 时赋值。
-    /// 品质完全由图集图表达：attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame，
+    /// 局内角色/敌人信息卡。人物用 card，敌人用 enemycard，头像与数值在 <see cref="Bind"/> 时赋值。
+    /// 玩家 attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame；
+    /// 怪物 enemycard 底图取 MonsterConfig.BaseMap，attack/heart 取 HealthBar。
     /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
@@ -21,22 +22,48 @@ namespace App.Game
 
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
+        [SerializeField] private Image cardBg;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private Animator attackValueAnimator;
         [SerializeField] private TMP_Text cardAttackHeart;
         [SerializeField] private GameObject attackRoot;
         [SerializeField] private Image attackBg;
         [SerializeField] private Image heartBg;
-        [SerializeField] private TMP_Text cardState;
+        [SerializeField] private TMP_Text enemyCardName;
+        [SerializeField] private Image enemyCardIcon;
+        [SerializeField] private Image enemyCardBg;
+        [SerializeField] private TMP_Text enemyCardAttackValue;
+        [SerializeField] private Animator enemyAttackValueAnimator;
+        [SerializeField] private TMP_Text enemyCardAttackHeart;
+        [SerializeField] private GameObject enemyAttackRoot;
+        [SerializeField] private Image enemyAttackBg;
+        [SerializeField] private Image enemyHeartBg;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
+
+        private bool _stateHidden;
+        private bool _enemyVisual;
+        private bool _visualReady;
+
+        private TMP_Text ActiveName => _enemyVisual && enemyCardName != null ? enemyCardName : cardName;
+        private Image ActiveIcon => _enemyVisual && enemyCardIcon != null ? enemyCardIcon : cardIcon;
+        private TMP_Text ActiveAttackValue =>
+            _enemyVisual && enemyCardAttackValue != null ? enemyCardAttackValue : cardAttackValue;
+        private Animator ActiveAttackAnimator =>
+            _enemyVisual && enemyAttackValueAnimator != null ? enemyAttackValueAnimator : attackValueAnimator;
+        private GameObject ActiveAttackRoot =>
+            _enemyVisual && enemyAttackRoot != null ? enemyAttackRoot : attackRoot;
+        private Image ActiveHeartBg => _enemyVisual && enemyHeartBg != null ? enemyHeartBg : heartBg;
+        private TMP_Text ActiveHeart =>
+            _enemyVisual && enemyCardAttackHeart != null ? enemyCardAttackHeart : cardAttackHeart;
 
         public RectTransform CardIconRect
         {
             get
             {
                 EnsureRefs();
-                return cardIcon != null ? cardIcon.rectTransform : null;
+                var icon = ActiveIcon;
+                return icon != null ? icon.rectTransform : null;
             }
         }
 
@@ -145,7 +172,8 @@ namespace App.Game
             get
             {
                 EnsureRefs();
-                return cardAttackValue != null ? cardAttackValue.rectTransform : null;
+                var value = ActiveAttackValue;
+                return value != null ? value.rectTransform : null;
             }
         }
 
@@ -154,7 +182,7 @@ namespace App.Game
             get
             {
                 EnsureRefs();
-                return attackValueAnimator;
+                return ActiveAttackAnimator;
             }
         }
 
@@ -175,72 +203,51 @@ namespace App.Game
             dissolve?.ResetState();
         }
 
-        public void Bind(SeatState seat, Sprite portrait, int attack = 0, int actingAiId = -1)
+        public void Bind(SeatState seat, Sprite portrait, int attack = 0)
         {
             EnsureRefs();
             var enemy = seat != null && !seat.IsPlayer;
-            ApplyTheme();
-            SetName(seat != null ? seat.Name : string.Empty);
-            SetAttack(attack);
-            SetHp(seat != null ? seat.Hp : 0);
-            SetPortrait(portrait);
+            SetEnemyVisual(enemy);
             if (enemy)
             {
-                SetState(FormatAiState(seat, actingAiId));
-            }
-            else if (seat != null && !string.IsNullOrEmpty(seat.PeekedType))
-            {
-                SetState($"透视 {seat.PeekedType}");
+                ApplyMonsterFrames(seat.MonsterId);
             }
             else
             {
-                SetState(string.Empty);
-            }
-        }
-
-        public static string FormatAiState(SeatState seat, int actingAiId)
-        {
-            if (seat == null || seat.IsPlayer)
-            {
-                return string.Empty;
+                ApplyTheme();
             }
 
-            if (seat.Folded)
-            {
-                return "弃牌";
-            }
-
-            if (seat.Id == actingAiId)
-            {
-                return "操作中";
-            }
-
-            if (!string.IsNullOrEmpty(seat.PeekedType))
-            {
-                return $"透视 {seat.PeekedType}";
-            }
-
-            if (!string.IsNullOrEmpty(seat.Status))
-            {
-                return seat.Status;
-            }
-
-            return seat.StreetPaid > 0 ? "已下注" : string.Empty;
-        }
-
-        public void SetState(string text)
-        {
-            EnsureRefs();
-            if (cardState != null)
-            {
-                cardState.text = text ?? string.Empty;
-            }
+            SetName(seat != null ? seat.Name : string.Empty);
+            SetAttack(attack);
+            SetHp(seat != null ? seat.Hp : 0, hideWhenZero: false);
+            SetPortrait(portrait);
         }
 
         public void ApplyTheme(QualityType quality = QualityType.Ordinary)
         {
             EnsureRefs();
+            SetEnemyVisual(false);
             ApplyStatFrame(quality);
+        }
+
+        private void SetEnemyVisual(bool enemy)
+        {
+            if (enemy && enemyCardBg == null)
+            {
+                enemy = false;
+            }
+
+            _enemyVisual = enemy;
+            _visualReady = true;
+            if (cardBg != null)
+            {
+                cardBg.gameObject.SetActive(!enemy);
+            }
+
+            if (enemyCardBg != null)
+            {
+                enemyCardBg.gameObject.SetActive(enemy);
+            }
         }
 
         /// <summary>
@@ -272,12 +279,72 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 怪物 enemycard 底图用 BaseMap，enemycardattack/heart 用 HealthBar。缺配置或缺图保留当前 sprite。
+        /// </summary>
+        private void ApplyMonsterFrames(int monsterId)
+        {
+            var row = FindMonster(monsterId);
+            if (row == null)
+            {
+                return;
+            }
+
+            var baseMap = ItemBgSpriteLibrary.Get(row.BaseMap);
+            if (baseMap != null && enemyCardBg != null)
+            {
+                enemyCardBg.sprite = baseMap;
+            }
+
+            var healthBar = ItemBgSpriteLibrary.Get(row.HealthBar);
+            if (healthBar == null)
+            {
+                return;
+            }
+
+            if (enemyAttackBg != null)
+            {
+                enemyAttackBg.sprite = healthBar;
+            }
+
+            if (enemyHeartBg != null)
+            {
+                enemyHeartBg.sprite = healthBar;
+            }
+        }
+
+        private static MonsterConfig FindMonster(int monsterId)
+        {
+            if (monsterId <= 0)
+            {
+                return null;
+            }
+
+            MonsterConfig best = null;
+            foreach (var kv in MonsterConfig.All)
+            {
+                var row = kv.Value;
+                if (row == null || row.MonsterId != monsterId)
+                {
+                    continue;
+                }
+
+                if (best == null || row.MonsterLevel < best.MonsterLevel)
+                {
+                    best = row;
+                }
+            }
+
+            return best;
+        }
+
         public void SetName(string name)
         {
             EnsureRefs();
-            if (cardName != null)
+            var label = ActiveName;
+            if (label != null)
             {
-                cardName.text = name ?? string.Empty;
+                label.text = name ?? string.Empty;
             }
         }
 
@@ -285,89 +352,96 @@ namespace App.Game
         {
             EnsureRefs();
             var value = Mathf.Max(0, attack);
-            if (cardAttackValue != null)
+            var label = ActiveAttackValue;
+            if (label != null)
             {
-                cardAttackValue.text = value.ToString();
+                label.text = value.ToString();
             }
 
-            if (attackRoot != null)
+            var root = ActiveAttackRoot;
+            if (root != null)
             {
-                attackRoot.SetActive(value > 0);
+                root.SetActive(value > 0);
             }
-            else if (cardAttackValue != null)
+            else if (label != null)
             {
-                cardAttackValue.gameObject.SetActive(value > 0);
+                label.gameObject.SetActive(value > 0);
             }
         }
 
         public void PlayAttackNumberShake(bool low, bool high)
         {
             EnsureRefs();
-            if (attackValueAnimator == null)
+            var animator = ActiveAttackAnimator;
+            if (animator == null)
             {
                 return;
             }
 
-            attackValueAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            attackValueAnimator.enabled = true;
-            attackValueAnimator.SetBool("low", false);
-            attackValueAnimator.SetBool("high", false);
-            attackValueAnimator.SetBool("normal", false);
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.enabled = true;
+            animator.SetBool("low", false);
+            animator.SetBool("high", false);
+            animator.SetBool("normal", false);
 
             var state = low ? "NumberShackLow" : high ? "NumberShackHigh" : "NumberNormal";
-            attackValueAnimator.SetBool("low", low);
-            attackValueAnimator.SetBool("high", high);
-            attackValueAnimator.SetBool("normal", !low && !high);
-            attackValueAnimator.Play(state, 0, 0f);
-            attackValueAnimator.Update(0f);
+            animator.SetBool("low", low);
+            animator.SetBool("high", high);
+            animator.SetBool("normal", !low && !high);
+            animator.Play(state, 0, 0f);
+            animator.Update(0f);
             if (low)
             {
-                attackValueAnimator.SetBool("low", false);
+                animator.SetBool("low", false);
             }
 
             if (high)
             {
-                attackValueAnimator.SetBool("high", false);
+                animator.SetBool("high", false);
             }
         }
 
-        public void SetHp(int hp)
+        public void SetHp(int hp, bool hideWhenZero = true)
         {
             EnsureRefs();
             var value = Mathf.Max(0, hp);
-            if (cardAttackHeart != null)
+            var label = ActiveHeart;
+            if (label != null)
             {
-                cardAttackHeart.text = value.ToString();
+                label.text = value.ToString();
             }
 
-            if (heartBg != null)
+            var visible = value > 0 || !hideWhenZero;
+            var bg = ActiveHeartBg;
+            if (bg != null)
             {
-                heartBg.gameObject.SetActive(value > 0);
+                bg.gameObject.SetActive(visible);
             }
-            else if (cardAttackHeart != null)
+            else if (label != null)
             {
-                cardAttackHeart.gameObject.SetActive(value > 0);
+                label.gameObject.SetActive(visible);
             }
         }
 
         public void SetPortrait(Sprite portrait, bool locked = false)
         {
             EnsureRefs();
-            if (cardIcon == null)
+            var icon = ActiveIcon;
+            if (icon == null)
             {
                 return;
             }
 
             if (portrait == null)
             {
-                cardIcon.enabled = false;
-                cardIcon.color = UnlockedPortraitColor;
+                icon.enabled = false;
+                icon.color = UnlockedPortraitColor;
                 return;
             }
 
-            cardIcon.sprite = portrait;
-            cardIcon.color = locked ? LockedPortraitColor : UnlockedPortraitColor;
-            cardIcon.enabled = true;
+            icon.sprite = portrait;
+            icon.color = locked ? LockedPortraitColor : UnlockedPortraitColor;
+            icon.enabled = true;
         }
 
         private void Awake()
@@ -385,6 +459,11 @@ namespace App.Game
             if (cardIcon == null)
             {
                 cardIcon = FindImage("card_icon");
+            }
+
+            if (cardBg == null)
+            {
+                cardBg = FindImage("card");
             }
 
             if (cardAttackValue == null)
@@ -424,10 +503,59 @@ namespace App.Game
                 cardAttackHeart = FindText("card_attackHeart");
             }
 
-            if (cardState == null)
+            if (enemyCardName == null)
             {
-                cardState = FindText("state");
+                enemyCardName = FindText("enemycard_Name");
             }
+
+            if (enemyCardIcon == null)
+            {
+                enemyCardIcon = FindImage("enemycard_icon");
+            }
+
+            if (enemyCardBg == null)
+            {
+                enemyCardBg = FindImage("enemycard");
+            }
+
+            if (enemyCardAttackValue == null)
+            {
+                enemyCardAttackValue = FindText("enemycard_attackValue");
+            }
+
+            if (enemyAttackValueAnimator == null && enemyCardAttackValue != null)
+            {
+                enemyAttackValueAnimator = enemyCardAttackValue.GetComponent<Animator>();
+            }
+
+            if (enemyAttackRoot == null || enemyAttackBg == null)
+            {
+                var node = FindDeep(transform, "enemycardattack");
+                if (node != null)
+                {
+                    if (enemyAttackRoot == null)
+                    {
+                        enemyAttackRoot = node.gameObject;
+                    }
+
+                    if (enemyAttackBg == null)
+                    {
+                        enemyAttackBg = node.GetComponent<Image>();
+                    }
+                }
+            }
+
+            if (enemyHeartBg == null)
+            {
+                enemyHeartBg = FindImage("enemycardheart");
+            }
+
+            if (enemyCardAttackHeart == null)
+            {
+                enemyCardAttackHeart = FindText("enemycard_attackHeart");
+            }
+
+            HideStateNode();
 
             if (playerRoot == null)
             {
@@ -443,12 +571,32 @@ namespace App.Game
             {
                 playerAnimator = playerRoot.GetComponent<Animator>();
             }
+
+            if (!_visualReady)
+            {
+                SetEnemyVisual(false);
+            }
         }
 
         private Image FindImage(string nodeName)
         {
             var node = FindDeep(transform, nodeName);
             return node != null ? node.GetComponent<Image>() : null;
+        }
+
+        private void HideStateNode()
+        {
+            if (_stateHidden)
+            {
+                return;
+            }
+
+            _stateHidden = true;
+            var node = FindDeep(transform, "state");
+            if (node != null)
+            {
+                node.gameObject.SetActive(false);
+            }
         }
 
         private TMP_Text FindText(string nodeName)

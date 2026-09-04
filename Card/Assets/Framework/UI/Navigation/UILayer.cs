@@ -9,6 +9,8 @@ namespace Framework.UI.Navigation
         Resource = 4,
         Loading = 5,
         TopMost = 6,
-        Guide = 7
+        Guide = 7,
+        /// <summary>常驻 Toast，不参与关屏栈；画在 TopMost 之上、Guide 之下。</summary>
+        Toast = 8
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace Framework.UI.Navigation
 {
@@ -20,6 +19,7 @@ namespace Framework.UI.Navigation
         [SerializeField] private RectTransform _topMostLayer;
         [SerializeField] private RectTransform _resourceLayer;
         [SerializeField] private RectTransform _guideLayer;
+        [SerializeField] private RectTransform _toastLayer;
 
         public Canvas RootCanvas { get; private set; }
 
@@ -85,6 +85,7 @@ namespace Framework.UI.Navigation
             RegisterLayer(UILayer.Resource, _resourceLayer);
             RegisterLayer(UILayer.Loading, _loadingLayer);
             RegisterLayer(UILayer.TopMost, _topMostLayer);
+            RegisterLayer(UILayer.Toast, _toastLayer);
             RegisterLayer(UILayer.Guide, _guideLayer);
         }
 

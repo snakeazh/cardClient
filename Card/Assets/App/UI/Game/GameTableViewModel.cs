@@ -472,18 +472,6 @@ namespace App.UI
             }
 
             var shown = new bool[ShowEnemy.Length];
-            var comparing = ShouldShowCardInfo(Session);
-            var displayedSlot = comparing ? Session.DisplayedEnemyVisualSlot : -1;
-            var aliveCount = 0;
-            for (var i = 0; i < Session.Enemies.Length; i++)
-            {
-                if (Session.Enemies[i].Alive)
-                {
-                    aliveCount++;
-                }
-            }
-
-            var hideOthers = comparing && aliveCount >= 3;
             var placed = 0;
             for (var i = 0; i < Session.Enemies.Length; i++)
             {
@@ -500,7 +488,7 @@ namespace App.UI
                     continue;
                 }
 
-                shown[slot] = enemy.Alive && (!hideOthers || slot == displayedSlot);
+                shown[slot] = enemy.Alive;
                 EnemyChips[slot].Value = $"勇气 {enemy.Courage}";
                 EnemyBet[slot].Value = BetLabel(enemy);
                 EnemyState[slot].Value = SeatLine(enemy);

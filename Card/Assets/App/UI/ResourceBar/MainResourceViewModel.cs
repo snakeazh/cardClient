@@ -51,7 +51,8 @@ namespace App.UI
 
         public IReadOnlyList<ResourceSlot> Slots => _slots;
 
-        /// <summary>资源栏 AddBtn：打开广告商店（体力/金币限购）。</summary>
+        /// <summary>资源栏 AddBtn：打开广告商店（体力/金币限购）。弹窗已打开时忽略连点——
+        /// 框架 OpenCore 对同层已有屏只会隐藏旧实例再叠一个新视图，连点会越叠越深。</summary>
         public IRelayCommand OpenShopCommand { get; }
 
         public async Task EnsureShown()
@@ -131,23 +132,39 @@ namespace App.UI
             _runGold.Amount.Value = _session.Run.Gold.ToString();
         }
 
-        /// <summary>打开广告商店弹窗（体力/金币限购）。VM 复用，弹窗自身关闭后可再次打开。</summary>
+        /// <summary>打开广告商店弹窗（体力/金币限购）。每次新建 VM：旧 VM 随关闭被 Dispose，
+        /// 不可复用；VM 的 Closed 回调清引用，之后 AddBtn 才能再次打开。</summary>
         private async void OpenShop()
         {
+            if (_shopPop != null)
+            {
+                return;
+            }
+
             try
             {
-                if (_shopPop == null)
-                {
-                    var registration = _ui.Registry.GetByViewModelType(typeof(StaminaPurchasePopViewModel));
-                    _shopPop = (StaminaPurchasePopViewModel)_ui.Registry.CreateViewModel(registration);
-                }
-
-                await _ui.Open(_shopPop);
+                var registration = _ui.Registry.GetByViewModelType(typeof(StaminaPurchasePopViewModel));
+                var vm = (StaminaPurchasePopViewModel)_ui.Registry.CreateViewModel(registration);
+                vm.Closed += OnShopPopClosed;
+                _shopPop = vm;
+                await _ui.Open(vm);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
+                OnShopPopClosed();
             }
+        }
+
+        private void OnShopPopClosed()
+        {
+            if (_shopPop == null)
+            {
+                return;
+            }
+
+            _shopPop.Closed -= OnShopPopClosed;
+            _shopPop = null;
         }
 
         /// <summary>View 在 OnBind 时注入手动引用的图标（Common 目录不打图集，不走运行时加载）。</summary>

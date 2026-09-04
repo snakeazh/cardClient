@@ -11,7 +11,9 @@ namespace TMPro.EditorUtilities
     public static class GameFontAtlasBuilder
     {
         public const string FontAssetPath = "Assets/TextMesh Pro/Fonts/GameFont SDF.asset";
-        public const string SourceFontPath = "Assets/TextMesh Pro/Fonts/LeMi.ttf";
+
+        /// <summary>2026-09 起主源字体换为美工提供的像素字体，LeMi.ttf 已弃用。</summary>
+        public const string SourceFontPath = "Assets/TextMesh Pro/Fonts/FusionPixel12Mono.otf";
 
         /// <summary>回退源字体：LeMi 缺字时补字形（覆盖全部中英文符号）。</summary>
         public const string FallbackSourceFontPath = "Assets/TextMesh Pro/Fonts/GameFont.otf";

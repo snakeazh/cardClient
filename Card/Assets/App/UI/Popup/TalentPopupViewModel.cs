@@ -101,12 +101,20 @@ namespace App.UI.Popup
                 var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
                 var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
                 vm.Setup(talentId);
+                // 详情页看广告升级后刷新列表（等级角标、解锁染色）
+                vm.Upgraded += OnDetailUpgraded;
                 await _ui.Open(vm);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
             }
+        }
+
+        private void OnDetailUpgraded(int talentId)
+        {
+            RebuildItems();
+            ListVersion.Value++;
         }
 
         /// <summary>打开天赋规则说明弹窗（DetailBtn，GameConst.TalentDesc 文案）。</summary>

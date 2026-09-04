@@ -23,10 +23,12 @@ namespace App.UI.Popup
         private const string TemplateName = "Item";
         private const string UltimateBannerName = "TitleBg";
         private const string UltimateGridName = "UltimateGrid";
+        private const string RareBannerName = "RareBanner";
+        private const string RareGridName = "RareGrid";
         private const string NormalBannerName = "NormalBanner";
         private const string NormalGridName = "NormalGrid";
 
-        /// <summary>终极区收史诗/传说品质，其余进普通区；调整分组只改这里。</summary>
+        /// <summary>终极区收史诗/传说品质，稀有区收 Rare，其余进普通区；调整分组只改这里。</summary>
         private static readonly QualityType[] UltimateTypes = { QualityType.Epic, QualityType.Legend };
 
         private readonly List<ItemCard> _cards = new List<ItemCard>();
@@ -64,14 +66,27 @@ namespace App.UI.Popup
             }
 
             var ultimate = new List<TalentItem>();
+            var rare = new List<TalentItem>();
             var normal = new List<TalentItem>();
             var items = ViewModel.Items;
             for (var i = 0; i < items.Count; i++)
             {
-                (IsUltimate(items[i]) ? ultimate : normal).Add(items[i]);
+                if (IsUltimate(items[i]))
+                {
+                    ultimate.Add(items[i]);
+                }
+                else if (items[i].Type == QualityType.Rare)
+                {
+                    rare.Add(items[i]);
+                }
+                else
+                {
+                    normal.Add(items[i]);
+                }
             }
 
             FillSection(content.Find(UltimateBannerName), content.Find(UltimateGridName), ultimate);
+            FillSection(content.Find(RareBannerName), content.Find(RareGridName), rare);
             FillSection(content.Find(NormalBannerName), content.Find(NormalGridName), normal);
         }
 

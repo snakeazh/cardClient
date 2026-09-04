@@ -26,6 +26,7 @@ namespace App.UI.Popup
             Atlas = atlas;
             NameText = new ObservableProperty<string>();
             DescText = new ObservableProperty<string>();
+            LevelText = new ObservableProperty<string>(string.Empty);
             IconKey = new ObservableProperty<string>(string.Empty);
             ShowSwitch = new ObservableProperty<bool>(false);
             PrevCommand = new RelayCommand(() => Shift(-1));
@@ -36,6 +37,9 @@ namespace App.UI.Popup
         public ObservableProperty<string> NameText { get; }
 
         public ObservableProperty<string> DescText { get; }
+
+        /// <summary>等级角标文案（如 "Lv.2"），空串隐藏。</summary>
+        public ObservableProperty<string> LevelText { get; }
 
         /// <summary>当前天赋在 Altas/Talent 图集内的 sprite 名，空表示配置未填或无选中。</summary>
         public ObservableProperty<string> IconKey { get; }
@@ -91,6 +95,9 @@ namespace App.UI.Popup
                 : string.Empty;
             DescText.Value = snapshot != null && snapshot.Config != null
                 ? snapshot.Config.Desc ?? string.Empty
+                : string.Empty;
+            LevelText.Value = snapshot != null && snapshot.IsOwned
+                ? $"Lv.{snapshot.Level}"
                 : string.Empty;
             IconKey.Value = snapshot?.Config == null || string.IsNullOrWhiteSpace(snapshot.Config.Icon)
                 ? string.Empty

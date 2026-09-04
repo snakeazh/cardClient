@@ -191,5 +191,17 @@ namespace App.UI
 
             _ui.Root.GetLayer(UILayer.Resource).gameObject.SetActive(visible);
         }
+
+        /// <summary>隐藏资源栏所在层（图鉴等整屏页签用），同 Navigation.HideBar 模式。</summary>
+        public void HideBar()
+        {
+            SetLayerVisible(false);
+        }
+
+        /// <summary>恢复资源栏（与 HideBar 成对）。</summary>
+        public void ShowBar()
+        {
+            SetLayerVisible(true);
+        }
     }
 }

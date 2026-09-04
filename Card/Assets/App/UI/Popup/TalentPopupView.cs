@@ -125,6 +125,8 @@ namespace App.UI.Popup
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 card.SetName(item.Name);
                 card.SetUnlocked(item.Snapshot.IsOwned);
+                // 图标随解锁态染色：未解锁黑色剪影，解锁白色原色
+                card.SetIconColor(item.Snapshot.IsOwned ? Color.white : Color.black);
                 // 等级角标仅解锁态显示；未解锁卡面已有 Mask + ？？？ 占位
                 card.SetLevel(item.Snapshot.IsOwned ? $"Lv.{item.Snapshot.Level}" : null);
                 if (!string.IsNullOrEmpty(item.IconKey))

@@ -157,6 +157,16 @@ namespace App.Item
             cardIcon.enabled = true;
         }
 
+        /// <summary>染 card_icon 颜色；白 = 原色不染色，黑 = 剪影（天赋列表未解锁态用）。</summary>
+        public void SetIconColor(Color color)
+        {
+            EnsureRefs();
+            if (cardIcon != null)
+            {
+                cardIcon.color = color;
+            }
+        }
+
         /// <summary>
         /// 解锁态：隐藏 Mask 遮罩、图标原色；未解锁：激活 Mask 遮罩（不染黑卡面组件），名字占位为 ？？？。
         /// </summary>

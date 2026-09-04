@@ -25,18 +25,12 @@ namespace App.UI
             ViewModel.SetIcons(_goldIcon, _energyIcon);
         }
 
-        /// <summary>资源格上的 AddBtn 打开广告商店；局内金币格（RunGold）不显示入口。</summary>
-        private void BindShopEntry(Transform item, ResourceSlot slot)
+        /// <summary>资源格上的 AddBtn 打开广告商店。</summary>
+        private void BindShopEntry(Transform item, ResourceSlot _)
         {
             var addBtn = item.Find("AddBtn");
             if (addBtn == null)
             {
-                return;
-            }
-
-            if (slot.Kind == ResourceKind.RunGold)
-            {
-                addBtn.gameObject.SetActive(false);
                 return;
             }
 

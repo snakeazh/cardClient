@@ -9,7 +9,7 @@
 
 | 位置 | 文件 |
 |------|------|
-| 顶栏资源栏（局外钱包 / 局内金币） | `App/UI/ResourceBar/ResourceBarBinder.cs` |
+| 顶栏资源栏（局外钱包 / 体力） | `App/UI/ResourceBar/ResourceBarBinder.cs` |
 | 局内牌桌 HUD 金币 | `App/UI/Game/GameUIView.cs` |
 | 商店弹窗金币 | `App/UI/Popup/BattleShopPopView.cs` |
 | 局内结算升级弹窗金币 | `App/UI/Popup/BattleSettleUpPopView.cs` |

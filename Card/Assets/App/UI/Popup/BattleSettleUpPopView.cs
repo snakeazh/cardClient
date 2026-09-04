@@ -15,8 +15,14 @@ namespace App.UI.Popup
     [AutoScreen(AppScreenIds.BattleSettleUpPop, UILayer.Popup, ResResourcePaths.BattleSettleUpPop)]
     public sealed class BattleSettleUpPopView : ViewBase<BattleSettleUpPopViewModel>
     {
+        // BG 底部预留 = 背景图九宫格下边框厚度（LevelSettlementBaseFrame spriteBorder.w = 116）
+        private const float BgBottomEdge = 116f;
+
         private readonly List<GameObject> _roundRows = new List<GameObject>();
         private GameObject _roundTemplate;
+        private RectTransform _bgRect;
+        private RectTransform _titleRect;
+        private RectTransform _contentRect;
 
         protected override void OnBind()
         {
@@ -147,6 +153,51 @@ namespace App.UI.Popup
                 ApplyRoundRow(row, rows[i]);
                 _roundRows.Add(row);
             }
+        }
+
+        // BG 高度 = Title 高度 + Content 高度 + 底部边框；BG 锚点/轴心居中，只改 sizeDelta 即保持居中。
+        // Content 高度由 ContentSizeFitter 帧末刷新，绑定时序不定，故每帧检测变化后再写入。
+        private void LateUpdate()
+        {
+            FitBgHeight();
+        }
+
+        private void FitBgHeight()
+        {
+            if (_bgRect == null)
+            {
+                _bgRect = FindDeep(transform, "BG") as RectTransform;
+                if (_bgRect == null)
+                {
+                    return;
+                }
+            }
+
+            if (_titleRect == null)
+            {
+                _titleRect = FindDeep(_bgRect, "Title") as RectTransform;
+                if (_titleRect == null)
+                {
+                    return;
+                }
+            }
+
+            if (_contentRect == null)
+            {
+                _contentRect = FindDeep(_bgRect, "Content") as RectTransform;
+                if (_contentRect == null)
+                {
+                    return;
+                }
+            }
+
+            var target = _titleRect.rect.height + _contentRect.rect.height + BgBottomEdge;
+            if (Mathf.Abs(target - _bgRect.rect.height) <= 0.5f)
+            {
+                return;
+            }
+
+            _bgRect.sizeDelta = new Vector2(_bgRect.sizeDelta.x, target);
         }
 
         private void EnsureTemplate()

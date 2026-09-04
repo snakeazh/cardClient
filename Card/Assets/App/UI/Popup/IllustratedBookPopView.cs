@@ -603,10 +603,19 @@ namespace App.UI.Popup
 
         private void OnTipTitle(string text)
         {
-            if (_tipTitle != null)
+            ApplyTipTitle(text);
+        }
+
+        private void ApplyTipTitle(string text)
+        {
+            if (_tipTitle == null)
             {
-                _tipTitle.text = text ?? string.Empty;
+                return;
             }
+
+            var value = text ?? string.Empty;
+            _tipTitle.text = value;
+            _tipTitle.gameObject.SetActive(!string.IsNullOrEmpty(value));
         }
 
         private void OnTipText(string text)
@@ -646,10 +655,7 @@ namespace App.UI.Popup
                 return;
             }
 
-            if (_tipTitle != null)
-            {
-                _tipTitle.text = ViewModel.TipTitle.Value ?? string.Empty;
-            }
+            ApplyTipTitle(ViewModel.TipTitle.Value);
 
             if (_tipText != null)
             {

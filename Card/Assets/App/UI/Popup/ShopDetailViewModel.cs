@@ -147,6 +147,12 @@ namespace App.UI.Popup
                 return;
             }
 
+            if (Session.Run.RelicConfigIds.Count >= Session.RelicCarryMax)
+            {
+                Toast.Show("遗物已满");
+                return;
+            }
+
             var ownedBefore = Session.OwnsRelicConfig(RelicId);
             Session.BuyShopRelic(RelicId);
             if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)

@@ -138,9 +138,9 @@ namespace App.UI.Popup
             }
 
             SelectedId = entry.Id;
-            TipTitle.Value = entry.Unlocked
-                ? (entry.Name ?? string.Empty)
-                : "？？？";
+            TipTitle.Value = entry.Tab == IllustratedBookTab.Monster
+                ? string.Empty
+                : (entry.Unlocked ? (entry.Name ?? string.Empty) : "？？？");
             TipText.Value = entry.Unlocked
                 ? (entry.Desc ?? string.Empty)
                 : (string.IsNullOrEmpty(entry.UnlockTip) ? "尚未解锁" : entry.UnlockTip);
@@ -309,7 +309,7 @@ namespace App.UI.Popup
                     Tab = IllustratedBookTab.Monster,
                     Id = row.MonsterId,
                     Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
-                    Desc = row.Desc != null ? row.Desc.Trim() : string.Empty,
+                    Desc = row.Desc ?? string.Empty,
                     Icon = row.Icon,
                     Unlocked = true
                 });

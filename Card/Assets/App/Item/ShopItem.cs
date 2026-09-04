@@ -190,17 +190,31 @@ namespace App.Game
         {
             _suppressClick = true;
             DragBegan?.Invoke(this, eventData);
+            ForwardDrag(eventData, ExecuteEvents.beginDragHandler);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
             DragMoved?.Invoke(this, eventData);
+            ForwardDrag(eventData, ExecuteEvents.dragHandler);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             _suppressClick = false;
             DragEnded?.Invoke(this, eventData);
+            ForwardDrag(eventData, ExecuteEvents.endDragHandler);
+        }
+
+        private void ForwardDrag<T>(PointerEventData eventData, ExecuteEvents.EventFunction<T> handler)
+            where T : IEventSystemHandler
+        {
+            if (eventData == null || transform.parent == null)
+            {
+                return;
+            }
+
+            ExecuteEvents.ExecuteHierarchy(transform.parent.gameObject, eventData, handler);
         }
 
         private void Awake()

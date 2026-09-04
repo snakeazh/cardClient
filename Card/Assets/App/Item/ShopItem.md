@@ -48,7 +48,7 @@ item.PlayChooseEnd();
 
 点击：`BindClick` / `Clicked`。拖拽：`BindDrag` / `IBeginDragHandler` 等（通关商店已不再用拖拽）。
 
-`BattleShopPopView` 用预制体上的隐藏模板 `sellItem` / `mineItem`（外壳带缩放，里面是 ShopItem），克隆到 `sellHor` 和 `MineHor` 的 Content。货架 5 格走买入价，已购走 `forSale: false`，点开 ShopDetail。
+`BattleShopPopView` 用预制体上的隐藏模板 `sellItem` / `mineItem`（外壳带缩放，里面是 ShopItem），克隆到 `sellHor` 和 `MineHor` 的 Content。货架 4 格走买入价，已购走 `forSale: false`，点开 ShopDetail。拖拽会转发给父级 ScrollRect，所以 MineHor 点在装备上也能滑动。
 
 ---
 

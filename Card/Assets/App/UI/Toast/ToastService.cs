@@ -19,7 +19,7 @@ namespace App.UI
 
     /// <summary>
     /// Toast提示服务 - 全局管理Toast提示。
-    /// 新Toast立即替换旧的；ToastPanel 首次显示时懒打开，之后常驻在 TopMost 层。
+    /// 新Toast立即替换旧的；ToastPanel 首次显示时懒打开，之后常驻在 Toast 层。
     /// 依赖 IUINavigator，须在 UIFramework.Create 之后注册（见 AppBootstrap）。
     /// </summary>
     public sealed class ToastService

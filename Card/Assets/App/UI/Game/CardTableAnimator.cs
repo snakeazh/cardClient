@@ -19,6 +19,7 @@ namespace App.UI
         private const int CardsPerHand = GameBalance.MaxCardsPerSeat;
         private const float DealMoveDuration = 0.32f;
         private const float DealStagger = 0.08f;
+        private const float DealFlipPause = 0.12f;
         private const float ShuffleStagger = 0.015f;
         private const float ShuffleAppear02 = 0.8f;
         private const float FlipDuration = 0.35f;
@@ -619,6 +620,27 @@ namespace App.UI
             }
 
             seq.AppendInterval(DealMoveDuration);
+            seq.AppendInterval(DealFlipPause);
+            var playerCount = GameBalance.CardsDealt(true, session.Run);
+            for (var i = 0; i < playerCount; i++)
+            {
+                var cardIndex = i;
+                seq.AppendCallback(() =>
+                {
+                    if (token != _dealToken)
+                    {
+                        return;
+                    }
+
+                    FlipSeatCard(session, _player, session.Player, cardIndex);
+                });
+                if (i < playerCount - 1)
+                {
+                    seq.AppendInterval(DealStagger);
+                }
+            }
+
+            seq.AppendInterval(FlipDuration);
             seq.OnComplete(() =>
             {
                 if (token != _dealToken)
@@ -1004,7 +1026,6 @@ namespace App.UI
 
                 SnapToPoint(item, point);
                 view.Landed[cardIndex] = true;
-                ApplyFace(item, DesiredFace(_session, seat, view.IsPlayer, cardIndex), false);
             });
         }
 

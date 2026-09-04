@@ -22,7 +22,8 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuffGrid` 下每条机制一
 
 访问：`BossEntryConfig.Get(id)` / `BossMechanics.Find(run, type)` / `BossMechanics.ResolveAll(run)`。Excel 源在仓库 `Config/`。
 
-`Run` 关卡临时：`BossShieldHitsLeft`、`StolenAttack`、`HandBrandIndex`、`DisabledRelicIds`。进下一关在 `StartStage` 清。
+`Run` 关卡临时：`BossShieldHitsLeft`、`StolenAttack`、`HandBrandIndex`、`DisabledRelicIds`。进下一关在 `StartStage` 清。  
+敌人座位临时：`PhaseRageTriggered`、`SecondWindUsed`。进关 `ApplyLevelEnemies` 清。
 
 ---
 
@@ -50,8 +51,24 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuffGrid` 下每条机制一
 | AttackSteal | `StartRound` | 每手开始把玩家当前攻击 `× Value[0]` 转给 BOSS |
 | BossTimid | `ApplyDamage` 目标是 BOSS | 场上还有非 BOSS 存活时 BOSS 免疫 |
 | DisableRedSuit / DisableBlackSuit | `EvaluateSeat` 玩家 | 红（方片+红桃）或黑（黑桃+梅花）不参与牌型、不计入点数 |
+| FaceDevalue | `EvaluateSeat` | 人头牌伤害点数改为 `Value[0]`（默认 5），比牌 Keys/Level 不变 |
+| AceDown | `EvaluateSeat` | A 伤害点数改为 `Value[0]`（默认 1），比牌不变 |
+| RubDown | `ResetSkillCharges` | 本关搓牌次数 `-Value[0]` |
+| SwapLock | 替换按钮 | 禁用替换技能 |
+| RubFee | `ApplyRubReplace` | 每次搓牌扣 `Value[0]` 金币，不够不能搓 |
+| MonsterRegen | `StartRound` | 活着的敌人回复最大生命 `× Value[0]` |
+| MonsterGrow | `AfterRound` | 活着的敌人 `BaseAttack` `+ Value[0]`，避免被狂暴刷新冲掉 |
+| ThornShell | `ApplyDamage` 玩家主刀打中敌人 | 自损该次实际伤害 `× Value[0]`（直扣 HP，不走 `ApplyDamage`） |
+| VengefulSoul | 击杀敌人 | 玩家 `PermanentAttackBonus + Value[0]`（可为负，跨关永久） |
+| HealBan | `HealPlayer` | 治疗 `× (1 + Value[0])`。`FragileBody` 仍全拦 |
+| TieLose | `OpenerWinsCompare` | 双方 `CompareLevel` 相同则敌人胜，不再比 Keys |
+| PhaseRage | `ApplyDamage` 敌人扣血后 | 每个敌人首次 HP 低于 `Value[0]` 时，`BaseAttack × (1 + Value[1])`。不加额外免疫 |
+| SecondWind | `ApplyDamage` 敌人将死 | 每个敌人首次将死时以最大生命 `× Value[0]` 复活，不触发击杀 |
+| LifeSiphon | `ApplyDamage` 敌人打到玩家 | 攻击者按实际伤害 `× Value[0]` 回血 |
+| DisableHeartUesd / SpadeUesd / DiamonUesdd / PlumBlossomUesd | `EvaluateSeat` 玩家 | 该花色不参与牌型、不计入伤害点数 |
+| DisableHeadUesd | `EvaluateSeat` 玩家 | 人头牌不参与牌型、不计入伤害点数 |
 
-打敌人时的免疫顺序：胆小首领 → 灵活身姿闪避 → 黑暗护盾。
+打敌人时的结算顺序：胆小首领 → 灵活身姿闪避 → 黑暗护盾 → 不灭传说（将死复活）→ 扣血 → 背水一战 → 击杀/怨恨之灵 → 诅咒之躯/尖刺外壳。敌人打玩家后生命虹吸。
 
 ---
 
@@ -61,12 +78,16 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuffGrid` 下每条机制一
 |------|------|
 | 抽机制 | `StartStage` → `PickLevelEntries`（条数 = `LevelEntryNum`） |
 | 血上限 | `ApplyHeroToPlayer` |
-| 每手开始 | `StartRound`：回合制约、收藏禁用、窃取指环 |
-| 搓牌 | `DrawRubCard` |
+| 每手开始 | `StartRound`：回合制约、收藏禁用、窃取指环、巫术灵体回血 |
+| 搓牌 | `DrawRubCard` / `ApplyRubReplace`（有偿服务扣金） |
+| 搓牌次数 | `ResetSkillCharges`（生锈拇指） |
+| 替换 | `PlayerMayUseTiHuanGood`（宿命之手） |
 | 发牌张数 | `DealAll` / `PlayerDealCount` |
 | 开牌烙印 | `StartSequentialCompare` → `PickHandBrand` |
-| 比牌过滤 | `EvaluateSeat` / `GetScoreBan` |
+| 比牌过滤 | `EvaluateSeat` / `GetScoreBan`（含禁用花色/人头、王权旁落、折翼之A） |
+| 比牌胜负 | `OpenerWinsCompare`（苛刻裁判） |
 | 出伤 | `ComputeAttackDamage` |
-| 入伤 | `IncomingDamageAfterMitigation` / `ApplyDamage` |
+| 入伤 | `IncomingDamageAfterMitigation` / `ApplyDamage`（复活、背水、虹吸、尖刺、怨恨） |
 | 狂暴写回攻击 | `ApplyDamage` → `RefreshBossRageAttack`（窃取指环也会刷新） |
-| 回血 | `HealPlayer` |
+| 回血 | `HealPlayer`（枯竭之泉削弱；脆弱身躯全拦） |
+| 每手结束 | `AfterRound`：磨刀霍霍 |

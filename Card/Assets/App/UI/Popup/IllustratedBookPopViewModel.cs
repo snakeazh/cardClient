@@ -309,8 +309,7 @@ namespace App.UI.Popup
                     Tab = IllustratedBookTab.Monster,
                     Id = row.MonsterId,
                     Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
-                    Desc = (isBoss ? "BOSS" : "普通敌人") +
-                           "\n生命 " + row.MonsterHp + "  攻击 " + row.MonsterDamage,
+                    Desc = row.Desc != null ? row.Desc.Trim() : string.Empty,
                     Icon = row.Icon,
                     Unlocked = true
                 });

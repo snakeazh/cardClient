@@ -213,7 +213,7 @@ namespace App.UI
 
             var hero = App.Config.HeroConfig.Get(ViewModel.SelectedHeroId.Value);
             var unlocked = ViewModel.IsHeroUnlocked(hero);
-            _playerItem.ApplyTheme(false);
+            _playerItem.ApplyTheme();
             _playerItem.SetState(string.Empty);
             var portrait = hero != null ? PortraitLoader.GetRole(hero.Icon) : null;
             if (unlocked && hero != null)

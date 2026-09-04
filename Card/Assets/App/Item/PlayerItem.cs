@@ -1,4 +1,5 @@
 using System;
+using App.Atlas;
 using App.Config;
 using App.UI;
 using DG.Tweening;
@@ -9,17 +10,16 @@ using UnityEngine.UI;
 namespace App.Game
 {
     /// <summary>
-    /// 局内角色/敌人信息卡。人物与敌人共用同一套节点，颜色与头像在 <see cref="Bind"/> 时赋值。
+    /// 局内角色/敌人信息卡。人物与敌人共用同一套节点，头像与数值在 <see cref="Bind"/> 时赋值。
+    /// 品质完全由图集图表达：attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame，
+    /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
     {
         private static readonly Color UnlockedPortraitColor = Color.white;
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
 
-        [SerializeField] private Image iconBg;
-        [SerializeField] private Image iconTitleBg;
         [SerializeField] private TMP_Text cardName;
-        [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private Animator attackValueAnimator;
@@ -27,8 +27,6 @@ namespace App.Game
         [SerializeField] private GameObject attackRoot;
         [SerializeField] private Image attackBg;
         [SerializeField] private Image heartBg;
-        [SerializeField] private Sprite playerStatFrame;
-        [SerializeField] private Sprite enemyStatFrame;
         [SerializeField] private TMP_Text cardState;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
@@ -181,7 +179,7 @@ namespace App.Game
         {
             EnsureRefs();
             var enemy = seat != null && !seat.IsPlayer;
-            ApplyTheme(enemy);
+            ApplyTheme();
             SetName(seat != null ? seat.Name : string.Empty);
             SetAttack(attack);
             SetHp(seat != null ? seat.Hp : 0);
@@ -239,30 +237,38 @@ namespace App.Game
             }
         }
 
-        public void ApplyTheme(bool enemy)
+        public void ApplyTheme(QualityType quality = QualityType.Ordinary)
         {
             EnsureRefs();
-            if (enemy)
+            ApplyStatFrame(quality);
+        }
+
+        /// <summary>
+        /// attack/heart 数值底图按品质取 Altas/ItemBg 的 {品质}RectangleFrame（预制体默认即
+        /// OrdinaryRectangleFrame 的直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
+        /// 普通品质，图集整体不可用时保留当前图。
+        /// </summary>
+        private void ApplyStatFrame(QualityType quality)
+        {
+            var frame = ItemBgSpriteLibrary.GetRectangleFrame(quality);
+            if (frame == null && quality != QualityType.Ordinary)
             {
-                ThemeColors.ApplyCard(ThemeColors.Enemy, ThemeColors.EnemyTitle, iconBg, iconTitleBg, cardCircle);
-            }
-            else
-            {
-                ThemeColors.ApplyCard(QualityType.Ordinary, iconBg, iconTitleBg, cardCircle);
+                frame = ItemBgSpriteLibrary.GetRectangleFrame(QualityType.Ordinary);
             }
 
-            var frame = enemy ? enemyStatFrame : playerStatFrame;
-            if (frame != null)
+            if (frame == null)
             {
-                if (attackBg != null)
-                {
-                    attackBg.sprite = frame;
-                }
+                return;
+            }
 
-                if (heartBg != null)
-                {
-                    heartBg.sprite = frame;
-                }
+            if (attackBg != null)
+            {
+                attackBg.sprite = frame;
+            }
+
+            if (heartBg != null)
+            {
+                heartBg.sprite = frame;
             }
         }
 
@@ -371,24 +377,9 @@ namespace App.Game
 
         private void EnsureRefs()
         {
-            if (iconBg == null)
-            {
-                iconBg = FindImage("IconBG");
-            }
-
-            if (iconTitleBg == null)
-            {
-                iconTitleBg = FindImage("IconTitleBG");
-            }
-
             if (cardName == null)
             {
                 cardName = FindText("card_Name");
-            }
-
-            if (cardCircle == null)
-            {
-                cardCircle = FindImage("card_Circle");
             }
 
             if (cardIcon == null)

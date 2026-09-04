@@ -56,6 +56,9 @@ namespace App.UI.Popup
 
         public IRelayCommand CloseCommand { get; }
 
+        /// <summary>随 Dispose 触发一次，入口（资源栏 AddBtn）据此恢复可再次打开。</summary>
+        public event Action Closed;
+
         protected override Task OnOpen(object args)
         {
             _shop.Changed -= OnShopChanged;
@@ -73,6 +76,7 @@ namespace App.UI.Popup
         protected override void OnDispose()
         {
             _shop.Changed -= OnShopChanged;
+            Closed?.Invoke();
         }
 
         private void OnShopChanged()

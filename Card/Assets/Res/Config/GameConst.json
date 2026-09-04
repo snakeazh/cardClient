@@ -26,7 +26,7 @@
     "2.品质概率分布:普通-80%,稀有-40%,史诗-20%,传说-10%",
     "3.每个天赋卡会有等级上限,重复抽取后可以提升等级"
   ],
-  "DefaultRelicNumMax": 5,
+  "DefaultRelicNumMax": 4,
   "AdShopStaminaPerBuy": 10,
   "AdShopStaminaDailyLimit": 10,
   "AdShopGoldPerBuy": 10,
@@ -34,5 +34,6 @@
   "OrdinaryRelicColor": "",
   "RareRelicColor": "",
   "EpicRelicColor": "",
-  "LegendRelicColor": ""
+  "LegendRelicColor": "",
+  "DefaultSkillShuffleNum": 3
 }

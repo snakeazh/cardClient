@@ -156,6 +156,11 @@ namespace App.Config
         /// </summary>
         public string LegendRelicColor;
 
+        /// <summary>
+        /// 每关默认搓牌使用次数
+        /// </summary>
+        public int DefaultSkillShuffleNum;
+
     }
 }
 

@@ -66,7 +66,8 @@ namespace App.UI.Popup
             TipText = new ObservableProperty<string>();
             CloseCommand = new RelayCommand(Close);
             BuildEntries();
-            ApplyTab(IllustratedBookTab.Collect, force: true);
+            // 收藏页签已从界面移除，默认展示遗物页
+            ApplyTab(IllustratedBookTab.Relic, force: true);
         }
 
         public IResourceService Resources { get; }
@@ -109,12 +110,10 @@ namespace App.UI.Popup
         {
             switch (Tab)
             {
-                case IllustratedBookTab.Relic:
-                    return _relics;
                 case IllustratedBookTab.Monster:
                     return _monsters;
                 default:
-                    return _collect;
+                    return _relics;
             }
         }
 
@@ -170,7 +169,7 @@ namespace App.UI.Popup
         {
             HideTip();
             BuildEntries();
-            ApplyTab(IllustratedBookTab.Collect, force: true);
+            ApplyTab(IllustratedBookTab.Relic, force: true);
             return Task.CompletedTask;
         }
 
@@ -294,11 +293,12 @@ namespace App.UI.Popup
             {
                 var row = kv.Value;
                 var isBoss = row.Type == MonsterType.Boss;
+                var fallbackName = isBoss ? "BOSS " + row.MonsterId : "怪物 " + row.MonsterId;
                 _monsters.Add(new IllustratedBookEntry
                 {
                     Tab = IllustratedBookTab.Monster,
                     Id = row.MonsterId,
-                    Name = isBoss ? "BOSS " + row.MonsterId : "怪物 " + row.MonsterId,
+                    Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
                     Desc = (isBoss ? "BOSS" : "普通敌人") +
                            "\n生命 " + row.MonsterHp + "  攻击 " + row.MonsterDamage,
                     Icon = row.Icon,

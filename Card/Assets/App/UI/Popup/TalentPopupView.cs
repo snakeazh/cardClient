@@ -15,7 +15,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 天赋页面。Content 下的 Item 模板按天赋聚合结果克隆成网格；
-    /// 点条目打开天赋详情，点遮罩回主页。
+    /// 点条目打开天赋详情。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentPopup, UILayer.Page, ResResourcePaths.TalentPopup)]
     public sealed class TalentPopupView : ViewBase<TalentPopupViewModel>
@@ -36,7 +36,6 @@ namespace App.UI.Popup
 
         protected override void OnBind()
         {
-            BindOverlayClose();
             BindBuyCost();
             BindRulesOpen();
             FillList();
@@ -46,18 +45,6 @@ namespace App.UI.Popup
         {
             ClearCards();
             return Task.CompletedTask;
-        }
-
-        private void BindOverlayClose()
-        {
-            var overlay = GetComponent<Button>();
-            if (overlay == null)
-            {
-                overlay = gameObject.AddComponent<Button>();
-                overlay.transition = Selectable.Transition.None;
-            }
-
-            Binding.BindCommand(overlay, ViewModel.CloseCommand);
         }
 
         private void FillList()
@@ -138,6 +125,10 @@ namespace App.UI.Popup
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 card.SetName(item.Name);
                 card.SetUnlocked(item.Snapshot.IsOwned);
+                // 图标随解锁态染色：未解锁黑色剪影，解锁白色原色
+                card.SetIconColor(item.Snapshot.IsOwned ? Color.white : Color.black);
+                // 等级角标仅解锁态显示；未解锁卡面已有 Mask + ？？？ 占位
+                card.SetLevel(item.Snapshot.IsOwned ? $"Lv.{item.Snapshot.Level}" : null);
                 if (!string.IsNullOrEmpty(item.IconKey))
                 {
                     ApplyCardIcon(card, item.IconKey);

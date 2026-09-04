@@ -24,6 +24,7 @@ namespace App.Item
         [SerializeField] private Image cardImage;
         [SerializeField] private GameObject lockMask;
         [SerializeField] private TMP_Text cardName;
+        [SerializeField] private TMP_Text levelText;
         [SerializeField] private Image cardCircle;
         [SerializeField] private Image cardIcon;
         [SerializeField] private Image iconShadow;
@@ -83,6 +84,9 @@ namespace App.Item
             EnsureRefs();
             CacheThemeColors();
             EnsureDefaultFrame();
+            // 等级角标仅天赋列表/详情会调 SetLevel 显示，其余共用 Item 预制体的界面（图鉴/商店等）默认隐藏，
+            // 防止预制体默认文案（Lv.1）外泄
+            SetLevel(null);
 
             if (button != null)
             {
@@ -115,6 +119,25 @@ namespace App.Item
             }
         }
 
+        /// <summary>
+        /// 等级角标（cardFrame/Level 节点）：传 "Lv.2" 这类非空文本显示，null/空串隐藏。
+        /// </summary>
+        public void SetLevel(string text)
+        {
+            EnsureRefs();
+            if (levelText == null)
+            {
+                return;
+            }
+
+            var visible = !string.IsNullOrEmpty(text);
+            levelText.gameObject.SetActive(visible);
+            if (visible)
+            {
+                levelText.text = text;
+            }
+        }
+
         /// <summary>icon 为 null 时隐藏图标节点（背景框仍显示）。</summary>
         public void SetIcon(Sprite icon)
         {
@@ -132,6 +155,16 @@ namespace App.Item
 
             cardIcon.sprite = icon;
             cardIcon.enabled = true;
+        }
+
+        /// <summary>染 card_icon 颜色；白 = 原色不染色，黑 = 剪影（天赋列表未解锁态用）。</summary>
+        public void SetIconColor(Color color)
+        {
+            EnsureRefs();
+            if (cardIcon != null)
+            {
+                cardIcon.color = color;
+            }
         }
 
         /// <summary>
@@ -386,6 +419,11 @@ namespace App.Item
             if (cardName == null)
             {
                 cardName = FindText("card_Name");
+            }
+
+            if (levelText == null)
+            {
+                levelText = FindText("Level");
             }
 
             if (cardCircle == null)

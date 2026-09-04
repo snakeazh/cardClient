@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Energy;
-using App.Game;
 using App.UI.Popup;
 using App.Wallet;
 using Framework.Log;
@@ -16,7 +15,8 @@ namespace App.UI
 {
     /// <summary>
     /// 常驻资源栏。挂 Resource 层，进 Home 后 EnsureShown，之后不关闭。
-    /// 局外显示钱包金币与体力，局内只显示局内闯关金币。
+    /// 只显示钱包金币与体力。战斗时同层打开 GameResource，navigator 会藏起本栏。
+    /// 图鉴等整屏页签仍 HideBar 隐藏整层。
     /// 图标由 MainResourceView 手动引用后经 SetIcons 注入（Common 目录不打图集）。
     /// </summary>
     public sealed class MainResourceViewModel : ViewModelBase
@@ -24,28 +24,22 @@ namespace App.UI
         private readonly IUIManager _ui;
         private readonly IWalletService _wallet;
         private readonly IEnergyService _energy;
-        private readonly GameSession _session;
         private readonly ResourceSlot _gold;
         private readonly ResourceSlot _energySlot;
-        private readonly ResourceSlot _runGold;
         private readonly ResourceSlot[] _slots;
         private StaminaPurchasePopViewModel _shopPop;
 
         public MainResourceViewModel(
             IUIManager ui,
             IWalletService wallet,
-            IEnergyService energy,
-            GameSession session)
+            IEnergyService energy)
         {
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
             _wallet = wallet ?? throw new ArgumentNullException(nameof(wallet));
             _energy = energy ?? throw new ArgumentNullException(nameof(energy));
-            _session = session ?? throw new ArgumentNullException(nameof(session));
             _gold = new ResourceSlot(ResourceKind.Gold);
             _energySlot = new ResourceSlot(ResourceKind.Energy);
-            _runGold = new ResourceSlot(ResourceKind.RunGold);
-            _runGold.Visible.Value = false;
-            _slots = new[] { _gold, _energySlot, _runGold };
+            _slots = new[] { _gold, _energySlot };
             OpenShopCommand = new RelayCommand(OpenShop);
         }
 
@@ -69,19 +63,9 @@ namespace App.UI
         {
             _wallet.Changed += OnWalletChanged;
             _energy.Changed += OnEnergyChanged;
-            _session.Changed += OnSessionChanged;
             RefreshGold();
             RefreshEnergy();
-            RefreshRunGold();
-            SetInRun(false);
             return Task.CompletedTask;
-        }
-
-        public void SetInRun(bool inRun)
-        {
-            _gold.Visible.Value = !inRun;
-            _energySlot.Visible.Value = !inRun;
-            _runGold.Visible.Value = inRun;
         }
 
         protected override Task OnClose()
@@ -99,7 +83,6 @@ namespace App.UI
         {
             _wallet.Changed -= OnWalletChanged;
             _energy.Changed -= OnEnergyChanged;
-            _session.Changed -= OnSessionChanged;
         }
 
         private void OnWalletChanged()
@@ -112,11 +95,6 @@ namespace App.UI
             RefreshEnergy();
         }
 
-        private void OnSessionChanged()
-        {
-            RefreshRunGold();
-        }
-
         private void RefreshGold()
         {
             _gold.Amount.Value = _wallet.Gold.ToString();
@@ -125,11 +103,6 @@ namespace App.UI
         private void RefreshEnergy()
         {
             _energySlot.Amount.Value = _energy.Current.ToString();
-        }
-
-        private void RefreshRunGold()
-        {
-            _runGold.Amount.Value = _session.Run.Gold.ToString();
         }
 
         /// <summary>打开广告商店弹窗（体力/金币限购）。每次新建 VM：旧 VM 随关闭被 Dispose，
@@ -173,7 +146,6 @@ namespace App.UI
             if (goldIcon != null)
             {
                 _gold.Icon.Value = goldIcon;
-                _runGold.Icon.Value = goldIcon;
             }
 
             if (energyIcon != null)

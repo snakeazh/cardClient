@@ -325,7 +325,7 @@ namespace App.UI
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
-            _mainResource.SetInRun(true);
+            _mainResource.HideBar();
             _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
             return Task.CompletedTask;
         }
@@ -333,13 +333,14 @@ namespace App.UI
         protected override Task OnClose()
         {
             _guide.Abort();
-            _mainResource.SetInRun(false);
+            _mainResource.ShowBar();
             return Task.CompletedTask;
         }
 
         protected override void OnDispose()
         {
             Session.Changed -= Refresh;
+            _mainResource.ShowBar();
         }
 
         private async void TryPresentResultPopup()

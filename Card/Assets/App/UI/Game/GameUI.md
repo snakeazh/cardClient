@@ -16,6 +16,7 @@
 
 ```
 GameUI
+  ResourceBar             ← 局内金币（嵌套 ResourceBar）；进对局隐藏局外 MainResource
   backBtn                 ← 返回主页
   PlayerItem              ← 玩家卡（card），显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
   player1/2/3             ← 敌人卡槽（player1 中心；运行时克隆 PlayerItem 并切到 enemycard）；平时点击弹出 ItemTip

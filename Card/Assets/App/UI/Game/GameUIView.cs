@@ -1218,6 +1218,12 @@ namespace App.UI
                 {
                     goldItem = child;
                     child.gameObject.SetActive(true);
+                    var addBtn = child.Find("AddBtn") ?? FindDeep(child, "AddBtn");
+                    if (addBtn != null)
+                    {
+                        addBtn.gameObject.SetActive(false);
+                    }
+
                     continue;
                 }
 

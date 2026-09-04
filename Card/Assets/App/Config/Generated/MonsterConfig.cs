@@ -42,6 +42,11 @@ namespace App.Config
         public string Name;
 
         /// <summary>
+        /// 怪物介绍
+        /// </summary>
+        public string Desc;
+
+        /// <summary>
         /// 怪物icon
         /// </summary>
         public string Icon;

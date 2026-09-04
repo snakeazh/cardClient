@@ -35,5 +35,7 @@
   "RareRelicColor": "",
   "EpicRelicColor": "",
   "LegendRelicColor": "",
-  "DefaultSkillShuffleNum": 3
+  "DefaultSkillShuffleNum": 3,
+  "DefaultSkillReplaceNum": 1,
+  "DefaultSkillPerspectiveNum": 1
 }

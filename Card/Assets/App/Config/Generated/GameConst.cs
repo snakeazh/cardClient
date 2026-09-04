@@ -161,6 +161,16 @@ namespace App.Config
         /// </summary>
         public int DefaultSkillShuffleNum;
 
+        /// <summary>
+        /// 每关默认换牌使用次数
+        /// </summary>
+        public int DefaultSkillReplaceNum;
+
+        /// <summary>
+        /// 每关默认看牌使用次数
+        /// </summary>
+        public int DefaultSkillPerspectiveNum;
+
     }
 }
 

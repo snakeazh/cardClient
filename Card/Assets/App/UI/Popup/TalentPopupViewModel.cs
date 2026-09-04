@@ -37,26 +37,22 @@ namespace App.UI.Popup
     public sealed class TalentPopupViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly ITalentService _talent;
         private readonly IWalletService _wallet;
         private readonly List<TalentItem> _items = new List<TalentItem>();
 
         public TalentPopupViewModel(
             IUIManager ui,
-            NavigationViewModel navigation,
             ITalentService talent,
             IWalletService wallet,
             IResourceService resources,
             IAtlasService atlas)
         {
             _ui = ui;
-            _navigation = navigation;
             _talent = talent;
             _wallet = wallet;
             Resources = resources;
             Atlas = atlas;
-            CloseCommand = new RelayCommand(Dismiss);
             BuyCommand = new RelayCommand(Buy);
             OpenRulesCommand = new RelayCommand(OpenRules);
             BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
@@ -76,8 +72,6 @@ namespace App.UI.Popup
 
         /// <summary>取 Altas/Talent 天赋图标 sprite（TalentConfig.Icon 为 sprite 名）。</summary>
         public IAtlasService Atlas { get; }
-
-        public IRelayCommand CloseCommand { get; }
 
         public IRelayCommand BuyCommand { get; }
 
@@ -190,11 +184,6 @@ namespace App.UI.Popup
         private static string ResolveBuyCost()
         {
             return GameConst.IsLoaded ? GameConst.Instance.TalentChestNeedGold.ToString() : "0";
-        }
-
-        private void Dismiss()
-        {
-            _navigation.ShowHome();
         }
     }
 }

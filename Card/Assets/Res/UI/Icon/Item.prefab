@@ -107,6 +107,7 @@ RectTransform:
   m_Children:
   - {fileID: 2373286617505429933}
   - {fileID: 5429598590234320403}
+  - {fileID: 1927329739522674060}
   m_Father: {fileID: 2909766976845221080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -182,7 +183,6 @@ RectTransform:
   m_Children:
   - {fileID: 1530544223060630532}
   - {fileID: 5237157933286067635}
-  - {fileID: 1927329739522674060}
   - {fileID: 8952821243062361840}
   m_Father: {fileID: 2334026311634312068}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -427,10 +427,10 @@ RectTransform:
   m_GameObject: {fileID: 4600769170698447370}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.99968004, y: 0.99968004, z: 0.99968004}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2909766976845221080}
+  m_Father: {fileID: 5237157933286067635}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -774,6 +774,7 @@ MonoBehaviour:
   cardImage: {fileID: 0}
   lockMask: {fileID: 0}
   cardName: {fileID: 4783247149552327194}
+  levelText: {fileID: 0}
   cardCircle: {fileID: 0}
   cardIcon: {fileID: 7520153749033201337}
   iconShadow: {fileID: 7740453763786824355}

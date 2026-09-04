@@ -11,7 +11,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 天赋详情弹窗。注册在 TopMost 层：叠加在 Popup 层的天赋列表之上，弹出时不隐藏列表。
-    /// Item 卡显示天赋名与图标，Detail 显示当前等级描述；LeftBtn/RightBtn 切换已解锁天赋，
+    /// Item 卡显示天赋名、图标与等级角标，Detail 显示当前等级描述；LeftBtn/RightBtn 切换已解锁天赋，
     /// 不足两个时隐藏；Tip 为预制体固定文案；点 Mask 关闭。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentDetail, UILayer.TopMost, ResResourcePaths.TalentDetail)]
@@ -29,6 +29,7 @@ namespace App.UI.Popup
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 _card.SetUnlocked(true);
                 Binding.Add(ViewModel.NameText.Subscribe(_card.SetName));
+                Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
                 Binding.Add(ViewModel.IconKey.Subscribe(LoadDetailIcon));
             }
 

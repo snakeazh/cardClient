@@ -26,6 +26,8 @@ namespace App.UI.Popup
         public string Icon;
         public bool Unlocked;
         public string UnlockTip;
+        public int Hp;
+        public int Attack;
     }
 
     /// <summary>
@@ -300,7 +302,9 @@ namespace App.UI.Popup
                     Desc = (isBoss ? "BOSS" : "普通敌人") +
                            "\n生命 " + row.MonsterHp + "  攻击 " + row.MonsterDamage,
                     Icon = row.Icon,
-                    Unlocked = true
+                    Unlocked = true,
+                    Hp = row.MonsterHp,
+                    Attack = row.MonsterDamage
                 });
             }
 

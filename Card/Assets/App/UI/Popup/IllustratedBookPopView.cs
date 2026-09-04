@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Game;
 using App.Item;
 using App.Resources;
 using Framework.UI.Binding;
@@ -14,29 +15,32 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换三份 ScrollRect。
+    /// 收藏/遗物两页用 Item(ItemCard)，怪物页用 PlayerItem（卡面带攻击/血量块）。
     /// </summary>
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
     public sealed class IllustratedBookPopView : ViewBase<IllustratedBookPopViewModel>
     {
         private readonly List<ItemCard> _collectCards = new List<ItemCard>();
         private readonly List<ItemCard> _relicCards = new List<ItemCard>();
-        private readonly List<ItemCard> _monsterCards = new List<ItemCard>();
-        private readonly Dictionary<ItemCard, IllustratedBookEntry> _entries =
-            new Dictionary<ItemCard, IllustratedBookEntry>();
+        private readonly List<PlayerItem> _monsterCards = new List<PlayerItem>();
+        private readonly Dictionary<Component, IllustratedBookEntry> _entries =
+            new Dictionary<Component, IllustratedBookEntry>();
         private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
         private readonly Vector3[] _corners = new Vector3[4];
         private GameObject _itemPrefab;
+        private GameObject _monsterPrefab;
         private GameObject _tip;
         private TMP_Text _tipTitle;
         private TMP_Text _tipText;
         private GameObject _tipCatcher;
-        private ItemCard _tipAnchor;
+        private Component _tipAnchor;
         private Canvas _canvas;
 
         protected override async Task OnViewOpen()
         {
             ViewModel.RefreshEntries();
             await EnsureItemPrefab();
+            await EnsureMonsterPrefab();
             await LoadIcons();
             await EnsureTip();
         }
@@ -54,7 +58,7 @@ namespace App.UI.Popup
             BindTab(UI.Get<Toggle>("MonsterToggle"), ViewModel.MonsterOn, IllustratedBookTab.Monster);
             FillList(UI.Get<ScrollRect>("CollectSCView"), ViewModel.CollectEntries, _collectCards);
             FillList(UI.Get<ScrollRect>("RelicSCView"), ViewModel.RelicEntries, _relicCards);
-            FillList(UI.Get<ScrollRect>("MonsterSCView"), ViewModel.MonsterEntries, _monsterCards);
+            FillMonsterList(UI.Get<ScrollRect>("MonsterSCView"), ViewModel.MonsterEntries);
             Binding.Add(ViewModel.ShowTip.Subscribe(_ => ApplyTip(), emitCurrent: true));
             Binding.Add(ViewModel.TipTitle.Subscribe(OnTipTitle, emitCurrent: true));
             Binding.Add(ViewModel.TipText.Subscribe(OnTipText, emitCurrent: true));
@@ -129,6 +133,71 @@ namespace App.UI.Popup
             }
 
             FitContentHeight(scroll, content, cards.Count);
+        }
+
+        /// <summary>怪物页格子为 PlayerItem 敌人形态：enemycard 底图走 MonsterConfig.BaseMap/HealthBar，
+        /// 显示头像/名字/攻击/血量；未解锁置黑头像并隐藏数值。</summary>
+        private void FillMonsterList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
+        {
+            _monsterCards.Clear();
+            if (scroll == null || scroll.content == null || _monsterPrefab == null)
+            {
+                return;
+            }
+
+            var content = scroll.content;
+            ClearContent(content);
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                var go = Instantiate(_monsterPrefab, content, false);
+                go.name = entry.Tab + "_" + entry.Id;
+                go.SetActive(true);
+                var bind = go.GetComponent<UIBind>();
+                if (bind != null)
+                {
+                    Destroy(bind);
+                }
+
+                var card = go.GetComponent<PlayerItem>();
+                if (card == null)
+                {
+                    continue;
+                }
+
+                card.ApplyEnemyTheme(entry.Id);
+                card.SetName(entry.Unlocked ? entry.Name : "？？？");
+                card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
+                card.SetAttack(entry.Unlocked ? entry.Attack : 0);
+                card.SetHp(entry.Unlocked ? entry.Hp : 0);
+                HookMonsterClick(card);
+                _entries[card] = entry;
+                _monsterCards.Add(card);
+            }
+
+            FitContentHeight(scroll, content, _monsterCards.Count);
+        }
+
+        /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。</summary>
+        private void HookMonsterClick(PlayerItem card)
+        {
+            var target = card.gameObject;
+            var image = target.GetComponent<Image>();
+            if (image == null)
+            {
+                image = target.AddComponent<Image>();
+                image.color = new Color(1f, 1f, 1f, 0.01f);
+            }
+
+            var button = target.GetComponent<Button>();
+            if (button == null)
+            {
+                button = target.AddComponent<Button>();
+            }
+
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.None;
+            button.onClick.AddListener(() => OnMonsterClicked(card));
         }
 
         private static void ClearContent(RectTransform content)
@@ -215,6 +284,19 @@ namespace App.UI.Popup
             ApplyTip();
         }
 
+        private void OnMonsterClicked(PlayerItem card)
+        {
+            if (!_entries.TryGetValue(card, out var entry))
+            {
+                return;
+            }
+
+            _tipAnchor = card;
+            ViewModel.SelectEntry(entry);
+            RefreshSelected();
+            ApplyTip();
+        }
+
         private void RefreshSelected()
         {
             RefreshSelected(_collectCards);
@@ -236,6 +318,20 @@ namespace App.UI.Popup
             }
         }
 
+        private void RefreshSelected(List<PlayerItem> cards)
+        {
+            for (var i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (card == null || !_entries.TryGetValue(card, out var entry))
+                {
+                    continue;
+                }
+
+                card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
+            }
+        }
+
         private async Task EnsureItemPrefab()
         {
             if (_itemPrefab != null || ViewModel.Resources == null)
@@ -246,6 +342,22 @@ namespace App.UI.Popup
             try
             {
                 _itemPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.Item);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private async Task EnsureMonsterPrefab()
+        {
+            if (_monsterPrefab != null || ViewModel.Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _monsterPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.PlayerItem);
             }
             catch (Exception)
             {
@@ -546,7 +658,7 @@ namespace App.UI.Popup
             _tipCatcher = go;
         }
 
-        private void PositionTipBelow(ItemCard item)
+        private void PositionTipBelow(Component item)
         {
             var tipRt = _tip != null ? _tip.GetComponent<RectTransform>() : null;
             var itemRt = item != null ? item.GetComponent<RectTransform>() : null;

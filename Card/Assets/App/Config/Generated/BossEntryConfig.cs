@@ -22,7 +22,7 @@ namespace App.Config
         public BossEntryType Type;
 
         /// <summary>
-        /// 值
+        /// 生效值
         /// </summary>
         public float[] Value;
 

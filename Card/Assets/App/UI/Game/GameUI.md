@@ -16,8 +16,6 @@
 
 ```
 GameUI
-  ResourceBar             ← 局内金币（嵌套 ResourceBar）；进对局隐藏局外 MainResource
-  backBtn                 ← 返回主页
   PlayerItem              ← 玩家卡（card），显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
   player1/2/3             ← 敌人卡槽（player1 中心；运行时克隆 PlayerItem 并切到 enemycard）；平时点击弹出 ItemTip
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
@@ -26,7 +24,7 @@ GameUI
   cardinfoItem            ← 亮牌后玩家牌型图标
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
-  cardtypeEnemyNum        ← 敌人倍率数字
+  cardinfoEnemyNum        ← 敌人倍率数字（嵌套 cardinfoItem 后改名；WinTip 模板仍叫 cardtypeEnemyNum）
   roundInfo               ← 第几轮
   roundbuffGrid           ← 关卡机制格子；下面按条目克隆 roundbuff
   roundbuff               ← 机制图标模板（蓝书），无机制时格子隐藏
@@ -43,10 +41,10 @@ GameUI
 
 | 节点 | 用途 |
 |------|------|
-| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType` |
+| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType`。按 `HandScoreConfig.Level` 开特效：≥3 启动 `UiFlowLight`；5 显示 `PokerHandStraightFlush01`；6 显示 `PokerHandBomb01`；其余不扫光、不播粒子 |
 | `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup` |
-| `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType` |
-| `cardtypeEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue` |
+| `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType`，特效规则与 `cardinfoItem` 相同 |
+| `cardinfoEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue`。绑定优先 `cardinfoEnemyNum`，兼容 `cardtypeEnemyNum` |
 
 `horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算遗物跳动没有槽位 Animator 时只改数字。
 
@@ -122,6 +120,7 @@ GameUI
 
 ## 注意
 
+- 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

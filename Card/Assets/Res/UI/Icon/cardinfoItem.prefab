@@ -216,7 +216,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flowLightShader: {fileID: 0}
-  autoPlay: 1
+  autoPlay: 0
   frequency: 0.3
   intensity: 1.5
   width: 0.15
@@ -254,6 +254,10 @@ PrefabInstance:
     - target: {fileID: 4886688717718215111, guid: 78ac526665435504797f9b68c8d89216, type: 3}
       propertyPath: m_Name
       value: PokerHandStraightFlush01
+      objectReference: {fileID: 0}
+    - target: {fileID: 4886688717718215111, guid: 78ac526665435504797f9b68c8d89216, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8996780021200854130, guid: 78ac526665435504797f9b68c8d89216, type: 3}
       propertyPath: m_LocalScale.x
@@ -388,6 +392,10 @@ PrefabInstance:
     - target: {fileID: 2960386051746034700, guid: b70a74fb5130df742bc4431872d28e33, type: 3}
       propertyPath: m_Name
       value: PokerHandBomb01
+      objectReference: {fileID: 0}
+    - target: {fileID: 2960386051746034700, guid: b70a74fb5130df742bc4431872d28e33, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8163743358095302059, guid: b70a74fb5130df742bc4431872d28e33, type: 3}
       propertyPath: m_SortingLayer

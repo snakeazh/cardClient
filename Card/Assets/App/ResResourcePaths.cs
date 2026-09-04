@@ -10,6 +10,7 @@ namespace App.Resources
         public const string Home = "UI/Home";
         public const string MainInterfaceBottom = "UI/Bottom/MainInterfaceBottom";
         public const string MainResource = "UI/Bottom/MainResource";
+        public const string GameResource = "UI/Bottom/GameResource";
         public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
         public const string ConfirmDialog = "UI/ConfirmDialog";

@@ -30,6 +30,7 @@ namespace App.UI.Popup
             DescText = new ObservableProperty<string>();
             PriceText = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>(DefaultTip);
+            GoldText = new ObservableProperty<string>("0");
             IconSprite = new ObservableProperty<Sprite>();
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
@@ -54,6 +55,8 @@ namespace App.UI.Popup
         public ObservableProperty<string> PriceText { get; }
 
         public ObservableProperty<string> TipText { get; }
+
+        public ObservableProperty<string> GoldText { get; }
 
         public ObservableProperty<Sprite> IconSprite { get; }
 
@@ -127,6 +130,7 @@ namespace App.UI.Popup
                 : (Buying
                     ? Session.EffectiveBuyPrice(RelicId)
                     : Session.EffectiveSellPrice(RelicId)).ToString();
+            GoldText.Value = Session.Run.Gold.ToString();
         }
 
         private Sprite GetRelicIcon(RelicConfig relic)

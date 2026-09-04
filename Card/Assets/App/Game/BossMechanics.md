@@ -7,7 +7,7 @@
 不读 `MonsterConfig.MonsterEntry`。表里没有行的 `Edge` / `AllIn` 不会被抽到。
 
 数值一律读对应 `BossEntryConfig.Value[]`：主值 `Value[0]`，第二项 `BossMechanics.ValueAt(run, type, 1)`。  
-HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuff` 显示名称（多条用顿号拼接），点击 `ItemTip` 出 `Desc`。
+HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuffGrid` 下每条机制一个 `roundbuff`，点击 `ItemTip` 出该条 `Name` / `Desc`。
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。遗物：[`RelicMechanics.md`](RelicMechanics.md)。
 

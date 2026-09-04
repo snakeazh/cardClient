@@ -48,7 +48,12 @@ namespace App.UI.Popup
         protected override void OnBind()
         {
             _canvas = GetComponentInParent<Canvas>();
-            Binding.BindCommand(UI.GetGameObject("CloseBtn").GetComponent<Button>(), ViewModel.CloseCommand);
+            // 新预制体已删 CloseBtn 节点（关闭走底栏导航页签）；旧预制体仍带按钮时保持绑定。
+            if (UI.TryGet<Button>("CloseBtn", out var closeBtn))
+            {
+                Binding.BindCommand(closeBtn, ViewModel.CloseCommand);
+            }
+
             Binding.BindText(UI.Get<TMP_Text>("CurItemNum"), ViewModel.CurItemNum);
             Binding.BindActive(UI.GetGameObject("CollectSCView"), ViewModel.ShowCollect);
             Binding.BindActive(UI.GetGameObject("RelicSCView"), ViewModel.ShowRelic);
@@ -112,6 +117,7 @@ namespace App.UI.Popup
                 var go = Instantiate(_itemPrefab, content, false);
                 go.name = entry.Tab + "_" + entry.Id;
                 go.SetActive(true);
+                go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
                 var bind = go.GetComponent<UIBind>();
                 if (bind != null)
                 {
@@ -136,7 +142,7 @@ namespace App.UI.Popup
         }
 
         /// <summary>怪物页格子为 PlayerItem 敌人形态：enemycard 底图走 MonsterConfig.BaseMap/HealthBar，
-        /// 显示头像/名字/攻击/血量；未解锁置黑头像并隐藏数值。</summary>
+        /// 显示头像/名字；攻血数值走 tip 看，卡上不显示（SetAttack/SetHp 传 0 即整块隐藏）；未解锁置黑头像。</summary>
         private void FillMonsterList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
         {
             _monsterCards.Clear();
@@ -153,6 +159,7 @@ namespace App.UI.Popup
                 var go = Instantiate(_monsterPrefab, content, false);
                 go.name = entry.Tab + "_" + entry.Id;
                 go.SetActive(true);
+                go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
                 var bind = go.GetComponent<UIBind>();
                 if (bind != null)
                 {
@@ -166,10 +173,17 @@ namespace App.UI.Popup
                 }
 
                 card.ApplyEnemyTheme(entry.Id);
+                var cardMask = FindDeep(card.transform, "cardMask");
+                if (cardMask != null)
+                {
+                    cardMask.gameObject.SetActive(false);
+                }
+
                 card.SetName(entry.Unlocked ? entry.Name : "？？？");
                 card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
-                card.SetAttack(entry.Unlocked ? entry.Attack : 0);
-                card.SetHp(entry.Unlocked ? entry.Hp : 0);
+                card.SetAttack(0);
+                card.SetHp(0);
+
                 HookMonsterClick(card);
                 _entries[card] = entry;
                 _monsterCards.Add(card);
@@ -198,6 +212,30 @@ namespace App.UI.Popup
             button.targetGraphic = image;
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => OnMonsterClicked(card));
+        }
+
+        private static Transform FindDeep(Transform root, string nodeName)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == nodeName)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindDeep(root.GetChild(i), nodeName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private static void ClearContent(RectTransform content)

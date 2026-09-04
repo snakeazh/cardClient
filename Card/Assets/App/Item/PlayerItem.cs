@@ -230,6 +230,14 @@ namespace App.Game
             ApplyStatFrame(quality);
         }
 
+        /// <summary>敌人形态：启用 enemycard 并按 MonsterId 取 BaseMap/HealthBar 底图。图鉴等非对局场景使用。</summary>
+        public void ApplyEnemyTheme(int monsterId)
+        {
+            EnsureRefs();
+            SetEnemyVisual(true);
+            ApplyMonsterFrames(monsterId);
+        }
+
         private void SetEnemyVisual(bool enemy)
         {
             if (enemy && enemyCardBg == null)

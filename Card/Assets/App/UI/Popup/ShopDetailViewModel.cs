@@ -31,6 +31,7 @@ namespace App.UI.Popup
             PriceText = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>(DefaultTip);
             IconSprite = new ObservableProperty<Sprite>();
+            Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
             BuyCommand = new RelayCommand(ConfirmBuy);
@@ -55,6 +56,8 @@ namespace App.UI.Popup
         public ObservableProperty<string> TipText { get; }
 
         public ObservableProperty<Sprite> IconSprite { get; }
+
+        public ObservableProperty<QualityType> Quality { get; }
 
         public ObservableProperty<bool> ShowBuy { get; }
 
@@ -112,6 +115,7 @@ namespace App.UI.Popup
         private void Apply()
         {
             var relic = RelicConfig.Get(RelicId);
+            Quality.Value = relic != null ? relic.Type : QualityType.Ordinary;
             NameText.Value = relic != null ? relic.Name : string.Empty;
             DescText.Value = relic != null ? relic.Desc ?? string.Empty : string.Empty;
             IconSprite.Value = GetRelicIcon(relic);

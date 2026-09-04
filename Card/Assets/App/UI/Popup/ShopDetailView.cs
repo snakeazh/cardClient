@@ -28,6 +28,7 @@ namespace App.UI.Popup
                 _card.SetUnlocked(true);
                 Binding.Add(ViewModel.NameText.Subscribe(_card.SetName));
                 Binding.Add(ViewModel.IconSprite.Subscribe(ApplyIcon, emitCurrent: true));
+                Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality, emitCurrent: true));
             }
 
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);

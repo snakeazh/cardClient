@@ -21,8 +21,8 @@ namespace App.UI
     {
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
-        private readonly MainResourceViewModel _mainResource;
         private readonly IGuideService _guide;
+        private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
         private bool _settleShownThisShop;
@@ -32,7 +32,6 @@ namespace App.UI
             IResourceService resources,
             IUIManager ui,
             NavigationViewModel navigation,
-            MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IAtlasService atlas,
             IGuideService guide)
@@ -43,7 +42,6 @@ namespace App.UI
             Atlas = atlas;
             _ui = ui;
             _navigation = navigation;
-            _mainResource = mainResource ?? throw new ArgumentNullException(nameof(mainResource));
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
@@ -225,6 +223,10 @@ namespace App.UI
             RoundBuffDesc.Value = FormatEntryDescs(entries);
             Hint.Value = Session.Hint ?? string.Empty;
             GoldText.Value = run.Gold.ToString();
+            if (_gameResource != null)
+            {
+                _gameResource.ShowBackBtn.Value = !_shopPopupOpen && !_resultPopupOpen;
+            }
             PotText.Value = string.Empty;
             PlayerChips.Value = $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
@@ -320,27 +322,59 @@ namespace App.UI
             }
         }
 
-        protected override Task OnOpen(object args)
+        protected override async Task OnOpen(object args)
         {
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
-            _mainResource.HideBar();
+            await ShowGameResource();
             _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
-            return Task.CompletedTask;
         }
 
-        protected override Task OnClose()
+        protected override async Task OnClose()
         {
             _guide.Abort();
-            _mainResource.ShowBar();
-            return Task.CompletedTask;
+            await CloseGameResource();
         }
 
         protected override void OnDispose()
         {
             Session.Changed -= Refresh;
-            _mainResource.ShowBar();
+            _ = CloseGameResource();
+        }
+
+        private async Task ShowGameResource()
+        {
+            await CloseGameResource();
+            if (_ui == null)
+            {
+                return;
+            }
+
+            var registration = _ui.Registry.GetByViewModelType(typeof(GameResourceViewModel));
+            _gameResource = (GameResourceViewModel)_ui.Registry.CreateViewModel(registration);
+            _gameResource.BindBack(BackCommand);
+            await _ui.Open(_gameResource);
+        }
+
+        private async Task CloseGameResource()
+        {
+            var bar = _gameResource;
+            _gameResource = null;
+            if (bar == null || !bar.IsOpen || _ui == null)
+            {
+                return;
+            }
+
+            await _ui.Close(bar);
+        }
+
+        private void SetShowBackBtn(bool visible)
+        {
+            if (_gameResource != null)
+            {
+                _gameResource.ShowBackBtn.Value = visible;
+            }
         }
 
         private async void TryPresentResultPopup()
@@ -359,6 +393,7 @@ namespace App.UI
             }
 
             _resultPopupOpen = true;
+            SetShowBackBtn(false);
             try
             {
                 await PresentResultThenLeaveOrRetry();
@@ -370,6 +405,7 @@ namespace App.UI
             finally
             {
                 _resultPopupOpen = false;
+                SetShowBackBtn(!_shopPopupOpen);
             }
         }
 
@@ -392,6 +428,7 @@ namespace App.UI
             }
 
             _shopPopupOpen = true;
+            SetShowBackBtn(false);
             try
             {
                 if (Session.IsLastLevel)
@@ -430,6 +467,7 @@ namespace App.UI
             finally
             {
                 _shopPopupOpen = false;
+                SetShowBackBtn(!_resultPopupOpen);
             }
 
             TryPresentResultPopup();

@@ -15,7 +15,8 @@ namespace App.UI
 {
     /// <summary>
     /// 常驻资源栏。挂 Resource 层，进 Home 后 EnsureShown，之后不关闭。
-    /// 只显示钱包金币与体力；战斗期间由 GameUI 隐藏整层。
+    /// 只显示钱包金币与体力。战斗时同层打开 GameResource，navigator 会藏起本栏。
+    /// 图鉴等整屏页签仍 HideBar 隐藏整层。
     /// 图标由 MainResourceView 手动引用后经 SetIcons 注入（Common 目录不打图集）。
     /// </summary>
     public sealed class MainResourceViewModel : ViewModelBase
@@ -163,7 +164,7 @@ namespace App.UI
             _ui.Root.GetLayer(UILayer.Resource).gameObject.SetActive(visible);
         }
 
-        /// <summary>隐藏资源栏所在层（图鉴等整屏页签、战斗 GameUI 用），同 Navigation.HideBar 模式。</summary>
+        /// <summary>隐藏资源栏所在层（图鉴等整屏页签用），同 Navigation.HideBar 模式。</summary>
         public void HideBar()
         {
             SetLayerVisible(false);

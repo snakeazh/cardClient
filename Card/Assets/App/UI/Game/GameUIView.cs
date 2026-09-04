@@ -1135,27 +1135,37 @@ namespace App.UI
                 {
                     _beilvNum.gameObject.SetActive(false);
                 }
+
+                if (_playerCardInfo != null)
+                {
+                    _playerCardInfo.SetActive(false);
+                }
+
+                if (_enemyCardInfo != null)
+                {
+                    _enemyCardInfo.SetActive(false);
+                }
+
+                return;
             }
 
             if (_playerCardInfo != null)
             {
-                _playerCardInfo.SetActive(settling);
-            }
-
-            if (_enemyCardInfo != null)
-            {
-                _enemyCardInfo.SetActive(false);
-            }
-
-            if (!settling)
-            {
-                return;
+                _playerCardInfo.SetActive(true);
+                if (session.Player != null)
+                {
+                    ApplyCardInfoFx(_playerCardInfo, session.EvaluateSeat(session.Player).Level);
+                }
             }
 
             var displayed = session.DisplayedEnemy;
             if (displayed != null && displayed.Alive)
             {
                 ApplyEnemyCardInfo(session.EvaluateSeat(displayed));
+            }
+            else if (_enemyCardInfo != null)
+            {
+                _enemyCardInfo.SetActive(false);
             }
         }
 
@@ -1167,6 +1177,7 @@ namespace App.UI
             }
 
             _enemyCardInfo.SetActive(true);
+            ApplyCardInfoFx(_enemyCardInfo, score.Level);
             if (_enemyCardTypeIcon != null)
             {
                 _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(score.Type);
@@ -1190,57 +1201,13 @@ namespace App.UI
 
         private void BindHudChrome()
         {
-            BindBtn("backBtn", ViewModel.BackCommand);
-            BindResourceBar();
+            var rootBack = transform.Find("backBtn");
+            if (rootBack != null)
+            {
+                rootBack.gameObject.SetActive(false);
+            }
+
             BindRuleBtn();
-        }
-
-        private void BindResourceBar()
-        {
-            var bar = ResolveSlot("ResourceBar") ?? transform.Find("ResourceBar") ?? FindDeep(transform, "ResourceBar");
-            if (bar == null)
-            {
-                return;
-            }
-
-            bar.gameObject.SetActive(true);
-            var top = bar.Find("TopArea") ?? FindDeep(bar, "TopArea") ?? bar;
-            Transform goldItem = null;
-            for (var i = 0; i < top.childCount; i++)
-            {
-                var child = top.GetChild(i);
-                if (!child.name.StartsWith("ResourceItem"))
-                {
-                    continue;
-                }
-
-                if (goldItem == null)
-                {
-                    goldItem = child;
-                    child.gameObject.SetActive(true);
-                    var addBtn = child.Find("AddBtn") ?? FindDeep(child, "AddBtn");
-                    if (addBtn != null)
-                    {
-                        addBtn.gameObject.SetActive(false);
-                    }
-
-                    continue;
-                }
-
-                child.gameObject.SetActive(false);
-            }
-
-            if (goldItem == null)
-            {
-                return;
-            }
-
-            var num = goldItem.Find("Num") ?? FindDeep(goldItem, "Num");
-            var text = num != null ? num.GetComponent<TMP_Text>() : null;
-            if (text != null)
-            {
-                Binding.BindRollingText(text, ViewModel.GoldText);
-            }
         }
 
         private void BindSeatClick(GameObject target, IRelayCommand command)
@@ -1363,10 +1330,13 @@ namespace App.UI
                 _enemyCardTypeIcon = root.GetComponent<Image>();
             }
 
-            var num = ResolveSlot("cardtypeEnemyNum");
+            var num = ResolveSlot("cardinfoEnemyNum") ?? ResolveSlot("cardtypeEnemyNum");
             if (num == null && root != null)
             {
-                num = root.Find("cardtypeEnemyNum") ?? FindDeep(root, "cardtypeEnemyNum");
+                num = root.Find("cardinfoEnemyNum") ??
+                      root.Find("cardtypeEnemyNum") ??
+                      FindDeep(root, "cardinfoEnemyNum") ??
+                      FindDeep(root, "cardtypeEnemyNum");
             }
 
             _enemyCardTypeNum = num;
@@ -2545,6 +2515,44 @@ namespace App.UI
             if (child != null)
             {
                 child.gameObject.SetActive(false);
+            }
+        }
+
+        private static void ApplyCardInfoFx(GameObject root, int level)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var flow = root.GetComponent<UiFlowLight>();
+            if (flow != null)
+            {
+                if (level >= 3)
+                {
+                    flow.Play();
+                }
+                else
+                {
+                    flow.Stop();
+                }
+            }
+
+            SetChildActive(root.transform, "PokerHandStraightFlush01", level == 5);
+            SetChildActive(root.transform, "PokerHandBomb01", level == 6);
+        }
+
+        private static void SetChildActive(Transform root, string name, bool active)
+        {
+            var child = root.Find(name);
+            if (child == null)
+            {
+                child = FindDeep(root, name);
+            }
+
+            if (child != null)
+            {
+                child.gameObject.SetActive(active);
             }
         }
 

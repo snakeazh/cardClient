@@ -1,142 +1,156 @@
 [
   {
-    "Id": 1001,
-    "Type": 1,
+    "Id": 10101,
+    "Type": 12,
     "StackedValue": 1,
-    "Value": 40,
-    "Desc": "击杀40只敌人后解锁"
+    "Value": 20,
+    "Desc": "亮出20次对子后解锁"
   },
   {
-    "Id": 1002,
-    "Type": 2,
-    "StackedValue": 1,
-    "Value": 90,
-    "Desc": "使用90次搓牌后解锁"
-  },
-  {
-    "Id": 1003,
-    "Type": 3,
-    "StackedValue": 1,
-    "Value": 25,
-    "Desc": "刷新25次商店后解锁"
-  },
-  {
-    "Id": 1004,
-    "Type": 4,
-    "StackedValue": 1,
-    "Value": 30,
-    "Desc": "亮出30次顺子后解锁"
-  },
-  {
-    "Id": 1005,
-    "Type": 5,
-    "StackedValue": 1,
-    "Value": 1,
-    "Desc": "亮出1次散牌235并且击败1次豹子牌型解锁"
-  },
-  {
-    "Id": 1006,
-    "Type": 6,
-    "StackedValue": 1,
-    "Value": 90,
-    "Desc": "使用搓牌并战胜90次敌人解锁"
-  },
-  {
-    "Id": 1007,
-    "Type": 2,
-    "StackedValue": 1,
-    "Value": 180,
-    "Desc": "使用180次搓牌后解锁"
-  },
-  {
-    "Id": 1008,
-    "Type": 7,
-    "StackedValue": 1,
-    "Value": 50,
-    "Desc": "亮出50次数字牌7后解锁"
-  },
-  {
-    "Id": 1009,
+    "Id": 10201,
     "Type": 8,
     "StackedValue": 1,
     "Value": 20,
     "Desc": "亮出20次同花后解锁"
   },
   {
-    "Id": 1010,
-    "Type": 10,
-    "StackedValue": 1,
-    "Value": 2000,
-    "Desc": "累计获得2000金币后解锁"
-  },
-  {
-    "Id": 1011,
-    "Type": 3,
-    "StackedValue": 1,
-    "Value": 40,
-    "Desc": "刷新40次商店后解锁"
-  },
-  {
-    "Id": 1012,
-    "Type": 1,
-    "StackedValue": 1,
-    "Value": 150,
-    "Desc": "击杀150只敌人后解锁"
-  },
-  {
-    "Id": 1013,
-    "Type": 8,
-    "StackedValue": 1,
-    "Value": 35,
-    "Desc": "亮出35次同花后解锁"
-  },
-  {
-    "Id": 1014,
-    "Type": 6,
-    "StackedValue": 1,
-    "Value": 100,
-    "Desc": "使用搓牌并战胜200次敌人后解锁"
-  },
-  {
-    "Id": 1015,
-    "Type": 8,
-    "StackedValue": 1,
-    "Value": 60,
-    "Desc": "亮出60次同花后解锁"
-  },
-  {
-    "Id": 1016,
-    "Type": 11,
-    "StackedValue": 1,
-    "Value": 300,
-    "Desc": "单次比牌造成300点伤害后解锁"
-  },
-  {
-    "Id": 1017,
+    "Id": 10301,
     "Type": 4,
     "StackedValue": 1,
-    "Value": 60,
-    "Desc": "亮出60次顺子后解锁"
+    "Value": 20,
+    "Desc": "亮出20次顺子后解锁"
   },
   {
-    "Id": 1018,
-    "Type": 2,
+    "Id": 10401,
+    "Type": 1,
     "StackedValue": 1,
-    "Value": 300,
-    "Desc": "使用300次搓牌后解锁"
+    "Value": 20,
+    "Desc": "击杀20只敌人后解锁"
   },
   {
-    "Id": 1019,
+    "Id": 10402,
+    "Type": 1,
+    "StackedValue": 1,
+    "Value": 40,
+    "Desc": "击杀40只敌人后解锁"
+  },
+  {
+    "Id": 10501,
+    "Type": 9,
+    "StackedValue": 1,
+    "Value": 2,
+    "Desc": "首次通关难度2解锁"
+  },
+  {
+    "Id": 10502,
     "Type": 9,
     "StackedValue": 1,
     "Value": 3,
-    "Desc": "通关难度3后解锁"
+    "Desc": "首次通关难度3解锁"
   },
   {
-    "Id": 1020,
+    "Id": 10601,
+    "Type": 2,
+    "StackedValue": 1,
+    "Value": 30,
+    "Desc": "使用30次搓牌后解锁"
+  },
+  {
+    "Id": 10602,
+    "Type": 2,
+    "StackedValue": 1,
+    "Value": 120,
+    "Desc": "使用120次搓牌后解锁"
+  },
+  {
+    "Id": 10701,
+    "Type": 3,
+    "StackedValue": 1,
+    "Value": 20,
+    "Desc": "刷新20次商店后解锁"
+  },
+  {
+    "Id": 10801,
+    "Type": 13,
+    "StackedValue": 1,
+    "Value": 30,
+    "Desc": "负于对手30次后解锁"
+  },
+  {
+    "Id": 10901,
+    "Type": 14,
+    "StackedValue": 1,
+    "Value": 30,
+    "Desc": "战胜对手30次后解锁"
+  },
+  {
+    "Id": 11001,
+    "Type": 5,
+    "StackedValue": 1,
+    "Value": 1,
+    "Desc": "亮出1次高牌235并战胜豹子解锁"
+  },
+  {
+    "Id": 11002,
+    "Type": 6,
+    "StackedValue": 1,
+    "Value": 10,
+    "Desc": "使用搓牌并战胜10次敌人解锁"
+  },
+  {
+    "Id": 11003,
+    "Type": 15,
+    "StackedValue": 1,
+    "Value": 1,
+    "Desc": "使用[平凡之人]通过难度10,且全程未使用任何技能解锁"
+  },
+  {
+    "Id": 11004,
+    "Type": 16,
+    "StackedValue": 1,
+    "Value": 1,
+    "Desc": "使用[平凡之人]通过难度3解锁"
+  },
+  {
+    "Id": 11101,
+    "Type": 17,
+    "StackedValue": 1,
+    "Value": 10,
+    "Desc": "死亡10次后解锁"
+  },
+  {
+    "Id": 11201,
+    "Type": 21,
+    "StackedValue": 1,
+    "Value": 20,
+    "Desc": "触发20次暴击后解锁"
+  },
+  {
+    "Id": 11301,
+    "Type": 18,
+    "StackedValue": 1,
+    "Value": 30,
+    "Desc": "使用30次透视后解锁"
+  },
+  {
+    "Id": 11401,
     "Type": 10,
     "StackedValue": 1,
-    "Value": 5000,
-    "Desc": "累计获得5000金币后解锁"
+    "Value": 10000,
+    "Desc": "累计获得10000金币后解锁"
+  },
+  {
+    "Id": 11501,
+    "Type": 19,
+    "StackedValue": 1,
+    "Value": 2000,
+    "Desc": "单次打出2000点伤害后解锁"
+  },
+  {
+    "Id": 11601,
+    "Type": 20,
+    "StackedValue": 1,
+    "Value": 1000,
+    "Desc": "拥有1000金币后解锁"
   }
 ]

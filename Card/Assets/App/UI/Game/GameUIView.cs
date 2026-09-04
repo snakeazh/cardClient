@@ -54,9 +54,13 @@ namespace App.UI
         private GameObject _equipTipCatcher;
         private Transform _equipTipAnchor;
         private int _shownEquipRelicId;
-        private bool _shownRoundBuff;
+        private int _shownRoundBuffId;
         private bool _shownPlayerTip;
         private int _shownEnemySlot = -1;
+        private Transform _roundBuffGrid;
+        private GameObject _roundBuffTemplate;
+        private readonly List<GameObject> _roundBuffs = new List<GameObject>(4);
+        private readonly List<int> _roundBuffEntryIds = new List<int>(4);
         private GameObject _winTip;
         private Transform _winTipTemplate;
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
@@ -99,6 +103,7 @@ namespace App.UI
             RefreshPlayerItems();
             RefreshCardInfos();
             RefreshEquips();
+            RefreshRoundBuffs();
         }
 
         protected override async Task OnViewOpen()
@@ -175,6 +180,7 @@ namespace App.UI
             }
 
             HideEquipTip();
+            ClearRoundBuffs();
             if (_winTip != null)
             {
                 Destroy(_winTip);
@@ -215,6 +221,7 @@ namespace App.UI
             _ = EnsureBattlePortraits();
             RefreshCardInfos();
             RefreshEquips();
+            RefreshRoundBuffs();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -734,40 +741,113 @@ namespace App.UI
 
         private void BindRoundBuff()
         {
-            var root = ResolveSlot("roundbuff") ?? transform.Find("roundbuff");
-            if (root == null)
+            _roundBuffGrid = ResolveSlot("roundbuffGrid") ?? transform.Find("roundbuffGrid") ??
+                             FindDeep(transform, "roundbuffGrid");
+            var template = ResolveSlot("roundbuff") ?? transform.Find("roundbuff") ?? FindDeep(transform, "roundbuff");
+            if (template != null)
+            {
+                _roundBuffTemplate = template.gameObject;
+                _roundBuffTemplate.SetActive(false);
+            }
+
+            if (_roundBuffGrid != null)
+            {
+                Binding.BindActive(_roundBuffGrid.gameObject, ViewModel.RoundBuffVisible);
+            }
+        }
+
+        private void RefreshRoundBuffs()
+        {
+            if (_roundBuffTemplate == null || ViewModel == null)
             {
                 return;
             }
 
-            Binding.BindActive(root.gameObject, ViewModel.RoundBuffVisible);
-            var textSlot = ResolveSlot("roundbuffText");
-            TMP_Text text = null;
-            if (textSlot != null)
+            var parent = _roundBuffGrid != null ? _roundBuffGrid : _roundBuffTemplate.transform.parent;
+            var entries = BossMechanics.ResolveAll(ViewModel.Session.Run);
+            while (_roundBuffs.Count < entries.Count)
             {
-                text = textSlot.GetComponent<TMP_Text>() ?? textSlot.GetComponentInChildren<TMP_Text>(true);
+                var clone = Instantiate(_roundBuffTemplate, parent, false);
+                clone.name = $"roundbuff{_roundBuffs.Count + 1}";
+                var binds = clone.GetComponentsInChildren<Framework.UI.Binding.UIBind>(true);
+                for (var b = 0; b < binds.Length; b++)
+                {
+                    Destroy(binds[b]);
+                }
+
+                HookRoundBuffClick(clone, _roundBuffs.Count);
+                _roundBuffs.Add(clone);
+                _roundBuffEntryIds.Add(0);
             }
 
-            if (text != null)
+            var shownStillPresent = false;
+            for (var i = 0; i < _roundBuffs.Count; i++)
             {
-                Binding.BindText(text, ViewModel.RoundBuffName);
+                var go = _roundBuffs[i];
+                if (go == null)
+                {
+                    continue;
+                }
+
+                BossEntryConfig entry = null;
+                if (i < entries.Count)
+                {
+                    entry = entries[i];
+                }
+
+                _roundBuffEntryIds[i] = entry != null ? entry.Id : 0;
+                if (entry != null && entry.Id == _shownRoundBuffId)
+                {
+                    shownStillPresent = true;
+                }
+
+                go.SetActive(entry != null);
             }
 
-            var button = root.GetComponent<Button>();
+            if (_shownRoundBuffId > 0 && !shownStillPresent)
+            {
+                HideEquipTip();
+            }
+        }
+
+        private void HookRoundBuffClick(GameObject go, int index)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var button = go.GetComponent<Button>();
             if (button == null)
             {
-                button = root.gameObject.AddComponent<Button>();
+                button = go.AddComponent<Button>();
             }
 
-            var image = root.GetComponent<Image>();
+            var image = go.GetComponent<Image>();
             if (image != null)
             {
                 button.targetGraphic = image;
             }
 
             button.transition = Selectable.Transition.None;
-            button.onClick.RemoveListener(OnRoundBuffClicked);
-            button.onClick.AddListener(OnRoundBuffClicked);
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnRoundBuffClicked(index));
+        }
+
+        private void ClearRoundBuffs()
+        {
+            for (var i = 0; i < _roundBuffs.Count; i++)
+            {
+                if (_roundBuffs[i] != null)
+                {
+                    Destroy(_roundBuffs[i]);
+                }
+            }
+
+            _roundBuffs.Clear();
+            _roundBuffEntryIds.Clear();
+            _roundBuffGrid = null;
+            _roundBuffTemplate = null;
         }
 
         private PlayerItem ResolvePlayerItem()
@@ -1438,21 +1518,30 @@ namespace App.UI
             _ = ShowEnemyTip(slot);
         }
 
-        private void OnRoundBuffClicked()
+        private void OnRoundBuffClicked(int index)
         {
-            if (ViewModel == null || !ViewModel.RoundBuffVisible.Value)
+            if (index < 0 || index >= _roundBuffEntryIds.Count || _roundBuffEntryIds[index] <= 0)
             {
                 HideEquipTip();
                 return;
             }
 
-            if (_shownRoundBuff && _equipTip != null && _equipTip.activeSelf)
+            var entryId = _roundBuffEntryIds[index];
+            if (_shownRoundBuffId == entryId && _equipTip != null && _equipTip.activeSelf)
             {
                 HideEquipTip();
                 return;
             }
 
-            _ = ShowRoundBuffTip();
+            var entry = BossEntryConfig.Get(entryId);
+            var slot = index < _roundBuffs.Count ? _roundBuffs[index] : null;
+            if (entry == null || slot == null)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowRoundBuffTip(slot.transform, entry);
         }
 
         private void OnRuleClicked()
@@ -1467,31 +1556,26 @@ namespace App.UI
             _ = ShowWinTip();
         }
 
-        private async Task ShowRoundBuffTip()
+        private async Task ShowRoundBuffTip(Transform slot, BossEntryConfig entry)
         {
             await EnsureEquipTip();
-            if (_equipTip == null || ViewModel == null)
+            if (_equipTip == null || entry == null)
             {
                 return;
             }
 
             _shownEquipRelicId = 0;
-            _shownRoundBuff = true;
+            _shownRoundBuffId = entry.Id;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
-            var name = ViewModel.RoundBuffName.Value;
-            var desc = ViewModel.RoundBuffDesc.Value;
+            var name = entry.Name ?? string.Empty;
+            var desc = string.IsNullOrEmpty(entry.Desc) ? name : entry.Desc;
             if (string.Equals(desc, name, StringComparison.Ordinal))
             {
                 desc = string.Empty;
             }
 
-            await PresentItemTip(
-                ResolveSlot("roundbuff") ?? transform.Find("roundbuff"),
-                name,
-                desc,
-                showUse: false,
-                placeRight: false);
+            await PresentItemTip(slot, name, desc, showUse: false, placeRight: false);
         }
 
         private async Task ShowWinTip()
@@ -1734,7 +1818,7 @@ namespace App.UI
             }
 
             _shownEquipRelicId = relic.Id;
-            _shownRoundBuff = false;
+            _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
             await PresentItemTip(slot, relic.Name, relic.Desc, RelicMechanics.IsConsumable(relic), placeRight: false);
@@ -1749,7 +1833,7 @@ namespace App.UI
             }
 
             _shownEquipRelicId = 0;
-            _shownRoundBuff = false;
+            _shownRoundBuffId = 0;
             _shownPlayerTip = true;
             _shownEnemySlot = -1;
             await PresentItemTip(_playerItem.transform, hero.Name, BuildHeroTipBody(hero), showUse: false, placeRight: true);
@@ -1765,7 +1849,7 @@ namespace App.UI
             }
 
             _shownEquipRelicId = 0;
-            _shownRoundBuff = false;
+            _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = slot;
             await PresentItemTip(
@@ -1813,7 +1897,7 @@ namespace App.UI
         private void HideEquipTip()
         {
             _shownEquipRelicId = 0;
-            _shownRoundBuff = false;
+            _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
             _equipTipAnchor = null;

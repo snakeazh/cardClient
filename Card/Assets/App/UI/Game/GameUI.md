@@ -27,11 +27,12 @@ GameUI
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
   cardtypeEnemyNum        ← 敌人倍率数字
   roundInfo               ← 第几轮
-  roundbuff               ← 关卡机制图标（蓝书），无机制时隐藏
+  roundbuffGrid           ← 关卡机制格子；下面按条目克隆 roundbuff
+  roundbuff               ← 机制图标模板（蓝书），无机制时格子隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时 `roundbuff` 显示，点击弹出 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`（多条拼接）。
+发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时 `roundbuffGrid` 显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 
@@ -114,7 +115,7 @@ GameUI
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
 
-`roundbuff`：关卡机制图标。`LevelEntryNum` 为 0 或未抽到时隐藏；点击出 `BossEntryConfig.Desc`。多条时名称用顿号拼接。
+`roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 
 ---
 

@@ -137,22 +137,22 @@ namespace App.Config
         public int AdShopGoldDailyLimit;
 
         /// <summary>
-        /// 普通品质遗物框颜色
+        /// 普通品质圣物框颜色
         /// </summary>
         public string OrdinaryRelicColor;
 
         /// <summary>
-        /// 稀有品质遗物框颜色
+        /// 稀有品质圣物框颜色
         /// </summary>
         public string RareRelicColor;
 
         /// <summary>
-        /// 史诗品质遗物框颜色
+        /// 史诗品质圣物框颜色
         /// </summary>
         public string EpicRelicColor;
 
         /// <summary>
-        /// 传说品质遗物框颜色
+        /// 传说品质圣物框颜色
         /// </summary>
         public string LegendRelicColor;
 

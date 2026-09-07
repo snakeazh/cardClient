@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
@@ -5,8 +6,11 @@ using App.Config;
 using App.Level;
 using App.Unlock;
 using Framework.Assets;
+using Framework.Log;
+using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI.Popup
 {
@@ -37,6 +41,7 @@ namespace App.UI.Popup
         private readonly MainResourceViewModel _mainResource;
         private readonly ILevelProgressService _progress;
         private readonly IUnlockConditionService _unlock;
+        private readonly IUIManager _ui;
         private readonly List<IllustratedBookEntry> _collect = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _relics = new List<IllustratedBookEntry>();
         private readonly List<IllustratedBookEntry> _monsters = new List<IllustratedBookEntry>();
@@ -47,12 +52,14 @@ namespace App.UI.Popup
             ILevelProgressService progress,
             IUnlockConditionService unlock,
             IResourceService resources,
-            IAtlasService atlas)
+            IAtlasService atlas,
+            IUIManager ui)
         {
             _navigation = navigation;
             _mainResource = mainResource;
             _progress = progress;
             _unlock = unlock;
+            _ui = ui;
             Resources = resources;
             Atlas = atlas;
             CollectOn = new ObservableProperty<bool>(true);
@@ -153,6 +160,65 @@ namespace App.UI.Popup
             ShowTip.Value = false;
             TipTitle.Value = string.Empty;
             TipText.Value = string.Empty;
+        }
+
+        /// <summary>
+        /// 点击条目打开 TalentDetail 展示模式：左右切换在条目所在页签的整页列表内循环，
+        /// 始终隐藏升级按钮。文案口径同原 tip：未解锁名字显示 ？？？（传 null）、描述显示解锁进度提示。
+        /// 图标由 View 侧解析好传入（遗物图集/收藏资源/怪物头像三种来源）。
+        /// </summary>
+        public async void OpenDetail(IllustratedBookEntry entry, Func<IllustratedBookEntry, Sprite> iconResolver)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var siblings = ResolveTabEntries(entry.Tab);
+                var displays = new List<TalentDetailViewModel.DisplayEntry>(siblings.Count);
+                var index = 0;
+                for (var i = 0; i < siblings.Count; i++)
+                {
+                    var sibling = siblings[i];
+                    if (ReferenceEquals(sibling, entry))
+                    {
+                        index = i;
+                    }
+
+                    displays.Add(new TalentDetailViewModel.DisplayEntry
+                    {
+                        Name = sibling.Unlocked ? sibling.Name : null,
+                        Desc = sibling.Unlocked
+                            ? sibling.Desc ?? string.Empty
+                            : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
+                        Icon = iconResolver != null ? iconResolver(sibling) : null
+                    });
+                }
+
+                var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
+                var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
+                vm.SetupDisplay(displays, index);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+        }
+
+        private IReadOnlyList<IllustratedBookEntry> ResolveTabEntries(IllustratedBookTab tab)
+        {
+            switch (tab)
+            {
+                case IllustratedBookTab.Collect:
+                    return _collect;
+                case IllustratedBookTab.Monster:
+                    return _monsters;
+                default:
+                    return _relics;
+            }
         }
 
         public bool IsSelected(IllustratedBookEntry entry)

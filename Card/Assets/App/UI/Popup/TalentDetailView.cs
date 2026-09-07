@@ -33,6 +33,8 @@ namespace App.UI.Popup
                 // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
                 Binding.Add(ViewModel.IconKey.Subscribe(LoadDetailIcon));
+                // 展示模式图标（图鉴传入的 Sprite，优先于 IconKey 图集逻辑）
+                Binding.Add(ViewModel.IconOverride.Subscribe(ApplyDetailIcon));
             }
 
             var left = UI.GetGameObject("LeftBtn");
@@ -73,6 +75,15 @@ namespace App.UI.Popup
             if (ViewModel.Atlas.TryGetSprite(ResResourcePaths.TalentAtlas, key, out var sprite) && sprite != null)
             {
                 _card.SetIcon(sprite);
+            }
+        }
+
+        /// <summary>展示模式图标；null 保留 IconKey 图集逻辑或预制体默认图，不主动清空。</summary>
+        private void ApplyDetailIcon(Sprite icon)
+        {
+            if (_card != null && icon != null)
+            {
+                _card.SetIcon(icon);
             }
         }
 

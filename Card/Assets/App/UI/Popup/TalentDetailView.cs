@@ -1,4 +1,5 @@
 using System;
+using App.Game;
 using App.Item;
 using App.Resources;
 using Framework.UI.Navigation;
@@ -13,11 +14,16 @@ namespace App.UI.Popup
     /// 天赋详情弹窗。注册在 TopMost 层：叠加在 Popup 层的天赋列表之上，弹出时不隐藏列表。
     /// Item 卡显示天赋名、图标与等级角标，Detail 显示当前等级描述；LeftBtn/RightBtn 切换已解锁天赋，
     /// 不足两个时隐藏；UpgradeBtn 看广告升级，满级隐藏；Tip 为预制体固定文案；点 Mask 关闭。
+    /// 图鉴展示模式：遗物/收藏用 Item 卡；怪物条目切换到 MonsterItem（PlayerItem 敌人形态，显示
+    /// 配表 BaseMap 底图），与 Item 卡互斥；AcquireMethod 显示获得方式，CongratulationsImg 抽卡入口开。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentDetail, UILayer.TopMost, ResResourcePaths.TalentDetail)]
     public sealed class TalentDetailView : ViewBase<TalentDetailViewModel>
     {
+        private const string MonsterItemName = "MonsterItem";
+
         private ItemCard _card;
+        private PlayerItem _monsterCard;
 
         protected override void OnBind()
         {
@@ -28,7 +34,7 @@ namespace App.UI.Popup
                 _card.SetAnimationEnabled(false);
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 _card.SetUnlocked(true);
-                Binding.Add(ViewModel.NameText.Subscribe(_card.SetName));
+                Binding.Add(ViewModel.NameText.Subscribe(ApplyName));
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
                 // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
@@ -37,6 +43,7 @@ namespace App.UI.Popup
                 Binding.Add(ViewModel.IconOverride.Subscribe(ApplyDetailIcon));
             }
 
+            BindMonsterItem();
             var left = UI.GetGameObject("LeftBtn");
             var right = UI.GetGameObject("RightBtn");
             Binding.BindCommand(left.GetComponent<Button>(), ViewModel.PrevCommand);
@@ -60,9 +67,85 @@ namespace App.UI.Popup
 
             Binding.BindActive(upgrade, ViewModel.ShowUpgrade);
 
+            // 恭喜获得图（抽卡入口开）；获得方式文本（图鉴遗物页开，文案=UnlockConditionConfig.Desc）
+            Binding.BindActive(UI.GetGameObject("CongratulationsImg"), ViewModel.ShowCongratulations);
+            var acquire = UI.GetGameObject("AcquireMethod");
+            Binding.BindActive(acquire, ViewModel.ShowAcquireMethod);
+            Binding.BindText(acquire.GetComponent<TMP_Text>(), ViewModel.AcquireMethodText);
+
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);
             BindMaskClose();
         }
+
+        /// <summary>怪物条目用 PlayerItem 敌人形态卡（预制体内 MonsterItem 节点，默认隐藏）；
+        /// 节点不存在时安全退化——仍用 Item 卡显示（无怪物底图）。初始化细节同图鉴 FillMonsterSection。</summary>
+        private void BindMonsterItem()
+        {
+            var node = FindDeep(transform, MonsterItemName);
+            if (node != null)
+            {
+                _monsterCard = node.GetComponent<PlayerItem>();
+            }
+
+            if (_monsterCard != null)
+            {
+                Binding.Add(ViewModel.CurrentMonsterId.Subscribe(ApplyMonsterCard));
+                Binding.Add(ViewModel.ShowMonsterCard.Subscribe(ApplyCardSwitch));
+            }
+        }
+
+        private void ApplyName(string name)
+        {
+            if (_card != null)
+            {
+                _card.SetName(name);
+            }
+
+            if (_monsterCard != null && ViewModel.ShowMonsterCard.Value)
+            {
+                _monsterCard.SetName(string.IsNullOrEmpty(name) ? "？？？" : name);
+            }
+        }
+
+        /// <summary>怪物卡随条目切换刷新：敌人形态底图 + 隐藏 cardMask/攻血块 + 名字/头像。</summary>
+        private void ApplyMonsterCard(int monsterId)
+        {
+            if (_monsterCard == null || monsterId <= 0)
+            {
+                return;
+            }
+
+            _monsterCard.ApplyEnemyTheme(monsterId);
+            var cardMask = FindDeep(_monsterCard.transform, "cardMask");
+            if (cardMask != null)
+            {
+                cardMask.gameObject.SetActive(false);
+            }
+
+            _monsterCard.SetAttack(0);
+            _monsterCard.SetHp(0);
+            _monsterCard.SetName(ViewModel.NameText.Value);
+            var icon = ViewModel.IconOverride.Value;
+            if (icon != null)
+            {
+                _monsterCard.SetPortrait(icon, locked: false);
+            }
+        }
+
+        /// <summary>Item 卡与 MonsterItem 互斥显隐。</summary>
+        private void ApplyCardSwitch(bool monster)
+        {
+            if (_monsterCard != null)
+            {
+                _monsterCard.gameObject.SetActive(monster);
+            }
+
+            if (_card != null)
+            {
+                _card.gameObject.SetActive(!monster);
+            }
+        }
+
 
         /// <summary>图标在 Altas/Talent 图集（sprite 名=TalentConfig.Icon）；缺图保留预制体默认图。</summary>
         private void LoadDetailIcon(string key)
@@ -78,13 +161,50 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>展示模式图标；null 保留 IconKey 图集逻辑或预制体默认图，不主动清空。</summary>
+        /// <summary>展示模式图标；null 保留 IconKey 图集逻辑或预制体默认图，不主动清空。
+        /// 怪物条目把头像画到 PlayerItem 卡上，其余画到 Item 卡。</summary>
         private void ApplyDetailIcon(Sprite icon)
         {
-            if (_card != null && icon != null)
+            if (icon == null)
+            {
+                return;
+            }
+
+            if (ViewModel.ShowMonsterCard.Value)
+            {
+                if (_monsterCard != null)
+                {
+                    _monsterCard.SetPortrait(icon, locked: false);
+                }
+            }
+            else if (_card != null)
             {
                 _card.SetIcon(icon);
             }
+        }
+
+        private static Transform FindDeep(Transform root, string nodeName)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == nodeName)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindDeep(root.GetChild(i), nodeName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private void BindMaskClose()

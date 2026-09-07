@@ -24,6 +24,12 @@ namespace App.UI.Popup
             public string Name;
             public string Desc;
             public Sprite Icon;
+
+            /// <summary>获得方式文案（遗物页=UnlockConditionConfig.Desc）；空表示该条目不显示。</summary>
+            public string AcquireMethod;
+
+            /// <summary>怪物页条目的 MonsterId（&gt;0 表示用 PlayerItem 敌人形态卡显示底图），其余为 0。</summary>
+            public int MonsterId;
         }
 
         private readonly IUIManager _ui;
@@ -33,6 +39,7 @@ namespace App.UI.Popup
         private TalentSnapshot _snapshot;
         private int _displayIndex;
         private bool _displayMode;
+        private bool _rewardMode;
 
         public TalentDetailViewModel(IUIManager ui, ITalentService talent, IAtlasService atlas)
         {
@@ -47,6 +54,11 @@ namespace App.UI.Popup
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowSwitch = new ObservableProperty<bool>(false);
             ShowUpgrade = new ObservableProperty<bool>(false);
+            ShowCongratulations = new ObservableProperty<bool>(false);
+            ShowAcquireMethod = new ObservableProperty<bool>(false);
+            AcquireMethodText = new ObservableProperty<string>(string.Empty);
+            ShowMonsterCard = new ObservableProperty<bool>(false);
+            CurrentMonsterId = new ObservableProperty<int>(0);
             PrevCommand = new RelayCommand(() => Shift(-1));
             NextCommand = new RelayCommand(() => Shift(1));
             UpgradeCommand = new RelayCommand(Upgrade, () => CanUpgrade);
@@ -77,6 +89,21 @@ namespace App.UI.Popup
         /// <summary>是否显示升级按钮（有选中天赋且未满级）。</summary>
         public ObservableProperty<bool> ShowUpgrade { get; }
 
+        /// <summary>是否显示恭喜获得图（抽卡入口 Setup(reward:true) 时开）。</summary>
+        public ObservableProperty<bool> ShowCongratulations { get; }
+
+        /// <summary>是否显示获得方式文本（图鉴遗物页开，文案=UnlockConditionConfig.Desc）。</summary>
+        public ObservableProperty<bool> ShowAcquireMethod { get; }
+
+        /// <summary>获得方式文案。</summary>
+        public ObservableProperty<string> AcquireMethodText { get; }
+
+        /// <summary>是否用 PlayerItem 敌人形态卡替代 ItemCard 显示（图鉴怪物页条目开）。</summary>
+        public ObservableProperty<bool> ShowMonsterCard { get; }
+
+        /// <summary>当前怪物条目 MonsterId（ShowMonsterCard 为 true 时有效，View 据此 ApplyEnemyTheme）。</summary>
+        public ObservableProperty<int> CurrentMonsterId { get; }
+
         public IRelayCommand PrevCommand { get; }
 
         public IRelayCommand NextCommand { get; }
@@ -91,12 +118,13 @@ namespace App.UI.Popup
 
         private bool CanUpgrade => _snapshot != null && !_snapshot.IsMaxLevel;
 
-        public void Setup(int talentId)
+        /// <param name="reward">抽卡获得入口：隐藏左右切换、显示恭喜获得图（升级按钮仍保留）。</param>
+        public void Setup(int talentId, bool reward = false)
         {
             _displayMode = false;
+            _rewardMode = reward;
             _owned.Clear();
             _owned.AddRange(_talent.GetOwned());
-            ShowSwitch.Value = _owned.Count > 1;
 
             var index = _owned.FindIndex(s => s.TalentId == talentId);
             if (index < 0)
@@ -115,6 +143,7 @@ namespace App.UI.Popup
         public void SetupDisplay(IReadOnlyList<DisplayEntry> entries, int startIndex)
         {
             _displayMode = true;
+            _rewardMode = false;
             _owned.Clear();
             _snapshot = null;
             _display.Clear();
@@ -139,6 +168,11 @@ namespace App.UI.Popup
             Quality.Value = QualityType.Ordinary;
             ShowSwitch.Value = _display.Count > 1;
             ShowUpgrade.Value = false;
+            ShowCongratulations.Value = false;
+            ShowAcquireMethod.Value = entry != null && !string.IsNullOrEmpty(entry.AcquireMethod);
+            AcquireMethodText.Value = entry != null ? entry.AcquireMethod ?? string.Empty : string.Empty;
+            ShowMonsterCard.Value = entry != null && entry.MonsterId > 0;
+            CurrentMonsterId.Value = entry != null ? entry.MonsterId : 0;
         }
 
         private void Shift(int delta)
@@ -186,7 +220,13 @@ namespace App.UI.Popup
                 ? string.Empty
                 : snapshot.Config.Icon.Trim();
             Quality.Value = snapshot?.Config != null ? snapshot.Config.Type : QualityType.Ordinary;
+            ShowSwitch.Value = !_rewardMode && _owned.Count > 1;
             ShowUpgrade.Value = CanUpgrade;
+            ShowCongratulations.Value = _rewardMode;
+            ShowAcquireMethod.Value = false;
+            AcquireMethodText.Value = string.Empty;
+            ShowMonsterCard.Value = false;
+            CurrentMonsterId.Value = 0;
             UpgradeCommand.RaiseCanExecuteChanged();
         }
 

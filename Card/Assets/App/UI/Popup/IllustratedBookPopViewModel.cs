@@ -189,7 +189,9 @@ namespace App.UI.Popup
                 for (var i = 0; i < siblings.Count; i++)
                 {
                     var sibling = siblings[i];
-                    if (ReferenceEquals(sibling, entry))
+                    // 按 Id 值匹配定位（siblings 已是同页列表）：RefreshEntries 每次打开
+                    // 重建列表实例，View 点击回调持有的可能是旧实例，引用比较会失配导致 index 恒 0
+                    if (sibling.Id == entry.Id)
                     {
                         index = i;
                     }
@@ -200,7 +202,9 @@ namespace App.UI.Popup
                         Desc = sibling.Unlocked
                             ? sibling.Desc ?? string.Empty
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
-                        Icon = iconResolver != null ? iconResolver(sibling) : null
+                        Icon = iconResolver != null ? iconResolver(sibling) : null,
+                        AcquireMethod = ResolveAcquireMethod(sibling),
+                        MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0
                     });
                 }
 
@@ -226,6 +230,27 @@ namespace App.UI.Popup
                 default:
                     return _relics;
             }
+        }
+
+        /// <summary>遗物获得方式："获取方式: \n" + UnlockConditionConfig.Desc（如"击杀20只敌人后解锁"）；
+        /// 仅遗物页提供，未配条件（Id&lt;=0）或取不到行兜底"商店购买获得"（商店常驻货）。</summary>
+        private static string ResolveAcquireMethod(IllustratedBookEntry entry)
+        {
+            if (entry == null || entry.Tab != IllustratedBookTab.Relic)
+            {
+                return null;
+            }
+
+            var relic = RelicConfig.Get(entry.Id);
+            var desc = relic != null && relic.UnlockConditionId > 0
+                ? UnlockConditionConfig.Get(relic.UnlockConditionId)?.Desc
+                : null;
+            if (string.IsNullOrEmpty(desc))
+            {
+                desc = "商店购买获得";
+            }
+
+            return "获取方式: \n" + desc;
         }
 
         public bool IsSelected(IllustratedBookEntry entry)

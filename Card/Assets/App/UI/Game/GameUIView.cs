@@ -396,7 +396,6 @@ namespace App.UI
                 ViewModel.Atlas,
                 _bonusBeats,
                 baseAttack,
-                score.BaseChips,
                 Math.Max(1, session.AttackDamage),
                 value => { _heldAttackValue = value; },
                 () =>
@@ -428,7 +427,7 @@ namespace App.UI
             }
 
             var mag = GameSession.HandTypeMagnification(score.Type);
-            var attackValue = Math.Max(0, baseAttack) + Math.Max(0, score.BaseChips);
+            var attackValue = Math.Max(0, baseAttack);
             for (var i = 0; i < _relicBonuses.Count; i++)
             {
                 var part = _relicBonuses[i];

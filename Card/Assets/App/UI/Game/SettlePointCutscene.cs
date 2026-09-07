@@ -11,7 +11,7 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 开牌结算点数演出：选中牌特效飞到攻击数字，再按点数、倍率刷新伤害。
+    /// 开牌结算点数演出：选中牌特效飞到攻击数字，再按圣物攻击/倍率刷新伤害。
     /// </summary>
     public sealed class SettlePointCutscene
     {
@@ -69,7 +69,6 @@ namespace App.UI
             IAtlasService atlas,
             IReadOnlyList<BonusBeat> bonusBeats,
             int baseAttack,
-            int cardPoints,
             int finalDamage,
             Action<int> onAttackNumber,
             Action onDone)
@@ -134,7 +133,6 @@ namespace App.UI
                 HideSpawned();
                 if (attackItem != null)
                 {
-                    SetAttackNumber(attackItem, Mathf.Max(0, baseAttack) + Mathf.Max(0, cardPoints), onAttackNumber);
                     attackItem.PlayAttackNumberShake(true, false);
                 }
             });

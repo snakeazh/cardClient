@@ -33,17 +33,17 @@
 
 主路径入口：`GameSession.ComputeAttackDamage` → `HandEvaluator.ComputeAttackDamage`。
 
-本手上下文（未亮出 2 张、搓牌已用/剩余、幸运七掷骰）由 `GameSession` 建成 `RelicCombatContext` 再传进 `RelicMechanics`，不要只靠 `HandScore`。
+本手上下文（亮出牌从左到右、未亮出 2 张、搓牌已用/剩余、幸运七掷骰）由 `GameSession` 建成 `RelicCombatContext` 再传进 `RelicMechanics`，不要只靠 `HandScore`。
 
 ```
 总倍率 = (HandScoreConfig.BasicMagnification + 遗物倍率加成) × 燧石
-伤害   = (攻击力 + 遗物攻击加成 + BaseChips) × 总倍率
+伤害   = (攻击力 + 遗物攻击加成) × 总倍率
 ```
 
 - 攻击力：`SeatState.Attack`（英雄 `HeroDamage` / 怪物 `MonsterDamage`）。
-- `BaseChips`：亮出三张 `ChipValue` 之和（A=11，J/Q/K=10，2～10 为面值）。
+- 牌面点数不再默认进伤害。第一位/第二位/第三位/三花聚顶按亮出牌槽位把 `ChipValue` 加进遗物攻击；回旋刃为 `BaseChips × Value`。
 - 遗物加成是 **加在牌型倍率上**，不是再乘一层。金花 2.5、白银法杖 +2 → `30 × (2.5+2) = 135`，不是 `30 × 2.5 × 3`。
-- 燧石：总倍率 `× (1 + BossEntry Value[0])`（当前表为 ×0.5）。怪物没有遗物加成，只吃燧石。只改倍率，不改 `BaseChips`。
+- 燧石：总倍率 `× (1 + BossEntry Value[0])`（当前表为 ×0.5）。怪物没有遗物加成，只吃燧石。
 - 结果 `Math.Round` 后至少为 1。
 
 牌型基础倍率（`HandScoreConfig.BasicMagnification`，比牌用 `Level`）：
@@ -107,6 +107,7 @@
 | Type | 行为 |
 |------|------|
 | 花色 Attack（老花眼金花被改花色的牌真实+展示都算）、牌型 Attack、SpecialEightCard、DoubleCardAttack | 与既有结算相同 |
+| CardProvideAttack | `Value[]` 为 1-based 亮出牌槽位（左到右）；每张加 `ChipValueOf`（第一位/第二位/第三位/三花聚顶） |
 | HeadCardAttack / ACardAttack | 人头 / 每张 A |
 | TheSwordOfVictory | 未亮出 2 张里 `ChipValue` 最大的那张（表 Value=0 时按 ×1） |
 | ConsumeFundsGetAttack | `floor(本局花费金币 / Value)`（Value 为每 +1 攻击所需金币；卖掉不加也不扣花费） |
@@ -210,10 +211,10 @@
 
 ```
 [Game] 伤害 平凡之人→敌人A | 金花 梅花10梅花7梅花6
-  攻击7 + 遗物攻8 (致胜之剑+8) + 天赋攻3 (2点精通+3) + 点数23 = 41 | 牌型x2.5 + 遗物+2 (白银法杖+2) 天赋+0.2 (好兆头+0.2) | 燧石x1 | 倍率x4.7
+  攻击7 + 遗物攻8 (致胜之剑+8) + 天赋攻3 (2点精通+3) = 18 | 牌型x2.5 + 遗物+2 (白银法杖+2) 天赋+0.2 (好兆头+0.2) | 燧石x1 | 倍率x4.7
   未亮出 红桃A黑桃2 | 搓牌已用1 剩余2 透视1 替换1 | 幸运七x0
-  天赋伤害+18 (2点精通+3, 好兆头+0.2)
-  41 x 4.7 = 193 | 天赋伤害+18
+  天赋伤害+17 (2点精通+3, 好兆头+0.2)
+  18 x 4.7 = 85 | 天赋伤害+17
 ```
 
 另外只在有情况时打：

@@ -19,8 +19,8 @@
   → 开牌后用这 3 张，按上场顺序与每名存活敌人逐个比牌
       敌人从 5 张里自动选出不超过本关 `MonsterCardHandScoreLevelLimit` 的最大 3 张牌型，选中的牌朝玩家方向移开
   → 双方亮牌，按炸金花比大小
-      赢：玩家按 (攻击力 + 牌面点数) × (牌型倍率 + 遗物加成) 打该怪物
-      输：该怪物按 (攻击力 + 牌面点数) × 牌型倍率 打玩家
+      赢：玩家按 (攻击力 + 遗物/天赋攻击加成) × (牌型倍率 + 遗物加成) 打该怪物
+      输：该怪物按 攻击力 × 牌型倍率 打玩家
   → 打完所有存活敌人
   → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
   → 打完该难度：BattleResultPopup 成功；阵亡：BattleResultPopup 失败（可复活）
@@ -112,10 +112,10 @@
 ## 6. 伤害
 
 ```
-伤害 = (攻击力 + 牌面点数 BaseChips) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
+伤害 = (攻击力 + 遗物攻击加成 + 天赋攻击加成) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
 ```
 
-攻击力进关时从配置写入 `SeatState.Attack`，本关内不随扣血变化。`BaseChips` 为亮出三张牌的 `ChipValue` 全加（A=11，J/Q/K=10，2~10 为面值）。
+攻击力进关时从配置写入 `SeatState.Attack`，本关内不随扣血变化。牌面点数不再默认进伤害，由指定圣物（第一位/第二位/第三位/三花聚顶/回旋刃等）加成。`ChipValue`：A=11，J/Q/K=10，2~10 为面值。
 
 | 牌型 | 配置 Type | Level | 基础倍率 |
 |------|-----------|-------|----------|
@@ -141,7 +141,7 @@
 
 ## 8. 牌型
 
-豹子 > 顺金 > 顺子 > 金花 > 对子 > 散牌（`HandScoreConfig.Level`）。同牌型比点数（比牌 `RankKey`：A=14）。伤害用的 `ChipValue`：A=11，J/Q/K=10，2~10 为面值。这是牌力数值，不是货币。
+豹子 > 顺金 > 顺子 > 金花 > 对子 > 散牌（`HandScoreConfig.Level`）。同牌型比点数（比牌 `RankKey`：A=14）。指定圣物把 `ChipValue` 加进攻击：A=11，J/Q/K=10，2~10 为面值。这是牌力数值，不是货币。
 
 亮牌顺序（单挑）：先亮敌人，再亮玩家。赢家手牌高亮。
 
@@ -203,7 +203,7 @@
 2. 发牌后直接看牌，不要再露出闷牌 / 看牌。
 3. 开牌前点选 3 张牌（或用技能），不要走跟注 / 加注 / 弃牌。
 4. 开牌后必须按敌人顺序逐个比，不要全员一起摊牌后点选。
-5. 伤害用 `(攻击力 + BaseChips) × (HandScoreConfig 倍率 + 遗物加成)`，遗物是加在倍率上，不要再乘一层。细则见 [`RelicMechanics.md`](RelicMechanics.md)。
+5. 伤害用 `(攻击力 + 遗物攻击加成) × (HandScoreConfig 倍率 + 遗物加成)`，遗物是加在倍率上，不要再乘一层。牌面点数只通过指定圣物进入攻击。细则见 [`RelicMechanics.md`](RelicMechanics.md)。
 6. 玩家 HP / 攻击力读 `HeroConfig`，怪物 HP / 攻击力读 `MonsterConfig`。
 7. `HandScore.BaseChips` / `Card.ChipValue` 是牌力，不是货币。
 8. 玩家和敌人都发 5 张；开牌各用 3 张（玩家点选，敌人自动选不超过本关顺位上限的最大牌型）。

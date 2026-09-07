@@ -276,7 +276,8 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 牌型评估结果。Level 决定大小，Type 只是牌型身份，Keys 拆同分；BaseChips 为牌面点数，参与攻击力结算。
+    /// 牌型评估结果。Level 决定大小，Type 只是牌型身份，Keys 拆同分。
+    /// BaseChips 为牌面点数，不再默认进伤害，由指定圣物加成。
     /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
@@ -889,11 +890,10 @@ namespace App.Game
             return Math.Max(1, (int)Math.Round(value));
         }
 
-        /// <summary>伤害 = (攻击力 + 牌面点数) × 总倍率（牌型倍率 + 遗物加成）。</summary>
-        public static int ComputeAttackDamage(int attack, int cardPoints, float magnification)
+        /// <summary>伤害 = 攻击力 × 总倍率（牌型倍率 + 遗物加成）。</summary>
+        public static int ComputeAttackDamage(int attack, float magnification)
         {
-            var effectiveAttack = Math.Max(0, attack) + Math.Max(0, cardPoints);
-            var value = effectiveAttack * Math.Max(0f, magnification);
+            var value = Math.Max(0, attack) * Math.Max(0f, magnification);
             return Math.Max(1, (int)Math.Round(value));
         }
 

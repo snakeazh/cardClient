@@ -4,11 +4,12 @@ using App.Config;
 
 namespace App.Game
 {
-    /// <summary>本手结算上下文：未亮出牌、搓牌次数、幸运七掷骰等。不要只靠 HandScore。</summary>
+    /// <summary>本手结算上下文：亮出/未亮出牌、搓牌次数、幸运七掷骰等。不要只靠 HandScore。</summary>
     public readonly struct RelicCombatContext
     {
         public RelicCombatContext(
             Card[] unshown,
+            Card[] shown,
             int rubsUsedThisHand,
             bool rubbedThisHand,
             int peekLeft,
@@ -18,6 +19,7 @@ namespace App.Game
             bool treatAllAsFace)
         {
             Unshown = unshown ?? Array.Empty<Card>();
+            Shown = shown ?? Array.Empty<Card>();
             RubsUsedThisHand = Math.Max(0, rubsUsedThisHand);
             RubbedThisHand = rubbedThisHand;
             PeekLeft = Math.Max(0, peekLeft);
@@ -28,6 +30,8 @@ namespace App.Game
         }
 
         public Card[] Unshown { get; }
+        /// <summary>亮出牌，手牌槽位从左到右，与 CopySelectedCards 一致。</summary>
+        public Card[] Shown { get; }
         public int RubsUsedThisHand { get; }
         public bool RubbedThisHand { get; }
         public int PeekLeft { get; }
@@ -37,7 +41,7 @@ namespace App.Game
         public bool TreatAllAsFace { get; }
 
         public static RelicCombatContext Empty { get; } = new RelicCombatContext(
-            Array.Empty<Card>(), 0, false, 0, 0, 0, 0, false);
+            Array.Empty<Card>(), Array.Empty<Card>(), 0, false, 0, 0, 0, 0, false);
     }
 
     /// <summary>
@@ -450,6 +454,7 @@ namespace App.Game
             RunState run,
             HandScore score,
             Card[] unshown,
+            Card[] shown,
             int rubsUsedThisHand,
             bool rubbedThisHand,
             Random rng)
@@ -475,6 +480,7 @@ namespace App.Game
 
             return new RelicCombatContext(
                 unshown,
+                shown,
                 rubsUsedThisHand,
                 rubbedThisHand,
                 run != null ? Math.Max(0, run.PeekGoodCharges) : 0,
@@ -704,9 +710,39 @@ namespace App.Game
                     return SumRankAttackForever(run, score);
                 case MechanismType.SpecialSevenCardAttack:
                     return ctx.LuckySevenHits * value;
+                case MechanismType.CardProvideAttack:
+                    return SumCardProvideAttack(entry, run, ctx);
                 default:
                     return 0f;
             }
+        }
+
+        private static float SumCardProvideAttack(RelicEntryConfig entry, RunState run, RelicCombatContext ctx)
+        {
+            if (entry?.Value == null || ctx.Shown == null)
+            {
+                return 0f;
+            }
+
+            var extra = 0f;
+            for (var i = 0; i < entry.Value.Length; i++)
+            {
+                var index = (int)Math.Round(entry.Value[i]) - 1;
+                if (index < 0 || index >= ctx.Shown.Length)
+                {
+                    continue;
+                }
+
+                var card = ctx.Shown[index];
+                if (!card.IsValid)
+                {
+                    continue;
+                }
+
+                extra += BossMechanics.ChipValueOf(run, card);
+            }
+
+            return extra;
         }
 
         private static float SumRankAttackForever(RunState run, HandScore score)

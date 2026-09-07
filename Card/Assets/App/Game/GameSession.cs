@@ -11,7 +11,7 @@ using Framework.Log;
 namespace App.Game
 {
     /// <summary>
-    /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → (攻击力+牌面点数)×牌型倍率结算伤害。
+    /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → 攻击力×牌型倍率结算伤害。
     /// 敌人座位固定 3 个，人格在 <see cref="CreateSeat"/> 绑定，BOSS 关覆盖成 Expert。
     /// </summary>
     public sealed class GameSession
@@ -1429,6 +1429,7 @@ namespace App.Game
                     Run,
                     score,
                     CollectUnshownCards(attacker),
+                    CollectShownCards(attacker),
                     _rubsUsedThisHand,
                     _rubbedThisHand,
                     _rng);
@@ -1447,12 +1448,10 @@ namespace App.Game
             var totalMag = (mag + extra) * flint;
             var relicMag = (mag + relicExtra) * flint;
             var atk = attacker.Attack + attackExtra;
-            // BaseChips：亮出三张牌 ChipValue 全加（A=11），加在配置攻击力上再乘（牌型+遗物）倍率。
-            var damage = HandEvaluator.ComputeAttackDamage(atk, score.BaseChips, totalMag);
+            var damage = HandEvaluator.ComputeAttackDamage(atk, totalMag);
             var formulaDamage = damage;
             var withoutTalent = HandEvaluator.ComputeAttackDamage(
                 attacker.Attack + relicAttack,
-                score.BaseChips,
                 relicMag);
             var dmgPercent = 0f;
             var crit = false;
@@ -1652,8 +1651,7 @@ namespace App.Game
             bool execute)
         {
             var atk = Math.Max(0, attacker.Attack);
-            var chips = Math.Max(0, score.BaseChips);
-            var effective = atk + attackExtra + chips;
+            var effective = atk + attackExtra;
             var vs = defender != null ? $"→{defender.Name}" : string.Empty;
             var beats = score.BeatsAll ? " 通杀" : string.Empty;
             var cards = FormatUsedCards(score);
@@ -1765,7 +1763,7 @@ namespace App.Game
             AppLog.Info(
                 LogChannel.Game,
                 $"伤害 {attacker.Name}{vs} | {HandEvaluator.TypeName(score.Type)}{beats} {cards}\n" +
-                $"  攻击{atk}{attackRelic} + 点数{chips} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
+                $"  攻击{atk}{attackRelic} = {effective} | 牌型x{mag} + {relicText} | 燧石x{flint} | 倍率x{totalMag}\n" +
                 contextLine +
                 talentLine +
                 resultLine);
@@ -4211,6 +4209,16 @@ namespace App.Game
             }
 
             return picked.ToArray();
+        }
+
+        private Card[] CollectShownCards(SeatState seat)
+        {
+            if (seat?.Hand == null)
+            {
+                return Array.Empty<Card>();
+            }
+
+            return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);
         }
 
         private Card[] CollectUnshownCards(SeatState seat)

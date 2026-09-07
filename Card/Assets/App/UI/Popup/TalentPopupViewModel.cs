@@ -89,7 +89,8 @@ namespace App.UI.Popup
             return item == null ? Task.CompletedTask : OpenDetail(item.Snapshot.TalentId);
         }
 
-        public async Task OpenDetail(int talentId)
+        /// <param name="reward">抽卡获得入口：隐藏左右切换、显示恭喜获得图。</param>
+        public async Task OpenDetail(int talentId, bool reward = false)
         {
             if (_talent.GetLevel(talentId) <= 0)
             {
@@ -100,7 +101,7 @@ namespace App.UI.Popup
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(TalentDetailViewModel));
                 var vm = (TalentDetailViewModel)_ui.Registry.CreateViewModel(registration);
-                vm.Setup(talentId);
+                vm.Setup(talentId, reward);
                 // 详情页看广告升级后刷新列表（等级角标、解锁染色）
                 vm.Upgraded += OnDetailUpgraded;
                 await _ui.Open(vm);
@@ -155,7 +156,7 @@ namespace App.UI.Popup
             _talent.Add(talentId);
             RebuildItems();
             ListVersion.Value++;
-            _ = OpenDetail(talentId);
+            _ = OpenDetail(talentId, reward: true);
         }
 
         private void RebuildItems()

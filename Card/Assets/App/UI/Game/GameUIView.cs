@@ -14,6 +14,7 @@ using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using HandType = App.Game.HandType;
 
@@ -65,6 +66,9 @@ namespace App.UI
         private Transform _winTipTemplate;
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
+        private bool _shownPeekGoodTip;
+        private Coroutine _peekHoldCo;
+        private bool _peekHoldFired;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -152,6 +156,7 @@ namespace App.UI
             }
 
             UnregisterGuideTargets();
+            StopPeekHold();
 
             _peekGoodArmedSub?.Dispose();
             _peekGoodArmedSub = null;
@@ -532,8 +537,9 @@ namespace App.UI
                     PlaceHpAtTarget(session.AttackVisualSlot);
                 }
 
-                TryDissolveIfLethal(session);
                 session.ApplyPendingAttackHits();
+                TryDissolveIfLethal(session);
+                session.NotifyUi();
             };
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };
             Action onDone = () =>
@@ -561,35 +567,39 @@ namespace App.UI
                 return;
             }
 
-            var damage = session.IncomingAttack
-                ? Math.Max(1, session.TakenDamage)
-                : Math.Max(1, session.AttackDamage);
-            if (session.IncomingAttack)
+            if (session.Player != null && session.Player.Hp <= 0)
             {
-                if (session.Player != null && session.Player.Hp <= damage)
-                {
-                    _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
-                    ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
-                }
-
-                return;
+                _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
+                ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
             }
 
-            var target = session.EnemyAtVisualSlot(session.AttackVisualSlot);
-            if (target != null && target.Hp <= damage)
+            var mainSlot = session.AttackVisualSlot;
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
             {
-                var item = AttackItemAtSlot(session.AttackVisualSlot);
-                _attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
-                if (item != null)
+                var enemy = session.EnemyAtVisualSlot(slot);
+                if (enemy == null || enemy.Hp > 0)
+                {
+                    continue;
+                }
+
+                var item = AttackItemAtSlot(slot);
+                _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (slot == mainSlot || _waitLethalItem == null)
                 {
                     _waitLethalItem = item;
-                    ScheduleDeathDissolve(item, hideWhenDone: true);
                 }
+
+                ScheduleDeathDissolve(item, hideWhenDone: true);
             }
         }
 
         /// <summary>
-        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。受击开始就会扣血，
+        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。扣血后 Hp 为 0 才预约。
         /// ShowEnemy 立刻翻 false —— BindEnemyVisible 得让位给这里，否则会抢在延迟结束前把卡溶掉。
         /// 怪溶完要隐藏节点，玩家卡留着。
         /// </summary>
@@ -657,19 +667,44 @@ namespace App.UI
 
         private bool IsWaitingLethalDissolve()
         {
-            if (_waitLethalItem == null)
+            foreach (var pair in _deathDissolves)
             {
-                return false;
+                if (pair.Key == _playerItem)
+                {
+                    continue;
+                }
+
+                if (pair.Value != null && pair.Value.IsActive())
+                {
+                    return true;
+                }
             }
 
-            if (_deathDissolves.TryGetValue(_waitLethalItem, out var tween) &&
-                tween != null &&
-                tween.IsActive())
+            if (IsDissolvePlaying(_waitLethalItem))
             {
                 return true;
             }
 
-            var dissolve = _waitLethalItem.GetComponent<UiDissolve>();
+            for (var i = 0; i < _enemyItems.Length; i++)
+            {
+                var item = _enemyItems[i];
+                if (item != null && item != _waitLethalItem && IsDissolvePlaying(item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsDissolvePlaying(PlayerItem item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            var dissolve = item.GetComponent<UiDissolve>();
             return dissolve != null && dissolve.IsPlaying;
         }
 
@@ -1266,6 +1301,7 @@ namespace App.UI
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
             BindPeekGoodArmed();
+            BindPeekGoodHoldTip();
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
             BindBtn("TiHuanGood", ViewModel.TiHuanGoodCommand);
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
@@ -1909,6 +1945,7 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
+            _shownPeekGoodTip = false;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -2290,6 +2327,95 @@ namespace App.UI
             }
 
             _peekGoodBtn.colors = colors;
+        }
+
+        private void BindPeekGoodHoldTip()
+        {
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            var trigger = _peekGoodBtn.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = _peekGoodBtn.gameObject.AddComponent<EventTrigger>();
+            }
+
+            AddEventTrigger(trigger, EventTriggerType.PointerDown, OnPeekGoodPointerDown);
+            AddEventTrigger(trigger, EventTriggerType.PointerUp, OnPeekGoodPointerUp);
+            AddEventTrigger(trigger, EventTriggerType.PointerExit, OnPeekGoodPointerUp);
+        }
+
+        private static void AddEventTrigger(
+            EventTrigger trigger,
+            EventTriggerType type,
+            UnityEngine.Events.UnityAction<BaseEventData> action)
+        {
+            var entry = new EventTrigger.Entry { eventID = type };
+            entry.callback.AddListener(action);
+            trigger.triggers.Add(entry);
+        }
+
+        private void OnPeekGoodPointerDown(BaseEventData _)
+        {
+            _peekHoldFired = false;
+            StopPeekHold();
+            _peekHoldCo = StartCoroutine(PeekGoodHoldRoutine());
+        }
+
+        private void OnPeekGoodPointerUp(BaseEventData data)
+        {
+            StopPeekHold();
+            if (_peekHoldFired && data is PointerEventData pointer)
+            {
+                pointer.eligibleForClick = false;
+            }
+        }
+
+        private IEnumerator PeekGoodHoldRoutine()
+        {
+            yield return new WaitForSecondsRealtime(0.45f);
+            _peekHoldFired = true;
+            _peekHoldCo = null;
+            _ = ShowPeekGoodTip();
+        }
+
+        private void StopPeekHold()
+        {
+            if (_peekHoldCo == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_peekHoldCo);
+            _peekHoldCo = null;
+        }
+
+        private async Task ShowPeekGoodTip()
+        {
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            if (_shownPeekGoodTip && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _shownEquipRelicId = 0;
+            _shownRoundBuffId = 0;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            await PresentItemTip(
+                _peekGoodBtn.transform,
+                "搓牌",
+                "点选一张手牌，将其替换为牌堆中的一张新牌。",
+                showUse: false,
+                placeRight: false);
+            _shownPeekGoodTip = true;
         }
 
         private static GameObject EnsureSkillArmedGlow(Transform button)

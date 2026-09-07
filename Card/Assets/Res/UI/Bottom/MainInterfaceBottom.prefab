@@ -609,6 +609,7 @@ GameObject:
   - component: {fileID: 7380900260538544437}
   - component: {fileID: 4917459268025807365}
   - component: {fileID: 8647667307174308071}
+  - component: {fileID: 7300000000000000000}
   m_Layer: 0
   m_Name: TalentBtn
   m_TagString: Untagged
@@ -750,6 +751,7 @@ GameObject:
   - component: {fileID: 6087097568082406661}
   - component: {fileID: 9185481552174919027}
   - component: {fileID: 7073512370827564496}
+  - component: {fileID: 7300000000000000001}
   m_Layer: 0
   m_Name: AdventureBtn
   m_TagString: Untagged
@@ -891,6 +893,7 @@ GameObject:
   - component: {fileID: 939271897196039466}
   - component: {fileID: 5002504639023393082}
   - component: {fileID: 7342439196826375109}
+  - component: {fileID: 7300000000000000002}
   m_Layer: 0
   m_Name: CollectBtn
   m_TagString: Untagged
@@ -1282,3 +1285,45 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7300000000000000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5097800180452471464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53e9f7bb3bfa4842b4f511d22dbea58b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UnselectedAlpha: 0.5
+  Label: {fileID: 0}
+--- !u!114 &7300000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5897465708302183174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53e9f7bb3bfa4842b4f511d22dbea58b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UnselectedAlpha: 0.5
+  Label: {fileID: 0}
+--- !u!114 &7300000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6034101324386046893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53e9f7bb3bfa4842b4f511d22dbea58b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UnselectedAlpha: 0.5
+  Label: {fileID: 0}

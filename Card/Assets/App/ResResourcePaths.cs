@@ -24,7 +24,9 @@ namespace App.Resources
         public const string TalentDetail = "UI/Popup/TalentDetail";
         public const string TalentRulesPop = "UI/Popup/TalentRulesPop";
         public const string ShopDetail = "UI/Top/ShopDetail";
+        public const string CommonTop = "UI/Top/CommonTop";
         public const string RemainListPop = "UI/Popup/RemainListPop";
+        public const string GamePopupInfo = "UI/Popup/GamePopupInfo";
         public const string EnergyPopup = "UI/Popup/EnergyPopup";
         public const string StaminaPurchasePop = "UI/Popup/StaminaPurchasePop";
         public const string ToastPanel = "UI/Popup/ToastPanel";

@@ -25,7 +25,9 @@ namespace App.UI
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
+        private bool _infoPopupOpen;
         private bool _settleShownThisShop;
+        private string _shownInfoKey;
 
         public GameTableViewModel(
             GameSession session,
@@ -273,6 +275,7 @@ namespace App.UI
 
             TryPresentShopPopup();
             TryPresentResultPopup();
+            TryPresentGamePopupInfo();
             ShowAttack.Value = !Session.SequentialCompare &&
                                (Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget);
             if (!Session.AttackPlaying)
@@ -324,6 +327,7 @@ namespace App.UI
 
         protected override async Task OnOpen(object args)
         {
+            _shownInfoKey = null;
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
@@ -407,6 +411,8 @@ namespace App.UI
                 _resultPopupOpen = false;
                 SetShowBackBtn(!_shopPopupOpen);
             }
+
+            TryPresentGamePopupInfo();
         }
 
         private async Task PresentResultThenLeaveOrRetry()
@@ -471,23 +477,59 @@ namespace App.UI
             }
 
             TryPresentResultPopup();
+            TryPresentGamePopupInfo();
         }
 
-        private async Task<BattleResultAction> ShowBattleResultAsync()
+        private async Task<BattleResultAction> ShowBattleResultAsync(bool forfeitNoRevive = false)
         {
             var registration = _ui.Registry.GetByViewModelType(typeof(BattleResultPopupViewModel));
             var popup = (BattleResultPopupViewModel)_ui.Registry.CreateViewModel(registration);
-            return await _ui.Dialogs.ShowCustomAsync<BattleResultPopupViewModel, BattleResultAction>(popup);
+            return await _ui.Dialogs.ShowCustomAsync<BattleResultPopupViewModel, BattleResultAction>(
+                popup,
+                forfeitNoRevive);
+        }
+
+        private async Task<bool> ShowCommonTopAsync()
+        {
+            var registration = _ui.Registry.GetByViewModelType(typeof(CommonTopViewModel));
+            var popup = (CommonTopViewModel)_ui.Registry.CreateViewModel(registration);
+            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup);
         }
 
         private async void OnBack()
         {
-            if (_ui == null)
+            if (_ui == null || _resultPopupOpen || _shopPopupOpen)
             {
                 return;
             }
 
-            await LeaveToHome();
+            _resultPopupOpen = true;
+            SetShowBackBtn(false);
+            try
+            {
+                var confirmed = await ShowCommonTopAsync();
+                if (!confirmed || !IsOpen)
+                {
+                    return;
+                }
+
+                var action = await ShowBattleResultAsync(forfeitNoRevive: true);
+                if (action == BattleResultAction.Again)
+                {
+                    return;
+                }
+
+                await LeaveToHome();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+            finally
+            {
+                _resultPopupOpen = false;
+                SetShowBackBtn(!_shopPopupOpen);
+            }
         }
 
         private async Task LeaveToHome()
@@ -776,6 +818,64 @@ namespace App.UI
         private static int SkillChargeMax(int baseline, float extra)
         {
             return Math.Max(0, baseline + (int)Math.Round(extra));
+        }
+
+        private async void TryPresentGamePopupInfo()
+        {
+            if (!IsOpen ||
+                _infoPopupOpen ||
+                _shopPopupOpen ||
+                _resultPopupOpen ||
+                _ui == null)
+            {
+                return;
+            }
+
+            if (Session.Phase == GamePhase.Shop ||
+                Session.Phase == GamePhase.RunComplete ||
+                Session.Phase == GamePhase.StageFail)
+            {
+                return;
+            }
+
+            var entries = BossMechanics.ResolveAll(Session.Run);
+            if (entries.Count == 0)
+            {
+                return;
+            }
+
+            var key = BuildInfoKey(Session.Run);
+            if (string.IsNullOrEmpty(key) || key == _shownInfoKey)
+            {
+                return;
+            }
+
+            _shownInfoKey = key;
+            _infoPopupOpen = true;
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(GamePopupInfoViewModel));
+                var popup = (GamePopupInfoViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(popup);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+            finally
+            {
+                _infoPopupOpen = false;
+            }
+        }
+
+        private static string BuildInfoKey(RunState run)
+        {
+            if (run?.LevelEntryIds == null || run.LevelEntryIds.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return run.Stage + ":" + string.Join(",", run.LevelEntryIds);
         }
 
         private async void OpenRemainList()

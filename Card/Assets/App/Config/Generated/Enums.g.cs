@@ -365,6 +365,11 @@ namespace App.Config
         /// </summary>
         CriticalNum = 21,
 
+        /// <summary>
+        /// 三花聚顶
+        /// </summary>
+        ThreeCardAttack = 22,
+
     }
 
     /// <summary>

@@ -1316,7 +1316,7 @@
     "MechanismId": [
       30032
     ],
-    "UnlockConditionId": 0,
+    "UnlockConditionId": 11005,
     "UseType": 0,
     "Desc": "亮出的每张牌都提供其点数对应的攻击力加成"
   },

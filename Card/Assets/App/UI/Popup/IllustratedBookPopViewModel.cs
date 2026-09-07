@@ -30,6 +30,9 @@ namespace App.UI.Popup
         public string Icon;
         public bool Unlocked;
         public string UnlockTip;
+
+        /// <summary>怪物页分区用（Boss 进 UltimateGrid，Normal 进 RareGrid）；收藏/遗物页未赋值。</summary>
+        public MonsterType MonsterType;
     }
 
     /// <summary>
@@ -68,6 +71,7 @@ namespace App.UI.Popup
             ShowCollect = new ObservableProperty<bool>(true);
             ShowRelic = new ObservableProperty<bool>(false);
             ShowMonster = new ObservableProperty<bool>(false);
+            ShowTitleBar = new ObservableProperty<bool>(true);
             ShowTip = new ObservableProperty<bool>(false);
             CurItemNum = new ObservableProperty<string>("0/0");
             TipTitle = new ObservableProperty<string>();
@@ -103,6 +107,9 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowRelic { get; }
 
         public ObservableProperty<bool> ShowMonster { get; }
+
+        /// <summary>界面顶部标题横幅（BG/TitleBg）：怪物页隐藏（分区横幅自带标题），其余页签显示。</summary>
+        public ObservableProperty<bool> ShowTitleBar { get; }
 
         public ObservableProperty<bool> ShowTip { get; }
 
@@ -270,6 +277,7 @@ namespace App.UI.Popup
             ShowCollect.Value = tab == IllustratedBookTab.Collect;
             ShowRelic.Value = tab == IllustratedBookTab.Relic;
             ShowMonster.Value = tab == IllustratedBookTab.Monster;
+            ShowTitleBar.Value = tab != IllustratedBookTab.Monster;
             RefreshCount();
         }
 
@@ -377,7 +385,8 @@ namespace App.UI.Popup
                     Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
                     Desc = row.Desc ?? string.Empty,
                     Icon = row.Icon,
-                    Unlocked = true
+                    Unlocked = true,
+                    MonsterType = row.Type
                 });
             }
 

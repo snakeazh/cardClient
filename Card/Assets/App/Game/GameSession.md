@@ -42,7 +42,7 @@ StartNewRun / Continue
   → WaitingOpen：点选 3 张，或长按搓牌 / 透视 / 替换
   → RequestShowdown（开牌）
       先 ResetEnemyOpenSelection（清掉透视时的 5 张全选）
-      再对当前敌人 LockBestOpenCardsIfEnemy（锁最大 3 张）
+      再对当前敌人 LockBestOpenCardsIfEnemy（锁不超过本关上限的最大 3 张）
       RevealPlaySerial++ ，牌桌播翻牌
   → WaitingAttack → 受击开始扣血 → 演出结束打下一个
   → 下一只敌人，或 RoundSettle / Shop / StageFail / RunComplete
@@ -86,7 +86,7 @@ StartNewRun / Continue
    - 敌人 5 张全部 `CardSelected = true`（先抬起）。
    - 写入 `seat.PeekedType`（牌型名），扣 1 次。
 4. 牌桌：先播抬牌（`SelectLiftDuration`），抬完再 `CardItem.SetBackSeeThrough(true)`，**不翻牌**。
-5. 开牌时 `ResetEnemyOpenSelection()` 清掉 5 张全选，再 `LockBestOpenCardsIfEnemy` 只锁最大牌型的 3 张并翻面亮牌（不抬起）。
+5. 开牌时 `ResetEnemyOpenSelection()` 清掉 5 张全选，再 `LockBestOpenCardsIfEnemy` 只锁不超过本关 `MonsterCardHandScoreLevelLimit` 的最大 3 张并翻面亮牌（不抬起）。
 
 同一座位本手只能透视一次。
 
@@ -95,7 +95,7 @@ StartNewRun / Continue
 ## 注意
 
 - 不要在透视阶段调用 `LockBestOpenCardsIfEnemy`，否则 5 张全选会被改成 3 张。
-- `EvaluateSeat` 在敌人未锁 3 张时会自己枚举最大牌型，透视文案仍准确。
+- `EvaluateSeat` 在敌人未锁 3 张时会自己枚举不超过本关上限的最大牌型，透视文案仍准确。
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
 - 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
 - 天赋养成走 `ITalentService`；局内效果走 `TalentMechanics`（`Value × 等级`）。见 [`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。

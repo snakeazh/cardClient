@@ -21,7 +21,7 @@ GameUI
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
   horEquipBtns2           ← yiwuBtn 遗物列表；ruleBtn 点出 WinTip 赔率表（一直可点）
-  cardinfoItem            ← 亮牌后玩家牌型图标
+  cardinfoItem            ← 玩家牌型图标（选满 3 张即预览；亮牌后仍显示）
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
   cardinfoEnemyNum        ← 敌人倍率数字（嵌套 cardinfoItem 后改名；WinTip 模板仍叫 cardtypeEnemyNum）
@@ -35,13 +35,13 @@ GameUI
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 
-`cardinfoItem` / `cardinfoEnemyItem` 只在亮牌/比牌/攻击/本手结束时显示。透视未亮牌不显示。
+`cardinfoItem` 在开牌前选满 3 张时就显示当前牌型，亮牌/比牌/攻击/本手结束时继续显示。`cardinfoEnemyItem` 只在亮牌结算阶段显示。透视未亮牌不显示敌人牌型。
 
 世界牌在 `GameHud`：`mineNode` 玩家 5 张，`otherNode` 只画 `GameSession.DisplayedEnemy` 的 5 张（三人仍各有一手数据）。
 
 | 节点 | 用途 |
 |------|------|
-| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType`。按 `HandScoreConfig.Level` 开特效：≥3 启动 `UiFlowLight`；5 显示 `PokerHandStraightFlush01`；6 显示 `PokerHandBomb01`；其余不扫光、不播粒子 |
+| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType`。按 `HandScoreConfig.Level` 开特效：>3 启动 `UiFlowLight`；5 显示 `PokerHandStraightFlush01`；6 显示 `PokerHandBomb01`；其余不扫光、不播粒子 |
 | `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup` |
 | `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType`，特效规则与 `cardinfoItem` 相同 |
 | `cardinfoEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue`。绑定优先 `cardinfoEnemyNum`，兼容 `cardtypeEnemyNum` |
@@ -122,7 +122,7 @@ GameUI
 
 - 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
-- 玩家点桌上手牌选中/取消，选满 3 张才显示开战。
+- 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。
 - 敌人人物卡平时点击弹出 `ItemTip`；透视中点敌人走透视，不用于选攻击目标。
 - `player1` 是中心：只剩 1 个敌人就站中间；2 个时第一个开牌的站中间；3 个拼牌时当前对手站中间。

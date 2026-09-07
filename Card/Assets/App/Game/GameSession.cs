@@ -1263,7 +1263,7 @@ namespace App.Game
             RunNextCompare();
         }
 
-        /// <summary>结算前清掉透视时的 5 张全选，再由 LockBestOpenCardsIfEnemy 锁最大 3 张（翻面亮牌，不抬起）。</summary>
+        /// <summary>结算前清掉透视时的 5 张全选，再由 LockBestOpenCardsIfEnemy 锁不超过本关上限的最大 3 张（翻面亮牌，不抬起）。</summary>
         private void ResetEnemyOpenSelection()
         {
             if (Enemies == null)
@@ -2471,7 +2471,7 @@ namespace App.Game
             }
         }
 
-        /// <summary>开牌结算时为敌人锁定 5 选 3 的最大牌型（会先清掉透视时的全选）。</summary>
+        /// <summary>开牌结算时为敌人锁定 5 选 3 的最大牌型（受本关顺位上限约束；会先清掉透视时的全选）。</summary>
         private void LockBestOpenCardsIfEnemy(SeatState seat)
         {
             if (seat == null || seat.IsPlayer || seat.Hand == null)
@@ -2488,7 +2488,15 @@ namespace App.Game
                 banFaces,
                 GetHandEvalRules(seat),
                 banned2,
-                banned3);
+                banned3,
+                EnemyHandScoreLevelLimit());
+        }
+
+        /// <summary>本关敌人开牌最大牌型顺位。0 表示不限制。</summary>
+        private int EnemyHandScoreLevelLimit()
+        {
+            var snapshot = LevelSvc()?.Current;
+            return snapshot != null ? snapshot.MonsterCardHandScoreLevelLimit : 0;
         }
 
         /// <summary>评估座位牌型。BOSS 失效花色会先过滤玩家手牌。</summary>
@@ -4176,7 +4184,8 @@ namespace App.Game
                     banFaces,
                     rules,
                     banned2,
-                    banned3);
+                    banned3,
+                    EnemyHandScoreLevelLimit());
             }
 
             return HandEvaluator.CopySelectedCards(seat.Hand, seat.CardSelected);

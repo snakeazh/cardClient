@@ -741,7 +741,10 @@ namespace App.Game
             return HighCard(filtered);
         }
 
-        /// <summary>从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。</summary>
+        /// <summary>
+        /// 从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。
+        /// <paramref name="maxHandScoreLevel"/> &gt; 0 时只在该顺位及以下取最强；全部超限则取 Level 最低的一组。
+        /// </summary>
         public static HandScore SelectBestOpen(
             Card[] hand,
             bool[] selected,
@@ -750,7 +753,8 @@ namespace App.Game
             bool banFaces = false,
             HandEvalRules rules = default,
             Suit? bannedSuit2 = null,
-            Suit? bannedSuit3 = null)
+            Suit? bannedSuit3 = null,
+            int maxHandScoreLevel = 0)
         {
             if (selected != null)
             {
@@ -787,7 +791,7 @@ namespace App.Game
                         trio[1] = hand[j];
                         trio[2] = hand[k];
                         var score = Evaluate(trio, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
-                        if (!any || score.CompareTo(best) > 0)
+                        if (!any || IsBetterOpen(score, best, maxHandScoreLevel))
                         {
                             best = score;
                             bestI = i;
@@ -820,6 +824,29 @@ namespace App.Game
             return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
         }
 
+        /// <summary>
+        /// 有上限时优先 Level ≤ max 的组合；都超限则取更低 Level，同 Level 再比 kickers。
+        /// </summary>
+        private static bool IsBetterOpen(HandScore candidate, HandScore current, int maxHandScoreLevel)
+        {
+            if (maxHandScoreLevel > 0)
+            {
+                var candidateOk = candidate.Level <= maxHandScoreLevel;
+                var currentOk = current.Level <= maxHandScoreLevel;
+                if (candidateOk != currentOk)
+                {
+                    return candidateOk;
+                }
+
+                if (!candidateOk && candidate.Level != current.Level)
+                {
+                    return candidate.Level < current.Level;
+                }
+            }
+
+            return candidate.CompareTo(current) > 0;
+        }
+
         public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
         {
             if (hand == null || selected == null)
@@ -847,10 +874,11 @@ namespace App.Game
             bool banFaces = false,
             HandEvalRules rules = default,
             Suit? bannedSuit2 = null,
-            Suit? bannedSuit3 = null)
+            Suit? bannedSuit3 = null,
+            int maxHandScoreLevel = 0)
         {
             var flags = new bool[GameBalance.MaxCardsPerSeat];
-            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
+            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3, maxHandScoreLevel);
             return CopySelectedCards(hand, flags);
         }
 

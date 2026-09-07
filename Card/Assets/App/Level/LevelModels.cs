@@ -15,6 +15,7 @@ namespace App.Level
             int level,
             int getGold,
             int levelEntryNum,
+            int monsterCardHandScoreLevelLimit,
             IReadOnlyList<LevelMonster> monsters)
         {
             Id = id;
@@ -22,6 +23,7 @@ namespace App.Level
             Level = level;
             GetGold = getGold < 0 ? 0 : getGold;
             LevelEntryNum = levelEntryNum < 0 ? 0 : levelEntryNum;
+            MonsterCardHandScoreLevelLimit = monsterCardHandScoreLevelLimit < 0 ? 0 : monsterCardHandScoreLevelLimit;
             Monsters = monsters ?? Array.Empty<LevelMonster>();
             var hasBoss = false;
             for (var i = 0; i < Monsters.Count; i++)
@@ -47,6 +49,9 @@ namespace App.Level
 
         /// <summary>本关随机机制条数，来自 <see cref="LevelConfig.LevelEntryNum"/>。</summary>
         public int LevelEntryNum { get; }
+
+        /// <summary>敌人开牌最大牌型顺位，来自 <see cref="LevelConfig.MonsterCardHandScoreLevelLimit"/>。0 表示不限制。</summary>
+        public int MonsterCardHandScoreLevelLimit { get; }
 
         public bool HasBoss { get; }
 

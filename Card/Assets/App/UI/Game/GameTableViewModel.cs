@@ -593,10 +593,11 @@ namespace App.UI
         private void RefreshCardInfo()
         {
             IsHandSettling = ShouldShowCardInfo(Session);
-            if (!IsHandSettling || Session.Player == null)
+            var preview = ShouldShowPlayerHandPreview(Session);
+            if ((!IsHandSettling && !preview) || Session.Player == null)
             {
                 ShowCardInfo.Value = false;
-                if (!IsHandSettling)
+                if (!IsHandSettling && !preview)
                 {
                     CardTypeNum.Value = string.Empty;
                 }
@@ -616,6 +617,23 @@ namespace App.UI
                     session.Phase == GamePhase.Showdown ||
                     session.Phase == GamePhase.WaitingAttack ||
                     session.Phase == GamePhase.RoundSettle);
+        }
+
+        /// <summary>开牌前选满 3 张时预览玩家牌型；亮牌结算仍走 <see cref="ShouldShowCardInfo"/>。</summary>
+        public static bool ShouldShowPlayerHandPreview(GameSession session)
+        {
+            if (session?.Player == null || ShouldShowCardInfo(session))
+            {
+                return false;
+            }
+
+            if (session.Phase != GamePhase.WaitingOpen && session.Phase != GamePhase.WaitingRub)
+            {
+                return false;
+            }
+
+            return !session.Player.Folded &&
+                   session.Player.CountSelectedCards() == GameBalance.OpenHandSize;
         }
 
         public void ApplyCardType(

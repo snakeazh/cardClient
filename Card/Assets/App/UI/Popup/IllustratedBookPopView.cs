@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
@@ -20,6 +21,13 @@ namespace App.UI.Popup
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
     public sealed class IllustratedBookPopView : ViewBase<IllustratedBookPopViewModel>
     {
+        // 怪物页分区节点名：Boss 进 UltimateGrid（横幅 TitleBg），Normal 进 RareGrid；
+        // NormalBanner/NormalGrid 已在预制体隐藏，代码不再触碰
+        private const string UltimateBannerName = "TitleBg";
+        private const string UltimateGridName = "UltimateGrid";
+        private const string RareBannerName = "RareBanner";
+        private const string RareGridName = "RareGrid";
+
         private readonly List<ItemCard> _collectCards = new List<ItemCard>();
         private readonly List<ItemCard> _relicCards = new List<ItemCard>();
         private readonly List<PlayerItem> _monsterCards = new List<PlayerItem>();
@@ -58,6 +66,8 @@ namespace App.UI.Popup
             Binding.BindActive(UI.GetGameObject("CollectSCView"), ViewModel.ShowCollect);
             Binding.BindActive(UI.GetGameObject("RelicSCView"), ViewModel.ShowRelic);
             Binding.BindActive(UI.GetGameObject("MonsterSCView"), ViewModel.ShowMonster);
+            // 怪物页隐藏界面顶部标题横幅（分区横幅自带标题，UIReference 键由编辑器注册）
+            Binding.BindActive(UI.GetGameObject("TitleBg"), ViewModel.ShowTitleBar);
             BindTab(UI.Get<Toggle>("CollectToggle"), ViewModel.CollectOn, IllustratedBookTab.Collect);
             BindTab(UI.Get<Toggle>("RelicToggle"), ViewModel.RelicOn, IllustratedBookTab.Relic);
             BindTab(UI.Get<Toggle>("MonsterToggle"), ViewModel.MonsterOn, IllustratedBookTab.Monster);
@@ -141,22 +151,70 @@ namespace App.UI.Popup
             FitContentHeight(scroll, content, cards.Count);
         }
 
-        /// <summary>怪物页格子为 PlayerItem 敌人形态：enemycard 底图走 MonsterConfig.BaseMap/HealthBar，
-        /// 显示头像/名字；攻血数值走 tip 看，卡上不显示（SetAttack/SetHp 传 0 即整块隐藏）；未解锁置黑头像。</summary>
+        /// <summary>
+        /// 怪物页按 MonsterType 分两区（同天赋页格式：横幅 + Grid 交替，Content 由
+        /// VLayout+ContentSizeFitter 自适应高度）：Boss 进 UltimateGrid，Normal 进 RareGrid；
+        /// 对应类型没有怪物时连横幅一起隐藏。
+        /// </summary>
         private void FillMonsterList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
         {
             _monsterCards.Clear();
-            if (scroll == null || scroll.content == null || _monsterPrefab == null)
+            var content = scroll != null ? scroll.content : null;
+            if (content == null || _monsterPrefab == null)
             {
                 return;
             }
 
-            var content = scroll.content;
-            ClearContent(content);
+            var bosses = new List<IllustratedBookEntry>();
+            var normals = new List<IllustratedBookEntry>();
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].MonsterType == MonsterType.Boss)
+                {
+                    bosses.Add(entries[i]);
+                }
+                else
+                {
+                    normals.Add(entries[i]);
+                }
+            }
+
+            FillMonsterSection(content.Find(UltimateBannerName), content.Find(UltimateGridName), bosses);
+            FillMonsterSection(content.Find(RareBannerName), content.Find(RareGridName), normals);
+        }
+
+        /// <summary>对应类型没有怪物时连横幅一起隐藏；格子为 PlayerItem 敌人形态（enemycard 底图走
+        /// MonsterConfig.BaseMap/HealthBar，攻血块隐藏，点击打开详情），卡面 0.9 缩放沿旧版。</summary>
+        private void FillMonsterSection(Transform banner, Transform grid, List<IllustratedBookEntry> entries)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            var visible = entries.Count > 0;
+            if (banner != null)
+            {
+                banner.gameObject.SetActive(visible);
+            }
+
+            grid.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            for (var i = grid.childCount - 1; i >= 0; i--)
+            {
+                var child = grid.GetChild(i);
+                child.SetParent(null, false);
+                Destroy(child.gameObject);
+            }
+
             for (var i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i];
-                var go = Instantiate(_monsterPrefab, content, false);
+                var go = Instantiate(_monsterPrefab, grid, false);
                 go.name = entry.Tab + "_" + entry.Id;
                 go.SetActive(true);
                 go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
@@ -188,8 +246,6 @@ namespace App.UI.Popup
                 _entries[card] = entry;
                 _monsterCards.Add(card);
             }
-
-            FitContentHeight(scroll, content, _monsterCards.Count);
         }
 
         /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。</summary>

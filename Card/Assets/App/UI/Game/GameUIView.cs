@@ -14,6 +14,7 @@ using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using HandType = App.Game.HandType;
 
@@ -65,6 +66,9 @@ namespace App.UI
         private Transform _winTipTemplate;
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
+        private bool _shownPeekGoodTip;
+        private Coroutine _peekHoldCo;
+        private bool _peekHoldFired;
         private Canvas _hudCanvas;
         private readonly Vector3[] _equipTipCorners = new Vector3[4];
         private CameraShakeAnimator _cameraShake;
@@ -152,6 +156,7 @@ namespace App.UI
             }
 
             UnregisterGuideTargets();
+            StopPeekHold();
 
             _peekGoodArmedSub?.Dispose();
             _peekGoodArmedSub = null;
@@ -1266,6 +1271,7 @@ namespace App.UI
             BindBtn("AllInBtn", ViewModel.AllInCommand, ViewModel.ShowAllIn);
             BindBtn("PeekGood", ViewModel.PeekGoodCommand);
             BindPeekGoodArmed();
+            BindPeekGoodHoldTip();
             BindBtn("ChaKanGood", ViewModel.ChaKanGoodCommand);
             BindBtn("TiHuanGood", ViewModel.TiHuanGoodCommand);
             BindBtn("PeekBtn", ViewModel.RubCommand, ViewModel.ShowRub);
@@ -1909,6 +1915,7 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
+            _shownPeekGoodTip = false;
             _equipTipAnchor = null;
             if (_equipTip != null)
             {
@@ -2290,6 +2297,95 @@ namespace App.UI
             }
 
             _peekGoodBtn.colors = colors;
+        }
+
+        private void BindPeekGoodHoldTip()
+        {
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            var trigger = _peekGoodBtn.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = _peekGoodBtn.gameObject.AddComponent<EventTrigger>();
+            }
+
+            AddEventTrigger(trigger, EventTriggerType.PointerDown, OnPeekGoodPointerDown);
+            AddEventTrigger(trigger, EventTriggerType.PointerUp, OnPeekGoodPointerUp);
+            AddEventTrigger(trigger, EventTriggerType.PointerExit, OnPeekGoodPointerUp);
+        }
+
+        private static void AddEventTrigger(
+            EventTrigger trigger,
+            EventTriggerType type,
+            UnityEngine.Events.UnityAction<BaseEventData> action)
+        {
+            var entry = new EventTrigger.Entry { eventID = type };
+            entry.callback.AddListener(action);
+            trigger.triggers.Add(entry);
+        }
+
+        private void OnPeekGoodPointerDown(BaseEventData _)
+        {
+            _peekHoldFired = false;
+            StopPeekHold();
+            _peekHoldCo = StartCoroutine(PeekGoodHoldRoutine());
+        }
+
+        private void OnPeekGoodPointerUp(BaseEventData data)
+        {
+            StopPeekHold();
+            if (_peekHoldFired && data is PointerEventData pointer)
+            {
+                pointer.eligibleForClick = false;
+            }
+        }
+
+        private IEnumerator PeekGoodHoldRoutine()
+        {
+            yield return new WaitForSecondsRealtime(0.45f);
+            _peekHoldFired = true;
+            _peekHoldCo = null;
+            _ = ShowPeekGoodTip();
+        }
+
+        private void StopPeekHold()
+        {
+            if (_peekHoldCo == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_peekHoldCo);
+            _peekHoldCo = null;
+        }
+
+        private async Task ShowPeekGoodTip()
+        {
+            if (_peekGoodBtn == null)
+            {
+                return;
+            }
+
+            if (_shownPeekGoodTip && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _shownEquipRelicId = 0;
+            _shownRoundBuffId = 0;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            await PresentItemTip(
+                _peekGoodBtn.transform,
+                "搓牌",
+                "点选一张手牌，将其替换为牌堆中的一张新牌。",
+                showUse: false,
+                placeRight: false);
+            _shownPeekGoodTip = true;
         }
 
         private static GameObject EnsureSkillArmedGlow(Transform button)

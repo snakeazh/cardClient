@@ -796,6 +796,51 @@
     "Desc": "使用后,顺子牌型提供的倍率永久+1"
   },
   {
+    "Id": 233,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第一位",
+    "Icon": "StraightExperience",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      20033
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "亮牌时的第一张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 234,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第二位",
+    "Icon": "StraightExperience",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      20034
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "亮牌时的第二张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 235,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第三位",
+    "Icon": "StraightExperience",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      20035
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "亮牌时的第三张牌提供其点数对应的攻击力加成"
+  },
+  {
     "Id": 301,
     "Type": 3,
     "RefreshProbability": 0.2,
@@ -1259,6 +1304,21 @@
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,移除本关内的1条BOSS词缀效果"
+  },
+  {
+    "Id": 332,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "三花聚顶",
+    "Icon": "PurificationPotion",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30032
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "亮出的每张牌都提供其点数对应的攻击力加成"
   },
   {
     "Id": 401,

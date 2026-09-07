@@ -1213,6 +1213,11 @@ namespace App.Config
         /// </summary>
         GiantPotion = 152,
 
+        /// <summary>
+        /// 卡牌提供攻击力
+        /// </summary>
+        CardProvideAttack = 153,
+
         MaxHp = 1111,
 
         EveryRoundHpUp = 1112,

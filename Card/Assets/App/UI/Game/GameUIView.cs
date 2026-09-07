@@ -537,8 +537,9 @@ namespace App.UI
                     PlaceHpAtTarget(session.AttackVisualSlot);
                 }
 
-                TryDissolveIfLethal(session);
                 session.ApplyPendingAttackHits();
+                TryDissolveIfLethal(session);
+                session.NotifyUi();
             };
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };
             Action onDone = () =>
@@ -566,35 +567,39 @@ namespace App.UI
                 return;
             }
 
-            var damage = session.IncomingAttack
-                ? Math.Max(1, session.TakenDamage)
-                : Math.Max(1, session.AttackDamage);
-            if (session.IncomingAttack)
+            if (session.Player != null && session.Player.Hp <= 0)
             {
-                if (session.Player != null && session.Player.Hp <= damage)
-                {
-                    _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
-                    ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
-                }
-
-                return;
+                _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
+                ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
             }
 
-            var target = session.EnemyAtVisualSlot(session.AttackVisualSlot);
-            if (target != null && target.Hp <= damage)
+            var mainSlot = session.AttackVisualSlot;
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
             {
-                var item = AttackItemAtSlot(session.AttackVisualSlot);
-                _attackFx.PlayDeathEffect(_attackFx.HitPosition(session.AttackVisualSlot));
-                if (item != null)
+                var enemy = session.EnemyAtVisualSlot(slot);
+                if (enemy == null || enemy.Hp > 0)
+                {
+                    continue;
+                }
+
+                var item = AttackItemAtSlot(slot);
+                _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (slot == mainSlot || _waitLethalItem == null)
                 {
                     _waitLethalItem = item;
-                    ScheduleDeathDissolve(item, hideWhenDone: true);
                 }
+
+                ScheduleDeathDissolve(item, hideWhenDone: true);
             }
         }
 
         /// <summary>
-        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。受击开始就会扣血，
+        /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。扣血后 Hp 为 0 才预约。
         /// ShowEnemy 立刻翻 false —— BindEnemyVisible 得让位给这里，否则会抢在延迟结束前把卡溶掉。
         /// 怪溶完要隐藏节点，玩家卡留着。
         /// </summary>
@@ -662,19 +667,44 @@ namespace App.UI
 
         private bool IsWaitingLethalDissolve()
         {
-            if (_waitLethalItem == null)
+            foreach (var pair in _deathDissolves)
             {
-                return false;
+                if (pair.Key == _playerItem)
+                {
+                    continue;
+                }
+
+                if (pair.Value != null && pair.Value.IsActive())
+                {
+                    return true;
+                }
             }
 
-            if (_deathDissolves.TryGetValue(_waitLethalItem, out var tween) &&
-                tween != null &&
-                tween.IsActive())
+            if (IsDissolvePlaying(_waitLethalItem))
             {
                 return true;
             }
 
-            var dissolve = _waitLethalItem.GetComponent<UiDissolve>();
+            for (var i = 0; i < _enemyItems.Length; i++)
+            {
+                var item = _enemyItems[i];
+                if (item != null && item != _waitLethalItem && IsDissolvePlaying(item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsDissolvePlaying(PlayerItem item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            var dissolve = item.GetComponent<UiDissolve>();
             return dissolve != null && dissolve.IsPlaying;
         }
 

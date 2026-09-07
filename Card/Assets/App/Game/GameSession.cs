@@ -1001,7 +1001,10 @@ namespace App.Game
             BeginPlayerAttack(target);
         }
 
-        /// <summary>受击演出开始时扣血。没有演出时由 <see cref="CompletePlayerAttack"/> 兜底。</summary>
+        /// <summary>
+        /// 受击演出开始时扣血。不刷新 UI，调用方先按实际 Hp 登记致死溶解，再 <see cref="NotifyUi"/>。
+        /// 没有演出时由 <see cref="CompletePlayerAttack"/> 兜底。
+        /// </summary>
         public void ApplyPendingAttackHits()
         {
             if (_attackHitsApplied || Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
@@ -1010,8 +1013,9 @@ namespace App.Game
             }
 
             ResolvePendingAttackHits(_pendingAttackTarget);
-            Notify();
         }
+
+        public void NotifyUi() => Notify();
 
         public void CompletePlayerAttack()
         {

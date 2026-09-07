@@ -104,8 +104,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentRenderer: {fileID: 1500414084062459219}
-  CardDragEffect: {fileID: 5398217308811808724}
-  CardDragSuccessEffect: {fileID: 7744183268842903648}
+  CardDragEffect: {fileID: 7744183268842903648}
+  CardDragSuccessEffect: {fileID: 5398217308811808724}
   backRenderer: {fileID: 70993717205349809}
   frontTransparentRenderer: {fileID: 180746053289002404}
 --- !u!1 &4464075292584615947

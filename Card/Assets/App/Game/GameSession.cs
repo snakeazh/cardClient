@@ -471,19 +471,10 @@ namespace App.Game
                 : message);
         }
 
-        /// <summary>点选手牌立刻搓牌替换，不进入拖拽阶段。</summary>
+        /// <summary>点选手牌搓牌替换。次数没用完则保持点选，不必再点搓牌按钮。</summary>
         public bool TryRubPlayerCard(int index)
         {
-            if (!SelectingRubTarget ||
-                AiActing ||
-                Player.Folded ||
-                !Player.Looked ||
-                Phase != GamePhase.WaitingOpen ||
-                Run.PeekGoodCharges <= 0 ||
-                BossMechanics.SkillsDisabled(Run) ||
-                !BossMechanics.CanAffordRub(Run) ||
-                index < 0 ||
-                index >= PlayerDealCount)
+            if (!CanRubPlayerCard(index))
             {
                 return false;
             }
@@ -493,13 +484,29 @@ namespace App.Game
                 return false;
             }
 
-            SelectingRubTarget = false;
-            Hint = Run.PeekGoodCharges > 0
-                ? $"{message}。再点搓牌可继续替换（剩余 {Run.PeekGoodCharges}）"
+            SelectingRubTarget = Run.PeekGoodCharges > 0 &&
+                                 !BossMechanics.SkillsDisabled(Run) &&
+                                 BossMechanics.CanAffordRub(Run);
+            Hint = SelectingRubTarget
+                ? $"{message}。可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）"
                 : message;
 
             Notify();
             return true;
+        }
+
+        public bool CanRubPlayerCard(int index)
+        {
+            return SelectingRubTarget &&
+                   !AiActing &&
+                   !Player.Folded &&
+                   Player.Looked &&
+                   Phase == GamePhase.WaitingOpen &&
+                   Run.PeekGoodCharges > 0 &&
+                   !BossMechanics.SkillsDisabled(Run) &&
+                   BossMechanics.CanAffordRub(Run) &&
+                   index >= 0 &&
+                   index < PlayerDealCount;
         }
 
         private bool ApplyRubReplace(int index, out string message)

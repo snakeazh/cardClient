@@ -39,6 +39,7 @@ namespace App.Game
         private Transform _tweenTarget;
         private Transform _backNode;
         private Transform _frontTransparentNode;
+        private GameObject _shakeCardEffect02;
         public SpriteRenderer backRenderer;
         public SpriteRenderer frontTransparentRenderer;
         private bool _tweenAnimatorResolved;
@@ -50,6 +51,8 @@ namespace App.Game
         private const string DealClip = "aini_card_deal";
         private const string DealHighlightClip = "aini_card_back";
         private const string SettleClip = "aini_card_settle";
+        private const string ChangeClip = "aini_card_change";
+        private const float ChangeClipFallback = 0.6f;
 
         /// <param name="card">牌面数据。</param>
         /// <param name="faceState">正面或背面。</param>
@@ -243,18 +246,37 @@ namespace App.Game
                 peek.sortingOrder = order - 1;
             }
 
+            ApplyEffectSorting(ResolveShakeCardEffect02(), order + 1);
             ApplyEffectSorting(CardDragEffect, order + 1);
             ApplyEffectSorting(CardDragSuccessEffect, order + 1);
         }
 
-        /// <summary>点选搓牌时显示循环拖拽特效。</summary>
+        /// <summary>搓牌点选阶段显示闪电特效（ShakeCardEffect02）。</summary>
         public void SetDragEffectVisible(bool visible)
         {
-            SetEffectActive(CardDragEffect, visible);
+            var fx = ResolveShakeCardEffect02();
+            if (fx != null && fx.activeSelf == visible)
+            {
+                if (visible)
+                {
+                    var keepOrder = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
+                    ApplyEffectSorting(fx, keepOrder);
+                }
+
+                return;
+            }
+
+            SetEffectActive(fx, visible);
             if (visible)
             {
+                var fx01 = ResolveNamedEffect("ShakeCardEffect01");
+                if (fx01 != null && fx01.activeSelf)
+                {
+                    fx01.SetActive(false);
+                }
+
                 var order = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
-                ApplyEffectSorting(CardDragEffect, order);
+                ApplyEffectSorting(fx, order);
             }
         }
 
@@ -289,6 +311,7 @@ namespace App.Game
         {
             _successFxHide?.Kill();
             _successFxHide = null;
+            SetEffectActive(ResolveShakeCardEffect02(), false);
             SetEffectActive(CardDragEffect, false);
             SetEffectActive(CardDragSuccessEffect, false);
         }
@@ -352,6 +375,14 @@ namespace App.Game
         public void PlaySettle()
         {
             PlayTweenClip(SettleClip);
+        }
+
+        /// <summary>搓牌换牌：播 aini_card_change，返回片段时长。</summary>
+        public float PlayChange()
+        {
+            ResetTweenTargetPose();
+            PlayTweenClip(ChangeClip);
+            return GetTweenClipLength(ChangeClip);
         }
 
         private void OnDestroy()
@@ -522,6 +553,48 @@ namespace App.Game
             }
         }
 
+        private GameObject ResolveShakeCardEffect02()
+        {
+            if (_shakeCardEffect02 != null)
+            {
+                return _shakeCardEffect02;
+            }
+
+            _shakeCardEffect02 = ResolveNamedEffect("ShakeCardEffect02");
+            if (_shakeCardEffect02 != null)
+            {
+                return _shakeCardEffect02;
+            }
+
+            if (CardDragEffect != null && CardDragEffect.name == "ShakeCardEffect02")
+            {
+                _shakeCardEffect02 = CardDragEffect;
+            }
+            else if (CardDragSuccessEffect != null && CardDragSuccessEffect.name == "ShakeCardEffect02")
+            {
+                _shakeCardEffect02 = CardDragSuccessEffect;
+            }
+            else
+            {
+                _shakeCardEffect02 = CardDragEffect;
+            }
+
+            return _shakeCardEffect02;
+        }
+
+        private GameObject ResolveNamedEffect(string name)
+        {
+            ResolveTweenHierarchy();
+            var root = _tweenTarget != null ? _tweenTarget : transform;
+            var node = root.Find(name);
+            if (node == null)
+            {
+                node = transform.Find(name);
+            }
+
+            return node != null ? node.gameObject : null;
+        }
+
         private void PlayTweenClip(string clipName)
         {
             gameObject.SetActive(true);
@@ -551,6 +624,27 @@ namespace App.Game
             animator.Play(clipName, 0, 0f);
             animator.Update(0f);
             SetSpritesVisible(true);
+        }
+
+        private float GetTweenClipLength(string clipName)
+        {
+            var animator = ResolveTweenAnimator();
+            var controller = animator != null ? animator.runtimeAnimatorController : null;
+            if (controller == null)
+            {
+                return ChangeClipFallback;
+            }
+
+            var clips = controller.animationClips;
+            for (var i = 0; i < clips.Length; i++)
+            {
+                if (clips[i] != null && clips[i].name == clipName)
+                {
+                    return Mathf.Max(clips[i].length, 0.05f);
+                }
+            }
+
+            return ChangeClipFallback;
         }
 
 

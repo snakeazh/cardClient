@@ -1755,7 +1755,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -7.700012, y: 384.35968}
+  m_AnchoredPosition: {x: -7.700012, y: 580.96}
   m_SizeDelta: {x: 148.8995, y: 0}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &8652487020779359484
@@ -6210,13 +6210,29 @@ PrefabInstance:
       propertyPath: m_Name
       value: cardinfoEnemyItem
       objectReference: {fileID: 0}
+    - target: {fileID: 1633369525518812495, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3045077211449470820, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3678668542412564263, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: _key
       value: cardinfoEnemyItem
       objectReference: {fileID: 0}
+    - target: {fileID: 4355588762345459205, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5132124143797972557, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: _key
       value: cardinfoEnemyNum
+      objectReference: {fileID: 0}
+    - target: {fileID: 7001776831878978050, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9087895447890829619, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: m_Pivot.x
@@ -6298,6 +6314,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9175113346362050098, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6351,6 +6371,22 @@ PrefabInstance:
     - target: {fileID: 806023881170500751, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: m_Name
       value: cardinfoItem
+      objectReference: {fileID: 0}
+    - target: {fileID: 1633369525518812495, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3045077211449470820, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4355588762345459205, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7001776831878978050, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9087895447890829619, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: m_Pivot.x
@@ -6430,6 +6466,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9087895447890829619, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9175113346362050098, guid: 331185fa7d47b4140b4a3cdadc19ddf8, type: 3}
+      propertyPath: m_SortingLayer
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

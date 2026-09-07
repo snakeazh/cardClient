@@ -148,25 +148,23 @@ namespace App.UI
 
         private void ApplyInstantRub(int index)
         {
-            _rubCompleting = true;
-            try
+            if (_cards.IsRubPlaying || !_vm.Session.CanRubPlayerCard(index))
             {
-                _cards.BeginInstantRub(index);
-                if (!_vm.Session.TryRubPlayerCard(index))
-                {
-                    _cards.CancelRubPreview();
-                    return;
-                }
+                return;
+            }
 
-                if (_cards.IsRubPreviewActive)
+            _rubCompleting = true;
+            _cards.PlayRubReplace(
+                index,
+                () => _vm != null && _vm.Session.TryRubPlayerCard(index),
+                () =>
                 {
-                    _cards.CompleteRubFlip();
-                }
-            }
-            finally
-            {
-                _rubCompleting = false;
-            }
+                    _rubCompleting = false;
+                    if (_vm != null)
+                    {
+                        _cards.Sync(_vm.Session);
+                    }
+                });
         }
 
         private void CancelRubPreviewIfNeeded()
@@ -190,7 +188,7 @@ namespace App.UI
                 return;
             }
 
-            if (!_rubCompleting)
+            if (!_rubCompleting && !_cards.IsRubPlaying)
             {
                 CancelRubPreviewIfNeeded();
             }

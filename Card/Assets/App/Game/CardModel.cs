@@ -276,7 +276,8 @@ namespace App.Game
     }
 
     /// <summary>
-    /// 牌型评估结果。Level 决定大小，Type 只是牌型身份，Keys 拆同分；BaseChips 为牌面点数，参与攻击力结算。
+    /// 牌型评估结果。Level 决定大小，Type 只是牌型身份，Keys 拆同分。
+    /// BaseChips 为牌面点数，不再默认进伤害，由指定圣物加成。
     /// </summary>
     public readonly struct HandScore : IComparable<HandScore>
     {
@@ -741,7 +742,10 @@ namespace App.Game
             return HighCard(filtered);
         }
 
-        /// <summary>从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。</summary>
+        /// <summary>
+        /// 从已发手牌中选出炸金花最大的 3 张，写入 <paramref name="selected"/>。
+        /// <paramref name="maxHandScoreLevel"/> &gt; 0 时只在该顺位及以下取最强；全部超限则取 Level 最低的一组。
+        /// </summary>
         public static HandScore SelectBestOpen(
             Card[] hand,
             bool[] selected,
@@ -750,7 +754,8 @@ namespace App.Game
             bool banFaces = false,
             HandEvalRules rules = default,
             Suit? bannedSuit2 = null,
-            Suit? bannedSuit3 = null)
+            Suit? bannedSuit3 = null,
+            int maxHandScoreLevel = 0)
         {
             if (selected != null)
             {
@@ -787,7 +792,7 @@ namespace App.Game
                         trio[1] = hand[j];
                         trio[2] = hand[k];
                         var score = Evaluate(trio, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
-                        if (!any || score.CompareTo(best) > 0)
+                        if (!any || IsBetterOpen(score, best, maxHandScoreLevel))
                         {
                             best = score;
                             bestI = i;
@@ -820,6 +825,29 @@ namespace App.Game
             return any ? best : Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
         }
 
+        /// <summary>
+        /// 有上限时优先 Level ≤ max 的组合；都超限则取更低 Level，同 Level 再比 kickers。
+        /// </summary>
+        private static bool IsBetterOpen(HandScore candidate, HandScore current, int maxHandScoreLevel)
+        {
+            if (maxHandScoreLevel > 0)
+            {
+                var candidateOk = candidate.Level <= maxHandScoreLevel;
+                var currentOk = current.Level <= maxHandScoreLevel;
+                if (candidateOk != currentOk)
+                {
+                    return candidateOk;
+                }
+
+                if (!candidateOk && candidate.Level != current.Level)
+                {
+                    return candidate.Level < current.Level;
+                }
+            }
+
+            return candidate.CompareTo(current) > 0;
+        }
+
         public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
         {
             if (hand == null || selected == null)
@@ -847,10 +875,11 @@ namespace App.Game
             bool banFaces = false,
             HandEvalRules rules = default,
             Suit? bannedSuit2 = null,
-            Suit? bannedSuit3 = null)
+            Suit? bannedSuit3 = null,
+            int maxHandScoreLevel = 0)
         {
             var flags = new bool[GameBalance.MaxCardsPerSeat];
-            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
+            SelectBestOpen(hand, flags, dealt, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3, maxHandScoreLevel);
             return CopySelectedCards(hand, flags);
         }
 
@@ -861,11 +890,10 @@ namespace App.Game
             return Math.Max(1, (int)Math.Round(value));
         }
 
-        /// <summary>伤害 = (攻击力 + 牌面点数) × 总倍率（牌型倍率 + 遗物加成）。</summary>
-        public static int ComputeAttackDamage(int attack, int cardPoints, float magnification)
+        /// <summary>伤害 = 攻击力 × 总倍率（牌型倍率 + 遗物加成）。</summary>
+        public static int ComputeAttackDamage(int attack, float magnification)
         {
-            var effectiveAttack = Math.Max(0, attack) + Math.Max(0, cardPoints);
-            var value = effectiveAttack * Math.Max(0f, magnification);
+            var value = Math.Max(0, attack) * Math.Max(0f, magnification);
             return Math.Max(1, (int)Math.Round(value));
         }
 

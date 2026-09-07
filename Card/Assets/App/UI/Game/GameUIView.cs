@@ -396,7 +396,6 @@ namespace App.UI
                 ViewModel.Atlas,
                 _bonusBeats,
                 baseAttack,
-                score.BaseChips,
                 Math.Max(1, session.AttackDamage),
                 value => { _heldAttackValue = value; },
                 () =>
@@ -428,7 +427,7 @@ namespace App.UI
             }
 
             var mag = GameSession.HandTypeMagnification(score.Type);
-            var attackValue = Math.Max(0, baseAttack) + Math.Max(0, score.BaseChips);
+            var attackValue = Math.Max(0, baseAttack);
             for (var i = 0; i < _relicBonuses.Count; i++)
             {
                 var part = _relicBonuses[i];
@@ -1129,7 +1128,8 @@ namespace App.UI
 
             var session = ViewModel.Session;
             var settling = GameTableViewModel.ShouldShowCardInfo(session);
-            if (!settling)
+            var preview = GameTableViewModel.ShouldShowPlayerHandPreview(session);
+            if (!settling && !preview)
             {
                 if (_beilvNum != null)
                 {
@@ -1156,6 +1156,16 @@ namespace App.UI
                 {
                     ApplyCardInfoFx(_playerCardInfo, session.EvaluateSeat(session.Player).Level);
                 }
+            }
+
+            if (!settling)
+            {
+                if (_enemyCardInfo != null)
+                {
+                    _enemyCardInfo.SetActive(false);
+                }
+
+                return;
             }
 
             var displayed = session.DisplayedEnemy;
@@ -2528,7 +2538,7 @@ namespace App.UI
             var flow = root.GetComponent<UiFlowLight>();
             if (flow != null)
             {
-                if (level >= 3)
+                if (level > 3)
                 {
                     flow.Play();
                 }

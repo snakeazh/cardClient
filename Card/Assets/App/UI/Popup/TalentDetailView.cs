@@ -12,7 +12,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 天赋详情弹窗。注册在 TopMost 层：叠加在 Popup 层的天赋列表之上，弹出时不隐藏列表。
     /// Item 卡显示天赋名、图标与等级角标，Detail 显示当前等级描述；LeftBtn/RightBtn 切换已解锁天赋，
-    /// 不足两个时隐藏；Tip 为预制体固定文案；点 Mask 关闭。
+    /// 不足两个时隐藏；UpgradeBtn 看广告升级，满级隐藏；Tip 为预制体固定文案；点 Mask 关闭。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentDetail, UILayer.TopMost, ResResourcePaths.TalentDetail)]
     public sealed class TalentDetailView : ViewBase<TalentDetailViewModel>
@@ -30,7 +30,11 @@ namespace App.UI.Popup
                 _card.SetUnlocked(true);
                 Binding.Add(ViewModel.NameText.Subscribe(_card.SetName));
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
+                // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
+                Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
                 Binding.Add(ViewModel.IconKey.Subscribe(LoadDetailIcon));
+                // 展示模式图标（图鉴传入的 Sprite，优先于 IconKey 图集逻辑）
+                Binding.Add(ViewModel.IconOverride.Subscribe(ApplyDetailIcon));
             }
 
             var left = UI.GetGameObject("LeftBtn");
@@ -39,6 +43,23 @@ namespace App.UI.Popup
             Binding.BindCommand(right.GetComponent<Button>(), ViewModel.NextCommand);
             Binding.BindActive(left, ViewModel.ShowSwitch);
             Binding.BindActive(right, ViewModel.ShowSwitch);
+
+            // UpgradeBtn 看广告升级，满级整体隐藏（同 LeftBtn/RightBtn 的缺失兜底）
+            var upgrade = UI.GetGameObject("UpgradeBtn");
+            if (upgrade != null)
+            {
+                var button = upgrade.GetComponent<Button>();
+                if (button == null)
+                {
+                    button = upgrade.AddComponent<Button>();
+                    button.transition = Selectable.Transition.None;
+                }
+
+                Binding.BindCommand(button, ViewModel.UpgradeCommand);
+            }
+
+            Binding.BindActive(upgrade, ViewModel.ShowUpgrade);
+
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);
             BindMaskClose();
         }
@@ -54,6 +75,15 @@ namespace App.UI.Popup
             if (ViewModel.Atlas.TryGetSprite(ResResourcePaths.TalentAtlas, key, out var sprite) && sprite != null)
             {
                 _card.SetIcon(sprite);
+            }
+        }
+
+        /// <summary>展示模式图标；null 保留 IconKey 图集逻辑或预制体默认图，不主动清空。</summary>
+        private void ApplyDetailIcon(Sprite icon)
+        {
+            if (_card != null && icon != null)
+            {
+                _card.SetIcon(icon);
             }
         }
 

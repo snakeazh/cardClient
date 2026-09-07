@@ -315,6 +315,61 @@ namespace App.Config
         /// </summary>
         SingleDamage = 11,
 
+        /// <summary>
+        /// 亮出对子次数
+        /// </summary>
+        Couplet = 12,
+
+        /// <summary>
+        /// 比牌负于对手次数
+        /// </summary>
+        Failure = 13,
+
+        /// <summary>
+        /// 比牌战胜对手次数
+        /// </summary>
+        Defeat = 14,
+
+        /// <summary>
+        /// 奢侈品
+        /// </summary>
+        LuxuryGoods = 15,
+
+        /// <summary>
+        /// 天使
+        /// </summary>
+        Angel = 16,
+
+        /// <summary>
+        /// 死亡次数
+        /// </summary>
+        DeathNum = 17,
+
+        /// <summary>
+        /// 使用透视次数
+        /// </summary>
+        Perspective = 18,
+
+        /// <summary>
+        /// 单次打出的伤害
+        /// </summary>
+        OneDamage = 19,
+
+        /// <summary>
+        /// 战斗时拥有金币数量
+        /// </summary>
+        NumberOfCoinsOwned = 20,
+
+        /// <summary>
+        /// 触发暴击次数
+        /// </summary>
+        CriticalNum = 21,
+
+        /// <summary>
+        /// 三花聚顶
+        /// </summary>
+        ThreeCardAttack = 22,
+
     }
 
     /// <summary>
@@ -1157,6 +1212,16 @@ namespace App.Config
         /// 比牌时,自己的牌型顺位提高
         /// </summary>
         UpLevel = 151,
+
+        /// <summary>
+        /// 巨人药剂
+        /// </summary>
+        GiantPotion = 152,
+
+        /// <summary>
+        /// 卡牌提供攻击力
+        /// </summary>
+        CardProvideAttack = 153,
 
         MaxHp = 1111,
 

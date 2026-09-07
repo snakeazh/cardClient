@@ -33,7 +33,7 @@ HUD：[`GameUI.md`](../UI/Game/GameUI.md) 的 `roundbuffGrid` 下每条机制一
 |------|------|------|
 | DisableHeart / Spade / Diamond / PlumBlossom | `DrawRubCard` | 搓出牌禁该花色 |
 | DisableHead | `DrawRubCard` | 搓出牌禁 J/Q/K |
-| Flint | `ComputeAttackDamage` | 总倍率 `× (1 + Value[0])`。只改倍率，不改 `BaseChips` |
+| Flint | `ComputeAttackDamage` | 总倍率 `× (1 + Value[0])`。只改倍率 |
 | FlushDamage / CoupletDamage / StraightDamage | 玩家出伤 | 对应牌型 `× (1 + Value[0])` |
 | CurseBody | 入伤 + 对怪主刀后 | 玩家受伤 `× (1 + Value[0])`；每次对怪主刀再扣自身当前 HP 的 `\|Value[1]\|` |
 | PlayerDamageDown | 玩家出伤 | `× (1 + Value[0])` |

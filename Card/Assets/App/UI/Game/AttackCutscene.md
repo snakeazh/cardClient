@@ -116,12 +116,12 @@ if (_deathDissolves.ContainsKey(item))
 逻辑伤害：
 
 ```
-伤害 = (SeatState.Attack + HandScore.BaseChips) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
+伤害 = (SeatState.Attack + 遗物攻击加成) × (HandScoreConfig.BasicMagnification + 遗物倍率加成)
 ```
 
 细则见 [`RelicMechanics.md`](../../Game/RelicMechanics.md)。
 
-攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数为亮出三张 `ChipValue` 之和（`HandScore.BaseChips`）。怪物卡上的攻击数字读减伤前的 `AttackDamage`；命中飘字读减伤后的 `TakenDamage`。积分也按该攻击数值记，不按实际扣血。
+攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数不再默认进伤害，由指定圣物加成。怪物卡上的攻击数字读减伤前的 `AttackDamage`；命中飘字读减伤后的 `TakenDamage`。积分也按该攻击数值记，不按实际扣血。
 
 ---
 

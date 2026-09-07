@@ -311,28 +311,18 @@ namespace App.UI.Popup
 
         private void OnCardClicked(ItemCard card)
         {
-            if (!_entries.TryGetValue(card, out var entry))
+            if (_entries.TryGetValue(card, out var entry))
             {
-                return;
+                ViewModel.OpenDetail(entry, GetIcon);
             }
-
-            _tipAnchor = card;
-            ViewModel.SelectEntry(entry);
-            RefreshSelected();
-            ApplyTip();
         }
 
         private void OnMonsterClicked(PlayerItem card)
         {
-            if (!_entries.TryGetValue(card, out var entry))
+            if (_entries.TryGetValue(card, out var entry))
             {
-                return;
+                ViewModel.OpenDetail(entry, GetIcon);
             }
-
-            _tipAnchor = card;
-            ViewModel.SelectEntry(entry);
-            RefreshSelected();
-            ApplyTip();
         }
 
         private void RefreshSelected()

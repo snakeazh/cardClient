@@ -288,7 +288,7 @@ namespace App.Game
         public bool ShowCards;
         public bool Alive => ActiveInStage && Hp > 0;
         public Card[] Hand = new Card[GameBalance.MaxCardsPerSeat];
-        /// <summary>开牌用牌。玩家点选；敌人结算时锁定最大牌型组合。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
+        /// <summary>开牌用牌。玩家点选；敌人结算时锁定不超过本关顺位上限的最大牌型组合。最多 <see cref="GameBalance.OpenHandSize"/> 张。</summary>
         public readonly bool[] CardSelected = new bool[GameBalance.MaxCardsPerSeat];
         public string Status = string.Empty;
         public string Banner = string.Empty;

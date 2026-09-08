@@ -446,6 +446,7 @@ GameObject:
   - component: {fileID: 6868860410833223556}
   - component: {fileID: 4478496918772899802}
   - component: {fileID: 8957120591417237107}
+  - component: {fileID: 2621086535529219082}
   m_Layer: 0
   m_Name: RefreshBtn
   m_TagString: Untagged
@@ -571,6 +572,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: RefreshBtn
   _target: {fileID: 4777307506383071671}
+--- !u!114 &2621086535529219082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884155513129105674}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &1948134833457036999
 GameObject:
   m_ObjectHideFlags: 0
@@ -1630,7 +1649,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 649850321745706228}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1
@@ -1695,8 +1714,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -728.66}
-  m_SizeDelta: {x: 958.3705, y: 153.0115}
+  m_AnchoredPosition: {x: 0, y: -742.73}
+  m_SizeDelta: {x: 958.3705, y: 124.87}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3745136318843918250
 CanvasRenderer:
@@ -1878,7 +1897,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 6.9}
-  m_SizeDelta: {x: 363, y: 110}
+  m_SizeDelta: {x: 269, y: 130}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3288490289336686486
 CanvasRenderer:
@@ -1908,8 +1927,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 78d4a09e3daa15a4799888e414bf82ac, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 8484bba6976996f4fbb3e6d15dea3aa6, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

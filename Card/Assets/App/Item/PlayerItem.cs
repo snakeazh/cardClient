@@ -17,12 +17,15 @@ namespace App.Game
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
     {
+        public const string LockedStatText = "???";
+
         private static readonly Color UnlockedPortraitColor = Color.white;
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
 
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
         [SerializeField] private Image cardBg;
+        [SerializeField] private GameObject cardMask;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private Animator attackValueAnimator;
         [SerializeField] private TMP_Text cardAttackHeart;
@@ -221,6 +224,7 @@ namespace App.Game
             SetAttack(attack);
             SetHp(seat != null ? seat.Hp : 0, hideWhenZero: false);
             SetPortrait(portrait);
+            SetCardMaskVisible(false);
         }
 
         public void ApplyTheme(QualityType quality = QualityType.Ordinary)
@@ -228,6 +232,7 @@ namespace App.Game
             EnsureRefs();
             SetEnemyVisual(false);
             ApplyStatFrame(quality);
+            SetCardMaskVisible(false);
         }
 
         /// <summary>敌人形态：启用 enemycard 并按 MonsterId 取 BaseMap/HealthBar 底图。图鉴等非对局场景使用。</summary>
@@ -360,21 +365,7 @@ namespace App.Game
         {
             EnsureRefs();
             var value = Mathf.Max(0, attack);
-            var label = ActiveAttackValue;
-            if (label != null)
-            {
-                label.text = value.ToString();
-            }
-
-            var root = ActiveAttackRoot;
-            if (root != null)
-            {
-                root.SetActive(value > 0);
-            }
-            else if (label != null)
-            {
-                label.gameObject.SetActive(value > 0);
-            }
+            SetAttackDisplay(value.ToString(), visible: value > 0);
         }
 
         public void PlayAttackNumberShake(bool low, bool high)
@@ -413,22 +404,24 @@ namespace App.Game
         {
             EnsureRefs();
             var value = Mathf.Max(0, hp);
-            var label = ActiveHeart;
-            if (label != null)
+            SetHpDisplay(value.ToString(), visible: value > 0 || !hideWhenZero);
+        }
+
+        /// <summary>
+        /// 解锁态：隐藏 <c>card/cardMask</c>；未解锁：打开遮罩，attack / heart 显示 ??? 且保持可见。
+        /// 已解锁的真实数值仍由 <see cref="SetAttack"/> / <see cref="SetHp"/> 写入。
+        /// </summary>
+        public void SetUnlocked(bool unlocked)
+        {
+            EnsureRefs();
+            SetCardMaskVisible(!unlocked);
+            if (unlocked)
             {
-                label.text = value.ToString();
+                return;
             }
 
-            var visible = value > 0 || !hideWhenZero;
-            var bg = ActiveHeartBg;
-            if (bg != null)
-            {
-                bg.gameObject.SetActive(visible);
-            }
-            else if (label != null)
-            {
-                label.gameObject.SetActive(visible);
-            }
+            SetAttackDisplay(LockedStatText, visible: true);
+            SetHpDisplay(LockedStatText, visible: true);
         }
 
         public void SetPortrait(Sprite portrait, bool locked = false)
@@ -452,6 +445,53 @@ namespace App.Game
             icon.enabled = true;
         }
 
+        private void SetAttackDisplay(string text, bool visible)
+        {
+            var label = ActiveAttackValue;
+            if (label != null)
+            {
+                label.text = text ?? string.Empty;
+            }
+
+            var root = ActiveAttackRoot;
+            if (root != null)
+            {
+                root.SetActive(visible);
+            }
+            else if (label != null)
+            {
+                label.gameObject.SetActive(visible);
+            }
+        }
+
+        private void SetHpDisplay(string text, bool visible)
+        {
+            var label = ActiveHeart;
+            if (label != null)
+            {
+                label.text = text ?? string.Empty;
+            }
+
+            var bg = ActiveHeartBg;
+            if (bg != null)
+            {
+                bg.gameObject.SetActive(visible);
+            }
+            else if (label != null)
+            {
+                label.gameObject.SetActive(visible);
+            }
+        }
+
+        private void SetCardMaskVisible(bool visible)
+        {
+            EnsureRefs();
+            if (cardMask != null)
+            {
+                cardMask.SetActive(visible);
+            }
+        }
+
         private void Awake()
         {
             EnsureRefs();
@@ -472,6 +512,15 @@ namespace App.Game
             if (cardBg == null)
             {
                 cardBg = FindImage("card");
+            }
+
+            if (cardMask == null && cardBg != null)
+            {
+                var node = FindDeep(cardBg.transform, "cardMask");
+                if (node != null)
+                {
+                    cardMask = node.gameObject;
+                }
             }
 
             if (cardAttackValue == null)

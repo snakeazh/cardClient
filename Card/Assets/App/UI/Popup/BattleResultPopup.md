@@ -20,8 +20,9 @@
 |------|------|------|
 | 成功 | `GamePhase.RunComplete`（打完该难度全部关卡，商店点下一关） | `logosuccess` / `logosuccess2` |
 | 失败 | `GamePhase.StageFail`（阵亡） | `logofail` / `logofail2` |
+| 失败（无复活） | 局内 `backBtn` 经 `CommonTop` 确定退出 | `logofail` / `logofail2`，隐藏 `AgainBtn` |
 
-不再弹出独立的 `BattleFailPopup`（预制体与脚本保留，暂不使用）。阵亡直接出本页。
+不再弹出独立的 `BattleFailPopup`（预制体与脚本保留，暂不使用）。阵亡直接出本页。主动退出先弹 [`CommonTop`](CommonTopView.cs)，确定后再以 `forfeitNoRevive` 打开本页。
 
 ---
 
@@ -30,7 +31,7 @@
 | 按钮 | 成功 | 失败 | 行为 |
 |------|------|------|------|
 | `BackBtn` | 显示 | 显示 | 回主界面；失败时放弃本局并兑入局外货币 |
-| `AgainBtn` | 隐藏 | 本关尚未复活时显示 | `WatchAdRevive()`：HP 回满，本关继续。每关最多 1 次 |
+| `AgainBtn` | 隐藏 | 本关尚未复活时显示；主动退出隐藏 | `WatchAdRevive()`：HP 回满，本关继续。每关最多 1 次 |
 
 ---
 

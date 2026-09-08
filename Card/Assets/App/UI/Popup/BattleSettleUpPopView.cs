@@ -16,7 +16,7 @@ namespace App.UI.Popup
     public sealed class BattleSettleUpPopView : ViewBase<BattleSettleUpPopViewModel>
     {
         // BG 底部预留 = 背景图九宫格下边框厚度（LevelSettlementBaseFrame spriteBorder.w = 116）
-        private const float BgBottomEdge = 116f;
+        public float BgBottomEdge = 116f;
 
         private readonly List<GameObject> _roundRows = new List<GameObject>();
         private GameObject _roundTemplate;

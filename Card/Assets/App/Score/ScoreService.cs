@@ -16,6 +16,9 @@ namespace App.Score
         private readonly ISaveService _save;
         private readonly List<int> _stageRoundScores = new List<int>();
         private readonly List<int> _stageRoundKills = new List<int>();
+        /// <summary>直接击杀（不走牌局积分）的伤害旁路记录，按行与积分对应；仅结算明细显示，不入 Stage/Total 积分。</summary>
+        private readonly List<int> _stageDirectKillDamages = new List<int>();
+        private int _lastKillIndex = -1;
         private int _total;
         private int _stage;
         private int _round;
@@ -36,6 +39,8 @@ namespace App.Score
 
         public IReadOnlyList<int> StageRoundKills => _stageRoundKills;
 
+        public IReadOnlyList<int> StageDirectKillDamages => _stageDirectKillDamages;
+
         public void TrackStageKill()
         {
             // 比牌流：击杀先于本回合积分入账 → 挂下一行，AwardRoundScore 补齐对应积分行；
@@ -47,7 +52,24 @@ namespace App.Score
             }
 
             _stageRoundKills[index]++;
+            _lastKillIndex = index;
             _dirty = true;
+        }
+
+        /// <summary>把直接击杀（不走牌局积分，编辑器外挂）造成的伤害补记到最近一次击杀行，仅供结算明细显示。</summary>
+        public void RecordDirectKillDamage(int damage)
+        {
+            if (damage <= 0 || _lastKillIndex < 0)
+            {
+                return;
+            }
+
+            while (_stageDirectKillDamages.Count <= _lastKillIndex)
+            {
+                _stageDirectKillDamages.Add(0);
+            }
+
+            _stageDirectKillDamages[_lastKillIndex] += damage;
         }
 
         public int CollectableGold => ScoreBalance.PointsToGold(_total);
@@ -58,6 +80,8 @@ namespace App.Score
         {
             _stageRoundScores.Clear();
             _stageRoundKills.Clear();
+            _stageDirectKillDamages.Clear();
+            _lastKillIndex = -1;
             if (_total == 0 && _stage == 0 && _round == 0 && _grantedGold == 0)
             {
                 return;
@@ -74,6 +98,8 @@ namespace App.Score
         {
             _stageRoundScores.Clear();
             _stageRoundKills.Clear();
+            _stageDirectKillDamages.Clear();
+            _lastKillIndex = -1;
             if (_stage == 0 && _round == 0)
             {
                 return;
@@ -147,6 +173,8 @@ namespace App.Score
             _round = 0;
             _grantedGold = 0;
             _stageRoundScores.Clear();
+            _stageDirectKillDamages.Clear();
+            _lastKillIndex = -1;
             _dirty = false;
             if (!_save.HasKey(SaveKey))
             {

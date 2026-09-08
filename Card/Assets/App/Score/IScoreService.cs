@@ -22,6 +22,12 @@ namespace App.Score
         IReadOnlyList<int> StageRoundKills { get; }
 
         /// <summary>
+        /// 直接击杀（不走牌局积分）的伤害旁路记录，按行与 <see cref="StageRoundScores"/> 对应，
+        /// 清空时机相同。仅供结算明细显示，不计入 Stage/Total 积分与金币。
+        /// </summary>
+        IReadOnlyList<int> StageDirectKillDamages { get; }
+
+        /// <summary>
         /// floor(总积分 / GameConst.ExchangePointsForGoldCoins)。预览可兑局外货币，不改积分。
         /// 对局不再用此发局内金币。
         /// </summary>
@@ -50,6 +56,9 @@ namespace App.Score
 
         /// <summary>记一次击杀：本回合积分已入账则归最后一行，否则挂下一行（由 AwardRoundScore 补齐积分行）。</summary>
         void TrackStageKill();
+
+        /// <summary>把直接击杀造成的伤害补记到最近一次击杀行（结算明细显示用，不入积分）。</summary>
+        void RecordDirectKillDamage(int damage);
 
         /// <summary>
         /// 旧局内金币差额发放（CollectableGold - GrantedGold）。积分不清空。

@@ -31,7 +31,7 @@ GameUI
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时 `roundbuffGrid` 显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
+发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时开局弹出 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs)（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 同时显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 
@@ -107,6 +107,7 @@ GameUI
 | `StageFail` | `BattleResultPopup` 失败 | `AgainBtn` 广告复活；`BackBtn` 放弃回主页 |
 | `Shop` | `BattleSettleUpPop` 一次，然后 `BattleShopPop` | 本关积分与本关掉落金币，再买遗物 |
 | `RunComplete` | `BattleResultPopup` 成功 | 只显示 BackBtn |
+| 点 `backBtn` | `CommonTop` 确认 | 确定后弹失败无复活的 `BattleResultPopup`；取消继续对局 |
 
 ---
 
@@ -114,13 +115,13 @@ GameUI
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
 
-`roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
+`roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时开局还会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 
 ---
 
 ## 注意
 
-- 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。
+- 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。点 `backBtn` 先出 [`CommonTop`](../Popup/CommonTopView.cs)「确定退出游戏吗」：确定弹出失败且无复活的 `BattleResultPopup`（点 Back 回主页并兑金）；取消关闭确认框，继续对局。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

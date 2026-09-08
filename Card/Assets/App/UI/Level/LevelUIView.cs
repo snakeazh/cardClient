@@ -221,13 +221,13 @@ namespace App.UI
                 _playerItem.SetHp(hero.Hp);
                 _playerItem.SetAttack(hero.HeroDamage);
                 _playerItem.SetPortrait(portrait);
+                _playerItem.SetUnlocked(true);
             }
             else
             {
                 _playerItem.SetName(LevelUIViewModel.LockedText);
-                _playerItem.SetHp(0);
-                _playerItem.SetAttack(0);
                 _playerItem.SetPortrait(portrait, locked: true);
+                _playerItem.SetUnlocked(false);
             }
         }
     }

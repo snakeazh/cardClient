@@ -305,8 +305,8 @@
     "RefreshProbability": 0.8,
     "Name": "对子心得",
     "Icon": "PairExperience",
-    "Price": 70,
-    "SellingPrice": 35,
+    "Price": 35,
+    "SellingPrice": 17,
     "MechanismId": [
       10021
     ],
@@ -327,7 +327,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张方片牌在结算时提供+1倍率"
+    "Desc": "亮出的每张方片牌在结算时提供+2倍率"
   },
   {
     "Id": 202,
@@ -342,7 +342,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
+    "Desc": "亮出的每张黑桃牌在结算时提供+2倍率"
   },
   {
     "Id": 203,
@@ -357,7 +357,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张红心牌在结算时提供+1倍率"
+    "Desc": "亮出的每张红心牌在结算时提供+2倍率"
   },
   {
     "Id": 204,
@@ -372,7 +372,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
+    "Desc": "亮出的每张梅花牌在结算时提供+2倍率"
   },
   {
     "Id": 205,
@@ -493,7 +493,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张人头牌在结算时提供+3倍率"
+    "Desc": "亮出的每张人头牌在结算时提供+2倍率"
   },
   {
     "Id": 213,
@@ -771,14 +771,14 @@
     "RefreshProbability": 0.4,
     "Name": "同花心得",
     "Icon": "FlushExperience",
-    "Price": 190,
-    "SellingPrice": 95,
+    "Price": 160,
+    "SellingPrice": 80,
     "MechanismId": [
       20031
     ],
     "UnlockConditionId": 0,
     "UseType": 2,
-    "Desc": "使用后,同花牌型提供的倍率永久+1"
+    "Desc": "使用后,同花牌型提供的倍率永久+2"
   },
   {
     "Id": 232,
@@ -786,14 +786,14 @@
     "RefreshProbability": 0.4,
     "Name": "顺子心得",
     "Icon": "StraightExperience",
-    "Price": 190,
-    "SellingPrice": 95,
+    "Price": 160,
+    "SellingPrice": 80,
     "MechanismId": [
       20032
     ],
     "UnlockConditionId": 0,
     "UseType": 2,
-    "Desc": "使用后,顺子牌型提供的倍率永久+1"
+    "Desc": "使用后,顺子牌型提供的倍率永久+2"
   },
   {
     "Id": 233,
@@ -801,8 +801,8 @@
     "RefreshProbability": 0.4,
     "Name": "第一位",
     "Icon": "StraightExperience",
-    "Price": 190,
-    "SellingPrice": 95,
+    "Price": 80,
+    "SellingPrice": 40,
     "MechanismId": [
       20033
     ],
@@ -816,8 +816,8 @@
     "RefreshProbability": 0.4,
     "Name": "第二位",
     "Icon": "StraightExperience",
-    "Price": 190,
-    "SellingPrice": 95,
+    "Price": 80,
+    "SellingPrice": 40,
     "MechanismId": [
       20034
     ],
@@ -831,8 +831,8 @@
     "RefreshProbability": 0.4,
     "Name": "第三位",
     "Icon": "StraightExperience",
-    "Price": 190,
-    "SellingPrice": 95,
+    "Price": 80,
+    "SellingPrice": 40,
     "MechanismId": [
       20035
     ],
@@ -883,7 +883,7 @@
     ],
     "UnlockConditionId": 10501,
     "UseType": 0,
-    "Desc": "结算伤害时,将留在手牌上最大的牌点数×4转化为额外攻击力"
+    "Desc": "结算伤害时,将留在手牌上最大的牌点数×2转化为额外攻击力"
   },
   {
     "Id": 304,
@@ -936,14 +936,14 @@
     "RefreshProbability": 0.2,
     "Name": "致命黑八",
     "Icon": "DeadlyBlackEight",
-    "Price": 265,
-    "SellingPrice": 132,
+    "Price": 240,
+    "SellingPrice": 120,
     "MechanismId": [
       30007
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张8在结算时提供+50攻击力"
+    "Desc": "亮出的每张8在结算时提供+100攻击力"
   },
   {
     "Id": 308,
@@ -951,14 +951,14 @@
     "RefreshProbability": 0.2,
     "Name": "偶数韵律",
     "Icon": "EvenRhythm",
-    "Price": 360,
-    "SellingPrice": 180,
+    "Price": 280,
+    "SellingPrice": 140,
     "MechanismId": [
       30008
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+4倍率"
+    "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+2倍率"
   },
   {
     "Id": 309,
@@ -966,14 +966,14 @@
     "RefreshProbability": 0.2,
     "Name": "奇数韵律",
     "Icon": "OddRhythm",
-    "Price": 350,
-    "SellingPrice": 175,
+    "Price": 270,
+    "SellingPrice": 135,
     "MechanismId": [
       30009
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+4倍率"
+    "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+2倍率"
   },
   {
     "Id": 310,
@@ -988,7 +988,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张人头牌在结算时提供+5倍率"
+    "Desc": "亮出的每张人头牌在结算时提供+4倍率"
   },
   {
     "Id": 311,
@@ -1003,7 +1003,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每击杀1名敌人,就会获得50金币"
+    "Desc": "每击杀1名敌人,这件圣物的出售价格+10金币"
   },
   {
     "Id": 312,
@@ -1296,8 +1296,8 @@
     "RefreshProbability": 0.2,
     "Name": "净化药水",
     "Icon": "PurificationPotion",
-    "Price": 140,
-    "SellingPrice": 70,
+    "Price": 160,
+    "SellingPrice": 80,
     "MechanismId": [
       30031
     ],
@@ -1311,8 +1311,8 @@
     "RefreshProbability": 0.2,
     "Name": "三花聚顶",
     "Icon": "PurificationPotion",
-    "Price": 260,
-    "SellingPrice": 130,
+    "Price": 200,
+    "SellingPrice": 100,
     "MechanismId": [
       30032
     ],
@@ -1408,7 +1408,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每拥有1个圣物,结算时提供+3倍率"
+    "Desc": "每拥有1个圣物,结算时提供+0.5倍率"
   },
   {
     "Id": 407,
@@ -1446,15 +1446,15 @@
     "RefreshProbability": 0.1,
     "Name": "顶尖学者",
     "Icon": "TopScholar",
-    "Price": 300,
-    "SellingPrice": 150,
+    "Price": 280,
+    "SellingPrice": 140,
     "MechanismId": [
       40009,
       400091
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张A在结算伤害时提供+50攻击力和+8倍率"
+    "Desc": "亮出的每张A在结算伤害时提供+66攻击力和+6倍率"
   },
   {
     "Id": 410,
@@ -1532,7 +1532,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张7结算时有概率提供+77攻击力和+7倍率"
+    "Desc": "亮出的每张7结算时必定提供+77攻击力和+7倍率"
   },
   {
     "Id": 415,
@@ -1782,13 +1782,13 @@
     "RefreshProbability": 0.1,
     "Name": "旗帜",
     "Icon": "Flag",
-    "Price": 130,
-    "SellingPrice": 65,
+    "Price": 260,
+    "SellingPrice": 130,
     "MechanismId": [
       40031
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+5攻击力"
+    "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+12攻击力"
   }
 ]

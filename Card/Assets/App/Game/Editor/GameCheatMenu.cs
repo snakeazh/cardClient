@@ -80,6 +80,17 @@ namespace App.Game.Editor
             session.DebugSkipStage();
         }
 
+        [MenuItem("Debug/外挂/直接击杀当前怪物 _k", false, 15)]
+        public static void KillCurrentEnemy()
+        {
+            if (!TryGetSession(out var session))
+            {
+                return;
+            }
+
+            session.DebugKillCurrentEnemy();
+        }
+
         [MenuItem(GodMenuPath, false, 20)]
         public static void ToggleGodMode()
         {

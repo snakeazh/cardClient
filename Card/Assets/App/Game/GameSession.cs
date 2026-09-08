@@ -2451,6 +2451,58 @@ namespace App.Game
 
             EnterShop();
         }
+
+        /// <summary>编辑器外挂：直接击杀牌桌当前展示的敌人。走 ApplyDamage 真实结算（击杀数/天赋/解锁与正常战斗一致）。</summary>
+        public void DebugKillCurrentEnemy()
+        {
+            if (Phase != GamePhase.WaitingOpen && Phase != GamePhase.WaitingRub &&
+                Phase != GamePhase.RoundSettle)
+            {
+                Hint = "[编辑器] 当前阶段不可直接击杀，请回到待开牌/结算阶段";
+                Log(Hint);
+                Notify();
+                return;
+            }
+
+            var target = DisplayedEnemy;
+            if (target == null || !target.Alive)
+            {
+                Hint = "[编辑器] 当前没有存活的敌人";
+                Log(Hint);
+                Notify();
+                return;
+            }
+
+            var dealt = ApplyDamage(target, Math.Max(1, target.Hp), true, Player);
+            if (target.Alive)
+            {
+                Log($"[编辑器] {target.Name} 触发免疫/复活机制未被击杀（造成 {dealt} 伤害）");
+                Notify();
+                return;
+            }
+
+            if (ReferenceEquals(_pendingOpenTarget, target))
+            {
+                _pendingOpenTarget = null;
+            }
+
+            Log($"[编辑器] 直接击杀 {target.Name}");
+            if (!AnyEnemyAlive())
+            {
+                if (IsLastLevel)
+                {
+                    CompleteLastLevel();
+                }
+                else
+                {
+                    EnterShop();
+                }
+
+                return;
+            }
+
+            Notify();
+        }
 #endif
 
         /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物/天赋加在牌型倍率上。</summary>

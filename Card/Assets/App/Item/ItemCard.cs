@@ -176,6 +176,16 @@ namespace App.Item
             if (lockMask != null)
             {
                 lockMask.SetActive(!unlocked);
+                if (!unlocked)
+                {
+                    // 兜底：遮罩节点上的 Graphic 若被外部禁用（override/误操作），激活遮罩时强制启用，
+                    // 否则节点激活了遮罩也不可见
+                    var graphic = lockMask.GetComponent<Graphic>();
+                    if (graphic != null && !graphic.enabled)
+                    {
+                        graphic.enabled = true;
+                    }
+                }
             }
 
             if (!unlocked)

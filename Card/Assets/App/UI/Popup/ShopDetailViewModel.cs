@@ -12,6 +12,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败改 Tip 文案，成功后关掉自己。
+    /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
     {
@@ -36,6 +37,7 @@ namespace App.UI.Popup
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
             BuyCommand = new RelayCommand(ConfirmBuy);
+            VideoBuyCommand = new RelayCommand(ConfirmVideoBuy);
             SellCommand = new RelayCommand(ConfirmSell);
             CloseCommand = new RelayCommand(Dismiss);
         }
@@ -67,6 +69,9 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowSell { get; }
 
         public IRelayCommand BuyCommand { get; }
+
+        /// <summary>看广告免费购买货架遗物。</summary>
+        public IRelayCommand VideoBuyCommand { get; }
 
         public IRelayCommand SellCommand { get; }
 
@@ -146,6 +151,16 @@ namespace App.UI.Popup
 
         private void ConfirmBuy()
         {
+            TryBuy(watchAd: false);
+        }
+
+        private void ConfirmVideoBuy()
+        {
+            TryBuy(watchAd: true);
+        }
+
+        private void TryBuy(bool watchAd)
+        {
             if (!Buying || RelicId <= 0)
             {
                 return;
@@ -158,7 +173,15 @@ namespace App.UI.Popup
             }
 
             var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            Session.BuyShopRelic(RelicId);
+            if (watchAd)
+            {
+                Session.WatchAdBuyShopRelic(RelicId);
+            }
+            else
+            {
+                Session.BuyShopRelic(RelicId);
+            }
+
             if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)
             {
                 return;

@@ -15,6 +15,8 @@ namespace App.UI
     {
         private readonly GameSession _session;
         private readonly ResourceSlot _gold;
+        private GamePhase _lastPhase;
+        private int _heldGold;
 
         public GameResourceViewModel(GameSession session)
         {
@@ -44,6 +46,12 @@ namespace App.UI
         {
             _session.Changed -= OnSessionChanged;
             _session.Changed += OnSessionChanged;
+            _lastPhase = _session.Phase;
+            if (_lastPhase == GamePhase.Shop)
+            {
+                _heldGold = Math.Max(0, _session.ShopGoldGranted);
+            }
+
             RefreshGold();
             ShowBackBtn.Value = true;
             return Task.CompletedTask;
@@ -70,14 +78,69 @@ namespace App.UI
 
         public ResourceSlot GoldSlot => _gold;
 
+        /// <summary>结算飞币未到位前暂扣的金币，资源栏先显示扣除后的数量。</summary>
+        public int HeldGold => _heldGold;
+
+        public void HoldGold(int amount, bool refresh = true)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            _heldGold += amount;
+            if (refresh)
+            {
+                RefreshGold();
+            }
+        }
+
+        /// <summary>飞币到位后释放暂扣；amount ≤ 0 时全部释放。</summary>
+        public void ReleaseHeldGold(int amount = 0)
+        {
+            if (_heldGold <= 0)
+            {
+                return;
+            }
+
+            if (amount <= 0 || amount >= _heldGold)
+            {
+                _heldGold = 0;
+            }
+            else
+            {
+                _heldGold -= amount;
+            }
+
+            RefreshGold();
+        }
+
         private void OnSessionChanged()
         {
+            var phase = _session.Phase;
+            if (phase == GamePhase.Shop && _lastPhase != GamePhase.Shop)
+            {
+                _heldGold = Math.Max(0, _session.ShopGoldGranted);
+            }
+            else if (phase != GamePhase.Shop)
+            {
+                _heldGold = 0;
+            }
+
+            _lastPhase = phase;
             RefreshGold();
         }
 
         private void RefreshGold()
         {
-            _gold.Amount.Value = _session.Run.Gold.ToString();
+            var gold = _session.Run != null ? _session.Run.Gold : 0;
+            gold -= _heldGold;
+            if (gold < 0)
+            {
+                gold = 0;
+            }
+
+            _gold.Amount.Value = gold.ToString();
         }
 
         private void Unsubscribe()

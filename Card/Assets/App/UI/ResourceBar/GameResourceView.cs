@@ -11,6 +11,11 @@ namespace App.UI
         /// <summary>Common 目录不打图集，图标在 Inspector 手动引用。</summary>
         [SerializeField] private Sprite _goldIcon;
 
+        public static GameResourceView FindOpen()
+        {
+            return FindObjectOfType<GameResourceView>();
+        }
+
         protected override void OnBind()
         {
             ViewModel.SetIcon(_goldIcon);

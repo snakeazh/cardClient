@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Resources;
+using DG.Tweening;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
@@ -11,6 +12,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 关卡结算弹窗。节点通过 UIReference / UIBind 解析。
+    /// WithDrawBtn / DoubleBtn 在按钮处散落 coinitem，停留 0.5 秒后飞向 GameResourceBar 金币图标。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleSettleUpPop, UILayer.Popup, ResResourcePaths.BattleSettleUpPop)]
     public sealed class BattleSettleUpPopView : ViewBase<BattleSettleUpPopViewModel>
@@ -23,6 +25,11 @@ namespace App.UI.Popup
         private RectTransform _bgRect;
         private RectTransform _titleRect;
         private RectTransform _contentRect;
+        private Button _withdrawBtn;
+        private Button _doubleBtn;
+        private GameObject _coinPrefab;
+        private Sequence _coinSeq;
+        private int _playToken;
 
         protected override void OnBind()
         {
@@ -31,16 +38,40 @@ namespace App.UI.Popup
             Binding.BindText(GetNode<TMP_Text>("CoinNum"), ViewModel.CoinNum);
             Binding.BindText(GetNode<TMP_Text>("Num"), ViewModel.WithdrawNum);
             Binding.BindText(GetNode<TMP_Text>("FormulaText"), ViewModel.FormulaText);
-            Binding.BindCommand(GetNode<Button>("WithDrawBtn"), ViewModel.ContinueCommand);
-            Binding.BindCommand(GetNode<Button>("DoubleBtn"), ViewModel.DoubleCommand);
+            _withdrawBtn = GetNode<Button>("WithDrawBtn");
+            _doubleBtn = GetNode<Button>("DoubleBtn");
+            if (_withdrawBtn != null)
+            {
+                _withdrawBtn.onClick.AddListener(OnWithdrawClicked);
+            }
+
+            if (_doubleBtn != null)
+            {
+                _doubleBtn.onClick.AddListener(OnDoubleClicked);
+            }
+
+            Binding.BindInteractable(_withdrawBtn, ViewModel.ButtonsEnabled);
+            Binding.BindInteractable(_doubleBtn, ViewModel.DoubleEnabled);
             // OnBind 先于 VM.OnOpen 执行，此时 RoundRows 还是空的，
             // 须订阅版本号等 Refresh 后再重建行列表。
             Binding.Add(ViewModel.RoundRevision.Subscribe(_ => RefreshRoundList()));
             BindOverlayClose();
+            _ = EnsureCoinPrefab();
         }
 
         protected override Task OnViewClose()
         {
+            KillCoinFx();
+            if (_withdrawBtn != null)
+            {
+                _withdrawBtn.onClick.RemoveListener(OnWithdrawClicked);
+            }
+
+            if (_doubleBtn != null)
+            {
+                _doubleBtn.onClick.RemoveListener(OnDoubleClicked);
+            }
+
             ClearRoundRows();
             return Task.CompletedTask;
         }
@@ -55,6 +86,135 @@ namespace App.UI.Popup
             }
 
             Binding.BindCommand(overlay, ViewModel.ContinueCommand);
+        }
+
+        private async Task EnsureCoinPrefab()
+        {
+            if (_coinPrefab != null || ViewModel?.Resources == null)
+            {
+                return;
+            }
+
+            if (ViewModel.Resources.TryGetCached<GameObject>(ResResourcePaths.CoinItem, out var cached) && cached != null)
+            {
+                _coinPrefab = cached;
+                return;
+            }
+
+            _coinPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CoinItem);
+        }
+
+        private async void OnWithdrawClicked()
+        {
+            if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
+            {
+                return;
+            }
+
+            ViewModel.SetBusy(true);
+            await EnsureCoinPrefab();
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var bar = GameResourceView.FindOpen()?.ViewModel;
+            var amount = bar != null ? bar.HeldGold : 0;
+            if (amount <= 0 || !TryPlayCoinFly(_withdrawBtn, () => ViewModel.CompleteWithdraw(bar)))
+            {
+                ViewModel.CompleteWithdraw(bar);
+            }
+        }
+
+        private async void OnDoubleClicked()
+        {
+            if (ViewModel == null || !ViewModel.DoubleEnabled.Value)
+            {
+                return;
+            }
+
+            ViewModel.SetBusy(true);
+            await EnsureCoinPrefab();
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var bar = GameResourceView.FindOpen()?.ViewModel;
+            if (!ViewModel.TryBeginDouble(bar, out var extra))
+            {
+                ViewModel.SetBusy(false);
+                return;
+            }
+
+            if (extra <= 0 || !TryPlayCoinFly(_doubleBtn, () => ViewModel.CompleteDouble(bar, extra)))
+            {
+                ViewModel.CompleteDouble(bar, extra);
+                ViewModel.SetBusy(false);
+            }
+        }
+
+        private bool TryPlayCoinFly(Button source, System.Action onArrived)
+        {
+            var from = source != null ? source.transform as RectTransform : null;
+            var to = FindGoldIcon();
+            var parent = ResolveFxParent();
+            if (from == null || to == null || parent == null || _coinPrefab == null)
+            {
+                return false;
+            }
+
+            var token = ++_playToken;
+            KillCoinFx(false);
+            _coinSeq = CoinFlyFx.Play(
+                _coinPrefab,
+                parent,
+                from.position,
+                to.position,
+                () =>
+                {
+                    if (token != _playToken || ViewModel == null)
+                    {
+                        return;
+                    }
+
+                    _coinSeq = null;
+                    onArrived?.Invoke();
+                    ViewModel.SetBusy(false);
+                });
+            return _coinSeq != null;
+        }
+
+        private RectTransform ResolveFxParent()
+        {
+            var root = ViewModel?.Ui?.Root;
+            if (root != null)
+            {
+                return root.GetLayer(UILayer.Resource);
+            }
+
+            return transform as RectTransform;
+        }
+
+        private static RectTransform FindGoldIcon()
+        {
+            var view = GameResourceView.FindOpen();
+            return view != null ? GameResourceBarBinder.FindGoldIcon(view.transform) : null;
+        }
+
+        private void KillCoinFx(bool bumpToken = true)
+        {
+            if (bumpToken)
+            {
+                _playToken++;
+            }
+
+            if (_coinSeq != null && _coinSeq.IsActive())
+            {
+                _coinSeq.Kill();
+            }
+
+            _coinSeq = null;
         }
 
         private static Transform FindDeep(Transform root, string name)

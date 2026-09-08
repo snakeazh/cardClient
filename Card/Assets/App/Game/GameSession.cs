@@ -2024,7 +2024,12 @@ namespace App.Game
             Notify();
         }
 
-        public void BuyShopRelic(int relicId)
+        public void BuyShopRelic(int relicId) => AcquireShopRelic(relicId, watchAd: false);
+
+        /// <summary>看广告免费购入货架遗物。广告当前为模拟发放，成功后不扣金币。</summary>
+        public void WatchAdBuyShopRelic(int relicId) => AcquireShopRelic(relicId, watchAd: true);
+
+        private void AcquireShopRelic(int relicId, bool watchAd)
         {
             if (Phase != GamePhase.Shop)
             {
@@ -2056,22 +2061,26 @@ namespace App.Game
                 return;
             }
 
-            var price = EffectiveBuyPrice(relicId);
-            if (!RelicMechanics.CanAfford(Run, price))
+            if (!watchAd)
             {
-                Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
-                    ? "超出白条额度"
-                    : "金币不足";
-                Notify();
-                return;
+                var price = EffectiveBuyPrice(relicId);
+                if (!RelicMechanics.CanAfford(Run, price))
+                {
+                    Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
+                        ? "超出白条额度"
+                        : "金币不足";
+                    Notify();
+                    return;
+                }
+
+                SpendGold(price);
             }
 
-            SpendGold(price);
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
             ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
-            Log($"购入遗物 {relic.Name}");
-            Hint = $"已购买 {relic.Name}";
+            Log(watchAd ? $"观看广告购入遗物 {relic.Name}" : $"购入遗物 {relic.Name}");
+            Hint = watchAd ? $"已免费获得 {relic.Name}" : $"已购买 {relic.Name}";
             Notify();
         }
 
@@ -2373,6 +2382,14 @@ namespace App.Game
             Log("观看广告，本关额外获得 1 次搓牌");
             Hint = $"搓牌次数 +1（剩余 {Run.PeekGoodCharges}，本关还可广告 {2 - Run.AdsExtraRubThisStage} 次）";
             Notify();
+        }
+
+        public bool CanWatchAdDoubleGold()
+        {
+            return Phase == GamePhase.Shop
+                && Run != null
+                && Run.AdsDoubleGoldToday < GameBalance.DailyDoubleGoldAds
+                && !Run.DoubleGoldThisStage;
         }
 
         public void WatchAdDoubleGold()

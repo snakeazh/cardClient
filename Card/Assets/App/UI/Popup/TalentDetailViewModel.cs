@@ -30,6 +30,9 @@ namespace App.UI.Popup
 
             /// <summary>怪物页条目的 MonsterId（&gt;0 表示用 PlayerItem 敌人形态卡显示底图），其余为 0。</summary>
             public int MonsterId;
+
+            /// <summary>品质卡面边框（遗物页=RelicConfig.Type）；默认 Ordinary。</summary>
+            public QualityType Quality;
         }
 
         private readonly IUIManager _ui;
@@ -177,7 +180,7 @@ namespace App.UI.Popup
             LevelText.Value = string.Empty;
             IconKey.Value = string.Empty;
             IconOverride.Value = entry != null ? entry.Icon : null;
-            Quality.Value = QualityType.Ordinary;
+            Quality.Value = entry != null ? entry.Quality : QualityType.Ordinary;
             ShowSwitch.Value = _display.Count > 1;
             ShowUpgrade.Value = false;
             CardOwned.Value = true;

@@ -73,6 +73,24 @@ namespace App.UI
                    ?? FindDeep(host, "ResourceBar");
         }
 
+        public static RectTransform FindGoldIcon(Transform host)
+        {
+            var bar = Resolve(host);
+            if (bar == null)
+            {
+                return null;
+            }
+
+            var item = bar.Find("ResourceItem") ?? FindDeep(bar, "ResourceItem");
+            if (item == null)
+            {
+                return null;
+            }
+
+            var icon = item.Find("Icon") ?? FindDeep(item, "Icon");
+            return icon as RectTransform;
+        }
+
         private static void BindBack(
             BindingContext binding,
             Transform bar,

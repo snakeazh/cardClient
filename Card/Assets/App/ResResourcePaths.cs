@@ -42,6 +42,7 @@ namespace App.Resources
         public const string CardPointEffect03 = "Effect/UI/Card/CardPointEffect03";
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
+        public const string CoinItem = "UI/Icon/coinitem";
         /// <summary>攻击演出参数 Assets/Res/SO/AttackTuning.asset（<see cref="App.UI.AttackTuningConfig"/>）。</summary>
         public const string AttackTuning = "SO/AttackTuning";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>

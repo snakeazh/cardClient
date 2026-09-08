@@ -142,7 +142,11 @@ namespace App.UI.Popup
 
                 card.SetShadowVisible(false);
                 card.SetAnimationEnabled(false);
+                // 品质卡面边框（遗物页=RelicConfig.Type，缺图回退普通品质）
+                card.ApplyQuality(entry.Quality);
                 card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
+                // 图标随解锁态染色：未拥有黑色剪影，拥有原色（同天赋列表口径）
+                card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
                 card.Clicked += OnCardClicked;
                 _entries[card] = entry;
                 cards.Add(card);

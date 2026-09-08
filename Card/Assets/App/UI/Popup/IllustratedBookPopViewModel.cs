@@ -33,6 +33,9 @@ namespace App.UI.Popup
 
         /// <summary>怪物页分区用（Boss 进 UltimateGrid，Normal 进 RareGrid）；收藏/遗物页未赋值。</summary>
         public MonsterType MonsterType;
+
+        /// <summary>品质卡面边框（遗物页=RelicConfig.Type）；未赋值的页保持 Ordinary。</summary>
+        public QualityType Quality;
     }
 
     /// <summary>
@@ -204,7 +207,8 @@ namespace App.UI.Popup
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
                         Icon = iconResolver != null ? iconResolver(sibling) : null,
                         AcquireMethod = ResolveAcquireMethod(sibling),
-                        MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0
+                        MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0,
+                        Quality = sibling.Quality
                     });
                 }
 
@@ -373,7 +377,8 @@ namespace App.UI.Popup
                     Desc = row.Desc,
                     Icon = row.Icon,
                     Unlocked = unlocked,
-                    UnlockTip = unlocked ? null : RelicUnlockTip(row, _unlock)
+                    UnlockTip = unlocked ? null : RelicUnlockTip(row, _unlock),
+                    Quality = row.Type
                 });
             }
 

@@ -33,8 +33,9 @@ namespace App.UI.Popup
                 _card.SetShadowVisible(false);
                 _card.SetAnimationEnabled(false);
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
-                _card.SetUnlocked(true);
                 Binding.Add(ViewModel.NameText.Subscribe(ApplyName));
+                // 未拥有观感同天赋列表：Mask 激活 + card_Name ？？？ + card_icon 黑色剪影
+                Binding.Add(ViewModel.CardOwned.Subscribe(ApplyCardOwned));
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
                 // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
@@ -51,7 +52,8 @@ namespace App.UI.Popup
             Binding.BindActive(left, ViewModel.ShowSwitch);
             Binding.BindActive(right, ViewModel.ShowSwitch);
 
-            // UpgradeBtn 看广告升级，满级整体隐藏（同 LeftBtn/RightBtn 的缺失兜底）
+            // UpgradeBtn 键指向已改名的 BuyBtn 节点：看广告获得（未拥有）/升级（已拥有未满级），
+            // 主文案按拥有态切换（未拥有="立即获得"），满级整体隐藏
             var upgrade = UI.GetGameObject("UpgradeBtn");
             if (upgrade != null)
             {
@@ -63,6 +65,14 @@ namespace App.UI.Popup
                 }
 
                 Binding.BindCommand(button, ViewModel.UpgradeCommand);
+                // Tip 节点按拥有态切换文案（未拥有="立即获得"，已拥有="立即升级"）；
+                // 主文案 Text (TMP) 保持预制体静态文案
+                var tip = upgrade.transform.Find("Tip");
+                var tipTmp = tip != null ? tip.GetComponent<TMP_Text>() : null;
+                if (tipTmp != null)
+                {
+                    Binding.BindText(tipTmp, ViewModel.ActionText);
+                }
             }
 
             Binding.BindActive(upgrade, ViewModel.ShowUpgrade);
@@ -77,16 +87,22 @@ namespace App.UI.Popup
             BindMaskClose();
         }
 
-        /// <summary>怪物条目用 PlayerItem 敌人形态卡（预制体内 MonsterItem 节点，默认隐藏）；
-        /// 节点不存在时安全退化——仍用 Item 卡显示（无怪物底图）。初始化细节同图鉴 FillMonsterSection。</summary>
+        /// <summary>怪物条目用 PlayerItem 敌人形态卡：优先取 UIReference 注册的 PlayerItem 节点
+        ///（编辑器拖入），缺键时按名兜底找 MonsterItem；都没有则安全退化——仍用 Item 卡显示。
+        /// 初始化细节同图鉴 FillMonsterSection。</summary>
         private void BindMonsterItem()
         {
-            var node = FindDeep(transform, MonsterItemName);
-            if (node != null)
+            Component node = null;
+            if (UI.TryGet<Component>("PlayerItem", out var registered) && registered != null)
             {
-                _monsterCard = node.GetComponent<PlayerItem>();
+                node = registered;
+            }
+            else
+            {
+                node = FindDeep(transform, MonsterItemName);
             }
 
+            _monsterCard = node != null ? node.GetComponent<PlayerItem>() : null;
             if (_monsterCard != null)
             {
                 Binding.Add(ViewModel.CurrentMonsterId.Subscribe(ApplyMonsterCard));
@@ -94,11 +110,23 @@ namespace App.UI.Popup
             }
         }
 
+        /// <summary>拥有态切换：Mask 激活/关闭、图标剪影染色，并联动刷新名字口径。</summary>
+        private void ApplyCardOwned(bool owned)
+        {
+            if (_card != null)
+            {
+                _card.SetUnlocked(owned);
+                _card.SetIconColor(owned ? Color.white : Color.black);
+                ApplyName(ViewModel.NameText.Value);
+            }
+        }
+
         private void ApplyName(string name)
         {
             if (_card != null)
             {
-                _card.SetName(name);
+                // 未拥有 card_Name 显示 ？？？（null 触发占位，同天赋列表口径）
+                _card.SetName(ViewModel.CardOwned.Value ? name : null);
             }
 
             if (_monsterCard != null && ViewModel.ShowMonsterCard.Value)

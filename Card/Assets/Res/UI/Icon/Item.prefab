@@ -772,7 +772,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   iconBg: {fileID: 7451596854250681226}
   cardImage: {fileID: 0}
-  lockMask: {fileID: 0}
+  lockMask: {fileID: 4600769170698447370}
   cardName: {fileID: 4783247149552327194}
   levelText: {fileID: 0}
   cardCircle: {fileID: 0}

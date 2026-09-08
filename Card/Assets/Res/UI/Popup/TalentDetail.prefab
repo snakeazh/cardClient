@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6150403367536936123}
   - component: {fileID: 2953524311411431413}
   m_Layer: 0
-  m_Name: UpgradeBtn
+  m_Name: BuyBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1322,6 +1322,9 @@ MonoBehaviour:
   - Key: Item
     Component: {fileID: 8878109433128577629}
     Bind: {fileID: 3477843466385202880}
+  - Key: PlayerItem
+    Component: {fileID: 3561859907177696112}
+    Bind: {fileID: 2890668980464053485}
   - Key: LeftBtn
     Component: {fileID: 594135503896354819}
     Bind: {fileID: 3944913383441453670}
@@ -1648,6 +1651,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MonsterItem
       objectReference: {fileID: 0}
+    - target: {fileID: 644677406578115141, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4744713796314350000, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1745,6 +1752,22 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
+--- !u!114 &2890668980464053485 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2736143837313304472, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
+  m_PrefabInstance: {fileID: 1001211223244794741}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!222 &3561859907177696112 stripped
+CanvasRenderer:
+  m_CorrespondingSourceObject: {fileID: 4362652111921192965, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
+  m_PrefabInstance: {fileID: 1001211223244794741}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &5493714532592626373 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4744713796314350000, guid: cf88e49ce46fb924b8978f5cafce0c29, type: 3}
@@ -1852,6 +1875,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1514776434252976975, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
       propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4600769170698447370, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
+      propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6642624202227667130, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}

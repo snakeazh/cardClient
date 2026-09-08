@@ -59,9 +59,11 @@ namespace App.UI.Popup
             AcquireMethodText = new ObservableProperty<string>(string.Empty);
             ShowMonsterCard = new ObservableProperty<bool>(false);
             CurrentMonsterId = new ObservableProperty<int>(0);
+            CardOwned = new ObservableProperty<bool>(false);
+            ActionText = new ObservableProperty<string>("立即升级");
             PrevCommand = new RelayCommand(() => Shift(-1));
             NextCommand = new RelayCommand(() => Shift(1));
-            UpgradeCommand = new RelayCommand(Upgrade, () => CanUpgrade);
+            UpgradeCommand = new RelayCommand(Upgrade, () => CanAct);
             CloseCommand = new RelayCommand(Dismiss);
         }
 
@@ -104,6 +106,12 @@ namespace App.UI.Popup
         /// <summary>当前怪物条目 MonsterId（ShowMonsterCard 为 true 时有效，View 据此 ApplyEnemyTheme）。</summary>
         public ObservableProperty<int> CurrentMonsterId { get; }
 
+        /// <summary>当前卡是否已拥有（false 时 Item 卡显示未解锁 Mask，全局口径同天赋列表）。</summary>
+        public ObservableProperty<bool> CardOwned { get; }
+
+        /// <summary>BuyBtn 主文案：未拥有="立即获得"（看广告获得），已拥有="立即升级"。</summary>
+        public ObservableProperty<string> ActionText { get; }
+
         public IRelayCommand PrevCommand { get; }
 
         public IRelayCommand NextCommand { get; }
@@ -116,7 +124,8 @@ namespace App.UI.Popup
         /// <summary>升级成功后触发，参数为天赋 Id；天赋列表据此刷新角标与染色。</summary>
         public event Action<int> Upgraded;
 
-        private bool CanUpgrade => _snapshot != null && _snapshot.IsOwned && !_snapshot.IsMaxLevel;
+        /// <summary>BuyBtn 可用：未拥有可看广告获得，已拥有未满级可看广告升级。</summary>
+        private bool CanAct => _snapshot != null && (!_snapshot.IsOwned || !_snapshot.IsMaxLevel);
 
         /// <param name="reward">抽卡获得入口：隐藏左右切换、显示恭喜获得图（升级按钮仍保留）。</param>
         /// <remarks>未拥有天赋也可打开（天赋列表点未解锁卡）：单条展示其 1 级行信息，无等级角标/切换/升级。</remarks>
@@ -171,6 +180,8 @@ namespace App.UI.Popup
             Quality.Value = QualityType.Ordinary;
             ShowSwitch.Value = _display.Count > 1;
             ShowUpgrade.Value = false;
+            CardOwned.Value = true;
+            ActionText.Value = "立即升级";
             ShowCongratulations.Value = false;
             ShowAcquireMethod.Value = entry != null && !string.IsNullOrEmpty(entry.AcquireMethod);
             AcquireMethodText.Value = entry != null ? entry.AcquireMethod ?? string.Empty : string.Empty;
@@ -231,8 +242,10 @@ namespace App.UI.Popup
                 ? string.Empty
                 : config.Icon.Trim();
             Quality.Value = config != null ? config.Type : QualityType.Ordinary;
+            CardOwned.Value = snapshot != null && snapshot.IsOwned;
+            ActionText.Value = CardOwned.Value ? "立即升级" : "立即获得";
             ShowSwitch.Value = !_rewardMode && inOwned && _owned.Count > 1;
-            ShowUpgrade.Value = CanUpgrade;
+            ShowUpgrade.Value = CanAct;
             ShowCongratulations.Value = _rewardMode;
             ShowAcquireMethod.Value = false;
             AcquireMethodText.Value = string.Empty;
@@ -242,12 +255,13 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// 看广告升级：广告当前为模拟发放，直接补 1 张副本（CopiesPerLevel=1 即 +1 级，同 AdShop 口径）。
-        /// 满级时按钮已隐藏，这里再兜一层。
+        /// 看广告升级/获得（广告当前为模拟发放）：统一走 Add 补 1 张副本——已拥有即 +1 级
+        /// （CopiesPerLevel=1，同 AdShop 口径），未拥有即直接获得 Lv.1。
+        /// 按钮不可用时已隐藏，这里再兜一层。
         /// </summary>
         private void Upgrade()
         {
-            if (!CanUpgrade)
+            if (!CanAct)
             {
                 return;
             }
@@ -259,6 +273,11 @@ namespace App.UI.Popup
             {
                 // 同步 _owned 快照，否则左右切换回来显示的还是升级前等级
                 _owned[index] = upgraded;
+            }
+            else
+            {
+                // 未拥有经此获得：进已拥有列表，恢复左右切换
+                _owned.Add(upgraded);
             }
 
             Apply(upgraded, inOwned: true);

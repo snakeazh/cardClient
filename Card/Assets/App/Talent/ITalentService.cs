@@ -35,8 +35,17 @@ namespace App.Talent
 
         IReadOnlyList<TalentSnapshot> GetOwned();
 
-        /// <summary>Uniformly picks one configured TalentId. 0 when none configured.</summary>
+        /// <summary>
+        /// Uniformly picks one configured TalentId among non-max-level talents.
+        /// 0 when none configured or all maxed out.
+        /// </summary>
         int DrawRandomId();
+
+        /// <summary>当前一次抽取的价格：GameConst.TalentChestNeedGold + 已抽次数 × TalentNeedChestGold。</summary>
+        int GetDrawCost();
+
+        /// <summary>记一次成功抽取（扣费成功后调用）：下次 GetDrawCost 递增一个步长。</summary>
+        void RecordDraw();
 
         /// <summary>
         /// Adds obtained copies. Amount must be positive.

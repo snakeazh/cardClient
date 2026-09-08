@@ -2517,7 +2517,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
-  BgBottomEdge: 45
+  BgBottomEdge: 50
 --- !u!1 &6819718925485379873
 GameObject:
   m_ObjectHideFlags: 0

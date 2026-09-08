@@ -2384,6 +2384,14 @@ namespace App.Game
             Notify();
         }
 
+        public bool CanWatchAdDoubleGold()
+        {
+            return Phase == GamePhase.Shop
+                && Run != null
+                && Run.AdsDoubleGoldToday < GameBalance.DailyDoubleGoldAds
+                && !Run.DoubleGoldThisStage;
+        }
+
         public void WatchAdDoubleGold()
         {
             if (Phase != GamePhase.Shop)

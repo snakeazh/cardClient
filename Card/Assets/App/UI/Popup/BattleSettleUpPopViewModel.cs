@@ -4,6 +4,8 @@ using App.Bootstrap;
 using App.Config;
 using App.Game;
 using App.Level;
+using Framework.Assets;
+using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
@@ -23,16 +25,23 @@ namespace App.UI.Popup
     /// <summary>
     /// 关卡结算：只统计本关。总伤害是本关 Stage 积分，怪物总数取关卡配置，
     /// 基础奖励 / 提现是本关掉落金币，双倍提现走 <see cref="GameSession.WatchAdDoubleGold"/>。
+    /// 金币先暂扣在资源栏外，按钮飞币到位后再加回。
     /// </summary>
     public sealed class BattleSettleUpPopViewModel : ViewModelBase
     {
         private readonly IDialogService _dialogs;
         private readonly List<SettleRoundRow> _roundRows = new List<SettleRoundRow>();
 
-        public BattleSettleUpPopViewModel(GameSession session, IDialogService dialogs)
+        public BattleSettleUpPopViewModel(
+            GameSession session,
+            IDialogService dialogs,
+            IUIManager ui,
+            IResourceService resources)
         {
             Session = session;
             _dialogs = dialogs;
+            Ui = ui;
+            Resources = resources;
             CurScoreNum = new ObservableProperty<string>("0");
             TotalScoreNum = new ObservableProperty<string>("0");
             CoinNum = new ObservableProperty<string>("0");
@@ -40,11 +49,17 @@ namespace App.UI.Popup
             GoldText = new ObservableProperty<string>("0");
             FormulaText = new ObservableProperty<string>(string.Empty);
             RoundRevision = new ObservableProperty<int>();
-            ContinueCommand = new RelayCommand(Continue);
-            DoubleCommand = new RelayCommand(DoubleWithdraw);
+            ButtonsEnabled = new ObservableProperty<bool>(true);
+            DoubleEnabled = new ObservableProperty<bool>(false);
+            ContinueCommand = new RelayCommand(SkipAndClose, () => ButtonsEnabled.Value);
+            DoubleCommand = new RelayCommand(DoubleWithdraw, CanDouble);
         }
 
         public GameSession Session { get; }
+
+        public IUIManager Ui { get; }
+
+        public IResourceService Resources { get; }
 
         /// <summary>怪物总数（关卡配置的出场怪物数）。</summary>
         public ObservableProperty<string> CurScoreNum { get; }
@@ -68,6 +83,10 @@ namespace App.UI.Popup
         /// <summary>行数据版本号，Refresh 后自增，驱动 View 重建行列表。</summary>
         public ObservableProperty<int> RoundRevision { get; }
 
+        public ObservableProperty<bool> ButtonsEnabled { get; }
+
+        public ObservableProperty<bool> DoubleEnabled { get; }
+
         public IRelayCommand ContinueCommand { get; }
 
         /// <summary>看广告双倍提现（GameSession 内含每日限次与已双倍保护）。</summary>
@@ -76,6 +95,54 @@ namespace App.UI.Popup
         protected override Task OnOpen(object args)
         {
             Refresh();
+            return Task.CompletedTask;
+        }
+
+        public void SetBusy(bool busy)
+        {
+            ButtonsEnabled.Value = !busy;
+            RefreshDoubleEnabled();
+            ContinueCommand.RaiseCanExecuteChanged();
+            DoubleCommand.RaiseCanExecuteChanged();
+        }
+
+        public void CompleteWithdraw(GameResourceViewModel bar)
+        {
+            bar?.ReleaseHeldGold();
+            Close();
+        }
+
+        public bool TryBeginDouble(GameResourceViewModel bar, out int extra)
+        {
+            extra = 0;
+            if (!CanDouble())
+            {
+                return false;
+            }
+
+            extra = Session.ShopGoldGranted;
+            if (extra > 0)
+            {
+                bar?.HoldGold(extra, refresh: false);
+            }
+
+            Session.WatchAdDoubleGold();
+            Refresh();
+            return true;
+        }
+
+        public void CompleteDouble(GameResourceViewModel bar, int extra)
+        {
+            if (extra > 0)
+            {
+                bar?.ReleaseHeldGold(extra);
+            }
+        }
+
+        protected override Task OnClose()
+        {
+            var view = GameResourceView.FindOpen();
+            view?.ViewModel?.ReleaseHeldGold();
             return Task.CompletedTask;
         }
 
@@ -89,6 +156,7 @@ namespace App.UI.Popup
             WithdrawNum.Value = stageGold.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
             FormulaText.Value = "每" + GameConst.Instance.ExchangePointsForGoldCoins + "点伤害=1";
+            RefreshDoubleEnabled();
 
             _roundRows.Clear();
             var scores = Session.StageRoundScores;
@@ -121,13 +189,29 @@ namespace App.UI.Popup
             return level?.Current?.Monsters.Count ?? 0;
         }
 
-        private void DoubleWithdraw()
+        private bool CanDouble()
         {
-            Session.WatchAdDoubleGold();
-            Refresh();
+            return ButtonsEnabled.Value && Session.CanWatchAdDoubleGold();
         }
 
-        private void Continue()
+        private void RefreshDoubleEnabled()
+        {
+            DoubleEnabled.Value = CanDouble();
+        }
+
+        private void DoubleWithdraw()
+        {
+            // View 拦截 DoubleBtn 点击并播飞币；命令仅用于 CanExecute。
+        }
+
+        private void SkipAndClose()
+        {
+            var view = GameResourceView.FindOpen();
+            view?.ViewModel?.ReleaseHeldGold();
+            Close();
+        }
+
+        private void Close()
         {
             _ = _dialogs.CloseWithResult(true);
         }

@@ -90,9 +90,10 @@ namespace App.UI.Popup
         }
 
         /// <param name="reward">抽卡获得入口：隐藏左右切换、显示恭喜获得图。</param>
+        /// <remarks>未拥有天赋也可打开（点未解锁卡看 1 级行详情）。</remarks>
         public async Task OpenDetail(int talentId, bool reward = false)
         {
-            if (_talent.GetLevel(talentId) <= 0)
+            if (talentId <= 0)
             {
                 return;
             }

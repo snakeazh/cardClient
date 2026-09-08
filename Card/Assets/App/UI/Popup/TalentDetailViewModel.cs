@@ -116,9 +116,10 @@ namespace App.UI.Popup
         /// <summary>升级成功后触发，参数为天赋 Id；天赋列表据此刷新角标与染色。</summary>
         public event Action<int> Upgraded;
 
-        private bool CanUpgrade => _snapshot != null && !_snapshot.IsMaxLevel;
+        private bool CanUpgrade => _snapshot != null && _snapshot.IsOwned && !_snapshot.IsMaxLevel;
 
         /// <param name="reward">抽卡获得入口：隐藏左右切换、显示恭喜获得图（升级按钮仍保留）。</param>
+        /// <remarks>未拥有天赋也可打开（天赋列表点未解锁卡）：单条展示其 1 级行信息，无等级角标/切换/升级。</remarks>
         public void Setup(int talentId, bool reward = false)
         {
             _displayMode = false;
@@ -127,12 +128,14 @@ namespace App.UI.Popup
             _owned.AddRange(_talent.GetOwned());
 
             var index = _owned.FindIndex(s => s.TalentId == talentId);
-            if (index < 0)
+            if (index >= 0)
             {
-                index = 0;
+                Apply(_owned[index], inOwned: true);
             }
-
-            Apply(_owned.Count > 0 ? _owned[index] : null);
+            else
+            {
+                Apply(_talent.GetCurrent(talentId), inOwned: false);
+            }
         }
 
         /// <summary>
@@ -201,26 +204,34 @@ namespace App.UI.Popup
             }
 
             var next = (index + delta + _owned.Count) % _owned.Count;
-            Apply(_owned[next]);
+            Apply(_owned[next], inOwned: true);
         }
 
-        private void Apply(TalentSnapshot snapshot)
+        /// <summary>未拥有快照 Config 为空，回退 1 级行取名字/描述/图标/品质（同天赋列表口径）。</summary>
+        private TalentConfig ResolveConfig(TalentSnapshot snapshot)
+        {
+            if (snapshot?.Config != null)
+            {
+                return snapshot.Config;
+            }
+
+            return snapshot != null && _talent.TryGet(snapshot.TalentId, 1, out var row) ? row : null;
+        }
+
+        private void Apply(TalentSnapshot snapshot, bool inOwned)
         {
             _snapshot = snapshot;
-            NameText.Value = snapshot != null && snapshot.Config != null
-                ? snapshot.Config.Name
-                : string.Empty;
-            DescText.Value = snapshot != null && snapshot.Config != null
-                ? snapshot.Config.Desc ?? string.Empty
-                : string.Empty;
+            var config = ResolveConfig(snapshot);
+            NameText.Value = config != null ? config.Name : string.Empty;
+            DescText.Value = config != null ? config.Desc ?? string.Empty : string.Empty;
             LevelText.Value = snapshot != null && snapshot.IsOwned
                 ? $"Lv.{snapshot.Level}"
                 : string.Empty;
-            IconKey.Value = snapshot?.Config == null || string.IsNullOrWhiteSpace(snapshot.Config.Icon)
+            IconKey.Value = config == null || string.IsNullOrWhiteSpace(config.Icon)
                 ? string.Empty
-                : snapshot.Config.Icon.Trim();
-            Quality.Value = snapshot?.Config != null ? snapshot.Config.Type : QualityType.Ordinary;
-            ShowSwitch.Value = !_rewardMode && _owned.Count > 1;
+                : config.Icon.Trim();
+            Quality.Value = config != null ? config.Type : QualityType.Ordinary;
+            ShowSwitch.Value = !_rewardMode && inOwned && _owned.Count > 1;
             ShowUpgrade.Value = CanUpgrade;
             ShowCongratulations.Value = _rewardMode;
             ShowAcquireMethod.Value = false;
@@ -250,7 +261,7 @@ namespace App.UI.Popup
                 _owned[index] = upgraded;
             }
 
-            Apply(upgraded);
+            Apply(upgraded, inOwned: true);
             Upgraded?.Invoke(upgraded.TalentId);
         }
 

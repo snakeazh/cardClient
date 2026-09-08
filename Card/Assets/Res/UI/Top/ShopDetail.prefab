@@ -40,7 +40,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -448.07996}
-  m_SizeDelta: {x: 264.2301, y: 105.86377}
+  m_SizeDelta: {x: 269, y: 130}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5466341388413507406
 CanvasRenderer:
@@ -70,7 +70,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6376cdbd9048c2e4c9f9b7823bc3edbf, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e29d2495391950745a7aeafc421a993d, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -640,7 +640,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -448.07996}
-  m_SizeDelta: {x: 264.2301, y: 105.86377}
+  m_SizeDelta: {x: 269, y: 130}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1721477943914665720
 CanvasRenderer:
@@ -670,7 +670,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c9b6fba18800f354482671a055efa21a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8484bba6976996f4fbb3e6d15dea3aa6, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1768,4 +1768,4 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 46437b472bdc98f4da94f659ac35bb87, type: 3}
   m_Name: 
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 

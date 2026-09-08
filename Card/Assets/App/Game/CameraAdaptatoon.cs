@@ -3,7 +3,8 @@ using UnityEngine;
 namespace App.Game
 {
     /// <summary>
-    /// 正交相机按宽度适配。设计分辨率 1080×1920 时保持水平可视范围不变，高度随屏幕比例伸缩。
+    /// 正交相机按 9:16（1080×1920）适配。窄屏按宽度适配（上下多出可视区域）；
+    /// 宽于 9:16 时锁定设计高度，左右由 UIRoot 黑边遮挡，可见区域与设计分辨率一致。
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(Camera))]
@@ -62,7 +63,7 @@ namespace App.Game
 
             float designAspect = designWidth / designHeight;
             float currentAspect = (float)width / height;
-            _camera.orthographicSize = designOrthographicSize * (designAspect / currentAspect);
+            _camera.orthographicSize = designOrthographicSize * Mathf.Max(1f, designAspect / currentAspect);
         }
     }
 }

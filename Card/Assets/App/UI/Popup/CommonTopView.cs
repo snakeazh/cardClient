@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 局内退出确认。节点通过 UIReference 解析：tipContext / yes / no。
+    /// 通用确认弹窗。节点通过 UIReference 解析：tipContext / yes / no。
     /// UIBind Target 可能是 CanvasRenderer，统一走 GameObject 再取组件。
     /// </summary>
     [AutoScreen(AppScreenIds.CommonTop, UILayer.Popup, ResResourcePaths.CommonTop)]
@@ -26,12 +26,14 @@ namespace App.UI.Popup
             if (yes != null)
             {
                 Binding.BindCommand(yes, ViewModel.YesCommand);
+                Binding.BindActive(yes.gameObject, ViewModel.ShowYes);
             }
 
             var no = GetNode<Button>("no");
             if (no != null)
             {
                 Binding.BindCommand(no, ViewModel.NoCommand);
+                Binding.BindActive(no.gameObject, ViewModel.ShowNo);
             }
         }
 

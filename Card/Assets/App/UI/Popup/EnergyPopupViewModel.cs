@@ -8,7 +8,7 @@ using Framework.UI.View;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 体力不足弹窗：看广告补充（每日限次）或关闭。广告当前为模拟发放。
+    /// 体力不足弹窗（已改走 CommonTop，本页保留未接入）。
     /// </summary>
     public sealed class EnergyPopupViewModel : ViewModelBase
     {

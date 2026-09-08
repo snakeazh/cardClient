@@ -5,8 +5,24 @@ using Framework.UI.View;
 
 namespace App.UI.Popup
 {
+    public sealed class CommonTopArgs
+    {
+        public CommonTopArgs(string tip, bool showYes = true, bool showNo = true)
+        {
+            Tip = tip ?? string.Empty;
+            ShowYes = showYes;
+            ShowNo = showNo;
+        }
+
+        public string Tip { get; }
+
+        public bool ShowYes { get; }
+
+        public bool ShowNo { get; }
+    }
+
     /// <summary>
-    /// 局内退出确认：确定后走失败结算（无复活），取消则继续对局。
+    /// 通用确认：默认「确定退出游戏吗」。也可传入文案（如体力不足）。
     /// </summary>
     public sealed class CommonTopViewModel : ViewModelBase
     {
@@ -16,11 +32,17 @@ namespace App.UI.Popup
         {
             _dialogs = dialogs;
             TipContext = new ObservableProperty<string>("确定退出游戏吗");
+            ShowYes = new ObservableProperty<bool>(true);
+            ShowNo = new ObservableProperty<bool>(true);
             YesCommand = new RelayCommand(Confirm);
             NoCommand = new RelayCommand(Cancel);
         }
 
         public ObservableProperty<string> TipContext { get; }
+
+        public ObservableProperty<bool> ShowYes { get; }
+
+        public ObservableProperty<bool> ShowNo { get; }
 
         public IRelayCommand YesCommand { get; }
 
@@ -28,7 +50,19 @@ namespace App.UI.Popup
 
         protected override Task OnOpen(object args)
         {
-            if (args is string tip && !string.IsNullOrWhiteSpace(tip))
+            ShowYes.Value = true;
+            ShowNo.Value = true;
+            if (args is CommonTopArgs options)
+            {
+                if (!string.IsNullOrWhiteSpace(options.Tip))
+                {
+                    TipContext.Value = options.Tip;
+                }
+
+                ShowYes.Value = options.ShowYes;
+                ShowNo.Value = options.ShowNo;
+            }
+            else if (args is string tip && !string.IsNullOrWhiteSpace(tip))
             {
                 TipContext.Value = tip;
             }

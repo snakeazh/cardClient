@@ -114,6 +114,7 @@ namespace App.UI
 
         protected override async Task OnViewOpen()
         {
+            SetInBattleFit(true);
             var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.GameHud);
             _gameHud = Instantiate(prefab);
             _gameHud.name = "GameHud";
@@ -150,6 +151,7 @@ namespace App.UI
 
         protected override Task OnViewClose()
         {
+            SetInBattleFit(false);
             if (ViewModel != null)
             {
                 ViewModel.Session.Changed -= OnSessionChanged;
@@ -225,6 +227,17 @@ namespace App.UI
             }
 
             return Task.CompletedTask;
+        }
+
+        private void SetInBattleFit(bool inBattle)
+        {
+            var root = GetComponentInParent<UIRoot>(true);
+            if (root == null)
+            {
+                root = FindObjectOfType<UIRoot>();
+            }
+
+            root?.SetInBattleFit(inBattle);
         }
 
         private void OnSessionChanged()

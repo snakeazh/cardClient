@@ -27,8 +27,24 @@ namespace Framework.UI.Navigation
         private CanvasScaler _scaler;
         private int _lastWidth;
         private int _lastHeight;
+        private bool _inBattleFit;
 
         public Canvas RootCanvas { get; private set; }
+
+        /// <summary>局内按高度适配；局外按宽度适配（宽屏仍锁高度加黑边）。</summary>
+        public bool InBattleFit => _inBattleFit;
+
+        public void SetInBattleFit(bool inBattle)
+        {
+            if (_inBattleFit == inBattle)
+            {
+                ApplyWidescreenFit(true);
+                return;
+            }
+
+            _inBattleFit = inBattle;
+            ApplyWidescreenFit(true);
+        }
 
         /// <summary>
         /// Instantiates UIRoot from a prefab asset (loaded via IResourceService in UIFramework).
@@ -95,8 +111,8 @@ namespace Framework.UI.Navigation
 #endif
 
         /// <summary>
-        /// 宽于 9:16 时按高度适配（与 GameHud 锁定设计高度一致），左右用黑边遮挡；
-        /// 否则保持按宽度适配，黑边宽度为 0。
+        /// 1080×1920（9:16）。局外按宽度适配；局内按高度适配。
+        /// 宽于 9:16 时始终锁高度，左右黑边遮挡。
         /// </summary>
         private void ApplyWidescreenFit(bool force)
         {
@@ -134,19 +150,16 @@ namespace Framework.UI.Navigation
 
             float designAspect = designWidth / designHeight;
             float currentAspect = (float)width / height;
+            bool useHeightFit = _inBattleFit || currentAspect > designAspect;
+            if (_scaler != null)
+            {
+                _scaler.matchWidthOrHeight = useHeightFit ? 1f : 0f;
+            }
+
             float barWidth = 0f;
             if (currentAspect > designAspect)
             {
-                if (_scaler != null)
-                {
-                    _scaler.matchWidthOrHeight = 1f;
-                }
-
                 barWidth = (designHeight * currentAspect - designWidth) * 0.5f;
-            }
-            else if (_scaler != null)
-            {
-                _scaler.matchWidthOrHeight = 0f;
             }
 
             SetBarWidth(_blackLeft, barWidth);

@@ -107,7 +107,7 @@ namespace App.UI
 
         /// <summary>打开广告商店弹窗（体力/金币限购）。每次新建 VM：旧 VM 随关闭被 Dispose，
         /// 不可复用；VM 的 Closed 回调清引用，之后 AddBtn 才能再次打开。</summary>
-        private async void OpenShop()
+        public async void OpenShop()
         {
             if (_shopPop != null)
             {

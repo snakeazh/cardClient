@@ -23,6 +23,21 @@ namespace App.Game
             return sum;
         }
 
+        public static float ShopWeightMultiplier(ITalentService talent, QualityType quality)
+        {
+            if (quality == QualityType.Epic)
+            {
+                return 1f + SumValue(talent, MechanismType.EpicRelicPro);
+            }
+
+            if (quality == QualityType.Legend)
+            {
+                return 1f + SumValue(talent, MechanismType.LegendRelicPro);
+            }
+
+            return 1f;
+        }
+
         public static float SumAttackExtra(ITalentService talent, HandScore score, RelicCombatContext ctx)
         {
             var extra = 0f;

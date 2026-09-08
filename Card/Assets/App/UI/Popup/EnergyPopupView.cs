@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 体力不足弹窗。节点通过 UIReference / UIBind 解析：Info / AdInfo / AdBtn / CloseBtn。
+    /// 体力不足弹窗（已改走 CommonTop，本页保留未接入）。
     /// </summary>
     [AutoScreen(AppScreenIds.EnergyPopup, UILayer.Popup, ResResourcePaths.EnergyPopup)]
     public sealed class EnergyPopupView : ViewBase<EnergyPopupViewModel>

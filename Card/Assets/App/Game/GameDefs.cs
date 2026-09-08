@@ -411,7 +411,7 @@ namespace App.Game
         public float NextShopDiscount;
         /// <summary>当前商店已生效的购买折扣。</summary>
         public float ShopBuyDiscount;
-        /// <summary>消耗品：本局首次亮出豹子获得的金币。0 表示没有或已触发。</summary>
+        /// <summary>消耗品：本局每次亮出豹子获得的金币。0 表示没有。</summary>
         public int FirstLeopardGoldPending;
         /// <summary>消耗品：本关比牌获胜时伤害提高。</summary>
         public float LevelWinDamageUp;
@@ -435,6 +435,10 @@ namespace App.Game
         public int DefeatMagStacks;
         /// <summary>小强层数（每输掉一次比牌 +1）。</summary>
         public int DefeatDmgStacks;
+        /// <summary>复仇之刺层数（每输掉一次比牌 +1，有上限）。</summary>
+        public int LossRampStacks;
+        /// <summary>本局是否用过搓牌 / 透视 / 替换。奢侈品解锁用。</summary>
+        public bool UsedSkillThisRun;
         /// <summary>本局比牌输过的敌人 MonsterId。小本本 / 陷阱用。</summary>
         public readonly HashSet<int> LostToMonsterIds = new HashSet<int>();
         /// <summary>救命稻草本关是否已用。</summary>
@@ -456,6 +460,8 @@ namespace App.Game
             EvadeStacks = 0;
             DefeatMagStacks = 0;
             DefeatDmgStacks = 0;
+            LossRampStacks = 0;
+            UsedSkillThisRun = false;
             StrawUsedThisStage = false;
             StrawHealPending = 0f;
             PracticeMagForever = 0f;

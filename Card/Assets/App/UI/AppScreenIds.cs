@@ -21,7 +21,9 @@ namespace App.UI
         public const string TalentDetail = "App.TalentDetail";
         public const string TalentRulesPop = "App.TalentRulesPop";
         public const string ShopDetail = "App.ShopDetail";
+        public const string CommonTop = "App.CommonTop";
         public const string RemainListPop = "App.RemainListPop";
+        public const string GamePopupInfo = "App.GamePopupInfo";
         public const string EnergyPopup = "App.EnergyPopup";
         public const string StaminaPurchasePop = "App.StaminaPurchasePop";
         public const string LevelUI = "App.LevelUI";

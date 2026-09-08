@@ -16,13 +16,15 @@ namespace App.UI.Popup
 
     /// <summary>
     /// 闯关结算：成功 / 失败两套节点。coinNum 为局外货币，积分按 10:1 兑换资金。
-    /// 失败时 AgainBtn 为广告复活；放弃或通关才兑入局外货币。
+    /// 失败时 AgainBtn 为广告复活；局内主动退出以 forfeitNoRevive 打开则隐藏复活。
+    /// 放弃或通关才兑入局外货币。
     /// </summary>
     public sealed class BattleResultPopupViewModel : ViewModelBase
     {
         private readonly IDialogService _dialogs;
         private readonly IWalletService _wallet;
         private bool _granted;
+        private bool _forfeitNoRevive;
 
         public BattleResultPopupViewModel(
             GameSession session,
@@ -57,7 +59,8 @@ namespace App.UI.Popup
 
         protected override Task OnOpen(object args)
         {
-            var success = Session.Phase == GamePhase.RunComplete;
+            _forfeitNoRevive = args is bool forfeit && forfeit;
+            var success = !_forfeitNoRevive && Session.Phase == GamePhase.RunComplete;
             ShowSuccess.Value = success;
             ShowFail.Value = !success;
             ShowAgain.Value = CanRevive();
@@ -74,7 +77,9 @@ namespace App.UI.Popup
 
         private bool CanRevive()
         {
-            return Session.Phase == GamePhase.StageFail && Session.Run.AdsReviveThisStage < 1;
+            return !_forfeitNoRevive &&
+                   Session.Phase == GamePhase.StageFail &&
+                   Session.Run.AdsReviveThisStage < 1;
         }
 
         private void GrantOutGameGold(int funds)

@@ -310,6 +310,7 @@ GameObject:
   - component: {fileID: 7625611904719111217}
   - component: {fileID: 714662193290312761}
   - component: {fileID: 50614556044454336}
+  - component: {fileID: 1736598081572384496}
   m_Layer: 0
   m_Name: BG
   m_TagString: Untagged
@@ -383,6 +384,22 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1736598081572384496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3180738342356446736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b61e567f559365f43b26e369a9422896, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  designWidth: 1080
+  designHeight: 1920
+  originalScale: {x: 1, y: 1, z: 1}
+  originalScaleCaptured: 1
 --- !u!1 &3801340591993348428
 GameObject:
   m_ObjectHideFlags: 0

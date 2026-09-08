@@ -32,6 +32,7 @@ namespace App.UI
         private readonly ILevelService _levels;
         private readonly ILevelProgressService _progress;
         private readonly IEnergyService _energy;
+        private readonly MainResourceViewModel _mainResource;
         private readonly List<HeroConfig> _heroes = new List<HeroConfig>();
         private readonly List<LevelSnapshot> _stages = new List<LevelSnapshot>();
 
@@ -43,6 +44,7 @@ namespace App.UI
             ILevelService levels,
             ILevelProgressService progress,
             IEnergyService energy,
+            MainResourceViewModel mainResource,
             IResourceService resources)
         {
             _ui = ui;
@@ -52,6 +54,7 @@ namespace App.UI
             _levels = levels;
             _progress = progress;
             _energy = energy;
+            _mainResource = mainResource;
             Resources = resources;
 
             CollectHeroes();
@@ -356,7 +359,7 @@ namespace App.UI
             await _ui.Open(_tableVm);
         }
 
-        /// <summary>扣开局体力。不足时弹补充弹窗，看广告补满后继续开局；返回是否可开局。</summary>
+        /// <summary>扣开局体力。不足时弹 CommonTop，确定后打开体力商店；返回是否可开局。</summary>
         private async Task<bool> TrySpendEnergyWithPopupAsync()
         {
             if (_energy.TrySpendRunCost())
@@ -364,15 +367,21 @@ namespace App.UI
                 return true;
             }
 
-            var refilled = await PresentEnergyPopupAsync();
-            return refilled && _energy.TrySpendRunCost();
+            await PresentEnergyInsufficientPopupAsync();
+            return false;
         }
 
-        private async Task<bool> PresentEnergyPopupAsync()
+        private async Task PresentEnergyInsufficientPopupAsync()
         {
-            var registration = _ui.Registry.GetByViewModelType(typeof(EnergyPopupViewModel));
-            var popup = (EnergyPopupViewModel)_ui.Registry.CreateViewModel(registration);
-            return await _ui.Dialogs.ShowCustomAsync<EnergyPopupViewModel, bool>(popup);
+            var registration = _ui.Registry.GetByViewModelType(typeof(CommonTopViewModel));
+            var popup = (CommonTopViewModel)_ui.Registry.CreateViewModel(registration);
+            var confirmed = await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(
+                popup,
+                "体力不足，前往商店购买");
+            if (confirmed)
+            {
+                _mainResource.OpenShop();
+            }
         }
 
         private void RefreshHeroPanel()

@@ -102,5 +102,8 @@ namespace App.Talent
     public sealed class TalentSaveData
     {
         public TalentSaveEntry[] Entries = Array.Empty<TalentSaveEntry>();
+
+        /// <summary>累计抽卡次数，决定下次抽取价格递增（GameConst.TalentNeedChestGold × 次数）。</summary>
+        public int DrawCount;
     }
 }

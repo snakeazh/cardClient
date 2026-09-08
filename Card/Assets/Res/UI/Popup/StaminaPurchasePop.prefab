@@ -185,8 +185,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 6, y: -84}
-  m_SizeDelta: {x: 610.0469, y: 93.878296}
+  m_AnchoredPosition: {x: 6, y: -79.02234}
+  m_SizeDelta: {x: 610.0469, y: 83.923}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4846327908342929469
 CanvasRenderer:
@@ -1633,6 +1633,19 @@ MonoBehaviour:
   - Key: BuyCoin
     Component: {fileID: 9034511658978777231}
     Bind: {fileID: 1266775426841996934}
+--- !u!114 &7421000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6175134540057785447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a9b42c4ea5e05646abf975de0789688, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ui: {fileID: 0}
 --- !u!1 &6472958314727978219
 GameObject:
   m_ObjectHideFlags: 0
@@ -2056,16 +2069,3 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &7421000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6175134540057785447}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a9b42c4ea5e05646abf975de0789688, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _ui: {fileID: 0}

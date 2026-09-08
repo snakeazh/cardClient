@@ -24,6 +24,7 @@ namespace App.Talent
         private readonly Dictionary<int, int> _maxLevel = new Dictionary<int, int>();
         private int[] _ids = Array.Empty<int>();
         private readonly Dictionary<int, int> _counts = new Dictionary<int, int>();
+        private int _drawCount;
         private bool _dirty;
 
         public TalentService(ISaveService save)
@@ -119,9 +120,46 @@ namespace App.Talent
             return list;
         }
 
+        /// <summary>当前一次抽取的价格：基础价 + 已抽次数 × 每次累加值（均读 GameConst）。</summary>
+        public int GetDrawCost()
+        {
+            if (!GameConst.IsLoaded)
+            {
+                return 0;
+            }
+
+            return GameConst.Instance.TalentChestNeedGold +
+                   GameConst.Instance.TalentNeedChestGold * _drawCount;
+        }
+
+        /// <summary>记一次成功抽取：下次 GetDrawCost 递增一个步长。</summary>
+        public void RecordDraw()
+        {
+            _drawCount++;
+            _dirty = true;
+        }
+
         public int DrawRandomId()
         {
-            return _ids.Length == 0 ? 0 : _ids[UnityEngine.Random.Range(0, _ids.Length)];
+            // 满级天赋不再进入抽取池
+            List<int> pool = null;
+            for (var i = 0; i < _ids.Length; i++)
+            {
+                if (IsMaxLevel(_ids[i]))
+                {
+                    continue;
+                }
+
+                pool ??= new List<int>(_ids.Length);
+                pool.Add(_ids[i]);
+            }
+
+            if (pool == null)
+            {
+                return 0;
+            }
+
+            return pool[UnityEngine.Random.Range(0, pool.Count)];
         }
 
         public TalentAddResult Add(int talentId, int amount = 1)
@@ -149,18 +187,20 @@ namespace App.Talent
 
         public void Clear()
         {
-            if (_counts.Count == 0)
+            if (_counts.Count == 0 && _drawCount == 0)
             {
                 return;
             }
 
             _counts.Clear();
+            _drawCount = 0;
             _dirty = true;
         }
 
         public void Load()
         {
             _counts.Clear();
+            _drawCount = 0;
             _dirty = false;
             if (!_save.HasKey(SaveKey))
             {
@@ -180,6 +220,7 @@ namespace App.Talent
                 return;
             }
 
+            _drawCount = data.DrawCount > 0 ? data.DrawCount : 0;
             for (var i = 0; i < data.Entries.Length; i++)
             {
                 var entry = data.Entries[i];
@@ -219,7 +260,8 @@ namespace App.Talent
             owned.Sort((a, b) => a.TalentId.CompareTo(b.TalentId));
             var data = new TalentSaveData
             {
-                Entries = owned.ToArray()
+                Entries = owned.ToArray(),
+                DrawCount = _drawCount
             };
             _save.SetString(SaveKey, JsonUtility.ToJson(data));
             _save.Save();

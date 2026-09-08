@@ -1,10 +1,12 @@
+using Framework.UI.Navigation;
 using UnityEngine;
 
 namespace App.Game
 {
     /// <summary>
-    /// 正交相机按 9:16（1080×1920）适配。窄屏按宽度适配（上下多出可视区域）；
-    /// 宽于 9:16 时锁定设计高度，左右由 UIRoot 黑边遮挡，可见区域与设计分辨率一致。
+    /// 正交相机按 9:16（1080×1920）适配。
+    /// 局外按宽度适配（高屏扩大可视高度）；局内锁定设计高度，过宽由 <see cref="TallScreenFitScale"/> 缩小。
+    /// 宽于 9:16 时始终锁高度，左右由 UIRoot 黑边遮挡。
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(Camera))]
@@ -15,8 +17,10 @@ namespace App.Game
         [SerializeField] private float designOrthographicSize = 9.6f;
 
         private Camera _camera;
+        private UIRoot _uiRoot;
         private int _lastWidth;
         private int _lastHeight;
+        private bool _lastInBattle;
 
         private void OnEnable()
         {
@@ -26,7 +30,8 @@ namespace App.Game
 
         private void LateUpdate()
         {
-            if (Screen.width != _lastWidth || Screen.height != _lastHeight)
+            bool inBattle = IsInBattleFit();
+            if (Screen.width != _lastWidth || Screen.height != _lastHeight || inBattle != _lastInBattle)
             {
                 Apply();
             }
@@ -63,7 +68,23 @@ namespace App.Game
 
             float designAspect = designWidth / designHeight;
             float currentAspect = (float)width / height;
-            _camera.orthographicSize = designOrthographicSize * Mathf.Max(1f, designAspect / currentAspect);
+            bool inBattle = IsInBattleFit();
+            _lastInBattle = inBattle;
+
+            bool useHeightFit = inBattle || currentAspect > designAspect;
+            _camera.orthographicSize = useHeightFit
+                ? designOrthographicSize
+                : designOrthographicSize * (designAspect / currentAspect);
+        }
+
+        private bool IsInBattleFit()
+        {
+            if (_uiRoot == null)
+            {
+                _uiRoot = FindObjectOfType<UIRoot>();
+            }
+
+            return _uiRoot != null && _uiRoot.InBattleFit;
         }
     }
 }

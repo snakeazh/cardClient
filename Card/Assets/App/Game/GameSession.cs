@@ -5360,6 +5360,9 @@ namespace App.Game
             }
 
             gold += CountStageKills() * KillMonsterGoldBonus();
+            var unusedSkills = UnusedSkillCharges();
+            var unusedGold = unusedSkills * EverySkillProvideGold();
+            gold += unusedGold;
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
@@ -5369,6 +5372,11 @@ namespace App.Game
             AddGold(gold);
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
+            if (unusedGold > 0)
+            {
+                Log($"未使用技能 +{unusedGold} 金币（剩余 {unusedSkills} 次）");
+            }
+
             Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
             return gold;
         }
@@ -6212,6 +6220,18 @@ namespace App.Game
             return GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.KillMonsterGetGold) : 0;
         }
 
+        private int UnusedSkillCharges()
+        {
+            return Math.Max(0, Run.PeekGoodCharges)
+                + Math.Max(0, Run.ChaKanGoodCharges)
+                + Math.Max(0, Run.TiHuanGoodCharges);
+        }
+
+        private static int EverySkillProvideGold()
+        {
+            return GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.EverySkillProvideGold) : 0;
+        }
+
         private int CardsDealtFor(SeatState seat)
         {
             return GameBalance.CardsDealt(seat != null && seat.IsPlayer, Run);
@@ -6712,7 +6732,7 @@ namespace App.Game
             var total = 0f;
             for (var i = 0; i < pool.Count; i++)
             {
-                total += HeroMechanics.ShopWeight(Run, pool[i]);
+                total += OfferWeight(pool[i]);
             }
 
             if (total <= 0f)
@@ -6724,7 +6744,7 @@ namespace App.Game
             var acc = 0.0;
             for (var i = 0; i < pool.Count; i++)
             {
-                acc += HeroMechanics.ShopWeight(Run, pool[i]);
+                acc += OfferWeight(pool[i]);
                 if (roll < acc)
                 {
                     return pool[i];
@@ -6732,6 +6752,12 @@ namespace App.Game
             }
 
             return pool[pool.Count - 1];
+        }
+
+        private float OfferWeight(RelicConfig relic)
+        {
+            return HeroMechanics.ShopWeight(Run, relic)
+                * TalentMechanics.ShopWeightMultiplier(TalentSvc(), relic != null ? relic.Type : default);
         }
 
         private bool HasUnownedRelicConfig()

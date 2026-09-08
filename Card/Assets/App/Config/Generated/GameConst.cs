@@ -176,6 +176,11 @@ namespace App.Config
         /// </summary>
         public int TalentNeedChestGold;
 
+        /// <summary>
+        /// 每有1个未使用的技能,结算时提供20金币
+        /// </summary>
+        public int EverySkillProvideGold;
+
     }
 }
 

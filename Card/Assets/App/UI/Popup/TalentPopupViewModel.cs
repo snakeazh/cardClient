@@ -31,8 +31,8 @@ namespace App.UI.Popup
 
     /// <summary>
     /// 天赋弹窗：列表读 ITalentService（未解锁显示 ???），点击条目打开天赋详情；
-    /// BuyBtn 按 GameConst.TalentChestNeedGold 扣金币随机抽一个天赋，弹详情展示结果，
-    /// 金币不足时 Toast 提示。
+    /// BuyBtn 按 GetDrawCost（基础价 + 已抽次数 × 递增步长）扣金币，从非满级天赋中随机抽一个，
+    /// 弹详情展示结果，金币不足时 Toast 提示，全部满级时 Toast 提示。
     /// </summary>
     public sealed class TalentPopupViewModel : ViewModelBase
     {
@@ -55,7 +55,7 @@ namespace App.UI.Popup
             Atlas = atlas;
             BuyCommand = new RelayCommand(Buy);
             OpenRulesCommand = new RelayCommand(OpenRules);
-            BuyCostText = new ObservableProperty<string>(ResolveBuyCost());
+            BuyCostText = new ObservableProperty<string>(_talent.GetDrawCost().ToString());
             ListVersion = new ObservableProperty<int>(0);
             RebuildItems();
         }
@@ -140,10 +140,11 @@ namespace App.UI.Popup
                 return;
             }
 
-            var cost = GameConst.Instance.TalentChestNeedGold;
+            var cost = _talent.GetDrawCost();
             var talentId = _talent.DrawRandomId();
-            if (cost <= 0 || talentId <= 0)
+            if (talentId <= 0)
             {
+                Toast.Show("天赋已全部满级");
                 return;
             }
 
@@ -154,6 +155,8 @@ namespace App.UI.Popup
             }
 
             _talent.Add(talentId);
+            _talent.RecordDraw();
+            BuyCostText.Value = _talent.GetDrawCost().ToString();
             RebuildItems();
             ListVersion.Value++;
             _ = OpenDetail(talentId, reward: true);
@@ -188,11 +191,6 @@ namespace App.UI.Popup
             }
 
             return _talent.TryGet(snapshot.TalentId, 1, out var row) ? row : null;
-        }
-
-        private static string ResolveBuyCost()
-        {
-            return GameConst.IsLoaded ? GameConst.Instance.TalentChestNeedGold.ToString() : "0";
         }
     }
 }

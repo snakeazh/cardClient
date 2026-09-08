@@ -121,6 +121,9 @@ namespace App.Game
         /// <summary>本关每回合击杀数，与 <see cref="StageRoundScores"/> 一一对应。</summary>
         public IReadOnlyList<int> StageRoundKills =>
             ScoreSvc()?.StageRoundKills ?? Array.Empty<int>();
+        /// <summary>本关直接击杀（编辑器外挂）的旁路伤害，按行与 <see cref="StageRoundScores"/> 对应。</summary>
+        public IReadOnlyList<int> StageDirectKillDamages =>
+            ScoreSvc()?.StageDirectKillDamages ?? Array.Empty<int>();
         public int PendingAttackDamage { get; private set; }
         /// <summary>最近一次玩家伤害结算的遗物上下文，HUD 装备加成动画复用同一份掷骰。</summary>
         public RelicCombatContext LastRelicContext { get; private set; }
@@ -2486,7 +2489,8 @@ namespace App.Game
                 _pendingOpenTarget = null;
             }
 
-            Log($"[编辑器] 直接击杀 {target.Name}");
+            ScoreSvc()?.RecordDirectKillDamage(dealt);
+            Log($"[编辑器] 直接击杀 {target.Name}（伤害 {dealt} 已记入结算明细，不入积分）");
             if (!AnyEnemyAlive())
             {
                 if (IsLastLevel)

@@ -93,13 +93,22 @@ namespace App.UI.Popup
             _roundRows.Clear();
             var scores = Session.StageRoundScores;
             var kills = Session.StageRoundKills;
-            for (var i = 0; i < scores.Count; i++)
+            var directDamages = Session.StageDirectKillDamages;
+            // 行数取积分/击杀的较大者：直接击杀（无牌局积分）只产生击杀行，不能按积分数截断丢行。
+            var rowCount = scores.Count > kills.Count ? scores.Count : kills.Count;
+            for (var i = 0; i < rowCount; i++)
             {
+                var damage = i < scores.Count ? scores[i] : 0;
+                if (i < directDamages.Count)
+                {
+                    damage += directDamages[i];
+                }
+
                 _roundRows.Add(new SettleRoundRow
                 {
                     Round = i + 1,
                     Kills = i < kills.Count ? kills[i] : 0,
-                    Damage = scores[i]
+                    Damage = damage
                 });
             }
 

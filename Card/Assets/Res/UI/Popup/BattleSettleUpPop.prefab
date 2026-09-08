@@ -437,6 +437,7 @@ GameObject:
   - component: {fileID: 2087567874985291628}
   - component: {fileID: 75107193346636879}
   - component: {fileID: 8576341209817346056}
+  - component: {fileID: 4249247317952173388}
   m_Layer: 0
   m_Name: WithDrawBtn
   m_TagString: Untagged
@@ -608,6 +609,24 @@ MonoBehaviour:
   m_FlexibleWidth: 0
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &4249247317952173388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270883637502556861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &1373284674466944690
 GameObject:
   m_ObjectHideFlags: 0
@@ -3836,6 +3855,7 @@ GameObject:
   - component: {fileID: 8576341209817346096}
   - component: {fileID: 8576341209817346097}
   - component: {fileID: 8576341209817346131}
+  - component: {fileID: 8768307784530819151}
   m_Layer: 0
   m_Name: DoubleBtn
   m_TagString: Untagged
@@ -4006,6 +4026,24 @@ MonoBehaviour:
   m_FlexibleWidth: 0
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &8768307784530819151
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8576341209817346091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &8576341209817346101
 GameObject:
   m_ObjectHideFlags: 0

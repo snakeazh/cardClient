@@ -171,6 +171,11 @@ namespace App.Config
         /// </summary>
         public int DefaultSkillPerspectiveNum;
 
+        /// <summary>
+        /// 每次抽取天赋金币累加
+        /// </summary>
+        public int TalentNeedChestGold;
+
     }
 }
 

@@ -5,7 +5,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+1"
@@ -16,7 +16,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+2"
@@ -27,7 +27,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+3"
@@ -38,7 +38,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+4"
@@ -49,7 +49,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+5"
@@ -60,7 +60,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+6"
@@ -71,7 +71,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+7"
@@ -82,7 +82,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+8"
@@ -93,7 +93,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+9"
@@ -104,7 +104,7 @@
     "Name": "2点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TwoPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 101,
     "Desc": "数字牌2提供的攻击力+10"
@@ -115,7 +115,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 1,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+1"
@@ -126,7 +126,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 2,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+2"
@@ -137,7 +137,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 3,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+3"
@@ -148,7 +148,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 4,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+4"
@@ -159,7 +159,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 5,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+5"
@@ -170,7 +170,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 6,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+6"
@@ -181,7 +181,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 7,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+7"
@@ -192,7 +192,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 8,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+8"
@@ -203,7 +203,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 9,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+9"
@@ -214,7 +214,7 @@
     "Name": "3点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "ThreePointMastery",
     "TalentLevel": 10,
     "TalentEntry": 102,
     "Desc": "数字牌3提供的攻击力+10"
@@ -225,7 +225,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+1"
@@ -236,7 +236,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+2"
@@ -247,7 +247,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+3"
@@ -258,7 +258,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+4"
@@ -269,7 +269,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+5"
@@ -280,7 +280,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+6"
@@ -291,7 +291,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+7"
@@ -302,7 +302,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+8"
@@ -313,7 +313,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+9"
@@ -324,7 +324,7 @@
     "Name": "4点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FourPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 103,
     "Desc": "数字牌4提供的攻击力+10"
@@ -335,7 +335,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 1,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+1"
@@ -346,7 +346,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 2,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+2"
@@ -357,7 +357,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 3,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+3"
@@ -368,7 +368,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 4,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+4"
@@ -379,7 +379,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 5,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+5"
@@ -390,7 +390,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 6,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+6"
@@ -401,7 +401,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 7,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+7"
@@ -412,7 +412,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 8,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+8"
@@ -423,7 +423,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 9,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+9"
@@ -434,7 +434,7 @@
     "Name": "5点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "FivePointMastery",
     "TalentLevel": 10,
     "TalentEntry": 104,
     "Desc": "数字牌5提供的攻击力+10"
@@ -445,7 +445,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+1"
@@ -456,7 +456,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+2"
@@ -467,7 +467,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+3"
@@ -478,7 +478,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+4"
@@ -489,7 +489,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+5"
@@ -500,7 +500,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+6"
@@ -511,7 +511,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+7"
@@ -522,7 +522,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+8"
@@ -533,7 +533,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+9"
@@ -544,7 +544,7 @@
     "Name": "6点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SixPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 105,
     "Desc": "数字牌6提供的攻击力+10"
@@ -555,7 +555,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+1"
@@ -566,7 +566,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+2"
@@ -577,7 +577,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+3"
@@ -588,7 +588,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+4"
@@ -599,7 +599,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+5"
@@ -610,7 +610,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+6"
@@ -621,7 +621,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+7"
@@ -632,7 +632,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+8"
@@ -643,7 +643,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+9"
@@ -654,7 +654,7 @@
     "Name": "7点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "SevenPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 106,
     "Desc": "数字牌7提供的攻击力+10"
@@ -665,7 +665,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+1"
@@ -676,7 +676,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+2"
@@ -687,7 +687,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+3"
@@ -698,7 +698,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+4"
@@ -709,7 +709,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+5"
@@ -720,7 +720,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+6"
@@ -731,7 +731,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+7"
@@ -742,7 +742,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+8"
@@ -753,7 +753,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+9"
@@ -764,7 +764,7 @@
     "Name": "8点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "EightPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 107,
     "Desc": "数字牌8提供的攻击力+10"
@@ -775,7 +775,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 1,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+1"
@@ -786,7 +786,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 2,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+2"
@@ -797,7 +797,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 3,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+3"
@@ -808,7 +808,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 4,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+4"
@@ -819,7 +819,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 5,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+5"
@@ -830,7 +830,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 6,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+6"
@@ -841,7 +841,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 7,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+7"
@@ -852,7 +852,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 8,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+8"
@@ -863,7 +863,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 9,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+9"
@@ -874,7 +874,7 @@
     "Name": "9点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "NinePointMastery",
     "TalentLevel": 10,
     "TalentEntry": 108,
     "Desc": "数字牌9提供的攻击力+10"
@@ -885,7 +885,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 1,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+1"
@@ -896,7 +896,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 2,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+2"
@@ -907,7 +907,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 3,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+3"
@@ -918,7 +918,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 4,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+4"
@@ -929,7 +929,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 5,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+5"
@@ -940,7 +940,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 6,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+6"
@@ -951,7 +951,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 7,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+7"
@@ -962,7 +962,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 8,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+8"
@@ -973,7 +973,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 9,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+9"
@@ -984,7 +984,7 @@
     "Name": "10点精通",
     "Type": 1,
     "ChestProbability": 0.8,
-    "Icon": "",
+    "Icon": "TenPointMastery",
     "TalentLevel": 10,
     "TalentEntry": 109,
     "Desc": "数字牌10提供的攻击力+10"
@@ -2535,7 +2535,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 1,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+2"
@@ -2546,7 +2546,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 2,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+4"
@@ -2557,7 +2557,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 3,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+6"
@@ -2568,7 +2568,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 4,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+8"
@@ -2579,7 +2579,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 5,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+10"
@@ -2590,7 +2590,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 6,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+12"
@@ -2601,7 +2601,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 7,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+14"
@@ -2612,7 +2612,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 8,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+16"
@@ -2623,7 +2623,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 9,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+18"
@@ -2634,7 +2634,7 @@
     "Name": "A点精通",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "APointMastery",
     "TalentLevel": 10,
     "TalentEntry": 303,
     "Desc": "A牌提供的攻击力+20"

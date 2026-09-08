@@ -10,12 +10,12 @@
   "ShopRefreshGoldUpNumMax": 3,
   "GoldIcon": "coin",
   "TalentChestNeedGold": 10,
-  "PlayerInitialGoldNum": 140,
+  "PlayerInitialGoldNum": 0,
   "DamageTurnToGold": [
     12,
     1
   ],
-  "KillMonsterGetGold": 10,
+  "KillMonsterGetGold": 0,
   "HeroReplyHpPerLevelClear": 8,
   "EnergyMax": 5,
   "EnergyCostPerRun": 1,
@@ -38,5 +38,6 @@
   "DefaultSkillShuffleNum": 3,
   "DefaultSkillReplaceNum": 1,
   "DefaultSkillPerspectiveNum": 1,
-  "TalentNeedChestGold": 10
+  "TalentNeedChestGold": 10,
+  "EverySkillProvideGold": 20
 }

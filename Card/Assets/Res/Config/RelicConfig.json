@@ -289,7 +289,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "复仇之刺",
-    "Icon": "RevengeThorn",
+    "Icon": "VengeanceSpike",
     "Price": 30,
     "SellingPrice": 15,
     "MechanismId": [
@@ -304,7 +304,7 @@
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "对子心得",
-    "Icon": "PairExperience",
+    "Icon": "PairInsight",
     "Price": 35,
     "SellingPrice": 17,
     "MechanismId": [
@@ -725,7 +725,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "急救包",
-    "Icon": "GoldenFirstAidKit",
+    "Icon": "GoldFirstAidKit",
     "Price": 145,
     "SellingPrice": 72,
     "MechanismId": [
@@ -755,7 +755,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "商人票据",
-    "Icon": "MerchantTicket",
+    "Icon": "MerchantBill",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -770,7 +770,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "同花心得",
-    "Icon": "FlushExperience",
+    "Icon": "SameSuitInsight",
     "Price": 160,
     "SellingPrice": 80,
     "MechanismId": [
@@ -785,7 +785,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "顺子心得",
-    "Icon": "StraightExperience",
+    "Icon": "StraightInsight",
     "Price": 160,
     "SellingPrice": 80,
     "MechanismId": [
@@ -800,7 +800,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "第一位",
-    "Icon": "StraightExperience",
+    "Icon": "FirstPosition",
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [
@@ -815,7 +815,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "第二位",
-    "Icon": "StraightExperience",
+    "Icon": "SecondPosition",
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [
@@ -830,7 +830,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "第三位",
-    "Icon": "StraightExperience",
+    "Icon": "ThirdPosition",
     "Price": 80,
     "SellingPrice": 40,
     "MechanismId": [
@@ -1235,7 +1235,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "时之沙",
-    "Icon": "SandOfTime",
+    "Icon": "TimeSand",
     "Price": 200,
     "SellingPrice": 100,
     "MechanismId": [
@@ -1265,7 +1265,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "降低",
-    "Icon": "ReduceLevel",
+    "Icon": "LowerStatus",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1280,7 +1280,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "升职",
-    "Icon": "UpLevel",
+    "Icon": "Promote",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1295,7 +1295,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "净化药水",
-    "Icon": "PurificationPotion",
+    "Icon": "PurifyPotion",
     "Price": 160,
     "SellingPrice": 80,
     "MechanismId": [
@@ -1310,7 +1310,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "三花聚顶",
-    "Icon": "PurificationPotion",
+    "Icon": "ThreeFlowersGatherAtTheTop",
     "Price": 200,
     "SellingPrice": 100,
     "MechanismId": [

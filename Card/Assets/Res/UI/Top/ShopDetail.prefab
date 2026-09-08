@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1202710500555683207}
   - component: {fileID: 5796575033563361903}
   - component: {fileID: 1891775075134397802}
+  - component: {fileID: 1452865177876879289}
   m_Layer: 0
   m_Name: BuyBtn
   m_TagString: Untagged
@@ -138,6 +139,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: BuyBtn
   _target: {fileID: 5466341388413507406}
+--- !u!114 &1452865177876879289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494540224180407153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &2366536616645746077
 GameObject:
   m_ObjectHideFlags: 0
@@ -613,6 +632,7 @@ GameObject:
   - component: {fileID: 6889254375132690255}
   - component: {fileID: 9053679594471815941}
   - component: {fileID: 7587249624644419004}
+  - component: {fileID: 2333559109473566780}
   m_Layer: 0
   m_Name: SellBtn
   m_TagString: Untagged
@@ -738,6 +758,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _key: SellBtn
   _target: {fileID: 1721477943914665720}
+--- !u!114 &2333559109473566780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3294468640756719645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressMoveTarget: {fileID: 0}
+  pressMoveY: -8
+  pressScale: 0.95
+  duration: 0.08
+  ease: 6
+  clip: {fileID: 0}
 --- !u!1 &3400825171211096719
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,7 +18,11 @@ namespace App.Unlock
 
         void BeginRun();
 
-        void Report(ContidionType type);
+        /// <summary>
+        /// 上报进度。<paramref name="amount"/> 默认 1。
+        /// 累加类：进度 += amount × StackedValue；取最大类（通关难度 / 持有金币 / 单次伤害）：进度 = max(当前, amount)。
+        /// </summary>
+        void Report(ContidionType type, int amount = 1);
 
         void Load();
     }

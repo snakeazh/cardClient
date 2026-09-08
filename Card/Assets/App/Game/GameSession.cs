@@ -326,7 +326,7 @@ namespace App.Game
             var talentGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
             var heroGold = (int)Math.Round(HeroMechanics.SumValue(hero, MechanismType.InitialFunds));
             var extraGold = Math.Max(0, talentGold) + Math.Max(0, heroGold);
-            Run.Gold = baseGold + extraGold;
+            AddGold(baseGold + extraGold);
             if (extraGold > 0)
             {
                 Log($"富裕：初始金币 {Run.Gold}（基础 {baseGold} + {extraGold}）");
@@ -551,6 +551,7 @@ namespace App.Game
 
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
+            Run.UsedSkillThisRun = true;
             UnlockSvc()?.Report(ContidionType.ShuffleCard);
             if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
             {
@@ -862,6 +863,7 @@ namespace App.Game
 
             Player.PeekedType = string.Empty;
             Run.TiHuanGoodCharges--;
+            Run.UsedSkillThisRun = true;
             if (Player.Looked)
             {
                 Hint =
@@ -906,6 +908,8 @@ namespace App.Game
             var score = EvaluateSeat(seat);
             seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
+            Run.UsedSkillThisRun = true;
+            UnlockSvc()?.Report(ContidionType.Perspective);
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
             Log($"透视 {seat.Name} {seat.PeekedType}");
@@ -1374,12 +1378,12 @@ namespace App.Game
             var targetScore = target != null ? EvaluateSeat(target) : default;
             _pendingPlayerScore = opener != null && opener.IsPlayer ? openScore : targetScore;
             _pendingEnemyScore = opener != null && opener.IsPlayer ? targetScore : openScore;
-            NotifyPlayerShowdown(openScore, _pendingOpenerWins);
             var playerWonCompare = opener != null && opener.IsPlayer
                 ? _pendingOpenerWins
                 : !_pendingOpenerWins;
+            NotifyPlayerShowdown(_pendingPlayerScore, playerWonCompare);
             var enemySeat = opener != null && opener.IsPlayer ? target : opener;
-            RecordCompareOutcome(enemySeat, playerWonCompare);
+            RecordCompareOutcome(enemySeat, playerWonCompare, _pendingPlayerScore, _pendingEnemyScore);
             if (_pendingOpenerWins)
             {
                 var damage = ComputeAttackDamage(opener, openScore, target);
@@ -1564,6 +1568,19 @@ namespace App.Game
                 critMul,
                 chaseAdd,
                 execute);
+            if (attacker.IsPlayer)
+            {
+                if (crit)
+                {
+                    UnlockSvc()?.Report(ContidionType.CriticalNum);
+                }
+
+                if (damage > 0)
+                {
+                    UnlockSvc()?.Report(ContidionType.OneDamage, Math.Max(1, damage));
+                }
+            }
+
             if (damage <= 0)
             {
                 return 0;
@@ -1572,7 +1589,7 @@ namespace App.Game
             return Math.Max(1, damage);
         }
 
-        /// <summary>打玩家前的减伤：先加遗物/天赋 HeroTakeDamage，再乘百分比（英雄、条约、陷阱、差距胶囊）。闪避仍在 ApplyDamage。</summary>
+        /// <summary>打玩家前的减伤：天赋 HeroTakeDamage 为固定加减，遗物圆盾等并进百分比，再乘条约/陷阱/差距胶囊。</summary>
         private int IncomingDamageAfterMitigation(int damage, SeatState attacker = null)
         {
             if (Run.UseNullifyIncoming)
@@ -1580,15 +1597,15 @@ namespace App.Game
                 return 0;
             }
 
-            var take = (int)Math.Round(
-                RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage) +
-                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
+            var take = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroTakeDamage));
             if (take != 0)
             {
                 damage = Math.Max(1, damage + take);
             }
 
             var takePer = HeroMechanics.SumValue(Run, MechanismType.HeroTakeDamagePer);
+            takePer += RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamage);
+            takePer += RelicMechanics.SumValue(Run, MechanismType.HeroTakeDamagePer);
             takePer += RelicMechanics.SumValue(Run, MechanismType.MonsterDamage);
             if (attacker != null && Run.LostToMonster(attacker.MonsterId))
             {
@@ -1631,6 +1648,11 @@ namespace App.Game
                 Run,
                 MechanismType.DefeatGetDamage,
                 Run.DefeatDmgStacks);
+            percent += RelicMechanics.StackedValue(
+                Run,
+                MechanismType.LossRampDamage,
+                Run.LossRampStacks);
+            percent += RelicMechanics.GoldDamageScalePercent(Run);
             percent += RelicMechanics.GapDamagePercent(
                 Run,
                 _pendingPlayerScore.Type,
@@ -2075,7 +2097,7 @@ namespace App.Game
 
             Run.RelicConfigIds.Remove(relicId);
             var sell = RelicMechanics.SellPrice(Run, relicId);
-            Run.Gold += sell;
+            AddGold(sell);
             ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
             Log($"出售遗物 {relic.Name}，获得 {sell} 金币");
             Hint = $"已出售 {relic.Name}";
@@ -2200,13 +2222,18 @@ namespace App.Game
                     Log($"消耗品：下次商店购买折扣 {value:P0}");
                     break;
                 case MechanismType.RemoveBossEntry:
-                    Run.LevelEntryIds.Clear();
-                    Run.BossShieldHitsLeft = 0;
-                    Log("消耗品：已移除本关词缀");
+                    if (Run.LevelEntryIds.Count > 0)
+                    {
+                        var removeAt = _rng.Next(Run.LevelEntryIds.Count);
+                        Run.LevelEntryIds.RemoveAt(removeAt);
+                        Run.BossShieldHitsLeft = BossMechanics.ShieldHits(Run);
+                        Log("消耗品：已移除本关 1 条词缀");
+                    }
+
                     break;
                 case MechanismType.FirstLeopardGold:
                     Run.FirstLeopardGoldPending += (int)Math.Round(value);
-                    Log($"消耗品：本局首次豹子额外金币 {value}");
+                    Log($"消耗品：本局亮出豹子额外金币 {value}");
                     break;
                 case MechanismType.LevelWinDamageUp:
                     if (inShop)
@@ -2290,6 +2317,7 @@ namespace App.Game
             if (!TryAdvanceLevel())
             {
                 Phase = GamePhase.RunComplete;
+                ReportRunCompleteUnlocks();
                 if (string.IsNullOrEmpty(Hint) || Hint.Contains("关卡胜利") || Hint.Contains("兑换"))
                 {
                     Hint = "你已打完该难度全部关卡！";
@@ -2373,7 +2401,7 @@ namespace App.Game
             var extra = _shopGoldGranted;
             if (extra > 0)
             {
-                Run.Gold += extra;
+                AddGold(extra);
                 _shopGoldGranted += extra;
             }
 
@@ -2398,7 +2426,7 @@ namespace App.Game
                 return;
             }
 
-            Run.Gold += amount;
+            AddGold(amount);
             Log($"[编辑器] 金币 +{amount}（总金币 {Run.Gold}）");
             Notify();
         }
@@ -2691,8 +2719,7 @@ namespace App.Game
             if (score.Type == HandType.ThreeOfAKind && Run.FirstLeopardGoldPending > 0)
             {
                 var gold = Run.FirstLeopardGoldPending;
-                Run.FirstLeopardGoldPending = 0;
-                Run.Gold += gold;
+                AddGold(gold);
                 Log($"豹子精髓 +{gold} 金币（总金币 {Run.Gold}）");
             }
             if (score.Type == HandType.Straight)
@@ -2700,9 +2727,14 @@ namespace App.Game
                 UnlockSvc()?.Report(ContidionType.Straight);
             }
 
-            if (RelicMechanics.IsNaturalTwoThreeFive(score.UsedCards))
+            if (score.Type == HandType.Flush)
             {
-                UnlockSvc()?.Report(ContidionType.TwoThreeFive);
+                UnlockSvc()?.Report(ContidionType.Flush);
+            }
+
+            if (score.Type == HandType.Pair)
+            {
+                UnlockSvc()?.Report(ContidionType.Couplet);
             }
 
             if (HasShownSeven(score.UsedCards))
@@ -2721,12 +2753,31 @@ namespace App.Game
             _playerHandSettledThisRound = true;
             if (RelicMechanics.HasMechanism(Run, MechanismType.EveryCardAttackForever) && score.UsedCards != null)
             {
-                var delta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryCardAttackForever));
-                if (delta != 0)
+                var pickCount = Math.Max(0, (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryCardAttackForever)));
+                var delta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryCardAttackForever, 1));
+                if (delta == 0)
                 {
-                    for (var i = 0; i < score.UsedCards.Length; i++)
+                    delta = pickCount;
+                }
+
+                var cards = score.UsedCards;
+                var remain = cards.Length;
+                var take = Math.Min(pickCount, remain);
+                if (delta != 0 && take > 0)
+                {
+                    var order = new int[remain];
+                    for (var i = 0; i < remain; i++)
                     {
-                        Run.AddRankAttackBonus(score.UsedCards[i].Rank, delta);
+                        order[i] = i;
+                    }
+
+                    for (var i = 0; i < take; i++)
+                    {
+                        var pick = _rng.Next(i, remain);
+                        var tmp = order[i];
+                        order[i] = order[pick];
+                        order[pick] = tmp;
+                        Run.AddRankAttackBonus(cards[order[i]].Rank, delta);
                     }
                 }
             }
@@ -2756,6 +2807,12 @@ namespace App.Game
 
             var allFace = RelicMechanics.HasMechanism(Run, MechanismType.AllCardIsHeadCard);
             var headChance = RelicMechanics.SumValue(Run, MechanismType.ProOfHeadCardFunds);
+            var headGold = RelicMechanics.SumValue(Run, MechanismType.ProOfHeadCardFunds, 1);
+            if (headGold == 0f)
+            {
+                headGold = 1f;
+            }
+
             var nineGold = RelicMechanics.SumValue(Run, MechanismType.SpecialNineCard);
             var gained = 0;
             for (var i = 0; i < cards.Length; i++)
@@ -2763,7 +2820,7 @@ namespace App.Game
                 var card = cards[i];
                 if ((allFace || card.IsFace) && headChance > 0f && _rng.NextDouble() < headChance)
                 {
-                    gained += 1;
+                    gained += (int)Math.Round(headGold);
                 }
 
                 if (card.Rank == Rank.Nine && nineGold != 0f)
@@ -2777,7 +2834,7 @@ namespace App.Game
                 return;
             }
 
-            Run.Gold += gained;
+            AddGold(gained);
             Log($"亮牌结算 +{gained} 金币（总金币 {Run.Gold}）");
         }
 
@@ -2807,6 +2864,43 @@ namespace App.Game
 
             Run.Gold -= amount;
             Run.GoldSpentThisRun += amount;
+        }
+
+        private void AddGold(int amount)
+        {
+            if (amount == 0)
+            {
+                return;
+            }
+
+            Run.Gold += amount;
+            if (amount > 0)
+            {
+                UnlockSvc()?.Report(ContidionType.AccumulateGold, amount);
+                UnlockSvc()?.Report(ContidionType.NumberOfCoinsOwned, Run.Gold);
+            }
+        }
+
+        private void ApplyPracticePaperOnKill()
+        {
+            if (!RelicMechanics.HasMechanism(Run, MechanismType.NoKillMonsterGetMagnification))
+            {
+                return;
+            }
+
+            var mag = RelicMechanics.SumValue(Run, MechanismType.NoKillMonsterGetMagnification, 1);
+            if (mag == 0f)
+            {
+                mag = RelicMechanics.SumValue(Run, MechanismType.NoKillMonsterGetMagnification);
+            }
+
+            if (mag == 0f)
+            {
+                return;
+            }
+
+            Run.PracticeMagForever += mag;
+            Log($"练习卷：永久倍率 +{mag}");
         }
 
         /// <summary>搓牌/透视/替换次数：开新关、进商店后下一手、复活时重置；本关内跨手保留。</summary>
@@ -2977,6 +3071,7 @@ namespace App.Game
             _deck = new Deck(_rng);
             DealAll();
             ApplyRoundStartRelics();
+            ApplyEveryRoundHpUp();
             EnterOpenReady();
         }
 
@@ -4116,6 +4211,9 @@ namespace App.Game
             {
                 NotifyPlayerShowdown(playerScore, playerWon);
                 TryApplyPermanentCardBonuses(playerScore);
+                var enemySeat = opener != null && opener.IsPlayer ? target : opener;
+                var enemyScore = opener != null && opener.IsPlayer ? targetScore : openScore;
+                RecordCompareOutcome(enemySeat, playerWon, playerScore, enemyScore);
             }
 
             if (_pendingOpenerWins)
@@ -4659,8 +4757,13 @@ namespace App.Game
                     ScoreSvc()?.TrackStageKill();
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
+                    ApplyPracticePaperOnKill();
                     UnlockSvc()?.Report(ContidionType.KillMonster);
                     ApplyVengefulSoulOnKill();
+                }
+                else
+                {
+                    UnlockSvc()?.Report(ContidionType.DeathNum);
                 }
             }
             else
@@ -4692,7 +4795,7 @@ namespace App.Game
             var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TakeDamageGetFunds));
             if (gold != 0)
             {
-                Run.Gold += gold;
+                AddGold(gold);
                 Log($"补偿金 +{gold} 金币（总金币 {Run.Gold}）");
             }
         }
@@ -4704,7 +4807,8 @@ namespace App.Game
                 return;
             }
 
-            var bounce = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.BounceDamage));
+            var bouncePer = RelicMechanics.SumValue(Run, MechanismType.BounceDamage);
+            var bounce = (int)Math.Round(dealt * bouncePer);
             if (bounce <= 0)
             {
                 return;
@@ -4789,7 +4893,7 @@ namespace App.Game
             }
         }
 
-        private void RecordCompareOutcome(SeatState enemy, bool playerWon)
+        private void RecordCompareOutcome(SeatState enemy, bool playerWon, HandScore playerScore, HandScore enemyScore)
         {
             if (enemy == null || enemy.IsPlayer)
             {
@@ -4799,10 +4903,21 @@ namespace App.Game
             if (playerWon)
             {
                 _roundCompareWins++;
+                UnlockSvc()?.Report(ContidionType.Defeat);
+                ApplyWinBadges();
+                ApplySteppingStoneRoll();
+                ApplyWinHeal();
+                if (RelicMechanics.IsNaturalTwoThreeFive(playerScore.UsedCards) &&
+                    enemyScore.Type == HandType.ThreeOfAKind)
+                {
+                    UnlockSvc()?.Report(ContidionType.TwoThreeFive);
+                }
+
                 return;
             }
 
             _roundCompareLosses++;
+            UnlockSvc()?.Report(ContidionType.Failure);
             if (RelicMechanics.HasMechanism(Run, MechanismType.Revenge) ||
                 RelicMechanics.HasMechanism(Run, MechanismType.Trap))
             {
@@ -4818,10 +4933,24 @@ namespace App.Game
             {
                 Run.DefeatDmgStacks++;
             }
-            ApplyDefeatBadges();
+
+            if (RelicMechanics.HasMechanism(Run, MechanismType.LossRampDamage))
+            {
+                var cap = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.LossRampDamage, 1));
+                if (cap <= 0)
+                {
+                    cap = int.MaxValue;
+                }
+
+                if (Run.LossRampStacks < cap)
+                {
+                    Run.LossRampStacks++;
+                    Log($"复仇之刺叠层 {Run.LossRampStacks}/{cap}");
+                }
+            }
         }
 
-        private void ApplyDefeatBadges()
+        private void ApplyWinBadges()
         {
             var atk = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatGetAttack));
             if (atk != 0)
@@ -4840,22 +4969,52 @@ namespace App.Game
             }
         }
 
+        private void ApplySteppingStoneRoll()
+        {
+            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.SteppingStone)
+                {
+                    return;
+                }
+
+                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                {
+                    return;
+                }
+
+                var atk = (int)Math.Round(RelicMechanics.ValueAt(entry, 1));
+                if (atk == 0)
+                {
+                    atk = 1;
+                }
+
+                Run.PermanentAttackBonus += atk;
+                Player.Attack = Math.Max(0, Player.Attack + atk);
+                Log($"垫脚石：永久攻击 +{atk}");
+            });
+        }
+
+        private void ApplyWinHeal()
+        {
+            var heal = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.WinHeal));
+            if (heal <= 0)
+            {
+                return;
+            }
+
+            var gained = HealPlayer(heal);
+            if (gained > 0)
+            {
+                Log($"月光酒回复 {gained} HP（当前 {Player.Hp}/{Player.MaxHp}）");
+            }
+        }
+
         private void ApplyRoundCompareRelics()
         {
             if (_roundCompareWins + _roundCompareLosses <= 0)
             {
                 return;
-            }
-
-            if (_roundCompareLosses == 0)
-            {
-                var atk = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.SteppingStone));
-                if (atk != 0)
-                {
-                    Run.PermanentAttackBonus += atk;
-                    Player.Attack = Math.Max(0, Player.Attack + atk);
-                    Log($"垫脚石：永久攻击 +{atk}");
-                }
             }
 
             if (_roundCompareWins == 0)
@@ -4864,7 +5023,7 @@ namespace App.Game
                 var heal = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGoldAndReplyHp, 1));
                 if (gold != 0)
                 {
-                    Run.Gold += gold;
+                    AddGold(gold);
                     Log($"后备计划 +{gold} 金币（总金币 {Run.Gold}）");
                 }
 
@@ -4890,7 +5049,7 @@ namespace App.Game
             }
 
             _ironRiceBowlGranted = true;
-            Run.Gold += gold;
+            AddGold(gold);
             Log($"铁饭碗 +{gold} 金币（总金币 {Run.Gold}）");
         }
 
@@ -4899,7 +5058,7 @@ namespace App.Game
             var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundGetGold));
             if (gold != 0)
             {
-                Run.Gold += gold;
+                AddGold(gold);
                 Log($"小钱包 +{gold} 金币（总金币 {Run.Gold}）");
             }
 
@@ -4907,7 +5066,7 @@ namespace App.Game
             var nobleGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.NobleBadge, 1));
             if (nobleGold != 0 && Player.MaxHp > 0 && Player.Hp > Player.MaxHp * nobleHp)
             {
-                Run.Gold += nobleGold;
+                AddGold(nobleGold);
                 Log($"高贵徽章 +{nobleGold} 金币（总金币 {Run.Gold}）");
             }
 
@@ -4970,7 +5129,7 @@ namespace App.Game
                 var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGold));
                 if (gold != 0)
                 {
-                    Run.Gold += gold;
+                    AddGold(gold);
                     Log($"记账本 +{gold} 金币（总金币 {Run.Gold}）");
                 }
             }
@@ -4993,7 +5152,7 @@ namespace App.Game
                     return;
                 }
 
-                Run.Gold += gold;
+                AddGold(gold);
                 Log($"幸运草 +{gold} 金币（总金币 {Run.Gold}）");
             });
 
@@ -5004,7 +5163,7 @@ namespace App.Game
                 var gain = (int)Math.Floor(Run.Gold / (double)interestUnit) * interestGold;
                 if (gain != 0)
                 {
-                    Run.Gold += gain;
+                    AddGold(gain);
                     Log($"利息 +{gain} 金币（总金币 {Run.Gold}）");
                 }
             }
@@ -5016,7 +5175,7 @@ namespace App.Game
                 var gain = (int)Math.Floor(Run.PeekGoodCharges / peekUnit) * peekGold;
                 if (gain != 0)
                 {
-                    Run.Gold += gain;
+                    AddGold(gain);
                     Log($"小算盘 +{gain} 金币（总金币 {Run.Gold}）");
                 }
             }
@@ -5027,7 +5186,7 @@ namespace App.Game
                 var gain = (int)Math.Floor(_roundDamageDealt * (double)potRatio);
                 if (gain != 0)
                 {
-                    Run.Gold += gain;
+                    AddGold(gain);
                     Log($"聚宝盆 +{gain} 金币（总金币 {Run.Gold}）");
                 }
             }
@@ -5042,16 +5201,6 @@ namespace App.Game
 
             TryAddCappedStack(MechanismType.EveryRoundEndingGetCritical, ref Run.CritStacks, "暴击拳套");
             TryAddCappedStack(MechanismType.EveryRoundEndingGetEvade, ref Run.EvadeStacks, "运动鞋");
-
-            if (_roundKills <= 0 && RelicMechanics.HasMechanism(Run, MechanismType.NoKillMonsterGetMagnification))
-            {
-                var mag = RelicMechanics.SumValue(Run, MechanismType.NoKillMonsterGetMagnification);
-                if (mag != 0f)
-                {
-                    Run.PracticeMagForever += mag;
-                    Log($"练习卷：永久倍率 +{mag}");
-                }
-            }
         }
 
         private void TryAddCappedStack(MechanismType type, ref int stacks, string name)
@@ -5108,6 +5257,7 @@ namespace App.Game
                     ai.Status = "斩杀";
                     ai.Banner = "濒死斩杀";
                     Log($"互助斩杀：{ai.Name} 血量不足继续，被你斩杀");
+                    ApplyPracticePaperOnKill();
                     UnlockSvc()?.Report(ContidionType.KillMonster);
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
@@ -5137,7 +5287,6 @@ namespace App.Game
                 return;
             }
 
-            ApplyEveryRoundHpUp();
             ApplyRoundEndRelics();
             ApplyTalentRoundGold();
             ApplyMonsterGrow();
@@ -5186,6 +5335,7 @@ namespace App.Game
             if (!TryAdvanceLevel())
             {
                 Phase = GamePhase.RunComplete;
+                ReportRunCompleteUnlocks();
                 if (string.IsNullOrEmpty(Hint) || Hint.Contains("关卡胜利") || Hint.Contains("兑换"))
                 {
                     Hint = "你已打完该难度全部关卡！";
@@ -5216,7 +5366,7 @@ namespace App.Game
             }
 
             _shopGoldGranted = gold;
-            Run.Gold += gold;
+            AddGold(gold);
             var stage = score != null ? score.Current.Stage : 0;
             var total = score != null ? score.Current.Total : 0;
             Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
@@ -5922,12 +6072,46 @@ namespace App.Game
             return AppServices.IsReady ? AppServices.Resolve<IUnlockConditionService>() : null;
         }
 
+        private const int RelicIdFirstSlot = 233;
+        private const int RelicIdSecondSlot = 234;
+        private const int RelicIdThirdSlot = 235;
+
+        private void ReportRunCompleteUnlocks()
+        {
+            var difficulty = LevelSvc()?.Current?.Difficulty ?? 0;
+            if (difficulty > 0)
+            {
+                UnlockSvc()?.Report(ContidionType.ClearDifficulty, difficulty);
+            }
+
+            var defaultHeroId = GameConst.IsLoaded ? GameConst.Instance.DefaultHeroId : 1;
+            if (Run.HeroId == defaultHeroId)
+            {
+                if (difficulty >= 3)
+                {
+                    UnlockSvc()?.Report(ContidionType.Angel);
+                }
+
+                if (difficulty >= 10 && !Run.UsedSkillThisRun)
+                {
+                    UnlockSvc()?.Report(ContidionType.LuxuryGoods);
+                }
+            }
+
+            if (OwnsRelicConfig(RelicIdFirstSlot) &&
+                OwnsRelicConfig(RelicIdSecondSlot) &&
+                OwnsRelicConfig(RelicIdThirdSlot))
+            {
+                UnlockSvc()?.Report(ContidionType.ThreeCardAttack);
+            }
+        }
+
         private void ApplyTalentKillRewards()
         {
             var talent = TalentSvc();
             if (TalentMechanics.Roll(talent, MechanismType.KillingProOfObtainingFunds, _rng))
             {
-                Run.Gold += 1;
+                AddGold(1);
                 Log($"点金手 +1 金币（总金币 {Run.Gold}）");
             }
 
@@ -5951,7 +6135,7 @@ namespace App.Game
                 return;
             }
 
-            Run.Gold += 1;
+            AddGold(1);
             Log($"资本家 +1 金币（总金币 {Run.Gold}）");
         }
 
@@ -5988,7 +6172,7 @@ namespace App.Game
                 return;
             }
 
-            Run.Gold += gold;
+            AddGold(gold);
             Log($"伤害换金 +{gold}（本手 {damage} 伤害，总金币 {Run.Gold}）");
         }
 

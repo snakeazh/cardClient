@@ -86,11 +86,6 @@ namespace App.Game
             {
                 extra += AttackFromEntry(entry, score, run, ctx);
             });
-            if (!HasMechanism(run, MechanismType.EveryCardAttackForever))
-            {
-                extra += SumRankAttackForever(run, score);
-            }
-
             return extra;
         }
 
@@ -358,6 +353,38 @@ namespace App.Game
             return (outgoing ? ranks : -ranks) * per;
         }
 
+        /// <summary>贪欲之冠：floor(金币 / Value[0]) × Value[1]，层数上限 Value[2]。</summary>
+        public static float GoldDamageScalePercent(RunState run)
+        {
+            var percent = 0f;
+            ForEachEntry(run, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.GoldDamageScale || run == null)
+                {
+                    return;
+                }
+
+                var unit = ValueAt(entry);
+                var per = ValueAt(entry, 1);
+                if (unit <= 0f || per == 0f)
+                {
+                    return;
+                }
+
+                var stacks = (int)Math.Floor(run.Gold / (double)unit);
+                var cap = entry.Value != null && entry.Value.Length > 2
+                    ? (int)Math.Round(ValueAt(entry, 2))
+                    : int.MaxValue;
+                if (cap > 0)
+                {
+                    stacks = Math.Min(stacks, cap);
+                }
+
+                percent += stacks * per;
+            });
+            return percent;
+        }
+
         /// <summary>「自身攻击力」：次数 Value[0]，倍率缺省为 1。</summary>
         public static int AttackPowerDamage(RelicEntryConfig entry, int attack)
         {
@@ -397,7 +424,8 @@ namespace App.Game
                     ? (int)Math.Round(ValueAt(entry, 1))
                     : int.MaxValue;
                 if (type == MechanismType.EveryRoundEndingGetCritical ||
-                    type == MechanismType.EveryRoundEndingGetEvade)
+                    type == MechanismType.EveryRoundEndingGetEvade ||
+                    type == MechanismType.LossRampDamage)
                 {
                     var used = Math.Min(stacks, cap > 0 ? cap : stacks);
                     sum += used * unit;
@@ -629,8 +657,6 @@ namespace App.Game
                     return CountFace(score, ctx) * value;
                 case MechanismType.SpecialACard:
                     return CountRank(score, Rank.Ace) * value;
-                case MechanismType.EveryRubbingNum:
-                    return ctx.PeekLeft * value;
                 case MechanismType.Camera:
                     return CountUnshown(ctx, black: true) * value;
                 case MechanismType.Cupid:
@@ -642,7 +668,7 @@ namespace App.Game
                 case MechanismType.EveryRelic:
                     return (run?.RelicConfigIds != null ? run.RelicConfigIds.Count : 0) * value;
                 case MechanismType.NoUseRubbingEveryRubbingNum:
-                    return ctx.RubbedThisHand ? 0f : ctx.PeekLeft * value;
+                    return ctx.PeekLeft * value;
                 case MechanismType.AccumulatedNumOfCardType:
                     return (run != null ? run.HandTypeShowCount(score.Type) : 0) * value;
                 case MechanismType.RubbingCardRelic:
@@ -706,12 +732,12 @@ namespace App.Game
                     }
 
                     return (float)Math.Floor(run.GoldSpentThisRun / (double)value);
-                case MechanismType.EveryCardAttackForever:
-                    return SumRankAttackForever(run, score);
                 case MechanismType.SpecialSevenCardAttack:
                     return ctx.LuckySevenHits * value;
                 case MechanismType.CardProvideAttack:
                     return SumCardProvideAttack(entry, run, ctx);
+                case MechanismType.EveryRubbingNum:
+                    return ctx.PeekLeft * value;
                 default:
                     return 0f;
             }
@@ -740,22 +766,7 @@ namespace App.Game
                 }
 
                 extra += BossMechanics.ChipValueOf(run, card);
-            }
-
-            return extra;
-        }
-
-        private static float SumRankAttackForever(RunState run, HandScore score)
-        {
-            if (run == null || score.UsedCards == null)
-            {
-                return 0f;
-            }
-
-            var extra = 0f;
-            for (var i = 0; i < score.UsedCards.Length; i++)
-            {
-                extra += run.RankAttackBonus(score.UsedCards[i].Rank);
+                extra += run != null ? run.RankAttackBonus(card.Rank) : 0;
             }
 
             return extra;

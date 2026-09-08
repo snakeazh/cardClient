@@ -88,19 +88,44 @@ namespace App.Unlock
             }
         }
 
-        public void Report(ContidionType type)
+        public void Report(ContidionType type, int amount = 1)
         {
+            if (amount <= 0)
+            {
+                return;
+            }
+
             var changed = false;
             foreach (var kv in UnlockConditionConfig.All)
             {
                 var condition = kv.Value;
-                if (condition == null || condition.Type != type || condition.StackedValue <= 0)
+                if (condition == null || condition.Type != type)
                 {
                     continue;
                 }
 
                 _progress.TryGetValue(condition.Id, out var current);
-                _progress[condition.Id] = current + condition.StackedValue;
+                int next;
+                if (UsesMaxProgress(type))
+                {
+                    next = Math.Max(current, amount);
+                }
+                else
+                {
+                    if (condition.StackedValue <= 0)
+                    {
+                        continue;
+                    }
+
+                    next = current + amount * condition.StackedValue;
+                }
+
+                if (next == current)
+                {
+                    continue;
+                }
+
+                _progress[condition.Id] = next;
                 changed = true;
             }
 
@@ -111,6 +136,14 @@ namespace App.Unlock
 
             _dirty = true;
             SyncUnlockedRelics(toast: true);
+        }
+
+        private static bool UsesMaxProgress(ContidionType type)
+        {
+            return type == ContidionType.ClearDifficulty ||
+                   type == ContidionType.NumberOfCoinsOwned ||
+                   type == ContidionType.OneDamage ||
+                   type == ContidionType.SingleDamage;
         }
 
         public void Load()

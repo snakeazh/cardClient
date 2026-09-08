@@ -35,10 +35,15 @@ namespace App.Item
             }
 
             playerItem.ApplyTheme();
-            playerItem.SetName(unlocked && hero != null ? hero.Name : "???");
-            playerItem.SetHp(unlocked && hero != null ? hero.Hp : 0);
-            playerItem.SetAttack(unlocked && hero != null ? hero.HeroDamage : 0);
+            playerItem.SetName(unlocked && hero != null ? hero.Name : PlayerItem.LockedStatText);
             playerItem.SetPortrait(portrait, locked: !unlocked);
+            if (unlocked && hero != null)
+            {
+                playerItem.SetHp(hero.Hp);
+                playerItem.SetAttack(hero.HeroDamage);
+            }
+
+            playerItem.SetUnlocked(unlocked && hero != null);
         }
 
         public void SetSelected(bool selected, bool force = false)

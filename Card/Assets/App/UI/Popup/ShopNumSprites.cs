@@ -9,10 +9,11 @@ using UnityEngine.UI;
 namespace App.UI
 {
     /// <summary>
-    /// 把 <c>x2.5</c> / <c>x10</c> 拆成 <c>Altas/cardTypeValue</c> 图集里的 ×、数字、Point。
+    /// 把 <c>0/4</c> 拆成 <c>Altas/ShopNum</c> 图集里的数字与 Slash。
     /// </summary>
-    public static class CardTypeValueSprites
+    public static class ShopNumSprites
     {
+        private const string SlashSprite = "Slash";
         private static readonly List<string> Tokens = new List<string>(8);
 
         public static void Prepare(Transform root)
@@ -28,6 +29,8 @@ namespace App.UI
                 tmp.enabled = false;
                 tmp.raycastTarget = false;
             }
+
+            EnsureLayout(root);
         }
 
         public static void Apply(IAtlasService atlas, Transform root, string formatted)
@@ -38,7 +41,6 @@ namespace App.UI
             }
 
             Prepare(root);
-            HidePlusChild(root);
             Tokenize(formatted, Tokens);
             EnsureDigitCount(root, Tokens.Count);
             var childIndex = 0;
@@ -60,12 +62,12 @@ namespace App.UI
                 Sprite sprite = null;
                 if (atlas != null)
                 {
-                    atlas.TryGetSprite(ResResourcePaths.CardTypeValueAtlas, Tokens[childIndex], out sprite);
+                    atlas.TryGetSprite(ResResourcePaths.ShopNumAtlas, Tokens[childIndex], out sprite);
                 }
 
                 if (sprite == null)
                 {
-                    AppLog.Warn(LogChannel.Atlas, $"cardTypeValue missing '{Tokens[childIndex]}'.");
+                    AppLog.Warn(LogChannel.Atlas, $"ShopNum missing '{Tokens[childIndex]}'.");
                 }
 
                 image.sprite = sprite;
@@ -76,9 +78,28 @@ namespace App.UI
                 {
                     image.SetNativeSize();
                 }
+
                 child.gameObject.SetActive(sprite != null);
                 childIndex++;
             }
+        }
+
+        private static void EnsureLayout(Transform root)
+        {
+            var layout = root.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
+            {
+                layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
+            }
+
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.spacing = -8f;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.childControlWidth = false;
+            layout.childControlHeight = false;
+            layout.childScaleWidth = false;
+            layout.childScaleHeight = false;
         }
 
         private static void EnsureDigitCount(Transform root, int count)
@@ -103,19 +124,6 @@ namespace App.UI
             }
         }
 
-        private static void HidePlusChild(Transform root)
-        {
-            for (var i = 0; i < root.childCount; i++)
-            {
-                var child = root.GetChild(i);
-                if (child != null && child.name == "plus")
-                {
-                    child.gameObject.SetActive(false);
-                    return;
-                }
-            }
-        }
-
         private static void Tokenize(string formatted, List<string> tokens)
         {
             tokens.Clear();
@@ -132,27 +140,10 @@ namespace App.UI
                     continue;
                 }
 
-                if (c == 'x' || c == 'X' || c == '×')
+                if (c == '/' || c == '\\')
                 {
-                    tokens.Add("×");
+                    tokens.Add(SlashSprite);
                     continue;
-                }
-
-                if (c == '.')
-                {
-                    tokens.Add("Point");
-                    continue;
-                }
-
-                if (c == '1' && i + 1 < formatted.Length && formatted[i + 1] == '0')
-                {
-                    var after = i + 2;
-                    if (after >= formatted.Length || !char.IsDigit(formatted[after]))
-                    {
-                        tokens.Add("10");
-                        i++;
-                        continue;
-                    }
                 }
 
                 if (c >= '0' && c <= '9')

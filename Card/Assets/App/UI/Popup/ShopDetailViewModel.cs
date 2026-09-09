@@ -12,7 +12,7 @@ using UnityEngine;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败改 Tip 文案，成功后关掉自己。
+    /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
     /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
     /// 出售先暂扣金币，飞币到位后再加到 GameResourceBar。
     /// </summary>
@@ -40,6 +40,7 @@ namespace App.UI.Popup
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
+            CanAffordBuy = new ObservableProperty<bool>(true);
             ButtonsEnabled = new ObservableProperty<bool>(true);
             BuyCommand = new RelayCommand(ConfirmBuy, () => ButtonsEnabled.Value);
             VideoBuyCommand = new RelayCommand(ConfirmVideoBuy, () => ButtonsEnabled.Value);
@@ -76,6 +77,8 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowBuy { get; }
 
         public ObservableProperty<bool> ShowSell { get; }
+
+        public ObservableProperty<bool> CanAffordBuy { get; }
 
         public ObservableProperty<bool> ButtonsEnabled { get; }
 
@@ -214,11 +217,13 @@ namespace App.UI.Popup
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;
             TipText.Value = DefaultTip;
-            PriceText.Value = RelicId <= 0
-                ? string.Empty
+            var price = RelicId <= 0
+                ? 0
                 : (Buying
                     ? Session.EffectiveBuyPrice(RelicId)
-                    : Session.EffectiveSellPrice(RelicId)).ToString();
+                    : Session.EffectiveSellPrice(RelicId));
+            PriceText.Value = RelicId <= 0 ? string.Empty : price.ToString();
+            CanAffordBuy.Value = !Buying || RelicId <= 0 || RelicMechanics.CanAfford(Session.Run, price);
             GoldText.Value = Session.Run.Gold.ToString();
         }
 
@@ -279,9 +284,14 @@ namespace App.UI.Popup
             // View 拦截 SellBtn 点击并播飞币；命令仅用于 CanExecute。
         }
 
-        private void ShowFail(string message)
+        private static void ShowFail(string message)
         {
-            TipText.Value = message ?? DefaultTip;
+            if (string.IsNullOrEmpty(message))
+            {
+                return;
+            }
+
+            Toast.Show(message);
         }
 
         private void ReleasePendingSellGold()

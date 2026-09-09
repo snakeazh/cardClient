@@ -14,7 +14,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店商品详情。注册在 TopMost 层：叠加在 Popup 层的商店之上。
     /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一，购买时另显示 VideoBuyBtn 看广告免费拿；
-    /// 失败时 Tip 改为提示文案；点 Mask 关闭。出售时金币从 SellBtn 飞入 GameResourceBar。
+    /// 金币不足时 BuyNum 变红；失败弹 Toast，不改底部 Tip。点 Mask 关闭。出售时金币从 SellBtn 飞入 GameResourceBar。
     /// </summary>
     [AutoScreen(AppScreenIds.ShopDetail, UILayer.TopMost, ResResourcePaths.ShopDetail)]
     public sealed class ShopDetailView : ViewBase<ShopDetailViewModel>
@@ -78,7 +78,25 @@ namespace App.UI.Popup
             var go = UI.GetGameObject(buttonKey);
             Binding.BindActive(go, visible);
             Binding.BindCommand(go.GetComponent<Button>(), command);
-            Binding.BindText(UI.GetGameObject(priceKey).GetComponent<TMP_Text>(), price);
+            var priceText = UI.GetGameObject(priceKey).GetComponent<TMP_Text>();
+            Binding.BindText(priceText, price);
+            if (buttonKey == "BuyBtn")
+            {
+                BindBuyPriceColor(priceText);
+            }
+        }
+
+        private void BindBuyPriceColor(TMP_Text priceText)
+        {
+            if (priceText == null)
+            {
+                return;
+            }
+
+            var normal = priceText.color;
+            Binding.Add(ViewModel.CanAffordBuy.Subscribe(
+                affordable => priceText.color = affordable ? normal : ThemeColors.ShopPriceUnaffordable,
+                emitCurrent: true));
         }
 
         private void BindSellButton()

@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using App.Atlas;
+using App.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
 using Framework.Assets;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace App.UI
 {
@@ -27,6 +29,7 @@ namespace App.UI
         public struct BonusBeat
         {
             public Animator EquipAnimator;
+            public int RelicId;
             public bool IsAttack;
             public string BeilvText;
             public string CardTypeText;
@@ -45,6 +48,10 @@ namespace App.UI
         private readonly List<BonusBeat> _beats = new List<BonusBeat>(8);
         private Vector2 _beilvHome;
         private RectTransform _beilvRt;
+        private Animator _beilvAnimator;
+        private Image _beilvIcon;
+        private TMP_Text _attackNum;
+        private Transform _beilvNumRoot;
 
         public bool IsPlaying { get; private set; }
 
@@ -64,7 +71,10 @@ namespace App.UI
         public void Play(
             IReadOnlyList<CardItem> cards,
             PlayerItem attackItem,
-            TMP_Text beilvNum,
+            RectTransform beilvInfo,
+            Image beilvIcon,
+            TMP_Text attackNum,
+            Transform beilvNumRoot,
             Transform cardTypeNum,
             IAtlasService atlas,
             IReadOnlyList<BonusBeat> bonusBeats,
@@ -87,7 +97,11 @@ namespace App.UI
                 }
             }
 
-            _beilvRt = beilvNum != null ? beilvNum.rectTransform : null;
+            _beilvRt = beilvInfo;
+            _beilvAnimator = beilvInfo != null ? beilvInfo.GetComponent<Animator>() : null;
+            _beilvIcon = beilvIcon;
+            _attackNum = attackNum;
+            _beilvNumRoot = beilvNumRoot;
             if (_beilvRt != null)
             {
                 _beilvHome = _beilvRt.anchoredPosition;
@@ -147,7 +161,7 @@ namespace App.UI
                         return;
                     }
 
-                    ApplyBonusBeat(_beats[index], attackItem, beilvNum, cardTypeNum, atlas, onAttackNumber);
+                    ApplyBonusBeat(_beats[index], attackItem, cardTypeNum, atlas, onAttackNumber);
                 });
                 _seq.AppendInterval(BonusStepDuration);
             }
@@ -221,13 +235,12 @@ namespace App.UI
         private void ApplyBonusBeat(
             BonusBeat beat,
             PlayerItem attackItem,
-            TMP_Text beilvNum,
             Transform cardTypeNum,
             IAtlasService atlas,
             Action<int> onAttackNumber)
         {
             PlayNumberShake(beat.EquipAnimator, true, false);
-            ShowBeilv(beilvNum, beat.BeilvText);
+            ShowBeilv(beat, atlas);
             if (beat.IsAttack)
             {
                 if (attackItem != null)
@@ -443,20 +456,60 @@ namespace App.UI
             return uiWorld;
         }
 
-        private void ShowBeilv(TMP_Text beilvNum, string relicMultText)
+        private void ShowBeilv(BonusBeat beat, IAtlasService atlas)
         {
-            if (beilvNum == null || string.IsNullOrEmpty(relicMultText) || _beilvRt == null)
+            if (_beilvRt == null)
             {
                 return;
             }
 
-            beilvNum.text = relicMultText;
+            ApplyRelicIcon(beat.RelicId, atlas);
+            var showAttack = beat.IsAttack && !string.IsNullOrEmpty(beat.BeilvText);
+            var showBeilv = !beat.IsAttack && !string.IsNullOrEmpty(beat.BeilvText);
+            if (_attackNum != null)
+            {
+                _attackNum.gameObject.SetActive(showAttack);
+                if (showAttack)
+                {
+                    _attackNum.text = "攻击" + beat.BeilvText;
+                }
+            }
+
+            if (_beilvNumRoot != null)
+            {
+                _beilvNumRoot.gameObject.SetActive(showBeilv);
+                if (showBeilv)
+                {
+                    CardTypeValueSprites.Apply(atlas, _beilvNumRoot, beat.BeilvText);
+                }
+            }
+
             _beilvRt.DOKill();
             _beilvRt.anchoredPosition = _beilvHome;
             _beilvRt.gameObject.SetActive(true);
-            PlayNumberShake(beilvNum, true, false);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_beilvRt);
+            PlayNumberShake(_beilvAnimator, true, false);
             _beilvRt.DOAnchorPos(_beilvHome + new Vector2(0f, BeilvFloatPixels), BeilvFloatDuration)
                 .SetEase(Ease.OutQuad);
+        }
+
+        private void ApplyRelicIcon(int relicId, IAtlasService atlas)
+        {
+            if (_beilvIcon == null)
+            {
+                return;
+            }
+
+            Sprite sprite = null;
+            var relic = RelicConfig.Get(relicId);
+            if (relic != null && atlas != null && !string.IsNullOrWhiteSpace(relic.Icon))
+            {
+                atlas.TryGetSprite(ResResourcePaths.RelicAtlas, relic.Icon.Trim(), out sprite);
+            }
+
+            _beilvIcon.sprite = sprite;
+            _beilvIcon.enabled = sprite != null;
+            _beilvIcon.gameObject.SetActive(true);
         }
 
         private void HideBeilv()
@@ -468,7 +521,7 @@ namespace App.UI
 
             _beilvRt.DOKill();
             _beilvRt.anchoredPosition = _beilvHome;
-            PlayNumberShake(_beilvRt.GetComponent<TMP_Text>(), false, false);
+            PlayNumberShake(_beilvAnimator, false, false);
             _beilvRt.gameObject.SetActive(false);
         }
 
@@ -476,6 +529,10 @@ namespace App.UI
         {
             HideBeilv();
             _beilvRt = null;
+            _beilvAnimator = null;
+            _beilvIcon = null;
+            _attackNum = null;
+            _beilvNumRoot = null;
         }
 
         private void HideSpawned()

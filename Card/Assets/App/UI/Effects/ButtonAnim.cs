@@ -1,3 +1,5 @@
+using App.Audio;
+using App.Bootstrap;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -41,7 +43,6 @@ namespace App.UI
         private AudioClip clip;
 
         private Selectable _selectable;
-        private AudioSource _audio;
         private Tween _scaleTween;
         private Tween _moveTween;
         private Transform _moveTarget;
@@ -163,24 +164,12 @@ namespace App.UI
 
         private void PlayClip()
         {
-            if (clip == null)
+            if (clip == null || !AppServices.IsReady)
             {
                 return;
             }
 
-            if (_audio == null)
-            {
-                _audio = GetComponent<AudioSource>();
-                if (_audio == null)
-                {
-                    _audio = gameObject.AddComponent<AudioSource>();
-                }
-
-                _audio.playOnAwake = false;
-                _audio.spatialBlend = 0f;
-            }
-
-            _audio.PlayOneShot(clip);
+            AppServices.Resolve<IAudioService>().PlaySfx(clip);
         }
 
         private void CacheRestPose()

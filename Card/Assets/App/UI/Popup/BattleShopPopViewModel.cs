@@ -36,6 +36,7 @@ namespace App.UI.Popup
             RefreshNum = new ObservableProperty<string>(FormatFreeRefreshNum(session.Run.FreeShopRefreshLeft));
             ShowRefreshNum = new ObservableProperty<bool>(session.Run.FreeShopRefreshLeft > 0);
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
+            CarryNum = new ObservableProperty<string>(FormatCarryNum());
             ShopRevision = new ObservableProperty<int>();
             RefreshCommand = new RelayCommand(() => Session.RefreshShopOffers(), () => Session.CanRefreshShop);
             NextStageCommand = new RelayCommand(Leave);
@@ -52,6 +53,8 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowRefreshNum { get; }
 
         public ObservableProperty<string> GoldText { get; }
+
+        public ObservableProperty<string> CarryNum { get; }
 
         public ObservableProperty<int> ShopRevision { get; }
 
@@ -142,8 +145,15 @@ namespace App.UI.Popup
             RefreshNum.Value = FormatFreeRefreshNum(freeLeft);
             ShowRefreshNum.Value = freeLeft > 0;
             GoldText.Value = Session.Run.Gold.ToString();
+            CarryNum.Value = FormatCarryNum();
             RefreshCommand.RaiseCanExecuteChanged();
             ShopRevision.Value++;
+        }
+
+        private string FormatCarryNum()
+        {
+            var current = Session.Run.RelicConfigIds != null ? Session.Run.RelicConfigIds.Count : 0;
+            return $"{current}/{Session.RelicCarryMax}";
         }
 
         private static string FormatFreeRefreshNum(int freeLeft)

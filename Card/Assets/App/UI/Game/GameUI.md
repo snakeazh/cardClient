@@ -21,6 +21,7 @@ GameUI
   horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
   horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
   horEquipBtns2           ← yiwuBtn 遗物列表；ruleBtn 点出 WinTip 赔率表（一直可点）
+  beilvInfo               ← 结算圣物加成飘字（默认隐藏）：beilvIcon / attackNum / beilvNum
   cardinfoItem            ← 玩家牌型图标（选满 3 张即预览；亮牌后仍显示）
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
@@ -45,8 +46,9 @@ GameUI
 | `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup` |
 | `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType`，特效规则与 `cardinfoItem` 相同 |
 | `cardinfoEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue`。绑定优先 `cardinfoEnemyNum`，兼容 `cardtypeEnemyNum` |
+| `beilvInfo` | 结算逐步飘字。`beilvIcon` 显示圣物图标；攻击加成显示 `attackNum`「攻击+xx」；倍率加成在 `beilvNum` 用与 `cardtypeNum` 相同的图集（`×` + 数字）。整组上浮并播 `NumberShack`，加攻击与加倍率各播一次 |
 
-`horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算遗物跳动没有槽位 Animator 时只改数字。
+`horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算圣物加成由 `beilvInfo` 逐步飘字；没有槽位 Animator 时只改数字与飘字。
 
 `ruleBtn` 一直显示。点击在按钮左侧弹出 `WinTip`：按 `HandScoreConfig` 从高到低克隆一行牌型图标 + 倍率（`BasicMagnification`，再加本局 `HandTypeMagBonus`）。关闭逻辑与 `ItemTip` 相同：全屏透明 Catcher，点空白关闭；再点 `ruleBtn` 也关闭。
 

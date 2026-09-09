@@ -1246,6 +1246,11 @@ namespace App.Config
         /// </summary>
         Boss = 2,
 
+        /// <summary>
+        /// 精英敌人
+        /// </summary>
+        Elite = 3,
+
     }
 
     /// <summary>

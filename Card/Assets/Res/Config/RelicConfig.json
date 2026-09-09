@@ -919,21 +919,6 @@
     "Id": 306,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "错峰出行",
-    "Icon": "StaggeredTravel",
-    "Price": 240,
-    "SellingPrice": 120,
-    "MechanismId": [
-      30006
-    ],
-    "UnlockConditionId": 0,
-    "UseType": 0,
-    "Desc": "顺子牌型可以相隔1点组成[例如:2,4,5]"
-  },
-  {
-    "Id": 307,
-    "Type": 3,
-    "RefreshProbability": 0.2,
     "Name": "致命黑八",
     "Icon": "DeadlyBlackEight",
     "Price": 240,
@@ -946,7 +931,7 @@
     "Desc": "亮出的每张8在结算时提供+100攻击力"
   },
   {
-    "Id": 308,
+    "Id": 307,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "偶数韵律",
@@ -961,7 +946,7 @@
     "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+2倍率"
   },
   {
-    "Id": 309,
+    "Id": 308,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "奇数韵律",
@@ -976,7 +961,7 @@
     "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+2倍率"
   },
   {
-    "Id": 310,
+    "Id": 309,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "贵族",
@@ -991,7 +976,7 @@
     "Desc": "亮出的每张人头牌在结算时提供+4倍率"
   },
   {
-    "Id": 311,
+    "Id": 310,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "工资卡",
@@ -1006,7 +991,7 @@
     "Desc": "每击杀1名敌人,这件圣物的出售价格+10金币"
   },
   {
-    "Id": 312,
+    "Id": 311,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "训练",
@@ -1021,7 +1006,7 @@
     "Desc": "回合首次亮牌时,随机有1张牌提供的攻击力永久+1"
   },
   {
-    "Id": 313,
+    "Id": 312,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "九霄云外",
@@ -1036,7 +1021,7 @@
     "Desc": "亮出的每张9在结算时提供30金币"
   },
   {
-    "Id": 314,
+    "Id": 313,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "后备计划",
@@ -1051,7 +1036,7 @@
     "Desc": "如果本回合牌型小于所有敌人,则立即获得15金币并回复20点血量"
   },
   {
-    "Id": 315,
+    "Id": 314,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "护身符",
@@ -1066,7 +1051,7 @@
     "Desc": "每关受到的首次伤害完全免疫"
   },
   {
-    "Id": 316,
+    "Id": 315,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "复盘笔记",
@@ -1081,7 +1066,7 @@
     "Desc": "每输1次敌人,结算时就永久提供+0.2倍率"
   },
   {
-    "Id": 317,
+    "Id": 316,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "幸运同花",
@@ -1096,7 +1081,7 @@
     "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
   },
   {
-    "Id": 318,
+    "Id": 317,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "逆转沙漏",
@@ -1111,7 +1096,7 @@
     "Desc": "当牌型小于敌人时,有50%概率反转对比结果,但伤害按自身牌型计算"
   },
   {
-    "Id": 319,
+    "Id": 318,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "练习卷",
@@ -1126,7 +1111,7 @@
     "Desc": "每击杀1名敌人,结算时就永久提供+0.5倍率"
   },
   {
-    "Id": 320,
+    "Id": 319,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "小本本",
@@ -1141,7 +1126,7 @@
     "Desc": "本局内,对自己曾经输过的敌人造成伤害时,伤害+50%"
   },
   {
-    "Id": 321,
+    "Id": 320,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "高贵徽章",
@@ -1156,7 +1141,7 @@
     "Desc": "每关开始时,若血量高于50%,则获得50金币"
   },
   {
-    "Id": 322,
+    "Id": 321,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "陷阱",
@@ -1171,7 +1156,7 @@
     "Desc": "本局内,曾经赢过自己的敌人在造成伤害时,伤害-30%"
   },
   {
-    "Id": 323,
+    "Id": 322,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "好运来",
@@ -1183,10 +1168,10 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每回合有50%概率使本回合所有敌人亮出的牌型顺位降1级"
+    "Desc": "每回合有25%概率使本回合所有敌人亮出的牌型顺位降1级"
   },
   {
-    "Id": 324,
+    "Id": 323,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "入场券",
@@ -1201,7 +1186,7 @@
     "Desc": "每回合开始时,对所有敌人造成1次自身攻击力的伤害"
   },
   {
-    "Id": 325,
+    "Id": 324,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "条约",
@@ -1216,7 +1201,7 @@
     "Desc": "所有敌人造成的伤害降低30%"
   },
   {
-    "Id": 326,
+    "Id": 325,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "豹子精髓",
@@ -1231,7 +1216,7 @@
     "Desc": "使用后,本局内你亮出豹子时,就会获得300金币"
   },
   {
-    "Id": 327,
+    "Id": 326,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "时之沙",
@@ -1246,7 +1231,7 @@
     "Desc": "使用后,本关内你比牌获胜时的伤害+20%"
   },
   {
-    "Id": 328,
+    "Id": 327,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "巨人药剂",
@@ -1261,37 +1246,7 @@
     "Desc": "使用后,玩家生命上限+80,并立即恢复80点血量"
   },
   {
-    "Id": 329,
-    "Type": 3,
-    "RefreshProbability": 0.2,
-    "Name": "降低",
-    "Icon": "LowerStatus",
-    "Price": 260,
-    "SellingPrice": 130,
-    "MechanismId": [
-      30029
-    ],
-    "UnlockConditionId": 0,
-    "UseType": 0,
-    "Desc": "比牌时,对方的牌型顺位降低1级"
-  },
-  {
-    "Id": 330,
-    "Type": 3,
-    "RefreshProbability": 0.2,
-    "Name": "升职",
-    "Icon": "Promote",
-    "Price": 260,
-    "SellingPrice": 130,
-    "MechanismId": [
-      30030
-    ],
-    "UnlockConditionId": 0,
-    "UseType": 0,
-    "Desc": "比牌时,自己的牌型顺位提高1级"
-  },
-  {
-    "Id": 331,
+    "Id": 328,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "净化药水",
@@ -1306,7 +1261,7 @@
     "Desc": "使用后,移除本关内的1条BOSS词缀效果"
   },
   {
-    "Id": 332,
+    "Id": 329,
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "三花聚顶",
@@ -1614,21 +1569,6 @@
     "Id": 420,
     "Type": 4,
     "RefreshProbability": 0.1,
-    "Name": "变形魔方",
-    "Icon": "TransformCube",
-    "Price": 560,
-    "SellingPrice": 280,
-    "MechanismId": [
-      40020
-    ],
-    "UnlockConditionId": 0,
-    "UseType": 0,
-    "Desc": "每回合亮出的牌型顺位提升一级"
-  },
-  {
-    "Id": 421,
-    "Type": 4,
-    "RefreshProbability": 0.1,
     "Name": "毒药",
     "Icon": "Poison",
     "Price": 620,
@@ -1641,7 +1581,7 @@
     "Desc": "所有敌人血量降低30%[BOSS除外]"
   },
   {
-    "Id": 422,
+    "Id": 421,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "刺客秘籍",
@@ -1657,7 +1597,7 @@
     "Desc": "获得50%暴击率,且触发暴击时会对其他敌人造成1次自身攻击力的伤害"
   },
   {
-    "Id": 423,
+    "Id": 422,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "透视眼",
@@ -1672,7 +1612,7 @@
     "Desc": "每关[透视]使用次数+1"
   },
   {
-    "Id": 424,
+    "Id": 423,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "聚宝盆",
@@ -1687,7 +1627,7 @@
     "Desc": "每回合结束后,本回合自身总伤害输出的20%转化为金币"
   },
   {
-    "Id": 425,
+    "Id": 424,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "差距胶囊",
@@ -1702,7 +1642,7 @@
     "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
   },
   {
-    "Id": 426,
+    "Id": 425,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "神之左手",
@@ -1717,7 +1657,7 @@
     "Desc": "使用后,本次比牌你造成的伤害提高200%"
   },
   {
-    "Id": 427,
+    "Id": 426,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "凤凰羽毛",
@@ -1732,7 +1672,7 @@
     "Desc": "使用后,本次比牌你受到的所有伤害变为0,并恢复30%血量"
   },
   {
-    "Id": 428,
+    "Id": 427,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "时光宝盒",
@@ -1747,7 +1687,7 @@
     "Desc": "使用后,随机3种牌型的提供的倍率永久+5"
   },
   {
-    "Id": 429,
+    "Id": 428,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "龙心",
@@ -1762,7 +1702,7 @@
     "Desc": "使用后,获得120点生命上限,并立即恢复120点血量"
   },
   {
-    "Id": 430,
+    "Id": 429,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "贪欲之冠",
@@ -1777,7 +1717,7 @@
     "Desc": "每拥有40金币,你造成的伤害+10%,至多叠加20层"
   },
   {
-    "Id": 431,
+    "Id": 430,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "旗帜",
@@ -1790,5 +1730,50 @@
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+12攻击力"
+  },
+  {
+    "Id": 431,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "降低",
+    "Icon": "LowerStatus",
+    "Price": 500,
+    "SellingPrice": 250,
+    "MechanismId": [
+      30029
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时,对方的牌型顺位降低1级"
+  },
+  {
+    "Id": 432,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "升职",
+    "Icon": "Promote",
+    "Price": 500,
+    "SellingPrice": 250,
+    "MechanismId": [
+      30030
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时,自己的牌型顺位提高1级"
+  },
+  {
+    "Id": 433,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "错峰出行",
+    "Icon": "StaggeredTravel",
+    "Price": 500,
+    "SellingPrice": 250,
+    "MechanismId": [
+      30006
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "顺子牌型可以相隔1点组成[例如:2,4,5]"
   }
 ]

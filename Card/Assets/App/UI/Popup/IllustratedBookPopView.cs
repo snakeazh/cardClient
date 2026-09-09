@@ -22,11 +22,20 @@ namespace App.UI.Popup
     public sealed class IllustratedBookPopView : ViewBase<IllustratedBookPopViewModel>
     {
         // 怪物页分区节点名：Boss 进 UltimateGrid（横幅 TitleBg），Normal 进 RareGrid；
-        // NormalBanner/NormalGrid 已在预制体隐藏，代码不再触碰
+        // NormalBanner/NormalGrid 已在预制体隐藏，代码不再触碰（怪物页自己的同名节点）
         private const string UltimateBannerName = "TitleBg";
         private const string UltimateGridName = "UltimateGrid";
         private const string RareBannerName = "RareBanner";
         private const string RareGridName = "RareGrid";
+
+        // 遗物页品质分区节点名（RelicSCView/Content 下 Banner+Grid 成对）：
+        // 传说→LegendGrid、史诗→EpicGrid、稀有→RareGrid、普通→NormalGrid；Rare 与怪物页同名同值共用
+        private const string LegendBannerName = "LegendBanner";
+        private const string LegendGridName = "LegendGrid";
+        private const string EpicBannerName = "EpicBanner";
+        private const string EpicGridName = "EpicGrid";
+        private const string NormalBannerName = "NormalBanner";
+        private const string NormalGridName = "NormalGrid";
 
         private readonly List<ItemCard> _collectCards = new List<ItemCard>();
         private readonly List<ItemCard> _relicCards = new List<ItemCard>();
@@ -72,7 +81,7 @@ namespace App.UI.Popup
             BindTab(UI.Get<Toggle>("RelicToggle"), ViewModel.RelicOn, IllustratedBookTab.Relic);
             BindTab(UI.Get<Toggle>("MonsterToggle"), ViewModel.MonsterOn, IllustratedBookTab.Monster);
             FillList(UI.Get<ScrollRect>("CollectSCView"), ViewModel.CollectEntries, _collectCards);
-            FillList(UI.Get<ScrollRect>("RelicSCView"), ViewModel.RelicEntries, _relicCards);
+            FillRelicList(UI.Get<ScrollRect>("RelicSCView"), ViewModel.RelicEntries);
             FillMonsterList(UI.Get<ScrollRect>("MonsterSCView"), ViewModel.MonsterEntries);
             Binding.Add(ViewModel.ShowTip.Subscribe(_ => ApplyTip(), emitCurrent: true));
             Binding.Add(ViewModel.TipTitle.Subscribe(OnTipTitle, emitCurrent: true));
@@ -123,36 +132,153 @@ namespace App.UI.Popup
             ClearContent(content);
             for (var i = 0; i < entries.Count; i++)
             {
-                var entry = entries[i];
-                var go = Instantiate(_itemPrefab, content, false);
-                go.name = entry.Tab + "_" + entry.Id;
-                go.SetActive(true);
-                go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
-                var bind = go.GetComponent<UIBind>();
-                if (bind != null)
+                var card = InstantiateItemCard(content, entries[i]);
+                if (card != null)
                 {
-                    Destroy(bind);
+                    cards.Add(card);
                 }
-
-                var card = go.GetComponent<ItemCard>();
-                if (card == null)
-                {
-                    continue;
-                }
-
-                card.SetShadowVisible(false);
-                card.SetAnimationEnabled(false);
-                // 品质卡面边框（遗物页=RelicConfig.Type，缺图回退普通品质）
-                card.ApplyQuality(entry.Quality);
-                card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
-                // 图标随解锁态染色：未拥有黑色剪影，拥有原色（同天赋列表口径）
-                card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
-                card.Clicked += OnCardClicked;
-                _entries[card] = entry;
-                cards.Add(card);
             }
 
             FitContentHeight(scroll, content, cards.Count);
+        }
+
+        /// <summary>克隆 ItemCard 并按图鉴口径装饰（0.9 缩放、品质边框、未解锁黑剪影、点击打开详情）。</summary>
+        private ItemCard InstantiateItemCard(Transform parent, IllustratedBookEntry entry)
+        {
+            var go = Instantiate(_itemPrefab, parent, false);
+            go.name = entry.Tab + "_" + entry.Id;
+            go.SetActive(true);
+            go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            var bind = go.GetComponent<UIBind>();
+            if (bind != null)
+            {
+                Destroy(bind);
+            }
+
+            var card = go.GetComponent<ItemCard>();
+            if (card == null)
+            {
+                return null;
+            }
+
+            card.SetShadowVisible(false);
+            card.SetAnimationEnabled(false);
+            // 品质卡面边框（遗物页=RelicConfig.Type，缺图回退普通品质）
+            card.ApplyQuality(entry.Quality);
+            card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
+            // 图标随解锁态染色：未拥有黑色剪影，拥有原色（同天赋列表口径）
+            card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
+            card.Clicked += OnCardClicked;
+            _entries[card] = entry;
+            return card;
+        }
+
+        /// <summary>
+        /// 遗物页按品质分四区（传说/史诗/稀有/普通，同怪物页格式：横幅 + Grid 交替）；
+        /// 对应品质没有遗物时连横幅一起隐藏。
+        /// </summary>
+        private void FillRelicList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
+        {
+            _relicCards.Clear();
+            var content = scroll != null ? scroll.content : null;
+            if (content == null || _itemPrefab == null)
+            {
+                return;
+            }
+
+            EnsureRelicContentLayout(content);
+
+            var legends = new List<IllustratedBookEntry>();
+            var epics = new List<IllustratedBookEntry>();
+            var rares = new List<IllustratedBookEntry>();
+            var normals = new List<IllustratedBookEntry>();
+            for (var i = 0; i < entries.Count; i++)
+            {
+                switch (entries[i].Quality)
+                {
+                    case QualityType.Legend:
+                        legends.Add(entries[i]);
+                        break;
+                    case QualityType.Epic:
+                        epics.Add(entries[i]);
+                        break;
+                    case QualityType.Rare:
+                        rares.Add(entries[i]);
+                        break;
+                    default:
+                        normals.Add(entries[i]);
+                        break;
+                }
+            }
+
+            FillRelicSection(content.Find(LegendBannerName), content.Find(LegendGridName), legends);
+            FillRelicSection(content.Find(EpicBannerName), content.Find(EpicGridName), epics);
+            FillRelicSection(content.Find(RareBannerName), content.Find(RareGridName), rares);
+            FillRelicSection(content.Find(NormalBannerName), content.Find(NormalGridName), normals);
+        }
+
+        /// <summary>
+        /// 预制体里 Content 只挂了 VLG：运行时补 ContentSizeFitter（竖直 Preferred，同怪物页），
+        /// 并清掉美术预放的示例卡（Content 下不属于分区节点的子物体，不参与分区填充）。
+        /// </summary>
+        private static void EnsureRelicContentLayout(RectTransform content)
+        {
+            if (content.GetComponent<ContentSizeFitter>() == null)
+            {
+                var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            }
+
+            for (var i = content.childCount - 1; i >= 0; i--)
+            {
+                var child = content.GetChild(i);
+                if (child.name != LegendBannerName && child.name != LegendGridName &&
+                    child.name != EpicBannerName && child.name != EpicGridName &&
+                    child.name != RareBannerName && child.name != RareGridName &&
+                    child.name != NormalBannerName && child.name != NormalGridName)
+                {
+                    child.SetParent(null, false);
+                    Destroy(child.gameObject);
+                }
+            }
+        }
+
+        /// <summary>遗物品质分区填充：清 Grid 旧卡再克隆 ItemCard（收藏/遗物两页卡面同口径）。</summary>
+        private void FillRelicSection(Transform banner, Transform grid, List<IllustratedBookEntry> entries)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            var visible = entries.Count > 0;
+            if (banner != null)
+            {
+                banner.gameObject.SetActive(visible);
+            }
+
+            grid.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            for (var i = grid.childCount - 1; i >= 0; i--)
+            {
+                var child = grid.GetChild(i);
+                child.SetParent(null, false);
+                Destroy(child.gameObject);
+            }
+
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var card = InstantiateItemCard(grid, entries[i]);
+                if (card != null)
+                {
+                    _relicCards.Add(card);
+                }
+            }
         }
 
         /// <summary>

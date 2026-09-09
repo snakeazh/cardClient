@@ -87,7 +87,7 @@
     "Id": 1001007,
     "MonsterId": 1001,
     "MonsterLevel": 7,
-    "MonsterHp": 1148,
+    "MonsterHp": 1205,
     "MonsterDamage": 19,
     "Type": 1,
     "Name": "屎莱姆",
@@ -143,7 +143,7 @@
     "Id": 1001011,
     "MonsterId": 1001,
     "MonsterLevel": 11,
-    "MonsterHp": 1451,
+    "MonsterHp": 1528,
     "MonsterDamage": 20,
     "Type": 1,
     "Name": "屎莱姆",
@@ -199,7 +199,7 @@
     "Id": 1001015,
     "MonsterId": 1001,
     "MonsterLevel": 15,
-    "MonsterHp": 1804,
+    "MonsterHp": 1906,
     "MonsterDamage": 21,
     "Type": 1,
     "Name": "屎莱姆",
@@ -255,7 +255,7 @@
     "Id": 1001019,
     "MonsterId": 1001,
     "MonsterLevel": 19,
-    "MonsterHp": 2227,
+    "MonsterHp": 2361,
     "MonsterDamage": 21,
     "Type": 1,
     "Name": "屎莱姆",
@@ -311,7 +311,7 @@
     "Id": 1001023,
     "MonsterId": 1001,
     "MonsterLevel": 23,
-    "MonsterHp": 2713,
+    "MonsterHp": 2885,
     "MonsterDamage": 22,
     "Type": 1,
     "Name": "屎莱姆",
@@ -367,7 +367,7 @@
     "Id": 1001027,
     "MonsterId": 1001,
     "MonsterLevel": 27,
-    "MonsterHp": 3282,
+    "MonsterHp": 3503,
     "MonsterDamage": 23,
     "Type": 1,
     "Name": "屎莱姆",
@@ -703,7 +703,7 @@
     "Id": 1002007,
     "MonsterId": 1002,
     "MonsterLevel": 7,
-    "MonsterHp": 1044,
+    "MonsterHp": 1096,
     "MonsterDamage": 29,
     "Type": 1,
     "Name": "狼哥",
@@ -759,7 +759,7 @@
     "Id": 1002011,
     "MonsterId": 1002,
     "MonsterLevel": 11,
-    "MonsterHp": 1319,
+    "MonsterHp": 1389,
     "MonsterDamage": 30,
     "Type": 1,
     "Name": "狼哥",
@@ -815,7 +815,7 @@
     "Id": 1002015,
     "MonsterId": 1002,
     "MonsterLevel": 15,
-    "MonsterHp": 1640,
+    "MonsterHp": 1733,
     "MonsterDamage": 31,
     "Type": 1,
     "Name": "狼哥",
@@ -871,7 +871,7 @@
     "Id": 1002019,
     "MonsterId": 1002,
     "MonsterLevel": 19,
-    "MonsterHp": 2025,
+    "MonsterHp": 2147,
     "MonsterDamage": 32,
     "Type": 1,
     "Name": "狼哥",
@@ -927,7 +927,7 @@
     "Id": 1002023,
     "MonsterId": 1002,
     "MonsterLevel": 23,
-    "MonsterHp": 2466,
+    "MonsterHp": 2623,
     "MonsterDamage": 33,
     "Type": 1,
     "Name": "狼哥",
@@ -983,7 +983,7 @@
     "Id": 1002027,
     "MonsterId": 1002,
     "MonsterLevel": 27,
-    "MonsterHp": 2984,
+    "MonsterHp": 3184,
     "MonsterDamage": 34,
     "Type": 1,
     "Name": "狼哥",
@@ -1241,8 +1241,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1255,8 +1255,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1269,8 +1269,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1283,8 +1283,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1297,8 +1297,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1311,22 +1311,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003007,
     "MonsterId": 1003,
     "MonsterLevel": 7,
-    "MonsterHp": 1002,
+    "MonsterHp": 1052,
     "MonsterDamage": 39,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1339,8 +1339,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1353,8 +1353,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1367,22 +1367,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003011,
     "MonsterId": 1003,
     "MonsterLevel": 11,
-    "MonsterHp": 1266,
+    "MonsterHp": 1333,
     "MonsterDamage": 40,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1395,8 +1395,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1409,8 +1409,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1423,22 +1423,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003015,
     "MonsterId": 1003,
     "MonsterLevel": 15,
-    "MonsterHp": 1574,
+    "MonsterHp": 1664,
     "MonsterDamage": 41,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1451,8 +1451,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1465,8 +1465,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1479,22 +1479,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003019,
     "MonsterId": 1003,
     "MonsterLevel": 19,
-    "MonsterHp": 1944,
+    "MonsterHp": 2061,
     "MonsterDamage": 43,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1507,8 +1507,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1521,8 +1521,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1535,22 +1535,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003023,
     "MonsterId": 1003,
     "MonsterLevel": 23,
-    "MonsterHp": 2368,
+    "MonsterHp": 2518,
     "MonsterDamage": 44,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1563,8 +1563,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1577,8 +1577,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1591,22 +1591,22 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1003027,
     "MonsterId": 1003,
     "MonsterLevel": 27,
-    "MonsterHp": 2865,
+    "MonsterHp": 3057,
     "MonsterDamage": 45,
     "Type": 1,
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1619,8 +1619,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1633,8 +1633,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1647,8 +1647,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1661,8 +1661,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1675,8 +1675,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1689,8 +1689,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1703,8 +1703,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1717,8 +1717,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1731,8 +1731,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1745,8 +1745,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1759,8 +1759,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1773,8 +1773,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1787,8 +1787,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1801,8 +1801,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1815,8 +1815,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1829,8 +1829,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1843,8 +1843,8 @@
     "Name": "蛙弟",
     "Desc": "经常被忽视,喜欢打翻身仗",
     "Icon": "enemy3",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1857,8 +1857,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1871,8 +1871,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1885,8 +1885,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1899,8 +1899,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1913,8 +1913,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1927,22 +1927,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004007,
     "MonsterId": 1004,
     "MonsterLevel": 7,
-    "MonsterHp": 877,
+    "MonsterHp": 920,
     "MonsterDamage": 29,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1955,8 +1955,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1969,8 +1969,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -1983,22 +1983,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004011,
     "MonsterId": 1004,
     "MonsterLevel": 11,
-    "MonsterHp": 1108,
+    "MonsterHp": 1167,
     "MonsterDamage": 30,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2011,8 +2011,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2025,8 +2025,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2039,22 +2039,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004015,
     "MonsterId": 1004,
     "MonsterLevel": 15,
-    "MonsterHp": 1378,
+    "MonsterHp": 1456,
     "MonsterDamage": 31,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2067,8 +2067,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2081,8 +2081,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2095,22 +2095,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004019,
     "MonsterId": 1004,
     "MonsterLevel": 19,
-    "MonsterHp": 1701,
+    "MonsterHp": 1803,
     "MonsterDamage": 32,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2123,8 +2123,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2137,8 +2137,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2151,22 +2151,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004023,
     "MonsterId": 1004,
     "MonsterLevel": 23,
-    "MonsterHp": 2072,
+    "MonsterHp": 2203,
     "MonsterDamage": 33,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2179,8 +2179,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2193,8 +2193,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2207,22 +2207,22 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1004027,
     "MonsterId": 1004,
     "MonsterLevel": 27,
-    "MonsterHp": 2506,
+    "MonsterHp": 2675,
     "MonsterDamage": 34,
     "Type": 1,
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2235,8 +2235,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2249,8 +2249,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2263,8 +2263,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2277,8 +2277,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2291,8 +2291,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2305,8 +2305,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2319,8 +2319,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2333,8 +2333,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2347,8 +2347,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2361,8 +2361,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2375,8 +2375,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2389,8 +2389,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2403,8 +2403,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2417,8 +2417,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2431,8 +2431,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2445,8 +2445,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2459,8 +2459,8 @@
     "Name": "小蜜蜂",
     "Desc": "虽然杀伤力不强,但声音惹人烦",
     "Icon": "enemy4",
-    "BaseMap": "PurpleMonsterBaseFrame",
-    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2473,8 +2473,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2487,8 +2487,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2501,8 +2501,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2515,8 +2515,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2529,8 +2529,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2543,22 +2543,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005007,
     "MonsterId": 1005,
     "MonsterLevel": 7,
-    "MonsterHp": 1211,
+    "MonsterHp": 1271,
     "MonsterDamage": 19,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2571,8 +2571,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2585,8 +2585,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2599,22 +2599,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005011,
     "MonsterId": 1005,
     "MonsterLevel": 11,
-    "MonsterHp": 1530,
+    "MonsterHp": 1611,
     "MonsterDamage": 20,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2627,8 +2627,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2641,8 +2641,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2655,22 +2655,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005015,
     "MonsterId": 1005,
     "MonsterLevel": 15,
-    "MonsterHp": 1902,
+    "MonsterHp": 2010,
     "MonsterDamage": 21,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2683,8 +2683,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2697,8 +2697,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2711,22 +2711,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005019,
     "MonsterId": 1005,
     "MonsterLevel": 19,
-    "MonsterHp": 2349,
+    "MonsterHp": 2490,
     "MonsterDamage": 21,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2739,8 +2739,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2753,8 +2753,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2767,22 +2767,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005023,
     "MonsterId": 1005,
     "MonsterLevel": 23,
-    "MonsterHp": 2861,
+    "MonsterHp": 3042,
     "MonsterDamage": 22,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2795,8 +2795,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2809,8 +2809,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2823,22 +2823,22 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 1005027,
     "MonsterId": 1005,
     "MonsterLevel": 27,
-    "MonsterHp": 3461,
+    "MonsterHp": 3694,
     "MonsterDamage": 23,
     "Type": 1,
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2851,8 +2851,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2865,8 +2865,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2879,8 +2879,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2893,8 +2893,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2907,8 +2907,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2921,8 +2921,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2935,8 +2935,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2949,8 +2949,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2963,8 +2963,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2977,8 +2977,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -2991,8 +2991,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3005,8 +3005,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3019,8 +3019,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3033,8 +3033,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3047,8 +3047,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3061,8 +3061,8 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
@@ -3075,15 +3075,15 @@
     "Name": "蘑菇人",
     "Desc": "身体强壮,但行动颇为缓慢",
     "Icon": "enemy5",
-    "BaseMap": "RedMonsterBaseFrame",
-    "HealthBar": "RedMonsterBaseFrameBox",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
     "MonsterEntry": 0
   },
   {
     "Id": 2001001,
     "MonsterId": 2001,
     "MonsterLevel": 1,
-    "MonsterHp": 4531,
+    "MonsterHp": 4598,
     "MonsterDamage": 42,
     "Type": 2,
     "Name": "大眼仔",
@@ -3231,6 +3231,622 @@
     "Icon": "enemy6",
     "BaseMap": "RedMonsterBaseFrame",
     "HealthBar": "RedMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001001,
+    "MonsterId": 3001,
+    "MonsterLevel": 1,
+    "MonsterHp": 116,
+    "MonsterDamage": 32,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001002,
+    "MonsterId": 3001,
+    "MonsterLevel": 2,
+    "MonsterHp": 232,
+    "MonsterDamage": 32,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001003,
+    "MonsterId": 3001,
+    "MonsterLevel": 3,
+    "MonsterHp": 348,
+    "MonsterDamage": 32,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001004,
+    "MonsterId": 3001,
+    "MonsterLevel": 4,
+    "MonsterHp": 464,
+    "MonsterDamage": 32,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001005,
+    "MonsterId": 3001,
+    "MonsterLevel": 5,
+    "MonsterHp": 240,
+    "MonsterDamage": 36,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001006,
+    "MonsterId": 3001,
+    "MonsterLevel": 6,
+    "MonsterHp": 634,
+    "MonsterDamage": 36,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001007,
+    "MonsterId": 3001,
+    "MonsterLevel": 7,
+    "MonsterHp": 1534,
+    "MonsterDamage": 36,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001008,
+    "MonsterId": 3001,
+    "MonsterLevel": 8,
+    "MonsterHp": 3423,
+    "MonsterDamage": 36,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001009,
+    "MonsterId": 3001,
+    "MonsterLevel": 9,
+    "MonsterHp": 255,
+    "MonsterDamage": 38,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001010,
+    "MonsterId": 3001,
+    "MonsterLevel": 10,
+    "MonsterHp": 733,
+    "MonsterDamage": 38,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001011,
+    "MonsterId": 3001,
+    "MonsterLevel": 11,
+    "MonsterHp": 1944,
+    "MonsterDamage": 38,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001012,
+    "MonsterId": 3001,
+    "MonsterLevel": 12,
+    "MonsterHp": 3647,
+    "MonsterDamage": 38,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001013,
+    "MonsterId": 3001,
+    "MonsterLevel": 13,
+    "MonsterHp": 271,
+    "MonsterDamage": 39,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001014,
+    "MonsterId": 3001,
+    "MonsterLevel": 14,
+    "MonsterHp": 849,
+    "MonsterDamage": 39,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001015,
+    "MonsterId": 3001,
+    "MonsterLevel": 15,
+    "MonsterHp": 2426,
+    "MonsterDamage": 39,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001016,
+    "MonsterId": 3001,
+    "MonsterLevel": 16,
+    "MonsterHp": 3870,
+    "MonsterDamage": 39,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001017,
+    "MonsterId": 3001,
+    "MonsterLevel": 17,
+    "MonsterHp": 287,
+    "MonsterDamage": 40,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001018,
+    "MonsterId": 3001,
+    "MonsterLevel": 18,
+    "MonsterHp": 977,
+    "MonsterDamage": 40,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001019,
+    "MonsterId": 3001,
+    "MonsterLevel": 19,
+    "MonsterHp": 3005,
+    "MonsterDamage": 40,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001020,
+    "MonsterId": 3001,
+    "MonsterLevel": 20,
+    "MonsterHp": 4094,
+    "MonsterDamage": 40,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001021,
+    "MonsterId": 3001,
+    "MonsterLevel": 21,
+    "MonsterHp": 302,
+    "MonsterDamage": 41,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001022,
+    "MonsterId": 3001,
+    "MonsterLevel": 22,
+    "MonsterHp": 1107,
+    "MonsterDamage": 41,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001023,
+    "MonsterId": 3001,
+    "MonsterLevel": 23,
+    "MonsterHp": 3672,
+    "MonsterDamage": 41,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001024,
+    "MonsterId": 3001,
+    "MonsterLevel": 24,
+    "MonsterHp": 4318,
+    "MonsterDamage": 41,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001025,
+    "MonsterId": 3001,
+    "MonsterLevel": 25,
+    "MonsterHp": 318,
+    "MonsterDamage": 42,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001026,
+    "MonsterId": 3001,
+    "MonsterLevel": 26,
+    "MonsterHp": 1257,
+    "MonsterDamage": 42,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001027,
+    "MonsterId": 3001,
+    "MonsterLevel": 27,
+    "MonsterHp": 4458,
+    "MonsterDamage": 42,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001028,
+    "MonsterId": 3001,
+    "MonsterLevel": 28,
+    "MonsterHp": 4542,
+    "MonsterDamage": 42,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001029,
+    "MonsterId": 3001,
+    "MonsterLevel": 29,
+    "MonsterHp": 334,
+    "MonsterDamage": 44,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001030,
+    "MonsterId": 3001,
+    "MonsterLevel": 30,
+    "MonsterHp": 1410,
+    "MonsterDamage": 44,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001031,
+    "MonsterId": 3001,
+    "MonsterLevel": 31,
+    "MonsterHp": 4766,
+    "MonsterDamage": 44,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001032,
+    "MonsterId": 3001,
+    "MonsterLevel": 32,
+    "MonsterHp": 4766,
+    "MonsterDamage": 44,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001033,
+    "MonsterId": 3001,
+    "MonsterLevel": 33,
+    "MonsterHp": 349,
+    "MonsterDamage": 45,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001034,
+    "MonsterId": 3001,
+    "MonsterLevel": 34,
+    "MonsterHp": 1586,
+    "MonsterDamage": 45,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001035,
+    "MonsterId": 3001,
+    "MonsterLevel": 35,
+    "MonsterHp": 4990,
+    "MonsterDamage": 45,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001036,
+    "MonsterId": 3001,
+    "MonsterLevel": 36,
+    "MonsterHp": 4990,
+    "MonsterDamage": 45,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001037,
+    "MonsterId": 3001,
+    "MonsterLevel": 37,
+    "MonsterHp": 365,
+    "MonsterDamage": 46,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001038,
+    "MonsterId": 3001,
+    "MonsterLevel": 38,
+    "MonsterHp": 1763,
+    "MonsterDamage": 46,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001039,
+    "MonsterId": 3001,
+    "MonsterLevel": 39,
+    "MonsterHp": 5214,
+    "MonsterDamage": 46,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001040,
+    "MonsterId": 3001,
+    "MonsterLevel": 40,
+    "MonsterHp": 5214,
+    "MonsterDamage": 46,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001041,
+    "MonsterId": 3001,
+    "MonsterLevel": 41,
+    "MonsterHp": 381,
+    "MonsterDamage": 48,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001042,
+    "MonsterId": 3001,
+    "MonsterLevel": 42,
+    "MonsterHp": 1979,
+    "MonsterDamage": 48,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001043,
+    "MonsterId": 3001,
+    "MonsterLevel": 43,
+    "MonsterHp": 5438,
+    "MonsterDamage": 48,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": 0
+  },
+  {
+    "Id": 3001044,
+    "MonsterId": 3001,
+    "MonsterLevel": 44,
+    "MonsterHp": 5438,
+    "MonsterDamage": 48,
+    "Type": 3,
+    "Name": "蘑菇人",
+    "Desc": "蘑菇人的进化体,更强壮也更危险",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
     "MonsterEntry": 0
   }
 ]

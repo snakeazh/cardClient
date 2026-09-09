@@ -1342,9 +1342,10 @@ namespace App.Game
         {
             _sequentialCompare = false;
             IncomingAttack = false;
+            // 玩家全程挨打未造成伤害的手也要占一行 0 分；伤害换金仍只在有伤害时发。
+            AwardPlayerRoundScore(_roundDamageDealt);
             if (_roundDamageDealt > 0)
             {
-                AwardPlayerRoundScore(_roundDamageDealt);
                 GrantDamageGold(_roundDamageDealt);
             }
 
@@ -4134,6 +4135,7 @@ namespace App.Game
             if (winner == null)
             {
                 LastResult = "无人亮牌";
+                AwardPlayerRoundScore(0);
                 AfterRound();
                 return;
             }
@@ -4191,6 +4193,8 @@ namespace App.Game
             DealPlayerLossDamage(winner);
             ApplyBankruptcy(false, winner);
             Pot = 0;
+            // 玩家输牌挨打的手也占一行 0 分。
+            AwardPlayerRoundScore(0);
             Hint = LastResult;
             AfterRound();
         }
@@ -6174,14 +6178,9 @@ namespace App.Game
             }
         }
 
-        /// <summary>亮牌获胜：本手对怪造成的伤害记入本轮/关卡/总积分。</summary>
+        /// <summary>本手结束记一行回合积分。0 分也记行，保证结算明细每手一行（含玩家未出手/未造成伤害的手）。</summary>
         private void AwardPlayerRoundScore(int potWon)
         {
-            if (potWon <= 0)
-            {
-                return;
-            }
-
             ScoreSvc()?.AwardRoundScore(potWon);
         }
 
@@ -6912,6 +6911,7 @@ namespace App.Game
             if (last == null)
             {
                 Pot = 0;
+                AwardPlayerRoundScore(0);
                 AfterRound();
                 return;
             }
@@ -6936,7 +6936,9 @@ namespace App.Game
                 return;
             }
 
+            // 敌方无人争夺收池：本手玩家 0 伤害，也占一行 0 分。
             Hint = LastResult;
+            AwardPlayerRoundScore(0);
             AfterRound();
         }
 

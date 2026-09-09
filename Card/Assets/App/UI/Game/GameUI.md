@@ -29,7 +29,7 @@ GameUI
   roundInfo               ← 第几轮
   roundbuffGrid           ← 关卡机制格子；下面按条目克隆 roundbuff
   roundbuff               ← 机制图标模板（蓝书），无机制时格子隐藏
-  mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出
+  mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出（闪避显示 MISS，不播 ani_hptextdi）
 ```
 
 发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时开局弹出 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs)（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 同时显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。

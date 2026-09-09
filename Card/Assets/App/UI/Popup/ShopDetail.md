@@ -11,6 +11,7 @@
 
 列表卡：[`ShopItem.md`](../../Item/ShopItem.md)  
 飞币：[`CoinFlyFx.md`](../Effects/CoinFlyFx.md)  
+购买飞入：[`ItemFlyFx.md`](../Effects/ItemFlyFx.md)  
 打开：`BattleShopPopViewModel.OpenDetail(relicId, buying)`
 
 ---
@@ -58,4 +59,14 @@
 
 ## 购买
 
-金币不够或遗物已满（`RelicCarryMax`）失败，满员走 Toast「遗物已满」。广告购买走 `WatchAdBuyShopRelic`。买成功后货架列表不再含该 Id，`OnSessionChanged` 会关掉详情。购买不加飞币。
+金币不够或遗物已满（`RelicCarryMax`）失败，满员走 Toast「遗物已满」。广告购买走 `WatchAdBuyShopRelic`。
+
+点 `BuyBtn` / `VideoBuyBtn`：
+
+1. `BattleShopPopView.HoldIncomingMine(relicId)`，再 `TryBeginBuy`（内部 `BuyShopRelic` / `WatchAdBuyShopRelic` + `Notify`）。
+2. MineHor 新格先占位、`CanvasGroup.alpha = 0`。克隆详情 `Item` 挂 `UILayer.TopMost`，详情根节点 `CanvasGroup.alpha = 0`（否则遮罩挡住装备栏）。
+3. 卡片飞向新格（约 0.45s），到位后 `RevealIncomingMine` 显现并轻微 punch，再关详情。
+
+飞不起来时直接显现并关闭。购买进行中不因「货架已无该 Id」把详情关掉，避免动画被掐断。飞入期间购买 / 出售 / Mask 锁定。中途关闭会把占位格立刻显现。
+
+购买不加飞币。飞入见 [`ItemFlyFx.md`](../Effects/ItemFlyFx.md)。

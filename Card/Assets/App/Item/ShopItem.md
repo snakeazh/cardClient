@@ -55,6 +55,6 @@ item.PlayChooseEnd();
 ## 注意
 
 - 商店商品只认 `RelicConfig`，不要再做第二套商品表。
-- 通关商店列表用 `ShopItem`，详情用 [`ShopDetail.md`](../UI/Popup/ShopDetail.md) 的 `ItemCard`。出售飞币见 [`CoinFlyFx.md`](../UI/Effects/CoinFlyFx.md)。
+- 通关商店列表用 `ShopItem`，详情用 [`ShopDetail.md`](../UI/Popup/ShopDetail.md) 的 `ItemCard`。出售飞币见 [`CoinFlyFx.md`](../UI/Effects/CoinFlyFx.md)。购买后详情卡飞入 MineHor 见 [`ItemFlyFx.md`](../UI/Effects/ItemFlyFx.md)。
 - 编辑器菜单 `Tools/Wire ShopItem Prefab` 会把节点挂到序列化字段（价格认 `priceValue`）。
 - 图鉴遗物页用的是 `ItemCard`，不是 `ShopItem`。

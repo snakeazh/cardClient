@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Config;
 using App.Game;
+using App.Item;
 using App.Resources;
+using DG.Tweening;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -23,6 +26,63 @@ namespace App.UI.Popup
         private GameObject _sellTemplate;
         private GameObject _mineTemplate;
         private Transform _mineContent;
+        private int _pendingMineRevealId;
+        private CanvasGroup _pendingMineGroup;
+
+        public static BattleShopPopView FindOpen()
+        {
+            return FindObjectOfType<BattleShopPopView>();
+        }
+
+        public void HoldIncomingMine(int relicId)
+        {
+            _pendingMineRevealId = relicId > 0 ? relicId : 0;
+        }
+
+        public void ClearIncomingMine()
+        {
+            _pendingMineRevealId = 0;
+            _pendingMineGroup = null;
+        }
+
+        public RectTransform GetIncomingMineRect(int relicId)
+        {
+            RebuildMineLayout();
+            var item = FindMineItem(relicId);
+            if (item == null)
+            {
+                return null;
+            }
+
+            var card = item.GetComponentInChildren<ItemCard>(true);
+            return card != null ? card.transform as RectTransform : item.transform as RectTransform;
+        }
+
+        public void RevealIncomingMine(int relicId)
+        {
+            var item = FindMineItem(relicId > 0 ? relicId : _pendingMineRevealId);
+            _pendingMineRevealId = 0;
+            if (_pendingMineGroup != null)
+            {
+                _pendingMineGroup.alpha = 1f;
+                _pendingMineGroup.blocksRaycasts = true;
+                _pendingMineGroup = null;
+            }
+            else if (item != null)
+            {
+                var cg = GetSlotCanvasGroup(item);
+                if (cg != null)
+                {
+                    cg.alpha = 1f;
+                    cg.blocksRaycasts = true;
+                }
+            }
+
+            if (item != null)
+            {
+                PunchSlot(item);
+            }
+        }
 
         protected override void OnBind()
         {
@@ -37,6 +97,12 @@ namespace App.UI.Popup
             EnsureSellItems();
             EnsureMineItems();
             Binding.Add(ViewModel.ShopRevision.Subscribe(_ => RefreshItems(), emitCurrent: true));
+        }
+
+        protected override Task OnViewClose()
+        {
+            RevealIncomingMine(_pendingMineRevealId);
+            return Task.CompletedTask;
         }
 
         private static Transform FindDeep(Transform root, string name)
@@ -234,7 +300,119 @@ namespace App.UI.Popup
 
                 SetSlotActive(item, true, _mineContent);
                 item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
+                ApplyIncomingMineVisibility(item);
             }
+
+            RebuildMineLayout();
+        }
+
+        private void ApplyIncomingMineVisibility(ShopItem item)
+        {
+            var cg = GetOrAddSlotCanvasGroup(item);
+            if (cg == null)
+            {
+                return;
+            }
+
+            var hide = _pendingMineRevealId > 0 && item.RelicConfigId == _pendingMineRevealId;
+            cg.alpha = hide ? 0f : 1f;
+            cg.blocksRaycasts = !hide;
+            if (!hide)
+            {
+                return;
+            }
+
+            _pendingMineGroup = cg;
+            ScrollMineToBottom();
+        }
+
+        private ShopItem FindMineItem(int relicId)
+        {
+            if (relicId <= 0)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < _mineItems.Count; i++)
+            {
+                var item = _mineItems[i];
+                if (item != null && item.RelicConfigId == relicId && item.gameObject.activeInHierarchy)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        private void RebuildMineLayout()
+        {
+            var content = _mineContent as RectTransform;
+            if (content != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            }
+
+            Canvas.ForceUpdateCanvases();
+        }
+
+        private void ScrollMineToBottom()
+        {
+            RebuildMineLayout();
+            var mineHor = UI.GetGameObject("MineHor");
+            var scroll = mineHor != null ? mineHor.GetComponent<ScrollRect>() : null;
+            if (scroll == null)
+            {
+                return;
+            }
+
+            scroll.verticalNormalizedPosition = 0f;
+        }
+
+        private Transform GetSlotRoot(ShopItem item)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            var t = item.transform;
+            while (t.parent != null && t.parent != _mineContent)
+            {
+                t = t.parent;
+            }
+
+            return t;
+        }
+
+        private CanvasGroup GetSlotCanvasGroup(ShopItem item)
+        {
+            var slot = GetSlotRoot(item);
+            return slot != null ? slot.GetComponent<CanvasGroup>() : null;
+        }
+
+        private CanvasGroup GetOrAddSlotCanvasGroup(ShopItem item)
+        {
+            var slot = GetSlotRoot(item);
+            if (slot == null)
+            {
+                return null;
+            }
+
+            var cg = slot.GetComponent<CanvasGroup>();
+            return cg != null ? cg : slot.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private static void PunchSlot(ShopItem item)
+        {
+            var rt = item.transform as RectTransform;
+            if (rt == null)
+            {
+                return;
+            }
+
+            rt.DOKill();
+            rt.DOPunchScale(Vector3.one * 0.08f, 0.28f, 6, 0.6f).SetUpdate(true);
         }
 
         private static void SetSlotActive(ShopItem item, bool active, Transform layoutRoot = null)
@@ -251,6 +429,16 @@ namespace App.UI.Popup
                 var parent = t.parent;
                 if (parent == null || parent == layoutRoot)
                 {
+                    if (!active)
+                    {
+                        var cg = t.GetComponent<CanvasGroup>();
+                        if (cg != null)
+                        {
+                            cg.alpha = 1f;
+                            cg.blocksRaycasts = true;
+                        }
+                    }
+
                     break;
                 }
 

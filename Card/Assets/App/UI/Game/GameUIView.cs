@@ -77,7 +77,10 @@ namespace App.UI
         private int _portraitLoadSerial;
         private int _playedAttack;
         private Transform _playerCardTypeNum;
-        private TMP_Text _beilvNum;
+        private RectTransform _beilvInfo;
+        private Image _beilvIcon;
+        private TMP_Text _attackNum;
+        private Transform _beilvNumRoot;
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
         private int _heldAttackValue;
@@ -105,7 +108,7 @@ namespace App.UI
             BindAttackHud();
             BindAttackFx();
             BindSettleFx();
-            BindBeilvNum();
+            BindBeilvInfo();
             BindHudChrome();
             ViewModel.Refresh();
             RefreshPlayerItems();
@@ -348,16 +351,29 @@ namespace App.UI
             _settleFx.Bind(ViewModel.Resources, transform);
         }
 
-        private void BindBeilvNum()
+        private void BindBeilvInfo()
         {
-            var node = ResolveSlot("beilvNum");
-            if (node == null)
+            var info = ResolveSlot("beilvInfo");
+            _beilvInfo = info as RectTransform;
+            if (_beilvInfo == null && info != null)
             {
-                return;
+                _beilvInfo = info.GetComponent<RectTransform>();
             }
 
-            _beilvNum = node.GetComponent<TMP_Text>();
-            node.gameObject.SetActive(false);
+            if (_beilvInfo != null)
+            {
+                _beilvInfo.gameObject.SetActive(false);
+            }
+
+            var icon = ResolveSlot("beilvIcon");
+            _beilvIcon = icon != null ? icon.GetComponent<Image>() : null;
+            var attack = ResolveSlot("attackNum");
+            _attackNum = attack != null ? attack.GetComponent<TMP_Text>() : null;
+            _beilvNumRoot = ResolveSlot("beilvNum");
+            if (_beilvNumRoot != null)
+            {
+                CardTypeValueSprites.Prepare(_beilvNumRoot);
+            }
         }
 
         private void TryPlayAttack()
@@ -393,10 +409,7 @@ namespace App.UI
             _holdAttackDisplay = true;
             _heldAttackItem = attackItem;
             _heldAttackValue = baseAttack;
-            if (_beilvNum != null)
-            {
-                _beilvNum.gameObject.SetActive(false);
-            }
+            HideBeilvInfo();
 
             if (_board != null)
             {
@@ -412,7 +425,10 @@ namespace App.UI
             _settleFx.Play(
                 _settleCards,
                 attackItem,
-                _beilvNum,
+                _beilvInfo,
+                _beilvIcon,
+                _attackNum,
+                _beilvNumRoot,
                 cardTypeNum,
                 ViewModel.Atlas,
                 _bonusBeats,
@@ -459,8 +475,9 @@ namespace App.UI
                     _bonusBeats.Add(new SettlePointCutscene.BonusBeat
                     {
                         EquipAnimator = equip,
+                        RelicId = part.RelicId,
                         IsAttack = false,
-                        BeilvText = GameTableViewModel.FormatBonus(part.MultiplierAdd),
+                        BeilvText = GameTableViewModel.FormatMultiplier(part.MultiplierAdd),
                         CardTypeText = GameTableViewModel.FormatMultiplier(mag),
                         AttackValue = attackValue
                     });
@@ -472,6 +489,7 @@ namespace App.UI
                     _bonusBeats.Add(new SettlePointCutscene.BonusBeat
                     {
                         EquipAnimator = equip,
+                        RelicId = part.RelicId,
                         IsAttack = true,
                         BeilvText = GameTableViewModel.FormatBonus(part.AttackAdd),
                         CardTypeText = null,
@@ -806,6 +824,15 @@ namespace App.UI
             _holdAttackDisplay = false;
             _heldAttackItem = null;
             _heldAttackValue = 0;
+            HideBeilvInfo();
+        }
+
+        private void HideBeilvInfo()
+        {
+            if (_beilvInfo != null)
+            {
+                _beilvInfo.gameObject.SetActive(false);
+            }
         }
 
         private void PlaceHpAtPlayer()
@@ -1242,10 +1269,7 @@ namespace App.UI
             var preview = GameTableViewModel.ShouldShowPlayerHandPreview(session);
             if (!settling && !preview)
             {
-                if (_beilvNum != null)
-                {
-                    _beilvNum.gameObject.SetActive(false);
-                }
+                HideBeilvInfo();
 
                 if (_playerCardInfo != null)
                 {
@@ -2278,17 +2302,9 @@ namespace App.UI
                 _equipRelicIds.Add(0);
             }
 
-            if (_beilvNum != null)
+            if (_beilvInfo != null)
             {
-                _beilvNum.transform.SetAsLastSibling();
-            }
-            else
-            {
-                var beilv = ResolveSlot("beilvNum");
-                if (beilv != null)
-                {
-                    beilv.SetAsLastSibling();
-                }
+                _beilvInfo.SetAsLastSibling();
             }
 
             var atlas = ViewModel.Atlas;

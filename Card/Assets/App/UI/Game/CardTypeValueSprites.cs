@@ -38,6 +38,7 @@ namespace App.UI
             }
 
             Prepare(root);
+            HidePlusChild(root);
             Tokenize(formatted, Tokens);
             EnsureDigitCount(root, Tokens.Count);
             var childIndex = 0;
@@ -99,6 +100,19 @@ namespace App.UI
                 image.preserveAspect = true;
                 image.raycastTarget = false;
                 have++;
+            }
+        }
+
+        private static void HidePlusChild(Transform root)
+        {
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                if (child != null && child.name == "plus")
+                {
+                    child.gameObject.SetActive(false);
+                    return;
+                }
             }
         }
 

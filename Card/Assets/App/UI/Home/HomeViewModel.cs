@@ -1,12 +1,17 @@
+using System;
 using System.Threading.Tasks;
+using App.Audio;
 using App.Config;
 using App.Energy;
 using App.Level;
+using App.Resources;
 using App.Talent;
 using Framework.Assets;
+using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI
 {
@@ -17,6 +22,7 @@ namespace App.UI
         private readonly ILevelService _levels;
         private readonly ILevelProgressService _progress;
         private readonly TalentBonusManager _talentBonus;
+        private readonly IAudioService _audio;
 
         public HomeViewModel(
             IUIManager ui,
@@ -24,13 +30,15 @@ namespace App.UI
             ILevelService levels,
             ILevelProgressService progress,
             TalentBonusManager talentBonus,
-            IResourceService resources)
+            IResourceService resources,
+            IAudioService audio)
         {
             _ui = ui;
             _navigation = navigation;
             _levels = levels;
             _progress = progress;
             _talentBonus = talentBonus;
+            _audio = audio;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
@@ -52,11 +60,34 @@ namespace App.UI
 
         public IRelayCommand StartCommand { get; }
 
-        protected override Task OnOpen(object args)
+        protected override async Task OnOpen(object args)
         {
             RefreshLastStage();
             RefreshStamina();
-            return Task.CompletedTask;
+            await StartHomeBgmAsync();
+        }
+
+        /// <summary>
+        /// HealthAdvisory 关闭后（或跳过忠告直进 Home）开始播主 BGM。
+        /// 开关已在启动时从 audio.bgm.enabled.v1 读入；关闭则只挂曲不播。
+        /// 再次打开 Home 时同一 clip 不会从头重播。
+        /// </summary>
+        private async Task StartHomeBgmAsync()
+        {
+            if (_audio == null || Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.Bgm);
+                _audio.PlayBgm(clip);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Home BGM load failed: " + ex.Message);
+            }
         }
 
         private void RefreshStamina()

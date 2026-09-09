@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using App.AdShop;
 using App.Atlas;
+using App.Audio;
 using App.Bag;
 using App.Config;
 using App.Energy;
@@ -46,6 +47,7 @@ namespace App.Bootstrap
             await AttackTuningConfig.PreloadAsync(_resources.Resources);
 
             _services.Register(SaveFramework.Create());
+            RegisterAudio(_services);
             _services.Register(new GameSession());
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();
@@ -96,6 +98,14 @@ namespace App.Bootstrap
             services.Register<IAtlasService>(atlas);
             CardSpriteLibrary.Bind(atlas);
             ItemBgSpriteLibrary.Bind(atlas);
+        }
+
+        private static void RegisterAudio(AppServicesHost services)
+        {
+            var audio = new AudioService(services.Resolve<ISaveService>(), services.gameObject);
+            audio.Load();
+            services.Register(audio);
+            services.Register<IAudioService>(audio);
         }
 
         private static void RegisterBag(AppServicesHost services)

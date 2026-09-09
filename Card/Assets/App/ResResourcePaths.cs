@@ -43,6 +43,8 @@ namespace App.Resources
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";
+        /// <summary>主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
+        public const string Bgm = "Audio/BGM/BGM";
         /// <summary>攻击演出参数 Assets/Res/SO/AttackTuning.asset（<see cref="App.UI.AttackTuningConfig"/>）。</summary>
         public const string AttackTuning = "SO/AttackTuning";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
@@ -57,6 +59,8 @@ namespace App.Resources
         public const string ItemBgAtlas = "Altas/ItemBg";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
         public const string TalentAtlas = "Altas/Talent";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>
+        public const string ShopNumAtlas = "Altas/ShopNum";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 

@@ -66,7 +66,13 @@ namespace App.UI
             return _playerRoot != null ? _playerRoot.position : Vector3.zero;
         }
 
-        public void PlayIncoming(int visualSlot, int level, Action onHit, Action onReturned, Action onDone)
+        public void PlayIncoming(
+            int visualSlot,
+            int level,
+            Action onHit,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -75,6 +81,7 @@ namespace App.UI
             if (_playerRoot == null || enemyRoot == null)
             {
                 onHit?.Invoke();
+                onCollisionDone?.Invoke();
                 onReturned?.Invoke();
                 onDone?.Invoke();
                 return;
@@ -126,6 +133,7 @@ namespace App.UI
 
                 PlayClip(enemyAnim, Clip(level, "back"));
                 PlayClip(_playerAnim, DefaultClip);
+                onCollisionDone?.Invoke();
             });
             AppendReturnHome(homeAnchored, beat.BackDuration);
             _seq.AppendCallback(() =>
@@ -153,7 +161,13 @@ namespace App.UI
             });
         }
 
-        public void Play(int visualSlot, int level, Action onHit, Action onReturned, Action onDone)
+        public void Play(
+            int visualSlot,
+            int level,
+            Action onHit,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -161,6 +175,7 @@ namespace App.UI
                 _enemyRoots[visualSlot] == null)
             {
                 onHit?.Invoke();
+                onCollisionDone?.Invoke();
                 onReturned?.Invoke();
                 onDone?.Invoke();
                 return;
@@ -212,6 +227,7 @@ namespace App.UI
 
                 PlayClip(_playerAnim, Clip(level, "back"));
                 PlayClip(targetAnim, DefaultClip);
+                onCollisionDone?.Invoke();
             });
             AppendReturnHome(homeAnchored, beat.BackDuration);
             _seq.AppendCallback(() =>
@@ -240,8 +256,8 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 这一击把血量打到 0 时，在被打者当前位置补一个特效，和溶解同时发生。
-        /// 只有致死才播，所以不进攻击序列的时间轴，自己按配置时长计时销毁。
+        /// 在被打者当前位置补一个致死特效。敌人致死由 GameUI 在碰撞完成（命中定格结束）时调用。
+        /// 不进攻击序列的时间轴，自己按配置时长计时销毁。
         /// </summary>
         public void PlayDeathEffect(Vector3 worldPos)
         {

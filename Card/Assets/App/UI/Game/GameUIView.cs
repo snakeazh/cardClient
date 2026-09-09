@@ -88,6 +88,7 @@ namespace App.UI
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
         private bool _attackCutsceneDone;
         private PlayerItem _waitLethalItem;
+        private readonly bool[] _pendingEnemyDeathFx = new bool[3];
         private readonly List<string> _guideTargetIds = new List<string>(4);
         private GuideTargetRegistry _guideTargets;
         private IDisposable _peekGoodArmedSub;
@@ -172,6 +173,7 @@ namespace App.UI
 
             StopAiDelay();
             CancelAllDeathDissolves();
+            ClearPendingEnemyDeathFx();
             _waitLethalItem = null;
             if (_attackCutsceneDone && ViewModel != null)
             {
@@ -535,6 +537,7 @@ namespace App.UI
 
             _attackCutsceneDone = false;
             _waitLethalItem = null;
+            ClearPendingEnemyDeathFx();
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
             Action onHit = () =>
@@ -555,6 +558,7 @@ namespace App.UI
                 TryDissolveIfLethal(session);
                 session.NotifyUi();
             };
+            Action onCollisionDone = PlayPendingEnemyDeathEffects;
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };
             Action onDone = () =>
             {
@@ -566,11 +570,23 @@ namespace App.UI
             };
             if (session.IncomingAttack)
             {
-                _attackFx.PlayIncoming(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
+                _attackFx.PlayIncoming(
+                    session.AttackVisualSlot,
+                    session.AttackLevel,
+                    onHit,
+                    onCollisionDone,
+                    onReturned,
+                    onDone);
             }
             else
             {
-                _attackFx.Play(session.AttackVisualSlot, session.AttackLevel, onHit, onReturned, onDone);
+                _attackFx.Play(
+                    session.AttackVisualSlot,
+                    session.AttackLevel,
+                    onHit,
+                    onCollisionDone,
+                    onReturned,
+                    onDone);
             }
         }
 
@@ -597,7 +613,7 @@ namespace App.UI
                 }
 
                 var item = AttackItemAtSlot(slot);
-                _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+                _pendingEnemyDeathFx[slot] = true;
                 if (item == null)
                 {
                     continue;
@@ -609,6 +625,31 @@ namespace App.UI
                 }
 
                 ScheduleDeathDissolve(item, hideWhenDone: true);
+            }
+        }
+
+        /// <summary>
+        /// 敌人致死烟等碰撞完成（命中定格结束、开始退回）再播。
+        /// </summary>
+        private void PlayPendingEnemyDeathEffects()
+        {
+            for (var slot = 0; slot < _pendingEnemyDeathFx.Length; slot++)
+            {
+                if (!_pendingEnemyDeathFx[slot])
+                {
+                    continue;
+                }
+
+                _pendingEnemyDeathFx[slot] = false;
+                _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+            }
+        }
+
+        private void ClearPendingEnemyDeathFx()
+        {
+            for (var i = 0; i < _pendingEnemyDeathFx.Length; i++)
+            {
+                _pendingEnemyDeathFx[i] = false;
             }
         }
 

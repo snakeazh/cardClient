@@ -38,6 +38,6 @@
   "DefaultSkillShuffleNum": 3,
   "DefaultSkillReplaceNum": 1,
   "DefaultSkillPerspectiveNum": 1,
-  "TalentNeedChestGold": 10,
+  "TalentNeedChestGold": 50,
   "EverySkillProvideGold": 20
 }

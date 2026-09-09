@@ -6,7 +6,7 @@
     "HeroDamage": 40,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People1",
     "HeroEntryId": [],
     "UnlockCondition": 0,
     "Desc": "平平无奇之人"
@@ -18,7 +18,7 @@
     "HeroDamage": 40,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Warrior",
+    "Icon": "People2",
     "HeroEntryId": [
       10001
     ],
@@ -32,7 +32,7 @@
     "HeroDamage": 34,
     "Critical": 0.05,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People3",
     "HeroEntryId": [
       10002,
       100021
@@ -47,7 +47,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People4",
     "HeroEntryId": [
       10003
     ],
@@ -61,7 +61,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Ranger",
+    "Icon": "People5",
     "HeroEntryId": [
       10004
     ],
@@ -75,7 +75,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Mage",
+    "Icon": "People6",
     "HeroEntryId": [
       10005
     ],
@@ -89,7 +89,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People7",
     "HeroEntryId": [
       10006
     ],
@@ -103,7 +103,7 @@
     "HeroDamage": 34,
     "Critical": 0.05,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People8",
     "HeroEntryId": [
       10007,
       100071
@@ -118,7 +118,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People9",
     "HeroEntryId": [
       10008
     ],
@@ -132,7 +132,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People10",
     "HeroEntryId": [
       10009
     ],
@@ -146,7 +146,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People11",
     "HeroEntryId": [
       10010
     ],
@@ -160,7 +160,7 @@
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
-    "Icon": "Adventurer",
+    "Icon": "People12",
     "HeroEntryId": [
       10011
     ],

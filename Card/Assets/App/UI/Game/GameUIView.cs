@@ -29,6 +29,7 @@ namespace App.UI
     {
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
         private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
+        private const float EnemySlideDuration = 0.3f;
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -37,6 +38,9 @@ namespace App.UI
         private readonly GameObject[] _enemyInfos = new GameObject[3];
         private readonly PlayerItem[] _enemyItems = new PlayerItem[3];
         private readonly Transform[] _enemyHomes = new Transform[3];
+        private readonly Tween[] _enemySlides = new Tween[3];
+        private bool _enemyStandReady;
+        private Vector3 _enemyItemLocalScale = Vector3.one;
         private GameObject _playerCardInfo;
         private GameObject _enemyCardInfo;
         private Image _enemyCardTypeIcon;
@@ -190,6 +194,7 @@ namespace App.UI
                 _board = null;
             }
 
+            KillEnemySlides();
             _attackFx.Dispose();
             _settleFx.Dispose();
             ClearAttackHold();
@@ -1069,6 +1074,7 @@ namespace App.UI
             }
 
             var templateScale = template.localScale;
+            _enemyItemLocalScale = templateScale;
             for (var i = 0; i < EnemySlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EnemySlotKeys[i]);
@@ -1225,36 +1231,106 @@ namespace App.UI
 
                 if (occupyCenter && i == centerSlot && center != null)
                 {
-                    PlaceEnemyAt(rt, center);
+                    PlaceEnemyAt(rt, center, i);
                     continue;
                 }
 
                 if (vacatedSide != null && i == 0)
                 {
-                    PlaceEnemyAt(rt, vacatedSide);
+                    PlaceEnemyAt(rt, vacatedSide, i);
                     continue;
                 }
 
-                PlaceEnemyAt(rt, _enemyHomes[i]);
+                PlaceEnemyAt(rt, _enemyHomes[i], i);
             }
+
+            _enemyStandReady = true;
         }
 
-        private static void PlaceEnemyAt(RectTransform rt, Transform parent)
+        private void PlaceEnemyAt(RectTransform rt, Transform parent, int index)
         {
             if (rt == null || parent == null)
             {
                 return;
             }
 
-            if (rt.parent != parent)
+            var instant = !_enemyStandReady || !rt.gameObject.activeInHierarchy;
+            if (rt.parent == parent)
             {
-                rt.SetParent(parent, false);
+                if (!IsEnemySliding(index))
+                {
+                    SnapEnemyLocal(rt);
+                }
+
+                return;
             }
 
+            if (instant)
+            {
+                KillEnemySlide(index);
+                rt.SetParent(parent, false);
+                SnapEnemyLocal(rt);
+                return;
+            }
+
+            KillEnemySlide(index);
+            var world = rt.position;
+            var worldScale = rt.lossyScale;
+            rt.SetParent(parent, true);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.position = world;
+            if (parent.lossyScale.x != 0f && parent.lossyScale.y != 0f && parent.lossyScale.z != 0f)
+            {
+                rt.localScale = new Vector3(
+                    worldScale.x / parent.lossyScale.x,
+                    worldScale.y / parent.lossyScale.y,
+                    worldScale.z / parent.lossyScale.z);
+            }
+
+            _enemySlides[index] = DOTween.Sequence()
+                .Join(rt.DOAnchorPos(Vector2.zero, EnemySlideDuration).SetEase(Ease.OutCubic))
+                .Join(rt.DOScale(_enemyItemLocalScale, EnemySlideDuration).SetEase(Ease.OutCubic))
+                .SetTarget(rt);
+        }
+
+        private static void SnapEnemyLocal(RectTransform rt)
+        {
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = Vector2.zero;
+            rt.localRotation = Quaternion.identity;
+        }
+
+        private bool IsEnemySliding(int index)
+        {
+            return index >= 0 &&
+                   index < _enemySlides.Length &&
+                   _enemySlides[index] != null &&
+                   _enemySlides[index].IsActive();
+        }
+
+        private void KillEnemySlide(int index)
+        {
+            if (index < 0 || index >= _enemySlides.Length)
+            {
+                return;
+            }
+
+            _enemySlides[index]?.Kill();
+            _enemySlides[index] = null;
+        }
+
+        private void KillEnemySlides()
+        {
+            for (var i = 0; i < _enemySlides.Length; i++)
+            {
+                KillEnemySlide(i);
+            }
+
+            _enemyStandReady = false;
         }
 
         private void RefreshCardInfos()

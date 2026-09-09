@@ -62,6 +62,7 @@ MonoBehaviour:
   cardName: {fileID: 1638339239333136613}
   cardIcon: {fileID: 4360046112712457286}
   cardBg: {fileID: 0}
+  cardMask: {fileID: 0}
   cardAttackValue: {fileID: 2251470114000148370}
   attackValueAnimator: {fileID: 0}
   cardAttackHeart: {fileID: 3126298132637409539}
@@ -357,7 +358,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -36.1, y: -0.98304}
-  m_SizeDelta: {x: 25, y: 25}
+  m_SizeDelta: {x: 30, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4801721510272931312
 CanvasRenderer:
@@ -1335,7 +1336,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -36.1, y: -0.98304}
-  m_SizeDelta: {x: 25, y: 25}
+  m_SizeDelta: {x: 30, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &834521474797950252
 CanvasRenderer:
@@ -1621,7 +1622,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -36.1, y: -0.98304}
-  m_SizeDelta: {x: 25, y: 25}
+  m_SizeDelta: {x: 30, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8359357830882866554
 CanvasRenderer:
@@ -2173,7 +2174,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -36.1, y: -0.98304}
-  m_SizeDelta: {x: 25, y: 25}
+  m_SizeDelta: {x: 30, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1230184328163839612
 CanvasRenderer:

@@ -5,8 +5,10 @@ using App.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
+using DG.Tweening;
 using Framework.Log;
 using Framework.UI.Binding;
+using Framework.UI.Core;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
@@ -38,13 +40,25 @@ namespace App.UI.Popup
         private int _shownRelicId;
         private Canvas _canvas;
         private GameObject _nohave;
+        private RectTransform _bg;
+        private Vector2 _bgHome;
+        private bool _bgHomeCached;
+        private Tween _bgFlyTween;
+        private bool _closing;
+        private const float BgFlyDuration = 0.35f;
+
+        protected override Task OnViewOpen()
+        {
+            PlayBgFlyIn();
+            return Task.CompletedTask;
+        }
 
         protected override void OnBind()
         {
             var closeBtn = GetNode<Button>("CloseBtn");
             if (closeBtn != null)
             {
-                Binding.BindCommand(closeBtn, ViewModel.CloseCommand);
+                Binding.BindCommand(closeBtn, new RelayCommand(OnCloseClicked));
             }
 
             BindResourceBar();
@@ -55,6 +69,8 @@ namespace App.UI.Popup
 
         protected override Task OnViewClose()
         {
+            _closing = false;
+            StopBgFly(restoreHome: true);
             HideTip();
             for (var i = 0; i < _items.Count; i++)
             {
@@ -84,6 +100,114 @@ namespace App.UI.Popup
             }
 
             return Task.CompletedTask;
+        }
+
+        private void PlayBgFlyIn()
+        {
+            if (!TryResolveBg())
+            {
+                return;
+            }
+
+            StopBgFly(restoreHome: false);
+            _bg.anchoredPosition = OffscreenPos();
+            _bgFlyTween = _bg.DOAnchorPos(_bgHome, BgFlyDuration)
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true);
+        }
+
+        private void OnCloseClicked()
+        {
+            _ = CloseWithFlyOut();
+        }
+
+        private async Task CloseWithFlyOut()
+        {
+            if (_closing || ViewModel == null)
+            {
+                return;
+            }
+
+            _closing = true;
+            await PlayBgFlyOut();
+            if (!_closing || ViewModel == null)
+            {
+                return;
+            }
+
+            ViewModel.CloseCommand.Execute();
+        }
+
+        private async Task PlayBgFlyOut()
+        {
+            if (!TryResolveBg())
+            {
+                return;
+            }
+
+            HideTip();
+            StopBgFly(restoreHome: false);
+            _bgFlyTween = _bg.DOAnchorPos(OffscreenPos(), BgFlyDuration)
+                .SetEase(Ease.InCubic)
+                .SetUpdate(true);
+            if (_bgFlyTween != null && _bgFlyTween.IsActive())
+            {
+                await _bgFlyTween.AsyncWaitForCompletion();
+            }
+        }
+
+        private Vector2 OffscreenPos()
+        {
+            return new Vector2(_bgHome.x + GetOffscreenWidth(), _bgHome.y);
+        }
+
+        private float GetOffscreenWidth()
+        {
+            Canvas.ForceUpdateCanvases();
+            var parent = _bg.parent as RectTransform;
+            var width = parent != null ? parent.rect.width : _bg.rect.width;
+            return width < 1f ? 1080f : width;
+        }
+
+        private bool TryResolveBg()
+        {
+            if (_bg == null)
+            {
+                var found = transform.Find("BG");
+                if (found == null)
+                {
+                    found = FindDeep(transform, "BG");
+                }
+
+                _bg = found as RectTransform;
+            }
+
+            if (_bg == null)
+            {
+                return false;
+            }
+
+            if (!_bgHomeCached)
+            {
+                _bgHome = _bg.anchoredPosition;
+                _bgHomeCached = true;
+            }
+
+            return true;
+        }
+
+        private void StopBgFly(bool restoreHome)
+        {
+            if (_bgFlyTween != null && _bgFlyTween.IsActive())
+            {
+                _bgFlyTween.Kill();
+            }
+
+            _bgFlyTween = null;
+            if (restoreHome && _bg != null && _bgHomeCached)
+            {
+                _bg.anchoredPosition = _bgHome;
+            }
         }
 
         private void BindResourceBar()

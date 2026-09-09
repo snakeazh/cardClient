@@ -78,6 +78,9 @@ namespace App.Item
         private bool _selected;
         private bool _hasSelectAnim;
         private bool _selectAnimOn;
+        private QualityType _quality = QualityType.Ordinary;
+
+        public QualityType Quality => _quality;
 
         private void Awake()
         {
@@ -228,6 +231,7 @@ namespace App.Item
         public void ApplyQuality(QualityType type)
         {
             EnsureRefs();
+            _quality = type;
             ApplyFrame(type);
         }
 

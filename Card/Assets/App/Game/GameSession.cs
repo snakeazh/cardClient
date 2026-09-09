@@ -236,8 +236,10 @@ namespace App.Game
 
         public int CenterStandVisualSlot => FindVisualSlot(CenterStandEnemy);
         public int AttackDamage { get; private set; }
-        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于 <see cref="AttackDamage"/>。</summary>
+        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于 <see cref="AttackDamage"/>。闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
+        /// <summary>本击因闪避未扣血，HUD 飘字显示 MISS。</summary>
+        public bool LastAttackMissed { get; private set; }
         /// <summary>攻击演出强度：1 低 / 2 中 / 3 高。</summary>
         public int AttackLevel { get; private set; } = 1;
         public bool AttackPlaying => _pendingAttackTarget != null;
@@ -1050,6 +1052,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(target);
             AttackDamage = Math.Max(0, PendingAttackDamage);
             TakenDamage = AttackDamage;
+            LastAttackMissed = false;
             _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
@@ -1239,6 +1242,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(attacker);
             AttackDamage = Math.Max(0, PendingAttackDamage);
             TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
+            LastAttackMissed = false;
             _attackHitsApplied = false;
             if (AttackLevel < 1 || AttackLevel > 3)
             {
@@ -4671,6 +4675,8 @@ namespace App.Game
                 {
                     Log($"闪避：{target.Name} 免疫 {damage} 伤害");
                     target.Banner = "闪避";
+                    LastAttackMissed = true;
+                    TakenDamage = 0;
                     ApplyDodgeCounter(attacker);
                     return 0;
                 }
@@ -6485,6 +6491,8 @@ namespace App.Game
 
             Log($"灵活身姿：{target.Name} 闪避攻击");
             target.Banner = "闪避";
+            LastAttackMissed = true;
+            TakenDamage = 0;
             var factor = BossMechanics.MonsterEvadeCounterFactor(Run);
             var counter = (int)Math.Round(target.Attack * factor);
             if (counter > 0 && Player != null && Player.Alive)

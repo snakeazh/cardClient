@@ -14,13 +14,14 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
     /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
-    /// 出售先暂扣金币，飞币到位后再加到 GameResourceBar。
+    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售先暂扣金币，飞币到位后再加到 GameResourceBar。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
     {
         private const string DefaultTip = "点击空白处以关闭";
         private readonly IUIManager _ui;
         private bool _awaitingSellFx;
+        private bool _awaitingBuyFx;
         private int _pendingSellGold;
 
         public ShopDetailViewModel(
@@ -108,6 +109,7 @@ namespace App.UI.Popup
 
         protected override Task OnClose()
         {
+            _awaitingBuyFx = false;
             ReleasePendingSellGold();
             return Task.CompletedTask;
         }
@@ -115,6 +117,7 @@ namespace App.UI.Popup
         protected override void OnDispose()
         {
             Session.Changed -= OnSessionChanged;
+            _awaitingBuyFx = false;
             ReleasePendingSellGold();
         }
 
@@ -179,9 +182,49 @@ namespace App.UI.Popup
             Dismiss();
         }
 
+        public bool TryBeginBuy(bool watchAd)
+        {
+            if (!Buying || RelicId <= 0)
+            {
+                return false;
+            }
+
+            if (Session.Run.RelicConfigIds.Count >= Session.RelicCarryMax)
+            {
+                Toast.Show("遗物已满");
+                return false;
+            }
+
+            _awaitingBuyFx = true;
+            var ownedBefore = Session.OwnsRelicConfig(RelicId);
+            if (watchAd)
+            {
+                Session.WatchAdBuyShopRelic(RelicId);
+            }
+            else
+            {
+                Session.BuyShopRelic(RelicId);
+            }
+
+            if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)
+            {
+                return true;
+            }
+
+            _awaitingBuyFx = false;
+            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
+            return false;
+        }
+
+        public void CompleteBuy()
+        {
+            _awaitingBuyFx = false;
+            Dismiss();
+        }
+
         private void OnSessionChanged()
         {
-            if (_awaitingSellFx)
+            if (_awaitingSellFx || _awaitingBuyFx)
             {
                 return;
             }
@@ -240,43 +283,12 @@ namespace App.UI.Popup
 
         private void ConfirmBuy()
         {
-            TryBuy(watchAd: false);
+            // View 拦截 BuyBtn 点击并播飞入；命令仅用于 CanExecute。
         }
 
         private void ConfirmVideoBuy()
         {
-            TryBuy(watchAd: true);
-        }
-
-        private void TryBuy(bool watchAd)
-        {
-            if (!Buying || RelicId <= 0)
-            {
-                return;
-            }
-
-            if (Session.Run.RelicConfigIds.Count >= Session.RelicCarryMax)
-            {
-                Toast.Show("遗物已满");
-                return;
-            }
-
-            var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            if (watchAd)
-            {
-                Session.WatchAdBuyShopRelic(RelicId);
-            }
-            else
-            {
-                Session.BuyShopRelic(RelicId);
-            }
-
-            if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)
-            {
-                return;
-            }
-
-            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
+            // View 拦截 VideoBuyBtn 点击并播飞入；命令仅用于 CanExecute。
         }
 
         private void ConfirmSell()

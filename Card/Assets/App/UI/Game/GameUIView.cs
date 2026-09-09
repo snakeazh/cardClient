@@ -566,19 +566,20 @@ namespace App.UI
             Action onHit = () =>
             {
                 _cameraShake?.PlayByLevel(session.AttackLevel);
-                ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage)}";
+                session.ApplyPendingAttackHits();
+                TryDissolveIfLethal(session);
+                var missed = session.LastAttackMissed;
+                ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
                 ViewModel.ShowHpText.Value = true;
                 if (session.IncomingAttack)
                 {
-                    PlaceHpAtPlayer();
+                    PlaceHpAtPlayer(!missed);
                 }
                 else
                 {
-                    PlaceHpAtTarget(session.AttackVisualSlot);
+                    PlaceHpAtTarget(session.AttackVisualSlot, !missed);
                 }
 
-                session.ApplyPendingAttackHits();
-                TryDissolveIfLethal(session);
                 session.NotifyUi();
             };
             Action onCollisionDone = PlayPendingEnemyDeathEffects;
@@ -840,17 +841,17 @@ namespace App.UI
             }
         }
 
-        private void PlaceHpAtPlayer()
+        private void PlaceHpAtPlayer(bool playAnim)
         {
-            PlaceHpAt(_attackFx.HitPositionPlayer());
+            PlaceHpAt(_attackFx.HitPositionPlayer(), playAnim);
         }
 
-        private void PlaceHpAtTarget(int slot)
+        private void PlaceHpAtTarget(int slot, bool playAnim)
         {
-            PlaceHpAt(_attackFx.HitPosition(slot));
+            PlaceHpAt(_attackFx.HitPosition(slot), playAnim);
         }
 
-        private void PlaceHpAt(Vector3 hit)
+        private void PlaceHpAt(Vector3 hit, bool playAnim)
         {
             if (_hpTextRt == null || hit == Vector3.zero)
             {
@@ -859,7 +860,13 @@ namespace App.UI
 
             _hpTextRt.SetAsLastSibling();
             _hpTextRt.position = hit;
-            PlayHpTextAnim();
+            if (playAnim)
+            {
+                PlayHpTextAnim();
+                return;
+            }
+
+            StopHpTextAnim();
         }
 
         private void PlayHpTextAnim()
@@ -873,8 +880,22 @@ namespace App.UI
             _hpTextAnim.Play();
         }
 
+        private void StopHpTextAnim()
+        {
+            if (_hpTextAnim == null)
+            {
+                return;
+            }
+
+            _hpTextAnim.Stop();
+            _hpTextAnim.Rewind();
+            _hpTextAnim.Sample();
+            _hpTextAnim.Stop();
+        }
+
         private void RestoreHpText()
         {
+            StopHpTextAnim();
             if (_hpTextRt == null)
             {
                 return;

@@ -1,6 +1,7 @@
 using System;
 using App.Config;
 using App.Game;
+using App.Talent;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +25,13 @@ namespace App.Item
 
         public event Action<HeroItem> Clicked;
 
-        public void Bind(HeroConfig hero, Sprite portrait, bool selected, bool unlocked, bool forceSelect = false)
+        public void Bind(
+            HeroConfig hero,
+            Sprite portrait,
+            bool selected,
+            bool unlocked,
+            HeroPanelStats stats,
+            bool forceSelect = false)
         {
             Data = hero;
             EnsureRefs();
@@ -39,8 +46,8 @@ namespace App.Item
             playerItem.SetPortrait(portrait, locked: !unlocked);
             if (unlocked && hero != null)
             {
-                playerItem.SetHp(hero.Hp);
-                playerItem.SetAttack(hero.HeroDamage);
+                playerItem.SetHp(stats.Hp);
+                playerItem.SetAttack(stats.Attack);
             }
 
             playerItem.SetUnlocked(unlocked && hero != null);

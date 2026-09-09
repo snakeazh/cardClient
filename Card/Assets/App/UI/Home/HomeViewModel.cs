@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using App.Config;
 using App.Energy;
 using App.Level;
+using App.Talent;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -15,18 +16,21 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private readonly ILevelService _levels;
         private readonly ILevelProgressService _progress;
+        private readonly TalentBonusManager _talentBonus;
 
         public HomeViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
             ILevelService levels,
             ILevelProgressService progress,
+            TalentBonusManager talentBonus,
             IResourceService resources)
         {
             _ui = ui;
             _navigation = navigation;
             _levels = levels;
             _progress = progress;
+            _talentBonus = talentBonus;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
@@ -37,6 +41,9 @@ namespace App.UI
         public IResourceService Resources { get; }
 
         public HeroConfig Hero { get; }
+
+        public HeroPanelStats PanelStats =>
+            _talentBonus != null ? _talentBonus.Evaluate(Hero) : TalentBonusManager.EvaluateBase(Hero);
 
         public ObservableProperty<string> LastStageInfo { get; }
 

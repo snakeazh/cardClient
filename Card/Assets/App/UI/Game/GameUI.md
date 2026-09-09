@@ -96,7 +96,9 @@ GameUI
 每手重置：搓牌 3 / 透视 1 / 替换 1（商店加成另加）。搓完或松手未达标回到开牌阶段。
 
 人物卡攻击力 / 血量见 [`PlayerItem.md`](../../Item/PlayerItem.md)。  
-通关商店货架 / 已购见 [`ShopItem.md`](../../Item/ShopItem.md)，买卖在 ShopDetail。  
+通关商店货架 / 已购见 [`ShopItem.md`](../../Item/ShopItem.md)，买卖在 [`ShopDetail.md`](../Popup/ShopDetail.md)。  
+关卡结算见 [`BattleSettleUpPop.md`](../Popup/BattleSettleUpPop.md)。  
+金币飞入见 [`CoinFlyFx.md`](../Effects/CoinFlyFx.md)。  
 攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。  
 闯关结算见 [`BattleResultPopup.md`](../Popup/BattleResultPopup.md)。
 

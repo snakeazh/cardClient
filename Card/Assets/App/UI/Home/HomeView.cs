@@ -50,9 +50,10 @@ namespace App.UI
                 return;
             }
 
+            var stats = ViewModel.PanelStats;
             _playerItem.SetName(hero.Name);
-            _playerItem.SetHp(hero.Hp);
-            _playerItem.SetAttack(hero.HeroDamage);
+            _playerItem.SetHp(stats.Hp);
+            _playerItem.SetAttack(stats.Attack);
             _playerItem.SetPortrait(PortraitLoader.GetRole(hero.Icon));
         }
     }

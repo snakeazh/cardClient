@@ -149,7 +149,7 @@
 
 ## 9. 商店、广告、词缀
 
-击杀本关全部敌人 → 发本关 `LevelConfig.GetGold`（可乘经济教授）+ 击杀数 × `KillMonsterGetGold` 为**局内金币**进商店；本手伤害换金已在比牌结束时入账。`BattleSettleUpPop` 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。
+击杀本关全部敌人 → 发本关 `LevelConfig.GetGold`（可乘经济教授）+ 击杀数 × `KillMonsterGetGold` 为**局内金币**进商店；本手伤害换金已在比牌结束时入账。[`BattleSettleUpPop.md`](../UI/Popup/BattleSettleUpPop.md) 只展示本关 `Stage` 积分和本关发放的金币，不展示本章节累计。提现 / 双倍 / 商店出售飞币见 [`CoinFlyFx.md`](../UI/Effects/CoinFlyFx.md)。
 
 商店商品来自 `RelicConfig`（`RelicEntryConfig` 为效果词条）。已购 Id 存在 `Run.RelicConfigIds`，件数不设上限。效果见 [`RelicMechanics.md`](RelicMechanics.md)。
 

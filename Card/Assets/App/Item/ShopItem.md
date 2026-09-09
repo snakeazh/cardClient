@@ -48,13 +48,13 @@ item.PlayChooseEnd();
 
 点击：`BindClick` / `Clicked`。拖拽：`BindDrag` / `IBeginDragHandler` 等（通关商店已不再用拖拽）。
 
-`BattleShopPopView` 用预制体上的隐藏模板 `sellItem` / `mineItem`（外壳带缩放，里面是 ShopItem），克隆到 `sellHor` 和 `MineHor` 的 Content。货架 4 格走买入价，已购走 `forSale: false`，点开 ShopDetail。拖拽会转发给父级 ScrollRect，所以 MineHor 点在装备上也能滑动。
+`BattleShopPopView` 用预制体上的隐藏模板 `sellItem` / `mineItem`（外壳带缩放，里面是 ShopItem），克隆到 `sellHor` 和 `MineHor` 的 Content。货架 4 格走买入价，已购走 `forSale: false`，点开 [`ShopDetail.md`](../UI/Popup/ShopDetail.md)。拖拽会转发给父级 ScrollRect，所以 MineHor 点在装备上也能滑动。
 
 ---
 
 ## 注意
 
 - 商店商品只认 `RelicConfig`，不要再做第二套商品表。
-- 通关商店列表用 `ShopItem`，详情用 `ShopDetail` 的 `ItemCard`。
+- 通关商店列表用 `ShopItem`，详情用 [`ShopDetail.md`](../UI/Popup/ShopDetail.md) 的 `ItemCard`。出售飞币见 [`CoinFlyFx.md`](../UI/Effects/CoinFlyFx.md)。
 - 编辑器菜单 `Tools/Wire ShopItem Prefab` 会把节点挂到序列化字段（价格认 `priceValue`）。
 - 图鉴遗物页用的是 `ItemCard`，不是 `ShopItem`。

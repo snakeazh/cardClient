@@ -180,7 +180,9 @@ namespace App.UI
             {
                 var item = _heroItems[i];
                 var hero = ViewModel.Heroes[i];
-                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, ViewModel.IsHeroUnlocked(hero), forceSelect);
+                var unlocked = ViewModel.IsHeroUnlocked(hero);
+                var stats = ViewModel.GetHeroPanelStats(hero);
+                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, unlocked, stats, forceSelect);
             }
         }
 
@@ -217,9 +219,10 @@ namespace App.UI
             var portrait = hero != null ? PortraitLoader.GetRole(hero.Icon) : null;
             if (unlocked && hero != null)
             {
+                var stats = ViewModel.GetHeroPanelStats(hero);
                 _playerItem.SetName(hero.Name);
-                _playerItem.SetHp(hero.Hp);
-                _playerItem.SetAttack(hero.HeroDamage);
+                _playerItem.SetHp(stats.Hp);
+                _playerItem.SetAttack(stats.Attack);
                 _playerItem.SetPortrait(portrait);
                 _playerItem.SetUnlocked(true);
             }

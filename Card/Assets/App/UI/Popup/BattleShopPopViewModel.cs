@@ -33,7 +33,8 @@ namespace App.UI.Popup
             _ui = ui;
             _dialogs = dialogs;
             RefreshGoldNum = new ObservableProperty<string>(session.EffectiveShopRefreshCost.ToString());
-            RefreshNum = new ObservableProperty<string>(session.Run.ShopRefreshCount.ToString());
+            RefreshNum = new ObservableProperty<string>(FormatFreeRefreshNum(session.Run.FreeShopRefreshLeft));
+            ShowRefreshNum = new ObservableProperty<bool>(session.Run.FreeShopRefreshLeft > 0);
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ShopRevision = new ObservableProperty<int>();
             RefreshCommand = new RelayCommand(() => Session.RefreshShopOffers(), () => Session.CanRefreshShop);
@@ -47,6 +48,8 @@ namespace App.UI.Popup
         public ObservableProperty<string> RefreshGoldNum { get; }
 
         public ObservableProperty<string> RefreshNum { get; }
+
+        public ObservableProperty<bool> ShowRefreshNum { get; }
 
         public ObservableProperty<string> GoldText { get; }
 
@@ -134,11 +137,18 @@ namespace App.UI.Popup
 
         private void Refresh()
         {
+            var freeLeft = Session.Run.FreeShopRefreshLeft;
             RefreshGoldNum.Value = Session.EffectiveShopRefreshCost.ToString();
-            RefreshNum.Value = Session.Run.ShopRefreshCount.ToString();
+            RefreshNum.Value = FormatFreeRefreshNum(freeLeft);
+            ShowRefreshNum.Value = freeLeft > 0;
             GoldText.Value = Session.Run.Gold.ToString();
             RefreshCommand.RaiseCanExecuteChanged();
             ShopRevision.Value++;
+        }
+
+        private static string FormatFreeRefreshNum(int freeLeft)
+        {
+            return $"免费{freeLeft}次";
         }
 
         private void Leave()

@@ -21,9 +21,11 @@ namespace App.UI.Popup
         // BG 底部预留 = 背景图九宫格下边框厚度（LevelSettlementBaseFrame spriteBorder.w = 116）
         public float BgBottomEdge = 116f;
 
-        // 入场动画节奏：面板自下方滑入淡现 → 标题回落 → 内容块自上而下逐块串行淡入
-        // （上一块播完才播下一块），BG 高度按各块高度逐段增长（跟随 Scroll View 逐渐展开），
-        // 全部播完后恢复 FitBgHeight 托底。
+        // 入场动画节奏：面板自下方滑入淡现 → 标题回落 → 静态块（表头/汇总/公式/按钮）开局一起淡入，
+        // BG 只长到表头底部 → Round_N 行逐行串行淡入（上一行播完才播下一行），BG 随每行逐格展开 →
+        // 行链播完 BG 一次补长到汇总/按钮区（数字滚动同刻触发）；全部播完后恢复 FitBgHeight 托底。
+        // BG 长高量必须按布局顺序累计（Viewport 蒙罩从上往下揭，可见范围只看"到此为止的块总高"）：
+        // 行下方静态块的高度提前计入，会把行区纸面过早掀开成大段空白。
         // BG 挂 TallScreenFitScale 会写 localScale，面板不做缩放动画；Content 由 VerticalLayoutGroup
         // 驱动，子块只做淡入不做位移；按钮不缩放（ButtonAnim 首次按下会缓存 localScale 当静止姿态）。
         private const float PanelSlideDistance = 60f;
@@ -91,11 +93,13 @@ namespace App.UI.Popup
             Binding.BindInteractable(_doubleBtn, ViewModel.DoubleEnabled);
             // OnBind 先于 VM.OnOpen 执行，此时 RoundRows 还是空的，
             // 须订阅版本号等 Refresh 重建行列表后再开播入场动画（动画要枚举行，顺序不能反）。
+            // emitCurrent:false：版本号默认会回放当前值 0，导致 OnBind 当场播一次无行入场动画、
+            // _entrancePlayed 提前置位，OnOpen 建出的行接不进动画、alpha 全 1 同帧齐现。
             Binding.Add(ViewModel.RoundRevision.Subscribe(_ =>
             {
                 RefreshRoundList();
                 PlayEntranceOnce();
-            }));
+            }, emitCurrent: false));
             BindOverlayClose();
             _ = EnsureCoinPrefab();
         }
@@ -206,29 +210,105 @@ namespace App.UI.Popup
                 _entranceSeq.Insert(TitleDelay, _titleRect.DOAnchorPos(_titleRestPos, TitleDropDuration).SetEase(Ease.OutBack));
             }
 
-            var cursor = BlocksDelay;
-            var grownTo = initialY;
             var bgWidth = _bgRect.sizeDelta.x;
+            var revealsAtRowEnd = new List<DG.Tweening.TweenCallback>();
+
+            // GrowTarget = 恰好露出该块底部时的 BG 高度（布局顺序累计，与各块淡入时刻解耦）。
+            var cumulative = initialY;
+            var firstStep = true;
+            for (var i = 0; i < _revealSteps.Count; i++)
+            {
+                cumulative += _revealSteps[i].Height + (firstStep ? 0f : spacing);
+                firstStep = false;
+                _revealSteps[i].GrowTarget = cumulative;
+            }
+
+            var firstRowIndex = -1;
+            for (var i = 0; i < _revealSteps.Count; i++)
+            {
+                if (_revealSteps[i].IsRow)
+                {
+                    firstRowIndex = i;
+                    break;
+                }
+            }
+
+            // 静态块（表头/汇总/公式/两个按钮）开局同帧一起淡入；行下方各块此刻仍被蒙罩挡着，
+            // 到行链播完纸面开到那里才真正露出，因此数字滚动排在行链末尾。
             for (var i = 0; i < _revealSteps.Count; i++)
             {
                 var step = _revealSteps[i];
+                if (step.IsRow)
+                {
+                    continue;
+                }
+
                 step.Group.alpha = 0f;
                 step.Group.blocksRaycasts = false;
                 _blockGroups.Add(step.Group);
+                var group = step.Group;
+                _entranceSeq.Insert(BlocksDelay, group.DOFade(1f, BlockFadeDuration).SetEase(Ease.OutQuad)
+                    .OnComplete(() => group.blocksRaycasts = true)
+                    .SetLink(group.gameObject, LinkBehaviour.KillOnDestroy));
+                if (step.OnShown != null)
+                {
+                    revealsAtRowEnd.Add(step.OnShown);
+                }
+            }
+
+            // 开局长高的只有行上方静态块（表头）。汇总/公式/按钮在布局上位于行下方，高度此刻计入
+            // 会把行区纸面过早掀开成大段空白，须等行链播完再长；无行时全部静态块都算行上方。
+            var grownTo = initialY;
+            if (firstRowIndex < 0)
+            {
+                grownTo = _revealSteps.Count > 0 ? _revealSteps[_revealSteps.Count - 1].GrowTarget : initialY;
+            }
+            else if (firstRowIndex > 0)
+            {
+                grownTo = _revealSteps[firstRowIndex - 1].GrowTarget;
+            }
+
+            if (grownTo > initialY)
+            {
+                _entranceSeq.Insert(BlocksDelay, _bgRect.DOSizeDelta(new Vector2(bgWidth, grownTo), BlockFadeDuration).SetEase(Ease.OutQuad));
+            }
+
+            // 只有 Round_N 行逐行串行：上一行播完下一行才开始，BG 随每行再长一段。
+            var cursor = BlocksDelay + BlockFadeDuration;
+            for (var i = 0; i < _revealSteps.Count; i++)
+            {
+                var step = _revealSteps[i];
+                if (!step.IsRow)
+                {
+                    continue;
+                }
+
+                step.Group.alpha = 0f;
+                step.Group.blocksRaycasts = false;
+                _blockGroups.Add(step.Group);
+                var group = step.Group;
                 var at = cursor;
                 cursor += BlockFadeDuration;
-                var group = step.Group;
                 // 入场途中双倍提现会重建行列表，行对象销毁时联动杀掉 tween，避免写已销毁的 CanvasGroup。
                 _entranceSeq.Insert(at, group.DOFade(1f, BlockFadeDuration).SetEase(Ease.OutQuad)
                     .OnComplete(() => group.blocksRaycasts = true)
                     .SetLink(group.gameObject, LinkBehaviour.KillOnDestroy));
-                grownTo += step.Height + (i > 0 ? spacing : 0f);
-                var growTo = grownTo;
-                _entranceSeq.Insert(at, _bgRect.DOSizeDelta(new Vector2(bgWidth, growTo), BlockFadeDuration).SetEase(Ease.OutQuad));
-                if (step.OnShown != null)
-                {
-                    _entranceSeq.InsertCallback(at, step.OnShown);
-                }
+                grownTo = step.GrowTarget;
+                _entranceSeq.Insert(at, _bgRect.DOSizeDelta(new Vector2(bgWidth, grownTo), BlockFadeDuration).SetEase(Ease.OutQuad));
+            }
+
+            // 行链播完，BG 一次补长到行下方静态块（汇总/公式/按钮）区域，与数字滚动同刻；
+            // 无行时开局已一次长满，这里不补。
+            var fullGrownTarget = _revealSteps.Count > 0 ? _revealSteps[_revealSteps.Count - 1].GrowTarget : initialY;
+            if (fullGrownTarget > grownTo + 0.01f)
+            {
+                _entranceSeq.Insert(cursor, _bgRect.DOSizeDelta(new Vector2(bgWidth, fullGrownTarget), BlockFadeDuration).SetEase(Ease.OutQuad));
+            }
+
+            // 行链播完（无行时为静态块淡入完），纸面正好开到汇总/按钮区域，此刻开始数字滚动。
+            for (var i = 0; i < revealsAtRowEnd.Count; i++)
+            {
+                _entranceSeq.InsertCallback(cursor, revealsAtRowEnd[i]);
             }
 
             // BG 的 blocksRaycasts=false 会让整个子树（含按钮）对射线透明，正常播完也必须恢复，
@@ -267,7 +347,10 @@ namespace App.UI.Popup
                 var step = new RevealStep
                 {
                     Group = group,
-                    Height = rect != null ? rect.rect.height : 0f
+                    Height = rect != null ? rect.rect.height : 0f,
+                    // 行判定用名字前缀（RefreshRoundList 命名 Round_N），不依赖列表引用比对——
+                    // 同帧待销毁旧行、池化复用时序都可能让 Contains 判否，行会被误当静态块一起播。
+                    IsRow = child.name.StartsWith("Round_") || _roundRows.Contains(child.gameObject)
                 };
                 if (child.name == "Summery")
                 {
@@ -661,13 +744,19 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// 内容块的一个显现步骤：块淡入一档，BG 同时长高该块占的高度。
+        /// 内容块的一个显现步骤：块淡入一档，GrowTarget 为恰好露出该块底部时的 BG 高度
+        /// （按布局顺序累计，淡入时刻与长高时机解耦）。IsRow 标记逐回合明细行（Round_N），
+        /// 它们单独串行播放，其余静态块开局一起淡入。
         /// </summary>
         private sealed class RevealStep
         {
             public CanvasGroup Group;
 
             public float Height;
+
+            public bool IsRow;
+
+            public float GrowTarget;
 
             public DG.Tweening.TweenCallback OnShown;
         }

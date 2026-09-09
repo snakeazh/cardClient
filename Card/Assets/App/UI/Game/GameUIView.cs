@@ -7,6 +7,7 @@ using App.Config;
 using App.Game;
 using App.Guide;
 using App.Resources;
+using App.Talent;
 using DG.Tweening;
 using Framework.UI.Binding;
 using Framework.UI.Core;
@@ -1933,7 +1934,7 @@ namespace App.UI
             _shownEnemySlot = slot;
             await PresentItemTip(
                 anchor.transform,
-                string.Empty,
+                enemy.Name ?? string.Empty,
                 BuildEnemyTipBody(enemy),
                 showUse: false,
                 placeRight: false);
@@ -2127,30 +2128,34 @@ namespace App.UI
             }
         }
 
-        private static string BuildHeroTipBody(HeroConfig hero)
+        private string BuildHeroTipBody(HeroConfig hero)
         {
-            if (hero == null)
+            var desc = string.Empty;
+            if (hero != null && !string.IsNullOrEmpty(hero.Desc))
             {
-                return string.Empty;
+                desc = hero.Desc;
             }
-
-            if (!string.IsNullOrEmpty(hero.Desc))
+            else if (hero != null)
             {
-                return hero.Desc;
-            }
-
-            var parts = new List<string>();
-            HeroMechanics.ForEachEntry(hero, entry =>
-            {
-                if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                var parts = new List<string>();
+                HeroMechanics.ForEachEntry(hero, entry =>
                 {
-                    parts.Add(entry.Desc);
-                }
-            });
-            return string.Join("\n", parts);
+                    if (entry != null && !string.IsNullOrEmpty(entry.Desc))
+                    {
+                        parts.Add(entry.Desc);
+                    }
+                });
+                desc = string.Join("\n", parts);
+            }
+
+            var session = ViewModel?.Session;
+            var stats = session != null
+                ? session.ResolveLivePlayerPanel()
+                : TalentBonusManager.EvaluateBase(hero);
+            return TalentBonusManager.AppendPanelLines(desc, stats);
         }
 
-        private static string BuildEnemyTipBody(SeatState enemy)
+        private string BuildEnemyTipBody(SeatState enemy)
         {
             if (enemy == null)
             {
@@ -2158,7 +2163,12 @@ namespace App.UI
             }
 
             var monster = FindMonster(enemy.MonsterId);
-            return monster != null ? monster.Desc ?? string.Empty : string.Empty;
+            var desc = monster != null ? monster.Desc ?? string.Empty : string.Empty;
+            var session = ViewModel?.Session;
+            var stats = session != null
+                ? session.ResolveLiveEnemyPanel(enemy)
+                : new HeroPanelStats(enemy.Attack, 0f, 0f, enemy.MaxHp);
+            return TalentBonusManager.AppendPanelLines(desc, stats);
         }
 
         private static MonsterConfig FindMonster(int monsterId)

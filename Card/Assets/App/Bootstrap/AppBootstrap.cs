@@ -142,6 +142,7 @@ namespace App.Bootstrap
             talent.Load();
             services.Register(talent);
             services.Register<ITalentService>(talent);
+            services.Register(new TalentBonusManager(talent));
         }
 
         private static void RegisterWallet(AppServicesHost services)

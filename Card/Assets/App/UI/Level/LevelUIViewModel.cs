@@ -4,6 +4,7 @@ using App.Config;
 using App.Energy;
 using App.Game;
 using App.Level;
+using App.Talent;
 using App.UI.Popup;
 using Framework.Assets;
 using Framework.UI;
@@ -33,6 +34,7 @@ namespace App.UI
         private readonly ILevelProgressService _progress;
         private readonly IEnergyService _energy;
         private readonly MainResourceViewModel _mainResource;
+        private readonly TalentBonusManager _talentBonus;
         private readonly List<HeroConfig> _heroes = new List<HeroConfig>();
         private readonly List<LevelSnapshot> _stages = new List<LevelSnapshot>();
 
@@ -45,6 +47,7 @@ namespace App.UI
             ILevelProgressService progress,
             IEnergyService energy,
             MainResourceViewModel mainResource,
+            TalentBonusManager talentBonus,
             IResourceService resources)
         {
             _ui = ui;
@@ -55,6 +58,7 @@ namespace App.UI
             _progress = progress;
             _energy = energy;
             _mainResource = mainResource;
+            _talentBonus = talentBonus;
             Resources = resources;
 
             CollectHeroes();
@@ -173,6 +177,17 @@ namespace App.UI
             }
 
             return $"通关难度{hero.UnlockCondition}可解锁";
+        }
+
+        public HeroPanelStats GetHeroPanelStats(HeroConfig hero)
+        {
+            return _talentBonus != null ? _talentBonus.Evaluate(hero) : TalentBonusManager.EvaluateBase(hero);
+        }
+
+        private string FormatUnlockedSkillInfo(HeroConfig hero)
+        {
+            var desc = hero != null && !string.IsNullOrEmpty(hero.Desc) ? hero.Desc : string.Empty;
+            return TalentBonusManager.AppendPanelLines(desc, GetHeroPanelStats(hero));
         }
 
         public bool IsLevelUnlocked(LevelSnapshot snapshot)
@@ -391,7 +406,7 @@ namespace App.UI
             if (unlocked)
             {
                 SkillName.Value = hero != null ? hero.Name : string.Empty;
-                SkillInfo.Value = hero != null ? hero.Desc : string.Empty;
+                SkillInfo.Value = FormatUnlockedSkillInfo(hero);
                 UnlockInfo.Value = string.Empty;
             }
             else

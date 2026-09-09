@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
@@ -74,7 +75,7 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> GoldText { get; }
 
-        /// <summary>换算说明：每 N 点伤害 = 1 金币。</summary>
+        /// <summary>换算说明：每 N 点伤害 = M 金币（局内伤害换金，读 GameConst.DamageTurnToGold）。</summary>
         public ObservableProperty<string> FormulaText { get; }
 
         /// <summary>逐回合统计（回合数 / 击杀数 / 伤害）。</summary>
@@ -155,7 +156,7 @@ namespace App.UI.Popup
             CoinNum.Value = stageGold.ToString();
             WithdrawNum.Value = stageGold.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
-            FormulaText.Value = "每" + GameConst.Instance.ExchangePointsForGoldCoins + "点伤害=1";
+            FormulaText.Value = FormatDamageGoldFormula();
             RefreshDoubleEnabled();
 
             _roundRows.Clear();
@@ -181,6 +182,18 @@ namespace App.UI.Popup
             }
 
             RoundRevision.Value++;
+        }
+
+        /// <summary>伤害换金说明文案。比例 [a, b] 即每 a 点伤害 = b 金币，与 GameSession.DamageToGold 同源同钳制。</summary>
+        private static string FormatDamageGoldFormula()
+        {
+            var rate = GameConst.IsLoaded ? GameConst.Instance.DamageTurnToGold : null;
+            if (rate == null || rate.Length < 2 || rate[0] <= 0)
+            {
+                return string.Empty;
+            }
+
+            return $"每{rate[0]}点伤害={Math.Max(0, rate[1])}";
         }
 
         private static int ResolveMonsterCount()

@@ -36,6 +36,10 @@ namespace App.UI.Popup
         private const float BlocksDelay = 0.32f;
         private const float BlockFadeDuration = 0.32f;
 
+        // FitBgHeight 的高度纠正走短补间：入场期间数字滚动会改 TMP 文本触发布局重算，
+        // Content 高度可能与入场测量值有偏差，BG 平滑补齐差值，避免一帧写死造成突兀跳变。
+        private const float BgFitTweenDuration = 0.25f;
+
         private readonly List<GameObject> _roundRows = new List<GameObject>();
         private readonly List<CanvasGroup> _blockGroups = new List<CanvasGroup>();
         private readonly List<RevealStep> _revealSteps = new List<RevealStep>();
@@ -50,6 +54,7 @@ namespace App.UI.Popup
         private float _bgFullTargetY;
         private bool _suppressBgFit;
         private Sequence _entranceSeq;
+        private Tween _bgFitTween;
         private RollingNumber _rollMonsterCount;
         private RollingNumber _rollTotalDamage;
         private RollingNumber _rollReward;
@@ -226,7 +231,17 @@ namespace App.UI.Popup
                 }
             }
 
-            _entranceSeq.OnComplete(() => _suppressBgFit = false);
+            // BG 的 blocksRaycasts=false 会让整个子树（含按钮）对射线透明，正常播完也必须恢复，
+            // 否则按钮收不到指针事件、点纸面反而触发蒙层关窗。
+            _entranceSeq.OnComplete(() =>
+            {
+                if (_bgGroup != null)
+                {
+                    _bgGroup.blocksRaycasts = true;
+                }
+
+                _suppressBgFit = false;
+            });
         }
 
         // 按 Content 的兄弟顺序（即布局显示顺序）收集要逐块显现的块；
@@ -299,6 +314,12 @@ namespace App.UI.Popup
             }
 
             _suppressBgFit = false;
+            if (_bgFitTween != null && _bgFitTween.IsActive())
+            {
+                _bgFitTween.Kill();
+            }
+
+            _bgFitTween = null;
             if (_bgRect != null && _bgFullTargetY > 0f)
             {
                 _bgRect.sizeDelta = new Vector2(_bgRect.sizeDelta.x, _bgFullTargetY);
@@ -555,7 +576,16 @@ namespace App.UI.Popup
                 return;
             }
 
-            _bgRect.sizeDelta = new Vector2(_bgRect.sizeDelta.x, target);
+            if (_bgFitTween != null && _bgFitTween.IsActive())
+            {
+                // 已在补间中，等它到位后下一帧再校验，避免反复重启。
+                return;
+            }
+
+            _bgFitTween = _bgRect.DOSizeDelta(new Vector2(_bgRect.sizeDelta.x, target), BgFitTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
 
         private void EnsureFitNodes()

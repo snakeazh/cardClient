@@ -12,6 +12,8 @@
 | 顶栏资源栏（局外钱包 / 体力） | `App/UI/ResourceBar/ResourceBarBinder.cs` |
 | 局内 GameResource 金币（`UIRoot/Resource`，含商城/购买/结算） | `App/UI/ResourceBar/GameResourceBarBinder.cs` |
 
+飞币到位后资源栏加金也会走本滚动，见 [`CoinFlyFx.md`](CoinFlyFx.md)。
+
 ## 接入方式
 
 任何 `ObservableProperty` 驱动的数字文本，把 `BindText` 换成 `BindRollingText` 即可（一行替换，ViewModel 不用动）：

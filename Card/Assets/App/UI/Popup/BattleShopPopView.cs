@@ -27,7 +27,9 @@ namespace App.UI.Popup
         protected override void OnBind()
         {
             Binding.BindText(GetNode<TMP_Text>("RefreshGooldNum"), ViewModel.RefreshGoldNum);
-            Binding.BindText(GetNode<TMP_Text>("refreshNum"), ViewModel.RefreshNum);
+            var refreshNum = GetNode<TMP_Text>("refreshNum");
+            Binding.BindText(refreshNum, ViewModel.RefreshNum);
+            Binding.BindActive(refreshNum.gameObject, ViewModel.ShowRefreshNum);
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
 

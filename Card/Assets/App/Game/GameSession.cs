@@ -1493,10 +1493,7 @@ namespace App.Game
                     damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
                 }
 
-                var critRate = TalentMechanics.CriticalRate(talent, hero)
-                    + HeroMechanics.SumValue(hero, MechanismType.HeroCritical)
-                    + RelicMechanics.SumValue(Run, MechanismType.HeroCritical)
-                    + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetCritical, Run.CritStacks);
+                var critRate = ResolveLivePlayerPanel().CritRate;
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero);
                 if (critRate > 0f && _rng.NextDouble() < critRate)
                 {
@@ -4669,12 +4666,7 @@ namespace App.Game
                     return 0;
                 }
 
-                var miss = HeroMechanics.SumValue(Run, MechanismType.MissDamagePer)
-                    + RelicMechanics.SumValue(Run, MechanismType.MissDamagePer)
-                    + RelicMechanics.StackedValue(
-                        Run,
-                        MechanismType.EveryRoundEndingGetEvade,
-                        Run.EvadeStacks);
+                var miss = ResolveLivePlayerPanel().DodgeRate;
                 if (miss > 0f && _rng.NextDouble() < miss)
                 {
                     Log($"闪避：{target.Name} 免疫 {damage} 伤害");
@@ -5762,10 +5754,10 @@ namespace App.Game
             Run.HeroId = hero != null ? hero.Id : 0;
             Player.ActiveInStage = true;
             Player.Name = hero != null && !string.IsNullOrEmpty(hero.Name) ? hero.Name : "你";
-            var maxHp = hero != null && hero.Hp > 0 ? hero.Hp : GameBalance.PlayerStartHp;
+            var panel = ResolvePlayerPanel(hero);
+            var maxHp = panel.Hp > 0 ? panel.Hp : GameBalance.PlayerStartHp;
             maxHp += (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.HeroHpMax) +
-                TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpMax) +
                 Run.PermanentMaxHpBonus);
             maxHp += Run.LevelHpMaxBonus;
             var hp = inheritHp ? Math.Min(Math.Max(0, Player.Hp), maxHp) : maxHp;
@@ -5777,9 +5769,7 @@ namespace App.Game
             }
 
             ApplySeatHp(Player, hp, maxHp);
-            var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
-            attack += (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroAttack));
-            attack += Run.PermanentAttackBonus;
+            var attack = panel.Attack + Run.PermanentAttackBonus;
             Player.Attack = Math.Max(0, attack);
             Player.Icon = hero != null ? hero.Icon : null;
         }
@@ -6094,6 +6084,46 @@ namespace App.Game
         private static ITalentService TalentSvc()
         {
             return AppServices.IsReady ? AppServices.Resolve<ITalentService>() : null;
+        }
+
+        private static TalentBonusManager TalentBonusMgr()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<TalentBonusManager>() : null;
+        }
+
+        private HeroPanelStats ResolvePlayerPanel(HeroConfig hero = null)
+        {
+            var resolved = hero ?? ResolveHero();
+            var bonus = TalentBonusMgr();
+            return bonus != null ? bonus.Evaluate(resolved) : TalentBonusManager.EvaluateBase(resolved);
+        }
+
+        /// <summary>
+        /// 局内玩家面板：天赋底值再叠圣物、层数，以及窃取/脆弱之躯等已写入座位的 debuff。
+        /// </summary>
+        public HeroPanelStats ResolveLivePlayerPanel()
+        {
+            var panel = ResolvePlayerPanel();
+            var attack = Player != null ? Math.Max(0, Player.Attack) : panel.Attack;
+            var hp = Player != null ? Math.Max(0, Player.MaxHp) : panel.Hp;
+            var crit = panel.CritRate
+                + RelicMechanics.SumValue(Run, MechanismType.HeroCritical)
+                + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetCritical, Run.CritStacks);
+            var dodge = panel.DodgeRate
+                + RelicMechanics.SumValue(Run, MechanismType.MissDamagePer)
+                + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetEvade, Run.EvadeStacks);
+            return new HeroPanelStats(attack, crit, dodge, hp);
+        }
+
+        /// <summary>
+        /// 局内敌人面板：当前座位攻血（含狂暴/窃取/怪物生命加成）+ 关卡闪避机制。
+        /// </summary>
+        public HeroPanelStats ResolveLiveEnemyPanel(SeatState enemy)
+        {
+            var attack = enemy != null ? Math.Max(0, enemy.Attack) : 0;
+            var hp = enemy != null ? Math.Max(0, enemy.MaxHp) : 0;
+            var dodge = BossMechanics.MonsterEvadeChance(Run);
+            return new HeroPanelStats(attack, critRate: 0f, dodgeRate: dodge, hp: hp);
         }
 
         private static IUnlockConditionService UnlockSvc()

@@ -824,14 +824,15 @@ namespace App.UI
 
         private void BindRoundInfo()
         {
+            BindStageInfo();
             var roundInfo = ResolveSlot("roundInfo") ?? transform.Find("roundInfo");
             if (roundInfo == null)
             {
                 return;
             }
 
-            roundInfo.gameObject.SetActive(true);
-            roundInfo.SetAsLastSibling();
+            Binding.BindActive(roundInfo.gameObject, ViewModel.ShowRoundInfo);
+            roundInfo.SetAsFirstSibling();
             var textSlot = ResolveSlot("roundInfoText");
             var text = textSlot != null
                 ? textSlot.GetComponent<TMP_Text>()
@@ -839,6 +840,26 @@ namespace App.UI
             if (text != null)
             {
                 Binding.BindText(text, ViewModel.RoundInfo);
+            }
+        }
+
+        private void BindStageInfo()
+        {
+            var stageInfo = ResolveSlot("stageInfo") ?? transform.Find("stageInfo");
+            if (stageInfo != null)
+            {
+                stageInfo.gameObject.SetActive(true);
+            }
+
+            var textSlot = ResolveSlot("stageInfoText");
+            var text = textSlot != null
+                ? textSlot.GetComponent<TMP_Text>()
+                : stageInfo != null
+                    ? stageInfo.GetComponentInChildren<TMP_Text>(true)
+                    : null;
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.StageInfoText);
             }
         }
 
@@ -1436,7 +1457,7 @@ namespace App.UI
                 return;
             }
 
-            slot.gameObject.SetActive(true);
+            Binding.BindActive(slot.gameObject, ViewModel.ShowYiwuBtn);
             var button = slot.GetComponent<Button>();
             if (button == null)
             {

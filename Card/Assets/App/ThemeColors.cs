@@ -24,6 +24,7 @@ namespace App
         public static readonly Color Enemy = ParseHex("F6393C");
         public static readonly Color EnemyTitle = ParseHex("B20003");
         public static readonly Color EquipEmpty = Color.black;
+        public static readonly Color ShopPriceUnaffordable = ParseHex("EA1E1E");
 
         public static Color ForQuality(QualityType type)
         {

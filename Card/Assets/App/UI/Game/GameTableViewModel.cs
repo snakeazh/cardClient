@@ -26,6 +26,7 @@ namespace App.UI
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
         private bool _infoPopupOpen;
+        private bool _remainListOpen;
         private bool _settleShownThisShop;
         private string _shownInfoKey;
 
@@ -109,7 +110,9 @@ namespace App.UI
         public ObservableProperty<string> PlayerChips { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> PlayerBet { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> PlayerState { get; } = new ObservableProperty<string>();
+        public ObservableProperty<string> StageInfoText { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> RoundInfo { get; } = new ObservableProperty<string>();
+        public ObservableProperty<bool> ShowRoundInfo { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<string> RoundBuffName { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<string> RoundBuffDesc { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<bool> RoundBuffVisible { get; } = new ObservableProperty<bool>(false);
@@ -126,10 +129,10 @@ namespace App.UI
         public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("x2下注");
         public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
         public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
-        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("(3/3)");
+        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("搓牌(3/3)");
         public ObservableProperty<bool> PeekGoodArmed { get; } = new ObservableProperty<bool>(false);
-        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
-        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
+        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("透视(1/1)");
+        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("替换(1/1)");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowFold { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCompare { get; } = new ObservableProperty<bool>();
@@ -141,6 +144,7 @@ namespace App.UI
         public ObservableProperty<bool> ShowHpText { get; } = new ObservableProperty<bool>();
         public ObservableProperty<string> HpText { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<bool> ShowCardInfo { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<bool> ShowYiwuBtn { get; } = new ObservableProperty<bool>(true);
         public ObservableProperty<Sprite> CardTypeIcon { get; } = new ObservableProperty<Sprite>();
         public ObservableProperty<Sprite> CardTypeLabel { get; } = new ObservableProperty<Sprite>();
         public ObservableProperty<string> CardTypeNum { get; } = new ObservableProperty<string>(string.Empty);
@@ -200,6 +204,7 @@ namespace App.UI
         public void NotifyDealReady()
         {
             ShowTableButtons.Value = true;
+            ShowRoundInfo.Value = true;
             GuideSignals.NotifyDealFinished(Session.DealSerial);
             Refresh();
         }
@@ -212,6 +217,7 @@ namespace App.UI
                 if (Session.DealSerial > 0)
                 {
                     ShowTableButtons.Value = false;
+                    ShowRoundInfo.Value = false;
                 }
             }
 
@@ -220,6 +226,7 @@ namespace App.UI
             Title.Value = run.HasBoss
                 ? $"第{run.Stage}关 BOSS"
                 : $"第{run.Stage}关";
+            StageInfoText.Value = $"第{run.Stage}关";
             RoundBuffVisible.Value = entries.Count > 0;
             RoundBuffName.Value = FormatEntryNames(entries);
             RoundBuffDesc.Value = FormatEntryDescs(entries);
@@ -239,6 +246,7 @@ namespace App.UI
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
             PeekGoodLabel.Value = FormatCharges(
+                "搓牌",
                 Session.Run.PeekGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
@@ -246,11 +254,13 @@ namespace App.UI
                     HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum)));
             PeekGoodArmed.Value = Session.SelectingRubTarget;
             ChaKanGoodLabel.Value = FormatCharges(
+                "透视",
                 Session.Run.ChaKanGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
                     RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
             TiHuanGoodLabel.Value = FormatCharges(
+                "替换",
                 Session.Run.TiHuanGoodCharges,
                 GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges);
             ShowLook.Value = false;
@@ -768,9 +778,9 @@ namespace App.UI
             return $"+{rounded:0.##}";
         }
 
-        private static string FormatCharges(int current, int max)
+        private static string FormatCharges(string name, int current, int max)
         {
-            return $"({Math.Max(0, current)}/{Math.Max(0, max)})";
+            return $"{name}({Math.Max(0, current)}/{Math.Max(0, max)})";
         }
 
         private static string FormatEntryNames(List<App.Config.BossEntryConfig> entries)
@@ -880,11 +890,13 @@ namespace App.UI
 
         private async void OpenRemainList()
         {
-            if (_ui == null)
+            if (_ui == null || _remainListOpen)
             {
                 return;
             }
 
+            _remainListOpen = true;
+            ShowYiwuBtn.Value = false;
             try
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(RemainListPopViewModel));
@@ -894,6 +906,11 @@ namespace App.UI
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
+            }
+            finally
+            {
+                _remainListOpen = false;
+                ShowYiwuBtn.Value = true;
             }
         }
     }

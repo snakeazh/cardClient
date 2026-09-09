@@ -19,6 +19,12 @@ namespace App.UI
         private const float FlyStagger = 0.04f;
         private const float CoinScale = 0.55f;
 
+        public static RectTransform FindGoldIcon()
+        {
+            var view = GameResourceView.FindOpen();
+            return view != null ? GameResourceBarBinder.FindGoldIcon(view.transform) : null;
+        }
+
         public static Sequence Play(
             GameObject prefab,
             RectTransform parent,

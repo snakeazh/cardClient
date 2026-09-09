@@ -439,8 +439,9 @@ namespace App.UI.Popup
                     }
 
                     _coinSeq = null;
-                    onArrived?.Invoke();
+                    // CompleteWithdraw 会同步 Close，把 ViewModel 置空，必须先解除 busy。
                     ViewModel.SetBusy(false);
+                    onArrived?.Invoke();
                 });
             return _coinSeq != null;
         }

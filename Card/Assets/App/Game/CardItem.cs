@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using Framework.Log;
 using UnityEngine;
@@ -40,9 +41,13 @@ namespace App.Game
         private Transform _backNode;
         private Transform _frontTransparentNode;
         private GameObject _shakeCardEffect02;
+        private GameObject _changeCard01;
+        private GameObject _changeCard02;
+        private readonly Dictionary<int, int> _effectSortBase = new Dictionary<int, int>();
         public SpriteRenderer backRenderer;
         public SpriteRenderer frontTransparentRenderer;
         private bool _tweenAnimatorResolved;
+        private const int PrefabCardSorting = 3;
 
         private Tween _successFxTween;
 
@@ -247,20 +252,28 @@ namespace App.Game
             }
 
             ApplyEffectSorting(ResolveShakeCardEffect02(), order + 1);
+            ApplyRelativeEffectSorting(ResolveChangeCard01(), order);
+            ApplyRelativeEffectSorting(ResolveChangeCard02(), order);
             ApplyEffectSorting(CardDragEffect, order + 1);
             ApplyEffectSorting(CardDragSuccessEffect, order + 1);
         }
 
-        /// <summary>搓牌点选阶段显示闪电特效（ShakeCardEffect02）。</summary>
+        /// <summary>搓牌点选阶段：己方牌抬起时显示 ChangeCard02。</summary>
         public void SetDragEffectVisible(bool visible)
         {
-            var fx = ResolveShakeCardEffect02();
+            var fx = ResolveChangeCard02();
+            if (visible)
+            {
+                SetEffectActive(ResolveChangeCard01(), false);
+                SetEffectActive(ResolveNamedEffect("ShakeCardEffect01"), false);
+                SetEffectActive(ResolveShakeCardEffect02(), false);
+            }
+
             if (fx != null && fx.activeSelf == visible)
             {
                 if (visible)
                 {
-                    var keepOrder = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
-                    ApplyEffectSorting(fx, keepOrder);
+                    ApplyRelativeEffectSorting(fx, CardSorting());
                 }
 
                 return;
@@ -269,15 +282,24 @@ namespace App.Game
             SetEffectActive(fx, visible);
             if (visible)
             {
-                var fx01 = ResolveNamedEffect("ShakeCardEffect01");
-                if (fx01 != null && fx01.activeSelf)
-                {
-                    fx01.SetActive(false);
-                }
-
-                var order = CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : 50;
-                ApplyEffectSorting(fx, order);
+                ApplyRelativeEffectSorting(fx, CardSorting());
             }
+        }
+
+        /// <summary>选中要替换的牌：关掉点选框，播 ChangeCard01。</summary>
+        public void PlayChangeReplaceFx()
+        {
+            SetEffectActive(ResolveChangeCard02(), false);
+            SetEffectActive(ResolveShakeCardEffect02(), false);
+            var fx = ResolveChangeCard01();
+            SetEffectActive(fx, true);
+            ApplyRelativeEffectSorting(fx, CardSorting());
+        }
+
+        public void HideChangeCardFx()
+        {
+            SetEffectActive(ResolveChangeCard01(), false);
+            SetEffectActive(ResolveChangeCard02(), false);
         }
 
         /// <summary>幅度和时间都够时叠上成功特效，拖拽特效保持显示。</summary>
@@ -311,6 +333,7 @@ namespace App.Game
         {
             _successFxHide?.Kill();
             _successFxHide = null;
+            HideChangeCardFx();
             SetEffectActive(ResolveShakeCardEffect02(), false);
             SetEffectActive(CardDragEffect, false);
             SetEffectActive(CardDragSuccessEffect, false);
@@ -417,6 +440,22 @@ namespace App.Game
             }
 
             go.SetActive(true);
+            var animators = go.GetComponentsInChildren<Animator>(true);
+            for (var i = 0; i < animators.Length; i++)
+            {
+                var animator = animators[i];
+                if (animator == null || animator.runtimeAnimatorController == null)
+                {
+                    continue;
+                }
+
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                animator.enabled = true;
+                animator.Rebind();
+                animator.Play(0, 0, 0f);
+                animator.Update(0f);
+            }
+
             var systems = go.GetComponentsInChildren<ParticleSystem>(true);
             for (var i = 0; i < systems.Length; i++)
             {
@@ -432,11 +471,46 @@ namespace App.Game
                 return;
             }
 
-            var renderers = go.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            var particles = go.GetComponentsInChildren<ParticleSystemRenderer>(true);
+            for (var i = 0; i < particles.Length; i++)
+            {
+                particles[i].sortingOrder = order;
+            }
+        }
+
+        /// <summary>
+        /// 按预制体相对牌面的前后关系平移层级：ChangeCard02 在牌下，ChangeCard01 一手在下、一手在上。
+        /// </summary>
+        private void ApplyRelativeEffectSorting(GameObject go, int cardOrder)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
             for (var i = 0; i < renderers.Length; i++)
             {
-                renderers[i].sortingOrder = order;
+                var renderer = renderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                var id = renderer.GetInstanceID();
+                if (!_effectSortBase.TryGetValue(id, out var original))
+                {
+                    original = renderer.sortingOrder;
+                    _effectSortBase[id] = original;
+                }
+
+                renderer.sortingOrder = original + (cardOrder - PrefabCardSorting);
             }
+        }
+
+        private int CardSorting()
+        {
+            return CurrentRenderer != null ? CurrentRenderer.sortingOrder : PrefabCardSorting;
         }
 
         private void ApplySprite()
@@ -580,6 +654,26 @@ namespace App.Game
             }
 
             return _shakeCardEffect02;
+        }
+
+        private GameObject ResolveChangeCard01()
+        {
+            if (_changeCard01 == null)
+            {
+                _changeCard01 = ResolveNamedEffect("ChangeCard01");
+            }
+
+            return _changeCard01;
+        }
+
+        private GameObject ResolveChangeCard02()
+        {
+            if (_changeCard02 == null)
+            {
+                _changeCard02 = ResolveNamedEffect("ChangeCard02");
+            }
+
+            return _changeCard02;
         }
 
         private GameObject ResolveNamedEffect(string name)

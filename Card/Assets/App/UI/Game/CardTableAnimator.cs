@@ -29,6 +29,7 @@ namespace App.UI
         private const float SettleClipDuration = 0.3f;
         private const float SelectLift = 0.28f;
         private const float SelectLiftDuration = 0.12f;
+        private const float RubReplaceRevealDelay = 1.5f;
 
         private IResourceService _resources;
         private GameObject _prefab;
@@ -143,6 +144,7 @@ namespace App.UI
             if (session.DealSerial <= 0)
             {
                 ClearAllItems();
+                HideDealPile();
                 _shownDeal = 0;
                 return;
             }
@@ -267,7 +269,7 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 选中一张牌搓牌：翻到背面 → aini_card_change → 翻回正面。
+        /// 选中一张牌搓牌：立刻翻到背面并播 ChangeCard01，约 1.5 秒后翻回正面揭示新牌。
         /// </summary>
         public void PlayRubReplace(int index, Func<bool> applyReplace, Action onComplete)
         {
@@ -293,8 +295,11 @@ namespace App.UI
                 ? _player.Points[index].position
                 : item.transform.position;
             BringRubCardToFront(index);
-            item.SetDragEffectVisible(false);
+            SetPlayerChangeSelectFx(false);
+            item.PlayChangeReplaceFx();
             TintPlayerCard(index, Color.white);
+
+            var replaced = false;
 
             void Done()
             {
@@ -303,6 +308,7 @@ namespace App.UI
                     return;
                 }
 
+                item.HideChangeCardFx();
                 RestoreRubCardLayer(index);
                 _rubLockIndex = -1;
                 _rubPlaying = false;
@@ -317,6 +323,7 @@ namespace App.UI
                     return;
                 }
 
+                ApplyReplaceIfNeeded();
                 item.StopTweenAnimation();
                 var flip = item.FlipTo(CardFaceState.Front, FlipDuration);
                 if (flip == null)
@@ -331,41 +338,35 @@ namespace App.UI
                     .OnComplete(Done);
             }
 
-            void AfterBack()
+            void ApplyReplaceIfNeeded()
             {
-                if (token != _rubPlayToken)
+                if (token != _rubPlayToken || replaced)
                 {
                     return;
                 }
 
-                var replaced = applyReplace == null || applyReplace();
-                if (!replaced)
-                {
-                    FlipFront();
-                    return;
-                }
-
-                var duration = item.PlayChange();
-                _rubSeq = DOTween.Sequence()
-                    .AppendInterval(Mathf.Max(0.05f, duration))
-                    .OnComplete(FlipFront);
-            }
-
-            var flipBack = item.FlipTo(CardFaceState.Back, FlipDuration);
-            if (flipBack == null)
-            {
                 if (item.FaceState != CardFaceState.Back)
                 {
                     item.SetFace(CardFaceState.Back);
                 }
 
-                AfterBack();
-                return;
+                applyReplace?.Invoke();
+                replaced = true;
+            }
+
+            var flipBack = item.FlipTo(CardFaceState.Back, FlipDuration);
+            if (flipBack != null)
+            {
+                flipBack.OnComplete(ApplyReplaceIfNeeded);
+            }
+            else
+            {
+                ApplyReplaceIfNeeded();
             }
 
             _rubSeq = DOTween.Sequence()
-                .AppendInterval(FlipDuration)
-                .OnComplete(AfterBack);
+                .AppendInterval(RubReplaceRevealDelay)
+                .OnComplete(FlipFront);
         }
 
         /// <summary>长按搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
@@ -676,6 +677,7 @@ namespace App.UI
             _seeThroughToken++;
             _dealing = true;
             ClearAllItems();
+            ShowDealPile();
 
             var seats = CollectDealSeats(session);
             var seq = DOTween.Sequence();
@@ -736,6 +738,15 @@ namespace App.UI
             }
 
             seq.AppendInterval(FlipDuration);
+            seq.AppendCallback(() =>
+            {
+                if (token != _dealToken)
+                {
+                    return;
+                }
+
+                HideDealPile();
+            });
             seq.OnComplete(() =>
             {
                 if (token != _dealToken)
@@ -1200,21 +1211,24 @@ namespace App.UI
 
         private void SyncRubSelectFx(GameSession session)
         {
+            var show = session != null &&
+                       session.SelectingRubTarget &&
+                       !_dealing &&
+                       !_rubPlaying;
+            SetPlayerChangeSelectFx(show);
+        }
+
+        private void SetPlayerChangeSelectFx(bool show)
+        {
             if (_player == null)
             {
                 return;
             }
 
-            var show = session != null && session.SelectingRubTarget && !_dealing;
             for (var i = 0; i < _player.Items.Length; i++)
             {
                 var item = _player.Items[i];
                 if (item == null || !_player.Landed[i])
-                {
-                    continue;
-                }
-
-                if (show && i == _rubLockIndex)
                 {
                     continue;
                 }
@@ -1237,6 +1251,7 @@ namespace App.UI
             {
                 var item = _player.Items[_rubLockIndex];
                 item?.StopTweenAnimation();
+                item?.HideChangeCardFx();
             }
 
             if (!restore)
@@ -1765,6 +1780,23 @@ namespace App.UI
                 {
                     child.gameObject.SetActive(false);
                 }
+            }
+        }
+
+        private void ShowDealPile()
+        {
+            if (_dealPile != null && _dealPoint != null)
+            {
+                _dealPoint.gameObject.SetActive(true);
+            }
+        }
+
+        private void HideDealPile()
+        {
+            _dealPile?.Clear();
+            if (_dealPile != null && _dealPoint != null)
+            {
+                _dealPoint.gameObject.SetActive(false);
             }
         }
 

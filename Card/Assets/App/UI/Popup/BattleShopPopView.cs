@@ -175,7 +175,12 @@ namespace App.UI.Popup
                 }
 
                 SetSlotActive(item, true);
-                item.Bind(relic, ViewModel.GetRelicIcon(relic), buyPrice: ViewModel.Session.EffectiveBuyPrice(relic.Id));
+                var price = ViewModel.Session.EffectiveBuyPrice(relic.Id);
+                item.Bind(
+                    relic,
+                    ViewModel.GetRelicIcon(relic),
+                    buyPrice: price,
+                    affordable: RelicMechanics.CanAfford(ViewModel.Session.Run, price));
             }
         }
 

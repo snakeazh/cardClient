@@ -38,20 +38,22 @@ namespace App.Game
         private Sprite _defaultIcon;
         private bool _suppressClick;
         private ItemCard _innerCard;
+        private Color _priceColor = Color.black;
+        private bool _priceColorCached;
 
-        public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null)
+        public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null, bool affordable = true)
         {
             Data = def;
             SetName(def != null ? def.Name : string.Empty);
             SetIcon(icon);
-            SetGoldNum(def != null ? def.Price : 0);
+            SetGoldNum(def != null ? def.Price : 0, affordable);
             if (goldSprite != null)
             {
                 SetGoldIcon(goldSprite);
             }
         }
 
-        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1, int buyPrice = -1)
+        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1, int buyPrice = -1, bool affordable = true)
         {
             Bind(relic == null
                 ? null
@@ -64,7 +66,7 @@ namespace App.Game
                         ? (buyPrice >= 0 ? buyPrice : relic.Price)
                         : (sellPrice >= 0 ? sellPrice : Math.Max(0, relic.SellingPrice)),
                     RelicConfigId = relic.Id
-                }, icon, goldSprite);
+                }, icon, goldSprite, affordable);
             ApplyQuality(relic != null ? relic.Type : QualityType.Ordinary);
         }
 
@@ -92,12 +94,19 @@ namespace App.Game
             cardIcon.enabled = cardIcon.sprite != null;
         }
 
-        public void SetGoldNum(int price)
+        public void SetGoldNum(int price, bool affordable = true)
         {
             EnsurePriceText();
             if (goldNum != null)
             {
+                if (!_priceColorCached)
+                {
+                    _priceColor = goldNum.color;
+                    _priceColorCached = true;
+                }
+
                 goldNum.text = Mathf.Max(0, price).ToString();
+                goldNum.color = affordable ? _priceColor : ThemeColors.ShopPriceUnaffordable;
             }
 
             if (gold != null)

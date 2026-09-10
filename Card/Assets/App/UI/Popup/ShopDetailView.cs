@@ -13,8 +13,9 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店商品详情。注册在 TopMost 层：叠加在 Popup 层的商店之上。
     /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一，购买时另显示 VideoBuyBtn 看广告免费拿；
+    /// 消耗品货架另显示 buyUseBtn（购买并立刻使用，不播飞入），已购栏另显示 useBtn。
     /// 金币不足时 BuyNum 变红；失败弹 Toast，不改底部 Tip。点 Mask 关闭。
-    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar。
+    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar，页面立刻关闭。
     /// </summary>
     [AutoScreen(AppScreenIds.ShopDetail, UILayer.TopMost, ResResourcePaths.ShopDetail)]
     public sealed class ShopDetailView : ViewBase<ShopDetailViewModel>
@@ -22,9 +23,10 @@ namespace App.UI.Popup
         private ItemCard _card;
         private Button _buyBtn;
         private Button _videoBuyBtn;
+        private Button _buyUseBtn;
         private Button _sellBtn;
+        private Button _useBtn;
         private GameObject _coinPrefab;
-        private Sequence _coinSeq;
         private Sequence _itemSeq;
         private CanvasGroup _overlayGroup;
         private int _playToken;
@@ -48,13 +50,14 @@ namespace App.UI.Popup
             BindBuyButton();
             BindSellButton();
             BindVideoBuyButton();
+            BindBuyUseButton();
+            BindUseButton();
             BindMaskClose();
             _ = EnsureCoinPrefab();
         }
 
         protected override Task OnViewClose()
         {
-            KillCoinFx();
             KillItemFx();
             RestoreOverlay();
             RevealPendingMine();
@@ -68,9 +71,19 @@ namespace App.UI.Popup
                 _videoBuyBtn.onClick.RemoveListener(OnVideoBuyClicked);
             }
 
+            if (_buyUseBtn != null)
+            {
+                _buyUseBtn.onClick.RemoveListener(OnBuyUseClicked);
+            }
+
             if (_sellBtn != null)
             {
                 _sellBtn.onClick.RemoveListener(OnSellClicked);
+            }
+
+            if (_useBtn != null)
+            {
+                _useBtn.onClick.RemoveListener(OnUseClicked);
             }
 
             return Task.CompletedTask;
@@ -141,6 +154,30 @@ namespace App.UI.Popup
             }
         }
 
+        private void BindBuyUseButton()
+        {
+            var go = UI.GetGameObject("buyUseBtn");
+            Binding.BindActive(go, ViewModel.ShowBuyUse);
+            _buyUseBtn = go.GetComponent<Button>();
+            if (_buyUseBtn != null)
+            {
+                _buyUseBtn.onClick.AddListener(OnBuyUseClicked);
+                Binding.BindInteractable(_buyUseBtn, ViewModel.ButtonsEnabled);
+            }
+        }
+
+        private void BindUseButton()
+        {
+            var go = UI.GetGameObject("useBtn");
+            Binding.BindActive(go, ViewModel.ShowUse);
+            _useBtn = go.GetComponent<Button>();
+            if (_useBtn != null)
+            {
+                _useBtn.onClick.AddListener(OnUseClicked);
+                Binding.BindInteractable(_useBtn, ViewModel.ButtonsEnabled);
+            }
+        }
+
         private void BindMaskClose()
         {
             if (!UI.TryGet<Button>("Mask", out var overlay))
@@ -186,6 +223,33 @@ namespace App.UI.Popup
         private void OnVideoBuyClicked()
         {
             BeginBuy(watchAd: true);
+        }
+
+        private void OnBuyUseClicked()
+        {
+            if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
+            {
+                return;
+            }
+
+            ViewModel.SetBusy(true);
+            if (!ViewModel.TryBeginBuyAndUse())
+            {
+                ViewModel.SetBusy(false);
+                return;
+            }
+
+            ViewModel.CompleteBuy();
+        }
+
+        private void OnUseClicked()
+        {
+            if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
+            {
+                return;
+            }
+
+            ViewModel.TryUse();
         }
 
         private void BeginBuy(bool watchAd)
@@ -322,41 +386,31 @@ namespace App.UI.Popup
                 return;
             }
 
-            if (gold <= 0 || !TryPlayCoinFly(_sellBtn, () => ViewModel.CompleteSell(bar, gold)))
+            if (gold > 0)
             {
-                ViewModel.CompleteSell(bar, gold);
+                TryPlayCoinFly(_sellBtn);
             }
+
+            ViewModel.CompleteSell(bar, gold);
         }
 
-        private bool TryPlayCoinFly(Button source, System.Action onArrived)
+        private void TryPlayCoinFly(Button source)
         {
             var from = source != null ? source.transform as RectTransform : null;
             var to = CoinFlyFx.FindGoldIcon();
             var parent = ResolveFxParent();
             if (from == null || to == null || parent == null || _coinPrefab == null)
             {
-                return false;
+                return;
             }
 
-            var token = ++_playToken;
-            KillCoinFx(false);
-            _coinSeq = CoinFlyFx.Play(
+            // 挂 TopMost，不跟详情页生命周期绑定；关页后金币继续飞。
+            CoinFlyFx.Play(
                 _coinPrefab,
                 parent,
                 from.position,
                 to.position,
-                () =>
-                {
-                    if (token != _playToken || ViewModel == null)
-                    {
-                        return;
-                    }
-
-                    _coinSeq = null;
-                    ViewModel.SetBusy(false);
-                    onArrived?.Invoke();
-                });
-            return _coinSeq != null;
+                null);
         }
 
         private RectTransform ResolveFxParent()
@@ -364,26 +418,11 @@ namespace App.UI.Popup
             var root = ViewModel?.Ui?.Root;
             if (root != null)
             {
-                // ShopDetail 在 TopMost，金币必须挂同层才能盖过详情遮罩。
+                // 飞币挂 TopMost，关页后还能看见。
                 return root.GetLayer(UILayer.TopMost);
             }
 
             return transform as RectTransform;
-        }
-
-        private void KillCoinFx(bool bumpToken = true)
-        {
-            if (bumpToken)
-            {
-                _playToken++;
-            }
-
-            if (_coinSeq != null && _coinSeq.IsActive())
-            {
-                _coinSeq.Kill();
-            }
-
-            _coinSeq = null;
         }
 
         private void KillItemFx(bool bumpToken = true)

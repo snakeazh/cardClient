@@ -10,18 +10,18 @@
 
 | 位置 | 文件 | 起点 | 飞币挂层 |
 |------|------|------|----------|
-| 关卡结算提现 / 双倍 | [`BattleSettleUpPop.md`](../Popup/BattleSettleUpPop.md) | `WithDrawBtn` / `DoubleBtn` | `UILayer.Resource`（盖过 Popup） |
-| 商店出售 | [`ShopDetail.md`](../Popup/ShopDetail.md) | `SellBtn` | `UILayer.TopMost`（盖过详情遮罩） |
+| 关卡结算提现 / 双倍 | [`BattleSettleUpPop.md`](../Popup/BattleSettleUpPop.md) | `WithDrawBtn` / `DoubleBtn` | `UILayer.Resource`（关页后继续飞） |
+| 商店出售 | [`ShopDetail.md`](../Popup/ShopDetail.md) | `SellBtn` | `UILayer.TopMost`（关页后继续飞） |
 
 目标一律是局内 `GameResourceBar` 的 `ResourceItem/Icon`（`CoinFlyFx.FindGoldIcon()`）。
 
 ## 时序
 
 ```
-散落 0.28s → 停留 0.5s → 飞入 0.5s（每枚错开 0.04s）→ onArrived → 资源栏加金
+散落 0.28s → 停留 0.5s → 飞入 0.5s（每枚错开 0.04s）→ onArrived（可选）
 ```
 
-默认 8 枚。`SetUpdate(true)`，不受 timescale 影响。关闭视图时 Kill Sequence，实例一并销毁。
+默认 8 枚。`SetUpdate(true)`，不受 timescale 影响。商店出售和结算提现 / 双倍关页不 Kill Sequence，金币继续飞完再销毁。
 
 ## 金币暂扣
 
@@ -39,7 +39,7 @@
 
 1. 点击时先 `HoldGold`（若金币尚未入账则 `refresh: false` 后再 `AddGold`）。
 2. `CoinFlyFx.Play(prefab, parent, fromWorld, toWorld, onArrived)`。
-3. `onArrived` 里 `ReleaseHeldGold`，需要的话再关界面。
+3. `onArrived` 里 `ReleaseHeldGold`。商店出售、结算提现 / 双倍改为飞币一开始就加金并关页，不必等飞完。
 4. `parent` 必须不低于起点所在层，否则金币会被遮罩挡住。结算弹窗用 Resource；TopMost 详情用 TopMost。
 
 ```csharp

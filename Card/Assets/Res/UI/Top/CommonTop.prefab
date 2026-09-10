@@ -572,6 +572,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 3278660836781131713}
+  _popupAnim: {fileID: 2820784518820813768}
 --- !u!1 &7592996867304030210
 GameObject:
   m_ObjectHideFlags: 0

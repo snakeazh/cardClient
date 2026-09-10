@@ -30,6 +30,8 @@ namespace App.UI
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
         private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
         private const float EnemySlideDuration = 0.3f;
+        private const float HudFlyDuration = 0.4f;
+        private const float HudFadeDuration = 0.25f;
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -101,6 +103,9 @@ namespace App.UI
         private IDisposable _peekGoodArmedSub;
         private Button _peekGoodBtn;
         private ColorBlock _peekGoodColors;
+        private readonly List<HudFly> _hudFlies = new List<HudFly>(4);
+        private readonly Dictionary<GameObject, Tween> _hudFades = new Dictionary<GameObject, Tween>(8);
+        private Sequence _hudEntrance;
 
         protected override void OnBind()
         {
@@ -119,11 +124,13 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
+            PlayHudEntrance();
         }
 
         protected override async Task OnViewOpen()
         {
             SetInBattleFit(true);
+            PrepareHudEntrance();
             var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.GameHud);
             _gameHud = Instantiate(prefab);
             _gameHud.name = "GameHud";
@@ -166,6 +173,7 @@ namespace App.UI
                 ViewModel.Session.Changed -= OnSessionChanged;
             }
 
+            KillHudMotion(restoreHome: true);
             UnregisterGuideTargets();
             StopPeekHold();
 
@@ -926,7 +934,7 @@ namespace App.UI
                 return;
             }
 
-            Binding.BindActive(roundInfo.gameObject, ViewModel.ShowRoundInfo);
+            BindFadeActive(roundInfo.gameObject, ViewModel.ShowRoundInfo);
             roundInfo.SetAsFirstSibling();
             var textSlot = ResolveSlot("roundInfoText");
             var text = textSlot != null
@@ -1485,8 +1493,10 @@ namespace App.UI
                 return;
             }
 
-            Binding.BindActive(_btns.gameObject, ViewModel.ShowTableButtons);
-            BindDealHidden("horBtns2");
+            var group = EnsureCanvasGroup(_btns.gameObject);
+            group.alpha = 1f;
+            group.interactable = true;
+            group.blocksRaycasts = true;
             BindRemainList();
             BindEquips();
 
@@ -1530,13 +1540,205 @@ namespace App.UI
             RegisterGuideTargets();
         }
 
-        private void BindDealHidden(string name)
+        private void PrepareHudEntrance()
         {
-            var node = ResolveSlot(name) ?? transform.Find(name);
-            if (node != null)
+            KillHudMotion(restoreHome: false);
+            _hudFlies.Clear();
+            ParkHudFly("horEquipBtns2", 1f, 0f);
+            ParkHudFly("horBtns2", -1f, 0f);
+            ParkHudFly("stageInfo", 1f, 0f);
+            var player = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
+            ParkHudFly(player, 0f, -1f);
+            var roundInfo = ResolveSlot("roundInfo") ?? transform.Find("roundInfo");
+            if (roundInfo != null)
             {
-                Binding.BindActive(node.gameObject, ViewModel.ShowTableButtons);
+                roundInfo.gameObject.SetActive(false);
             }
+
+            var btns = transform.Find("horBtns") ?? transform.Find("btns");
+            if (btns != null)
+            {
+                var group = EnsureCanvasGroup(btns.gameObject);
+                group.alpha = 0f;
+                group.blocksRaycasts = false;
+                group.interactable = false;
+            }
+        }
+
+        private void PlayHudEntrance()
+        {
+            if (_hudFlies.Count == 0)
+            {
+                return;
+            }
+
+            if (_hudEntrance != null && _hudEntrance.IsActive())
+            {
+                _hudEntrance.Kill();
+            }
+
+            var seq = DOTween.Sequence().SetUpdate(true).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            for (var i = 0; i < _hudFlies.Count; i++)
+            {
+                var fly = _hudFlies[i];
+                if (fly.Rt == null)
+                {
+                    continue;
+                }
+
+                seq.Join(fly.Rt.DOAnchorPos(fly.Home, HudFlyDuration)
+                    .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
+                    .SetLink(fly.Rt.gameObject, LinkBehaviour.KillOnDestroy));
+            }
+
+            _hudEntrance = seq;
+        }
+
+        private void ParkHudFly(string key, float xSign, float ySign)
+        {
+            ParkHudFly(ResolveSlot(key) ?? transform.Find(key), xSign, ySign);
+        }
+
+        private void ParkHudFly(Transform node, float xSign, float ySign)
+        {
+            var rt = node as RectTransform ?? (node != null ? node.GetComponent<RectTransform>() : null);
+            if (rt == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            var home = rt.anchoredPosition;
+            _hudFlies.Add(new HudFly { Rt = rt, Home = home });
+            rt.anchoredPosition = home + FlyDelta(rt, xSign, ySign);
+        }
+
+        private static Vector2 FlyDelta(RectTransform rt, float xSign, float ySign)
+        {
+            var size = rt.rect.size;
+            var w = Mathf.Max(size.x, 160f) + 48f;
+            var h = Mathf.Max(size.y, 220f) + 48f;
+            return new Vector2(xSign * w, ySign * h);
+        }
+
+        private void BindFadeActive(GameObject go, ObservableProperty<bool> visible)
+        {
+            if (go == null || visible == null)
+            {
+                return;
+            }
+
+            var group = EnsureCanvasGroup(go);
+            var first = true;
+            Binding.Add(visible.Subscribe(show =>
+            {
+                PlayHudFade(go, group, show, instant: first);
+                first = false;
+            }));
+        }
+
+        private void PlayHudFade(GameObject go, CanvasGroup group, bool show, bool instant)
+        {
+            if (go == null || group == null)
+            {
+                return;
+            }
+
+            if (_hudFades.TryGetValue(go, out var running) && running != null && running.IsActive())
+            {
+                running.Kill();
+            }
+
+            _hudFades.Remove(go);
+            if (instant)
+            {
+                go.SetActive(show);
+                group.alpha = show ? 1f : 0f;
+                group.interactable = show;
+                group.blocksRaycasts = show;
+                return;
+            }
+
+            if (show)
+            {
+                var wasActive = go.activeSelf;
+                go.SetActive(true);
+                if (!wasActive)
+                {
+                    group.alpha = 0f;
+                }
+
+                group.interactable = true;
+                group.blocksRaycasts = true;
+                var tween = group.DOFade(1f, HudFadeDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetUpdate(true)
+                    .SetLink(go, LinkBehaviour.KillOnDestroy);
+                _hudFades[go] = tween;
+                return;
+            }
+
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            if (!go.activeSelf)
+            {
+                group.alpha = 0f;
+                return;
+            }
+
+            var hide = group.DOFade(0f, HudFadeDuration)
+                .SetEase(Ease.InQuad)
+                .SetUpdate(true)
+                .SetLink(go, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    if (go != null)
+                    {
+                        go.SetActive(false);
+                    }
+
+                    _hudFades.Remove(go);
+                });
+            _hudFades[go] = hide;
+        }
+
+        private void KillHudMotion(bool restoreHome)
+        {
+            if (_hudEntrance != null && _hudEntrance.IsActive())
+            {
+                _hudEntrance.Kill();
+            }
+
+            _hudEntrance = null;
+            foreach (var pair in _hudFades)
+            {
+                if (pair.Value != null && pair.Value.IsActive())
+                {
+                    pair.Value.Kill();
+                }
+            }
+
+            _hudFades.Clear();
+            if (restoreHome)
+            {
+                for (var i = 0; i < _hudFlies.Count; i++)
+                {
+                    var fly = _hudFlies[i];
+                    if (fly.Rt != null)
+                    {
+                        fly.Rt.anchoredPosition = fly.Home;
+                    }
+                }
+            }
+
+            _hudFlies.Clear();
+        }
+
+        private static CanvasGroup EnsureCanvasGroup(GameObject go)
+        {
+            var group = go.GetComponent<CanvasGroup>();
+            return group != null ? group : go.AddComponent<CanvasGroup>();
         }
 
         private void BindCardInfo()
@@ -2655,7 +2857,7 @@ namespace App.UI
             }
 
             Binding.BindCommand(button, command);
-            Binding.BindActive(button.gameObject, visible);
+            BindFadeActive(button.gameObject, visible);
         }
 
         private void EnsureBtn(Button template, string name, string label, IRelayCommand command,
@@ -2692,7 +2894,7 @@ namespace App.UI
             }
 
             Binding.BindCommand(button, command);
-            Binding.BindActive(button.gameObject, visible);
+            BindFadeActive(button.gameObject, visible);
         }
 
         private void OrderActionButtons()
@@ -2923,6 +3125,12 @@ namespace App.UI
             }
 
             return null;
+        }
+
+        private struct HudFly
+        {
+            public RectTransform Rt;
+            public Vector2 Home;
         }
     }
 }

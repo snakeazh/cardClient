@@ -2486,6 +2486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
+  _popupAnim: {fileID: 3854314251039412974}
   BgBottomEdge: 50
 --- !u!1 &6819718925485379873
 GameObject:

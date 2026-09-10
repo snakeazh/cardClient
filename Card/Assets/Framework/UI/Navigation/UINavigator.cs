@@ -50,7 +50,7 @@ namespace Framework.UI.Navigation
             _root = root ?? throw new ArgumentNullException(nameof(root));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _resources = resources ?? throw new ArgumentNullException(nameof(resources));
-            _transition = transition ?? InstantViewTransition.Instance;
+            _transition = transition ?? PopupViewTransition.Instance;
 
             foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
             {

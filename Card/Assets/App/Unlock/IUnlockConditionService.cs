@@ -18,6 +18,9 @@ namespace App.Unlock
 
         void BeginRun();
 
+        /// <summary>弹出局内积压的解锁提示。回主页后调用；局内不弹。</summary>
+        void FlushUnlockToasts();
+
         /// <summary>
         /// 上报进度。<paramref name="amount"/> 默认 1。
         /// 累加类：进度 += amount × StackedValue；取最大类（通关难度 / 持有金币 / 单次伤害）：进度 = max(当前, amount)。

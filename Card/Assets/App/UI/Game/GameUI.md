@@ -16,23 +16,24 @@
 
 ```
 GameUI
-  PlayerItem              ← 玩家卡（card），显示 HeroDamage / Hp；点击弹出 ItemTip（名称 + 描述）
+  PlayerItem              ← 玩家卡；开局自下而上飞入
   player1/2/3             ← 敌人卡槽（player1 中心；运行时克隆 PlayerItem 并切到 enemycard）；平时点击弹出 ItemTip
-  horBtns                 ← 开战 / 取消 / 下一局（发牌动画结束才显示）
-  horBtns2                ← 搓牌 / 透视 / 替换，文案 (剩余/上限)
-  horEquipBtns2           ← yiwuBtn 遗物列表；ruleBtn 点出 WinTip 赔率表（一直可点）
+  horBtns                 ← 开战 / 取消 / 下一局（按钮随阶段渐显渐隐）
+  horBtns2                ← 搓牌 / 透视 / 替换；开局左侧飞入
+  horEquipBtns2           ← yiwuBtn / ruleBtn；开局右侧飞入
+  stageInfo               ← 关卡名；开局右侧飞入
   beilvInfo               ← 结算圣物加成飘字（默认隐藏）：beilvIcon / attackNum / beilvNum
   cardinfoItem            ← 玩家牌型图标（选满 3 张即预览；亮牌后仍显示）
   cardtypeNum             ← 玩家倍率数字
   cardinfoEnemyItem       ← 亮牌后敌人牌型图标（预制体自摆位置）
   cardinfoEnemyNum        ← 敌人倍率数字（嵌套 cardinfoItem 后改名；WinTip 模板仍叫 cardtypeEnemyNum）
-  roundInfo               ← 第几轮
+  roundInfo               ← 第几轮；发牌结束渐显
   roundbuffGrid           ← 关卡机制格子；下面按条目克隆 roundbuff
   roundbuff               ← 机制图标模板（蓝书），无机制时格子隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出（闪避显示 MISS，不播 ani_hptextdi）
 ```
 
-发牌期间 `ShowTableButtons=false`，`horBtns`、`horBtns2` 隐藏，发完再亮。`horEquipBtns2` 不跟发牌隐藏。`roundInfo` 局内一直显示第几轮。有关卡机制时开局弹出 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs)（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 同时显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
+开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。有关卡机制时开局弹出 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs)（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 同时显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 

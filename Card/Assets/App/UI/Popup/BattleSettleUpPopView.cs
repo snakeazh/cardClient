@@ -98,7 +98,6 @@ namespace App.UI.Popup
                 RefreshRoundList();
                 PlayEntranceOnce();
             }, emitCurrent: false));
-            BindOverlayClose();
             _ = EnsureCoinPrefab();
         }
 
@@ -117,18 +116,6 @@ namespace App.UI.Popup
 
             ClearRoundRows();
             return Task.CompletedTask;
-        }
-
-        private void BindOverlayClose()
-        {
-            var overlay = GetComponent<Button>();
-            if (overlay == null)
-            {
-                overlay = gameObject.AddComponent<Button>();
-                overlay.transition = Selectable.Transition.None;
-            }
-
-            Binding.BindCommand(overlay, ViewModel.ContinueCommand);
         }
 
         private RollingNumber BindRollingNumber(TMP_Text text, ObservableProperty<string> source)
@@ -189,7 +176,8 @@ namespace App.UI.Popup
             _bgGroup = GetOrAddCanvasGroup(_bgRect);
             _bgRestPos = _bgRect.anchoredPosition;
             _bgGroup.alpha = 0f;
-            _bgGroup.blocksRaycasts = false;
+            // 父级 CanvasGroup.blocksRaycasts=false 会让整棵子树（含提现/双倍按钮）收不到点击。
+            _bgGroup.blocksRaycasts = true;
             _bgRect.anchoredPosition = _bgRestPos + new Vector2(0f, -PanelSlideDistance);
             _bgRect.sizeDelta = new Vector2(_bgRect.sizeDelta.x, initialY);
 
@@ -308,8 +296,6 @@ namespace App.UI.Popup
                 _entranceSeq.InsertCallback(cursor, revealsAtRowEnd[i]);
             }
 
-            // BG 的 blocksRaycasts=false 会让整个子树（含按钮）对射线透明，正常播完也必须恢复，
-            // 否则按钮收不到指针事件、点纸面反而触发蒙层关窗。
             _entranceSeq.OnComplete(() =>
             {
                 if (_bgGroup != null)
@@ -481,12 +467,8 @@ namespace App.UI.Popup
 
             var bar = GameResourceView.FindOpen()?.ViewModel;
             var amount = bar != null ? bar.HeldGold : 0;
-            if (amount > 0)
-            {
-                TryPlayCoinFly(_withdrawBtn);
-            }
-
-            ViewModel.CompleteWithdraw(bar);
+            var flying = amount > 0 && TryPlayCoinFly(_withdrawBtn, bar, amount);
+            ViewModel.CompleteWithdraw(bar, coinFxOwnsGold: flying);
         }
 
         private async void OnDoubleClicked()
@@ -510,31 +492,29 @@ namespace App.UI.Popup
                 return;
             }
 
-            if (extra > 0)
-            {
-                TryPlayCoinFly(_doubleBtn);
-            }
-
-            ViewModel.CompleteDouble(bar, extra);
+            var amount = bar != null ? bar.HeldGold : extra;
+            var flying = amount > 0 && TryPlayCoinFly(_doubleBtn, bar, amount);
+            ViewModel.CompleteDouble(bar, extra, coinFxOwnsGold: flying);
         }
 
-        private void TryPlayCoinFly(Button source)
+        private bool TryPlayCoinFly(Button source, GameResourceViewModel bar, int gold)
         {
             var from = source != null ? source.transform as RectTransform : null;
             var to = FindGoldIcon();
             var parent = ResolveFxParent();
             if (from == null || to == null || parent == null || _coinPrefab == null)
             {
-                return;
+                return false;
             }
 
-            // 挂 Resource 层，不跟结算页生命周期绑定；关页后金币继续飞。
-            CoinFlyFx.Play(
+            // 挂 Resource 层，不跟结算页生命周期绑定；关页后金币继续飞，落到图标再加数字。
+            return CoinFlyFx.PlayAndCredit(
                 _coinPrefab,
                 parent,
                 from.position,
                 to.position,
-                null);
+                bar,
+                gold) != null;
         }
 
         private RectTransform ResolveFxParent()

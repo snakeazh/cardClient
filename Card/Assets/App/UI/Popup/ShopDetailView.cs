@@ -15,7 +15,7 @@ namespace App.UI.Popup
     /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一，购买时另显示 VideoBuyBtn 看广告免费拿；
     /// 消耗品货架另显示 buyUseBtn（购买并立刻使用，不播飞入），已购栏另显示 useBtn。
     /// 金币不足时 BuyNum 变红；失败弹 Toast，不改底部 Tip。点 Mask 关闭。
-    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar，页面立刻关闭。
+    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar，页面立刻关闭，数字等飞币到位再涨。
     /// </summary>
     [AutoScreen(AppScreenIds.ShopDetail, UILayer.TopMost, ResResourcePaths.ShopDetail)]
     public sealed class ShopDetailView : ViewBase<ShopDetailViewModel>
@@ -386,31 +386,28 @@ namespace App.UI.Popup
                 return;
             }
 
-            if (gold > 0)
-            {
-                TryPlayCoinFly(_sellBtn);
-            }
-
-            ViewModel.CompleteSell(bar, gold);
+            var flying = gold > 0 && TryPlayCoinFly(_sellBtn, bar, gold);
+            ViewModel.CompleteSell(bar, gold, coinFxOwnsGold: flying);
         }
 
-        private void TryPlayCoinFly(Button source)
+        private bool TryPlayCoinFly(Button source, GameResourceViewModel bar, int gold)
         {
             var from = source != null ? source.transform as RectTransform : null;
             var to = CoinFlyFx.FindGoldIcon();
             var parent = ResolveFxParent();
             if (from == null || to == null || parent == null || _coinPrefab == null)
             {
-                return;
+                return false;
             }
 
-            // 挂 TopMost，不跟详情页生命周期绑定；关页后金币继续飞。
-            CoinFlyFx.Play(
+            // 挂 TopMost，不跟详情页生命周期绑定；关页后金币继续飞，落到图标再加数字。
+            return CoinFlyFx.PlayAndCredit(
                 _coinPrefab,
                 parent,
                 from.position,
                 to.position,
-                null);
+                bar,
+                gold) != null;
         }
 
         private RectTransform ResolveFxParent()

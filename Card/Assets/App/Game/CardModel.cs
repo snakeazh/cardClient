@@ -350,6 +350,13 @@ namespace App.Game
                 return level;
             }
 
+            // 降低等顺位修正会让不同牌型落到同一 CompareLevel。
+            // 点数 Keys 按原牌型生成（金花三张点 vs 对子点数），不能再当同牌型比。
+            if (Type != other.Type)
+            {
+                return 0;
+            }
+
             var n = Math.Max(Keys.Length, other.Keys.Length);
             for (var i = 0; i < n; i++)
             {

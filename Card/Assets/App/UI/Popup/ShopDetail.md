@@ -51,9 +51,9 @@
 
 1. `HoldGold(卖价, refresh: false)`，再 `SellShopRelic`（内部 `AddGold` + `Notify`）。
 2. 按钮处散落 `coinitem` 飞向 `GameResourceBar` 金币图标（挂 `UILayer.TopMost`，不跟详情页绑定）。
-3. 飞币一开始就 `ReleaseHeldGold` 并关详情，不等金币飞完。
+3. 详情立刻关掉。金币逐枚落到图标时 `ReleaseHeldGold`，资源栏数字跟着涨。
 
-卖价为 0 或飞币播不出来时直接加金并关闭。出售进行中不因「已不拥有该遗物」把详情关掉。中途关闭会把暂扣金币立即加回资源栏。
+卖价为 0 或飞币播不出来时直接加金并关闭。出售进行中不因「已不拥有该遗物」把详情关掉。飞币会自己入账，关页不再把暂扣提前加回去。
 
 ---
 

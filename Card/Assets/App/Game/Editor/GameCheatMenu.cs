@@ -1,4 +1,5 @@
 using App.Bootstrap;
+using App.Config;
 using App.Game;
 using App.Talent;
 using UnityEditor;
@@ -13,6 +14,12 @@ namespace App.Game.Editor
     {
         private const string GodMenuPath = "Debug/外挂/无敌模式";
         private const string OneHitMenuPath = "Debug/外挂/一击必杀";
+
+        [MenuItem("Debug/外挂/添加指定圣物", false, 16)]
+        public static void OpenGrantRelic()
+        {
+            GrantRelicCheatWindow.Open();
+        }
 
         [MenuItem("Debug/外挂/金币 +99999", false, 10)]
         public static void AddGold()
@@ -107,7 +114,7 @@ namespace App.Game.Editor
             Debug.Log($"[外挂] 一击必杀 {(GameSession.DebugOneHitKill ? "开启" : "关闭")}");
         }
 
-        private static bool TryGetSession(out GameSession session)
+        internal static bool TryGetSession(out GameSession session)
         {
             if (!Application.isPlaying || !AppServices.IsReady)
             {
@@ -124,6 +131,94 @@ namespace App.Game.Editor
             }
 
             return true;
+        }
+    }
+
+    /// <summary>局内测试：输入 RelicConfig.Id 直接加入本局已持有。</summary>
+    public sealed class GrantRelicCheatWindow : EditorWindow
+    {
+        private int _relicId;
+        private Vector2 _scroll;
+
+        public static void Open()
+        {
+            var window = GetWindow<GrantRelicCheatWindow>("添加圣物");
+            window.minSize = new Vector2(320f, 160f);
+            window.Show();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Play 对局中输入圣物 Id，立即加入本局（不扣金币、不占上限）");
+            EditorGUILayout.Space(4f);
+            _relicId = EditorGUILayout.IntField("圣物 Id", _relicId);
+
+            RelicConfig relic = null;
+            if (Application.isPlaying)
+            {
+                relic = RelicConfig.Get(_relicId);
+            }
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.TextField("名称", relic != null ? relic.Name : "—");
+                EditorGUILayout.TextField("效果", relic != null ? relic.Desc : "—");
+            }
+
+            EditorGUILayout.Space(8f);
+            using (new EditorGUI.DisabledScope(!Application.isPlaying || relic == null))
+            {
+                if (GUILayout.Button("添加到本局", GUILayout.Height(28f)))
+                {
+                    Grant();
+                }
+            }
+
+            if (!Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("需要在 Play 模式且已进入对局。", MessageType.Info);
+                return;
+            }
+
+            DrawOwned();
+        }
+
+        private void Grant()
+        {
+            if (!GameCheatMenu.TryGetSession(out var session))
+            {
+                return;
+            }
+
+            session.DebugGrantRelic(_relicId);
+        }
+
+        private void DrawOwned()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var session = AppServices.Resolve<GameSession>();
+            var ids = session?.Run?.RelicConfigIds;
+            if (ids == null || ids.Count == 0)
+            {
+                EditorGUILayout.HelpBox("本局还没有圣物。", MessageType.None);
+                return;
+            }
+
+            EditorGUILayout.Space(8f);
+            EditorGUILayout.LabelField($"已持有 {ids.Count} 件");
+            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.MaxHeight(180f));
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var owned = RelicConfig.Get(ids[i]);
+                var label = owned != null ? $"{owned.Id}  {owned.Name}" : ids[i].ToString();
+                EditorGUILayout.LabelField(label);
+            }
+
+            EditorGUILayout.EndScrollView();
         }
     }
 }

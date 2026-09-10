@@ -2634,6 +2634,35 @@ namespace App.Game
 
             Notify();
         }
+
+        /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。</summary>
+        public bool DebugGrantRelic(int relicId)
+        {
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null)
+            {
+                Hint = $"[编辑器] 没有圣物 Id={relicId}";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            if (OwnsRelicConfig(relicId))
+            {
+                Hint = $"[编辑器] 已拥有 {relic.Name}（{relicId}）";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            Run.RelicConfigIds.Add(relicId);
+            Run.ShopOfferIds.Remove(relicId);
+            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+            Log($"[编辑器] 获得圣物 {relic.Name}（{relicId}）");
+            Hint = $"[编辑器] 已添加 {relic.Name}";
+            Notify();
+            return true;
+        }
 #endif
 
         /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物/天赋加在牌型倍率上。</summary>

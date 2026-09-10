@@ -293,16 +293,32 @@ namespace App.Game
             return WithType(score, ShiftType(score.Type, steps));
         }
 
-        /// <summary>只改比牌顺位，不改展示牌型和伤害倍率。须在牌型改写之后调用。</summary>
+        /// <summary>
+        /// 降低：敌人牌型按 Level +Value 改写（比牌、提示、出伤倍率一起变）。
+        /// 散牌已是最低，再降无效。须在好运来等牌型改写之后调用。
+        /// </summary>
         public static HandScore ApplyCompareRankBonus(RunState run, HandScore score)
         {
-            var bonus = (int)Math.Round(SumValue(run, MechanismType.ReduceLevel));
-            if (bonus == 0)
+            var steps = (int)Math.Round(SumValue(run, MechanismType.ReduceLevel));
+            if (steps == 0)
             {
                 return score;
             }
 
-            return score.WithCompareLevelBonus(bonus);
+            var type = ShiftType(score.Type, steps);
+            if (type == score.Type)
+            {
+                return score;
+            }
+
+            return new HandScore(
+                type,
+                score.BaseChips,
+                HandEvaluator.TypeMultiplier(type),
+                Array.Empty<int>(),
+                score.UsedCards,
+                HandEvaluator.TypeName(type),
+                score.BeatsAll);
         }
 
         public static HandScore ApplyEnemyTypeRewrite(RunState run, HandScore score, int downgradeSteps)

@@ -63,7 +63,7 @@
 
 玩家 vs 敌人：`CompareTo >= 0` 算玩家赢（平局玩家赢）。敌人当开牌方时必须严格大于才算敌人赢。比牌先比 `HandScoreConfig.Level`（豹子 ＞ 顺金 ＞ 顺子 ＞ 金花 ＞ 对子 ＞ 散牌），同 Level 再比点数。
 
-老花眼 / 错峰出行 / 235 / 近视眼只作用在玩家座位。敌人选最大 3 张时不吃这些遗物。升职改玩家实际牌型；降低只改敌人比牌顺位。
+老花眼 / 错峰出行 / 235 / 近视眼只作用在玩家座位。敌人选最大 3 张时不吃这些遗物。升职改玩家实际牌型；降低改敌人实际牌型（比牌、提示、出伤），散牌为下限。
 
 | 遗物 | Type | 行为 |
 |------|------|------|
@@ -72,7 +72,7 @@
 | 近视眼 | AllCardIsHeadCard | 不改点数/牌型；人头相关遗物把每张亮出牌都当人头 |
 | 235 | SpecialTwoThreeFive | 散牌恰好 2+3+5 → 豹子且 `BeatsAll` |
 | 升职 | UpLevel | 玩家牌型按 Level +Value（与变形魔方叠加）。展示名称、伤害倍率、比牌一起变，封顶豹子 |
-| 降低 | ReduceLevel | 只改敌人比牌顺位 `CompareLevel`（表 Value=-1）。展示和出伤仍按原牌型。散牌再降无效 |
+| 降低 | ReduceLevel | 敌人牌型按 Level +Value 改写（表 Value=-1）。比牌、牌型提示、出伤倍率一起变。散牌已是最低，再降无效 |
 
 ---
 
@@ -165,7 +165,7 @@
 | OneMonsterGetDamage | 场上只剩 1 名敌人 | 出伤 × (1+Value) |
 | CardUpGrade | `EvaluateSeat` 玩家 | 按 Level +Value（对子→金花→顺子→顺金→豹子），封顶豹子 |
 | UpLevel | `EvaluateSeat` 玩家 | 与 CardUpGrade 叠加，同样改写牌型/倍率/比牌 |
-| ReduceLevel | `EvaluateSeat` 敌人 | 只改比牌顺位，展示和伤害不变。须在好运来等牌型改写之后 |
+| ReduceLevel | `EvaluateSeat` 敌人 | 按 Level +Value 改写牌型/倍率/比牌/提示。散牌为下限。须在好运来等牌型改写之后 |
 | MonsterHpMax | 进关刷怪（非 BOSS） | 血上限 × (1+Value) |
 | CriticalAoe | 玩家暴击 | 对其他存活敌人打自身攻击力 × Value[1] |
 | PerspectiveNum | `ResetSkillCharges` | 透视次数 +Value |

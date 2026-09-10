@@ -316,6 +316,8 @@ namespace App.Game
         public int CompareLevelBonus { get; }
         /// <summary>比牌用的 Level，含顺位修正，夹到配置最小/最大。</summary>
         public int CompareLevel => HandEvaluator.ClampLevel(Level + CompareLevelBonus);
+        /// <summary>比牌顺位对应的牌型。降低后展示用这个，伤害仍看 <see cref="Type"/>。</summary>
+        public HandType CompareType => HandEvaluator.TypeByLevel(CompareLevel);
 
         public HandScore WithCompareLevelBonus(int bonus)
         {

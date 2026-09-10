@@ -74,6 +74,10 @@ namespace App.UI
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
         private bool _shownPeekGoodTip;
+#if UNITY_EDITOR
+        private string _debugRelicIdText = string.Empty;
+        private string _debugRelicPreview = string.Empty;
+#endif
         private Coroutine _peekHoldCo;
         private bool _peekHoldFired;
         private Canvas _hudCanvas;
@@ -162,6 +166,44 @@ namespace App.UI
             {
                 ViewModel.Session.DebugAddGold();
             }
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
+            GUILayout.Label("测试加圣物（仅编辑器）");
+            GUILayout.BeginHorizontal();
+            var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
+            if (next != _debugRelicIdText)
+            {
+                _debugRelicIdText = next;
+                RefreshDebugRelicPreview();
+            }
+
+            var canGrant = int.TryParse(_debugRelicIdText, out var relicId) && relicId > 0;
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = canGrant;
+            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrant)
+            {
+                ViewModel?.Session?.DebugGrantRelic(relicId);
+            }
+
+            GUI.enabled = wasEnabled;
+            GUILayout.EndHorizontal();
+            GUILayout.Label(string.IsNullOrEmpty(_debugRelicPreview) ? "输入 RelicConfig.Id" : _debugRelicPreview);
+            GUILayout.EndArea();
+        }
+
+        private void RefreshDebugRelicPreview()
+        {
+            if (!int.TryParse(_debugRelicIdText, out var relicId) || relicId <= 0)
+            {
+                _debugRelicPreview = string.Empty;
+                return;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            _debugRelicPreview = relic != null ? $"{relic.Name}  {relic.Desc}" : $"没有 Id={relicId}";
         }
 #endif
 
@@ -1427,10 +1469,11 @@ namespace App.UI
             }
 
             _enemyCardInfo.SetActive(true);
-            ApplyCardInfoFx(_enemyCardInfo, score.Level);
+            var shownType = score.CompareType;
+            ApplyCardInfoFx(_enemyCardInfo, score.CompareLevel);
             if (_enemyCardTypeIcon != null)
             {
-                _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(score.Type);
+                _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(shownType);
                 _enemyCardTypeIcon.enabled = _enemyCardTypeIcon.sprite != null;
                 _enemyCardTypeIcon.preserveAspect = true;
             }
@@ -1440,7 +1483,7 @@ namespace App.UI
                 CardTypeValueSprites.Apply(
                     ViewModel.Atlas,
                     _enemyCardTypeNum,
-                    GameTableViewModel.FormatHandMultiplier(score.Type));
+                    GameTableViewModel.FormatHandMultiplier(shownType));
             }
         }
 

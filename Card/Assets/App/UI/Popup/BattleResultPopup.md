@@ -46,7 +46,7 @@
 | `coinNum` | 最底部总金币（SummeryArea 内） |
 | `BackBtn` | 回到主界面 |
 | `AgainBtn` | 广告复活 |
-| `Scroll View` | 逐关明细滚动区（未直接使用，行克隆走 FindDeep 找 Content/Text1） |
+| `Scroll View` | 逐关明细滚动区（未直接使用，行克隆走 FindDeep 找 Content/Text1；View 不写它的 sizeDelta，靠拉伸锚点跟随 BG） |
 
 行模板 `Text1` 与 `Content` 没绑 UIBind，View 用 `FindDeep` 按名字取。
 
@@ -76,14 +76,16 @@ View 每帧 `FitBgHeight()`（**宽度固定不变**），线性模型（基准�
 
 ```
 extra   = (行数 − 1) × 行高        // 行高实测 Text1 模板 ≈ 59.5
-BG 高度 = 439 + extra              // BgBaseHeight
-Scroll View 高度 = 199 + extra     // ScrollBaseHeight
+BG 高度 = 439 + extra              // BgBaseHeight（代码只写 BG 这一处）
+Scroll View 高度 = BG 高度 − 240   // 拉伸锚点自动跟随 = 199 + extra
 ```
 
-第 1 关直接退出行数=1 → BG 正好 439；每多一行 BG 与滚动区同步加一个行高，
-1 行时纸面/滚动区的富余量在任意行数下保持不变（全部行直接可见，无需滚动）。
-子节点锚点配合：Title/Scroll View 挂 BG 顶边（长高时顶边上移、它们跟随），
-SummeryArea/两按钮挂 BG 底边（底边下移、它们跟随）；BG 居中锚点/轴心 +
+第 1 关直接退出行数=1 → BG 正好 439；每多一行 BG 加一个行高，滚动区经拉伸锚点自动
+同步加高，1 行时纸面/滚动区的富余量在任意行数下保持不变（全部行直接可见，无需滚动）。
+子节点锚点配合：Title 挂 BG 顶边（长高时顶边上移、跟随），SummeryArea/两按钮挂 BG
+底边（底边下移、跟随）；**Scroll View 是拉伸锚点（(0,0)-(1,1)+负 sizeDelta −240），
+代码不写它的 sizeDelta**——拉伸锚点下 sizeDelta 是相对 BG 的增量，按绝对高度写会
+算成 BG高+目标高 的双重叠加，滚动区溢出纸面。BG 居中锚点/轴心 +
 TallScreenFitScale（只写 localScale，不冲突）。行数极多时纸面会超出屏幕，未做上限。
 
 ---

@@ -1635,6 +1635,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
+  _popupAnim: {fileID: 0}
   BgBaseHeight: 439
   ScrollBaseHeight: 199
 --- !u!1 &6334321592646229442
@@ -1674,7 +1675,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 213.61511, y: -34.8555}
-  m_SizeDelta: {x: 60.01, y: 70.3072}
+  m_SizeDelta: {x: 0, y: 70.3072}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8677878086279887654
 CanvasRenderer:
@@ -2238,10 +2239,10 @@ RectTransform:
   - {fileID: 1679294634882962191}
   m_Father: {fileID: 7625611904719111217}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -0, y: -198.5}
-  m_SizeDelta: {x: 740.76, y: 199}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 21}
+  m_SizeDelta: {x: -71.23999, y: -240}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6238269574997081784
 CanvasRenderer:

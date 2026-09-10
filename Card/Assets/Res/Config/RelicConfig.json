@@ -1276,6 +1276,21 @@
     "Desc": "亮出的每张牌都提供其点数对应的攻击力加成"
   },
   {
+    "Id": 330,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "差距胶囊",
+    "Icon": "GapCapsule",
+    "Price": 300,
+    "SellingPrice": 150,
+    "MechanismId": [
+      40025
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
+  },
+  {
     "Id": 401,
     "Type": 4,
     "RefreshProbability": 0.1,
@@ -1363,7 +1378,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每拥有1个圣物,结算时提供+0.5倍率"
+    "Desc": "每拥有1个圣物,结算时提供+3倍率"
   },
   {
     "Id": 407,
@@ -1630,23 +1645,8 @@
     "Id": 424,
     "Type": 4,
     "RefreshProbability": 0.1,
-    "Name": "差距胶囊",
-    "Icon": "GapCapsule",
-    "Price": 300,
-    "SellingPrice": 150,
-    "MechanismId": [
-      40025
-    ],
-    "UnlockConditionId": 0,
-    "UseType": 0,
-    "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
-  },
-  {
-    "Id": 425,
-    "Type": 4,
-    "RefreshProbability": 0.1,
     "Name": "神之左手",
-    "Icon": "GodLeftHand",
+    "Icon": "GodsLeftHand",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [
@@ -1657,7 +1657,7 @@
     "Desc": "使用后,本次比牌你造成的伤害提高200%"
   },
   {
-    "Id": 426,
+    "Id": 425,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "凤凰羽毛",
@@ -1672,7 +1672,7 @@
     "Desc": "使用后,本次比牌你受到的所有伤害变为0,并恢复30%血量"
   },
   {
-    "Id": 427,
+    "Id": 426,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "时光宝盒",
@@ -1687,7 +1687,7 @@
     "Desc": "使用后,随机3种牌型的提供的倍率永久+5"
   },
   {
-    "Id": 428,
+    "Id": 427,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "龙心",
@@ -1702,7 +1702,7 @@
     "Desc": "使用后,获得120点生命上限,并立即恢复120点血量"
   },
   {
-    "Id": 429,
+    "Id": 428,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "贪欲之冠",
@@ -1717,7 +1717,7 @@
     "Desc": "每拥有40金币,你造成的伤害+10%,至多叠加20层"
   },
   {
-    "Id": 430,
+    "Id": 429,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "旗帜",
@@ -1732,7 +1732,7 @@
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+12攻击力"
   },
   {
-    "Id": 431,
+    "Id": 430,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "降低",
@@ -1747,7 +1747,7 @@
     "Desc": "比牌时,对方的牌型顺位降低1级"
   },
   {
-    "Id": 432,
+    "Id": 431,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "升职",
@@ -1762,7 +1762,7 @@
     "Desc": "比牌时,自己的牌型顺位提高1级"
   },
   {
-    "Id": 433,
+    "Id": 432,
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "错峰出行",

@@ -2205,7 +2205,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 1,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+0.2%"
@@ -2216,7 +2216,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 2,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+0.4%"
@@ -2227,7 +2227,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 3,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+0.6%"
@@ -2238,7 +2238,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 4,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+0.8%"
@@ -2249,7 +2249,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 5,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+1%"
@@ -2260,7 +2260,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 6,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+1.2%"
@@ -2271,7 +2271,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 7,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+1.4%"
@@ -2282,7 +2282,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 8,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+1.6%"
@@ -2293,7 +2293,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 9,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+1.8%"
@@ -2304,7 +2304,7 @@
     "Name": "史诗圣物",
     "Type": 2,
     "ChestProbability": 0.4,
-    "Icon": "",
+    "Icon": "EpicSacredRelic",
     "TalentLevel": 10,
     "TalentEntry": 209,
     "Desc": "商店中出现史诗品质圣物的概率+2%"
@@ -3195,7 +3195,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 1,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+0.2%"
@@ -3206,7 +3206,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 2,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+0.4%"
@@ -3217,7 +3217,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 3,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+0.6%"
@@ -3228,7 +3228,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 4,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+0.8%"
@@ -3239,7 +3239,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 5,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+1%"
@@ -3250,7 +3250,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 6,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+1.2%"
@@ -3261,7 +3261,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 7,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+1.4%"
@@ -3272,7 +3272,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 8,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+1.6%"
@@ -3283,7 +3283,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 9,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+1.8%"
@@ -3294,7 +3294,7 @@
     "Name": "传说圣物",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "LegendSacredRelic",
     "TalentLevel": 10,
     "TalentEntry": 309,
     "Desc": "商店中出现传说品质圣物的概率+2%"
@@ -3305,7 +3305,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 1,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+1"
@@ -3316,7 +3316,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 2,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+2"
@@ -3327,7 +3327,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 3,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+3"
@@ -3338,7 +3338,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 4,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+4"
@@ -3349,7 +3349,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 5,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+5"
@@ -3360,7 +3360,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 6,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+6"
@@ -3371,7 +3371,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 7,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+7"
@@ -3382,7 +3382,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 8,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+8"
@@ -3393,7 +3393,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 9,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+9"
@@ -3404,7 +3404,7 @@
     "Name": "圣物容量",
     "Type": 3,
     "ChestProbability": 0.2,
-    "Icon": "",
+    "Icon": "SacredRelicCapacity",
     "TalentLevel": 10,
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+10"

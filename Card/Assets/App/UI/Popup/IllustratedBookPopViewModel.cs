@@ -174,7 +174,8 @@ namespace App.UI.Popup
 
         /// <summary>
         /// 点击条目打开 TalentDetail 展示模式：左右切换在条目所在页签的整页列表内循环，
-        /// 始终隐藏升级按钮。文案口径同原 tip：未解锁名字显示 ？？？（传 null）、描述显示解锁进度提示。
+        /// 始终隐藏升级按钮。未解锁名字显示 ？？？（传 null）；描述遗物页显示效果描述
+        /// （解锁条件由获取方式文案传达），其余页显示解锁进度提示。
         /// 图标由 View 侧解析好传入（遗物图集/收藏资源/怪物头像三种来源）。
         /// </summary>
         public async void OpenDetail(IllustratedBookEntry entry, Func<IllustratedBookEntry, Sprite> iconResolver)
@@ -202,7 +203,7 @@ namespace App.UI.Popup
                     displays.Add(new TalentDetailViewModel.DisplayEntry
                     {
                         Name = sibling.Unlocked ? sibling.Name : null,
-                        Desc = sibling.Unlocked
+                        Desc = sibling.Tab == IllustratedBookTab.Relic || sibling.Unlocked
                             ? sibling.Desc ?? string.Empty
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
                         Icon = iconResolver != null ? iconResolver(sibling) : null,

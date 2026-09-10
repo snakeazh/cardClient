@@ -14,7 +14,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
     /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
-    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售先暂扣金币，飞币到位后再加到 GameResourceBar。
+    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售先播飞币再立刻关页，金币同时入账。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
     {

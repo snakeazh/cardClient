@@ -18,6 +18,7 @@ namespace App.UI.Popup
     public sealed class RemainListPopViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly TaskCompletionSource<bool> _closed = new TaskCompletionSource<bool>();
 
         public RemainListPopViewModel(
             GameSession session,
@@ -33,6 +34,9 @@ namespace App.UI.Popup
             ListVersion = new ObservableProperty<int>();
             CloseCommand = new RelayCommand(Close);
         }
+
+        /// <summary>飞出动画播完、弹窗真正关掉后完成。</summary>
+        public Task Closed => _closed.Task;
 
         public GameSession Session { get; }
 
@@ -67,9 +71,16 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
+        protected override Task OnClose()
+        {
+            _closed.TrySetResult(true);
+            return Task.CompletedTask;
+        }
+
         protected override void OnDispose()
         {
             Session.Changed -= OnSessionChanged;
+            _closed.TrySetResult(true);
         }
 
         private void OnSessionChanged()

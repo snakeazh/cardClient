@@ -65,7 +65,7 @@ GameUI
 |------|------|----------|
 | `CompareBtn` | 开战 | `WaitingOpen`，且已选 3 张 |
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | `(n/max)` | 始终在 `horBtns2`，没次数则禁用 |
-| `yiwuBtn` | 遗物列表 | 一直显示，点开 `RemainListPop` |
+| `yiwuBtn` | 遗物列表 | 点开 `RemainListPop` 时隐藏，弹窗关闭结束再显示 |
 | `ruleBtn` | 规则 | 一直显示，点开 `WinTip` 赔率表 |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 

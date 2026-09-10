@@ -902,6 +902,7 @@ namespace App.UI
                 var registration = _ui.Registry.GetByViewModelType(typeof(RemainListPopViewModel));
                 var popup = (RemainListPopViewModel)_ui.Registry.CreateViewModel(registration);
                 await _ui.Open(popup);
+                await popup.Closed;
             }
             catch (Exception ex)
             {

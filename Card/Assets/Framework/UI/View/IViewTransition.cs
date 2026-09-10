@@ -33,4 +33,40 @@ namespace Framework.UI.View
             return Task.CompletedTask;
         }
     }
+
+    /// <summary>
+    /// View 上手动挂了弹窗节点则播放缩放动画，否则与 <see cref="InstantViewTransition"/> 相同。
+    /// </summary>
+    public sealed class PopupViewTransition : IViewTransition
+    {
+        public static readonly PopupViewTransition Instance = new PopupViewTransition();
+
+        public async Task PlayEnter(GameObject target)
+        {
+            if (target != null)
+            {
+                target.SetActive(true);
+            }
+
+            var view = target != null ? target.GetComponent<IView>() : null;
+            if (view != null)
+            {
+                await view.PlayPopupEnter();
+            }
+        }
+
+        public async Task PlayExit(GameObject target)
+        {
+            var view = target != null ? target.GetComponent<IView>() : null;
+            if (view != null)
+            {
+                await view.PlayPopupExit();
+            }
+
+            if (target != null)
+            {
+                target.SetActive(false);
+            }
+        }
+    }
 }

@@ -6,6 +6,7 @@ using App.Energy;
 using App.Level;
 using App.Resources;
 using App.Talent;
+using App.Unlock;
 using Framework.Assets;
 using Framework.Log;
 using Framework.UI;
@@ -23,6 +24,7 @@ namespace App.UI
         private readonly ILevelProgressService _progress;
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
+        private readonly IUnlockConditionService _unlock;
 
         public HomeViewModel(
             IUIManager ui,
@@ -31,7 +33,8 @@ namespace App.UI
             ILevelProgressService progress,
             TalentBonusManager talentBonus,
             IResourceService resources,
-            IAudioService audio)
+            IAudioService audio,
+            IUnlockConditionService unlock)
         {
             _ui = ui;
             _navigation = navigation;
@@ -39,6 +42,7 @@ namespace App.UI
             _progress = progress;
             _talentBonus = talentBonus;
             _audio = audio;
+            _unlock = unlock;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
@@ -65,6 +69,7 @@ namespace App.UI
             RefreshLastStage();
             RefreshStamina();
             await StartHomeBgmAsync();
+            _unlock?.FlushUnlockToasts();
         }
 
         /// <summary>

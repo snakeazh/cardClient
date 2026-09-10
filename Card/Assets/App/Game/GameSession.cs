@@ -2031,6 +2031,63 @@ namespace App.Game
         /// <summary>看广告免费购入货架遗物。广告当前为模拟发放，成功后不扣金币。</summary>
         public void WatchAdBuyShopRelic(int relicId) => AcquireShopRelic(relicId, watchAd: true);
 
+        /// <summary>
+        /// 商店货架购买并立刻使用消耗品。不占携带上限：到手后马上消耗，因此遗物已满时仍可买用。
+        /// </summary>
+        public bool TryBuyAndUseShopRelic(int relicId)
+        {
+            if (Phase != GamePhase.Shop || !Run.ShopOfferIds.Contains(relicId))
+            {
+                return false;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null)
+            {
+                return false;
+            }
+
+            if (OwnsRelicConfig(relicId))
+            {
+                Hint = "已拥有该遗物";
+                Notify();
+                return false;
+            }
+
+            var price = EffectiveBuyPrice(relicId);
+            if (!RelicMechanics.CanAfford(Run, price))
+            {
+                Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
+                    ? "超出白条额度"
+                    : "金币不足";
+                Notify();
+                return false;
+            }
+
+            if (TryGetRelicUseFailHint(relicId, requireOwned: false, out var failHint))
+            {
+                Hint = failHint;
+                Notify();
+                return false;
+            }
+
+            SpendGold(price);
+            Run.RelicConfigIds.Add(relicId);
+            Run.ShopOfferIds.Remove(relicId);
+            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+            ApplyConsumableUseCore(relicId);
+            Log($"购入并使用遗物 {relic.Name}");
+            Hint = $"已购买并使用 {relic.Name}";
+            Notify();
+            return true;
+        }
+
+        /// <summary>当前阶段能否使用该消耗品。货架预览传 <paramref name="requireOwned"/> = false。</summary>
+        public bool CanUseRelicNow(int relicId, bool requireOwned = true)
+        {
+            return relicId > 0 && !TryGetRelicUseFailHint(relicId, requireOwned, out _);
+        }
+
         private void AcquireShopRelic(int relicId, bool watchAd)
         {
             if (Phase != GamePhase.Shop)
@@ -2117,46 +2174,61 @@ namespace App.Game
 
         public void UseRelic(int relicId)
         {
-            if (!OwnsRelicConfig(relicId) || RelicMechanics.IsDisabled(Run, relicId))
-            {
-                Hint = "未拥有该遗物";
-                Notify();
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            if (relic == null || !RelicMechanics.IsConsumable(relic))
-            {
-                Hint = "该装备无法使用";
-                Notify();
-                return;
-            }
-
-            var thisHand = RelicMechanics.RequiresComparePhase(relic);
-            if (!PlayerMayUseConsumable(thisHand))
-            {
-                Hint = thisHand ? "当前无法在比牌前使用" : "当前无法使用该装备";
-                Notify();
-                return;
-            }
-
-            if (!CanApplyConsumable(relic, out var failHint))
+            if (TryGetRelicUseFailHint(relicId, requireOwned: true, out var failHint))
             {
                 Hint = failHint;
                 Notify();
                 return;
             }
 
+            var relic = RelicConfig.Get(relicId);
+            ApplyConsumableUseCore(relicId);
+            Log($"使用遗物 {relic.Name}");
+            Hint = $"已使用 {relic.Name}";
+            Notify();
+        }
+
+        private bool TryGetRelicUseFailHint(int relicId, bool requireOwned, out string failHint)
+        {
+            failHint = null;
+            if (requireOwned && (!OwnsRelicConfig(relicId) || RelicMechanics.IsDisabled(Run, relicId)))
+            {
+                failHint = "未拥有该遗物";
+                return true;
+            }
+
+            if (!requireOwned && RelicMechanics.IsDisabled(Run, relicId))
+            {
+                failHint = "该装备无法使用";
+                return true;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null || !RelicMechanics.IsConsumable(relic))
+            {
+                failHint = "该装备无法使用";
+                return true;
+            }
+
+            var thisHand = RelicMechanics.RequiresComparePhase(relic);
+            if (!PlayerMayUseConsumable(thisHand))
+            {
+                failHint = thisHand ? "当前无法在比牌前使用" : "当前无法使用该装备";
+                return true;
+            }
+
+            return !CanApplyConsumable(relic, out failHint);
+        }
+
+        private void ApplyConsumableUseCore(int relicId)
+        {
+            var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
             if (Phase == GamePhase.Shop)
             {
                 FillShopOffers();
             }
-
-            Log($"使用遗物 {relic.Name}");
-            Hint = $"已使用 {relic.Name}";
-            Notify();
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)

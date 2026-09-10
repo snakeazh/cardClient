@@ -26,7 +26,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 关卡结算：只统计本关。总伤害是本关 Stage 积分，怪物总数取关卡配置，
     /// 基础奖励 / 提现是本关掉落金币，双倍提现走 <see cref="GameSession.WatchAdDoubleGold"/>。
-    /// 金币先暂扣在资源栏外，按钮飞币到位后再加回。
+    /// 金币先暂扣在资源栏外，点提现/双倍后立刻关页入账，飞币独立播放。
     /// </summary>
     public sealed class BattleSettleUpPopViewModel : ViewModelBase
     {
@@ -138,6 +138,8 @@ namespace App.UI.Popup
             {
                 bar?.ReleaseHeldGold(extra);
             }
+
+            Close();
         }
 
         protected override Task OnClose()

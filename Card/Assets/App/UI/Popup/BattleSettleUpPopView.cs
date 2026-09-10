@@ -13,7 +13,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 关卡结算弹窗。节点通过 UIReference / UIBind 解析。
-    /// WithDrawBtn / DoubleBtn 在按钮处散落 coinitem，停留 0.5 秒后飞向 GameResourceBar 金币图标。
+    /// WithDrawBtn / DoubleBtn 散落 coinitem 飞向 GameResourceBar；点了就关页，飞币自己播完。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleSettleUpPop, UILayer.Popup, ResResourcePaths.BattleSettleUpPop)]
     public sealed class BattleSettleUpPopView : ViewBase<BattleSettleUpPopViewModel>
@@ -65,8 +65,6 @@ namespace App.UI.Popup
         private Button _withdrawBtn;
         private Button _doubleBtn;
         private GameObject _coinPrefab;
-        private Sequence _coinSeq;
-        private int _playToken;
 
         protected override void OnBind()
         {
@@ -107,7 +105,6 @@ namespace App.UI.Popup
         protected override Task OnViewClose()
         {
             KillEntrance();
-            KillCoinFx();
             if (_withdrawBtn != null)
             {
                 _withdrawBtn.onClick.RemoveListener(OnWithdrawClicked);
@@ -484,10 +481,12 @@ namespace App.UI.Popup
 
             var bar = GameResourceView.FindOpen()?.ViewModel;
             var amount = bar != null ? bar.HeldGold : 0;
-            if (amount <= 0 || !TryPlayCoinFly(_withdrawBtn, () => ViewModel.CompleteWithdraw(bar)))
+            if (amount > 0)
             {
-                ViewModel.CompleteWithdraw(bar);
+                TryPlayCoinFly(_withdrawBtn);
             }
+
+            ViewModel.CompleteWithdraw(bar);
         }
 
         private async void OnDoubleClicked()
@@ -511,43 +510,31 @@ namespace App.UI.Popup
                 return;
             }
 
-            if (extra <= 0 || !TryPlayCoinFly(_doubleBtn, () => ViewModel.CompleteDouble(bar, extra)))
+            if (extra > 0)
             {
-                ViewModel.CompleteDouble(bar, extra);
-                ViewModel.SetBusy(false);
+                TryPlayCoinFly(_doubleBtn);
             }
+
+            ViewModel.CompleteDouble(bar, extra);
         }
 
-        private bool TryPlayCoinFly(Button source, System.Action onArrived)
+        private void TryPlayCoinFly(Button source)
         {
             var from = source != null ? source.transform as RectTransform : null;
             var to = FindGoldIcon();
             var parent = ResolveFxParent();
             if (from == null || to == null || parent == null || _coinPrefab == null)
             {
-                return false;
+                return;
             }
 
-            var token = ++_playToken;
-            KillCoinFx(false);
-            _coinSeq = CoinFlyFx.Play(
+            // 挂 Resource 层，不跟结算页生命周期绑定；关页后金币继续飞。
+            CoinFlyFx.Play(
                 _coinPrefab,
                 parent,
                 from.position,
                 to.position,
-                () =>
-                {
-                    if (token != _playToken || ViewModel == null)
-                    {
-                        return;
-                    }
-
-                    _coinSeq = null;
-                    // CompleteWithdraw 会同步 Close，把 ViewModel 置空，必须先解除 busy。
-                    ViewModel.SetBusy(false);
-                    onArrived?.Invoke();
-                });
-            return _coinSeq != null;
+                null);
         }
 
         private RectTransform ResolveFxParent()
@@ -565,21 +552,6 @@ namespace App.UI.Popup
         {
             var view = GameResourceView.FindOpen();
             return view != null ? GameResourceBarBinder.FindGoldIcon(view.transform) : null;
-        }
-
-        private void KillCoinFx(bool bumpToken = true)
-        {
-            if (bumpToken)
-            {
-                _playToken++;
-            }
-
-            if (_coinSeq != null && _coinSeq.IsActive())
-            {
-                _coinSeq.Kill();
-            }
-
-            _coinSeq = null;
         }
 
         private static Transform FindDeep(Transform root, string name)

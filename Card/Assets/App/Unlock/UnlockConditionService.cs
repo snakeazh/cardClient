@@ -19,6 +19,7 @@ namespace App.Unlock
         private readonly Dictionary<int, int> _progress = new Dictionary<int, int>();
         private readonly HashSet<int> _unlockedRelics = new HashSet<int>();
         private readonly HashSet<int> _shopSnapshot = new HashSet<int>();
+        private readonly List<string> _pendingUnlockNames = new List<string>();
         private bool _dirty;
 
         public UnlockConditionService(ISaveService save)
@@ -86,6 +87,17 @@ namespace App.Unlock
                     _shopSnapshot.Add(relic.Id);
                 }
             }
+        }
+
+        public void FlushUnlockToasts()
+        {
+            if (_pendingUnlockNames.Count == 0)
+            {
+                return;
+            }
+
+            Toast.Success($"解锁遗物：{string.Join("、", _pendingUnlockNames)}");
+            _pendingUnlockNames.Clear();
         }
 
         public void Report(ContidionType type, int amount = 1)
@@ -266,7 +278,7 @@ namespace App.Unlock
                 if (toast)
                 {
                     var name = string.IsNullOrEmpty(relic.Name) ? relic.Id.ToString() : relic.Name;
-                    Toast.Success($"解锁遗物：{name}");
+                    _pendingUnlockNames.Add(name);
                 }
             }
         }

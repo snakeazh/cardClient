@@ -14,6 +14,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
     /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
+    /// 消耗品在货架显示 buyUseBtn：购买并立刻使用，不播飞入 MineHor；已购栏显示 useBtn。
     /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售先播飞币再立刻关页，金币同时入账。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
@@ -41,11 +42,15 @@ namespace App.UI.Popup
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
+            ShowBuyUse = new ObservableProperty<bool>(false);
+            ShowUse = new ObservableProperty<bool>(false);
             CanAffordBuy = new ObservableProperty<bool>(true);
             ButtonsEnabled = new ObservableProperty<bool>(true);
             BuyCommand = new RelayCommand(ConfirmBuy, () => ButtonsEnabled.Value);
             VideoBuyCommand = new RelayCommand(ConfirmVideoBuy, () => ButtonsEnabled.Value);
+            BuyUseCommand = new RelayCommand(ConfirmBuyUse, () => ButtonsEnabled.Value);
             SellCommand = new RelayCommand(ConfirmSell, () => ButtonsEnabled.Value);
+            UseCommand = new RelayCommand(ConfirmUse, () => ButtonsEnabled.Value);
             CloseCommand = new RelayCommand(Dismiss, () => ButtonsEnabled.Value);
         }
 
@@ -79,6 +84,12 @@ namespace App.UI.Popup
 
         public ObservableProperty<bool> ShowSell { get; }
 
+        /// <summary>货架消耗品：购买并立刻使用。</summary>
+        public ObservableProperty<bool> ShowBuyUse { get; }
+
+        /// <summary>已购消耗品：直接使用。</summary>
+        public ObservableProperty<bool> ShowUse { get; }
+
         public ObservableProperty<bool> CanAffordBuy { get; }
 
         public ObservableProperty<bool> ButtonsEnabled { get; }
@@ -88,7 +99,12 @@ namespace App.UI.Popup
         /// <summary>看广告免费购买货架遗物。</summary>
         public IRelayCommand VideoBuyCommand { get; }
 
+        /// <summary>购买并立刻使用，不播飞入。</summary>
+        public IRelayCommand BuyUseCommand { get; }
+
         public IRelayCommand SellCommand { get; }
+
+        public IRelayCommand UseCommand { get; }
 
         public IRelayCommand CloseCommand { get; }
 
@@ -126,7 +142,9 @@ namespace App.UI.Popup
             ButtonsEnabled.Value = !busy;
             BuyCommand.RaiseCanExecuteChanged();
             VideoBuyCommand.RaiseCanExecuteChanged();
+            BuyUseCommand.RaiseCanExecuteChanged();
             SellCommand.RaiseCanExecuteChanged();
+            UseCommand.RaiseCanExecuteChanged();
             CloseCommand.RaiseCanExecuteChanged();
         }
 
@@ -222,6 +240,41 @@ namespace App.UI.Popup
             Dismiss();
         }
 
+        public bool TryBeginBuyAndUse()
+        {
+            if (!Buying || RelicId <= 0)
+            {
+                return false;
+            }
+
+            _awaitingBuyFx = true;
+            if (Session.TryBuyAndUseShopRelic(RelicId))
+            {
+                return true;
+            }
+
+            _awaitingBuyFx = false;
+            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
+            return false;
+        }
+
+        public void TryUse()
+        {
+            if (Buying || RelicId <= 0)
+            {
+                return;
+            }
+
+            var ownedBefore = Session.OwnsRelicConfig(RelicId);
+            Session.UseRelic(RelicId);
+            if (ownedBefore && !Session.OwnsRelicConfig(RelicId))
+            {
+                return;
+            }
+
+            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "使用失败" : Session.Hint);
+        }
+
         private void OnSessionChanged()
         {
             if (_awaitingSellFx || _awaitingBuyFx)
@@ -259,6 +312,8 @@ namespace App.UI.Popup
             IconSprite.Value = GetRelicIcon(relic);
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;
+            ShowBuyUse.Value = Buying && Session.CanUseRelicNow(RelicId, requireOwned: false);
+            ShowUse.Value = !Buying && Session.CanUseRelicNow(RelicId, requireOwned: true);
             TipText.Value = DefaultTip;
             var price = RelicId <= 0
                 ? 0
@@ -291,9 +346,19 @@ namespace App.UI.Popup
             // View 拦截 VideoBuyBtn 点击并播飞入；命令仅用于 CanExecute。
         }
 
+        private void ConfirmBuyUse()
+        {
+            // View 拦截 buyUseBtn：购买并立刻使用，不播飞入。
+        }
+
         private void ConfirmSell()
         {
             // View 拦截 SellBtn 点击并播飞币；命令仅用于 CanExecute。
+        }
+
+        private void ConfirmUse()
+        {
+            // View 拦截 useBtn。
         }
 
         private static void ShowFail(string message)

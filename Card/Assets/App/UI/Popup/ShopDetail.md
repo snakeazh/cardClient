@@ -20,8 +20,8 @@
 
 | 模式 | `Setup(id, buying)` | 按钮 |
 |------|---------------------|------|
-| 买入 | `buying: true` | `BuyBtn` + `VideoBuyBtn` |
-| 出售 | `buying: false` | `SellBtn` |
+| 买入 | `buying: true` | `BuyBtn` + `VideoBuyBtn`；当前能用的消耗品再加 `buyUseBtn` |
+| 出售 | `buying: false` | `SellBtn`；当前能用的消耗品再加 `useBtn` |
 
 `Item` 上的 `ItemCard` 关阴影和入场动画，只显示名字、图标、品质。价格文本买/卖共用 `PriceText`（买入走折后价，卖出走 `EffectiveSellPrice`）。
 
@@ -38,8 +38,10 @@
 | `Detail` | 遗物描述 |
 | `Tip` | 默认「点击空白处以关闭」；失败时改提示 |
 | `BuyBtn` / `BuyNum` | 购买与价格 |
+| `buyUseBtn` | 购买并立刻使用；不进 MineHor、不播飞入 |
 | `VideoBuyBtn` | 看广告免费拿（当前为模拟发放） |
 | `SellBtn` / `SellNum` | 出售与卖价 |
+| `useBtn` | 已购消耗品直接使用 |
 
 ---
 
@@ -66,5 +68,9 @@
 3. 卡片飞向新格（约 0.45s），到位后 `RevealIncomingMine` 显现并轻微 punch，再关详情。
 
 飞不起来时直接显现并关闭。购买进行中不因「货架已无该 Id」把详情关掉，避免动画被掐断。飞入期间购买 / 出售 / Mask 锁定。中途关闭会把占位格立刻显现。
+
+点 `buyUseBtn`：扣金后立刻 `UseRelic`，不 `HoldIncomingMine`、不播飞入。遗物已满时仍可买用（到手即消耗）。比牌前才能用的即时消耗品在商店不显示此按钮。
+
+点 `useBtn`：对已购消耗品调用 `UseRelic`，成功后关掉详情。
 
 购买不加飞币。飞入见 [`ItemFlyFx.md`](../Effects/ItemFlyFx.md)。

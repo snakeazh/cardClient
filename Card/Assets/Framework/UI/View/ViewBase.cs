@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using DG.Tweening;
 using Framework.UI.Binding;
 using UnityEngine;
 
@@ -12,14 +13,26 @@ namespace Framework.UI.View
         Task Open(ViewModelBase viewModel, object args);
         Task Hide();
         Task Close();
+        Task PlayPopupEnter();
+        Task PlayPopupExit();
     }
 
     public abstract class ViewBase<TVm> : MonoBehaviour, IView where TVm : ViewModelBase
     {
+        private const float PopupEnterDuration = 0.25f;
+        private const float PopupExitDuration = 0.18f;
+
         [SerializeField] private UIReference _ui;
+
+        [SerializeField]
+        [Tooltip("弹窗动画节点。手动拖入面板 Transform 后，打开/关闭时播放缩放动画；留空则无动画。")]
+        private Transform _popupAnim;
 
         private BindingContext _binding;
         private bool _opened;
+        private Vector3 _popupAnimRestScale = Vector3.one;
+        private bool _popupAnimRestCached;
+        private Tween _popupAnimTween;
 
         public TVm ViewModel { get; private set; }
         public ViewModelBase ViewModelObject => ViewModel;
@@ -56,6 +69,7 @@ namespace Framework.UI.View
             _opened = true;
 
             gameObject.SetActive(true);
+            PreparePopupEnter();
             await OnViewOpen();
             OnBind();
             await ViewModel.Open(args);
@@ -102,6 +116,93 @@ namespace Framework.UI.View
 
         protected virtual Task OnViewClose() => Task.CompletedTask;
 
+        Task IView.PlayPopupEnter()
+        {
+            if (_popupAnim == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            EnsurePopupAnimRest();
+            KillPopupAnim(snapToRest: false);
+            _popupAnim.localScale = Vector3.zero;
+            _popupAnimTween = _popupAnim
+                .DOScale(_popupAnimRestScale, PopupEnterDuration)
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            return WaitTween(_popupAnimTween);
+        }
+
+        Task IView.PlayPopupExit()
+        {
+            if (_popupAnim == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            EnsurePopupAnimRest();
+            KillPopupAnim(snapToRest: false);
+            _popupAnimTween = _popupAnim
+                .DOScale(Vector3.zero, PopupExitDuration)
+                .SetEase(Ease.InBack)
+                .SetUpdate(true)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            return WaitTween(_popupAnimTween);
+        }
+
+        private void PreparePopupEnter()
+        {
+            if (_popupAnim == null)
+            {
+                return;
+            }
+
+            EnsurePopupAnimRest();
+            KillPopupAnim(snapToRest: false);
+            _popupAnim.localScale = Vector3.zero;
+        }
+
+        private void EnsurePopupAnimRest()
+        {
+            if (_popupAnimRestCached || _popupAnim == null)
+            {
+                return;
+            }
+
+            _popupAnimRestScale = _popupAnim.localScale;
+            if (_popupAnimRestScale.sqrMagnitude < 0.0001f)
+            {
+                _popupAnimRestScale = Vector3.one;
+            }
+
+            _popupAnimRestCached = true;
+        }
+
+        private void KillPopupAnim(bool snapToRest)
+        {
+            if (_popupAnimTween != null && _popupAnimTween.IsActive())
+            {
+                _popupAnimTween.Kill();
+            }
+
+            _popupAnimTween = null;
+            if (snapToRest && _popupAnimRestCached && _popupAnim != null)
+            {
+                _popupAnim.localScale = _popupAnimRestScale;
+            }
+        }
+
+        private static async Task WaitTween(Tween tween)
+        {
+            if (tween == null || !tween.IsActive())
+            {
+                return;
+            }
+
+            await tween.AsyncWaitForCompletion();
+        }
+
         private void Unbind()
         {
             _binding?.Dispose();
@@ -110,6 +211,7 @@ namespace Framework.UI.View
 
         protected virtual async void OnDestroy()
         {
+            KillPopupAnim(snapToRest: false);
             if (_opened)
             {
                 await Close();

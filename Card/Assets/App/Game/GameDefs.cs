@@ -332,6 +332,14 @@ namespace App.Game
         }
     }
 
+    /// <summary>已结束关卡的积分记录（闯关结算逐关金币显示用）：Stage=关卡号，Score=该关总积分。</summary>
+    public sealed class StageScoreRecord
+    {
+        public int Stage;
+
+        public int Score;
+    }
+
     /// <summary>整次闯关进度：金币、关卡、遗物、广告次数、关卡机制。</summary>
     public sealed class RunState
     {

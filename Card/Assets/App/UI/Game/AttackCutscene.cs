@@ -32,6 +32,8 @@ namespace App.UI
         private RectTransform _hitRect;
         private Vector2 _hitRectHome;
         private GameObject _deathFx;
+        private Animator _missVictim;
+        private Tween _missHoldTween;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -131,7 +133,7 @@ namespace App.UI
                 }
 
                 PlayClip(enemyAnim, Clip(level, "back"));
-                PlayClip(_playerAnim, DefaultClip);
+                PlayVictimIdle(_playerAnim);
                 onCollisionDone?.Invoke();
             });
             AppendReturnHome(homeAnchored, beat.BackDuration);
@@ -222,7 +224,7 @@ namespace App.UI
                 }
 
                 PlayClip(_playerAnim, Clip(level, "back"));
-                PlayClip(targetAnim, DefaultClip);
+                PlayVictimIdle(targetAnim);
                 onCollisionDone?.Invoke();
             });
             AppendReturnHome(homeAnchored, beat.BackDuration);
@@ -403,7 +405,7 @@ namespace App.UI
 
         /// <summary>
         /// 命中瞬间：先结算扣血（由此得知是否闪避），再播受击或 miss。
-        /// 闪避不击退，躲开动作由 <see cref="MissClip"/> 承担。
+        /// 闪避不击退；受击方自己等 miss 播完再回 default，攻击方仍按 HitHold 后撤。
         /// </summary>
         private void PlayImpact(
             Animator attacker,
@@ -417,11 +419,69 @@ namespace App.UI
         {
             var missed = onHit != null && onHit();
             PlayClip(attacker, Clip(level, "end"));
-            PlayClip(victim, missed ? MissClip : Clip(level, "hit"));
-            if (!missed)
+            if (missed)
             {
-                InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
+                PlayClip(victim, MissClip);
+                HoldMissUntilDone(victim);
+                return;
             }
+
+            PlayClip(victim, Clip(level, "hit"));
+            InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
+        }
+
+        private void HoldMissUntilDone(Animator victim)
+        {
+            ClearMissHold(restoreIdle: false);
+            if (victim == null)
+            {
+                return;
+            }
+
+            var length = ClipLength(victim, MissClip);
+            if (length <= 0f)
+            {
+                PlayClip(victim, DefaultClip);
+                return;
+            }
+
+            _missVictim = victim;
+
+            var token = _playToken;
+            _missHoldTween = DOVirtual.DelayedCall(length, () =>
+            {
+                _missHoldTween = null;
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(victim, DefaultClip);
+                _missVictim = null;
+            }, false);
+            _missHoldTween.SetLink(victim.gameObject);
+        }
+
+        private void PlayVictimIdle(Animator victim)
+        {
+            if (victim == null || victim == _missVictim)
+            {
+                return;
+            }
+
+            PlayClip(victim, DefaultClip);
+        }
+
+        private void ClearMissHold(bool restoreIdle)
+        {
+            _missHoldTween?.Kill();
+            _missHoldTween = null;
+            if (restoreIdle && _missVictim != null)
+            {
+                PlayClip(_missVictim, DefaultClip);
+            }
+
+            _missVictim = null;
         }
 
         private void ClearDeathEffect()
@@ -486,6 +546,7 @@ namespace App.UI
             _playToken++;
             _seq?.Kill();
             _seq = null;
+            ClearMissHold(restoreIdle: true);
             RestoreRoot(_playerHome);
             RestoreIncoming();
             RestoreHitTarget();
@@ -621,6 +682,33 @@ namespace App.UI
         private static string Clip(int level, string phase)
         {
             return $"ani_atk_lv{level:D2}_{phase}";
+        }
+
+        private static float ClipLength(Animator animator, string clipName)
+        {
+            if (animator == null || string.IsNullOrEmpty(clipName))
+            {
+                return 0f;
+            }
+
+            var controller = animator.runtimeAnimatorController;
+            if (controller == null)
+            {
+                return 0f;
+            }
+
+            var clips = controller.animationClips;
+            for (var i = 0; i < clips.Length; i++)
+            {
+                var clip = clips[i];
+                if (clip != null && clip.name == clipName)
+                {
+                    return clip.length;
+                }
+            }
+
+            var info = animator.GetCurrentAnimatorStateInfo(0);
+            return info.IsName(clipName) ? info.length : 0f;
         }
 
         private static void PlayClip(Animator animator, string clipName)

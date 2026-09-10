@@ -613,7 +613,7 @@ namespace App.UI
             ClearPendingEnemyDeathFx();
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
-            Action onHit = () =>
+            Func<bool> onHit = () =>
             {
                 _cameraShake?.PlayByLevel(session.AttackLevel);
                 session.ApplyPendingAttackHits();
@@ -631,6 +631,7 @@ namespace App.UI
                 }
 
                 session.NotifyUi();
+                return missed;
             };
             Action onCollisionDone = PlayPendingEnemyDeathEffects;
             Action onReturned = () => { ViewModel.ShowMask.Value = false; };

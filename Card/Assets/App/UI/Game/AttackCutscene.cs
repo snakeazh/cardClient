@@ -11,6 +11,7 @@ namespace App.UI
     public sealed class AttackCutscene
     {
         private const string DefaultClip = "ani_default";
+        private const string MissClip = "ani_atk_lv03_miss";
         private const int DeathFxSortingOrder = 240;
 
         private Transform _hud;
@@ -69,7 +70,7 @@ namespace App.UI
         public void PlayIncoming(
             int visualSlot,
             int level,
-            Action onHit,
+            Func<bool> onHit,
             Action onCollisionDone,
             Action onReturned,
             Action onDone)
@@ -119,9 +120,7 @@ namespace App.UI
                     return;
                 }
 
-                PlayClip(enemyAnim, Clip(level, "end"));
-                PlayClip(_playerAnim, Clip(level, "hit"));
-                onHit?.Invoke();
+                PlayImpact(enemyAnim, _playerAnim, level, onHit, beat, _playerCardRect, homePos, hitPos);
             });
             _seq.AppendInterval(beat.HitHoldDuration);
             _seq.AppendCallback(() =>
@@ -149,7 +148,6 @@ namespace App.UI
                 onReturned?.Invoke();
             });
             _seq.AppendInterval(tuning.HpTextHoldDuration);
-            InsertHitKnockback(beat, _playerCardRect, homePos, hitPos);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -164,7 +162,7 @@ namespace App.UI
         public void Play(
             int visualSlot,
             int level,
-            Action onHit,
+            Func<bool> onHit,
             Action onCollisionDone,
             Action onReturned,
             Action onDone)
@@ -213,9 +211,7 @@ namespace App.UI
                     return;
                 }
 
-                PlayClip(_playerAnim, Clip(level, "end"));
-                PlayClip(targetAnim, Clip(level, "hit"));
-                onHit?.Invoke();
+                PlayImpact(_playerAnim, targetAnim, level, onHit, beat, _enemyCardRects[visualSlot], homePos, hitPos);
             });
             _seq.AppendInterval(beat.HitHoldDuration);
             _seq.AppendCallback(() =>
@@ -243,7 +239,6 @@ namespace App.UI
                 onReturned?.Invoke();
             });
             _seq.AppendInterval(tuning.HpTextHoldDuration);
-            InsertHitKnockback(beat, _enemyCardRects[visualSlot], homePos, hitPos);
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -401,8 +396,32 @@ namespace App.UI
                 return;
             }
 
+            _hitRect.DOKill();
             _hitRect.anchoredPosition = _hitRectHome;
             _hitRect = null;
+        }
+
+        /// <summary>
+        /// 命中瞬间：先结算扣血（由此得知是否闪避），再播受击或 miss。
+        /// 闪避不击退，躲开动作由 <see cref="MissClip"/> 承担。
+        /// </summary>
+        private void PlayImpact(
+            Animator attacker,
+            Animator victim,
+            int level,
+            Func<bool> onHit,
+            AttackTuningConfig.LevelTuning beat,
+            RectTransform hitRect,
+            Vector3 attackerWorldPos,
+            Vector3 targetWorldPos)
+        {
+            var missed = onHit != null && onHit();
+            PlayClip(attacker, Clip(level, "end"));
+            PlayClip(victim, missed ? MissClip : Clip(level, "hit"));
+            if (!missed)
+            {
+                InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
+            }
         }
 
         private void ClearDeathEffect()
@@ -516,8 +535,7 @@ namespace App.UI
         /// <summary>
         /// 冲撞命中那一刻起受击卡朝攻击方的反方向弹开，再回原位。位移做在卡根节点上，
         /// hit 片段驱动的是它下面的 PlayerRoot，两者不抢同一个 transform。
-        /// 必须在主时间轴 Append 完之后再调用：Append 是接在序列当前总时长的末尾，
-        /// 先 Insert 会把总时长撑长，后面 Append 的冲撞位移就被推到击退之后了。
+        /// 在命中回调里启动，不插入主时间轴，避免闪避时还被击退，也不改攻击序列时长。
         /// </summary>
         private void InsertHitKnockback(
             AttackTuningConfig.LevelTuning beat,
@@ -530,19 +548,17 @@ namespace App.UI
                 return;
             }
 
-            var hitTime = beat.StartDuration + beat.MoveDuration;
-
+            RestoreHitTarget();
             _hitRect = hitRect;
             _hitRectHome = hitRect.anchoredPosition;
 
             var knockDir = KnockbackDir(hitRect, targetWorldPos - attackerWorldPos);
             var knockAnchored = KnockbackPoint(_hitRectHome, knockDir, beat.HitKnockbackDistance);
-            _seq.Insert(
-                hitTime,
-                hitRect.DOAnchorPos(knockAnchored, beat.HitKnockbackDuration).SetEase(Ease.OutQuad));
-            _seq.Insert(
-                hitTime + beat.HitKnockbackDuration,
-                hitRect.DOAnchorPos(_hitRectHome, beat.HitRecoverDuration).SetEase(Ease.OutQuad));
+            DOTween.Sequence()
+                .Append(hitRect.DOAnchorPos(knockAnchored, beat.HitKnockbackDuration).SetEase(Ease.OutQuad))
+                .Append(hitRect.DOAnchorPos(_hitRectHome, beat.HitRecoverDuration).SetEase(Ease.OutQuad))
+                .SetLink(hitRect.gameObject)
+                .SetTarget(hitRect);
         }
 
         /// <summary>攻击方指向受击方的世界方向换算到受击卡父节点的局部方向。</summary>

@@ -21,19 +21,22 @@ namespace App.UI.Popup
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
     public sealed class IllustratedBookPopView : ViewBase<IllustratedBookPopViewModel>
     {
-        // 怪物页分区节点名：Boss 进 UltimateGrid（横幅 TitleBg），Normal 进 RareGrid；
-        // NormalBanner/NormalGrid 已在预制体隐藏，代码不再触碰（怪物页自己的同名节点）
-        private const string UltimateBannerName = "TitleBg";
+        // 怪物页按 MonsterType 三分（Banner+Grid 成对，MonsterSCView/Content 下 VLG 竖排）：
+        // Boss→UltimateBg/UltimateGrid、精英→EliteBanner/EliteGrid、普通→NormalBanner/NormalGrid；
+        // Normal 两个名字与遗物页分区同名，但 Fill 在各自 Content 下 Find，互不影响
+        private const string UltimateBannerName = "UltimateBg";
         private const string UltimateGridName = "UltimateGrid";
-        private const string RareBannerName = "RareBanner";
-        private const string RareGridName = "RareGrid";
+        private const string EliteBannerName = "EliteBanner";
+        private const string EliteGridName = "EliteGrid";
 
         // 遗物页品质分区节点名（RelicSCView/Content 下 Banner+Grid 成对）：
-        // 传说→LegendGrid、史诗→EpicGrid、稀有→RareGrid、普通→NormalGrid；Rare 与怪物页同名同值共用
+        // 传说→LegendGrid、史诗→EpicGrid、稀有→RareGrid、普通→NormalGrid
         private const string LegendBannerName = "LegendBanner";
         private const string LegendGridName = "LegendGrid";
         private const string EpicBannerName = "EpicBanner";
         private const string EpicGridName = "EpicGrid";
+        private const string RareBannerName = "RareBanner";
+        private const string RareGridName = "RareGrid";
         private const string NormalBannerName = "NormalBanner";
         private const string NormalGridName = "NormalGrid";
 
@@ -282,8 +285,8 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// 怪物页按 MonsterType 分两区（同天赋页格式：横幅 + Grid 交替，Content 由
-        /// VLayout+ContentSizeFitter 自适应高度）：Boss 进 UltimateGrid，Normal 进 RareGrid；
+        /// 怪物页按 MonsterType 分三区（同遗物页格式：横幅 + Grid 交替，Content 由
+        /// VLG+ContentSizeFitter 自适应高度）：Boss / 精英 / 普通；
         /// 对应类型没有怪物时连横幅一起隐藏。
         /// </summary>
         private void FillMonsterList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
@@ -296,21 +299,27 @@ namespace App.UI.Popup
             }
 
             var bosses = new List<IllustratedBookEntry>();
+            var elites = new List<IllustratedBookEntry>();
             var normals = new List<IllustratedBookEntry>();
             for (var i = 0; i < entries.Count; i++)
             {
-                if (entries[i].MonsterType == MonsterType.Boss)
+                switch (entries[i].MonsterType)
                 {
-                    bosses.Add(entries[i]);
-                }
-                else
-                {
-                    normals.Add(entries[i]);
+                    case MonsterType.Boss:
+                        bosses.Add(entries[i]);
+                        break;
+                    case MonsterType.Elite:
+                        elites.Add(entries[i]);
+                        break;
+                    default:
+                        normals.Add(entries[i]);
+                        break;
                 }
             }
 
             FillMonsterSection(content.Find(UltimateBannerName), content.Find(UltimateGridName), bosses);
-            FillMonsterSection(content.Find(RareBannerName), content.Find(RareGridName), normals);
+            FillMonsterSection(content.Find(EliteBannerName), content.Find(EliteGridName), elites);
+            FillMonsterSection(content.Find(NormalBannerName), content.Find(NormalGridName), normals);
         }
 
         /// <summary>对应类型没有怪物时连横幅一起隐藏；格子为 PlayerItem 敌人形态（enemycard 底图走

@@ -71,6 +71,10 @@ namespace App.Game
         private HandScore _pendingEnemyScore;
         /// <summary>跨手记录玩家弃/加/看/闷，供 AI 读线。</summary>
         public readonly PlayerHistory History = new PlayerHistory();
+        /// <summary>本章节已结束关卡的积分记录（重开本关会多一条同关号记录），闯关结算逐关金币显示用。</summary>
+        private readonly List<StageScoreRecord> _stageScores = new List<StageScoreRecord>();
+        /// <summary>当前章节是否已开过关（StartStage 置位，StartNewRun 复位）：0 分关也要落账占行。</summary>
+        private bool _stageStarted;
 
         public GameSession() : this(new Random())
         {
@@ -124,6 +128,8 @@ namespace App.Game
         /// <summary>本关直接击杀（编辑器外挂）的旁路伤害，按行与 <see cref="StageRoundScores"/> 对应。</summary>
         public IReadOnlyList<int> StageDirectKillDamages =>
             ScoreSvc()?.StageDirectKillDamages ?? Array.Empty<int>();
+        /// <summary>本章节已结束关卡的积分记录；当前未收尾关的积分另见 <see cref="Score"/>.Stage（通关最后一关不走 StartStage）。</summary>
+        public IReadOnlyList<StageScoreRecord> StageScores => _stageScores;
         public int PendingAttackDamage { get; private set; }
         /// <summary>最近一次玩家伤害结算的遗物上下文，HUD 装备加成动画复用同一份掷骰。</summary>
         public RelicCombatContext LastRelicContext { get; private set; }
@@ -322,6 +328,8 @@ namespace App.Game
             Run.BonusReplaceCharges = 0;
             Run.ClearRunProgress();
             Run.Log.Clear();
+            _stageScores.Clear();
+            _stageStarted = false;
             var hero = ResolveHero();
             Run.HeroId = hero != null ? hero.Id : 0;
             var baseGold = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.PlayerInitialGoldNum) : 0;
@@ -2966,8 +2974,19 @@ namespace App.Game
             PickLevelEntries();
             if (AppServices.IsReady)
             {
+                // 此刻 Run.Stage 仍是刚打完那关的编号（ApplyLevelEnemies 在后面才同步成新关号），
+                // 且积分尚未被 BeginStage 清掉——正好落账一条已结束关卡记录。
+                // 0 分关（如直杀通关、纯挨打）也要占行：只要求"这关真的开过"（_stageStarted），
+                // 章节首关开打前不会误记（StartNewRun 已复位标记）。
+                if (_stageStarted)
+                {
+                    _stageScores.Add(new StageScoreRecord { Stage = Run.Stage, Score = Score.Stage });
+                }
+
                 AppServices.Resolve<IScoreService>().BeginStage();
             }
+
+            _stageStarted = true;
 
             ApplyHeroToPlayer(inheritPlayerHp);
             var enemyCount = ApplyLevelEnemies();

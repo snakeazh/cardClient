@@ -46,7 +46,14 @@ namespace App.Game
         private SeatState _pendingOpenTarget;
         private bool _pendingOpenerWins;
         private SeatState _pendingAttackTarget;
-        private bool _attackHitsApplied;
+        private bool _mainHitsApplied;
+        private bool _extraHitsApplied;
+        private bool _extraAttackPending;
+        private bool _playingExtraAttack;
+        private readonly bool[] _lastHitApplied = new bool[MaxEnemies];
+        private readonly bool[] _lastHitMissed = new bool[MaxEnemies];
+        private readonly int[] _lastHitDealt = new int[MaxEnemies];
+        private readonly bool[] _lastHitKilled = new bool[MaxEnemies];
         private readonly List<SeatState> _compareQueue = new List<SeatState>();
         private int _compareCursor;
         private int _roundDamageDealt;
@@ -242,10 +249,12 @@ namespace App.Game
 
         public int CenterStandVisualSlot => FindVisualSlot(CenterStandEnemy);
         public int AttackDamage { get; private set; }
-        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于 <see cref="AttackDamage"/>。闪避成功时为 0。</summary>
+        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于主目标本波实扣。闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
-        /// <summary>本击因闪避未扣血，HUD 飘字显示 MISS。</summary>
+        /// <summary>主目标本波因闪避未扣血，HUD 飘字显示 MISS。旁路溅射闪避不改这个值。</summary>
         public bool LastAttackMissed { get; private set; }
+        /// <summary>本轮已掷中追击，两波攻击演出都加速，等第一波结束后再打第二轮。</summary>
+        public bool ExtraAttackPending => _extraAttackPending;
         /// <summary>攻击演出强度：1 低 / 2 中 / 3 高。</summary>
         public int AttackLevel { get; private set; } = 1;
         public bool AttackPlaying => _pendingAttackTarget != null;
@@ -1021,15 +1030,75 @@ namespace App.Game
         /// <summary>
         /// 受击演出开始时扣血。不刷新 UI，调用方先按实际 Hp 登记致死溶解，再 <see cref="NotifyUi"/>。
         /// 没有演出时由 <see cref="CompletePlayerAttack"/> 兜底。
+        /// 连击第二轮走同一入口，溅射/AOE 按当前存活重新计算。
         /// </summary>
         public void ApplyPendingAttackHits()
         {
-            if (_attackHitsApplied || Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
+            if (Phase != GamePhase.WaitingAttack || _pendingAttackTarget == null)
             {
                 return;
             }
 
-            ResolvePendingAttackHits(_pendingAttackTarget);
+            if (_playingExtraAttack)
+            {
+                if (_extraHitsApplied)
+                {
+                    return;
+                }
+
+                ResolveAttackWave(_pendingAttackTarget, allowExtra: false);
+                return;
+            }
+
+            if (_mainHitsApplied)
+            {
+                return;
+            }
+
+            ResolveAttackWave(_pendingAttackTarget, allowExtra: true);
+        }
+
+        public bool LastAttackHitApplied(int visualSlot)
+        {
+            return SlotInRange(visualSlot) && _lastHitApplied[visualSlot];
+        }
+
+        public bool LastAttackHitMissed(int visualSlot)
+        {
+            return SlotInRange(visualSlot) && _lastHitMissed[visualSlot];
+        }
+
+        public int LastAttackHitDealt(int visualSlot)
+        {
+            return SlotInRange(visualSlot) ? _lastHitDealt[visualSlot] : 0;
+        }
+
+        public bool LastAttackHitKilled(int visualSlot)
+        {
+            return SlotInRange(visualSlot) && _lastHitKilled[visualSlot];
+        }
+
+        /// <summary>第一轮退回后调用。目标已死或玩家已死则取消追击。</summary>
+        public bool TryBeginExtraAttack()
+        {
+            if (!_extraAttackPending)
+            {
+                return false;
+            }
+
+            _extraAttackPending = false;
+            var target = _pendingAttackTarget;
+            if (target == null || !target.Alive || Player == null || Player.Hp <= 0)
+            {
+                return false;
+            }
+
+            _playingExtraAttack = true;
+            LastAttackMissed = false;
+            TakenDamage = Math.Max(0, PendingAttackDamage);
+            Hint = $"追击 {target.Name}！";
+            Notify();
+            return true;
         }
 
         public void NotifyUi() => Notify();
@@ -1061,7 +1130,12 @@ namespace App.Game
             AttackDamage = Math.Max(0, PendingAttackDamage);
             TakenDamage = AttackDamage;
             LastAttackMissed = false;
-            _attackHitsApplied = false;
+            ResetAttackWaves();
+            if (ShouldRollExtraAttack())
+            {
+                _extraAttackPending = true;
+                Log("追击：额外攻击 1 次");
+            }
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -1133,12 +1207,19 @@ namespace App.Game
         private void FinishPlayerAttack(SeatState target)
         {
             IncomingAttack = false;
-            if (!_attackHitsApplied)
+            if (!_mainHitsApplied)
             {
-                ResolvePendingAttackHits(target);
+                ResolveAttackWave(target, allowExtra: true);
             }
 
-            _attackHitsApplied = false;
+            if ((_extraAttackPending || (_playingExtraAttack && !_extraHitsApplied)) &&
+                target != null && target.Alive && Player != null && Player.Hp > 0)
+            {
+                ResolveAttackWave(target, allowExtra: false);
+            }
+
+            ResetAttackWaves();
+            Run.SplashThisRound = false;
             PendingAttackDamage = 0;
 
             if (!_sequentialCompare)
@@ -1157,11 +1238,21 @@ namespace App.Game
             RunNextCompare();
         }
 
-        private void ResolvePendingAttackHits(SeatState target)
+        private void ResolveAttackWave(SeatState target, bool allowExtra)
         {
-            _attackHitsApplied = true;
+            if (allowExtra)
+            {
+                _mainHitsApplied = true;
+            }
+            else
+            {
+                _extraHitsApplied = true;
+                _playingExtraAttack = true;
+            }
+
+            ClearLastHitPulse();
             var damage = Math.Max(1, PendingAttackDamage);
-            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage);
+            var dealt = ApplyPlayerAttackHits(target, damage, out var scoreDamage, allowExtra);
             if (target != null && !target.IsPlayer)
             {
                 _roundDamageDealt += scoreDamage;
@@ -1169,7 +1260,7 @@ namespace App.Game
             }
         }
 
-        private int ApplyPlayerAttackHits(SeatState target, int damage, out int scoreDamage)
+        private int ApplyPlayerAttackHits(SeatState target, int damage, out int scoreDamage, bool allowExtra)
         {
             scoreDamage = 0;
             if (target == null)
@@ -1198,8 +1289,6 @@ namespace App.Game
                     dealt += ApplyDamage(Enemies[i], aoeDmg, Enemies[i] == target, Player);
                     scoreDamage += aoeDmg;
                 }
-
-                Run.SplashThisRound = false;
             }
             else
             {
@@ -1221,16 +1310,13 @@ namespace App.Game
                         scoreDamage += splash;
                     }
                 }
-
-                Run.SplashThisRound = false;
             }
 
             dealt += ApplyCriticalAoe(target);
-            if (HeroMechanics.Roll(Run, MechanismType.ExtraAttackOneTime, _rng))
+            if (allowExtra && _extraAttackPending &&
+                (target == null || !target.Alive || Player == null || Player.Hp <= 0))
             {
-                dealt += ApplyDamage(target, damage, true, Player);
-                scoreDamage += damage;
-                Log("追击：额外攻击 1 次");
+                _extraAttackPending = false;
             }
 
             TryApplyStrawHeal(dealt);
@@ -1251,7 +1337,7 @@ namespace App.Game
             AttackDamage = Math.Max(0, PendingAttackDamage);
             TakenDamage = IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
             LastAttackMissed = false;
-            _attackHitsApplied = false;
+            ResetAttackWaves();
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
@@ -2518,6 +2604,12 @@ namespace App.Game
         /// <summary>编辑器外挂：对敌伤害直接斩杀。ApplyDamage 生效。</summary>
         public static bool DebugOneHitKill { get; set; }
 
+        /// <summary>编辑器外挂：打怪必出追击第二轮，不依赖射手概率。</summary>
+        public static bool DebugForceExtraAttack { get; set; }
+
+        /// <summary>编辑器外挂：打怪必闪避（MISS），不依赖灵活身姿。反击不触发，方便看演出。</summary>
+        public static bool DebugForceMiss { get; set; }
+
         public void DebugAddGold(int amount = EditorDebugGoldAmount)
         {
             if (amount <= 0)
@@ -2662,6 +2754,88 @@ namespace App.Game
             Hint = $"[编辑器] 已添加 {relic.Name}";
             Notify();
             return true;
+        }
+
+        /// <summary>编辑器外挂：把指定 <see cref="BossEntryConfig"/> 加进本关词缀，立刻参与闪避等结算。同 Id / 同 Type 不重复。</summary>
+        public bool DebugGrantBossEntry(int entryId)
+        {
+            var entry = BossEntryConfig.Get(entryId);
+            if (entry == null)
+            {
+                Hint = $"[编辑器] 没有关卡词缀 Id={entryId}";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            if (Run.LevelEntryIds.Contains(entryId))
+            {
+                Hint = $"[编辑器] 本关已有 {entry.Name}（{entryId}）";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            for (var i = 0; i < Run.LevelEntryIds.Count; i++)
+            {
+                var owned = BossEntryConfig.Get(Run.LevelEntryIds[i]);
+                if (owned == null || owned.Type != entry.Type)
+                {
+                    continue;
+                }
+
+                Hint = $"[编辑器] 已有同类型词缀 {owned.Name}（{owned.Id}），先移除再加 {entry.Name}";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            Run.LevelEntryIds.Add(entryId);
+            RefreshDebugBossEntryState();
+            Log($"[编辑器] 本关词缀 +{entry.Name}（{entryId}）{entry.Desc}");
+            Hint = $"[编辑器] 已添加词缀 {entry.Name}";
+            Notify();
+            return true;
+        }
+
+        /// <summary>编辑器外挂：移除本关一条词缀。</summary>
+        public bool DebugRemoveBossEntry(int entryId)
+        {
+            if (!Run.LevelEntryIds.Remove(entryId))
+            {
+                Hint = $"[编辑器] 本关没有词缀 Id={entryId}";
+                Log(Hint);
+                Notify();
+                return false;
+            }
+
+            var entry = BossEntryConfig.Get(entryId);
+            var name = entry != null ? entry.Name : entryId.ToString();
+            RefreshDebugBossEntryState();
+            Log($"[编辑器] 本关词缀 -{name}（{entryId}）");
+            Hint = $"[编辑器] 已移除词缀 {name}";
+            Notify();
+            return true;
+        }
+
+        /// <summary>编辑器外挂：清空本关全部词缀。</summary>
+        public void DebugClearBossEntries()
+        {
+            Run.LevelEntryIds.Clear();
+            RefreshDebugBossEntryState();
+            Log("[编辑器] 已清空本关词缀");
+            Hint = "[编辑器] 本关词缀已清空";
+            Notify();
+        }
+
+        private void RefreshDebugBossEntryState()
+        {
+            Run.BossShieldHitsLeft = BossMechanics.ShieldHits(Run);
+            ApplyRelicDisable();
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                RefreshBossRageAttack(Enemies[i]);
+            }
         }
 #endif
 
@@ -3180,6 +3354,7 @@ namespace App.Game
             _pendingAttackTarget = null;
             AttackVisualSlot = -1;
             AttackLevel = 1;
+            ResetAttackWaves();
             Run.PeekSuitUsed = false;
             Run.PeekSuitIndex = -1;
             Run.PeekedSuit = null;
@@ -4767,16 +4942,19 @@ namespace App.Game
             {
                 if (TryBossTimidImmune(target))
                 {
+                    RecordEnemyHit(target, missed: false, dealt: 0, killed: false, main);
                     return 0;
                 }
 
                 if (TryMonsterEvade(target, attacker))
                 {
+                    RecordEnemyHit(target, missed: true, dealt: 0, killed: false, main);
                     return 0;
                 }
 
                 if (TryBossShieldImmune(target))
                 {
+                    RecordEnemyHit(target, missed: false, dealt: 0, killed: false, main);
                     return 0;
                 }
             }
@@ -4871,6 +5049,7 @@ namespace App.Game
                     ApplyThornShellSelfDamage(lost);
                 }
 
+                RecordEnemyHit(target, missed: false, dealt: lost, killed: false, main);
                 return lost;
             }
 
@@ -4921,6 +5100,7 @@ namespace App.Game
                 ApplyThornShellSelfDamage(dealt);
             }
 
+            RecordEnemyHit(target, missed: false, dealt: dealt, killed: target.Hp <= 0, main);
             return dealt;
         }
 
@@ -5674,6 +5854,56 @@ namespace App.Game
             }
 
             return -1;
+        }
+
+        private static bool SlotInRange(int visualSlot)
+        {
+            return visualSlot >= 0 && visualSlot < MaxEnemies;
+        }
+
+        private void ResetAttackWaves()
+        {
+            _mainHitsApplied = false;
+            _extraHitsApplied = false;
+            _extraAttackPending = false;
+            _playingExtraAttack = false;
+            ClearLastHitPulse();
+        }
+
+        private void ClearLastHitPulse()
+        {
+            for (var i = 0; i < MaxEnemies; i++)
+            {
+                _lastHitApplied[i] = false;
+                _lastHitMissed[i] = false;
+                _lastHitDealt[i] = 0;
+                _lastHitKilled[i] = false;
+            }
+        }
+
+        private void RecordEnemyHit(SeatState target, bool missed, int dealt, bool killed, bool main)
+        {
+            if (target == null || target.IsPlayer)
+            {
+                return;
+            }
+
+            if (main)
+            {
+                LastAttackMissed = missed;
+                TakenDamage = missed ? 0 : dealt;
+            }
+
+            var slot = FindVisualSlot(target);
+            if (!SlotInRange(slot))
+            {
+                return;
+            }
+
+            _lastHitApplied[slot] = true;
+            _lastHitMissed[slot] = missed;
+            _lastHitDealt[slot] = dealt;
+            _lastHitKilled[slot] = killed;
         }
 
         private SeatState BestRemainingAi()
@@ -6601,8 +6831,27 @@ namespace App.Game
             return true;
         }
 
+        private bool ShouldRollExtraAttack()
+        {
+#if UNITY_EDITOR
+            if (DebugForceExtraAttack)
+            {
+                return true;
+            }
+#endif
+            return HeroMechanics.Roll(Run, MechanismType.ExtraAttackOneTime, _rng);
+        }
+
         private bool TryMonsterEvade(SeatState target, SeatState attacker)
         {
+#if UNITY_EDITOR
+            if (DebugForceMiss && target != null)
+            {
+                Log($"[编辑器] 强制MISS：{target.Name} 闪避攻击");
+                target.Banner = "闪避";
+                return true;
+            }
+#endif
             var chance = BossMechanics.MonsterEvadeChance(Run);
             if (chance <= 0f || target == null || _rng.NextDouble() >= chance)
             {
@@ -6611,8 +6860,6 @@ namespace App.Game
 
             Log($"灵活身姿：{target.Name} 闪避攻击");
             target.Banner = "闪避";
-            LastAttackMissed = true;
-            TakenDamage = 0;
             var factor = BossMechanics.MonsterEvadeCounterFactor(Run);
             var counter = (int)Math.Round(target.Attack * factor);
             if (counter > 0 && Player != null && Player.Alive)

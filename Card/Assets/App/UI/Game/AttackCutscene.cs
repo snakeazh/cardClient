@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using App.Game;
 using DG.Tweening;
 using UnityEngine;
@@ -29,11 +30,15 @@ namespace App.UI
         private Vector2 _incomingHomeAnchored;
         private RectTransform _playerCardRect;
         private readonly RectTransform[] _enemyCardRects = new RectTransform[3];
-        private RectTransform _hitRect;
-        private Vector2 _hitRectHome;
+        private readonly List<RectTransform> _knockRects = new List<RectTransform>(3);
+        private readonly List<Vector2> _knockHomes = new List<Vector2>(3);
         private GameObject _deathFx;
-        private Animator _missVictim;
-        private Tween _missHoldTween;
+        private readonly List<Animator> _missVictims = new List<Animator>(3);
+        private readonly List<Tween> _missHoldTweens = new List<Tween>(3);
+        private float _playTimeScale = 1f;
+        private int _impactLevel = 1;
+        private AttackTuningConfig.LevelTuning _impactBeat;
+        private Vector3 _impactAttackerPos;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -91,6 +96,7 @@ namespace App.UI
             }
 
             var token = ++_playToken;
+            BeginPlay(1f);
             var tuning = AttackTuningConfig.Instance;
             var beat = tuning.Level(level);
             _incomingRoot = enemyRoot;
@@ -104,6 +110,7 @@ namespace App.UI
             var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
+            _seq.timeScale = _playTimeScale;
             AppendAimAndRetreat(enemyAnim, level, beat, homeAnchored, hitAnchored, invertAim: true);
             _seq.AppendCallback(() =>
             {
@@ -157,6 +164,7 @@ namespace App.UI
                     return;
                 }
 
+                SetAllAnimSpeed(1f);
                 onDone?.Invoke();
             });
         }
@@ -167,7 +175,8 @@ namespace App.UI
             Func<bool> onHit,
             Action onCollisionDone,
             Action onReturned,
-            Action onDone)
+            Action onDone,
+            float timeScale = 1f)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -182,6 +191,7 @@ namespace App.UI
             }
 
             var token = ++_playToken;
+            BeginPlay(timeScale);
             var tuning = AttackTuningConfig.Instance;
             var beat = tuning.Level(level);
             var targetAnim = _enemyAnims[visualSlot];
@@ -195,6 +205,7 @@ namespace App.UI
             var hitAnchored = WorldToHudAnchored(hitPos);
 
             _seq = DOTween.Sequence();
+            _seq.timeScale = _playTimeScale;
             AppendAimAndRetreat(_playerAnim, level, beat, homeAnchored, hitAnchored, invertAim: false);
             _seq.AppendCallback(() =>
             {
@@ -225,6 +236,13 @@ namespace App.UI
 
                 PlayClip(_playerAnim, Clip(level, "back"));
                 PlayVictimIdle(targetAnim);
+                for (var i = 0; i < _enemyAnims.Length; i++)
+                {
+                    if (i != visualSlot)
+                    {
+                        PlayVictimIdle(_enemyAnims[i]);
+                    }
+                }
                 onCollisionDone?.Invoke();
             });
             AppendReturnHome(homeAnchored, beat.BackDuration);
@@ -248,8 +266,30 @@ namespace App.UI
                     return;
                 }
 
+                SetAllAnimSpeed(1f);
                 onDone?.Invoke();
             });
+        }
+
+        /// <summary>主目标之外的溅射/AOE：按本波结算播受击或 miss，不改攻击方时间轴。</summary>
+        public void ReactSlot(int visualSlot, bool missed)
+        {
+            if (visualSlot < 0 || visualSlot >= _enemyAnims.Length || _impactBeat == null)
+            {
+                return;
+            }
+
+            var victim = _enemyAnims[visualSlot];
+            if (missed)
+            {
+                PlayClip(victim, MissClip);
+                HoldMissUntilDone(victim);
+                return;
+            }
+
+            PlayClip(victim, Clip(_impactLevel, "hit"));
+            var hitPos = _enemyRoots[visualSlot] != null ? _enemyRoots[visualSlot].position : Vector3.zero;
+            InsertHitKnockback(_impactBeat, _enemyCardRects[visualSlot], _impactAttackerPos, hitPos);
         }
 
         /// <summary>
@@ -393,14 +433,20 @@ namespace App.UI
         /// <summary>受击卡回到原位。位移做在卡根节点上，不动父子关系。</summary>
         private void RestoreHitTarget()
         {
-            if (_hitRect == null)
+            for (var i = 0; i < _knockRects.Count; i++)
             {
-                return;
+                var rect = _knockRects[i];
+                if (rect == null)
+                {
+                    continue;
+                }
+
+                rect.DOKill();
+                rect.anchoredPosition = _knockHomes[i];
             }
 
-            _hitRect.DOKill();
-            _hitRect.anchoredPosition = _hitRectHome;
-            _hitRect = null;
+            _knockRects.Clear();
+            _knockHomes.Clear();
         }
 
         /// <summary>
@@ -417,6 +463,9 @@ namespace App.UI
             Vector3 attackerWorldPos,
             Vector3 targetWorldPos)
         {
+            _impactLevel = level;
+            _impactBeat = beat;
+            _impactAttackerPos = attackerWorldPos;
             var missed = onHit != null && onHit();
             PlayClip(attacker, Clip(level, "end"));
             if (missed)
@@ -432,7 +481,6 @@ namespace App.UI
 
         private void HoldMissUntilDone(Animator victim)
         {
-            ClearMissHold(restoreIdle: false);
             if (victim == null)
             {
                 return;
@@ -445,26 +493,30 @@ namespace App.UI
                 return;
             }
 
-            _missVictim = victim;
+            if (!_missVictims.Contains(victim))
+            {
+                _missVictims.Add(victim);
+            }
 
             var token = _playToken;
-            _missHoldTween = DOVirtual.DelayedCall(length, () =>
+            var tween = DOVirtual.DelayedCall(length, () =>
             {
-                _missHoldTween = null;
                 if (token != _playToken)
                 {
                     return;
                 }
 
                 PlayClip(victim, DefaultClip);
-                _missVictim = null;
+                _missVictims.Remove(victim);
             }, false);
-            _missHoldTween.SetLink(victim.gameObject);
+            tween.timeScale = _playTimeScale;
+            tween.SetLink(victim.gameObject);
+            _missHoldTweens.Add(tween);
         }
 
         private void PlayVictimIdle(Animator victim)
         {
-            if (victim == null || victim == _missVictim)
+            if (victim == null || _missVictims.Contains(victim))
             {
                 return;
             }
@@ -474,14 +526,21 @@ namespace App.UI
 
         private void ClearMissHold(bool restoreIdle)
         {
-            _missHoldTween?.Kill();
-            _missHoldTween = null;
-            if (restoreIdle && _missVictim != null)
+            for (var i = 0; i < _missHoldTweens.Count; i++)
             {
-                PlayClip(_missVictim, DefaultClip);
+                _missHoldTweens[i]?.Kill();
             }
 
-            _missVictim = null;
+            _missHoldTweens.Clear();
+            if (restoreIdle)
+            {
+                for (var i = 0; i < _missVictims.Count; i++)
+                {
+                    PlayClip(_missVictims[i], DefaultClip);
+                }
+            }
+
+            _missVictims.Clear();
         }
 
         private void ClearDeathEffect()
@@ -551,6 +610,31 @@ namespace App.UI
             RestoreIncoming();
             RestoreHitTarget();
             ClearDeathEffect();
+            SetAllAnimSpeed(1f);
+            _playTimeScale = 1f;
+        }
+
+        private void BeginPlay(float timeScale)
+        {
+            _playTimeScale = Mathf.Max(0.01f, timeScale);
+            SetAllAnimSpeed(_playTimeScale);
+        }
+
+        private void SetAllAnimSpeed(float speed)
+        {
+            SetAnimSpeed(_playerAnim, speed);
+            for (var i = 0; i < _enemyAnims.Length; i++)
+            {
+                SetAnimSpeed(_enemyAnims[i], speed);
+            }
+        }
+
+        private static void SetAnimSpeed(Animator animator, float speed)
+        {
+            if (animator != null)
+            {
+                animator.speed = speed;
+            }
         }
 
         private void DestroyFlight()
@@ -604,22 +688,33 @@ namespace App.UI
             Vector3 attackerWorldPos,
             Vector3 targetWorldPos)
         {
-            if (hitRect == null)
+            if (hitRect == null || beat == null)
             {
                 return;
             }
 
-            RestoreHitTarget();
-            _hitRect = hitRect;
-            _hitRectHome = hitRect.anchoredPosition;
+            var home = hitRect.anchoredPosition;
+            var existing = _knockRects.IndexOf(hitRect);
+            if (existing >= 0)
+            {
+                hitRect.DOKill();
+                home = _knockHomes[existing];
+                hitRect.anchoredPosition = home;
+            }
+            else
+            {
+                _knockRects.Add(hitRect);
+                _knockHomes.Add(home);
+            }
 
             var knockDir = KnockbackDir(hitRect, targetWorldPos - attackerWorldPos);
-            var knockAnchored = KnockbackPoint(_hitRectHome, knockDir, beat.HitKnockbackDistance);
-            DOTween.Sequence()
+            var knockAnchored = KnockbackPoint(home, knockDir, beat.HitKnockbackDistance);
+            var seq = DOTween.Sequence()
                 .Append(hitRect.DOAnchorPos(knockAnchored, beat.HitKnockbackDuration).SetEase(Ease.OutQuad))
-                .Append(hitRect.DOAnchorPos(_hitRectHome, beat.HitRecoverDuration).SetEase(Ease.OutQuad))
+                .Append(hitRect.DOAnchorPos(home, beat.HitRecoverDuration).SetEase(Ease.OutQuad))
                 .SetLink(hitRect.gameObject)
                 .SetTarget(hitRect);
+            seq.timeScale = _playTimeScale;
         }
 
         /// <summary>攻击方指向受击方的世界方向换算到受击卡父节点的局部方向。</summary>

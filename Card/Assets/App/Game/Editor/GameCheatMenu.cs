@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
 using App.Game;
@@ -14,11 +16,19 @@ namespace App.Game.Editor
     {
         private const string GodMenuPath = "Debug/外挂/无敌模式";
         private const string OneHitMenuPath = "Debug/外挂/一击必杀";
+        private const string ExtraAttackMenuPath = "Debug/外挂/强制连击";
+        private const string ForceMissMenuPath = "Debug/外挂/强制MISS";
 
         [MenuItem("Debug/外挂/添加指定圣物", false, 16)]
         public static void OpenGrantRelic()
         {
             GrantRelicCheatWindow.Open();
+        }
+
+        [MenuItem("Debug/外挂/指定关卡词缀", false, 17)]
+        public static void OpenGrantBossEntry()
+        {
+            GrantBossEntryCheatWindow.Open();
         }
 
         [MenuItem("Debug/外挂/金币 +99999", false, 10)]
@@ -48,7 +58,7 @@ namespace App.Game.Editor
                 return;
             }
 
-            var id = ids[Random.Range(0, ids.Count)];
+            var id = ids[UnityEngine.Random.Range(0, ids.Count)];
             var result = talent.Add(id);
             talent.Save();
             Debug.Log($"[外挂] 获得天赋 {id}，等级 {result.PreviousLevel} -> {result.Current.Level}");
@@ -112,6 +122,22 @@ namespace App.Game.Editor
             GameSession.DebugOneHitKill = !GameSession.DebugOneHitKill;
             Menu.SetChecked(OneHitMenuPath, GameSession.DebugOneHitKill);
             Debug.Log($"[外挂] 一击必杀 {(GameSession.DebugOneHitKill ? "开启" : "关闭")}");
+        }
+
+        [MenuItem(ExtraAttackMenuPath, false, 22)]
+        public static void ToggleForceExtraAttack()
+        {
+            GameSession.DebugForceExtraAttack = !GameSession.DebugForceExtraAttack;
+            Menu.SetChecked(ExtraAttackMenuPath, GameSession.DebugForceExtraAttack);
+            Debug.Log($"[外挂] 强制连击 {(GameSession.DebugForceExtraAttack ? "开启" : "关闭")}");
+        }
+
+        [MenuItem(ForceMissMenuPath, false, 23)]
+        public static void ToggleForceMiss()
+        {
+            GameSession.DebugForceMiss = !GameSession.DebugForceMiss;
+            Menu.SetChecked(ForceMissMenuPath, GameSession.DebugForceMiss);
+            Debug.Log($"[外挂] 强制MISS {(GameSession.DebugForceMiss ? "开启" : "关闭")}");
         }
 
         internal static bool TryGetSession(out GameSession session)
@@ -219,6 +245,192 @@ namespace App.Game.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+    }
+
+    /// <summary>局内测试：指定本关 BossEntryConfig（敌人闪避等词缀），立即写入 LevelEntryIds。</summary>
+    public sealed class GrantBossEntryCheatWindow : EditorWindow
+    {
+        private int _entryId = 104;
+        private string _filter = string.Empty;
+        private Vector2 _catalogScroll;
+        private Vector2 _ownedScroll;
+
+        public static void Open()
+        {
+            var window = GetWindow<GrantBossEntryCheatWindow>("关卡词缀");
+            window.minSize = new Vector2(420f, 360f);
+            window.Show();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Play 对局中添加/移除本关词缀。闪避等即时生效；窃取/手牌压缩等要等下一手。");
+            EditorGUILayout.Space(4f);
+            _entryId = EditorGUILayout.IntField("词缀 Id", _entryId);
+
+            BossEntryConfig entry = null;
+            if (Application.isPlaying)
+            {
+                entry = BossEntryConfig.Get(_entryId);
+            }
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.TextField("名称", entry != null ? entry.Name : "—");
+                EditorGUILayout.TextField("效果", entry != null ? entry.Desc : "—");
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(!Application.isPlaying || entry == null))
+            {
+                if (GUILayout.Button("添加到本关", GUILayout.Height(28f)))
+                {
+                    Grant(_entryId);
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(!Application.isPlaying || entry == null))
+            {
+                if (GUILayout.Button("从本关移除", GUILayout.Height(28f)))
+                {
+                    Remove(_entryId);
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (!Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("需要在 Play 模式且已进入对局。", MessageType.Info);
+                return;
+            }
+
+            DrawOwned();
+            EditorGUILayout.Space(8f);
+            DrawCatalog();
+        }
+
+        private void Grant(int entryId)
+        {
+            if (!GameCheatMenu.TryGetSession(out var session))
+            {
+                return;
+            }
+
+            session.DebugGrantBossEntry(entryId);
+            Repaint();
+        }
+
+        private void Remove(int entryId)
+        {
+            if (!GameCheatMenu.TryGetSession(out var session))
+            {
+                return;
+            }
+
+            session.DebugRemoveBossEntry(entryId);
+            Repaint();
+        }
+
+        private void DrawOwned()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var session = AppServices.Resolve<GameSession>();
+            var ids = session?.Run?.LevelEntryIds;
+            EditorGUILayout.LabelField($"本关词缀 {(ids != null ? ids.Count : 0)} 条");
+            if (ids == null || ids.Count == 0)
+            {
+                EditorGUILayout.HelpBox("本关还没有词缀。", MessageType.None);
+                return;
+            }
+
+            _ownedScroll = EditorGUILayout.BeginScrollView(_ownedScroll, GUILayout.MaxHeight(120f));
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var id = ids[i];
+                var owned = BossEntryConfig.Get(id);
+                EditorGUILayout.BeginHorizontal();
+                var label = owned != null ? $"{owned.Id}  {owned.Name}" : id.ToString();
+                EditorGUILayout.LabelField(label);
+                if (GUILayout.Button("移除", GUILayout.Width(52f)))
+                {
+                    Remove(id);
+                    EditorGUILayout.EndHorizontal();
+                    break;
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.EndScrollView();
+            if (GUILayout.Button("清空本关词缀"))
+            {
+                if (GameCheatMenu.TryGetSession(out var sessionClear))
+                {
+                    sessionClear.DebugClearBossEntries();
+                    Repaint();
+                }
+            }
+        }
+
+        private void DrawCatalog()
+        {
+            EditorGUILayout.LabelField("全部词缀");
+            _filter = EditorGUILayout.TextField("筛选", _filter);
+            var rows = new List<BossEntryConfig>(BossEntryConfig.Count);
+            foreach (var pair in BossEntryConfig.All)
+            {
+                if (pair.Value != null && MatchFilter(pair.Value, _filter))
+                {
+                    rows.Add(pair.Value);
+                }
+            }
+
+            rows.Sort((a, b) => a.Id.CompareTo(b.Id));
+            _catalogScroll = EditorGUILayout.BeginScrollView(_catalogScroll);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                EditorGUILayout.BeginHorizontal();
+                var tip = string.IsNullOrEmpty(row.Desc) ? row.Name : row.Desc;
+                EditorGUILayout.LabelField(new GUIContent($"{row.Id}  {row.Name}", tip));
+                if (GUILayout.Button("添加", GUILayout.Width(52f)))
+                {
+                    _entryId = row.Id;
+                    Grant(row.Id);
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private static bool MatchFilter(BossEntryConfig row, string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+            {
+                return true;
+            }
+
+            if (row.Id.ToString().IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(row.Name) &&
+                row.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(row.Desc) &&
+                   row.Desc.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

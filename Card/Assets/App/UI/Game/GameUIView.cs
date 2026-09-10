@@ -27,6 +27,7 @@ namespace App.UI
     [AutoScreen(AppScreenIds.GameUI, UILayer.Page, ResResourcePaths.GameUI)]
     public sealed class GameUIView : ViewBase<GameTableViewModel>
     {
+        private const float ExtraAttackTimeScale = 1.5f;
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
         private static readonly string[] EquipSlotKeys = { "equip1", "equip2", "equip3" };
         private const float EnemySlideDuration = 0.3f;
@@ -77,6 +78,8 @@ namespace App.UI
 #if UNITY_EDITOR
         private string _debugRelicIdText = string.Empty;
         private string _debugRelicPreview = string.Empty;
+        private string _debugEntryIdText = "104";
+        private string _debugEntryPreview = string.Empty;
 #endif
         private Coroutine _peekHoldCo;
         private bool _peekHoldFired;
@@ -97,6 +100,7 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
+        private readonly List<RectTransform> _splashHpClones = new List<RectTransform>(2);
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
         private bool _attackCutsceneDone;
@@ -192,6 +196,28 @@ namespace App.UI
             GUILayout.EndHorizontal();
             GUILayout.Label(string.IsNullOrEmpty(_debugRelicPreview) ? "输入 RelicConfig.Id" : _debugRelicPreview);
             GUILayout.EndArea();
+
+            GUILayout.BeginArea(new Rect(8f, 90f, 260f, 78f), GUI.skin.box);
+            GUILayout.Label("测试加关卡词缀（仅编辑器）");
+            GUILayout.BeginHorizontal();
+            var entryNext = GUILayout.TextField(_debugEntryIdText ?? string.Empty, GUILayout.Width(88f));
+            if (entryNext != _debugEntryIdText)
+            {
+                _debugEntryIdText = entryNext;
+                RefreshDebugEntryPreview();
+            }
+
+            var canGrantEntry = int.TryParse(_debugEntryIdText, out var entryId) && entryId > 0;
+            GUI.enabled = canGrantEntry;
+            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrantEntry)
+            {
+                ViewModel?.Session?.DebugGrantBossEntry(entryId);
+            }
+
+            GUI.enabled = wasEnabled;
+            GUILayout.EndHorizontal();
+            GUILayout.Label(string.IsNullOrEmpty(_debugEntryPreview) ? "输入 BossEntryConfig.Id" : _debugEntryPreview);
+            GUILayout.EndArea();
         }
 
         private void RefreshDebugRelicPreview()
@@ -204,6 +230,18 @@ namespace App.UI
 
             var relic = RelicConfig.Get(relicId);
             _debugRelicPreview = relic != null ? $"{relic.Name}  {relic.Desc}" : $"没有 Id={relicId}";
+        }
+
+        private void RefreshDebugEntryPreview()
+        {
+            if (!int.TryParse(_debugEntryIdText, out var entryId) || entryId <= 0)
+            {
+                _debugEntryPreview = string.Empty;
+                return;
+            }
+
+            var entry = BossEntryConfig.Get(entryId);
+            _debugEntryPreview = entry != null ? $"{entry.Name}  {entry.Desc}" : $"没有 Id={entryId}";
         }
 #endif
 
@@ -231,8 +269,9 @@ namespace App.UI
             StopAiDelay();
             CancelAllDeathDissolves();
             ClearPendingEnemyDeathFx();
+            RestoreHpText();
             _waitLethalItem = null;
-            if (_attackCutsceneDone && ViewModel != null)
+            if (ViewModel != null && ViewModel.Session.AttackPlaying)
             {
                 _attackCutsceneDone = false;
                 ViewModel.Session.CompletePlayerAttack();
@@ -499,7 +538,7 @@ namespace App.UI
                     }
 
                     _heldAttackValue = Math.Max(1, session.AttackDamage);
-                    PlayAttackCutscene(session);
+                    PlayAttackCutscene(session, session.ExtraAttackPending ? ExtraAttackTimeScale : 1f);
                 });
         }
 
@@ -600,7 +639,7 @@ namespace App.UI
             return logicAttack;
         }
 
-        private void PlayAttackCutscene(GameSession session)
+        private void PlayAttackCutscene(GameSession session, float timeScale = 1f)
         {
             var mask = ResolveSlot("mask");
             if (mask != null)
@@ -609,32 +648,43 @@ namespace App.UI
             }
 
             _attackCutsceneDone = false;
-            _waitLethalItem = null;
             ClearPendingEnemyDeathFx();
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
+            RestoreSplashHpClones();
             Func<bool> onHit = () =>
             {
                 _cameraShake?.PlayByLevel(session.AttackLevel);
                 session.ApplyPendingAttackHits();
                 TryDissolveIfLethal(session);
-                var missed = session.LastAttackMissed;
-                ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
-                ViewModel.ShowHpText.Value = true;
-                if (session.IncomingAttack)
+                ShowAttackHpTexts(session);
+                if (!session.IncomingAttack)
                 {
-                    PlaceHpAtPlayer(!missed);
-                }
-                else
-                {
-                    PlaceHpAtTarget(session.AttackVisualSlot, !missed);
+                    var mainSlot = session.AttackVisualSlot;
+                    for (var slot = 0; slot < _enemyItems.Length; slot++)
+                    {
+                        if (slot == mainSlot || !session.LastAttackHitApplied(slot))
+                        {
+                            continue;
+                        }
+
+                        _attackFx.ReactSlot(slot, session.LastAttackHitMissed(slot));
+                    }
                 }
 
                 session.NotifyUi();
-                return missed;
+                return session.LastAttackMissed;
             };
             Action onCollisionDone = PlayPendingEnemyDeathEffects;
-            Action onReturned = () => { ViewModel.ShowMask.Value = false; };
+            Action onReturned = () =>
+            {
+                if (session.ExtraAttackPending)
+                {
+                    return;
+                }
+
+                ViewModel.ShowMask.Value = false;
+            };
             Action onDone = () =>
             {
                 ViewModel.ShowHpText.Value = false;
@@ -661,7 +711,8 @@ namespace App.UI
                     onHit,
                     onCollisionDone,
                     onReturned,
-                    onDone);
+                    onDone,
+                    timeScale);
             }
         }
 
@@ -681,8 +732,7 @@ namespace App.UI
             var mainSlot = session.AttackVisualSlot;
             for (var slot = 0; slot < _enemyItems.Length; slot++)
             {
-                var enemy = session.EnemyAtVisualSlot(slot);
-                if (enemy == null || enemy.Hp > 0)
+                if (!session.LastAttackHitKilled(slot))
                 {
                     continue;
                 }
@@ -690,6 +740,11 @@ namespace App.UI
                 var item = AttackItemAtSlot(slot);
                 _pendingEnemyDeathFx[slot] = true;
                 if (item == null)
+                {
+                    continue;
+                }
+
+                if (IsDissolvePlaying(item) || _deathDissolves.ContainsKey(item))
                 {
                     continue;
                 }
@@ -779,6 +834,13 @@ namespace App.UI
         {
             if (!_attackCutsceneDone)
             {
+                return;
+            }
+
+            if (ViewModel != null && ViewModel.Session.TryBeginExtraAttack())
+            {
+                _attackCutsceneDone = false;
+                PlayAttackCutscene(ViewModel.Session, ExtraAttackTimeScale);
                 return;
             }
 
@@ -892,6 +954,110 @@ namespace App.UI
             }
         }
 
+        private void ShowAttackHpTexts(GameSession session)
+        {
+            RestoreSplashHpClones();
+            if (session.IncomingAttack)
+            {
+                var missed = session.LastAttackMissed;
+                ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
+                ViewModel.ShowHpText.Value = true;
+                PlaceHpAtPlayer(!missed);
+                return;
+            }
+
+            var mainSlot = session.AttackVisualSlot;
+            var mainShown = ShowMainHpText(session);
+            ViewModel.ShowHpText.Value = mainShown;
+            if (mainShown)
+            {
+                PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+            }
+
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            {
+                if (slot == mainSlot || !session.LastAttackHitApplied(slot))
+                {
+                    continue;
+                }
+
+                var missed = session.LastAttackHitMissed(slot);
+                var dealt = session.LastAttackHitDealt(slot);
+                if (!missed && dealt <= 0)
+                {
+                    continue;
+                }
+
+                PlaceSplashHpAt(slot, missed ? "MISS" : $"-{Math.Max(1, dealt)}", !missed);
+            }
+        }
+
+        private bool ShowMainHpText(GameSession session)
+        {
+            if (session.LastAttackMissed)
+            {
+                ViewModel.HpText.Value = "MISS";
+                return true;
+            }
+
+            if (session.TakenDamage > 0)
+            {
+                ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage)}";
+                return true;
+            }
+
+            ViewModel.HpText.Value = string.Empty;
+            return false;
+        }
+
+        private void PlaceSplashHpAt(int slot, string text, bool playAnim)
+        {
+            if (_hpTextRt == null)
+            {
+                return;
+            }
+
+            var hit = _attackFx.HitPosition(slot);
+            if (hit == Vector3.zero)
+            {
+                return;
+            }
+
+            var clone = UnityEngine.Object.Instantiate(_hpTextRt, _hpTextRt.parent, false);
+            clone.gameObject.SetActive(true);
+            clone.SetAsLastSibling();
+            clone.position = hit;
+            var label = clone.GetComponent<TMP_Text>() ?? clone.GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.text = text;
+            }
+
+            var animRoot = clone.Find("ani_hptextdi") ?? FindDeep(clone, "ani_hptextdi") ?? clone;
+            var anim = animRoot.GetComponent<Animation>();
+            if (playAnim && anim != null)
+            {
+                anim.Rewind();
+                anim.Play();
+            }
+
+            _splashHpClones.Add(clone);
+        }
+
+        private void RestoreSplashHpClones()
+        {
+            for (var i = 0; i < _splashHpClones.Count; i++)
+            {
+                var clone = _splashHpClones[i];
+                if (clone != null)
+                {
+                    UnityEngine.Object.Destroy(clone.gameObject);
+                }
+            }
+
+            _splashHpClones.Clear();
+        }
+
         private void PlaceHpAtPlayer(bool playAnim)
         {
             PlaceHpAt(_attackFx.HitPositionPlayer(), playAnim);
@@ -947,6 +1113,7 @@ namespace App.UI
         private void RestoreHpText()
         {
             StopHpTextAnim();
+            RestoreSplashHpClones();
             if (_hpTextRt == null)
             {
                 return;

@@ -68,7 +68,7 @@ namespace App.UI
 
             LastBtnCommand = new RelayCommand(OnLast);
             UseHeroCommand = new RelayCommand(EnterStageSelect, () => IsSelectedHeroUnlocked());
-            UnlockHeroCommand = new RelayCommand(UnlockSelectedHero);
+            UnlockHeroCommand = new RelayCommand(UnlockSelectedHero, () => CanUnlockSelectedHero());
             StartGameCommand = new RelayCommand(StartGame, () =>
                 Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
             UnlockLevelCommand = new RelayCommand(
@@ -317,14 +317,25 @@ namespace App.UI
 
         private void UnlockSelectedHero()
         {
+            TryUnlockSelectedHero();
+            RefreshHeroPanel();
+        }
+
+        private bool CanUnlockSelectedHero()
+        {
             var hero = HeroConfig.Get(SelectedHeroId.Value);
-            if (hero == null || IsHeroUnlocked(hero) || !MeetsDifficultyUnlock(hero))
+            return hero != null && !IsHeroUnlocked(hero);
+        }
+
+        private bool TryUnlockSelectedHero()
+        {
+            var hero = HeroConfig.Get(SelectedHeroId.Value);
+            if (hero == null || IsHeroUnlocked(hero))
             {
-                return;
+                return false;
             }
 
-            _progress.TryUnlockHero(hero.Id);
-            RefreshHeroPanel();
+            return _progress.TryUnlockHero(hero.Id);
         }
 
         private bool MeetsDifficultyUnlock(HeroConfig hero)

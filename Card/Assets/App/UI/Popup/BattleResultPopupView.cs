@@ -21,12 +21,11 @@ namespace App.UI.Popup
     public sealed class BattleResultPopupView : ViewBase<BattleResultPopupViewModel>
     {
         // BG 高度模型（美术手调基准，与预制体一致）：1 行时 BG=439 / Scroll View=199，
-        // 之后每多一行两边同加一个行高（行高取 Text1 模板实测值 59.5）。
-        // 子节点锚点配合：Title/Scroll View 挂 BG 顶边、SummeryArea/两按钮挂 BG 底边，
-        // BG 居中轴心长高时顶边上移/底边下移，两边自动跟随、中间空隙不变。宽度固定不变。
+        // 之后每多一行 BG 加一个行高（行高取 Text1 模板实测值 59.5）。
+        // 子节点锚点配合：Title 挂 BG 顶边、SummeryArea/两按钮挂 BG 底边；
+        // Scroll View 是拉伸锚点（(0,0)-(1,1)+负 sizeDelta，实高恒=BG高−240），
+        // BG 居中轴心长高时它自动跟随、顶底间隙不变，代码只写 BG 不写它。宽度固定不变。
         public float BgBaseHeight = 439f;
-
-        public float ScrollBaseHeight = 199f;
 
         private readonly List<GameObject> _stageRows = new List<GameObject>();
         private readonly List<PaperRevealStep> _entranceSteps = new List<PaperRevealStep>();
@@ -34,7 +33,6 @@ namespace App.UI.Popup
         private RectTransform _bgRect;
         private RectTransform _titleRect;
         private RectTransform _contentRect;
-        private RectTransform _scrollRect;
         private PaperRevealAnim _entrance;
         private bool _entrancePlayed;
 
@@ -218,11 +216,6 @@ namespace App.UI.Popup
             {
                 _contentRect = FindDeep(_bgRect, "Content") as RectTransform;
             }
-
-            if (_scrollRect == null && _bgRect != null)
-            {
-                _scrollRect = FindDeep(_bgRect, "Scroll View") as RectTransform;
-            }
         }
 
         private void ClearStageRows()
@@ -238,9 +231,12 @@ namespace App.UI.Popup
             _stageRows.Clear();
         }
 
-        // BG 高度自适应：extra =（行数−1）×行高；BG=439+extra、Scroll View=199+extra 同步伸缩，
-        // 1 行时纸面与滚动区的富余量在任意行数下保持不变。行数取已克隆的 Stage_N 行，
-        // 行高实测 Text1 模板（非激活子节点不受布局驱动，rect 保持编辑器值）。
+        // BG 高度自适应：extra =（行数−1）×行高；BG=439+extra。Scroll View 是拉伸锚点
+        // ((0,0)-(1,1)+负 sizeDelta −240)，实际高度恒 = BG 高度 + sizeDelta.y，BG 长高时
+        // 自动跟随（=199+extra、顶底间隙不变）；这里绝不能按绝对高度写它的 sizeDelta——
+        // 拉伸锚点下那会算成 BG高+目标高 的双重叠加，滚动区溢出纸面。
+        // 行数取已克隆的 Stage_N 行，行高实测 Text1 模板
+        // （非激活子节点不受布局驱动，rect 保持编辑器值）。
         private void LateUpdate()
         {
             FitBgHeight();
@@ -250,7 +246,7 @@ namespace App.UI.Popup
         {
             EnsureFitNodes();
             EnsureTemplate();
-            if (_bgRect == null || _scrollRect == null || _stageTemplate == null)
+            if (_bgRect == null || _stageTemplate == null)
             {
                 return;
             }
@@ -258,15 +254,12 @@ namespace App.UI.Popup
             var rowHeight = (_stageTemplate.transform as RectTransform).rect.height;
             var extra = Mathf.Max(0, _stageRows.Count - 1) * rowHeight;
             var bgTarget = BgBaseHeight + extra;
-            var scrollTarget = ScrollBaseHeight + extra;
-            if (Mathf.Abs(bgTarget - _bgRect.sizeDelta.y) <= 0.5f &&
-                Mathf.Abs(scrollTarget - _scrollRect.sizeDelta.y) <= 0.5f)
+            if (Mathf.Abs(bgTarget - _bgRect.sizeDelta.y) <= 0.5f)
             {
                 return;
             }
 
             _bgRect.sizeDelta = new Vector2(_bgRect.sizeDelta.x, bgTarget);
-            _scrollRect.sizeDelta = new Vector2(_scrollRect.sizeDelta.x, scrollTarget);
         }
 
         private static Transform FindDeep(Transform root, string name)

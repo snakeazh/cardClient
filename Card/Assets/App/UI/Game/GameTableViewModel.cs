@@ -86,6 +86,9 @@ namespace App.UI
             ExtraRubAdCommand = new RelayCommand(() => Session.WatchAdExtraRub());
             DoubleGoldAdCommand = new RelayCommand(() => Session.WatchAdDoubleGold(), () => Session.Phase == GamePhase.Shop);
             OpenRemainListCommand = new RelayCommand(OpenRemainList);
+            ToggleSpeedCommand = new RelayCommand(TogglePlaybackSpeed);
+            PlaybackSpeed.Value = _savedPlaybackSpeed;
+            SpeedLabel.Value = FormatPlaybackSpeed(_savedPlaybackSpeed);
             AttackCommands = new IRelayCommand[3];
             for (var i = 0; i < AttackCommands.Length; i++)
             {
@@ -145,6 +148,8 @@ namespace App.UI
         public ObservableProperty<string> HpText { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<bool> ShowCardInfo { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<bool> ShowYiwuBtn { get; } = new ObservableProperty<bool>(true);
+        public ObservableProperty<float> PlaybackSpeed { get; } = new ObservableProperty<float>(MinPlaybackSpeed);
+        public ObservableProperty<string> SpeedLabel { get; } = new ObservableProperty<string>("x1");
         public ObservableProperty<Sprite> CardTypeIcon { get; } = new ObservableProperty<Sprite>();
         public ObservableProperty<Sprite> CardTypeLabel { get; } = new ObservableProperty<Sprite>();
         public ObservableProperty<string> CardTypeNum { get; } = new ObservableProperty<string>(string.Empty);
@@ -198,7 +203,11 @@ namespace App.UI
         public IRelayCommand ExtraRubAdCommand { get; }
         public IRelayCommand DoubleGoldAdCommand { get; }
         public IRelayCommand OpenRemainListCommand { get; }
+        public IRelayCommand ToggleSpeedCommand { get; }
         public IRelayCommand[] AttackCommands { get; }
+        public const float MinPlaybackSpeed = 1f;
+        public const float MaxPlaybackSpeed = 2f;
+        private static float _savedPlaybackSpeed = MinPlaybackSpeed;
         private int _seenDealSerial = -1;
 
         public void NotifyDealReady()
@@ -347,14 +356,36 @@ namespace App.UI
 
         protected override async Task OnClose()
         {
+            RestorePlaybackSpeed();
             _guide.Abort();
             await CloseGameResource();
         }
 
         protected override void OnDispose()
         {
+            RestorePlaybackSpeed();
             Session.Changed -= Refresh;
             _ = CloseGameResource();
+        }
+
+        private void TogglePlaybackSpeed()
+        {
+            var next = PlaybackSpeed.Value >= MaxPlaybackSpeed - 0.01f
+                ? MinPlaybackSpeed
+                : MaxPlaybackSpeed;
+            _savedPlaybackSpeed = next;
+            PlaybackSpeed.Value = next;
+            SpeedLabel.Value = FormatPlaybackSpeed(next);
+        }
+
+        public static void RestorePlaybackSpeed()
+        {
+            Time.timeScale = 1f;
+        }
+
+        private static string FormatPlaybackSpeed(float speed)
+        {
+            return speed >= MaxPlaybackSpeed - 0.01f ? "x2" : "x1";
         }
 
         private async Task ShowGameResource()

@@ -127,6 +127,7 @@ namespace App.UI
             BindSettleFx();
             BindBeilvInfo();
             BindHudChrome();
+            BindBeisu();
             ViewModel.Refresh();
             RefreshPlayerItems();
             RefreshCardInfos();
@@ -253,6 +254,7 @@ namespace App.UI
                 ViewModel.Session.Changed -= OnSessionChanged;
             }
 
+            GameTableViewModel.RestorePlaybackSpeed();
             KillHudMotion(restoreHome: true);
             UnregisterGuideTargets();
             StopPeekHold();
@@ -1669,6 +1671,31 @@ namespace App.UI
             }
 
             BindRuleBtn();
+        }
+
+        private void BindBeisu()
+        {
+            var slot = ResolveSlot("beisu") ?? transform.Find("beisu") ?? FindDeep(transform, "beisu");
+            if (slot == null)
+            {
+                return;
+            }
+
+            slot.gameObject.SetActive(true);
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            Binding.BindCommand(button, ViewModel.ToggleSpeedCommand);
+            var text = slot.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                Binding.BindText(text, ViewModel.SpeedLabel);
+            }
+
+            Binding.Add(ViewModel.PlaybackSpeed.Subscribe(speed => Time.timeScale = speed));
         }
 
         private void BindSeatClick(GameObject target, IRelayCommand command)

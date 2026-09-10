@@ -21,6 +21,7 @@ GameUI
   horBtns                 ← 开战 / 取消 / 下一局（按钮随阶段渐显渐隐）
   horBtns2                ← 搓牌 / 透视 / 替换；开局左侧飞入
   horEquipBtns2           ← yiwuBtn / ruleBtn；开局右侧飞入
+  beisu                   ← 对局倍速，点按在 x1 / x2 间切换，默认 x1
   stageInfo               ← 关卡名；开局右侧飞入
   beilvInfo               ← 结算圣物加成飘字（默认隐藏）：beilvIcon / attackNum / beilvNum
   cardinfoItem            ← 玩家牌型图标（选满 3 张即预览；亮牌后仍显示）
@@ -68,6 +69,7 @@ GameUI
 | `PeekGood` / `ChaKanGood` / `TiHuanGood` | `(n/max)` | 始终在 `horBtns2`，没次数则禁用 |
 | `yiwuBtn` | 遗物列表 | 点开 `RemainListPop` 时隐藏，弹窗关闭结束再显示 |
 | `ruleBtn` | 规则 | 一直显示，点开 `WinTip` 赔率表 |
+| `beisu` | `x1` / `x2` | 一直显示；点按切换对局倍速，默认 `x1`，最高 `x2` |
 | `NextRoundBtn` | 下一局 | `RoundSettle` |
 
 `n` 为当前剩余次数，`max` 为 `GameBalance.Skill*Uses + Bonus*` 再加遗物/英雄加成。次数配置仍是搓牌 3 / 透视 1 / 替换 1。
@@ -127,6 +129,7 @@ GameUI
 ## 注意
 
 - 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。点 `backBtn` 先出 [`CommonTop`](../Popup/CommonTopView.cs)「确定退出游戏吗」：确定弹出失败且无复活的 `BattleResultPopup`（点 Back 回主页并兑金）；取消关闭确认框，继续对局。
+- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1；同一次启动内记住上次选择。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

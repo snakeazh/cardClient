@@ -4942,19 +4942,19 @@ namespace App.Game
             {
                 if (TryBossTimidImmune(target))
                 {
-                    RecordEnemyHit(target, missed: false, dealt: 0, killed: false, main);
+                    RecordEnemyHit(target, missed: false, shown: 0, killed: false, main);
                     return 0;
                 }
 
                 if (TryMonsterEvade(target, attacker))
                 {
-                    RecordEnemyHit(target, missed: true, dealt: 0, killed: false, main);
+                    RecordEnemyHit(target, missed: true, shown: 0, killed: false, main);
                     return 0;
                 }
 
                 if (TryBossShieldImmune(target))
                 {
-                    RecordEnemyHit(target, missed: false, dealt: 0, killed: false, main);
+                    RecordEnemyHit(target, missed: false, shown: 0, killed: false, main);
                     return 0;
                 }
             }
@@ -5055,7 +5055,7 @@ namespace App.Game
                     ApplyThornShellSelfDamage(lost);
                 }
 
-                RecordEnemyHit(target, missed: false, dealt: shown, killed: false, main);
+                RecordEnemyHit(target, missed: false, shown: shown, killed: false, main);
                 return lost;
             }
 
@@ -5111,7 +5111,7 @@ namespace App.Game
                 TakenDamage = shown;
             }
 
-            RecordEnemyHit(target, missed: false, dealt: shown, killed: target.Hp <= 0, main);
+            RecordEnemyHit(target, missed: false, shown: shown, killed: target.Hp <= 0, main);
             return dealt;
         }
 

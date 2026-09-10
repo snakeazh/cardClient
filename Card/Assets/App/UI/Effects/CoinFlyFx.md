@@ -1,6 +1,6 @@
 # 金币飞入 CoinFlyFx
 
-按钮处散落若干 `coinitem`，停留后再飞向 `GameResourceBar` 金币图标。到位后才把暂扣的金币加回资源栏，数字走 [`RollingText.md`](RollingText.md) 滚动。
+按钮处散落若干 `coinitem`，停留后再飞向 `GameResourceBar` 金币图标。每枚落到图标时释放一截暂扣，资源栏数字走 [`RollingText.md`](RollingText.md) 滚动。
 
 代码：`Assets/App/UI/Effects/CoinFlyFx.cs`  
 预制体：`Assets/Res/UI/Icon/coinitem.prefab`  
@@ -18,10 +18,12 @@
 ## 时序
 
 ```
-散落 0.28s → 停留 0.5s → 飞入 0.5s（每枚错开 0.04s）→ onArrived（可选）
+散落 0.28s → 停留 0.5s → 飞入 0.5s（每枚错开 0.04s）→ 每枚到位 onCoinArrived → 全部结束 onArrived
 ```
 
 默认 8 枚。`SetUpdate(true)`，不受 timescale 影响。商店出售和结算提现 / 双倍关页不 Kill Sequence，金币继续飞完再销毁。
+
+出售 / 提现 / 双倍用 `PlayAndCredit`：关页立刻关，数字等飞币落到图标再涨。
 
 ## 金币暂扣
 
@@ -33,22 +35,20 @@
 | `ReleaseHeldGold(amount)` | 飞币到位后释放；`amount ≤ 0` 全部释放 |
 | 进入 `GamePhase.Shop` | 自动暂扣本关 `ShopGoldGranted`（结算提现用） |
 
-显示值 = `max(0, Run.Gold - HeldGold)`。弹窗中途关掉必须把剩余暂扣释放掉，否则资源栏会少金。
+显示值 = `max(0, Run.Gold - HeldGold)`。点空白关掉且没有飞币时，要把剩余暂扣释放掉。飞币自己入账的关页不要提前释放。
 
 ## 新入口怎么接
 
 1. 点击时先 `HoldGold`（若金币尚未入账则 `refresh: false` 后再 `AddGold`）。
-2. `CoinFlyFx.Play(prefab, parent, fromWorld, toWorld, onArrived)`。
-3. `onArrived` 里 `ReleaseHeldGold`。商店出售、结算提现 / 双倍改为飞币一开始就加金并关页，不必等飞完。
+2. `CoinFlyFx.PlayAndCredit(prefab, parent, fromWorld, toWorld, bar, gold)`。
+3. 立刻关界面，不要在关页时 `ReleaseHeldGold`。
 4. `parent` 必须不低于起点所在层，否则金币会被遮罩挡住。结算弹窗用 Resource；TopMost 详情用 TopMost。
 
 ```csharp
 bar?.HoldGold(gold, refresh: false);
 Session.SellShopRelic(relicId); // 内部 AddGold + Notify
-CoinFlyFx.Play(_coinPrefab, parent, btn.position, CoinFlyFx.FindGoldIcon().position, () =>
-{
-    bar?.ReleaseHeldGold(gold);
-});
+CoinFlyFx.PlayAndCredit(_coinPrefab, parent, btn.position, CoinFlyFx.FindGoldIcon().position, bar, gold);
+// 立刻关页；数字等飞币落到图标再涨
 ```
 
 预制体用 `IResourceService.LoadAsync<GameObject>(ResResourcePaths.CoinItem)`。实例关闭射线，避免挡住点击。

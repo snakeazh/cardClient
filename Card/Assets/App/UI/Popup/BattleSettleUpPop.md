@@ -20,7 +20,7 @@
 
 `GamePhase.Shop` 且不是最后一关。先弹本页，关掉后再弹 `BattleShopPop`。最后一关直接离店，不走结算页。
 
-进商店时 `GrantStageGold` 已经把本关金币写入 `Run.Gold`。资源栏先按 `ShopGoldGranted` 暂扣，点提现或双倍后立刻关页并加回，飞币继续播。
+进商店时 `GrantStageGold` 已经把本关金币写入 `Run.Gold`。资源栏先按 `ShopGoldGranted` 暂扣，点提现或双倍立刻关页，飞币落到金币图标时数字才涨。
 
 ---
 
@@ -28,11 +28,11 @@
 
 | 按钮 | 行为 |
 |------|------|
-| `WithDrawBtn` | 按钮处散落金币飞向 `GameResourceBar`，立刻释放暂扣并关弹窗 |
-| `DoubleBtn` | `WatchAdDoubleGold()`（每日限次、本关已双倍则不可点）。额外金币同样飞入，立刻关弹窗并入账 |
+| `WithDrawBtn` | 按钮处散落金币飞向 `GameResourceBar`，立刻关弹窗；金币落到图标时数字才涨 |
+| `DoubleBtn` | `WatchAdDoubleGold()`（每日限次、本关已双倍则不可点）。立刻关弹窗，飞币落到图标时把暂扣（基础+双倍）加回 |
 | 空白 Overlay | 不播飞币，立刻释放剩余暂扣并关闭 |
 
-点提现 / 双倍后飞币挂 `UILayer.Resource` 自己播完，不等飞完再关页。中途被关掉会把剩余暂扣一次性加回资源栏。
+点提现 / 双倍后飞币挂 `UILayer.Resource` 自己播完。关页不会提前把暂扣加回资源栏。
 
 `DoubleBtn` 可点条件：`GameSession.CanWatchAdDoubleGold()`（商店阶段、今日广告未用完、本关尚未双倍）。
 

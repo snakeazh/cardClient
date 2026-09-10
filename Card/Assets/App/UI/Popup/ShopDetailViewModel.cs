@@ -15,7 +15,7 @@ namespace App.UI.Popup
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
     /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
     /// 消耗品在货架显示 buyUseBtn：购买并立刻使用，不播飞入 MineHor；已购栏显示 useBtn。
-    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售先播飞币再立刻关页，金币同时入账。
+    /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售立刻关页，飞币落到金币图标时资源栏数字才涨。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
     {
@@ -23,6 +23,7 @@ namespace App.UI.Popup
         private readonly IUIManager _ui;
         private bool _awaitingSellFx;
         private bool _awaitingBuyFx;
+        private bool _coinFxOwnsGold;
         private int _pendingSellGold;
 
         public ShopDetailViewModel(
@@ -126,7 +127,11 @@ namespace App.UI.Popup
         protected override Task OnClose()
         {
             _awaitingBuyFx = false;
-            ReleasePendingSellGold();
+            if (!_coinFxOwnsGold)
+            {
+                ReleasePendingSellGold();
+            }
+
             return Task.CompletedTask;
         }
 
@@ -134,7 +139,10 @@ namespace App.UI.Popup
         {
             Session.Changed -= OnSessionChanged;
             _awaitingBuyFx = false;
-            ReleasePendingSellGold();
+            if (!_coinFxOwnsGold)
+            {
+                ReleasePendingSellGold();
+            }
         }
 
         public void SetBusy(bool busy)
@@ -188,15 +196,16 @@ namespace App.UI.Popup
             return false;
         }
 
-        public void CompleteSell(GameResourceViewModel bar, int gold)
+        public void CompleteSell(GameResourceViewModel bar, int gold, bool coinFxOwnsGold = false)
         {
-            if (gold > 0)
+            _coinFxOwnsGold = coinFxOwnsGold;
+            if (!coinFxOwnsGold && gold > 0)
             {
                 bar?.ReleaseHeldGold(gold);
+                _pendingSellGold = 0;
+                _awaitingSellFx = false;
             }
 
-            _pendingSellGold = 0;
-            _awaitingSellFx = false;
             Dismiss();
         }
 

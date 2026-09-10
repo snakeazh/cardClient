@@ -26,12 +26,13 @@ namespace App.UI.Popup
     /// <summary>
     /// 关卡结算：只统计本关。总伤害是本关 Stage 积分，怪物总数取关卡配置，
     /// 基础奖励 / 提现是本关掉落金币，双倍提现走 <see cref="GameSession.WatchAdDoubleGold"/>。
-    /// 金币先暂扣在资源栏外，点提现/双倍后立刻关页入账，飞币独立播放。
+    /// 金币先暂扣在资源栏外，点提现/双倍立刻关页，飞币落到金币图标时数字才涨。
     /// </summary>
     public sealed class BattleSettleUpPopViewModel : ViewModelBase
     {
         private readonly IDialogService _dialogs;
         private readonly List<SettleRoundRow> _roundRows = new List<SettleRoundRow>();
+        private bool _coinFxOwnsGold;
 
         public BattleSettleUpPopViewModel(
             GameSession session,
@@ -52,7 +53,6 @@ namespace App.UI.Popup
             RoundRevision = new ObservableProperty<int>();
             ButtonsEnabled = new ObservableProperty<bool>(true);
             DoubleEnabled = new ObservableProperty<bool>(false);
-            ContinueCommand = new RelayCommand(SkipAndClose, () => ButtonsEnabled.Value);
             DoubleCommand = new RelayCommand(DoubleWithdraw, CanDouble);
         }
 
@@ -88,8 +88,6 @@ namespace App.UI.Popup
 
         public ObservableProperty<bool> DoubleEnabled { get; }
 
-        public IRelayCommand ContinueCommand { get; }
-
         /// <summary>看广告双倍提现（GameSession 内含每日限次与已双倍保护）。</summary>
         public IRelayCommand DoubleCommand { get; }
 
@@ -103,20 +101,25 @@ namespace App.UI.Popup
         {
             ButtonsEnabled.Value = !busy;
             RefreshDoubleEnabled();
-            ContinueCommand.RaiseCanExecuteChanged();
             DoubleCommand.RaiseCanExecuteChanged();
         }
 
-        public void CompleteWithdraw(GameResourceViewModel bar)
+        public void CompleteWithdraw(GameResourceViewModel bar, bool coinFxOwnsGold = false)
         {
-            bar?.ReleaseHeldGold();
+            _coinFxOwnsGold = coinFxOwnsGold;
+            if (!coinFxOwnsGold)
+            {
+                bar?.ReleaseHeldGold();
+            }
+
             Close();
         }
 
         public bool TryBeginDouble(GameResourceViewModel bar, out int extra)
         {
             extra = 0;
-            if (!CanDouble())
+            // View 会先 SetBusy 防连点，这里不能再看 ButtonsEnabled，否则双倍会当场失败。
+            if (!Session.CanWatchAdDoubleGold())
             {
                 return false;
             }
@@ -132,9 +135,10 @@ namespace App.UI.Popup
             return true;
         }
 
-        public void CompleteDouble(GameResourceViewModel bar, int extra)
+        public void CompleteDouble(GameResourceViewModel bar, int extra, bool coinFxOwnsGold = false)
         {
-            if (extra > 0)
+            _coinFxOwnsGold = coinFxOwnsGold;
+            if (!coinFxOwnsGold && extra > 0)
             {
                 bar?.ReleaseHeldGold(extra);
             }
@@ -144,6 +148,11 @@ namespace App.UI.Popup
 
         protected override Task OnClose()
         {
+            if (_coinFxOwnsGold)
+            {
+                return Task.CompletedTask;
+            }
+
             var view = GameResourceView.FindOpen();
             view?.ViewModel?.ReleaseHeldGold();
             return Task.CompletedTask;
@@ -217,13 +226,6 @@ namespace App.UI.Popup
         private void DoubleWithdraw()
         {
             // View 拦截 DoubleBtn 点击并播飞币；命令仅用于 CanExecute。
-        }
-
-        private void SkipAndClose()
-        {
-            var view = GameResourceView.FindOpen();
-            view?.ViewModel?.ReleaseHeldGold();
-            Close();
         }
 
         private void Close()

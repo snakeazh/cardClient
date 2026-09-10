@@ -129,7 +129,7 @@ GameUI
 ## 注意
 
 - 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。点 `backBtn` 先出 [`CommonTop`](../Popup/CommonTopView.cs)「确定退出游戏吗」：确定弹出失败且无复活的 `BattleResultPopup`（点 Back 回主页并兑金）；取消关闭确认框，继续对局。
-- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1；同一次启动内记住上次选择。
+- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1。选择写入 `ISaveService`（`game.playback.speed.v1`），重启后仍用上次倍速。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

@@ -9,6 +9,7 @@ using App.Resources;
 using App.UI.Popup;
 using Framework.Assets;
 using Framework.Log;
+using Framework.Save;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -22,6 +23,7 @@ namespace App.UI
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
         private readonly IGuideService _guide;
+        private readonly ISaveService _save;
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -37,7 +39,8 @@ namespace App.UI
             NavigationViewModel navigation,
             ILevelProgressService progress,
             IAtlasService atlas,
-            IGuideService guide)
+            IGuideService guide,
+            ISaveService save)
         {
             Session = session;
             Resources = resources;
@@ -46,6 +49,7 @@ namespace App.UI
             _ui = ui;
             _navigation = navigation;
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
+            _save = save ?? throw new ArgumentNullException(nameof(save));
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -87,8 +91,7 @@ namespace App.UI
             DoubleGoldAdCommand = new RelayCommand(() => Session.WatchAdDoubleGold(), () => Session.Phase == GamePhase.Shop);
             OpenRemainListCommand = new RelayCommand(OpenRemainList);
             ToggleSpeedCommand = new RelayCommand(TogglePlaybackSpeed);
-            PlaybackSpeed.Value = _savedPlaybackSpeed;
-            SpeedLabel.Value = FormatPlaybackSpeed(_savedPlaybackSpeed);
+            LoadPlaybackSpeed();
             AttackCommands = new IRelayCommand[3];
             for (var i = 0; i < AttackCommands.Length; i++)
             {
@@ -207,7 +210,7 @@ namespace App.UI
         public IRelayCommand[] AttackCommands { get; }
         public const float MinPlaybackSpeed = 1f;
         public const float MaxPlaybackSpeed = 2f;
-        private static float _savedPlaybackSpeed = MinPlaybackSpeed;
+        public const string PlaybackSpeedSaveKey = "game.playback.speed.v1";
         private int _seenDealSerial = -1;
 
         public void NotifyDealReady()
@@ -370,12 +373,28 @@ namespace App.UI
 
         private void TogglePlaybackSpeed()
         {
-            var next = PlaybackSpeed.Value >= MaxPlaybackSpeed - 0.01f
+            var next = NormalizePlaybackSpeed(PlaybackSpeed.Value) >= MaxPlaybackSpeed
                 ? MinPlaybackSpeed
                 : MaxPlaybackSpeed;
-            _savedPlaybackSpeed = next;
-            PlaybackSpeed.Value = next;
-            SpeedLabel.Value = FormatPlaybackSpeed(next);
+            ApplyPlaybackSpeed(next);
+            PersistPlaybackSpeed(next);
+        }
+
+        private void LoadPlaybackSpeed()
+        {
+            ApplyPlaybackSpeed(NormalizePlaybackSpeed(_save.GetFloat(PlaybackSpeedSaveKey, MinPlaybackSpeed)));
+        }
+
+        private void ApplyPlaybackSpeed(float speed)
+        {
+            PlaybackSpeed.Value = speed;
+            SpeedLabel.Value = FormatPlaybackSpeed(speed);
+        }
+
+        private void PersistPlaybackSpeed(float speed)
+        {
+            _save.SetFloat(PlaybackSpeedSaveKey, speed);
+            _save.Save();
         }
 
         public static void RestorePlaybackSpeed()
@@ -383,9 +402,14 @@ namespace App.UI
             Time.timeScale = 1f;
         }
 
+        private static float NormalizePlaybackSpeed(float speed)
+        {
+            return speed >= MaxPlaybackSpeed - 0.01f ? MaxPlaybackSpeed : MinPlaybackSpeed;
+        }
+
         private static string FormatPlaybackSpeed(float speed)
         {
-            return speed >= MaxPlaybackSpeed - 0.01f ? "x2" : "x1";
+            return NormalizePlaybackSpeed(speed) >= MaxPlaybackSpeed ? "x2" : "x1";
         }
 
         private async Task ShowGameResource()

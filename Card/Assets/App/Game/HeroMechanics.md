@@ -31,7 +31,7 @@
 
 | 英雄 | Type | 时机 | 行为 |
 |------|------|------|------|
-| 大壮 | HeroTakeDamagePer | 挨打 | 先加遗物/天赋 `HeroTakeDamage`，再 `× (1 + Value)`。怪物攻击数字仍是减伤前；飘字 `TakenDamage` 和实际扣血是减伤后；未闪避时至少 1 |
+| 大壮 | HeroTakeDamagePer | 挨打 | 先加遗物/天赋 `HeroTakeDamage`，再 `× (1 + Value)`。怪物攻击数字仍是减伤前；飘字 `TakenDamage` 和实际扣血都是减伤后，飘字不按剩余血量截断；未闪避时至少 1 |
 | 狠人 | Damage | `ComputeAttackDamage` | 并入 `dmgPercent`：`伤害 × (1 + 天赋百分比 + Value)` |
 | 狠人 / 武林高手 | HeroCritical | `ComputeAttackDamage` | 加在 `HeroConfig.Critical` 和天赋暴击率之后 |
 | 多面手 | VersatilePerson | `ApplyPendingAttackHits` | 主目标满伤，其余存活敌人 `round(伤害 × Value)`。与溅射斩比例叠加 |

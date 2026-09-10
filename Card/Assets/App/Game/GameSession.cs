@@ -249,7 +249,7 @@ namespace App.Game
 
         public int CenterStandVisualSlot => FindVisualSlot(CenterStandEnemy);
         public int AttackDamage { get; private set; }
-        /// <summary>命中飘字 / 实际扣血用的伤害。挨打时已含玩家减伤，打怪时等于主目标本波实扣。闪避成功时为 0。</summary>
+        /// <summary>命中飘字用的伤害（计算值，不按剩余血量截断）。挨打时已含玩家减伤；闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
         /// <summary>主目标本波因闪避未扣血，HUD 飘字显示 MISS。旁路溅射闪避不改这个值。</summary>
         public bool LastAttackMissed { get; private set; }
@@ -5009,7 +5009,12 @@ namespace App.Game
                     var survived = Math.Max(0, target.Hp - 1);
                     target.Hp = 1;
                     HpSvc()?.Damage(target.Id, survived);
-                    target.Banner = main ? $"-{survived}" : $"溅射 -{survived}";
+                    target.Banner = main ? $"-{damage}" : $"溅射 -{damage}";
+                    if (main)
+                    {
+                        TakenDamage = damage;
+                    }
+
                     Log($"救命稻草：血量降至 1，下次造成伤害回复 {Run.StrawHealPending:P0}");
                     ApplyBounce(attacker, survived);
                     TryGrantTakeDamageGold(survived);
@@ -5023,10 +5028,11 @@ namespace App.Game
                 return 0;
             }
 
-            var dealt = Math.Min(target.Hp, Math.Max(1, damage));
-            if (dealt < damage)
+            var shown = Math.Max(1, damage);
+            var dealt = Math.Min(target.Hp, shown);
+            if (dealt < shown)
             {
-                AppLog.Info(LogChannel.Game, $"伤害截断 {target.Name} 计算{damage} → 实际{dealt}（当前HP {target.Hp}）");
+                AppLog.Info(LogChannel.Game, $"伤害截断 {target.Name} 计算{shown} → 实际{dealt}（当前HP {target.Hp}）");
             }
 
             if (!target.IsPlayer && dealt >= target.Hp && BossMechanics.CanSecondWind(Run, target))
@@ -5049,14 +5055,14 @@ namespace App.Game
                     ApplyThornShellSelfDamage(lost);
                 }
 
-                RecordEnemyHit(target, missed: false, dealt: lost, killed: false, main);
+                RecordEnemyHit(target, missed: false, dealt: shown, killed: false, main);
                 return lost;
             }
 
             target.Hp -= dealt;
             HpSvc()?.Damage(target.Id, dealt);
-            target.Banner = main ? $"-{dealt}" : $"溅射 -{dealt}";
-            Log($"攻击 {target.Name} {dealt}，剩余 HP {target.Hp}");
+            target.Banner = main ? $"-{shown}" : $"溅射 -{shown}";
+            Log($"攻击 {target.Name} {shown}，剩余 HP {target.Hp}");
             if (ReferenceEquals(target, Player) && dealt > 0)
             {
                 TryGrantTakeDamageGold(dealt);
@@ -5100,7 +5106,12 @@ namespace App.Game
                 ApplyThornShellSelfDamage(dealt);
             }
 
-            RecordEnemyHit(target, missed: false, dealt: dealt, killed: target.Hp <= 0, main);
+            if (main && ReferenceEquals(target, Player))
+            {
+                TakenDamage = shown;
+            }
+
+            RecordEnemyHit(target, missed: false, dealt: shown, killed: target.Hp <= 0, main);
             return dealt;
         }
 
@@ -5881,7 +5892,7 @@ namespace App.Game
             }
         }
 
-        private void RecordEnemyHit(SeatState target, bool missed, int dealt, bool killed, bool main)
+        private void RecordEnemyHit(SeatState target, bool missed, int shown, bool killed, bool main)
         {
             if (target == null || target.IsPlayer)
             {
@@ -5891,7 +5902,7 @@ namespace App.Game
             if (main)
             {
                 LastAttackMissed = missed;
-                TakenDamage = missed ? 0 : dealt;
+                TakenDamage = missed ? 0 : shown;
             }
 
             var slot = FindVisualSlot(target);
@@ -5902,7 +5913,7 @@ namespace App.Game
 
             _lastHitApplied[slot] = true;
             _lastHitMissed[slot] = missed;
-            _lastHitDealt[slot] = dealt;
+            _lastHitDealt[slot] = shown;
             _lastHitKilled[slot] = killed;
         }
 

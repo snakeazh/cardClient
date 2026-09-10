@@ -121,7 +121,7 @@ if (_deathDissolves.ContainsKey(item))
 
 细则见 [`RelicMechanics.md`](../../Game/RelicMechanics.md)。
 
-攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数不再默认进伤害，由指定圣物加成。怪物卡上的攻击数字读减伤前的 `AttackDamage`；命中飘字读减伤后的 `TakenDamage`。积分也按该攻击数值记，不按实际扣血。
+攻击力进关写入，玩家 `HeroConfig.HeroDamage`，怪物 `MonsterConfig.MonsterDamage`；牌面点数不再默认进伤害，由指定圣物加成。怪物卡上的攻击数字读减伤前的 `AttackDamage`；命中飘字读减伤后的 `TakenDamage`（打出多少显示多少，不按受击者剩余血量截断）。积分也按该攻击数值记，不按实际扣血。
 
 ---
 

@@ -1989,7 +1989,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  orderOffset: 400
+  orderOffset: 0
 --- !u!114 &8878109433128577629 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4114854566567120533, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}

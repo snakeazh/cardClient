@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
-using App.UI;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -19,7 +18,7 @@ namespace App.Unlock
         private readonly Dictionary<int, int> _progress = new Dictionary<int, int>();
         private readonly HashSet<int> _unlockedRelics = new HashSet<int>();
         private readonly HashSet<int> _shopSnapshot = new HashSet<int>();
-        private readonly List<string> _pendingUnlockNames = new List<string>();
+        private readonly List<int> _pendingUnlockRelicIds = new List<int>();
         private bool _dirty;
 
         public UnlockConditionService(ISaveService save)
@@ -89,15 +88,16 @@ namespace App.Unlock
             }
         }
 
-        public void FlushUnlockToasts()
+        public IReadOnlyList<int> ConsumePendingUnlockRelicIds()
         {
-            if (_pendingUnlockNames.Count == 0)
+            if (_pendingUnlockRelicIds.Count == 0)
             {
-                return;
+                return Array.Empty<int>();
             }
 
-            Toast.Success($"解锁遗物：{string.Join("、", _pendingUnlockNames)}");
-            _pendingUnlockNames.Clear();
+            var ids = _pendingUnlockRelicIds.ToArray();
+            _pendingUnlockRelicIds.Clear();
+            return ids;
         }
 
         public void Report(ContidionType type, int amount = 1)
@@ -277,8 +277,7 @@ namespace App.Unlock
                 _dirty = true;
                 if (toast)
                 {
-                    var name = string.IsNullOrEmpty(relic.Name) ? relic.Id.ToString() : relic.Name;
-                    _pendingUnlockNames.Add(name);
+                    _pendingUnlockRelicIds.Add(relic.Id);
                 }
             }
         }

@@ -317,10 +317,15 @@ namespace App.Item
         /// ItemRoot 下内嵌的天赋特效实例（红=传说、紫=史诗、蓝=稀有；普通只播动画）。
         /// 嵌套特效默认隐藏、在 Default 层且粒子不吃 Canvas 层级——激活前整组换 UI 层并挂排序继承。
         /// </summary>
-        public void PlayRewardReveal(QualityType quality)
+        /// <param name="showChoukaEffect">是否点亮 ChoukaEffect01；解锁弹窗等入口传 false。</param>
+        public void PlayRewardReveal(QualityType quality, bool showChoukaEffect = true)
         {
             EnsureRefs();
-            PrepareRewardFx("ChoukaEffect01");
+            if (showChoukaEffect)
+            {
+                PrepareRewardFx("ChoukaEffect01");
+            }
+
             var fxName = RewardFxName(quality);
             if (fxName != null)
             {

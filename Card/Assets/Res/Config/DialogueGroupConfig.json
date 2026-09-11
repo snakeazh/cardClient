@@ -1,0 +1,164 @@
+[
+  {
+    "Id": 1,
+    "MonsterId": 1001,
+    "PlayerTalk": "黏液?一巴掌拍扁你!",
+    "MonsterTalk": "站住,先尝尝我的黏液!"
+  },
+  {
+    "Id": 2,
+    "MonsterId": 1001,
+    "PlayerTalk": "正好,省得你逃跑!",
+    "MonsterTalk": "黏住你,你就走不掉啦!"
+  },
+  {
+    "Id": 3,
+    "MonsterId": 1001,
+    "PlayerTalk": "赢我?先扛住这一巴掌!",
+    "MonsterTalk": "软归软,黏住你就赢了!"
+  },
+  {
+    "Id": 4,
+    "MonsterId": 1001,
+    "PlayerTalk": "那我发财就指望你了。",
+    "MonsterTalk": "我要把你粘成金币模样!"
+  },
+  {
+    "Id": 5,
+    "MonsterId": 1002,
+    "PlayerTalk": "试试就试试,亮牌!",
+    "MonsterTalk": "学了发哥几手,来试试!"
+  },
+  {
+    "Id": 6,
+    "MonsterId": 1002,
+    "PlayerTalk": "看片归看片,打牌归打牌!",
+    "MonsterTalk": "港片看多了,牌技自然有!"
+  },
+  {
+    "Id": 7,
+    "MonsterId": 1002,
+    "PlayerTalk": "气场再足,不如牌好。",
+    "MonsterTalk": "压牌这一手,叫气场!"
+  },
+  {
+    "Id": 8,
+    "MonsterId": 1002,
+    "PlayerTalk": "正合我意,赌神驾到!",
+    "MonsterTalk": "比比谁的底牌更硬!"
+  },
+  {
+    "Id": 9,
+    "MonsterId": 1003,
+    "PlayerTalk": "翻盘也得问过我的牌!",
+    "MonsterTalk": "总被忽视,今天我翻盘!"
+  },
+  {
+    "Id": 10,
+    "MonsterId": 1003,
+    "PlayerTalk": "那今天让你输个明白。",
+    "MonsterTalk": "翻身仗,我可没输过!"
+  },
+  {
+    "Id": 11,
+    "MonsterId": 1003,
+    "PlayerTalk": "口气不小,牌桌上见!",
+    "MonsterTalk": "瘪牌正好压你一头!"
+  },
+  {
+    "Id": 12,
+    "MonsterId": 1003,
+    "PlayerTalk": "行,先让你叫两声。",
+    "MonsterTalk": "上桌才轮到我呱呱叫!"
+  },
+  {
+    "Id": 13,
+    "MonsterId": 1004,
+    "PlayerTalk": "手抖也比你动听。",
+    "MonsterTalk": "嗡嗡嗡,吵到你手抖!"
+  },
+  {
+    "Id": 14,
+    "MonsterId": 1004,
+    "PlayerTalk": "先把你自个儿烦哭吧。",
+    "MonsterTalk": "烦也能把你烦输!"
+  },
+  {
+    "Id": 15,
+    "MonsterId": 1004,
+    "PlayerTalk": "好玩也留不住你赢牌。",
+    "MonsterTalk": "花丛哪有牌桌好玩!"
+  },
+  {
+    "Id": 16,
+    "MonsterId": 1004,
+    "PlayerTalk": "先赢我一局再开嗓。",
+    "MonsterTalk": "我还能唱着歌赢你!"
+  },
+  {
+    "Id": 17,
+    "MonsterId": 1005,
+    "PlayerTalk": "稳不稳,亮牌才知道。",
+    "MonsterTalk": "慢工出细活,这把稳赢!"
+  },
+  {
+    "Id": 18,
+    "MonsterId": 1005,
+    "PlayerTalk": "来吧,让我看看你多壮。",
+    "MonsterTalk": "先扛过我这一把再说!"
+  },
+  {
+    "Id": 19,
+    "MonsterId": 1005,
+    "PlayerTalk": "拳头再硬,硬不过好牌。",
+    "MonsterTalk": "路没有,拳头有一把!"
+  },
+  {
+    "Id": 20,
+    "MonsterId": 1005,
+    "PlayerTalk": "嘴上赢了,牌还没出呢。",
+    "MonsterTalk": "慢是慢,赢你足够了!"
+  },
+  {
+    "Id": 21,
+    "MonsterId": 3001,
+    "PlayerTalk": "好惹不好惹,亮牌见!",
+    "MonsterTalk": "进化体,可不是好惹的!"
+  },
+  {
+    "Id": 22,
+    "MonsterId": 3001,
+    "PlayerTalk": "见识过了,不过如此。",
+    "MonsterTalk": "这把让你见识进化!"
+  },
+  {
+    "Id": 23,
+    "MonsterId": 3001,
+    "PlayerTalk": "先问问我的牌答不答应。",
+    "MonsterTalk": "我来替兄弟讨回场子!"
+  },
+  {
+    "Id": 24,
+    "MonsterId": 2001,
+    "PlayerTalk": "赢的会是我,看好了。",
+    "MonsterTalk": "瞪大眼睛,看谁输谁赢!"
+  },
+  {
+    "Id": 25,
+    "MonsterId": 2001,
+    "PlayerTalk": "那今天就轮到猎物翻身。",
+    "MonsterTalk": "首领面前,你才是猎物!"
+  },
+  {
+    "Id": 26,
+    "MonsterId": 2001,
+    "PlayerTalk": "看穿了,你也赢不走。",
+    "MonsterTalk": "这一眼,就看穿你底牌!"
+  },
+  {
+    "Id": 27,
+    "MonsterId": 2001,
+    "PlayerTalk": "掂量完了,你该退位了。",
+    "MonsterTalk": "大话之前,先掂量掂量!"
+  }
+]

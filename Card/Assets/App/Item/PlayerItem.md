@@ -116,7 +116,7 @@ item.HideDialog();                      // 渐隐后关掉当前气泡
 item.HideDialogImmediate();             // 立刻关掉，打断 tween
 ```
 
-`RootRect` / `RootAnimator` 给 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 做冲锋演出。开场对白由 [`OpeningCutscene`](../UI/Game/OpeningCutscene.cs) 调 `PlayDialog`：中心敌人先说、玩家再说。
+`RootRect` / `RootAnimator` 给 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 做冲锋演出。开场对白由 [`OpeningCutscene`](../UI/Game/OpeningCutscene.cs) 调 `PlayDialog`：中间敌人先说、玩家回，其余从左到右各说一句、玩家各回一句。
 
 ---
 

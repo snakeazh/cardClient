@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using App.Game;
 using DG.Tweening;
 using UnityEngine;
@@ -6,28 +7,40 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 开局对白 + VS：敌人 BottomDialog → 玩家 TopDialog → VS 飞入渐隐。
+    /// 开局对白 + VS：中间敌人先说、玩家回，其余从左到右各说一句、玩家各回一句，再 VS 飞入渐隐。
     /// </summary>
     public sealed class OpeningCutscene
     {
-        public const string EnemyLine = "来得正好。";
-        public const string PlayerLine = "放马过来。";
         public const string LethalLine = "受死吧。";
         public const string DodgeReplyLine = "就这";
 
-        private const float DialogHold = 1.1f;
+        public readonly struct Talk
+        {
+            public readonly PlayerItem Enemy;
+            public readonly string MonsterLine;
+            public readonly string PlayerLine;
+
+            public Talk(PlayerItem enemy, string monsterLine, string playerLine)
+            {
+                Enemy = enemy;
+                MonsterLine = monsterLine;
+                PlayerLine = playerLine;
+            }
+        }
+
+        private const float DialogHold = 1.1f / PlayerItem.DialogSpeed;
         private const float VsFlyDuration = 0.35f;
         private const float VsHold = 0.4f;
         private const float VsFade = 0.3f;
         private const float VsStartScale = 2.2f;
         private const float VsStartY = 80f;
 
+        private readonly List<PlayerItem> _speakers = new List<PlayerItem>(4);
         private RectTransform _vs;
         private CanvasGroup _vsGroup;
         private Vector2 _vsHome;
         private Sequence _seq;
         private int _playToken;
-        private PlayerItem _enemy;
         private PlayerItem _player;
 
         public void Bind(RectTransform vs)
@@ -50,20 +63,32 @@ namespace App.UI
             HideVs();
         }
 
-        public void Play(PlayerItem enemy, PlayerItem player, GameObject link, Action onComplete)
+        public void Play(
+            IReadOnlyList<Talk> talks,
+            PlayerItem player,
+            GameObject link,
+            Action onComplete)
         {
             Kill();
-            _enemy = enemy;
             _player = player;
+            RememberSpeakers(talks);
             var token = ++_playToken;
-            var seq = DOTween.Sequence().SetUpdate(true);
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
             }
 
-            AppendDialog(seq, enemy, top: false, EnemyLine);
-            AppendDialog(seq, player, top: true, PlayerLine);
+            if (talks != null)
+            {
+                for (var i = 0; i < talks.Count; i++)
+                {
+                    var talk = talks[i];
+                    AppendDialog(seq, talk.Enemy, top: false, talk.MonsterLine);
+                    AppendDialog(seq, player, top: true, talk.PlayerLine);
+                }
+            }
+
             AppendVs(seq);
 
             seq.OnComplete(() =>
@@ -84,8 +109,12 @@ namespace App.UI
         public void PlayLine(PlayerItem item, bool top, string line, GameObject link, Action onComplete)
         {
             Kill();
-            _enemy = top ? null : item;
             _player = top ? item : null;
+            if (!top && item != null)
+            {
+                _speakers.Add(item);
+            }
+
             var token = ++_playToken;
             if (item == null || !item.HasDialog(top))
             {
@@ -93,7 +122,7 @@ namespace App.UI
                 return;
             }
 
-            var seq = DOTween.Sequence().SetUpdate(true);
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -123,6 +152,7 @@ namespace App.UI
 
             _seq = null;
             HideDialogs();
+            _speakers.Clear();
             ResetVsPose();
             HideVs();
         }
@@ -132,13 +162,31 @@ namespace App.UI
             Kill();
             _vs = null;
             _vsGroup = null;
-            _enemy = null;
             _player = null;
+            _speakers.Clear();
+        }
+
+        private void RememberSpeakers(IReadOnlyList<Talk> talks)
+        {
+            _speakers.Clear();
+            if (talks == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < talks.Count; i++)
+            {
+                var enemy = talks[i].Enemy;
+                if (enemy != null && !_speakers.Contains(enemy))
+                {
+                    _speakers.Add(enemy);
+                }
+            }
         }
 
         private void AppendDialog(Sequence seq, PlayerItem item, bool top, string line)
         {
-            if (item == null || !item.HasDialog(top))
+            if (item == null || !item.HasDialog(top) || string.IsNullOrEmpty(line))
             {
                 return;
             }
@@ -157,17 +205,17 @@ namespace App.UI
             }
 
             seq.AppendCallback(PrepareVs);
-            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
-            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
+            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack));
+            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack));
             if (_vsGroup != null)
             {
-                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f).SetUpdate(true));
+                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f));
             }
 
             seq.AppendInterval(VsHold);
             if (_vsGroup != null)
             {
-                seq.Append(_vsGroup.DOFade(0f, VsFade).SetUpdate(true));
+                seq.Append(_vsGroup.DOFade(0f, VsFade));
             }
 
             seq.AppendCallback(HideVs);
@@ -217,7 +265,11 @@ namespace App.UI
 
         private void HideDialogs()
         {
-            _enemy?.HideDialogImmediate();
+            for (var i = 0; i < _speakers.Count; i++)
+            {
+                _speakers[i]?.HideDialogImmediate();
+            }
+
             _player?.HideDialogImmediate();
         }
     }

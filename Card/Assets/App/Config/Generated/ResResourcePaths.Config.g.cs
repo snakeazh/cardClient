@@ -7,6 +7,7 @@ namespace App.Resources
     {
         public const string BossEntryConfig = "Config/BossEntryConfig";
         public const string CollectionConfig = "Config/CollectionConfig";
+        public const string DialogueGroupConfig = "Config/DialogueGroupConfig";
         public const string GameConst = "Config/GameConst";
         public const string GuideGroupConfig = "Config/GuideGroupConfig";
         public const string GuideStepConfig = "Config/GuideStepConfig";

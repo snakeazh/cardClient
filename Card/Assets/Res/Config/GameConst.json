@@ -9,7 +9,7 @@
   "ShopRefreshAfter": 15,
   "ShopRefreshGoldUpNumMax": 3,
   "GoldIcon": "coin",
-  "TalentChestNeedGold": 10,
+  "TalentChestNeedGold": 50,
   "PlayerInitialGoldNum": 0,
   "DamageTurnToGold": [
     12,

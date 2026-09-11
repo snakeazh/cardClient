@@ -48,9 +48,10 @@ namespace App.Game
         [SerializeField] private GameObject bottomDialog;
         [SerializeField] private TMP_Text bottomDialogText;
 
-        public const float DialogShowDuration = 0.2f;
-        public const float DialogHideDuration = 0.15f;
-        public const float DialogCharInterval = 0.08f;
+        public const float DialogSpeed = 2f;
+        public const float DialogShowDuration = 0.2f / DialogSpeed;
+        public const float DialogHideDuration = 0.15f / DialogSpeed;
+        public const float DialogCharInterval = 0.08f / DialogSpeed;
 
         private bool _stateHidden;
         private bool _enemyVisual;
@@ -246,11 +247,11 @@ namespace App.Game
                 rt.localScale = Vector3.one * 0.7f;
             }
 
-            var seq = DOTween.Sequence().SetUpdate(true).SetLink(root, LinkBehaviour.KillOnDestroy);
-            seq.Join(group.DOFade(1f, DialogShowDuration).SetUpdate(true));
+            var seq = DOTween.Sequence().SetLink(root, LinkBehaviour.KillOnDestroy);
+            seq.Join(group.DOFade(1f, DialogShowDuration));
             if (rt != null)
             {
-                seq.Join(rt.DOScale(1f, DialogShowDuration).SetEase(Ease.OutBack).SetUpdate(true));
+                seq.Join(rt.DOScale(1f, DialogShowDuration).SetEase(Ease.OutBack));
             }
 
             if (label != null && full.Length > 0)
@@ -261,8 +262,7 @@ namespace App.Game
                         value => label.maxVisibleCharacters = value,
                         reveal,
                         reveal * DialogCharInterval)
-                    .SetEase(Ease.Linear)
-                    .SetUpdate(true));
+                    .SetEase(Ease.Linear));
             }
 
             _dialogTween = seq;
@@ -282,7 +282,6 @@ namespace App.Game
 
             var group = EnsureCanvasGroup(root);
             var tween = group.DOFade(0f, DialogHideDuration)
-                .SetUpdate(true)
                 .SetLink(root, LinkBehaviour.KillOnDestroy)
                 .OnComplete(() =>
                 {

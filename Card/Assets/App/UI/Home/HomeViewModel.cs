@@ -7,6 +7,7 @@ using App.Level;
 using App.Resources;
 using App.Talent;
 using App.Unlock;
+using App.UI.Popup;
 using Framework.Assets;
 using Framework.Log;
 using Framework.UI;
@@ -69,7 +70,34 @@ namespace App.UI
             RefreshLastStage();
             RefreshStamina();
             await StartHomeBgmAsync();
-            _unlock?.FlushUnlockToasts();
+            await PresentPendingUnlocksAsync();
+        }
+
+        /// <summary>局内积压的新解锁遗物：弹 GetEquipDetail，不再 Toast。</summary>
+        private async Task PresentPendingUnlocksAsync()
+        {
+            if (_unlock == null || _ui == null)
+            {
+                return;
+            }
+
+            var ids = _unlock.ConsumePendingUnlockRelicIds();
+            if (ids == null || ids.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(GetEquipDetailViewModel));
+                var vm = (GetEquipDetailViewModel)_ui.Registry.CreateViewModel(registration);
+                vm.Setup(ids);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
 
         /// <summary>

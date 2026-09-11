@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Framework.Save;
 using App.Config;
 
@@ -18,8 +19,10 @@ namespace App.Unlock
 
         void BeginRun();
 
-        /// <summary>弹出局内积压的解锁提示。回主页后调用；局内不弹。</summary>
-        void FlushUnlockToasts();
+        /// <summary>
+        /// 取出局内积压的新解锁遗物 Id（按解锁顺序）。回主页后调用以弹 GetEquipDetail；取出后清空。
+        /// </summary>
+        IReadOnlyList<int> ConsumePendingUnlockRelicIds();
 
         /// <summary>
         /// 上报进度。<paramref name="amount"/> 默认 1。

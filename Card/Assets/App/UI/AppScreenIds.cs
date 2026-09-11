@@ -19,6 +19,7 @@ namespace App.UI
         public const string IllustratedBookPop = "App.IllustratedBookPop";
         public const string TalentPopup = "App.TalentPopup";
         public const string TalentDetail = "App.TalentDetail";
+        public const string GetEquipDetail = "App.GetEquipDetail";
         public const string TalentRulesPop = "App.TalentRulesPop";
         public const string ShopDetail = "App.ShopDetail";
         public const string CommonTop = "App.CommonTop";

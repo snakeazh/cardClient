@@ -6,8 +6,8 @@ using UnityEngine;
 namespace App.Atlas
 {
     /// <summary>
-    /// 品质边框资源命名：Ordinary/Rare/Epic/Legend + CardFrame（方形卡）/ RectangleFrame（长条框），
-    /// 黑色底框遮罩 BlackBaseFrameMask。贴图来自预加载图集 Altas/ItemBg。
+    /// 品质边框资源命名：Ordinary/Rare/Epic/Legend + CardFrame（方形卡）/ RectangleFrame（长条框）/
+    /// CardFrameBack（卡背背景），黑色底框遮罩 BlackBaseFrameMask。贴图来自预加载图集 Altas/ItemBg。
     /// </summary>
     public static class ItemBgSpriteLibrary
     {
@@ -24,6 +24,12 @@ namespace App.Atlas
         public static Sprite GetCardFrame(QualityType type)
         {
             return GetSprite(QualityPrefix(type) + "CardFrame");
+        }
+
+        /// <summary>方形卡片品质卡背背景（Item 预制体 CardBG 节点）。</summary>
+        public static Sprite GetCardFrameBack(QualityType type)
+        {
+            return GetSprite(QualityPrefix(type) + "CardFrameBack");
         }
 
         /// <summary>长条矩形品质边框。</summary>

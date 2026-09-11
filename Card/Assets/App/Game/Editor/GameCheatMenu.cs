@@ -4,6 +4,7 @@ using App.Bootstrap;
 using App.Config;
 using App.Game;
 using App.Talent;
+using App.Wallet;
 using UnityEditor;
 using UnityEngine;
 
@@ -31,7 +32,7 @@ namespace App.Game.Editor
             GrantBossEntryCheatWindow.Open();
         }
 
-        [MenuItem("Debug/外挂/金币 +99999", false, 10)]
+        [MenuItem("Debug/外挂/局内金币 +99999", false, 10)]
         public static void AddGold()
         {
             if (!TryGetSession(out var session))
@@ -40,6 +41,21 @@ namespace App.Game.Editor
             }
 
             session.DebugAddGold();
+        }
+
+        [MenuItem("Debug/外挂/局外金币 +99999", false, 10)]
+        public static void AddWalletGold()
+        {
+            if (!Application.isPlaying || !AppServices.IsReady)
+            {
+                Debug.LogWarning("需要在 Play 模式且启动流程完成后使用");
+                return;
+            }
+
+            var wallet = AppServices.Resolve<IWalletService>();
+            wallet.Add(99999);
+            wallet.Save();
+            Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
         }
 
         [MenuItem("Debug/外挂/随机获得一个天赋", false, 14)]

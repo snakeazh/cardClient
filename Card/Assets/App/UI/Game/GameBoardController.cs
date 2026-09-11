@@ -1,7 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Game;
 using App.Guide;
+using App.Resources;
+using Framework.Log;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -21,6 +25,11 @@ namespace App.UI
         private GuideTargetRegistry _guideTargets;
         private readonly List<Transform> _playerCardTransforms = new List<Transform>(GameBalance.MaxCardsPerSeat);
         private readonly List<string> _guideTargetIds = new List<string>(8);
+        private HudBackgroundFit _hudBg;
+        private Sprite _hudNormalBg;
+        private Sprite _hudBossBg;
+        private bool? _hudBgBoss;
+        private int _hudBgSerial;
 
         public void Attach(GameTableViewModel viewModel)
         {
@@ -188,6 +197,8 @@ namespace App.UI
                 return;
             }
 
+            _ = ApplyHudBackgroundAsync();
+
             if (!_rubCompleting && !_cards.IsRubPlaying)
             {
                 CancelRubPreviewIfNeeded();
@@ -273,6 +284,74 @@ namespace App.UI
             }
 
             _cards.Bind(transform, _vm.Resources);
+            _hudBg = GetComponentInChildren<HudBackgroundFit>(true);
+        }
+
+        private async Task ApplyHudBackgroundAsync()
+        {
+            if (_hudBg == null || _vm?.Session == null)
+            {
+                return;
+            }
+
+            var isBoss = _vm.Session.Run.HasBoss;
+            if (_hudBgBoss == isBoss)
+            {
+                return;
+            }
+
+            if (_hudBg.TryApplyTheme(isBoss))
+            {
+                _hudBgBoss = isBoss;
+                return;
+            }
+
+            if (_hudNormalBg == null)
+            {
+                _hudNormalBg = _hudBg.CurrentSprite;
+            }
+
+            var serial = ++_hudBgSerial;
+            var sprite = isBoss ? await LoadHudBossBackground() : _hudNormalBg;
+            if (serial != _hudBgSerial || _hudBg == null || _vm == null || sprite == null)
+            {
+                return;
+            }
+
+            if (_vm.Session.Run.HasBoss != isBoss)
+            {
+                _hudBgBoss = null;
+                await ApplyHudBackgroundAsync();
+                return;
+            }
+
+            _hudBg.ApplySprite(sprite);
+            _hudBgBoss = isBoss;
+        }
+
+        private async Task<Sprite> LoadHudBossBackground()
+        {
+            if (_hudBossBg != null)
+            {
+                return _hudBossBg;
+            }
+
+            if (_vm?.Resources == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                _hudBossBg = await _vm.Resources.LoadAsync<Sprite>(ResResourcePaths.GameHudBossBg);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.UI, $"Failed to load hud bg '{ResResourcePaths.GameHudBossBg}': {ex.Message}");
+                _hudBossBg = null;
+            }
+
+            return _hudBossBg;
         }
     }
 }

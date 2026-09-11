@@ -214,7 +214,7 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 弹出 TopDialog（人物卡上方）或 BottomDialog（敌人卡下方）。
+        /// 弹出 TopDialog（卡上方）或 BottomDialog（卡下方）。开场对峙：敌人 top，人物 bottom。
         /// 气泡入场后按字逐个显示。返回入场 + 打字 tween。
         /// </summary>
         public Tween PlayDialog(bool top, string text)

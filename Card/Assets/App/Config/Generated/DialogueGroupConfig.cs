@@ -17,12 +17,12 @@ namespace App.Config
         public int MonsterId;
 
         /// <summary>
-        /// 玩家台词(玩家先说,&lt;=20字)
+        /// 玩家台词(回应怪物,&lt;=20字)
         /// </summary>
         public string PlayerTalk;
 
         /// <summary>
-        /// 怪物台词(回应玩家,&lt;=20字)
+        /// 怪物台词(怪物先说,&lt;=20字)
         /// </summary>
         public string MonsterTalk;
 

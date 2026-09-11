@@ -153,7 +153,7 @@ namespace App.UI.Popup
         private string FormatCarryNum()
         {
             var current = Session.Run.RelicConfigIds != null ? Session.Run.RelicConfigIds.Count : 0;
-            return $"{current}/{Session.RelicCarryMax}";
+            return $"当前圣物数量{current}/{Session.RelicCarryMax}";
         }
 
         private static string FormatFreeRefreshNum(int freeLeft)

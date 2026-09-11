@@ -92,7 +92,7 @@ namespace App.UI.Popup
             Binding.BindActive(refreshNum.gameObject, ViewModel.ShowRefreshNum);
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
-            BindCarryNum();
+            Binding.BindText(GetNode<TMP_Text>("MaxNum"), ViewModel.CarryNum);
 
             EnsureSellItems();
             EnsureMineItems();
@@ -132,21 +132,6 @@ namespace App.UI.Popup
         private T GetNode<T>(string key) where T : Component
         {
             return UI.GetGameObject(key).GetComponent<T>();
-        }
-
-        private void BindCarryNum()
-        {
-            var maxNum = UI.GetGameObject("MaxNum");
-            if (maxNum == null)
-            {
-                return;
-            }
-
-            var root = maxNum.transform;
-            ShopNumSprites.Prepare(root);
-            Binding.Add(ViewModel.CarryNum.Subscribe(
-                text => ShopNumSprites.Apply(ViewModel.Atlas, root, text),
-                emitCurrent: true));
         }
 
         private void EnsureSellItems()

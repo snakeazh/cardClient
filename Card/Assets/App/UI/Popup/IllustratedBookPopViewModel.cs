@@ -237,13 +237,19 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>遗物获得方式："获取方式: \n" + UnlockConditionConfig.Desc（如"击杀20只敌人后解锁"）；
-        /// 仅遗物页提供，未配条件（Id&lt;=0）或取不到行兜底"商店购买获得"（商店常驻货）。</summary>
+        /// <summary>遗物获得方式："获取方式: \n" + 条件文案；未解锁时带解锁进度（如"击杀20只敌人后解锁（5/20）"，
+        /// 同 UnlockTip 口径）。仅遗物页提供，已解锁未配条件（Id&lt;=0）或取不到行兜底"商店购买获得"（商店常驻货）。</summary>
         private static string ResolveAcquireMethod(IllustratedBookEntry entry)
         {
             if (entry == null || entry.Tab != IllustratedBookTab.Relic)
             {
                 return null;
+            }
+
+            // 未解锁：获取方式直接用带进度的解锁提示（BuildRelics 已算好 UnlockTip）
+            if (!entry.Unlocked && !string.IsNullOrEmpty(entry.UnlockTip))
+            {
+                return "获取方式: \n" + entry.UnlockTip;
             }
 
             var relic = RelicConfig.Get(entry.Id);

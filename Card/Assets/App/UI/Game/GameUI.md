@@ -32,9 +32,20 @@ GameUI
   roundbuffGrid           ← 关卡机制格子；下面按条目克隆 roundbuff
   roundbuff               ← 机制图标模板（蓝书），无机制时格子隐藏
   mask / hptextdi         ← 攻击演出用；扣血数字在 hptextdi 上弹出（闪避显示 MISS，不播 ani_hptextdi）
+  VS                      ← 开场对决图标；对话结束后飞入再渐隐，平时隐藏
 ```
 
-开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。有关卡机制时开局弹出 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs)（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 同时显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
+开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。
+
+每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，`SetUpdate(true)` 不跟倍速；同关点「下一局」不播：
+
+1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）
+2. 中心敌人 `PlayerItem.BottomDialog` 占位台词「来得正好。」（逐字）
+3. 玩家 `TopDialog` 占位台词「放马过来。」（逐字）
+4. `VS` 从略偏上放大飞入居中，短停后渐隐
+5. 再走 `CardTableAnimator` 发牌
+
+视觉发牌由 `GameTableViewModel.ShouldHoldDealVisual`（`StageRoundIndex == 1` 且本手尚未播完开场）拦住，`GameBoardController` 只清桌不 `PlayDeal`；开场结束 `CompleteOpening` 后再 `SyncCards`。有关卡机制时 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs) 改到开场+发牌结束后再弹（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 开局即可显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。
 
@@ -83,7 +94,8 @@ GameUI
 ## 一局操作
 
 ```
-发牌动画结束
+开场对话 + VS（每关第一手）
+  → 发牌动画结束
   → 玩家 5 张手牌已翻开；otherNode 显示当前存活敌人的牌
   → 点选 3 张（选中上移），可点技能，或点「开战」
   → 用这 3 张与每名存活敌人逐个亮牌、打伤害（敌人从 5 张里自动选出最大 3 张；otherNode 切到当前对手）
@@ -105,6 +117,7 @@ GameUI
 关卡结算见 [`BattleSettleUpPop.md`](../Popup/BattleSettleUpPop.md)。  
 金币飞入见 [`CoinFlyFx.md`](../Effects/CoinFlyFx.md)。  
 攻击冲锋见 [`AttackCutscene.md`](AttackCutscene.md)。  
+开场对话 / VS 见 [`OpeningCutscene.cs`](OpeningCutscene.cs)。  
 闯关结算见 [`BattleResultPopup.md`](../Popup/BattleResultPopup.md)。
 
 `GameTableViewModel` 按阶段弹窗：
@@ -122,14 +135,14 @@ GameUI
 
 `roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
 
-`roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时开局还会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
+`roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时，开场对话/VS 和发牌都结束后会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 
 ---
 
 ## 注意
 
 - 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。点 `backBtn` 先出 [`CommonTop`](../Popup/CommonTopView.cs)「确定退出游戏吗」：确定弹出失败且无复活的 `BattleResultPopup`（点 Back 回主页并兑金）；取消关闭确认框，继续对局。
-- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1。选择写入 `ISaveService`（`game.playback.speed.v1`），重启后仍用上次倍速。
+- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、开场对话/VS、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1。选择写入 `ISaveService`（`game.playback.speed.v1`），重启后仍用上次倍速。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

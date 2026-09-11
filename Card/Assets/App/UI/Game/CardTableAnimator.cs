@@ -181,6 +181,26 @@ namespace App.UI
             SyncRubSelectFx(session);
         }
 
+        /// <summary>
+        /// 开场 hold：清掉旧牌、不改 <c>_shownDeal</c>，之后 <see cref="Sync"/> 仍会 PlayDeal。
+        /// </summary>
+        public void SyncHoldingDeal(GameSession session)
+        {
+            _session = session;
+            if (session == null || _hud == null)
+            {
+                return;
+            }
+
+            ApplySeatVisibility(session);
+            ClearAllItems();
+            HideDealPile();
+            if (session.DealSerial <= 0)
+            {
+                _shownDeal = 0;
+            }
+        }
+
         public int HitPlayerCard(Camera camera)
         {
             if (camera == null || _player == null)

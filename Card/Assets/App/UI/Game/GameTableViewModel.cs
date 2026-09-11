@@ -212,6 +212,26 @@ namespace App.UI
         public const float MaxPlaybackSpeed = 2f;
         public const string PlaybackSpeedSaveKey = "game.playback.speed.v1";
         private int _seenDealSerial = -1;
+        private int _openingCompletedSerial = -1;
+
+        /// <summary>每关第一手开场（对话+VS）尚未完成时拦住视觉发牌。</summary>
+        public bool HoldDealVisual => ShouldHoldDealVisual();
+
+        public bool ShouldHoldDealVisual()
+        {
+            return Session != null &&
+                   Session.DealSerial > 0 &&
+                   Session.StageRoundIndex == 1 &&
+                   _openingCompletedSerial != Session.DealSerial;
+        }
+
+        public void CompleteOpening()
+        {
+            if (Session != null)
+            {
+                _openingCompletedSerial = Session.DealSerial;
+            }
+        }
 
         public void NotifyDealReady()
         {
@@ -891,6 +911,8 @@ namespace App.UI
                 _infoPopupOpen ||
                 _shopPopupOpen ||
                 _resultPopupOpen ||
+                HoldDealVisual ||
+                !ShowTableButtons.Value ||
                 _ui == null)
             {
                 return;

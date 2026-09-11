@@ -49,7 +49,11 @@ namespace App.UI
         private Image _enemyCardTypeIcon;
         private Transform _enemyCardTypeNum;
         private readonly AttackCutscene _attackFx = new AttackCutscene();
+        private readonly OpeningCutscene _openingFx = new OpeningCutscene();
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
+        private bool _openingPlaying;
+        private int _openingForSerial = -1;
+        private bool _waitHudForOpening;
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
@@ -133,7 +137,12 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
-            PlayHudEntrance();
+            _waitHudForOpening = true;
+            PlayHudEntrance(() =>
+            {
+                _waitHudForOpening = false;
+                TryStartOpening();
+            });
         }
 
         protected override async Task OnViewOpen()
@@ -256,6 +265,16 @@ namespace App.UI
 
             GameTableViewModel.RestorePlaybackSpeed();
             KillHudMotion(restoreHome: true);
+            _openingFx.Dispose();
+            _openingPlaying = false;
+            _openingForSerial = -1;
+            _waitHudForOpening = false;
+            _playerItem?.HideDialogImmediate();
+            for (var i = 0; i < _enemyItems.Length; i++)
+            {
+                _enemyItems[i]?.HideDialogImmediate();
+            }
+
             UnregisterGuideTargets();
             StopPeekHold();
 
@@ -350,6 +369,7 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
+            TryStartOpening();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
@@ -1782,6 +1802,7 @@ namespace App.UI
         {
             KillHudMotion(restoreHome: false);
             _hudFlies.Clear();
+            BindOpeningVs();
             ParkHudFly("horEquipBtns2", 1f, 0f);
             ParkHudFly("horBtns2", -1f, 0f);
             ParkHudFly("stageInfo", 1f, 0f);
@@ -1803,10 +1824,11 @@ namespace App.UI
             }
         }
 
-        private void PlayHudEntrance()
+        private void PlayHudEntrance(Action onComplete = null)
         {
             if (_hudFlies.Count == 0)
             {
+                onComplete?.Invoke();
                 return;
             }
 
@@ -1830,7 +1852,88 @@ namespace App.UI
                     .SetLink(fly.Rt.gameObject, LinkBehaviour.KillOnDestroy));
             }
 
+            if (onComplete != null)
+            {
+                seq.OnComplete(() => onComplete());
+            }
+
             _hudEntrance = seq;
+        }
+
+        private void BindOpeningVs()
+        {
+            var vs = ResolveSlot("VS") ?? transform.Find("VS");
+            var rt = vs as RectTransform ?? (vs != null ? vs.GetComponent<RectTransform>() : null);
+            _openingFx.Bind(rt);
+        }
+
+        private void TryStartOpening()
+        {
+            if (_waitHudForOpening || ViewModel == null || _board == null || !ViewModel.ShouldHoldDealVisual())
+            {
+                return;
+            }
+
+            var serial = ViewModel.Session.DealSerial;
+            if (_openingPlaying && _openingForSerial == serial)
+            {
+                return;
+            }
+
+            _openingPlaying = true;
+            _openingForSerial = serial;
+            BindOpeningVs();
+            _openingFx.Play(ResolveOpeningEnemy(), _playerItem, gameObject, OnOpeningComplete);
+        }
+
+        private PlayerItem ResolveOpeningEnemy()
+        {
+            if (IsEnemyItemVisible(0))
+            {
+                return _enemyItems[0];
+            }
+
+            var session = ViewModel != null ? ViewModel.Session : null;
+            if (session != null)
+            {
+                var slot = session.DisplayedEnemyVisualSlot;
+                if (IsEnemyItemVisible(slot))
+                {
+                    return _enemyItems[slot];
+                }
+            }
+
+            for (var i = 0; i < _enemyItems.Length; i++)
+            {
+                if (IsEnemyItemVisible(i))
+                {
+                    return _enemyItems[i];
+                }
+            }
+
+            return null;
+        }
+
+        private bool IsEnemyItemVisible(int slot)
+        {
+            if (slot < 0 || slot >= _enemyItems.Length)
+            {
+                return false;
+            }
+
+            var item = _enemyItems[slot];
+            return item != null && item.gameObject.activeInHierarchy;
+        }
+
+        private void OnOpeningComplete()
+        {
+            _openingPlaying = false;
+            if (ViewModel != null)
+            {
+                ViewModel.CompleteOpening();
+            }
+
+            _board?.SyncCards();
         }
 
         private void ParkHudFly(string key, float xSign, float ySign)

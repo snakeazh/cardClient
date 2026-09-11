@@ -26,8 +26,12 @@ Canvas HUD 在 [`GameUI.md`](GameUI.md)。对局状态在 [`GameSession.md`](../
 ```
 Attach(viewModel)
   → BindScene：Camera.main + CardTableAnimator.Bind(GameHud)
-  → Session.Changed → _cards.Sync(session)
+  → Session.Changed
+       每关第一手开场未完成：SyncHoldingDeal（清桌、不发牌）
+       否则：_cards.Sync(session)
   → DealFinished → ViewModel.NotifyDealReady()   // HUD 才显示开战/技能
+
+开场结束由 GameUIView 调 SyncCards() 再 PlayDeal。
 
 Detach / OnDestroy
   → 取消订阅，Dispose 牌动画

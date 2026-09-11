@@ -43,10 +43,21 @@ namespace App.Game
         [SerializeField] private Image enemyHeartBg;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
+        [SerializeField] private GameObject topDialog;
+        [SerializeField] private TMP_Text topDialogText;
+        [SerializeField] private GameObject bottomDialog;
+        [SerializeField] private TMP_Text bottomDialogText;
+
+        public const float DialogShowDuration = 0.2f;
+        public const float DialogHideDuration = 0.15f;
+        public const float DialogCharInterval = 0.08f;
 
         private bool _stateHidden;
         private bool _enemyVisual;
         private bool _visualReady;
+        private bool _dialogRefsReady;
+        private Tween _dialogTween;
+        private GameObject _activeDialog;
 
         private TMP_Text ActiveName => _enemyVisual && enemyCardName != null ? enemyCardName : cardName;
         private Image ActiveIcon => _enemyVisual && enemyCardIcon != null ? enemyCardIcon : cardIcon;
@@ -187,6 +198,112 @@ namespace App.Game
                 EnsureRefs();
                 return ActiveAttackAnimator;
             }
+        }
+
+        public bool HasDialog(bool top)
+        {
+            EnsureRefs();
+            return ResolveDialog(top) != null;
+        }
+
+        public static float DialogPlayDuration(string text)
+        {
+            var n = string.IsNullOrEmpty(text) ? 0 : text.Length;
+            return DialogShowDuration + n * DialogCharInterval;
+        }
+
+        /// <summary>
+        /// 弹出 TopDialog（人物卡上方）或 BottomDialog（敌人卡下方）。
+        /// 气泡入场后按字逐个显示。返回入场 + 打字 tween。
+        /// </summary>
+        public Tween PlayDialog(bool top, string text)
+        {
+            EnsureRefs();
+            KillDialogTween();
+            HideDialogRoots();
+            var root = ResolveDialog(top);
+            var label = ResolveDialogText(top);
+            if (root == null)
+            {
+                return null;
+            }
+
+            var full = text ?? string.Empty;
+            if (label != null)
+            {
+                label.text = full;
+                label.maxVisibleCharacters = 0;
+                label.ForceMeshUpdate();
+            }
+
+            root.SetActive(true);
+            _activeDialog = root;
+            var rt = root.transform as RectTransform;
+            var group = EnsureCanvasGroup(root);
+            group.alpha = 0f;
+            if (rt != null)
+            {
+                rt.localScale = Vector3.one * 0.7f;
+            }
+
+            var seq = DOTween.Sequence().SetUpdate(true).SetLink(root, LinkBehaviour.KillOnDestroy);
+            seq.Join(group.DOFade(1f, DialogShowDuration).SetUpdate(true));
+            if (rt != null)
+            {
+                seq.Join(rt.DOScale(1f, DialogShowDuration).SetEase(Ease.OutBack).SetUpdate(true));
+            }
+
+            if (label != null && full.Length > 0)
+            {
+                var reveal = full.Length;
+                seq.Append(DOTween.To(
+                        () => label.maxVisibleCharacters,
+                        value => label.maxVisibleCharacters = value,
+                        reveal,
+                        reveal * DialogCharInterval)
+                    .SetEase(Ease.Linear)
+                    .SetUpdate(true));
+            }
+
+            _dialogTween = seq;
+            return seq;
+        }
+
+        public Tween HideDialog()
+        {
+            EnsureRefs();
+            KillDialogTween();
+            var root = _activeDialog;
+            if (root == null || !root.activeSelf)
+            {
+                HideDialogRoots();
+                return null;
+            }
+
+            var group = EnsureCanvasGroup(root);
+            var tween = group.DOFade(0f, DialogHideDuration)
+                .SetUpdate(true)
+                .SetLink(root, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    if (root != null)
+                    {
+                        root.SetActive(false);
+                    }
+
+                    if (_activeDialog == root)
+                    {
+                        _activeDialog = null;
+                    }
+                });
+            _dialogTween = tween;
+            return tween;
+        }
+
+        public void HideDialogImmediate()
+        {
+            KillDialogTween();
+            HideDialogRoots();
         }
 
         public Tween PlayDissolve(float duration = -1f, Action onComplete = null)
@@ -497,6 +614,11 @@ namespace App.Game
             EnsureRefs();
         }
 
+        private void OnDestroy()
+        {
+            HideDialogImmediate();
+        }
+
         private void EnsureRefs()
         {
             if (cardName == null)
@@ -613,6 +735,7 @@ namespace App.Game
             }
 
             HideStateNode();
+            EnsureDialogRefs();
 
             if (playerRoot == null)
             {
@@ -633,6 +756,104 @@ namespace App.Game
             {
                 SetEnemyVisual(false);
             }
+        }
+
+        private void EnsureDialogRefs()
+        {
+            if (_dialogRefsReady)
+            {
+                return;
+            }
+
+            _dialogRefsReady = true;
+            if (topDialog == null)
+            {
+                var node = FindDeep(transform, "TopDialog");
+                if (node != null)
+                {
+                    topDialog = node.gameObject;
+                }
+            }
+
+            if (topDialogText == null && topDialog != null)
+            {
+                topDialogText = FindDialogText(topDialog.transform);
+            }
+
+            if (bottomDialog == null)
+            {
+                var node = FindDeep(transform, "BottomDialog");
+                if (node != null)
+                {
+                    bottomDialog = node.gameObject;
+                }
+            }
+
+            if (bottomDialogText == null && bottomDialog != null)
+            {
+                bottomDialogText = FindDialogText(bottomDialog.transform);
+            }
+
+            HideDialogRoots();
+        }
+
+        private GameObject ResolveDialog(bool top)
+        {
+            return top ? topDialog : bottomDialog;
+        }
+
+        private TMP_Text ResolveDialogText(bool top)
+        {
+            return top ? topDialogText : bottomDialogText;
+        }
+
+        private void HideDialogRoots()
+        {
+            ResetDialogText(topDialogText);
+            ResetDialogText(bottomDialogText);
+            if (topDialog != null)
+            {
+                topDialog.SetActive(false);
+            }
+
+            if (bottomDialog != null)
+            {
+                bottomDialog.SetActive(false);
+            }
+
+            _activeDialog = null;
+        }
+
+        private static void ResetDialogText(TMP_Text label)
+        {
+            if (label == null)
+            {
+                return;
+            }
+
+            label.maxVisibleCharacters = int.MaxValue;
+        }
+
+        private void KillDialogTween()
+        {
+            if (_dialogTween != null && _dialogTween.IsActive())
+            {
+                _dialogTween.Kill();
+            }
+
+            _dialogTween = null;
+        }
+
+        private static CanvasGroup EnsureCanvasGroup(GameObject go)
+        {
+            var group = go.GetComponent<CanvasGroup>();
+            return group != null ? group : go.AddComponent<CanvasGroup>();
+        }
+
+        private static TMP_Text FindDialogText(Transform dialog)
+        {
+            var node = FindDeep(dialog, "DialogText");
+            return node != null ? node.GetComponent<TMP_Text>() : null;
         }
 
         private Image FindImage(string nodeName)

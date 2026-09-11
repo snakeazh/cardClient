@@ -193,6 +193,24 @@ namespace App.UI
                 CancelRubPreviewIfNeeded();
             }
 
+            if (_vm.ShouldHoldDealVisual())
+            {
+                _cards.SyncHoldingDeal(_vm.Session);
+                RefreshGuideTargets();
+                return;
+            }
+
+            _cards.Sync(_vm.Session);
+            RefreshGuideTargets();
+        }
+
+        public void SyncCards()
+        {
+            if (_vm == null)
+            {
+                return;
+            }
+
             _cards.Sync(_vm.Session);
             RefreshGuideTargets();
         }

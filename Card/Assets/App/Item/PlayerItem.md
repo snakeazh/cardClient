@@ -34,6 +34,8 @@
 | `enemycardattack` | 敌人攻击力整块；值为 0 时隐藏。底图取 `MonsterConfig.HealthBar` |
 | `enemycardheart` | 敌人血量整块。局内阵亡仍显示 0。底图与 `enemycardattack` 相同 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
+| `TopDialog` | 开场对白气泡（卡上方，朝屏幕中心）；默认隐藏。子节点 `DialogText` |
+| `BottomDialog` | 开场对白气泡（卡下方，预制体已翻转朝屏幕中心）；敌人开场用。默认隐藏。子节点 `DialogText` |
 
 `state` 节点已不再使用。预制体若还留着，运行时会关掉，不要再写状态/透视文案。
 
@@ -109,9 +111,12 @@ item.SetAttack(10);
 item.SetPortrait(sprite);               // null 则关掉 Image
 item.SetPortrait(sprite, locked: true); // 未解锁：头像变黑
 item.Bind(seat, portrait, attack);      // 按 seat.IsPlayer 切 card / enemycard
+item.PlayDialog(top: true, "放马过来。"); // TopDialog 弹出后逐字；敌人开场用 top: false → BottomDialog
+item.HideDialog();                      // 渐隐后关掉当前气泡
+item.HideDialogImmediate();             // 立刻关掉，打断 tween
 ```
 
-`RootRect` / `RootAnimator` 给 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 做冲锋演出。
+`RootRect` / `RootAnimator` 给 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 做冲锋演出。开场对白由 [`OpeningCutscene`](../UI/Game/OpeningCutscene.cs) 调 `PlayDialog`：中心敌人先说、玩家再说。
 
 ---
 

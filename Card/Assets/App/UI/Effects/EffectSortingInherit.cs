@@ -7,7 +7,7 @@ namespace App.UI
     /// 挂到特效根节点的层级继承组件：粒子/拖尾等 Renderer 不吃父物体的层级，
     /// 挂上后 sortingOrder 会在自身原值基础上叠加所有父物体的层级
     /// （父链上的 Canvas 取其 sortingOrder，其余取其 Renderer.sortingOrder），
-    /// 挪到别的父节点下会自动重算，不会重复叠加。
+    /// 子物体里勾了 Override Sorting 的 Canvas 同样平移；挪到别的父节点下会自动重算，不会重复叠加。
     /// </summary>
     [DisallowMultipleComponent]
     public class EffectSortingInherit : MonoBehaviour
@@ -41,6 +41,12 @@ namespace App.UI
         private void Apply()
         {
             var inherited = GetInheritedOrder(transform);
+            ApplyRenderers(inherited);
+            ApplyCanvases(inherited);
+        }
+
+        private void ApplyRenderers(int inherited)
+        {
             var renderers = GetComponentsInChildren<Renderer>(true);
             for (var i = 0; i < renderers.Length; i++)
             {
@@ -59,6 +65,34 @@ namespace App.UI
                 }
 
                 renderer.sortingOrder = baseOrder + inherited + orderOffset;
+            }
+        }
+
+        private void ApplyCanvases(int inherited)
+        {
+            var canvases = GetComponentsInChildren<Canvas>(true);
+            for (var i = 0; i < canvases.Length; i++)
+            {
+                var canvas = canvases[i];
+                if (canvas == null)
+                {
+                    continue;
+                }
+
+                // 根 Canvas 是整个 UI 的层总闸不能动；未 override 的嵌套 Canvas 排序跟随父级，改字段不生效
+                if (canvas.isRootCanvas || !canvas.overrideSorting)
+                {
+                    continue;
+                }
+
+                var id = canvas.GetInstanceID();
+                if (!_baseOrders.TryGetValue(id, out var baseOrder))
+                {
+                    baseOrder = canvas.sortingOrder;
+                    _baseOrders[id] = baseOrder;
+                }
+
+                canvas.sortingOrder = baseOrder + inherited + orderOffset;
             }
         }
 

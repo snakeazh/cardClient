@@ -54,6 +54,7 @@ namespace App.UI
         private bool _openingPlaying;
         private int _openingForSerial = -1;
         private bool _waitHudForOpening;
+        private bool _lethalTauntThisAttack;
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
@@ -269,6 +270,7 @@ namespace App.UI
             _openingPlaying = false;
             _openingForSerial = -1;
             _waitHudForOpening = false;
+            _lethalTauntThisAttack = false;
             _playerItem?.HideDialogImmediate();
             for (var i = 0; i < _enemyItems.Length; i++)
             {
@@ -663,6 +665,33 @@ namespace App.UI
 
         private void PlayAttackCutscene(GameSession session, float timeScale = 1f)
         {
+            if (session.IncomingAttackWouldKill)
+            {
+                _lethalTauntThisAttack = true;
+                var speaker = AttackItemAtSlot(session.AttackVisualSlot);
+                _openingFx.PlayLine(
+                    speaker,
+                    top: false,
+                    OpeningCutscene.LethalLine,
+                    gameObject,
+                    () =>
+                    {
+                        if (ViewModel == null || ViewModel.Session != session)
+                        {
+                            return;
+                        }
+
+                        PlayAttackCharge(session, timeScale);
+                    });
+                return;
+            }
+
+            _lethalTauntThisAttack = false;
+            PlayAttackCharge(session, timeScale);
+        }
+
+        private void PlayAttackCharge(GameSession session, float timeScale = 1f)
+        {
             var mask = ResolveSlot("mask");
             if (mask != null)
             {
@@ -712,6 +741,19 @@ namespace App.UI
                 ViewModel.ShowHpText.Value = false;
                 RestoreHpText();
                 ClearAttackHold();
+                if (_lethalTauntThisAttack && session.LastAttackMissed)
+                {
+                    _lethalTauntThisAttack = false;
+                    _openingFx.PlayLine(
+                        _playerItem,
+                        top: true,
+                        OpeningCutscene.DodgeReplyLine,
+                        gameObject,
+                        FinishAttackAfterDodgeReply);
+                    return;
+                }
+
+                _lethalTauntThisAttack = false;
                 _attackCutsceneDone = true;
                 FinishAttackIfReady();
             };
@@ -736,6 +778,17 @@ namespace App.UI
                     onDone,
                     timeScale);
             }
+        }
+
+        private void FinishAttackAfterDodgeReply()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            _attackCutsceneDone = true;
+            FinishAttackIfReady();
         }
 
         private void TryDissolveIfLethal(GameSession session)

@@ -12,6 +12,8 @@ namespace App.UI
     {
         public const string EnemyLine = "来得正好。";
         public const string PlayerLine = "放马过来。";
+        public const string LethalLine = "受死吧。";
+        public const string DodgeReplyLine = "就这";
 
         private const float DialogHold = 1.1f;
         private const float VsFlyDuration = 0.35f;
@@ -73,6 +75,39 @@ namespace App.UI
 
                 HideDialogs();
                 HideVs();
+                onComplete?.Invoke();
+            });
+            _seq = seq;
+        }
+
+        /// <summary>单句对白：逐字 → 停留 → 收起。缺节点立刻完成，不卡住后续攻击。</summary>
+        public void PlayLine(PlayerItem item, bool top, string line, GameObject link, Action onComplete)
+        {
+            Kill();
+            _enemy = top ? null : item;
+            _player = top ? item : null;
+            var token = ++_playToken;
+            if (item == null || !item.HasDialog(top))
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            var seq = DOTween.Sequence().SetUpdate(true);
+            if (link != null)
+            {
+                seq.SetLink(link, LinkBehaviour.KillOnDestroy);
+            }
+
+            AppendDialog(seq, item, top, line ?? string.Empty);
+            seq.OnComplete(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                item.HideDialogImmediate();
                 onComplete?.Invoke();
             });
             _seq = seq;

@@ -260,6 +260,41 @@ namespace App.Game
         public bool AttackPlaying => _pendingAttackTarget != null;
         /// <summary>当前攻击由敌人打向玩家。</summary>
         public bool IncomingAttack { get; private set; }
+
+        /// <summary>
+        /// 这一击按 <see cref="TakenDamage"/> 会把玩家打到 0。护身符/稻草/免疫会救下则不算。
+        /// 闪避、和平鸽在命中时才掷，这里不提前判。
+        /// </summary>
+        public bool IncomingAttackWouldKill
+        {
+            get
+            {
+                if (!IncomingAttack || Player == null || Player.Hp <= 0)
+                {
+                    return false;
+                }
+
+                if (Run != null && Run.UseNullifyIncoming)
+                {
+                    return false;
+                }
+
+                if (!_amuletUsedThisRound && RelicMechanics.HasMechanism(Run, MechanismType.MissFirstDamage))
+                {
+                    return false;
+                }
+
+                if (Run != null &&
+                    !Run.StrawUsedThisStage &&
+                    RelicMechanics.HasMechanism(Run, MechanismType.AstrawToClutchAt))
+                {
+                    return false;
+                }
+
+                return TakenDamage >= Player.Hp;
+            }
+        }
+
         /// <summary>本手正在逐个与敌人比牌。</summary>
         public bool SequentialCompare => _sequentialCompare;
         public int RevealPlaySerial { get; private set; }

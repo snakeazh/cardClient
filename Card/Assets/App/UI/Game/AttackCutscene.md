@@ -28,6 +28,9 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 |------|------|------|
 | 玩家赢，打当前怪 | `IncomingAttack == false` | `Play(visualSlot, level, …)` |
 | 玩家输，当前怪打人 | `IncomingAttack == true` | `PlayIncoming(visualSlot, level, …)` |
+| 怪打人且将死 | `IncomingAttackWouldKill` | 先 `OpeningCutscene.PlayLine` 敌人 BottomDialog「受死吧。」（逐字），收起后再 `PlayIncoming`。对白期间不开 mask。护身符/稻草/免疫不算将死；闪避在命中时才掷。MISS 后玩家 TopDialog 回「就这」，说完再进下一对 |
+
+点数飞入（`SettlePointCutscene`）结束后才进攻击。将死台词插在点数飞入之后、冲锋之前。
 
 `visualSlot` 是敌人在桌面上的视觉槽 0/1/2。`level` 为 1 低 / 2 中 / 3 高，由牌型映射。
 

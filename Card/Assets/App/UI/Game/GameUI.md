@@ -45,6 +45,8 @@ GameUI
 4. `VS` 从略偏上放大飞入居中，短停后渐隐
 5. 再走 `CardTableAnimator` 发牌
 
+敌人这次攻击按减伤后仍会把玩家打到 0 时（`IncomingAttackWouldKill`），点数飞入结束后先播进攻敌人的 `BottomDialog`「受死吧。」（逐字），收起后再冲锋。护身符、救命稻草、免疫不算将死。若这下闪避（MISS），玩家 `TopDialog` 回一句「就这」。
+
 视觉发牌由 `GameTableViewModel.ShouldHoldDealVisual`（`StageRoundIndex == 1` 且本手尚未播完开场）拦住，`GameBoardController` 只清桌不 `PlayDeal`；开场结束 `CompleteOpening` 后再 `SyncCards`。有关卡机制时 [`GamePopupInfo`](../Popup/GamePopupInfoView.cs) 改到开场+发牌结束后再弹（`stageinfo` 每条一行「名称：描述」，点空白关闭）；`roundbuffGrid` 开局即可显示，按 `BossMechanics.ResolveAll` 克隆 `roundbuff`（一机制一图标）；点击弹出该条 `ItemTip`：`title` 为机制名，`tipContext` 为 `Desc`。
 
 `ItemTip` 预制体绑定 `title` / `tipContext` / `use`。遗物、关卡机制、玩家、敌人共用：`title` 填名称，`tipContext` 填具体内容。玩家读 `HeroConfig.Name` + `Desc`；敌人读 `MonsterConfig.Name`，BOSS 再带机制描述，普通怪没有词条时显示当前生命/攻击。透视点选敌人时仍走 `AttackEnemyAtSlot`，不弹 tip。

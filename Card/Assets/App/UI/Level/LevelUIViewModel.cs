@@ -423,7 +423,9 @@ namespace App.UI
             else
             {
                 SkillName.Value = LockedText;
-                SkillInfo.Value = LockedText;
+                // 未解锁可预览技能描述但隐藏属性数值，仅 skillinfo 放开（标题仍为 ???）；
+                // 描述未配置的英雄退回 ???。
+                SkillInfo.Value = hero != null && !string.IsNullOrEmpty(hero.Desc) ? hero.Desc : LockedText;
                 UnlockInfo.Value = GetUnlockCondition(hero);
             }
 

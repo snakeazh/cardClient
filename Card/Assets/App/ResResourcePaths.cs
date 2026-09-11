@@ -34,6 +34,10 @@ namespace App.Resources
         public const string ItemTip = "UI/Top/ItemTip";
         public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";
+        /// <summary>对局桌面背景 Assets/Res/Textures/BG/BigBackgroundBaseFrame.png。</summary>
+        public const string GameHudBg = "Textures/BG/BigBackgroundBaseFrame";
+        /// <summary>Boss 关桌面背景 Assets/Res/Textures/BG/RedBigBackgroundBaseFrame.png。</summary>
+        public const string GameHudBossBg = "Textures/BG/RedBigBackgroundBaseFrame";
         public const string CardIcon = "Game/CardIcon";
         public const string CardShadow = "UI/Icon/CardShadow";
         public const string PlayerItem = "UI/Icon/PlayerItem";

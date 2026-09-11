@@ -37,13 +37,15 @@ GameUI
 
 开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。
 
-每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对话/VS 跟对局倍速；同关点「下一局」不播：
+每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对峙/对话/VS 跟对局倍速；同关点「下一局」不播：
 
-1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）
-2. 中间敌人 `BottomDialog` 读该怪 `DialogueGroupConfig.MonsterTalk`（逐字；同 MonsterId 多条随机抽），玩家 `TopDialog` 回同条 `PlayerTalk`。中间：`CenterStandEnemy`（1～2 人开场会站到 player1），没有则用视觉槽 0
-3. 其余存活敌人按视觉槽 `0 → 1 → 2`（左到右，跳过已说过的）各说一句，玩家各回一句。同怪可抽到不同行。卡片还没显示时先等，不要空播完把发牌放行
-4. `VS` 从略偏上放大飞入居中，短停后渐隐
-5. 再走 `CardTableAnimator` 发牌
+1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）。若本关要播开场，人物直接飞到对峙位（原位上移 360）；怪物一显示就在槽位下移 300，全程不经过原位以免闪一下
+2. 对峙位：开场期间人物/怪物都已在对峙坐标。两人时与平时站位相同——一个在 `player1` 中心、一个在侧槽（不要左右两边再结束后突然拉中间）
+3. `VS` 飞入居中并留着；随后对话开始
+4. 中间敌人 `TopDialog` 读该怪 `DialogueGroupConfig.MonsterTalk`（逐字；同 MonsterId 多条随机抽），玩家 `BottomDialog` 回同条 `PlayerTalk`。三人固定先 `player1`（视觉中心）；两人先占中的 `CenterStandEnemy`
+5. 再两边：先左 `player2`、再右 `player3`，各说一句、玩家各回一句。同怪可抽到不同行。卡片还没显示时先等，不要空播完把发牌放行
+6. 对峙结束：`VS` 渐隐；人物与怪物缓动回到各自站位（仍是一中一侧）
+7. 再走 `CardTableAnimator` 发牌
 
 缺表或空文案则跳过该角色，仍播 VS。击杀「受死吧。」/ 闪避「就这」仍是占位常量，不读这张表。
 

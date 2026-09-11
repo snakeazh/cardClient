@@ -9,10 +9,59 @@ namespace App.Game
     [RequireComponent(typeof(SpriteRenderer))]
     public class HudBackgroundFit : MonoBehaviour
     {
+        [SerializeField] private Sprite _normalSprite;
+        [SerializeField] private Sprite _bossSprite;
+
         private SpriteRenderer _renderer;
         private float _lastOrthoSize;
         private int _lastWidth;
         private int _lastHeight;
+
+        public Sprite CurrentSprite
+        {
+            get
+            {
+                if (_renderer == null)
+                {
+                    _renderer = GetComponent<SpriteRenderer>();
+                }
+
+                return _renderer != null ? _renderer.sprite : null;
+            }
+        }
+
+        public bool TryApplyTheme(bool isBoss)
+        {
+            var sprite = isBoss ? _bossSprite : _normalSprite;
+            if (sprite == null)
+            {
+                return false;
+            }
+
+            ApplySprite(sprite);
+            return true;
+        }
+
+        public void ApplySprite(Sprite sprite)
+        {
+            if (sprite == null)
+            {
+                return;
+            }
+
+            if (_renderer == null)
+            {
+                _renderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            _renderer.sprite = sprite;
+            Apply(true);
+        }
 
         private void OnEnable()
         {

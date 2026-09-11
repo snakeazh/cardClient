@@ -54,6 +54,7 @@ namespace App.UI
         private bool _openingPlaying;
         private int _openingForSerial = -1;
         private bool _waitHudForOpening;
+        private Vector2? _playerOpeningLayoutHome;
         private readonly List<OpeningCutscene.Talk> _openingTalks = new List<OpeningCutscene.Talk>(3);
         private bool _lethalTauntThisAttack;
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
@@ -271,6 +272,7 @@ namespace App.UI
             _openingPlaying = false;
             _openingForSerial = -1;
             _waitHudForOpening = false;
+            _playerOpeningLayoutHome = null;
             _lethalTauntThisAttack = false;
             _playerItem?.HideDialogImmediate();
             for (var i = 0; i < _enemyItems.Length; i++)
@@ -1439,6 +1441,12 @@ namespace App.UI
                     go.SetActive(true);
                     CancelDeathDissolve(item);
                     item.ResetDissolve();
+                    var rt = go.transform as RectTransform;
+                    if (rt != null)
+                    {
+                        SnapEnemyLocal(rt);
+                    }
+
                     return;
                 }
 
@@ -1529,10 +1537,40 @@ namespace App.UI
             }
 
             SyncEnemyCompareStand(session);
+            EnsurePlayerAtOpeningPose();
+        }
+
+        /// <summary>
+        /// 开场对峙：人物立刻在原位上移 PlayerPoseOffset。HUD 飞入期间由入场动画接管，这里不抢。
+        /// </summary>
+        private void EnsurePlayerAtOpeningPose()
+        {
+            if (_waitHudForOpening ||
+                _playerItem == null ||
+                ViewModel == null ||
+                !ViewModel.ShouldHoldDealVisual())
+            {
+                return;
+            }
+
+            var rt = _playerItem.transform as RectTransform;
+            if (rt == null)
+            {
+                return;
+            }
+
+            if (!_playerOpeningLayoutHome.HasValue)
+            {
+                _playerOpeningLayoutHome = rt.anchoredPosition;
+            }
+
+            rt.DOKill();
+            rt.anchoredPosition = _playerOpeningLayoutHome.Value + new Vector2(0f, OpeningCutscene.PlayerPoseOffset);
         }
 
         private void SyncEnemyCompareStand(GameSession session)
         {
+            // 两人开场对峙：第一个站 player1 中心，另一个在侧槽；与回位后站位一致，避免对峙在两边、结束后再突然拉中间。
             var centerSlot = session.CenterStandVisualSlot;
             var center = ResolveSlot("player1");
             var occupyCenter = session.CenterStandEnemy != null;
@@ -1614,17 +1652,24 @@ namespace App.UI
             }
 
             _enemySlides[index] = DOTween.Sequence()
-                .Join(rt.DOAnchorPos(Vector2.zero, EnemySlideDuration).SetEase(Ease.OutCubic))
+                .Join(rt.DOAnchorPos(EnemyLayoutPose(), EnemySlideDuration).SetEase(Ease.OutCubic))
                 .Join(rt.DOScale(_enemyItemLocalScale, EnemySlideDuration).SetEase(Ease.OutCubic))
                 .SetTarget(rt);
         }
 
-        private static void SnapEnemyLocal(RectTransform rt)
+        private Vector2 EnemyLayoutPose()
+        {
+            return ViewModel != null && ViewModel.ShouldHoldDealVisual()
+                ? new Vector2(0f, -OpeningCutscene.EnemyPoseOffset)
+                : Vector2.zero;
+        }
+
+        private void SnapEnemyLocal(RectTransform rt)
         {
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = Vector2.zero;
+            rt.anchoredPosition = EnemyLayoutPose();
             rt.localRotation = Quaternion.identity;
         }
 
@@ -1870,7 +1915,7 @@ namespace App.UI
             ParkHudFly("horBtns2", -1f, 0f);
             ParkHudFly("stageInfo", 1f, 0f);
             var player = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
-            ParkHudFly(player, 0f, -1f);
+            ParkHudFly(player, 0f, -1f, openingPlayerPose: true);
             var roundInfo = ResolveSlot("roundInfo") ?? transform.Find("roundInfo");
             if (roundInfo != null)
             {
@@ -1948,14 +1993,22 @@ namespace App.UI
                 return;
             }
 
+            EnsurePlayerAtOpeningPose();
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
-            _openingFx.Play(_openingTalks, _playerItem, gameObject, OnOpeningComplete);
+            var playerLayoutHome = _playerOpeningLayoutHome;
+            _playerOpeningLayoutHome = null;
+            _openingFx.Play(
+                _openingTalks,
+                _playerItem,
+                gameObject,
+                OnOpeningComplete,
+                playerLayoutHome);
         }
 
         /// <summary>
-        /// 中间先、其余视觉槽 0→1→2。有存活敌人但卡片未就绪则 false，等下次再试。
+        /// 说话顺序：中间 → 左(player2) → 右(player3)。有存活敌人但卡片未就绪则 false，等下次再试。
         /// </summary>
         private bool TryCollectOpeningTalks(List<OpeningCutscene.Talk> talks)
         {
@@ -1973,7 +2026,8 @@ namespace App.UI
                 return false;
             }
 
-            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            // 两边：先左(slot1) 再右(slot2)，不再扫 slot0，避免打乱「中间优先」。
+            for (var slot = 1; slot < _enemyItems.Length; slot++)
             {
                 var seat = session.EnemyAtVisualSlot(slot);
                 if (seat == null || seat == centerSeat || !seat.Alive)
@@ -1993,6 +2047,29 @@ namespace App.UI
 
         private static void ResolveOpeningCenter(GameSession session, out SeatState seat, out int slot)
         {
+            var alive = 0;
+            for (var i = 0; i < session.Enemies.Length; i++)
+            {
+                var enemy = session.Enemies[i];
+                if (enemy != null && enemy.ActiveInStage && enemy.Alive)
+                {
+                    alive++;
+                }
+            }
+
+            // 三人：视觉中心固定 player1（slot 0）。两人：占中的 CenterStandEnemy。
+            if (alive >= 3)
+            {
+                seat = session.EnemyAtVisualSlot(0);
+                slot = seat != null && seat.Alive ? 0 : -1;
+                if (slot < 0)
+                {
+                    seat = null;
+                }
+
+                return;
+            }
+
             var center = session.CenterStandEnemy;
             if (center != null && center.Alive)
             {
@@ -2051,6 +2128,7 @@ namespace App.UI
             if (ViewModel != null)
             {
                 ViewModel.CompleteOpening();
+                RefreshPlayerItems();
             }
 
             _board?.SyncCards();
@@ -2061,7 +2139,7 @@ namespace App.UI
             ParkHudFly(ResolveSlot(key) ?? transform.Find(key), xSign, ySign);
         }
 
-        private void ParkHudFly(Transform node, float xSign, float ySign)
+        private void ParkHudFly(Transform node, float xSign, float ySign, bool openingPlayerPose = false)
         {
             var rt = node as RectTransform ?? (node != null ? node.GetComponent<RectTransform>() : null);
             if (rt == null)
@@ -2070,9 +2148,16 @@ namespace App.UI
             }
 
             Canvas.ForceUpdateCanvases();
-            var home = rt.anchoredPosition;
-            _hudFlies.Add(new HudFly { Rt = rt, Home = home });
-            rt.anchoredPosition = home + FlyDelta(rt, xSign, ySign);
+            var layoutHome = rt.anchoredPosition;
+            var flyHome = layoutHome;
+            if (openingPlayerPose && ViewModel != null && ViewModel.ShouldHoldDealVisual())
+            {
+                _playerOpeningLayoutHome = layoutHome;
+                flyHome = layoutHome + new Vector2(0f, OpeningCutscene.PlayerPoseOffset);
+            }
+
+            _hudFlies.Add(new HudFly { Rt = rt, Home = flyHome });
+            rt.anchoredPosition = flyHome + FlyDelta(rt, xSign, ySign);
         }
 
         private static Vector2 FlyDelta(RectTransform rt, float xSign, float ySign)

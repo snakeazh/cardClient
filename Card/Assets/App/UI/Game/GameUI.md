@@ -40,8 +40,8 @@ GameUI
 每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对话/VS 跟对局倍速；同关点「下一局」不播：
 
 1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）
-2. 中心敌人 `BottomDialog` 读 `DialogueGroupConfig.MonsterTalk`（逐字；同 MonsterId 多条随机抽）
-3. 玩家 `TopDialog` 读同条 `PlayerTalk`（逐字）。表注释是玩家先说，开场演出仍是怪物先、玩家后
+2. 中间敌人 `BottomDialog` 读该怪 `DialogueGroupConfig.MonsterTalk`（逐字；同 MonsterId 多条随机抽），玩家 `TopDialog` 回同条 `PlayerTalk`。中间：`CenterStandEnemy`（1～2 人开场会站到 player1），没有则用视觉槽 0
+3. 其余存活敌人按视觉槽 `0 → 1 → 2`（左到右，跳过已说过的）各说一句，玩家各回一句。同怪可抽到不同行。卡片还没显示时先等，不要空播完把发牌放行
 4. `VS` 从略偏上放大飞入居中，短停后渐隐
 5. 再走 `CardTableAnimator` 发牌
 

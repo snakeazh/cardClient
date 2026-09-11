@@ -54,6 +54,7 @@ namespace App.UI
         private bool _openingPlaying;
         private int _openingForSerial = -1;
         private bool _waitHudForOpening;
+        private readonly List<OpeningCutscene.Talk> _openingTalks = new List<OpeningCutscene.Talk>(3);
         private bool _lethalTauntThisAttack;
         private readonly List<CardItem> _settleCards = new List<CardItem>(GameBalance.OpenHandSize);
         private readonly List<Transform> _equipSlots = new List<Transform>(GameBalance.MaxRelics);
@@ -387,6 +388,7 @@ namespace App.UI
             }
 
             RefreshPlayerItems();
+            TryStartOpening();
         }
 
         private void TryScheduleAiDelay()
@@ -1512,10 +1514,18 @@ namespace App.UI
                     continue;
                 }
 
-                _enemyItems[slot].Bind(
+                var item = _enemyItems[slot];
+                if (enemy.Alive)
+                {
+                    CancelDeathDissolve(item);
+                    item.ResetDissolve();
+                    item.gameObject.SetActive(true);
+                }
+
+                item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    AttackDisplay(_enemyItems[slot], enemy.Attack));
+                    AttackDisplay(item, enemy.Attack));
             }
 
             SyncEnemyCompareStand(session);
@@ -1933,78 +1943,106 @@ namespace App.UI
                 return;
             }
 
+            if (!TryCollectOpeningTalks(_openingTalks))
+            {
+                return;
+            }
+
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
-            DialogueGroupLookup.TryPickTalk(ResolveOpeningMonsterId(), out var monsterLine, out var playerLine);
-            _openingFx.Play(
-                ResolveOpeningEnemy(),
-                _playerItem,
-                monsterLine,
-                playerLine,
-                gameObject,
-                OnOpeningComplete);
+            _openingFx.Play(_openingTalks, _playerItem, gameObject, OnOpeningComplete);
         }
 
-        private int ResolveOpeningMonsterId()
+        /// <summary>
+        /// 中间先、其余视觉槽 0→1→2。有存活敌人但卡片未就绪则 false，等下次再试。
+        /// </summary>
+        private bool TryCollectOpeningTalks(List<OpeningCutscene.Talk> talks)
         {
-            var seat = ResolveOpeningEnemySeat();
-            return seat != null ? seat.MonsterId : 0;
-        }
-
-        private SeatState ResolveOpeningEnemySeat()
-        {
+            talks.Clear();
             var session = ViewModel != null ? ViewModel.Session : null;
             if (session == null)
             {
-                return null;
+                return true;
             }
 
-            if (IsEnemyItemVisible(0))
+            ResolveOpeningCenter(session, out var centerSeat, out var centerSlot);
+            if (centerSeat != null && !TryAddOpeningTalk(talks, centerSeat, centerSlot))
             {
-                return session.EnemyAtVisualSlot(0);
+                talks.Clear();
+                return false;
             }
 
-            return session.DisplayedEnemy;
-        }
-
-        private PlayerItem ResolveOpeningEnemy()
-        {
-            if (IsEnemyItemVisible(0))
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
             {
-                return _enemyItems[0];
-            }
-
-            var session = ViewModel != null ? ViewModel.Session : null;
-            if (session != null)
-            {
-                var slot = session.DisplayedEnemyVisualSlot;
-                if (IsEnemyItemVisible(slot))
+                var seat = session.EnemyAtVisualSlot(slot);
+                if (seat == null || seat == centerSeat || !seat.Alive)
                 {
-                    return _enemyItems[slot];
+                    continue;
+                }
+
+                if (!TryAddOpeningTalk(talks, seat, slot))
+                {
+                    talks.Clear();
+                    return false;
                 }
             }
 
-            for (var i = 0; i < _enemyItems.Length; i++)
-            {
-                if (IsEnemyItemVisible(i))
-                {
-                    return _enemyItems[i];
-                }
-            }
-
-            return null;
+            return true;
         }
 
-        private bool IsEnemyItemVisible(int slot)
+        private static void ResolveOpeningCenter(GameSession session, out SeatState seat, out int slot)
         {
-            if (slot < 0 || slot >= _enemyItems.Length)
+            var center = session.CenterStandEnemy;
+            if (center != null && center.Alive)
+            {
+                seat = center;
+                slot = session.CenterStandVisualSlot;
+                return;
+            }
+
+            seat = session.EnemyAtVisualSlot(0);
+            slot = seat != null && seat.Alive ? 0 : -1;
+            if (slot < 0)
+            {
+                seat = null;
+            }
+        }
+
+        private bool TryAddOpeningTalk(List<OpeningCutscene.Talk> talks, SeatState seat, int slot)
+        {
+            var item = EnemyItemAtSlot(slot);
+            if (!EnsureEnemyItemReady(item))
             {
                 return false;
             }
 
-            var item = _enemyItems[slot];
-            return item != null && item.gameObject.activeInHierarchy;
+            DialogueGroupLookup.TryPickTalk(seat.MonsterId, out var monsterLine, out var playerLine);
+            talks.Add(new OpeningCutscene.Talk(item, monsterLine, playerLine));
+            return true;
+        }
+
+        private PlayerItem EnemyItemAtSlot(int slot)
+        {
+            if (slot < 0 || slot >= _enemyItems.Length)
+            {
+                return null;
+            }
+
+            return _enemyItems[slot];
+        }
+
+        private bool EnsureEnemyItemReady(PlayerItem item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            CancelDeathDissolve(item);
+            item.ResetDissolve();
+            item.gameObject.SetActive(true);
+            return item.gameObject.activeInHierarchy;
         }
 
         private void OnOpeningComplete()

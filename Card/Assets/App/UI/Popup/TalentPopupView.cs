@@ -15,7 +15,7 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 天赋页面。Content 下的 Item 模板按天赋聚合结果克隆成网格；
-    /// 点条目打开天赋详情。
+    /// 点条目打开天赋详情；抽卡结果直接弹详情，翻卡演出在详情内（TalentDetail 的 Item 卡）。
     /// </summary>
     [AutoScreen(AppScreenIds.TalentPopup, UILayer.Page, ResResourcePaths.TalentPopup)]
     public sealed class TalentPopupView : ViewBase<TalentPopupViewModel>

@@ -8,6 +8,22 @@ namespace App.UI
     /// </summary>
     public static class UiFx
     {
+        /// <summary>粒子预制体默认在 Default 层，UI 相机 cullingMask 不含；整组换 UI 层（含未激活子物体）。</summary>
+        public static void ApplyUiLayer(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var layer = LayerMask.NameToLayer("UI");
+            var transforms = go.GetComponentsInChildren<Transform>(true);
+            for (var i = 0; i < transforms.Length; i++)
+            {
+                transforms[i].gameObject.layer = layer;
+            }
+        }
+
         public static void ApplySorting(GameObject go, int order)
         {
             if (go == null)

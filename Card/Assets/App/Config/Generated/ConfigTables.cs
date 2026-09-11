@@ -23,6 +23,7 @@ namespace App.Config
 
             var bossEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BossEntryConfig);
             var collectionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.CollectionConfig);
+            var dialogueGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.DialogueGroupConfig);
             var gameConstAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GameConst);
             var guideGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideGroupConfig);
             var guideStepConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideStepConfig);
@@ -42,6 +43,7 @@ namespace App.Config
 
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
+            DialogueGroupConfig.Load(ConfigJson.FromArrayJson<DialogueGroupConfig>(dialogueGroupConfigAsset.text));
             GameConst.Load(ConfigJson.FromObjectJson<GameConst>(gameConstAsset.text));
             GuideGroupConfig.Load(ConfigJson.FromArrayJson<GuideGroupConfig>(guideGroupConfigAsset.text));
             GuideStepConfig.Load(ConfigJson.FromArrayJson<GuideStepConfig>(guideStepConfigAsset.text));

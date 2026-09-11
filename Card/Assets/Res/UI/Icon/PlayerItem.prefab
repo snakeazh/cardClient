@@ -82,6 +82,10 @@ MonoBehaviour:
   enemyHeartBg: {fileID: 0}
   playerRoot: {fileID: 0}
   playerAnimator: {fileID: 0}
+  topDialog: {fileID: 0}
+  topDialogText: {fileID: 0}
+  bottomDialog: {fileID: 0}
+  bottomDialogText: {fileID: 0}
 --- !u!114 &2736143837313304472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1978,8 +1982,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278452479
+  m_fontColor: {r: 1, g: 0, b: 0.015686275, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

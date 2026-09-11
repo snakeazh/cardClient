@@ -11,8 +11,9 @@ namespace App.Item
     /// <summary>
     /// 图鉴/收集类单卡显示控制，挂在预制体 <c>Res/UI/Icon/Item</c> 根节点上。
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
-    /// 界面结构：Item(Button) / ItemRoot(Animator) / cardFrame(IconBG + Mask + card(card_Name、card_icon))。
-    /// card 节点 Image 为品质卡面图，ApplyQuality 时按品质从 Altas/ItemBg 图集取图；Mask 为未解锁遮罩，SetUnlocked 控制。
+    /// 界面结构：Item(Button) / ItemRoot(Animator) / cardFrame(IconBG + Mask + card(card_Name、card_icon) + CardBG)。
+    /// card 节点 Image 为品质卡面图、CardBG 为品质卡背背景，ApplyQuality 时按品质从 Altas/ItemBg 图集取图；
+    /// Mask 为未解锁遮罩，SetUnlocked 控制。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
     {
@@ -23,6 +24,7 @@ namespace App.Item
 
         [SerializeField] private Image iconBg;
         [SerializeField] private Image cardImage;
+        [SerializeField] private Image cardBack;
         [SerializeField] private GameObject lockMask;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private TMP_Text levelText;
@@ -228,8 +230,8 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 按品质切换 card 节点卡面图（Altas/ItemBg）。目标品质缺图时回退普通品质，
-        /// 图集整体不可用时保留当前图（预制体默认即 OrdinaryCardFrame）。
+        /// 按品质切换 card 节点卡面图与 CardBG 卡背背景（Altas/ItemBg）。目标品质缺图时回退普通品质，
+        /// 图集整体不可用时保留当前图（预制体默认即 Ordinary）。
         /// 品质完全由卡面图表达，不改任何节点颜色；选中态高亮仍走 SetSelected。
         /// </summary>
         public void ApplyQuality(QualityType type)
@@ -239,41 +241,39 @@ namespace App.Item
             ApplyFrame(type);
         }
 
-        /// <summary>品质边框图；目标品质缺图时回退普通品质，图集整体不可用时不动当前图。</summary>
+        /// <summary>品质边框与卡背图；目标品质缺图时回退普通品质，图集整体不可用时不动当前图。</summary>
         private void ApplyFrame(QualityType type)
         {
-            if (cardImage == null)
-            {
-                return;
-            }
-
-            var frame = ItemBgSpriteLibrary.GetCardFrame(type);
-            if (frame == null && type != QualityType.Ordinary)
-            {
-                frame = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
-            }
-
-            if (frame != null)
-            {
-                cardImage.sprite = frame;
-            }
+            ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, type);
+            ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, type);
         }
 
         /// <summary>
-        /// 防护：初始化时把 card 边框统一切到图集版普通品质帧。源图已入 ItemBg 图集，
+        /// 防护：初始化时把 card 边框与 CardBG 卡背统一切到图集版普通品质图。源图已入 ItemBg 图集，
         /// prefab 对源图的直引在图集绑定完成前的窗口会渲染空白（丢背景），运行时以图集 sprite 为准。
         /// </summary>
         private void EnsureDefaultFrame()
         {
-            if (cardImage == null)
+            ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, QualityType.Ordinary);
+            ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, QualityType.Ordinary);
+        }
+
+        private static void ApplySprite(Image target, Func<QualityType, Sprite> resolve, QualityType type)
+        {
+            if (target == null)
             {
                 return;
             }
 
-            var frame = ItemBgSpriteLibrary.GetCardFrame(QualityType.Ordinary);
-            if (frame != null)
+            var sprite = resolve(type);
+            if (sprite == null && type != QualityType.Ordinary)
             {
-                cardImage.sprite = frame;
+                sprite = resolve(QualityType.Ordinary);
+            }
+
+            if (sprite != null)
+            {
+                target.sprite = sprite;
             }
         }
 
@@ -479,6 +479,11 @@ namespace App.Item
             if (cardImage == null)
             {
                 cardImage = FindImage("card");
+            }
+
+            if (cardBack == null)
+            {
+                cardBack = FindImage("CardBG");
             }
 
             if (lockMask == null)

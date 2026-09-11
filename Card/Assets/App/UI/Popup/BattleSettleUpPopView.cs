@@ -75,6 +75,7 @@ namespace App.UI.Popup
             _rollReward = BindRollingNumber(GetNode<TMP_Text>("CoinNum"), ViewModel.CoinNum);
             _rollWithdraw = BindRollingNumber(GetNode<TMP_Text>("Num"), ViewModel.WithdrawNum);
             Binding.BindText(GetNode<TMP_Text>("FormulaText"), ViewModel.FormulaText);
+            Binding.BindText(GetNode<TMP_Text>("FormulaSkillText"), ViewModel.FormulaSkillText);
             _withdrawBtn = GetNode<Button>("WithDrawBtn");
             _doubleBtn = GetNode<Button>("DoubleBtn");
             if (_withdrawBtn != null)

@@ -50,6 +50,7 @@ namespace App.UI.Popup
             WithdrawNum = new ObservableProperty<string>("0");
             GoldText = new ObservableProperty<string>("0");
             FormulaText = new ObservableProperty<string>(string.Empty);
+            FormulaSkillText = new ObservableProperty<string>(string.Empty);
             RoundRevision = new ObservableProperty<int>();
             ButtonsEnabled = new ObservableProperty<bool>(true);
             DoubleEnabled = new ObservableProperty<bool>(false);
@@ -77,6 +78,9 @@ namespace App.UI.Popup
 
         /// <summary>换算说明：每 N 点伤害 = M 金币（局内伤害换金，读 GameConst.DamageTurnToGold）。</summary>
         public ObservableProperty<string> FormulaText { get; }
+
+        /// <summary>换算说明：每剩余 1 次技能 = N 金币（结算时未使用技能折算，读 GameConst.EverySkillProvideGold）。</summary>
+        public ObservableProperty<string> FormulaSkillText { get; }
 
         /// <summary>逐回合统计（回合数 / 击杀数 / 伤害）。</summary>
         public IReadOnlyList<SettleRoundRow> RoundRows => _roundRows;
@@ -168,6 +172,7 @@ namespace App.UI.Popup
             WithdrawNum.Value = stageGold.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
             FormulaText.Value = FormatDamageGoldFormula();
+            FormulaSkillText.Value = FormatSkillGoldFormula();
             RefreshDoubleEnabled();
 
             _roundRows.Clear();
@@ -205,6 +210,13 @@ namespace App.UI.Popup
             }
 
             return $"每{rate[0]}点伤害={Math.Max(0, rate[1])}";
+        }
+
+        /// <summary>技能换金说明文案。与 GameSession.GrantStageGold 的未用技能折算同源同钳制。</summary>
+        private static string FormatSkillGoldFormula()
+        {
+            var value = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.EverySkillProvideGold) : 0;
+            return $"每剩余1技能={value}";
         }
 
         private static int ResolveMonsterCount()

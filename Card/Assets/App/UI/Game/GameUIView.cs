@@ -43,7 +43,6 @@ namespace App.UI
         private readonly Transform[] _enemyHomes = new Transform[3];
         private readonly Tween[] _enemySlides = new Tween[3];
         private bool _enemyStandReady;
-        private Vector3 _enemyItemLocalScale = Vector3.one;
         private GameObject _playerCardInfo;
         private GameObject _enemyCardInfo;
         private Image _enemyCardTypeIcon;
@@ -1391,8 +1390,6 @@ namespace App.UI
                 return;
             }
 
-            var templateScale = template.localScale;
-            _enemyItemLocalScale = templateScale;
             for (var i = 0; i < EnemySlotKeys.Length; i++)
             {
                 var slot = ResolveSlot(EnemySlotKeys[i]);
@@ -1417,7 +1414,8 @@ namespace App.UI
                     rt.anchorMax = new Vector2(0.5f, 0.5f);
                     rt.pivot = new Vector2(0.5f, 0.5f);
                     rt.anchoredPosition = Vector2.zero;
-                    rt.localScale = templateScale;
+                    rt.localRotation = Quaternion.identity;
+                    rt.localScale = EnemyCardLocalScale();
                 }
 
                 var item = clone.GetComponent<PlayerItem>() ?? clone.AddComponent<PlayerItem>();
@@ -1653,7 +1651,7 @@ namespace App.UI
 
             _enemySlides[index] = DOTween.Sequence()
                 .Join(rt.DOAnchorPos(EnemyLayoutPose(), EnemySlideDuration).SetEase(Ease.OutCubic))
-                .Join(rt.DOScale(_enemyItemLocalScale, EnemySlideDuration).SetEase(Ease.OutCubic))
+                .Join(rt.DOScale(EnemyCardLocalScale(), EnemySlideDuration).SetEase(Ease.OutCubic))
                 .SetTarget(rt);
         }
 
@@ -1671,6 +1669,27 @@ namespace App.UI
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = EnemyLayoutPose();
             rt.localRotation = Quaternion.identity;
+            rt.localScale = EnemyCardLocalScale();
+        }
+
+        /// <summary>
+        /// 相对父物体与人物 PlayerItem 同 localScale（预制体 0.9）。
+        /// 侧槽父节点 0.85 → 世界 0.9×0.85 更小；中心父节点 1 → 世界 0.9。
+        /// </summary>
+        private Vector3 EnemyCardLocalScale()
+        {
+            if (_playerItem != null)
+            {
+                return _playerItem.transform.localScale;
+            }
+
+            var slot = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
+            if (slot != null)
+            {
+                return slot.localScale;
+            }
+
+            return new Vector3(0.9f, 0.9f, 0.9f);
         }
 
         private bool IsEnemySliding(int index)

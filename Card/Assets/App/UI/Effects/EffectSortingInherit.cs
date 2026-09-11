@@ -15,6 +15,17 @@ namespace App.UI
         [Tooltip("在「自身原值 + 父物体层级」之上额外叠加的偏移，正数压过父物体，负数压到父物体下面")]
         [SerializeField] private int orderOffset;
 
+        /// <summary>运行时 AddComponent 后用该属性调偏移；赋值即按新偏移重算全部子 Renderer。</summary>
+        public int OrderOffset
+        {
+            get => orderOffset;
+            set
+            {
+                orderOffset = value;
+                Apply();
+            }
+        }
+
         private readonly Dictionary<int, int> _baseOrders = new Dictionary<int, int>();
 
         private void OnEnable()

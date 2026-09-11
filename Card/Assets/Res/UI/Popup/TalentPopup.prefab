@@ -861,6 +861,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 3278660836781131713}
+  _popupAnim: {fileID: 0}
 --- !u!1 &6303202632876348084
 GameObject:
   m_ObjectHideFlags: 0
@@ -1295,8 +1296,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 47.1, y: -12.6}
-  m_SizeDelta: {x: 134.668, y: 70}
+  m_AnchoredPosition: {x: 102.819664, y: -12.6}
+  m_SizeDelta: {x: 246.1073, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1759322494520891103
 CanvasRenderer:
@@ -1326,7 +1327,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: X10
+  m_text: X9999999
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 156412da13ac86f4e8342406c60be42d, type: 2}
   m_sharedMaterial: {fileID: 4959200930923700274, guid: 156412da13ac86f4e8342406c60be42d, type: 2}

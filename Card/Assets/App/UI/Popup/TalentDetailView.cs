@@ -31,7 +31,15 @@ namespace App.UI.Popup
             if (_card != null)
             {
                 _card.SetShadowVisible(false);
-                _card.SetAnimationEnabled(false);
+                if (ViewModel.ShowCongratulations.Value)
+                {
+                    // 抽卡入口：播翻卡动画并按品质点亮内嵌天赋特效（红=传说/紫=史诗/蓝=稀有）
+                    _card.PlayRewardReveal(ViewModel.Quality.Value);
+                }
+                else
+                {
+                    _card.SetAnimationEnabled(false);
+                }
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 Binding.Add(ViewModel.NameText.Subscribe(ApplyName));
                 // 未拥有观感同天赋列表：Mask 激活 + card_Name ？？？ + card_icon 黑色剪影

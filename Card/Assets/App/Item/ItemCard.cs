@@ -1,6 +1,7 @@
 using System;
 using App.Atlas;
 using App.Config;
+using App.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,6 +35,9 @@ namespace App.Item
 
         public const string SelectAnim = "ani_shop_onchoose";
         public const string DefaultAnim = "ani_shop_default";
+
+        /// <summary>抽卡翻卡演出（Res/Animations/Chouka/ItemRoot.controller 的主动画，5 秒一次性）。</summary>
+        public const string RewardRevealAnim = "ItemRoot";
 
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂。</summary>
         public event Action<ItemCard> Clicked;
@@ -306,6 +310,59 @@ namespace App.Item
             itemAnimator.speed = 1f;
             itemAnimator.Play(stateName, layer, normalizedTime);
             itemAnimator.Update(0f);
+        }
+
+        /// <summary>
+        /// 抽卡结果翻卡演出：播 ItemRoot 翻面动画（Res/Animations/Chouka），并按品质点亮
+        /// ItemRoot 下内嵌的天赋特效实例（红=传说、紫=史诗、蓝=稀有；普通只播动画）。
+        /// 嵌套特效默认隐藏、在 Default 层且粒子不吃 Canvas 层级——激活前整组换 UI 层并挂排序继承。
+        /// </summary>
+        public void PlayRewardReveal(QualityType quality)
+        {
+            EnsureRefs();
+            PrepareRewardFx("ChoukaEffect01");
+            var fxName = RewardFxName(quality);
+            if (fxName != null)
+            {
+                PrepareRewardFx(fxName);
+            }
+
+            PlayAnimation(RewardRevealAnim);
+        }
+
+        private void PrepareRewardFx(string fxName)
+        {
+            var root = itemRoot != null ? itemRoot.transform : transform;
+            var fx = root.Find(fxName);
+            if (fx == null)
+            {
+                return;
+            }
+
+            fx.gameObject.SetActive(true);
+            UiFx.ApplyUiLayer(fx.gameObject);
+            if (fx.GetComponent<EffectSortingInherit>() == null)
+            {
+                var inherit = fx.gameObject.AddComponent<EffectSortingInherit>();
+                inherit.OrderOffset = 10;
+            }
+
+            UiFx.RestartParticles(fx.gameObject);
+        }
+
+        private static string RewardFxName(QualityType quality)
+        {
+            switch (quality)
+            {
+                case QualityType.Legend:
+                    return "TianfuRed01";
+                case QualityType.Epic:
+                    return "TianfuPurple01";
+                case QualityType.Rare:
+                    return "TianfuBlue01";
+                default:
+                    return null;
+            }
         }
 
         private void SetSelectLift(bool selected)

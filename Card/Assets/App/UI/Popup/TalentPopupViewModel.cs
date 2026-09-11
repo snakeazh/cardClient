@@ -32,7 +32,7 @@ namespace App.UI.Popup
     /// <summary>
     /// 天赋弹窗：列表读 ITalentService（未解锁显示 ???），点击条目打开天赋详情；
     /// BuyBtn 按 GetDrawCost（基础价 + 已抽次数 × 递增步长）扣金币，从非满级天赋中随机抽一个，
-    /// 弹详情展示结果，金币不足时 Toast 提示，全部满级时 Toast 提示。
+    /// 直接弹详情播翻卡演出，金币不足时 Toast 提示，全部满级时 Toast 提示。
     /// </summary>
     public sealed class TalentPopupViewModel : ViewModelBase
     {

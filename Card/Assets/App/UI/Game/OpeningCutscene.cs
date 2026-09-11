@@ -6,16 +6,14 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 开局对白 + VS：敌人 BottomDialog → 玩家 TopDialog → VS 飞入渐隐。
+    /// 开局对白 + VS：敌人 BottomDialog（MonsterTalk）→ 玩家 TopDialog（PlayerTalk）→ VS 飞入渐隐。
     /// </summary>
     public sealed class OpeningCutscene
     {
-        public const string EnemyLine = "来得正好。";
-        public const string PlayerLine = "放马过来。";
         public const string LethalLine = "受死吧。";
         public const string DodgeReplyLine = "就这";
 
-        private const float DialogHold = 1.1f;
+        private const float DialogHold = 1.1f / PlayerItem.DialogSpeed;
         private const float VsFlyDuration = 0.35f;
         private const float VsHold = 0.4f;
         private const float VsFade = 0.3f;
@@ -50,20 +48,26 @@ namespace App.UI
             HideVs();
         }
 
-        public void Play(PlayerItem enemy, PlayerItem player, GameObject link, Action onComplete)
+        public void Play(
+            PlayerItem enemy,
+            PlayerItem player,
+            string monsterLine,
+            string playerLine,
+            GameObject link,
+            Action onComplete)
         {
             Kill();
             _enemy = enemy;
             _player = player;
             var token = ++_playToken;
-            var seq = DOTween.Sequence().SetUpdate(true);
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
             }
 
-            AppendDialog(seq, enemy, top: false, EnemyLine);
-            AppendDialog(seq, player, top: true, PlayerLine);
+            AppendDialog(seq, enemy, top: false, monsterLine);
+            AppendDialog(seq, player, top: true, playerLine);
             AppendVs(seq);
 
             seq.OnComplete(() =>
@@ -93,7 +97,7 @@ namespace App.UI
                 return;
             }
 
-            var seq = DOTween.Sequence().SetUpdate(true);
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -138,7 +142,7 @@ namespace App.UI
 
         private void AppendDialog(Sequence seq, PlayerItem item, bool top, string line)
         {
-            if (item == null || !item.HasDialog(top))
+            if (item == null || !item.HasDialog(top) || string.IsNullOrEmpty(line))
             {
                 return;
             }
@@ -157,17 +161,17 @@ namespace App.UI
             }
 
             seq.AppendCallback(PrepareVs);
-            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
-            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
+            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack));
+            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack));
             if (_vsGroup != null)
             {
-                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f).SetUpdate(true));
+                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f));
             }
 
             seq.AppendInterval(VsHold);
             if (_vsGroup != null)
             {
-                seq.Append(_vsGroup.DOFade(0f, VsFade).SetUpdate(true));
+                seq.Append(_vsGroup.DOFade(0f, VsFade));
             }
 
             seq.AppendCallback(HideVs);

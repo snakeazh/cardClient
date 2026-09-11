@@ -1936,7 +1936,36 @@ namespace App.UI
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
-            _openingFx.Play(ResolveOpeningEnemy(), _playerItem, gameObject, OnOpeningComplete);
+            DialogueGroupLookup.TryPickTalk(ResolveOpeningMonsterId(), out var monsterLine, out var playerLine);
+            _openingFx.Play(
+                ResolveOpeningEnemy(),
+                _playerItem,
+                monsterLine,
+                playerLine,
+                gameObject,
+                OnOpeningComplete);
+        }
+
+        private int ResolveOpeningMonsterId()
+        {
+            var seat = ResolveOpeningEnemySeat();
+            return seat != null ? seat.MonsterId : 0;
+        }
+
+        private SeatState ResolveOpeningEnemySeat()
+        {
+            var session = ViewModel != null ? ViewModel.Session : null;
+            if (session == null)
+            {
+                return null;
+            }
+
+            if (IsEnemyItemVisible(0))
+            {
+                return session.EnemyAtVisualSlot(0);
+            }
+
+            return session.DisplayedEnemy;
         }
 
         private PlayerItem ResolveOpeningEnemy()

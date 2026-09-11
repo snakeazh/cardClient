@@ -37,13 +37,15 @@ GameUI
 
 开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。
 
-每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，`SetUpdate(true)` 不跟倍速；同关点「下一局」不播：
+每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对话/VS 跟对局倍速；同关点「下一局」不播：
 
 1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）
-2. 中心敌人 `PlayerItem.BottomDialog` 占位台词「来得正好。」（逐字）
-3. 玩家 `TopDialog` 占位台词「放马过来。」（逐字）
+2. 中心敌人 `BottomDialog` 读 `DialogueGroupConfig.MonsterTalk`（逐字；同 MonsterId 多条随机抽）
+3. 玩家 `TopDialog` 读同条 `PlayerTalk`（逐字）。表注释是玩家先说，开场演出仍是怪物先、玩家后
 4. `VS` 从略偏上放大飞入居中，短停后渐隐
 5. 再走 `CardTableAnimator` 发牌
+
+缺表或空文案则跳过该角色，仍播 VS。击杀「受死吧。」/ 闪避「就这」仍是占位常量，不读这张表。
 
 敌人这次攻击按减伤后仍会把玩家打到 0 时（`IncomingAttackWouldKill`），点数飞入结束后先播进攻敌人的 `BottomDialog`「受死吧。」（逐字），收起后再冲锋。护身符、救命稻草、免疫不算将死。若这下闪避（MISS），玩家 `TopDialog` 回一句「就这」。
 
@@ -144,7 +146,7 @@ GameUI
 ## 注意
 
 - 局内金币栏是 `GameResource`（嵌套 `GameResourceBar`），跟局外 `MainResource` 一样 `Open` 到 `UIRoot/Resource`。进对局时 navigator 藏起 MainResource；商城/购买/结算期间 `backBtn` 隐藏，栏仍在 Resource 层。点 `backBtn` 先出 [`CommonTop`](../Popup/CommonTopView.cs)「确定退出游戏吗」：确定弹出失败且无复活的 `BattleResultPopup`（点 Back 回主页并兑金）；取消关闭确认框，继续对局。
-- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、开场对话/VS、按钮按压等 `SetUpdate(true)` 的动画不跟倍速。关 `GameUI` 时还原为 1。选择写入 `ISaveService`（`game.playback.speed.v1`），重启后仍用上次倍速。
+- `beisu` 点按在 `x1` / `x2` 间切换，走 `Time.timeScale`；默认 `x1`，最高 `x2`。HUD 入场、按钮按压等 `SetUpdate(true)` 的动画不跟倍速；开场对话/VS、击杀前台词跟倍速。关 `GameUI` 时还原为 1。选择写入 `ISaveService`（`game.playback.speed.v1`），重启后仍用上次倍速。
 - 开战前不要露出闷注 / 看牌 / 跟注 / 加注 / 弃牌。
 - 玩家点桌上手牌选中/取消，选满 3 张才显示开战，并立刻展示当前牌型。
 - 开战后不要让玩家再点选攻击目标，队列自动打当前敌人。

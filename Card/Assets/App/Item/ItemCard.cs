@@ -324,15 +324,31 @@ namespace App.Item
         public void PlayRewardReveal(QualityType quality, bool showChoukaEffect = true)
         {
             EnsureRefs();
-            // 先清掉上一次的品质特效：弹窗复用/连抽时避免多个特效同时亮
-            for (var i = 0; i < RewardFxNames.Length; i++)
-            {
-                SetRewardFxActive(RewardFxNames[i], false);
-            }
-
             if (showChoukaEffect)
             {
                 PrepareRewardFx("ChoukaEffect01");
+            }
+
+            ApplyQualityFx(quality);
+            PlayAnimation(RewardRevealAnim);
+        }
+
+        /// <summary>
+        /// 常驻场景（天赋列表、天赋详情等）按品质点亮天赋特效：不播翻卡动画、不亮 ChoukaEffect01，
+        /// 粒子自带循环，激活即持续显示；普通品质无特效。先清场再点亮，复用实例切品质不叠加。
+        /// </summary>
+        public void ShowQualityFx(QualityType quality)
+        {
+            EnsureRefs();
+            ApplyQualityFx(quality);
+        }
+
+        /// <summary>清掉三个品质特效后点亮目标品质（普通品质只清不亮）。</summary>
+        private void ApplyQualityFx(QualityType quality)
+        {
+            for (var i = 0; i < RewardFxNames.Length; i++)
+            {
+                SetRewardFxActive(RewardFxNames[i], false);
             }
 
             var fxName = RewardFxName(quality);
@@ -340,24 +356,6 @@ namespace App.Item
             {
                 PrepareRewardFx(fxName);
             }
-
-            PlayAnimation(RewardRevealAnim);
-        }
-
-        /// <summary>
-        /// 常驻场景（天赋列表等）按品质点亮天赋特效：不播翻卡动画、不亮 ChoukaEffect01，
-        /// 粒子自带循环，激活即持续显示；普通品质无特效。列表重建时克隆体默认隐藏，直接调用即可。
-        /// </summary>
-        public void ShowQualityFx(QualityType quality)
-        {
-            EnsureRefs();
-            var fxName = RewardFxName(quality);
-            if (fxName == null)
-            {
-                return;
-            }
-
-            PrepareRewardFx(fxName);
         }
 
         /// <summary>

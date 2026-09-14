@@ -2,7 +2,7 @@
   {
     "Id": 1,
     "Name": "平凡之人",
-    "Hp": 200,
+    "Hp": 320,
     "HeroDamage": 40,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -14,8 +14,8 @@
   {
     "Id": 2,
     "Name": "大壮",
-    "Hp": 180,
-    "HeroDamage": 40,
+    "Hp": 300,
+    "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People2",
@@ -28,7 +28,7 @@
   {
     "Id": 3,
     "Name": "狠人",
-    "Hp": 200,
+    "Hp": 320,
     "HeroDamage": 34,
     "Critical": 0.05,
     "CriticalDamage": 2,
@@ -38,12 +38,12 @@
       100021
     ],
     "UnlockCondition": 2,
-    "Desc": "造成的伤害+20%,且拥有15%暴击率"
+    "Desc": "造成的伤害+25%,且拥有15%暴击率"
   },
   {
     "Id": 4,
     "Name": "多面手",
-    "Hp": 180,
+    "Hp": 320,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -52,12 +52,12 @@
       10003
     ],
     "UnlockCondition": 3,
-    "Desc": "攻击时,对其他人造成25%的伤害"
+    "Desc": "攻击时,对其他人造成30%的伤害"
   },
   {
     "Id": 5,
     "Name": "射手",
-    "Hp": 180,
+    "Hp": 320,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -66,12 +66,12 @@
       10004
     ],
     "UnlockCondition": 4,
-    "Desc": "攻击时,有30%概率额外攻击1次"
+    "Desc": "攻击时,有35%概率额外攻击1次"
   },
   {
     "Id": 6,
     "Name": "大嗓门",
-    "Hp": 180,
+    "Hp": 320,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -80,12 +80,12 @@
       10005
     ],
     "UnlockCondition": 5,
-    "Desc": "攻击时,对所有人造成35%的群体伤害"
+    "Desc": "攻击时,对所有人造成40%的群体伤害"
   },
   {
     "Id": 7,
     "Name": "富豪",
-    "Hp": 180,
+    "Hp": 330,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -94,12 +94,12 @@
       10006
     ],
     "UnlockCondition": 6,
-    "Desc": "初始额外拥有50金币"
+    "Desc": "初始额外拥有150金币"
   },
   {
     "Id": 8,
     "Name": "武林高手",
-    "Hp": 170,
+    "Hp": 320,
     "HeroDamage": 34,
     "Critical": 0.05,
     "CriticalDamage": 2,
@@ -109,12 +109,12 @@
       100071
     ],
     "UnlockCondition": 7,
-    "Desc": "承受伤害时有20%概率免疫伤害,且拥有15%暴击率"
+    "Desc": "承受伤害时有25%概率免疫伤害,且拥有15%暴击率"
   },
   {
     "Id": 9,
     "Name": "赌神",
-    "Hp": 200,
+    "Hp": 340,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -123,12 +123,12 @@
       10008
     ],
     "UnlockCondition": 8,
-    "Desc": "额外拥有1次搓牌机会"
+    "Desc": "额外拥有2次搓牌机会"
   },
   {
     "Id": 10,
     "Name": "暴发户",
-    "Hp": 190,
+    "Hp": 330,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -137,12 +137,12 @@
       10009
     ],
     "UnlockCondition": 9,
-    "Desc": "商店刷到史诗及以上品质的圣物概率+15%"
+    "Desc": "商店刷到史诗及以上品质的圣物概率+25%"
   },
   {
     "Id": 11,
     "Name": "关系户",
-    "Hp": 190,
+    "Hp": 330,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -151,12 +151,12 @@
       10010
     ],
     "UnlockCondition": 10,
-    "Desc": "商店中的所有圣物的购买价格-15%"
+    "Desc": "商店中的所有圣物的购买价格-20%"
   },
   {
     "Id": 12,
     "Name": "经济教授",
-    "Hp": 190,
+    "Hp": 340,
     "HeroDamage": 34,
     "Critical": 0,
     "CriticalDamage": 2,
@@ -165,6 +165,6 @@
       10011
     ],
     "UnlockCondition": 11,
-    "Desc": "每关通过后获得的金币数量+20%"
+    "Desc": "每关通过后获得的金币数量+30%"
   }
 ]

@@ -2354,10 +2354,6 @@ namespace App.Game
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
-            if (Phase == GamePhase.Shop)
-            {
-                FillShopOffers();
-            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)

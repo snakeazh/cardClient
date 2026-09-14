@@ -32,6 +32,7 @@ namespace App.UI
         private readonly RectTransform[] _enemyCardRects = new RectTransform[3];
         private readonly List<RectTransform> _knockRects = new List<RectTransform>(3);
         private readonly List<Vector2> _knockHomes = new List<Vector2>(3);
+        private readonly List<Sequence> _knockSeqs = new List<Sequence>(3);
         private GameObject _deathFx;
         private readonly List<Animator> _missVictims = new List<Animator>(3);
         private readonly List<Tween> _missHoldTweens = new List<Tween>(3);
@@ -430,23 +431,30 @@ namespace App.UI
             }
         }
 
-        /// <summary>受击卡回到原位。位移做在卡根节点上，不动父子关系。</summary>
+        /// <summary>受击卡回到原位。位移做在卡根节点上，不动父子关系。只 Kill 击退 Sequence，不动同卡其它 tween。</summary>
         private void RestoreHitTarget()
         {
             for (var i = 0; i < _knockRects.Count; i++)
             {
                 var rect = _knockRects[i];
-                if (rect == null)
+                if (i < _knockSeqs.Count)
                 {
-                    continue;
+                    var seq = _knockSeqs[i];
+                    if (seq != null && seq.IsActive())
+                    {
+                        seq.Kill();
+                    }
                 }
 
-                rect.DOKill();
-                rect.anchoredPosition = _knockHomes[i];
+                if (rect != null)
+                {
+                    rect.anchoredPosition = _knockHomes[i];
+                }
             }
 
             _knockRects.Clear();
             _knockHomes.Clear();
+            _knockSeqs.Clear();
         }
 
         /// <summary>
@@ -697,7 +705,12 @@ namespace App.UI
             var existing = _knockRects.IndexOf(hitRect);
             if (existing >= 0)
             {
-                hitRect.DOKill();
+                var prev = existing < _knockSeqs.Count ? _knockSeqs[existing] : null;
+                if (prev != null && prev.IsActive())
+                {
+                    prev.Kill();
+                }
+
                 home = _knockHomes[existing];
                 hitRect.anchoredPosition = home;
             }
@@ -705,6 +718,8 @@ namespace App.UI
             {
                 _knockRects.Add(hitRect);
                 _knockHomes.Add(home);
+                _knockSeqs.Add(null);
+                existing = _knockRects.Count - 1;
             }
 
             var knockDir = KnockbackDir(hitRect, targetWorldPos - attackerWorldPos);
@@ -715,6 +730,7 @@ namespace App.UI
                 .SetLink(hitRect.gameObject)
                 .SetTarget(hitRect);
             seq.timeScale = _playTimeScale;
+            _knockSeqs[existing] = seq;
         }
 
         /// <summary>攻击方指向受击方的世界方向换算到受击卡父节点的局部方向。</summary>

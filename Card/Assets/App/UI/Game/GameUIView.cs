@@ -109,7 +109,7 @@ namespace App.UI
         private readonly List<RectTransform> _splashHpClones = new List<RectTransform>(2);
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
-        private readonly List<PlayerItem> _staleDeathDissolves = new List<PlayerItem>(4);
+        private readonly HashSet<PlayerItem> _lethalSettleItems = new HashSet<PlayerItem>();
         private bool _attackCutsceneDone;
         private PlayerItem _waitLethalItem;
         private readonly bool[] _pendingEnemyDeathFx = new bool[3];
@@ -294,6 +294,7 @@ namespace App.UI
 
             StopAiDelay();
             CancelAllDeathDissolves();
+            _lethalSettleItems.Clear();
             ClearPendingEnemyDeathFx();
             RestoreHpText();
             _waitLethalItem = null;
@@ -872,7 +873,7 @@ namespace App.UI
         /// <summary>
         /// 致死溶解按 DeathDissolveDelay 延后播，卡片先站着不动。扣血后 Hp 为 0 才预约。
         /// ShowEnemy 立刻翻 false —— BindEnemyVisible 得让位给这里，否则会抢在延迟结束前把卡溶掉。
-        /// 怪溶完要隐藏节点，玩家卡留着。
+        /// 怪溶完要隐藏节点，玩家卡留着。结算只等已 Register 的致死项，不扫全场 IsDissolvePlaying。
         /// </summary>
         private void ScheduleDeathDissolve(PlayerItem item, bool hideWhenDone)
         {
@@ -881,7 +882,12 @@ namespace App.UI
                 return;
             }
 
-            CancelDeathDissolve(item);
+            CancelDeathDissolve(item, unregisterAndResume: false);
+            if (hideWhenDone)
+            {
+                RegisterLethalSettle(item);
+            }
+
             var delay = AttackTuningConfig.Instance.DeathDissolveDelay;
             if (delay <= 0f)
             {
@@ -889,10 +895,26 @@ namespace App.UI
                 return;
             }
 
-            // ignoreTimeScale：避免局内加速/卡顿导致延迟溶解永不触发、攻击无法 Complete。
-            _deathDissolves[item] = DOVirtual
+            // 挂 UI 根，避免和敌人卡击退 rect.DOKill / SetLink 抢生命周期。
+            // OnKill：若 DelayedCall 在回调前被掐掉，补偿减计数并叫醒结算。
+            Tween delayTween = null;
+            delayTween = DOVirtual
                 .DelayedCall(delay, () => PlayDeathDissolve(item, hideWhenDone), true)
-                .SetLink(item.gameObject);
+                .SetLink(gameObject)
+                .OnKill(() =>
+                {
+                    if (!_deathDissolves.TryGetValue(item, out var tracked) || tracked != delayTween)
+                    {
+                        return;
+                    }
+
+                    _deathDissolves.Remove(item);
+                    if (UnregisterLethalSettle(item))
+                    {
+                        FinishAttackIfReady();
+                    }
+                });
+            _deathDissolves[item] = delayTween;
         }
 
         private void PlayDeathDissolve(PlayerItem item, bool hideWhenDone)
@@ -910,6 +932,7 @@ namespace App.UI
                 return;
             }
 
+            RegisterLethalSettle(item);
             item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
         }
 
@@ -920,13 +943,30 @@ namespace App.UI
                 return;
             }
 
+            RegisterLethalSettle(item);
             item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
         }
 
         private void OnEnemyDeathDissolveDone(PlayerItem item)
         {
             HideEnemyItem(item);
+            UnregisterLethalSettle(item);
             FinishAttackIfReady();
+        }
+
+        private void RegisterLethalSettle(PlayerItem item)
+        {
+            if (item == null || item == _playerItem)
+            {
+                return;
+            }
+
+            _lethalSettleItems.Add(item);
+        }
+
+        private bool UnregisterLethalSettle(PlayerItem item)
+        {
+            return item != null && _lethalSettleItems.Remove(item);
         }
 
         private bool HasPendingDeathDissolve(PlayerItem item)
@@ -941,8 +981,12 @@ namespace App.UI
                 return true;
             }
 
-            // 延迟 tween 已被 DOKill 等弄死时清掉脏项，允许重新预约或走 BindEnemyVisible。
             _deathDissolves.Remove(item);
+            if (UnregisterLethalSettle(item))
+            {
+                FinishAttackIfReady();
+            }
+
             return false;
         }
 
@@ -975,45 +1019,7 @@ namespace App.UI
 
         private bool IsWaitingLethalDissolve()
         {
-            if (_deathDissolves.Count > 0)
-            {
-                _staleDeathDissolves.Clear();
-                foreach (var pair in _deathDissolves)
-                {
-                    if (pair.Key == _playerItem)
-                    {
-                        continue;
-                    }
-
-                    if (pair.Value != null && pair.Value.IsActive())
-                    {
-                        return true;
-                    }
-
-                    _staleDeathDissolves.Add(pair.Key);
-                }
-
-                for (var i = 0; i < _staleDeathDissolves.Count; i++)
-                {
-                    _deathDissolves.Remove(_staleDeathDissolves[i]);
-                }
-            }
-
-            if (IsDissolvePlaying(_waitLethalItem))
-            {
-                return true;
-            }
-
-            for (var i = 0; i < _enemyItems.Length; i++)
-            {
-                var item = _enemyItems[i];
-                if (item != null && item != _waitLethalItem && IsDissolvePlaying(item))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return _lethalSettleItems.Count > 0;
         }
 
         private static bool IsDissolvePlaying(PlayerItem item)
@@ -1027,32 +1033,45 @@ namespace App.UI
             return dissolve != null && dissolve.IsPlaying;
         }
 
-        private void CancelDeathDissolve(PlayerItem item)
+        private void CancelDeathDissolve(PlayerItem item, bool unregisterAndResume = true)
         {
-            if (item == null || !_deathDissolves.TryGetValue(item, out var tween))
+            if (item == null)
             {
                 return;
             }
 
-            _deathDissolves.Remove(item);
-            if (tween != null && tween.IsActive())
+            if (_deathDissolves.TryGetValue(item, out var tween))
             {
-                tween.Kill();
-            }
-        }
-
-        private void CancelAllDeathDissolves()
-        {
-            foreach (var pair in _deathDissolves)
-            {
-                var tween = pair.Value;
+                _deathDissolves.Remove(item);
                 if (tween != null && tween.IsActive())
                 {
                     tween.Kill();
                 }
             }
 
+            if (unregisterAndResume && UnregisterLethalSettle(item))
+            {
+                FinishAttackIfReady();
+            }
+        }
+
+        private void CancelAllDeathDissolves()
+        {
+            var active = new List<Tween>(_deathDissolves.Count);
+            foreach (var pair in _deathDissolves)
+            {
+                if (pair.Value != null && pair.Value.IsActive())
+                {
+                    active.Add(pair.Value);
+                }
+            }
+
             _deathDissolves.Clear();
+            _lethalSettleItems.Clear();
+            for (var i = 0; i < active.Count; i++)
+            {
+                active[i].Kill();
+            }
         }
 
         private PlayerItem AttackItemAtSlot(int slot)
@@ -1507,7 +1526,8 @@ namespace App.UI
                     return;
                 }
 
-                // 必须回调 FinishAttackIfReady：溅射/大嗓门旁路致死常走这里，否则会等溶解等到死。
+                // 溅射/大嗓门旁路致死：登记后再溶，溶完减计数并叫醒结算。
+                RegisterLethalSettle(item);
                 item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
             }));
         }

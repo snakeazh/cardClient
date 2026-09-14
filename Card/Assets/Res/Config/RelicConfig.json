@@ -5,8 +5,8 @@
     "RefreshProbability": 0.8,
     "Name": "冒险证明",
     "Icon": "AdventureCertificate",
-    "Price": 30,
-    "SellingPrice": 15,
+    "Price": 45,
+    "SellingPrice": 22,
     "MechanismId": [
       10001
     ],
@@ -455,8 +455,8 @@
     "RefreshProbability": 0.4,
     "Name": "小精灵",
     "Icon": "Elf",
-    "Price": 110,
-    "SellingPrice": 55,
+    "Price": 140,
+    "SellingPrice": 70,
     "MechanismId": [
       20010,
       200101
@@ -561,8 +561,8 @@
     "RefreshProbability": 0.4,
     "Name": "补偿金",
     "Icon": "CompensationFund",
-    "Price": 80,
-    "SellingPrice": 40,
+    "Price": 60,
+    "SellingPrice": 30,
     "MechanismId": [
       20017
     ],
@@ -741,8 +741,8 @@
     "RefreshProbability": 0.4,
     "Name": "月光酒",
     "Icon": "MoonlightWine",
-    "Price": 75,
-    "SellingPrice": 37,
+    "Price": 95,
+    "SellingPrice": 47,
     "MechanismId": [
       20029
     ],
@@ -996,8 +996,8 @@
     "RefreshProbability": 0.2,
     "Name": "训练",
     "Icon": "Training",
-    "Price": 210,
-    "SellingPrice": 105,
+    "Price": 130,
+    "SellingPrice": 65,
     "MechanismId": [
       30012
     ],
@@ -1026,8 +1026,8 @@
     "RefreshProbability": 0.2,
     "Name": "后备计划",
     "Icon": "BackupPlan",
-    "Price": 180,
-    "SellingPrice": 90,
+    "Price": 120,
+    "SellingPrice": 60,
     "MechanismId": [
       30014
     ],
@@ -1478,8 +1478,8 @@
     "RefreshProbability": 0.1,
     "Name": "老搓家",
     "Icon": "OldCardPlayer",
-    "Price": 340,
-    "SellingPrice": 170,
+    "Price": 220,
+    "SellingPrice": 110,
     "MechanismId": [
       40013
     ],
@@ -1722,8 +1722,8 @@
     "RefreshProbability": 0.1,
     "Name": "旗帜",
     "Icon": "Flag",
-    "Price": 260,
-    "SellingPrice": 130,
+    "Price": 320,
+    "SellingPrice": 160,
     "MechanismId": [
       40031
     ],

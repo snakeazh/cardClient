@@ -29,6 +29,9 @@ Shader "LTY/FX/Simple"
 		[Toggle(_ALPHACLIP_ON)] _UseAlphaClip("近零Alpha裁剪", Float) = 1
 		_AlphaClip("AlphaClip", Range(0, 1)) = 0.01
 		_ColorClamp("HDR亮度上限(0=不限制)", Float) = 0
+
+		[Header(UGUIClip)]
+		[Toggle] _UseClipRect("启用视口裁剪(UIParticleClipper 写入)", Float) = 0
 	}
 
 	SubShader
@@ -79,55 +82,60 @@ Shader "LTY/FX/Simple"
 			half _MASK2_u_speed;
 			half _MASK2_v_speed;
 
-			UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-			half _soft;
-			half _AlphaClip;
-			half _ColorClamp;
+		UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+		half _soft;
+		half _AlphaClip;
+		half _ColorClamp;
+		// UGUI 视口裁剪：UIParticleClipper 经 MaterialPropertyBlock 写入（世界坐标矩形），材质默认 0 不裁
+		half _UseClipRect;
+		float4 _ClipRect;
 
 			struct appdata
-			{
+				{
 				float4 vertex : POSITION;
 				float4 color : COLOR;
 				float4 texcoord : TEXCOORD0;
 				float4 texcoord1 : TEXCOORD1;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
-			};
+				};
 
-			struct v2f
-			{
-				float4 pos : SV_POSITION;
-				half4 color : COLOR;
-				float2 uv0 : TEXCOORD0;
-				#ifdef _ONE_UV_ON
-				half2 customUV : TEXCOORD1;
-				#endif
-				#ifdef _SOFT_PARTICLE_ON
-				float4 screenPos : TEXCOORD2;
-				#endif
-				UNITY_VERTEX_OUTPUT_STEREO
-			};
+		struct v2f
+		{
+			float4 pos : SV_POSITION;
+			half4 color : COLOR;
+			float2 uv0 : TEXCOORD0;
+			#ifdef _ONE_UV_ON
+			half2 customUV : TEXCOORD1;
+			#endif
+			#ifdef _SOFT_PARTICLE_ON
+			float4 screenPos : TEXCOORD2;
+			#endif
+			float3 worldPos : TEXCOORD3;
+			UNITY_VERTEX_OUTPUT_STEREO
+		};
 
-			v2f vert(appdata v)
-			{
-				v2f o;
-				UNITY_SETUP_INSTANCE_ID(v);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+		v2f vert(appdata v)
+		{
+			v2f o;
+			UNITY_SETUP_INSTANCE_ID(v);
+			UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-				o.pos = UnityObjectToClipPos(v.vertex);
-				o.color = v.color;
-				o.uv0 = v.texcoord.xy;
-				#ifdef _ONE_UV_ON
-					o.customUV = v.texcoord1.zw;
-				#endif
-				#ifdef _SOFT_PARTICLE_ON
-					o.screenPos = ComputeScreenPos(o.pos);
-					COMPUTE_EYEDEPTH(o.screenPos.z);
-				#endif
-				return o;
-			}
+			o.pos = UnityObjectToClipPos(v.vertex);
+			o.color = v.color;
+			o.uv0 = v.texcoord.xy;
+			o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+			#ifdef _ONE_UV_ON
+				o.customUV = v.texcoord1.zw;
+			#endif
+			#ifdef _SOFT_PARTICLE_ON
+				o.screenPos = ComputeScreenPos(o.pos);
+				COMPUTE_EYEDEPTH(o.screenPos.z);
+			#endif
+			return o;
+		}
 
 			half4 frag(v2f i) : SV_Target
-			{
+				{
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
 				float2 mainUV = i.uv0 * _maintex_ST.xy + _maintex_ST.zw;
@@ -171,15 +179,28 @@ Shader "LTY/FX/Simple"
 				#endif
 
 				#ifdef _ALPHACLIP_ON
-					clip(alpha - _AlphaClip);
-				#endif
+				clip(alpha - _AlphaClip);
+			#endif
+
+				// UGUI 视口裁剪：世界坐标矩形外 alpha 归零，配合 _ALPHACLIP_ON 把矩形外像素整颗丢弃
+				UNITY_BRANCH
+			if (_UseClipRect > 0.5)
+				{
+				float2 inside = step(float2(_ClipRect.x, _ClipRect.y), i.worldPos.xy)
+					* step(i.worldPos.xy, float2(_ClipRect.z, _ClipRect.w));
+				alpha *= inside.x * inside.y;
+				}
+
+				#ifdef _ALPHACLIP_ON
+				clip(alpha - _AlphaClip);
+			#endif
 
 				UNITY_BRANCH
 				if (_ColorClamp > 0)
-					emis = min(emis, half3(_ColorClamp, _ColorClamp, _ColorClamp));
+				emis = min(emis, half3(_ColorClamp, _ColorClamp, _ColorClamp));
 
-				return half4(emis, alpha);
-			}
+			return half4(emis, alpha);
+				}
 			ENDCG
 		}
 	}

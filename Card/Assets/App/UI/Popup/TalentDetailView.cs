@@ -1,4 +1,5 @@
 using System;
+using App.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
@@ -39,6 +40,11 @@ namespace App.UI.Popup
                 else
                 {
                     _card.SetAnimationEnabled(false);
+                    // 常驻品质特效（同天赋列表口径：拥有才亮，怪物条目走 MonsterItem 不进这）
+                    if (ViewModel.CardOwned.Value)
+                    {
+                        _card.ShowQualityFx(ViewModel.Quality.Value);
+                    }
                 }
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 Binding.Add(ViewModel.NameText.Subscribe(ApplyName));
@@ -47,6 +53,8 @@ namespace App.UI.Popup
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
                 // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
+                // 切条目品质变化时同步换常驻品质特效
+                Binding.Add(ViewModel.Quality.Subscribe(OnQualityFxChanged));
                 Binding.Add(ViewModel.IconKey.Subscribe(LoadDetailIcon));
                 // 展示模式图标（图鉴传入的 Sprite，优先于 IconKey 图集逻辑）
                 Binding.Add(ViewModel.IconOverride.Subscribe(ApplyDetailIcon));
@@ -182,6 +190,23 @@ namespace App.UI.Popup
             }
         }
 
+
+        /// <summary>切条目时按新品质刷新常驻特效；抽卡演出模式由 PlayRewardReveal 全权管理不在此刷。</summary>
+        private void OnQualityFxChanged(QualityType type)
+        {
+            if (ViewModel.ShowCongratulations.Value)
+            {
+                return;
+            }
+
+            // 怪物条目 Item 卡整个隐藏（子特效随之隐藏）；未拥有同列表口径不亮
+            if (_card == null || !_card.gameObject.activeSelf || !ViewModel.CardOwned.Value)
+            {
+                return;
+            }
+
+            _card.ShowQualityFx(type);
+        }
 
         /// <summary>图标在 Altas/Talent 图集（sprite 名=TalentConfig.Icon）；缺图保留预制体默认图。</summary>
         private void LoadDetailIcon(string key)

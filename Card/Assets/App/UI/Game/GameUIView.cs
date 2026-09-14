@@ -140,6 +140,7 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
+            GuideSignals.Raised += OnGuideSignal;
             _waitHudForOpening = true;
             PlayHudEntrance(() =>
             {
@@ -281,7 +282,9 @@ namespace App.UI
             }
 
             UnregisterGuideTargets();
+            GuideSignals.Raised -= OnGuideSignal;
             StopPeekHold();
+            HideEquipTip();
 
             _peekGoodArmedSub?.Dispose();
             _peekGoodArmedSub = null;
@@ -2975,6 +2978,7 @@ namespace App.UI
 
         private void HideEquipTip()
         {
+            var closingPeekTip = _shownPeekGoodTip;
             _shownEquipRelicId = 0;
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
@@ -2990,6 +2994,11 @@ namespace App.UI
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(false);
+            }
+
+            if (closingPeekTip)
+            {
+                GuideSignals.NotifyPeekGoodTipClosed();
             }
         }
 
@@ -3394,6 +3403,11 @@ namespace App.UI
 
         private void OnPeekGoodPointerDown(BaseEventData _)
         {
+            if (IsGuidePeekClickOnly())
+            {
+                return;
+            }
+
             _peekHoldFired = false;
             StopPeekHold();
             _peekHoldCo = StartCoroutine(PeekGoodHoldRoutine());
@@ -3402,7 +3416,8 @@ namespace App.UI
         private void OnPeekGoodPointerUp(BaseEventData data)
         {
             StopPeekHold();
-            if (_peekHoldFired && data is PointerEventData pointer)
+            var blockClick = _peekHoldFired || IsGuidePeekHoldOnly();
+            if (blockClick && data is PointerEventData pointer)
             {
                 pointer.eligibleForClick = false;
             }
@@ -3451,6 +3466,49 @@ namespace App.UI
                 showUse: false,
                 placeRight: false);
             _shownPeekGoodTip = true;
+            GuideSignals.NotifyPeekGoodTipShown();
+        }
+
+        private bool IsGuidePeekHoldOnly()
+        {
+            var step = GetGuideCurrentStep();
+            return step != null &&
+                   step.StepType == GuideStepType.Wait &&
+                   string.Equals(step.WaitHandler, GuideWaitIds.PeekGoodTipShown, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsGuidePeekClickOnly()
+        {
+            var step = GetGuideCurrentStep();
+            return step != null &&
+                   step.StepType == GuideStepType.Click &&
+                   string.Equals(step.TargetId, GuideTargetIds.PeekGood, StringComparison.Ordinal);
+        }
+
+        private static GuideStepConfig GetGuideCurrentStep()
+        {
+            if (!AppServices.IsReady)
+            {
+                return null;
+            }
+
+            var guide = AppServices.Resolve<IGuideService>();
+            return guide != null && guide.IsRunning ? guide.CurrentStep : null;
+        }
+
+        private void OnGuideSignal(string id)
+        {
+            if (id != "GuideEnded")
+            {
+                return;
+            }
+
+            StopPeekHold();
+            _peekHoldFired = false;
+            if (_shownPeekGoodTip)
+            {
+                HideEquipTip();
+            }
         }
 
         private static GameObject EnsureSkillArmedGlow(Transform button)

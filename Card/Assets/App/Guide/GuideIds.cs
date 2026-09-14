@@ -16,11 +16,18 @@ namespace App.Guide
         public const string DealFinished = "DealFinished";
         public const string SelectCards = "SelectCards";
         public const string GamePhase = "GamePhase";
+        public const string RubCard = "RubCard";
+        public const string SelectHandType = "SelectHandType";
+        public const string PeekGoodTipShown = "PeekGoodTipShown";
+        public const string PeekGoodTipClosed = "PeekGoodTipClosed";
     }
 
     public static class GuideSignals
     {
         public static int LastDealSerial { get; private set; }
+
+        /// <summary>搓牌技能详情 tip 是否正在显示（供 WaitHandler 判断）。</summary>
+        public static bool PeekGoodTipVisible { get; private set; }
 
         public static event System.Action<string> Raised;
 
@@ -46,6 +53,25 @@ namespace App.Guide
             CurrentDealSerial = dealSerial;
             LastDealSerial = dealSerial;
             Raised?.Invoke(GuideWaitIds.DealFinished);
+        }
+
+        public static void NotifyPeekGoodTipShown()
+        {
+            PeekGoodTipVisible = true;
+            Raised?.Invoke(GuideWaitIds.PeekGoodTipShown);
+        }
+
+        public static void NotifyPeekGoodTipClosed()
+        {
+            PeekGoodTipVisible = false;
+            Raised?.Invoke(GuideWaitIds.PeekGoodTipClosed);
+        }
+
+        /// <summary>引导组结束（完成/跳过/中止）时发出，用于清 UI 门控与 tip。</summary>
+        public static void NotifyGuideEnded()
+        {
+            PeekGoodTipVisible = false;
+            Raised?.Invoke("GuideEnded");
         }
     }
 }

@@ -191,4 +191,305 @@ namespace App.Guide
             done?.Invoke();
         }
     }
+
+    /// <summary>等待指定下标手牌被搓成目标点数（默认 Ace）。WaitParam：下标，或 "index:Ace"。</summary>
+    public sealed class RubCardWaitHandler : IGuideWaitHandler
+    {
+        private readonly GameSession _session;
+        private Action _onComplete;
+        private int _index;
+        private Rank _targetRank;
+        private Rank _startRank;
+        private bool _armed;
+
+        public RubCardWaitHandler(GameSession session)
+        {
+            _session = session ?? throw new ArgumentNullException(nameof(session));
+        }
+
+        public string Id => GuideWaitIds.RubCard;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _index = GuideDealScript.RubTargetIndex;
+            _targetRank = Rank.Ace;
+            ParseParam(step != null ? step.WaitParam : null);
+
+            var hand = _session.Player?.Hand;
+            _startRank = hand != null && _index >= 0 && _index < hand.Length && hand[_index].IsValid
+                ? hand[_index].Rank
+                : Rank.Three;
+
+            _armed = true;
+            _session.Changed += OnChanged;
+            OnChanged();
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _session.Changed -= OnChanged;
+            _onComplete = null;
+        }
+
+        private void ParseParam(string param)
+        {
+            if (string.IsNullOrWhiteSpace(param))
+            {
+                return;
+            }
+
+            var text = param.Trim();
+            var colon = text.IndexOf(':');
+            if (colon >= 0)
+            {
+                var left = text.Substring(0, colon).Trim();
+                var right = text.Substring(colon + 1).Trim();
+                if (int.TryParse(left, out var idx) && idx >= 0)
+                {
+                    _index = idx;
+                }
+
+                if (Enum.TryParse(right, true, out Rank rank))
+                {
+                    _targetRank = rank;
+                }
+
+                return;
+            }
+
+            if (int.TryParse(text, out var onlyIndex) && onlyIndex >= 0)
+            {
+                _index = onlyIndex;
+            }
+        }
+
+        private void OnChanged()
+        {
+            if (!_armed || _session.Player?.Hand == null)
+            {
+                return;
+            }
+
+            var hand = _session.Player.Hand;
+            if (_index < 0 || _index >= hand.Length || !hand[_index].IsValid)
+            {
+                return;
+            }
+
+            var card = hand[_index];
+            if (card.Rank == _targetRank && card.Rank != _startRank)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待玩家点选满开牌张数且牌型匹配。WaitParam：HandType 名，如 ThreeOfAKind。</summary>
+    public sealed class SelectHandTypeWaitHandler : IGuideWaitHandler
+    {
+        private readonly GameSession _session;
+        private Action _onComplete;
+        private App.Game.HandType _target;
+        private bool _armed;
+
+        public SelectHandTypeWaitHandler(GameSession session)
+        {
+            _session = session ?? throw new ArgumentNullException(nameof(session));
+        }
+
+        public string Id => GuideWaitIds.SelectHandType;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _target = App.Game.HandType.ThreeOfAKind;
+            if (step != null && !string.IsNullOrWhiteSpace(step.WaitParam) &&
+                Enum.TryParse(step.WaitParam.Trim(), true, out App.Game.HandType parsed))
+            {
+                _target = parsed;
+            }
+
+            _armed = true;
+            _session.Changed += OnChanged;
+            OnChanged();
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _session.Changed -= OnChanged;
+            _onComplete = null;
+        }
+
+        private void OnChanged()
+        {
+            if (!_armed || _session.Player == null)
+            {
+                return;
+            }
+
+            if (_session.Player.CountSelectedCards() < GameBalance.OpenHandSize)
+            {
+                return;
+            }
+
+            var cards = HandEvaluator.CopySelectedCards(
+                _session.Player.Hand,
+                _session.Player.CardSelected);
+            if (cards == null || cards.Length < GameBalance.OpenHandSize)
+            {
+                return;
+            }
+
+            var score = HandEvaluator.Evaluate(cards);
+            if (score.Type == _target)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待搓牌技能详情 tip 弹出。</summary>
+    public sealed class PeekGoodTipShownWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.PeekGoodTipShown;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.PeekGoodTipVisible)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.PeekGoodTipShown)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待搓牌技能详情 tip 关闭；进入时若已关则立刻完成。</summary>
+    public sealed class PeekGoodTipClosedWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.PeekGoodTipClosed;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (!GuideSignals.PeekGoodTipVisible)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.PeekGoodTipClosed)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
 }

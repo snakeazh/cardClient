@@ -41,7 +41,11 @@ namespace App.Guide
             {
                 [GuideWaitIds.DealFinished] = new DealFinishedWaitHandler(session),
                 [GuideWaitIds.SelectCards] = new SelectCardsWaitHandler(session),
-                [GuideWaitIds.GamePhase] = new GamePhaseWaitHandler(session)
+                [GuideWaitIds.GamePhase] = new GamePhaseWaitHandler(session),
+                [GuideWaitIds.RubCard] = new RubCardWaitHandler(session),
+                [GuideWaitIds.SelectHandType] = new SelectHandTypeWaitHandler(session),
+                [GuideWaitIds.PeekGoodTipShown] = new PeekGoodTipShownWaitHandler(),
+                [GuideWaitIds.PeekGoodTipClosed] = new PeekGoodTipClosedWaitHandler()
             };
 
             _session.Changed += OnSessionChanged;
@@ -137,6 +141,26 @@ namespace App.Guide
             _ = AdvanceAsync();
         }
 
+        /// <summary>
+        /// 蒙版洞点击。优先触发目标按钮 onClick（业务命令 + Advance 监听），
+        /// 避免洞点不穿到下层 UI 导致「点击无效」。已在推进中则忽略，防止同帧双击。
+        /// </summary>
+        public void InvokeClickTarget()
+        {
+            if (!IsRunning || _advancing || _step == null || _step.StepType != GuideStepType.Click)
+            {
+                return;
+            }
+
+            if (_clickButton != null)
+            {
+                _clickButton.onClick.Invoke();
+                return;
+            }
+
+            Advance();
+        }
+
         public void Skip()
         {
             if (!IsRunning || _advancing)
@@ -228,6 +252,9 @@ namespace App.Guide
             _stepIndex = -1;
             _step = null;
             _steps.Clear();
+
+            _session.ClearGuideDealLocks();
+            GuideSignals.NotifyGuideEnded();
 
             if (completed)
             {

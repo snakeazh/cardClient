@@ -18,11 +18,16 @@ namespace App.Guide
 
         int CurrentGroupId { get; }
 
+        GuideStepConfig CurrentStep { get; }
+
         void TryStart(GuideTriggerType type, string param);
 
         void StartGroup(int groupId);
 
         void Advance();
+
+        /// <summary>Click 步骤点蒙版洞：有绑定按钮则触发其 onClick（含业务命令），否则仅推进。</summary>
+        void InvokeClickTarget();
 
         void Skip();
 

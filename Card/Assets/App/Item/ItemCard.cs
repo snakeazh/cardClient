@@ -184,25 +184,36 @@ namespace App.Item
         /// </summary>
         public void SetUnlocked(bool unlocked)
         {
-            EnsureRefs();
-            if (lockMask != null)
-            {
-                lockMask.SetActive(!unlocked);
-                if (!unlocked)
-                {
-                    // 兜底：遮罩节点上的 Graphic 若被外部禁用（override/误操作），激活遮罩时强制启用，
-                    // 否则节点激活了遮罩也不可见
-                    var graphic = lockMask.GetComponent<Graphic>();
-                    if (graphic != null && !graphic.enabled)
-                    {
-                        graphic.enabled = true;
-                    }
-                }
-            }
-
+            SetMaskVisible(!unlocked);
             if (!unlocked)
             {
                 SetName(null);
+            }
+        }
+
+        /// <summary>
+        /// 仅开关 Mask 遮罩，不改名字/图标。局内圣物禁用等「仍显示名称但失效」场景用。
+        /// </summary>
+        public void SetMaskVisible(bool visible)
+        {
+            EnsureRefs();
+            if (lockMask == null)
+            {
+                return;
+            }
+
+            lockMask.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            // 兜底：遮罩节点上的 Graphic 若被外部禁用（override/误操作），激活遮罩时强制启用，
+            // 否则节点激活了遮罩也不可见
+            var graphic = lockMask.GetComponent<Graphic>();
+            if (graphic != null && !graphic.enabled)
+            {
+                graphic.enabled = true;
             }
         }
 

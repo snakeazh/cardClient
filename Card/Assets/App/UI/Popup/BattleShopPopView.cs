@@ -58,7 +58,7 @@ namespace App.UI.Popup
             return card != null ? card.transform as RectTransform : item.transform as RectTransform;
         }
 
-        public void RevealIncomingMine(int relicId)
+        public void RevealIncomingMine(int relicId, bool punch = true)
         {
             var item = FindMineItem(relicId > 0 ? relicId : _pendingMineRevealId);
             _pendingMineRevealId = 0;
@@ -78,7 +78,7 @@ namespace App.UI.Popup
                 }
             }
 
-            if (item != null)
+            if (punch && item != null)
             {
                 PunchSlot(item);
             }
@@ -101,7 +101,8 @@ namespace App.UI.Popup
 
         protected override Task OnViewClose()
         {
-            RevealIncomingMine(_pendingMineRevealId);
+            // 关闭时只做显隐清理，不启动 punch：对象即将销毁，独立 Update 的 Tween 会访问已销毁 RectTransform。
+            RevealIncomingMine(_pendingMineRevealId, punch: false);
             return Task.CompletedTask;
         }
 
@@ -397,7 +398,9 @@ namespace App.UI.Popup
             }
 
             rt.DOKill();
-            rt.DOPunchScale(Vector3.one * 0.08f, 0.28f, 6, 0.6f).SetUpdate(true);
+            rt.DOPunchScale(Vector3.one * 0.08f, 0.28f, 6, 0.6f)
+                .SetUpdate(true)
+                .SetLink(rt.gameObject, LinkBehaviour.KillOnDestroy);
         }
 
         private static void SetSlotActive(ShopItem item, bool active, Transform layoutRoot = null)

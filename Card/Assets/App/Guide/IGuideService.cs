@@ -24,9 +24,12 @@ namespace App.Guide
 
         void StartGroup(int groupId);
 
+        /// <param name="fromOrder">从该 Order 起跑（0 表示从第一步）。</param>
+        void StartGroup(int groupId, int fromOrder);
+
         void Advance();
 
-        /// <summary>Click 步骤点蒙版洞：有绑定按钮则触发其 onClick（含业务命令），否则仅推进。</summary>
+        /// <summary>Click 步骤点蒙版洞：有绑定按钮/Toggle 则触发，否则仅推进。</summary>
         void InvokeClickTarget();
 
         void Skip();

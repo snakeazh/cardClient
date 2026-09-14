@@ -6,6 +6,7 @@ namespace App.Guide
     public static class GuideDealScript
     {
         public const int FirstBattleGroupId = 1;
+        public const int FirstTalentDrawGroupId = GuideGroupIds.FirstTalentDraw;
 
         /// <summary>必须搓掉的手牌下标（「3」）。</summary>
         public const int RubTargetIndex = 2;

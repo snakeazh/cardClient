@@ -115,5 +115,70 @@
     "ShowMask": true,
     "ShowFinger": true,
     "Padding": 16
+  },
+  {
+    "Id": 10,
+    "GroupId": 2,
+    "Order": 1,
+    "StepType": 1,
+    "TargetId": "Navigation.TalentBtn",
+    "Text": "点击天赋",
+    "WaitHandler": "",
+    "WaitParam": "",
+    "ShowMask": true,
+    "ShowFinger": true,
+    "Padding": 16
+  },
+  {
+    "Id": 11,
+    "GroupId": 2,
+    "Order": 2,
+    "StepType": 2,
+    "TargetId": "",
+    "Text": "",
+    "WaitHandler": "TalentPopupOpen",
+    "WaitParam": "",
+    "ShowMask": false,
+    "ShowFinger": false,
+    "Padding": 0
+  },
+  {
+    "Id": 12,
+    "GroupId": 2,
+    "Order": 3,
+    "StepType": 1,
+    "TargetId": "TalentPopup.BuyBtn",
+    "Text": "点击抽取天赋",
+    "WaitHandler": "",
+    "WaitParam": "",
+    "ShowMask": true,
+    "ShowFinger": true,
+    "Padding": 16
+  },
+  {
+    "Id": 13,
+    "GroupId": 2,
+    "Order": 4,
+    "StepType": 2,
+    "TargetId": "",
+    "Text": "",
+    "WaitHandler": "TalentDrawn",
+    "WaitParam": "",
+    "ShowMask": false,
+    "ShowFinger": false,
+    "Padding": 0
+  },
+  {
+    "Id": 14,
+    "GroupId": 2,
+    "Order": 5,
+    "StepType": 3,
+    "TargetId": "",
+    "Text": "这是抽到的天赋，点下一步继续",
+    "WaitHandler": "",
+    "WaitParam": "",
+    "ShowMask": true,
+    "ShowFinger": false,
+    "Padding": 0
   }
 ]

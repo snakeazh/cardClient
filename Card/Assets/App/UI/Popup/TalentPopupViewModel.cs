@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Bootstrap;
 using App.Config;
+using App.Guide;
 using App.Resources;
 using App.Talent;
 using App.Wallet;
@@ -81,7 +83,31 @@ namespace App.UI.Popup
         protected override Task OnOpen(object args)
         {
             RebuildItems();
+            TryStartTalentDrawGuide();
             return Task.CompletedTask;
+        }
+
+        private static void TryStartTalentDrawGuide()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var guide = AppServices.Resolve<IGuideService>();
+            var progress = AppServices.Resolve<IGuideProgressService>();
+            if (guide == null || progress == null || guide.IsRunning)
+            {
+                return;
+            }
+
+            if (progress.IsGroupCompleted(GuideGroupIds.FirstTalentDraw))
+            {
+                return;
+            }
+
+            // 已在天赋页：从抽取步骤开始，跳过底栏点天赋。
+            guide.StartGroup(GuideGroupIds.FirstTalentDraw, fromOrder: 3);
         }
 
         public Task OpenDetail(TalentItem item)
@@ -160,6 +186,7 @@ namespace App.UI.Popup
             BuyCostText.Value = _talent.GetDrawCost().ToString();
             RebuildItems();
             ListVersion.Value++;
+            GuideSignals.NotifyTalentDrawn();
             _ = OpenDetail(talentId, reward: true);
         }
 

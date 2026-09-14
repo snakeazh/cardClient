@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Bootstrap;
 using App.Game;
 using App.Guide;
 using App.Level;
@@ -624,6 +625,29 @@ namespace App.UI
                 _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
             await _ui.Open(home);
             await _navigation.EnsureShown();
+            TryStartFirstTalentGuide();
+        }
+
+        private void TryStartFirstTalentGuide()
+        {
+            if (_guide == null || _guide.IsRunning)
+            {
+                return;
+            }
+
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var progress = AppServices.Resolve<IGuideProgressService>();
+            if (progress == null || progress.IsGroupCompleted(GuideGroupIds.FirstTalentDraw))
+            {
+                return;
+            }
+
+            // 不强制 FirstBattle 已完成：关 GameUI 时 Abort 不会记完成，否则回大厅永远起不来。
+            _guide.StartGroup(GuideGroupIds.FirstTalentDraw);
         }
 
         private void RefreshEnemies()

@@ -492,4 +492,110 @@ namespace App.Guide
             done?.Invoke();
         }
     }
+
+    /// <summary>等待天赋弹窗打开。</summary>
+    public sealed class TalentPopupOpenWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.TalentPopupOpen;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.TalentPopupOpened)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.TalentPopupOpen)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待成功抽取天赋并打开详情。</summary>
+    public sealed class TalentDrawnWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.TalentDrawn;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.TalentDrawn)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.TalentDrawn)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
 }

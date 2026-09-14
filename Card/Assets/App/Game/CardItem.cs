@@ -356,7 +356,7 @@ namespace App.Game
             }
 
             ApplyFrontTransparentVisible(seeThrough);
-            FadeBackAlpha(seeThrough ? 0.5f : 1f, duration);
+            FadeBackAlpha(seeThrough ? 0.15f : 1f, duration);
         }
 
         public bool IsBackSeeThrough => _backSeeThrough;

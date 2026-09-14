@@ -7,7 +7,7 @@
   "AfterBettingAmount": 10,
   "ShopRefreshFirst": 15,
   "ShopRefreshAfter": 15,
-  "ShopRefreshGoldUpNumMax": 3,
+  "ShopRefreshGoldUpNumMax": 100,
   "GoldIcon": "coin",
   "TalentChestNeedGold": 50,
   "PlayerInitialGoldNum": 0,
@@ -16,7 +16,7 @@
     1
   ],
   "KillMonsterGetGold": 0,
-  "HeroReplyHpPerLevelClear": 8,
+  "HeroReplyHpPerLevelClear": 10,
   "EnergyMax": 5,
   "EnergyCostPerRun": 1,
   "EnergyDailyResetHour": 5,

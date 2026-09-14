@@ -14,7 +14,7 @@ namespace App.Wallet
 
         void Add(int amount);
 
-        /// <summary>扣款。余额不足或金额非法返回 false 且不改动余额。</summary>
+        /// <summary>扣款。余额不足或金额为负返回 false 且不改动余额；花费 0 视为成功。</summary>
         bool TrySpend(int amount);
 
         void Load();

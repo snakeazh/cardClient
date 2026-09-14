@@ -37,9 +37,15 @@ namespace App.Wallet
 
         public bool TrySpend(int amount)
         {
-            if (amount <= 0 || _gold < amount)
+            if (amount < 0 || _gold < amount)
             {
                 return false;
+            }
+
+            // 花费 0（如首次抽天赋免费）视为成功，不置脏、不触发事件
+            if (amount == 0)
+            {
+                return true;
             }
 
             _gold -= amount;

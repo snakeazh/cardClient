@@ -109,6 +109,7 @@ namespace App.UI
         private readonly List<RectTransform> _splashHpClones = new List<RectTransform>(2);
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
+        private readonly List<PlayerItem> _staleDeathDissolves = new List<PlayerItem>(4);
         private bool _attackCutsceneDone;
         private PlayerItem _waitLethalItem;
         private readonly bool[] _pendingEnemyDeathFx = new bool[3];
@@ -822,14 +823,21 @@ namespace App.UI
                     continue;
                 }
 
-                if (IsDissolvePlaying(item) || _deathDissolves.ContainsKey(item))
-                {
-                    continue;
-                }
-
                 if (slot == mainSlot || _waitLethalItem == null)
                 {
                     _waitLethalItem = item;
+                }
+
+                // 溅射/AOE 可能多人同帧致死：若 BindEnemyVisible 已抢先溶，补上结算回调，避免卡在 WaitingAttack。
+                if (IsDissolvePlaying(item))
+                {
+                    EnsureEnemyDeathDissolveCallback(item);
+                    continue;
+                }
+
+                if (HasPendingDeathDissolve(item))
+                {
+                    continue;
                 }
 
                 ScheduleDeathDissolve(item, hideWhenDone: true);
@@ -881,8 +889,9 @@ namespace App.UI
                 return;
             }
 
+            // ignoreTimeScale：避免局内加速/卡顿导致延迟溶解永不触发、攻击无法 Complete。
             _deathDissolves[item] = DOVirtual
-                .DelayedCall(delay, () => PlayDeathDissolve(item, hideWhenDone), false)
+                .DelayedCall(delay, () => PlayDeathDissolve(item, hideWhenDone), true)
                 .SetLink(item.gameObject);
         }
 
@@ -901,11 +910,40 @@ namespace App.UI
                 return;
             }
 
-            item.PlayDissolve(-1f, () =>
+            item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
+        }
+
+        private void EnsureEnemyDeathDissolveCallback(PlayerItem item)
+        {
+            if (item == null)
             {
-                HideEnemyItem(item);
-                FinishAttackIfReady();
-            });
+                return;
+            }
+
+            item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
+        }
+
+        private void OnEnemyDeathDissolveDone(PlayerItem item)
+        {
+            HideEnemyItem(item);
+            FinishAttackIfReady();
+        }
+
+        private bool HasPendingDeathDissolve(PlayerItem item)
+        {
+            if (item == null || !_deathDissolves.TryGetValue(item, out var tween))
+            {
+                return false;
+            }
+
+            if (tween != null && tween.IsActive())
+            {
+                return true;
+            }
+
+            // 延迟 tween 已被 DOKill 等弄死时清掉脏项，允许重新预约或走 BindEnemyVisible。
+            _deathDissolves.Remove(item);
+            return false;
         }
 
         private void FinishAttackIfReady()
@@ -937,16 +975,27 @@ namespace App.UI
 
         private bool IsWaitingLethalDissolve()
         {
-            foreach (var pair in _deathDissolves)
+            if (_deathDissolves.Count > 0)
             {
-                if (pair.Key == _playerItem)
+                _staleDeathDissolves.Clear();
+                foreach (var pair in _deathDissolves)
                 {
-                    continue;
+                    if (pair.Key == _playerItem)
+                    {
+                        continue;
+                    }
+
+                    if (pair.Value != null && pair.Value.IsActive())
+                    {
+                        return true;
+                    }
+
+                    _staleDeathDissolves.Add(pair.Key);
                 }
 
-                if (pair.Value != null && pair.Value.IsActive())
+                for (var i = 0; i < _staleDeathDissolves.Count; i++)
                 {
-                    return true;
+                    _deathDissolves.Remove(_staleDeathDissolves[i]);
                 }
             }
 
@@ -1453,12 +1502,13 @@ namespace App.UI
                     return;
                 }
 
-                if (_deathDissolves.ContainsKey(item))
+                if (HasPendingDeathDissolve(item))
                 {
                     return;
                 }
 
-                item.PlayDissolve(-1f, () => HideEnemyItem(item));
+                // 必须回调 FinishAttackIfReady：溅射/大嗓门旁路致死常走这里，否则会等溶解等到死。
+                item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
             }));
         }
 

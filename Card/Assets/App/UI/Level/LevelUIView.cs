@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Game;
@@ -22,6 +23,8 @@ namespace App.UI
         private readonly List<HeroItem> _heroItems = new List<HeroItem>();
         private readonly List<ItemCard> _levelItems = new List<ItemCard>();
         private PlayerItem _playerItem;
+        private Coroutine _scrollHeroRoutine;
+        private Coroutine _scrollLevelRoutine;
 
         protected override void OnBind()
         {
@@ -176,14 +179,22 @@ namespace App.UI
         private void RefreshHeroItems(bool forceSelect = false)
         {
             var selected = ViewModel.SelectedHeroId.Value;
+            RectTransform selectedRt = null;
             for (var i = 0; i < _heroItems.Count; i++)
             {
                 var item = _heroItems[i];
                 var hero = ViewModel.Heroes[i];
                 var unlocked = ViewModel.IsHeroUnlocked(hero);
                 var stats = ViewModel.GetHeroPanelStats(hero);
-                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), hero.Id == selected, unlocked, stats, forceSelect);
+                var isSelected = hero.Id == selected;
+                item.Bind(hero, PortraitLoader.GetRole(hero.Icon), isSelected, unlocked, stats, forceSelect);
+                if (isSelected)
+                {
+                    selectedRt = item.transform as RectTransform;
+                }
             }
+
+            ScrollListToChild("heroSelect", selectedRt);
         }
 
         private void RefreshLevelItems(bool forceSelect = false)
@@ -191,6 +202,7 @@ namespace App.UI
             var selected = ViewModel.SelectedLevelId.Value;
             var stages = ViewModel.Stages;
             var count = Mathf.Min(_levelItems.Count, stages.Count);
+            RectTransform selectedRt = null;
             for (var i = 0; i < count; i++)
             {
                 var item = _levelItems[i];
@@ -202,8 +214,114 @@ namespace App.UI
                     item.SetName($"难度{stage.Difficulty}");
                 }
 
-                item.PlaySelected(stage.Id == selected, forceSelect);
+                var isSelected = stage.Id == selected;
+                item.PlaySelected(isSelected, forceSelect);
+                if (isSelected)
+                {
+                    selectedRt = item.transform as RectTransform;
+                }
             }
+
+            ScrollListToChild("levelSelect", selectedRt);
+        }
+
+        private void ScrollListToChild(string listKey, RectTransform child)
+        {
+            if (child == null)
+            {
+                return;
+            }
+
+            if (listKey == "heroSelect")
+            {
+                if (_scrollHeroRoutine != null)
+                {
+                    StopCoroutine(_scrollHeroRoutine);
+                }
+
+                _scrollHeroRoutine = StartCoroutine(ScrollListToChildNextFrame(listKey, child));
+                return;
+            }
+
+            if (listKey == "levelSelect")
+            {
+                if (_scrollLevelRoutine != null)
+                {
+                    StopCoroutine(_scrollLevelRoutine);
+                }
+
+                _scrollLevelRoutine = StartCoroutine(ScrollListToChildNextFrame(listKey, child));
+            }
+        }
+
+        private IEnumerator ScrollListToChildNextFrame(string listKey, RectTransform child)
+        {
+            // 等一帧：面板刚激活 / ContentSizeFitter 算完后再滚。
+            yield return null;
+            if (child == null)
+            {
+                yield break;
+            }
+
+            var listGo = UI.GetGameObject(listKey);
+            if (listGo == null || !listGo.activeInHierarchy)
+            {
+                yield break;
+            }
+
+            EnsureChildVisible(listGo.GetComponent<ScrollRect>(), child);
+        }
+
+        /// <summary>
+        /// 竖向 ScrollRect：把子项滚进可视区（已在可视区内则不动）。
+        /// </summary>
+        private static void EnsureChildVisible(ScrollRect scroll, RectTransform child)
+        {
+            if (scroll == null || child == null || !scroll.vertical)
+            {
+                return;
+            }
+
+            var content = scroll.content;
+            var viewport = scroll.viewport != null ? scroll.viewport : scroll.transform as RectTransform;
+            if (content == null || viewport == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+            var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, child);
+            var view = viewport.rect;
+            float offset = 0f;
+            if (bounds.max.y > view.yMax)
+            {
+                offset = bounds.max.y - view.yMax;
+            }
+            else if (bounds.min.y < view.yMin)
+            {
+                offset = bounds.min.y - view.yMin;
+            }
+            else
+            {
+                return;
+            }
+
+            scroll.StopMovement();
+            var pos = content.anchoredPosition;
+            pos.y -= offset;
+            var overflow = content.rect.height - viewport.rect.height;
+            if (overflow > 0f)
+            {
+                pos.y = Mathf.Clamp(pos.y, 0f, overflow);
+            }
+            else
+            {
+                pos.y = 0f;
+            }
+
+            content.anchoredPosition = pos;
         }
 
         private void RefreshPreview()

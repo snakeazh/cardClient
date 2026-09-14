@@ -380,6 +380,12 @@ namespace App.Item
                 inherit.OrderOffset = 10;
             }
 
+            // 列表视口裁剪：父链上有 RectMask2D 时粒子按视口矩形裁剪（UIParticleClipper 自行判断）
+            if (fx.GetComponent<UIParticleClipper>() == null)
+            {
+                fx.gameObject.AddComponent<UIParticleClipper>();
+            }
+
             UiFx.RestartParticles(fx.gameObject);
         }
 

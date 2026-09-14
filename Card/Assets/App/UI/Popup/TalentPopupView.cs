@@ -137,6 +137,11 @@ namespace App.UI.Popup
                 card.SetAnimationEnabled(false);
                 // 品质染色 + card 节点品质边框（Altas/ItemBg），未解锁 Type 按 1 级行兜底
                 card.ApplyQuality(item.Type);
+                // 已解锁卡常驻品质特效（循环粒子）；未解锁是黑剪影+？？？，不亮
+                if (item.Snapshot.IsOwned)
+                {
+                    card.ShowQualityFx(item.Type);
+                }
                 // 不清 card_icon：无配置 Icon 时保留预制体默认图
                 card.SetName(item.Name);
                 card.SetUnlocked(item.Snapshot.IsOwned);

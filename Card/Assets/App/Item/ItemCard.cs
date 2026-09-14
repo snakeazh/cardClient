@@ -41,6 +41,9 @@ namespace App.Item
         /// <summary>抽卡翻卡演出（Res/Animations/Chouka/ItemRoot.controller 的主动画，5 秒一次性）。</summary>
         public const string RewardRevealAnim = "ItemRoot";
 
+        /// <summary>物品预制体内嵌的三个品质特效实例名（稀有/史诗/传说），翻卡前统一清掉。</summary>
+        private static readonly string[] RewardFxNames = { "TianfuBlue01", "TianfuPurple01", "TianfuRed01" };
+
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂。</summary>
         public event Action<ItemCard> Clicked;
 
@@ -314,13 +317,19 @@ namespace App.Item
 
         /// <summary>
         /// 抽卡结果翻卡演出：播 ItemRoot 翻面动画（Res/Animations/Chouka），并按品质点亮
-        /// ItemRoot 下内嵌的天赋特效实例（红=传说、紫=史诗、蓝=稀有；普通只播动画）。
-        /// 嵌套特效默认隐藏、在 Default 层且粒子不吃 Canvas 层级——激活前整组换 UI 层并挂排序继承。
+        /// 内嵌的天赋特效实例（红=传说、紫=史诗、蓝=稀有；普通无特效只播动画）。
+        /// 特效默认隐藏、在 Default 层且粒子不吃 Canvas 层级——激活前整组换 UI 层并挂排序继承。
         /// </summary>
         /// <param name="showChoukaEffect">是否点亮 ChoukaEffect01；解锁弹窗等入口传 false。</param>
         public void PlayRewardReveal(QualityType quality, bool showChoukaEffect = true)
         {
             EnsureRefs();
+            // 先清掉上一次的品质特效：弹窗复用/连抽时避免多个特效同时亮
+            for (var i = 0; i < RewardFxNames.Length; i++)
+            {
+                SetRewardFxActive(RewardFxNames[i], false);
+            }
+
             if (showChoukaEffect)
             {
                 PrepareRewardFx("ChoukaEffect01");
@@ -335,10 +344,29 @@ namespace App.Item
             PlayAnimation(RewardRevealAnim);
         }
 
+        /// <summary>
+        /// 常驻场景（天赋列表等）按品质点亮天赋特效：不播翻卡动画、不亮 ChoukaEffect01，
+        /// 粒子自带循环，激活即持续显示；普通品质无特效。列表重建时克隆体默认隐藏，直接调用即可。
+        /// </summary>
+        public void ShowQualityFx(QualityType quality)
+        {
+            EnsureRefs();
+            var fxName = RewardFxName(quality);
+            if (fxName == null)
+            {
+                return;
+            }
+
+            PrepareRewardFx(fxName);
+        }
+
+        /// <summary>
+        /// 激活并重播指定特效。三个品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
+        /// 故整树按名深查找，不能只在 itemRoot 下找。
+        /// </summary>
         private void PrepareRewardFx(string fxName)
         {
-            var root = itemRoot != null ? itemRoot.transform : transform;
-            var fx = root.Find(fxName);
+            var fx = FindDeep(transform, fxName);
             if (fx == null)
             {
                 return;
@@ -353,6 +381,15 @@ namespace App.Item
             }
 
             UiFx.RestartParticles(fx.gameObject);
+        }
+
+        private void SetRewardFxActive(string fxName, bool active)
+        {
+            var fx = FindDeep(transform, fxName);
+            if (fx != null)
+            {
+                fx.gameObject.SetActive(active);
+            }
         }
 
         private static string RewardFxName(QualityType quality)

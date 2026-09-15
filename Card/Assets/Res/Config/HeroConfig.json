@@ -123,7 +123,7 @@
       10008
     ],
     "UnlockCondition": 8,
-    "Desc": "额外拥有2次搓牌机会"
+    "Desc": "每关[搓牌]使用次数+2"
   },
   {
     "Id": 10,
@@ -165,6 +165,172 @@
       10011
     ],
     "UnlockCondition": 11,
-    "Desc": "每关通过后获得的金币数量+30%"
+    "Desc": "每关结算时获得的金币数量+30%"
+  },
+  {
+    "Id": 13,
+    "Name": "死灵法师",
+    "Hp": 300,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People13",
+    "HeroEntryId": [
+      10012
+    ],
+    "UnlockCondition": 12,
+    "Desc": "对精英、领主造成的伤害+50%"
+  },
+  {
+    "Id": 14,
+    "Name": "裁决使",
+    "Hp": 320,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People14",
+    "HeroEntryId": [
+      10013
+    ],
+    "UnlockCondition": 13,
+    "Desc": "对血量小于10%的非领主敌人造成伤害时,有20%概率直接斩杀"
+  },
+  {
+    "Id": 15,
+    "Name": "亡命徒",
+    "Hp": 320,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People15",
+    "HeroEntryId": [
+      10014
+    ],
+    "UnlockCondition": 14,
+    "Desc": "自身血量小于20%时,造成的伤害+50%"
+  },
+  {
+    "Id": 16,
+    "Name": "囤货王",
+    "Hp": 300,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People16",
+    "HeroEntryId": [
+      10015
+    ],
+    "UnlockCondition": 15,
+    "Desc": "圣物携带上限+2"
+  },
+  {
+    "Id": 17,
+    "Name": "阴阳师",
+    "Hp": 330,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People17",
+    "HeroEntryId": [
+      10016
+    ],
+    "UnlockCondition": 16,
+    "Desc": "每关[透视]使用次数+1"
+  },
+  {
+    "Id": 18,
+    "Name": "营养师",
+    "Hp": 320,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People18",
+    "HeroEntryId": [
+      10017
+    ],
+    "UnlockCondition": 17,
+    "Desc": "每次通关后额外回复自身10%血量"
+  },
+  {
+    "Id": 19,
+    "Name": "拾荒者",
+    "Hp": 330,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People19",
+    "HeroEntryId": [
+      10018
+    ],
+    "UnlockCondition": 18,
+    "Desc": "每击杀1名敌人,额外获得20金币"
+  },
+  {
+    "Id": 20,
+    "Name": "修炼者",
+    "Hp": 300,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People20",
+    "HeroEntryId": [
+      10019
+    ],
+    "UnlockCondition": 19,
+    "Desc": "每击杀1名敌人,额外提高2点攻击力"
+  },
+  {
+    "Id": 21,
+    "Name": "决斗大师",
+    "Hp": 310,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People21",
+    "HeroEntryId": [
+      10020
+    ],
+    "UnlockCondition": 20,
+    "Desc": "场上只剩1名敌人时,造成的伤害+50%"
+  },
+  {
+    "Id": 22,
+    "Name": "孩子王",
+    "Hp": 310,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People22",
+    "HeroEntryId": [
+      10021
+    ],
+    "UnlockCondition": 21,
+    "Desc": "场上敌人多于1名时,造成的伤害+30%"
+  },
+  {
+    "Id": 23,
+    "Name": "急性子",
+    "Hp": 310,
+    "HeroDamage": 34,
+    "Critical": 0,
+    "CriticalDamage": 2,
+    "Icon": "People23",
+    "HeroEntryId": [
+      10022
+    ],
+    "UnlockCondition": 22,
+    "Desc": "每关第一轮比牌时,结算时的倍率+2"
+  },
+  {
+    "Id": 24,
+    "Name": "锦鲤",
+    "Hp": 300,
+    "HeroDamage": 34,
+    "Critical": 0.4,
+    "CriticalDamage": 2.4,
+    "Icon": "People24",
+    "HeroEntryId": [],
+    "UnlockCondition": 23,
+    "Desc": "暴击率+40%,暴击伤害+40%"
   }
 ]

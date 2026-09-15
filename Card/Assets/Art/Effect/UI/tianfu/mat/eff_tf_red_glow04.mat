@@ -7,13 +7,12 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: eff_tf_red_glow01
+  m_Name: eff_tf_red_glow04
   m_Shader: {fileID: 4800000, guid: a27adc7aaa79f7343b41f312ec9b2883, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ALPHACLIP_ON
-  - _A_R_ON
   - _MASK2_ON
   - _MASK_ON
   m_InvalidKeywords: []
@@ -54,7 +53,7 @@ Material:
     - _MASKTEX2:
         m_Texture: {fileID: 2800000, guid: cf44122547e5c504aaf9402337f0a6d7, type: 3}
         m_Scale: {x: 0.3, y: 0.3}
-        m_Offset: {x: 0, y: -0.06}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -72,19 +71,19 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _maintex:
-        m_Texture: {fileID: 2800000, guid: 5f789d736ecfe964e9d5150a879cf955, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Texture: {fileID: 2800000, guid: 9a50860a09efb6244b9619627bc217ae, type: 3}
+        m_Scale: {x: 0.5, y: 0.5}
+        m_Offset: {x: 0, y: 0.5}
     m_Ints: []
     m_Floats:
-    - _A_R: 1
+    - _A_R: 0
     - _AlphaClip: 0.01
     - _BumpScale: 1
     - _ColorClamp: 0
     - _CullMode: 0
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _Dst: 1
+    - _Dst: 10
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
@@ -113,5 +112,5 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Maincolor: {r: 1, g: 1, b: 1, a: 1}
+    - _Maincolor: {r: 2, g: 2, b: 2, a: 1}
   m_BuildTextureStacks: []

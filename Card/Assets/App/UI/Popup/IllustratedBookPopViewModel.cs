@@ -34,6 +34,11 @@ namespace App.UI.Popup
         /// <summary>怪物页分区用（Boss 进 UltimateGrid，Normal 进 RareGrid）；收藏/遗物页未赋值。</summary>
         public MonsterType MonsterType;
 
+        /// <summary>怪物页卡面攻/血块数值（取最低等级行 MonsterDamage/MonsterHp）；其余页未赋值。</summary>
+        public int Attack;
+
+        public int Hp;
+
         /// <summary>品质卡面边框（遗物页=RelicConfig.Type）；未赋值的页保持 Ordinary。</summary>
         public QualityType Quality;
     }
@@ -423,7 +428,9 @@ namespace App.UI.Popup
                     Desc = row.Desc ?? string.Empty,
                     Icon = row.Icon,
                     Unlocked = true,
-                    MonsterType = row.Type
+                    MonsterType = row.Type,
+                    Attack = row.MonsterDamage,
+                    Hp = row.MonsterHp
                 });
             }
 

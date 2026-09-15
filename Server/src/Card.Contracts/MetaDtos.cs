@@ -13,6 +13,14 @@ public sealed class TalentDrawResponse
     public PlayerProfileDto Profile { get; set; } = new PlayerProfileDto();
 }
 
+public sealed class TalentGrantAdRequest
+{
+    public int TalentId { get; set; }
+
+    /// <summary>Reserved for a real ad SDK receipt. Ignored in this phase.</summary>
+    public string? AdProof { get; set; }
+}
+
 public sealed class AdProofRequest
 {
     /// <summary>Reserved for a real ad SDK receipt. Ignored in this phase.</summary>

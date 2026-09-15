@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using Framework.UI.DI;
@@ -13,7 +15,11 @@ namespace App.Bootstrap
     /// </summary>
     public sealed class AppServicesHost : MonoBehaviour
     {
+        private const float ProfileRefreshMinIntervalSeconds = 2f;
+
         private readonly List<ISaveFlushable> _flushables = new List<ISaveFlushable>();
+        private float _lastProfileRefreshRealtime = -999f;
+        private bool _refreshingProfile;
 
         public ServiceContainer Container { get; private set; }
 
@@ -77,6 +83,10 @@ namespace App.Bootstrap
             {
                 FlushAll();
             }
+            else
+            {
+                _ = RefreshProfileFromServerAsync();
+            }
         }
 
         private void OnApplicationFocus(bool hasFocus)
@@ -84,6 +94,38 @@ namespace App.Bootstrap
             if (!hasFocus)
             {
                 FlushAll();
+                return;
+            }
+
+            _ = RefreshProfileFromServerAsync();
+        }
+
+        private async Task RefreshProfileFromServerAsync()
+        {
+            if (!GameApi.IsReady || _refreshingProfile)
+            {
+                return;
+            }
+
+            if (Time.realtimeSinceStartup - _lastProfileRefreshRealtime < ProfileRefreshMinIntervalSeconds)
+            {
+                return;
+            }
+
+            _refreshingProfile = true;
+            try
+            {
+                var profile = await GameApi.Client.GetProfileAsync();
+                GameApi.ApplyProfile(profile);
+                _lastProfileRefreshRealtime = Time.realtimeSinceStartup;
+            }
+            catch (Exception e)
+            {
+                AppLog.Warn(LogChannel.Net, "refresh profile failed: " + e.Message);
+            }
+            finally
+            {
+                _refreshingProfile = false;
             }
         }
 

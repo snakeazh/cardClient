@@ -322,11 +322,40 @@ public sealed class PlayerProfile
         UnlockRules.Apply(Unlock, stats, config.Tables.UnlockConditions);
     }
 
-    public int GrantSettleGold(int totalScore, IGameConfig config, int levelClearGold = 0)
+    /// <summary>
+    /// 局外 Wallet 只按积分兑换。LevelConfig.GetGold 是局内商店筹码，不得计入此处。
+    /// </summary>
+    public int GrantSettleGold(int totalScore, IGameConfig config)
     {
-        var gold = PointsToGold(totalScore, config) + Math.Max(0, levelClearGold);
+        var gold = PointsToGold(totalScore, config);
         Gold += gold;
         return gold;
+    }
+
+    /// <summary>看广告发放指定天赋 1 份（不扣局外金、不增加 DrawCount）。</summary>
+    public TalentDrawResult GrantTalentByAd(int talentId, IGameConfig config)
+    {
+        if (talentId <= 0)
+        {
+            throw DomainException.Invalid("talentId is required.");
+        }
+
+        if (config.Tables.GetTalentMaxLevel(talentId) <= 0
+            && !config.Tables.TalentRows.Any(t => t.TalentId == talentId))
+        {
+            throw DomainException.Invalid($"Unknown talent {talentId}.");
+        }
+
+        var entry = Talent.GetOrAdd(talentId);
+        var maxLevel = config.Tables.GetTalentMaxLevel(talentId);
+        var level = TalentLevel(entry.Count, maxLevel, config.Balance.CopiesPerLevel);
+        if (maxLevel > 0 && level >= maxLevel)
+        {
+            throw new DomainException(ErrorCodes.TalentPoolEmpty, "Talent is already maxed.");
+        }
+
+        entry.Count++;
+        return new TalentDrawResult(talentId, entry.Count, Talent.DrawCount, goldSpent: 0);
     }
 
     public static int PointsToGold(int totalScore, IGameConfig config)

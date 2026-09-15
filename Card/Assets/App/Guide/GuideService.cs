@@ -306,8 +306,8 @@ namespace App.Guide
                     }
                     catch (Exception e)
                     {
+                        // 联网态不本地 Mark：失败留给下次重试，避免假完成。
                         AppLog.Exception(LogChannel.Net, e);
-                        _progress.MarkGroupCompleted(groupId);
                     }
                 }
                 else
@@ -502,7 +502,7 @@ namespace App.Guide
             }
         }
 
-        private static async void EnsureTalentDrawGold()
+        private static void EnsureTalentDrawGold()
         {
             if (!AppServices.IsReady)
             {
@@ -522,21 +522,8 @@ namespace App.Guide
                 return;
             }
 
-            if (!GameApi.IsReady)
-            {
-                return;
-            }
-
-            try
-            {
-                var profile = await GameApi.Client.DebugGrantGoldAsync(cost - wallet.Gold);
-                GameApi.ApplyProfile(profile);
-                AppLog.Info(LogChannel.UI, $"[Guide] granted gold for talent draw, now {wallet.Gold}");
-            }
-            catch (Exception e)
-            {
-                AppLog.Exception(LogChannel.Net, e);
-            }
+            // 引导不再调用 /debug/grant-gold 补金；金币不足时提示，由正常产出或广告店补足。
+            AppLog.Warn(LogChannel.UI, $"[Guide] talent draw needs {cost} gold, wallet has {wallet.Gold}");
         }
 
         private static bool ParamEquals(string configured, string actual)

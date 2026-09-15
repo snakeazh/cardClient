@@ -92,6 +92,8 @@ namespace App.Game
         private CardShare.Battle.PveLocalSession _pveLocal;
         private string _serverRunId;
         private int _serverLevelId;
+        /// <summary>本局已通关的最高关卡 Id；失败结算也要带上，避免 ApplyProfile 回滚中途进度。</summary>
+        private int _runHighestClearedLevelId;
         private Task _runGoldSync = Task.CompletedTask;
         private Task _shopSync = Task.CompletedTask;
         private readonly PveSettleStats _runStats = new PveSettleStats();
@@ -383,6 +385,7 @@ namespace App.Game
             Run.ShopRefreshCount = 0;
             _serverRunId = null;
             _serverLevelId = 0;
+            _runHighestClearedLevelId = 0;
             _runGoldSync = Task.CompletedTask;
             _shopSync = Task.CompletedTask;
             ResetSettleStats();
@@ -472,7 +475,7 @@ namespace App.Game
             var levelId = Run.LevelId;
             if (!cleared && _serverLevelId > 0)
             {
-                levelId = _serverLevelId;
+                levelId = _runHighestClearedLevelId > 0 ? _runHighestClearedLevelId : _serverLevelId;
             }
             else if (cleared && _serverLevelId > 0 && levelId <= 0)
             {
@@ -484,6 +487,7 @@ namespace App.Game
                 RunId = _serverRunId ?? string.Empty,
                 Cleared = cleared,
                 LevelId = levelId,
+                HighestClearedLevelId = _runHighestClearedLevelId,
                 TotalScore = score != null ? score.Current.Total : 0,
                 Stats = CloneSettleStats()
             };
@@ -6793,7 +6797,13 @@ namespace App.Game
             }
 
             var progress = ProgressSvc();
-            progress?.MarkCleared(current.Id);
+            _runHighestClearedLevelId = current.Id;
+            // 联网对局：关卡进度以 settle 灌档为准，避免中途本地写 + ApplyProfile 互相覆盖。
+            if (!HasServerRun)
+            {
+                progress?.MarkCleared(current.Id);
+            }
+
             progress?.SetLastLevel(current.Id);
             progress?.SetLastDifficulty(current.Difficulty);
 
@@ -6801,12 +6811,21 @@ namespace App.Game
             {
                 levels.TrySelect(next.Id);
                 progress?.SetLastLevel(next.Id);
-                progress?.Save();
+                if (!HasServerRun)
+                {
+                    progress?.Save();
+                }
+
                 return true;
             }
 
-            progress?.Save();
-            if (progress != null && progress.IsCleared(current.Difficulty))
+            if (!HasServerRun)
+            {
+                progress?.Save();
+            }
+
+            // 能走到这里说明没有下一关：本难度已打完。联网态进度尚未灌档，直接按通关提示。
+            if (HasServerRun || (progress != null && progress.IsCleared(current.Difficulty)))
             {
                 Hint = levels.TryGetNextDifficulty(current.Difficulty, out var nextDiff)
                     ? $"已完成难度{current.Difficulty}，解锁难度{nextDiff}"
@@ -6952,7 +6971,11 @@ namespace App.Game
         private void ReportUnlock(ContidionType type, int amount = 1)
         {
             AccumulateSettleStat(type, amount);
-            UnlockSvc()?.Report(type, amount);
+            // 联网对局：解锁进度随 settle Stats 由服务端重算并灌档，局内不再本地 Report。
+            if (!HasServerRun)
+            {
+                UnlockSvc()?.Report(type, amount);
+            }
         }
 
         private void ResetSettleStats()

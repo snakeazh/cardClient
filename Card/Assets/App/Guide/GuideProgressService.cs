@@ -1,4 +1,5 @@
 using System;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -39,6 +40,11 @@ namespace App.Guide
         public void MarkGroupCompleted(int groupId)
         {
             if (groupId <= 0 || IsGroupCompleted(groupId))
+            {
+                return;
+            }
+
+            if (!MetaLocalAuthority.AllowsLocalMutation("Guide.MarkGroupCompleted"))
             {
                 return;
             }

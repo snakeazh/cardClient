@@ -325,14 +325,27 @@ namespace App.UI
 
         private bool CanUnlockSelectedHero()
         {
+            // 联网：英雄解锁由 settle / 服务端主档驱动，禁止本地按钮解锁。
+            if (GameApi.IsReady)
+            {
+                return false;
+            }
+
             var hero = HeroConfig.Get(SelectedHeroId.Value);
-            return hero != null && !IsHeroUnlocked(hero);
+            return hero != null
+                   && !_progress.IsHeroUnlocked(hero.Id)
+                   && MeetsDifficultyUnlock(hero);
         }
 
         private bool TryUnlockSelectedHero()
         {
+            if (GameApi.IsReady)
+            {
+                return false;
+            }
+
             var hero = HeroConfig.Get(SelectedHeroId.Value);
-            if (hero == null || IsHeroUnlocked(hero))
+            if (hero == null || _progress.IsHeroUnlocked(hero.Id) || !MeetsDifficultyUnlock(hero))
             {
                 return false;
             }

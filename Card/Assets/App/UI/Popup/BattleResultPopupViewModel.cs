@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Game;
 using App.Net;
 using App.Score;
@@ -144,6 +145,13 @@ namespace App.UI.Popup
                 GameApi.ApplyProfile(resp.Profile);
                 CoinNum.Value = resp.GoldGranted.ToString();
                 _granted = true;
+                // 积分已兑成局外金，清空本地 score.v1，避免跨重启残留上报。
+                if (AppServices.IsReady)
+                {
+                    var score = AppServices.Resolve<IScoreService>();
+                    score.BeginChapter();
+                    score.Save();
+                }
             }
             catch (GameApiException ex)
             {

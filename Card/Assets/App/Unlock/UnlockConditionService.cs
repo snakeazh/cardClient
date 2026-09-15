@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -102,7 +103,7 @@ namespace App.Unlock
 
         public void Report(ContidionType type, int amount = 1)
         {
-            if (amount <= 0)
+            if (amount <= 0 || !MetaLocalAuthority.AllowsLocalMutation("Unlock.Report"))
             {
                 return;
             }

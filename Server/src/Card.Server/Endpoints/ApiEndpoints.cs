@@ -22,6 +22,8 @@ public static class ApiEndpoints
             => Results.Json(await commands.SettlePveAsync(http.RequireUserId(), request, ct)));
         v1.MapPost("/talent/draw", async (HttpContext http, PlayerCommandService commands, CancellationToken ct)
             => Results.Json(await commands.DrawTalentAsync(http.RequireUserId(), ct)));
+        v1.MapPost("/talent/grant-ad", async (HttpContext http, TalentGrantAdRequest request, PlayerCommandService commands, CancellationToken ct)
+            => Results.Json(await commands.GrantTalentByAdAsync(http.RequireUserId(), request.TalentId, ct)));
         v1.MapPost("/energy/refill-ad", async (HttpContext http, AdProofRequest _, PlayerCommandService commands, CancellationToken ct)
             => Results.Json(await commands.RefillEnergyByAdAsync(http.RequireUserId(), ct)));
         v1.MapPost("/adshop/claim", async (HttpContext http, AdShopClaimRequest request, PlayerCommandService commands, CancellationToken ct)
@@ -41,9 +43,9 @@ public static class ApiEndpoints
         v1.MapPost("/pve/shop/refresh", async (HttpContext http, PveShopActionRequest request, PlayerCommandService commands, CancellationToken ct)
             => Results.Json(await commands.RefreshShopAsync(http.RequireUserId(), request.RunId, ct)));
         v1.MapPost("/pve/run/grant-gold", async (HttpContext http, PveRunGoldRequest request, PlayerCommandService commands, CancellationToken ct)
-            => Results.Json(await commands.GrantRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, ct)));
+            => Results.Json(await commands.GrantRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, request.Reason, ct)));
         v1.MapPost("/pve/run/spend", async (HttpContext http, PveRunSpendRequest request, PlayerCommandService commands, CancellationToken ct)
-            => Results.Json(await commands.SpendRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, ct)));
+            => Results.Json(await commands.SpendRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, request.Kind, ct)));
         if (app.Environment.IsDevelopment())
         {
             v1.MapPost("/debug/grant-gold", async (HttpContext http, DebugGrantGoldRequest request, PlayerCommandService commands, CancellationToken ct)

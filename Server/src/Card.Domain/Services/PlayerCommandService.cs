@@ -1,4 +1,5 @@
 using CardShare.Contracts;
+using CardShare.Contracts.Config;
 using CardShare.Domain.Config;
 using CardShare.Domain.Players;
 using CardShare.Domain.Pve;
@@ -7,6 +8,20 @@ namespace CardShare.Domain.Services;
 
 public sealed class PlayerCommandService
 {
+    private const int MaxRunGoldDeltaPerCall = 50_000;
+    private const int MaxSettleTotalScore = 1_000_000;
+    private const int MaxDebugGrantGold = 10_000;
+
+    private static readonly HashSet<string> AllowedGrantReasons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "combat", "stage", "shop", "relic", "talent", "debug"
+    };
+
+    private static readonly HashSet<string> AllowedSpendKinds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "run", "shop", "rub", "skill", "refresh"
+    };
+
     private readonly IPlayerRepository _players;
     private readonly IPveRunRepository _runs;
     private readonly IGameConfig _config;
@@ -34,6 +49,22 @@ public sealed class PlayerCommandService
         var profile = await LoadAsync(userId, cancellationToken);
         await _players.SaveAsync(profile, cancellationToken);
         return ProfileMapper.ToDto(profile);
+    }
+
+    public async Task<TalentDrawResponse> GrantTalentByAdAsync(Guid userId, int talentId, CancellationToken cancellationToken)
+    {
+        await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
+        var profile = await LoadAsync(userId, cancellationToken);
+        var result = profile.GrantTalentByAd(talentId, _config);
+        await _players.SaveAsync(profile, cancellationToken);
+        return new TalentDrawResponse
+        {
+            TalentId = result.TalentId,
+            Count = result.Count,
+            DrawCount = result.DrawCount,
+            GoldSpent = result.GoldSpent,
+            Profile = ProfileMapper.ToDto(profile)
+        };
     }
 
     public async Task<TalentDrawResponse> DrawTalentAsync(Guid userId, CancellationToken cancellationToken)
@@ -100,6 +131,11 @@ public sealed class PlayerCommandService
 
     public async Task<PlayerProfileDto> DebugGrantGoldAsync(Guid userId, int amount, CancellationToken cancellationToken)
     {
+        if (amount <= 0 || amount > MaxDebugGrantGold)
+        {
+            throw DomainException.Invalid($"amount must be between 1 and {MaxDebugGrantGold}.");
+        }
+
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
         var profile = await LoadAsync(userId, cancellationToken);
         profile.GrantWalletGold(amount);
@@ -215,10 +251,28 @@ public sealed class PlayerCommandService
             throw DomainException.Invalid($"Unknown level {settleLevelId}.");
         }
 
-        var profile = await LoadAsync(userId, cancellationToken);
-        if (request.Cleared)
+        var progressLevelId = request.HighestClearedLevelId > 0
+            ? request.HighestClearedLevelId
+            : (request.Cleared ? settleLevelId : 0);
+        LevelConfig? progressLevel = null;
+        if (progressLevelId > 0)
         {
-            profile.MarkCleared(level, _config);
+            if (!_config.Tables.TryGetLevel(progressLevelId, out progressLevel))
+            {
+                throw DomainException.Invalid($"Unknown level {progressLevelId}.");
+            }
+
+            if (!_config.Tables.TryGetLevel(run.LevelId, out var startLevel)
+                || startLevel.Difficulty != progressLevel.Difficulty)
+            {
+                throw new DomainException(ErrorCodes.RunMismatch, "Progress level does not match the run.");
+            }
+        }
+
+        var profile = await LoadAsync(userId, cancellationToken);
+        if (progressLevel != null)
+        {
+            profile.MarkCleared(progressLevel, _config);
         }
 
         profile.ApplyUnlockStats(request.Stats, _config);
@@ -229,7 +283,9 @@ public sealed class PlayerCommandService
                 new PveSettleStats { ClearDifficulty = level.Difficulty },
                 _config.Tables.UnlockConditions);
         }
-        var gold = profile.GrantSettleGold(request.TotalScore, _config, request.Cleared ? level.GetGold : 0);
+
+        var totalScore = Math.Clamp(request.TotalScore, 0, MaxSettleTotalScore);
+        var gold = profile.GrantSettleGold(totalScore, _config);
 
         run.Status = PveRunStatus.Settled;
         run.SettledAt = _clock.UtcNow;
@@ -346,11 +402,21 @@ public sealed class PlayerCommandService
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
     }
 
-    public async Task<PveRunResponse> GrantRunGoldAsync(Guid userId, string runIdText, int amount, CancellationToken cancellationToken)
+    public async Task<PveRunResponse> GrantRunGoldAsync(
+        Guid userId,
+        string runIdText,
+        int amount,
+        string? reason,
+        CancellationToken cancellationToken)
     {
-        if (amount <= 0)
+        if (amount <= 0 || amount > MaxRunGoldDeltaPerCall)
         {
-            throw DomainException.Invalid("amount must be positive.");
+            throw DomainException.Invalid($"amount must be between 1 and {MaxRunGoldDeltaPerCall}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reason) || !AllowedGrantReasons.Contains(reason.Trim()))
+        {
+            throw DomainException.Invalid("reason is not allowed.");
         }
 
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
@@ -360,11 +426,21 @@ public sealed class PlayerCommandService
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
     }
 
-    public async Task<PveRunResponse> SpendRunGoldAsync(Guid userId, string runIdText, int amount, CancellationToken cancellationToken)
+    public async Task<PveRunResponse> SpendRunGoldAsync(
+        Guid userId,
+        string runIdText,
+        int amount,
+        string? kind,
+        CancellationToken cancellationToken)
     {
-        if (amount <= 0)
+        if (amount <= 0 || amount > MaxRunGoldDeltaPerCall)
         {
-            throw DomainException.Invalid("amount must be positive.");
+            throw DomainException.Invalid($"amount must be between 1 and {MaxRunGoldDeltaPerCall}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(kind) || !AllowedSpendKinds.Contains(kind.Trim()))
+        {
+            throw DomainException.Invalid("kind is not allowed.");
         }
 
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
@@ -446,6 +522,7 @@ public sealed class PlayerCommandService
         return string.Join("|",
             request.Cleared ? "1" : "0",
             request.LevelId,
+            request.HighestClearedLevelId,
             request.TotalScore,
             s.KillMonster, s.ShuffleCard, s.RefreshStore, s.Straight, s.TwoThreeFive,
             s.ShuffleCardAndVictory, s.Seven, s.Flush, s.ClearDifficulty, s.AccumulateGold,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -76,6 +77,11 @@ namespace App.Level
 
         public void MarkCleared(int levelId)
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("LevelProgress.MarkCleared"))
+            {
+                return;
+            }
+
             if (!_levels.TryGetById(levelId, out var snapshot) || snapshot == null)
             {
                 AppLog.Warn(LogChannel.Level, $"Unknown level Id={levelId}.");
@@ -140,6 +146,11 @@ namespace App.Level
 
         public bool TryUnlockHero(int heroId)
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("LevelProgress.TryUnlockHero"))
+            {
+                return false;
+            }
+
             if (heroId <= 0 || !_unlockedHeroes.Add(heroId))
             {
                 return false;

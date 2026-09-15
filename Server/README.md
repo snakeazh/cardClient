@@ -101,14 +101,15 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 | POST | `/auth/refresh` | `{ refreshToken }` |
 | GET | `/player/profile` | 拉主档（体力已按服务器时区跨日回满） |
 | POST | `/pve/start` | 扣体力，发 `runId`、初始金币与货架 |
-| POST | `/pve/settle` | 幂等结算：通关、兑金、解锁进度 |
+| POST | `/pve/settle` | 幂等结算：关卡进度（含失败前最高通关）、兑局外金（仅积分）、解锁进度 |
 | POST | `/pve/shop/enter` | 进店：免费重滚货架，写入免费刷新次数 |
 | POST | `/pve/shop/buy` | `{ runId, relicId }` 扣局内金、拿圣物 |
 | POST | `/pve/shop/sell` | `{ runId, relicId }` 卖圣物 |
 | POST | `/pve/shop/refresh` | `{ runId }` 刷新货架 |
-| POST | `/pve/run/grant-gold` | `{ runId, amount, reason }` 局内入账（客户端上报） |
-| POST | `/pve/run/spend` | `{ runId, amount, kind }` 局内扣费 |
+| POST | `/pve/run/grant-gold` | `{ runId, amount, reason }` 局内入账；reason 白名单，单次上限 50000 |
+| POST | `/pve/run/spend` | `{ runId, amount, kind }` 局内扣费；kind 白名单，单次上限 50000 |
 | POST | `/talent/draw` | 服务端随机 + 扣金 + DrawCount |
+| POST | `/talent/grant-ad` | `{ talentId }` 看广告发指定天赋 1 份（不扣金） |
 | POST | `/energy/refill-ad` | 广告回满体力 |
 | POST | `/adshop/claim` | `{ kind: stamina\|gold }` |
 | POST | `/bag/grant` | `{ itemId, amount }` |

@@ -22,6 +22,8 @@ namespace App.AdShop
         private int _staminaCount;
         private int _goldCount;
         private bool _dirty;
+        /// <summary>登录灌档后为 true：日限计数以服务端为准，本地时钟不得清零。</summary>
+        private bool _serverAuthoritative;
 
         public AdShopService(ISaveService save, IEnergyService energy, IWalletService wallet)
         {
@@ -59,6 +61,7 @@ namespace App.AdShop
             _staminaCount = staminaCount < 0 ? 0 : staminaCount;
             _goldCount = goldCount < 0 ? 0 : goldCount;
             _gameDay = TodayGameDay();
+            _serverAuthoritative = true;
             _dirty = true;
             Changed?.Invoke();
         }
@@ -101,6 +104,7 @@ namespace App.AdShop
             _staminaCount = 0;
             _goldCount = 0;
             _dirty = false;
+            _serverAuthoritative = false;
             if (_save.HasKey(SaveKey))
             {
                 var json = _save.GetString(SaveKey, string.Empty);
@@ -148,6 +152,11 @@ namespace App.AdShop
         /// </summary>
         private void EnsureDailyReset()
         {
+            if (_serverAuthoritative)
+            {
+                return;
+            }
+
             var today = TodayGameDay();
             if (today == _gameDay)
             {

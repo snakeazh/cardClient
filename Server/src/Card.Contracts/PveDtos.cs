@@ -90,6 +90,12 @@ public sealed class PveSettleRequest
 
     public int LevelId { get; set; }
 
+    /// <summary>
+    /// 本局实际打通的最高关卡 Id（含失败前已通关的中途关）。
+    /// 服务端据此写入关卡进度；0 表示本局未通任何关（失败回退到仅兑积分）。
+    /// </summary>
+    public int HighestClearedLevelId { get; set; }
+
     public int TotalScore { get; set; }
 
     public PveSettleStats Stats { get; set; } = new PveSettleStats();

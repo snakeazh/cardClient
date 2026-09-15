@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
+using App.Net;
 using App.Talent;
+using App.UI;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -258,33 +261,44 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// 看广告升级/获得（广告当前为模拟发放）：统一走 Add 补 1 张副本——已拥有即 +1 级
-        /// （CopiesPerLevel=1，同 AdShop 口径），未拥有即直接获得 Lv.1。
-        /// 按钮不可用时已隐藏，这里再兜一层。
+        /// 看广告升级/获得（广告当前为模拟发放）：联网走服务端发 1 份；离线拒绝。
+        /// 已拥有即 +1 级（CopiesPerLevel=1），未拥有即直接获得 Lv.1。
         /// </summary>
-        private void Upgrade()
+        private async void Upgrade()
         {
             if (!CanAct)
             {
                 return;
             }
 
-            _talent.Add(_snapshot.TalentId, 1);
-            var upgraded = _talent.GetCurrent(_snapshot.TalentId);
-            var index = _owned.FindIndex(s => s.TalentId == upgraded.TalentId);
-            if (index >= 0)
+            if (!GameApi.IsReady)
             {
-                // 同步 _owned 快照，否则左右切换回来显示的还是升级前等级
-                _owned[index] = upgraded;
-            }
-            else
-            {
-                // 未拥有经此获得：进已拥有列表，恢复左右切换
-                _owned.Add(upgraded);
+                Toast.Error("未连接服务器");
+                return;
             }
 
-            Apply(upgraded, inOwned: true);
-            Upgraded?.Invoke(upgraded.TalentId);
+            try
+            {
+                var granted = await GameApi.Client.GrantTalentByAdAsync(_snapshot.TalentId);
+                GameApi.ApplyProfile(granted.Profile);
+                var upgraded = _talent.GetCurrent(granted.TalentId > 0 ? granted.TalentId : _snapshot.TalentId);
+                var index = _owned.FindIndex(s => s.TalentId == upgraded.TalentId);
+                if (index >= 0)
+                {
+                    _owned[index] = upgraded;
+                }
+                else
+                {
+                    _owned.Add(upgraded);
+                }
+
+                Apply(upgraded, inOwned: true);
+                Upgraded?.Invoke(upgraded.TalentId);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Show(GameApi.Describe(ex));
+            }
         }
 
         protected override void OnDispose()

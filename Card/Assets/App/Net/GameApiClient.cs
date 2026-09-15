@@ -83,6 +83,9 @@ namespace App.Net
         public Task<TalentDrawResponse> DrawTalentAsync()
             => SendAsync<TalentDrawResponse>("POST", "/v1/talent/draw", new object());
 
+        public Task<TalentDrawResponse> GrantTalentByAdAsync(int talentId)
+            => SendAsync<TalentDrawResponse>("POST", "/v1/talent/grant-ad", new TalentGrantAdRequest { TalentId = talentId });
+
         public Task<EnergyRefillResponse> RefillEnergyByAdAsync()
             => SendAsync<EnergyRefillResponse>("POST", "/v1/energy/refill-ad", new AdProofRequest());
 

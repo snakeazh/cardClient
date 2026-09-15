@@ -9,6 +9,54 @@ namespace CardShare.Domain.Tests;
 public class PveFlowTests
 {
     [Fact]
+    public async Task SettleFailureKeepsMidRunProgressAndWalletOnlyFromScore()
+    {
+        var config = TestConfig.Create();
+        // GetGold 故意设大，确认局外金不吃关卡局内金。
+        config.Tables.Levels[0].GetGold = 999;
+        config.Tables.Levels[1].GetGold = 999;
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var runs = new MemoryPveRunRepository();
+        var userId = Guid.NewGuid();
+        await players.SaveAsync(
+            CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow),
+            CancellationToken.None);
+        var commands = new PlayerCommandService(players, runs, config, clock, new MemoryPlayerLock());
+        var started = await commands.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+
+        var settled = await commands.SettlePveAsync(
+            userId,
+            new PveSettleRequest
+            {
+                RunId = started.RunId,
+                Cleared = false,
+                LevelId = 1001,
+                HighestClearedLevelId = 1002,
+                TotalScore = 55
+            },
+            CancellationToken.None);
+
+        Assert.False(settled.AlreadySettled);
+        Assert.Equal(5, settled.GoldGranted);
+        Assert.Equal(5, settled.Profile.Gold);
+        Assert.Equal(2, settled.Profile.Level.DifficultyProgress[0].HighestClearedLevel);
+    }
+
+    [Fact]
+    public async Task GrantTalentByAdIncrementsCountWithoutSpendingGold()
+    {
+        var (commands, userId) = await CreateCommands();
+        var before = await commands.GetProfileAsync(userId, CancellationToken.None);
+        var granted = await commands.GrantTalentByAdAsync(userId, 101, CancellationToken.None);
+        Assert.Equal(101, granted.TalentId);
+        Assert.Equal(1, granted.Count);
+        Assert.Equal(0, granted.GoldSpent);
+        Assert.Equal(before.Gold, granted.Profile.Gold);
+        Assert.Equal(before.Talent.DrawCount, granted.DrawCount);
+    }
+
+    [Fact]
     public async Task StartSpendsEnergyAndSettleIsIdempotent()
     {
         var config = TestConfig.Create();

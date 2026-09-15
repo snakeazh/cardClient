@@ -1,4 +1,5 @@
 using CardShare.Contracts;
+using CardShare.Contracts.Config;
 using CardShare.Domain.Config;
 using CardShare.Domain.Players;
 using CardShare.Domain.Pve;
@@ -34,6 +35,22 @@ public sealed class PlayerCommandService
         var profile = await LoadAsync(userId, cancellationToken);
         await _players.SaveAsync(profile, cancellationToken);
         return ProfileMapper.ToDto(profile);
+    }
+
+    public async Task<TalentDrawResponse> GrantTalentByAdAsync(Guid userId, int talentId, CancellationToken cancellationToken)
+    {
+        await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
+        var profile = await LoadAsync(userId, cancellationToken);
+        var result = profile.GrantTalentByAd(talentId, _config);
+        await _players.SaveAsync(profile, cancellationToken);
+        return new TalentDrawResponse
+        {
+            TalentId = result.TalentId,
+            Count = result.Count,
+            DrawCount = result.DrawCount,
+            GoldSpent = result.GoldSpent,
+            Profile = ProfileMapper.ToDto(profile)
+        };
     }
 
     public async Task<TalentDrawResponse> DrawTalentAsync(Guid userId, CancellationToken cancellationToken)
@@ -215,10 +232,28 @@ public sealed class PlayerCommandService
             throw DomainException.Invalid($"Unknown level {settleLevelId}.");
         }
 
-        var profile = await LoadAsync(userId, cancellationToken);
-        if (request.Cleared)
+        var progressLevelId = request.HighestClearedLevelId > 0
+            ? request.HighestClearedLevelId
+            : (request.Cleared ? settleLevelId : 0);
+        LevelConfig? progressLevel = null;
+        if (progressLevelId > 0)
         {
-            profile.MarkCleared(level, _config);
+            if (!_config.Tables.TryGetLevel(progressLevelId, out progressLevel))
+            {
+                throw DomainException.Invalid($"Unknown level {progressLevelId}.");
+            }
+
+            if (!_config.Tables.TryGetLevel(run.LevelId, out var startLevel)
+                || startLevel.Difficulty != progressLevel.Difficulty)
+            {
+                throw new DomainException(ErrorCodes.RunMismatch, "Progress level does not match the run.");
+            }
+        }
+
+        var profile = await LoadAsync(userId, cancellationToken);
+        if (progressLevel != null)
+        {
+            profile.MarkCleared(progressLevel, _config);
         }
 
         profile.ApplyUnlockStats(request.Stats, _config);
@@ -229,7 +264,7 @@ public sealed class PlayerCommandService
                 new PveSettleStats { ClearDifficulty = level.Difficulty },
                 _config.Tables.UnlockConditions);
         }
-        var gold = profile.GrantSettleGold(request.TotalScore, _config, request.Cleared ? level.GetGold : 0);
+        var gold = profile.GrantSettleGold(request.TotalScore, _config);
 
         run.Status = PveRunStatus.Settled;
         run.SettledAt = _clock.UtcNow;
@@ -446,6 +481,7 @@ public sealed class PlayerCommandService
         return string.Join("|",
             request.Cleared ? "1" : "0",
             request.LevelId,
+            request.HighestClearedLevelId,
             request.TotalScore,
             s.KillMonster, s.ShuffleCard, s.RefreshStore, s.Straight, s.TwoThreeFive,
             s.ShuffleCardAndVictory, s.Seven, s.Flush, s.ClearDifficulty, s.AccumulateGold,

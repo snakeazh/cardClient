@@ -43,9 +43,9 @@ public static class ApiEndpoints
         v1.MapPost("/pve/shop/refresh", async (HttpContext http, PveShopActionRequest request, PlayerCommandService commands, CancellationToken ct)
             => Results.Json(await commands.RefreshShopAsync(http.RequireUserId(), request.RunId, ct)));
         v1.MapPost("/pve/run/grant-gold", async (HttpContext http, PveRunGoldRequest request, PlayerCommandService commands, CancellationToken ct)
-            => Results.Json(await commands.GrantRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, ct)));
+            => Results.Json(await commands.GrantRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, request.Reason, ct)));
         v1.MapPost("/pve/run/spend", async (HttpContext http, PveRunSpendRequest request, PlayerCommandService commands, CancellationToken ct)
-            => Results.Json(await commands.SpendRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, ct)));
+            => Results.Json(await commands.SpendRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, request.Kind, ct)));
         if (app.Environment.IsDevelopment())
         {
             v1.MapPost("/debug/grant-gold", async (HttpContext http, DebugGrantGoldRequest request, PlayerCommandService commands, CancellationToken ct)

@@ -8,6 +8,20 @@ namespace CardShare.Domain.Services;
 
 public sealed class PlayerCommandService
 {
+    private const int MaxRunGoldDeltaPerCall = 50_000;
+    private const int MaxSettleTotalScore = 1_000_000;
+    private const int MaxDebugGrantGold = 10_000;
+
+    private static readonly HashSet<string> AllowedGrantReasons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "combat", "stage", "shop", "relic", "talent", "debug"
+    };
+
+    private static readonly HashSet<string> AllowedSpendKinds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "run", "shop", "rub", "skill", "refresh"
+    };
+
     private readonly IPlayerRepository _players;
     private readonly IPveRunRepository _runs;
     private readonly IGameConfig _config;
@@ -117,6 +131,11 @@ public sealed class PlayerCommandService
 
     public async Task<PlayerProfileDto> DebugGrantGoldAsync(Guid userId, int amount, CancellationToken cancellationToken)
     {
+        if (amount <= 0 || amount > MaxDebugGrantGold)
+        {
+            throw DomainException.Invalid($"amount must be between 1 and {MaxDebugGrantGold}.");
+        }
+
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
         var profile = await LoadAsync(userId, cancellationToken);
         profile.GrantWalletGold(amount);
@@ -264,7 +283,9 @@ public sealed class PlayerCommandService
                 new PveSettleStats { ClearDifficulty = level.Difficulty },
                 _config.Tables.UnlockConditions);
         }
-        var gold = profile.GrantSettleGold(request.TotalScore, _config);
+
+        var totalScore = Math.Clamp(request.TotalScore, 0, MaxSettleTotalScore);
+        var gold = profile.GrantSettleGold(totalScore, _config);
 
         run.Status = PveRunStatus.Settled;
         run.SettledAt = _clock.UtcNow;
@@ -381,11 +402,21 @@ public sealed class PlayerCommandService
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
     }
 
-    public async Task<PveRunResponse> GrantRunGoldAsync(Guid userId, string runIdText, int amount, CancellationToken cancellationToken)
+    public async Task<PveRunResponse> GrantRunGoldAsync(
+        Guid userId,
+        string runIdText,
+        int amount,
+        string? reason,
+        CancellationToken cancellationToken)
     {
-        if (amount <= 0)
+        if (amount <= 0 || amount > MaxRunGoldDeltaPerCall)
         {
-            throw DomainException.Invalid("amount must be positive.");
+            throw DomainException.Invalid($"amount must be between 1 and {MaxRunGoldDeltaPerCall}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reason) || !AllowedGrantReasons.Contains(reason.Trim()))
+        {
+            throw DomainException.Invalid("reason is not allowed.");
         }
 
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);
@@ -395,11 +426,21 @@ public sealed class PlayerCommandService
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
     }
 
-    public async Task<PveRunResponse> SpendRunGoldAsync(Guid userId, string runIdText, int amount, CancellationToken cancellationToken)
+    public async Task<PveRunResponse> SpendRunGoldAsync(
+        Guid userId,
+        string runIdText,
+        int amount,
+        string? kind,
+        CancellationToken cancellationToken)
     {
-        if (amount <= 0)
+        if (amount <= 0 || amount > MaxRunGoldDeltaPerCall)
         {
-            throw DomainException.Invalid("amount must be positive.");
+            throw DomainException.Invalid($"amount must be between 1 and {MaxRunGoldDeltaPerCall}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(kind) || !AllowedSpendKinds.Contains(kind.Trim()))
+        {
+            throw DomainException.Invalid("kind is not allowed.");
         }
 
         await using var gate = await _locks.AcquireAsync(userId, cancellationToken);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -135,6 +136,11 @@ namespace App.Talent
         /// <summary>记一次成功抽取：下次 GetDrawCost 递增一个步长。</summary>
         public void RecordDraw()
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("Talent.RecordDraw"))
+            {
+                return;
+            }
+
             _drawCount++;
             _dirty = true;
         }
@@ -167,6 +173,11 @@ namespace App.Talent
             if (amount <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(amount), amount, "Amount must be positive.");
+            }
+
+            if (!MetaLocalAuthority.AllowsLocalMutation("Talent.Add"))
+            {
+                return new TalentAddResult(GetLevel(talentId), GetCurrent(talentId));
             }
 
             WarnIfUnknown(talentId);

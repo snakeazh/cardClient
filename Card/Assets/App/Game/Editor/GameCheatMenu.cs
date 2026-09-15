@@ -89,9 +89,29 @@ namespace App.Game.Editor
             }
 
             var id = ids[UnityEngine.Random.Range(0, ids.Count)];
+            if (GameApi.IsReady)
+            {
+                GrantTalentByAdAsync(id);
+                return;
+            }
+
             var result = talent.Add(id);
             talent.Save();
             Debug.Log($"[外挂] 获得天赋 {id}，等级 {result.PreviousLevel} -> {result.Current.Level}");
+        }
+
+        private static async void GrantTalentByAdAsync(int talentId)
+        {
+            try
+            {
+                var granted = await GameApi.Client.GrantTalentByAdAsync(talentId);
+                GameApi.ApplyProfile(granted.Profile);
+                Debug.Log($"[外挂] 服务端发放天赋 {granted.TalentId}，count={granted.Count}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[外挂] 发放天赋失败: " + ex.Message);
+            }
         }
 
         [MenuItem("Debug/外挂/回满血", false, 11)]

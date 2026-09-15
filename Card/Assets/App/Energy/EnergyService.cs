@@ -1,4 +1,5 @@
 using System;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -52,6 +53,11 @@ namespace App.Energy
 
         public bool TrySpendRunCost()
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("Energy.TrySpendRunCost"))
+            {
+                return false;
+            }
+
             EnsureDailyReset();
             var cost = EnergyBalance.CostPerRun;
             if (_current < cost)
@@ -77,7 +83,7 @@ namespace App.Energy
 
         public void Add(int amount)
         {
-            if (amount <= 0)
+            if (amount <= 0 || !MetaLocalAuthority.AllowsLocalMutation("Energy.Add"))
             {
                 return;
             }
@@ -90,6 +96,11 @@ namespace App.Energy
 
         public bool TryRefillByAd()
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("Energy.TryRefillByAd"))
+            {
+                return false;
+            }
+
             EnsureDailyReset();
             if (EnergyBalance.AdRefillDailyLimit <= 0 || _adRefillCount >= EnergyBalance.AdRefillDailyLimit)
             {

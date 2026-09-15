@@ -168,7 +168,7 @@ public class PveFlowTests
         Assert.NotNull(started.Run);
         Assert.NotEmpty(started.Run.ShopOfferIds);
 
-        var funded = await commands.GrantRunGoldAsync(userId, started.RunId, 100, CancellationToken.None);
+        var funded = await commands.GrantRunGoldAsync(userId, started.RunId, 100, "combat", CancellationToken.None);
         var relicId = funded.Run.ShopOfferIds[0];
         var bought = await commands.BuyShopRelicAsync(userId, started.RunId, relicId, CancellationToken.None);
         Assert.Contains(relicId, bought.Run.RelicIds);
@@ -178,6 +178,21 @@ public class PveFlowTests
         var sold = await commands.SellShopRelicAsync(userId, started.RunId, relicId, CancellationToken.None);
         Assert.DoesNotContain(relicId, sold.Run.RelicIds);
         Assert.True(sold.Run.Gold > bought.Run.Gold);
+    }
+
+    [Fact]
+    public async Task GrantRunGoldRejectsUnknownReasonAndHugeAmount()
+    {
+        var (commands, userId) = await CreateCommands();
+        var started = await commands.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+
+        var badReason = await Assert.ThrowsAsync<DomainException>(() =>
+            commands.GrantRunGoldAsync(userId, started.RunId, 10, "hack", CancellationToken.None));
+        Assert.Equal(ErrorCodes.InvalidRequest, badReason.Code);
+
+        var tooMuch = await Assert.ThrowsAsync<DomainException>(() =>
+            commands.GrantRunGoldAsync(userId, started.RunId, 50_001, "combat", CancellationToken.None));
+        Assert.Equal(ErrorCodes.InvalidRequest, tooMuch.Code);
     }
 
     private static async Task<(PlayerCommandService Commands, Guid UserId)> CreateCommands()

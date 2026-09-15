@@ -1,5 +1,6 @@
 using System;
 using App.Energy;
+using App.Net;
 using App.Wallet;
 using Framework.Log;
 using Framework.Save;
@@ -68,6 +69,11 @@ namespace App.AdShop
 
         public bool TryPurchaseStamina()
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("AdShop.TryPurchaseStamina"))
+            {
+                return false;
+            }
+
             EnsureDailyReset();
             if (AdShopBalance.StaminaDailyLimit <= 0 || _staminaCount >= AdShopBalance.StaminaDailyLimit)
             {
@@ -84,6 +90,11 @@ namespace App.AdShop
 
         public bool TryPurchaseGold()
         {
+            if (!MetaLocalAuthority.AllowsLocalMutation("AdShop.TryPurchaseGold"))
+            {
+                return false;
+            }
+
             EnsureDailyReset();
             if (AdShopBalance.GoldDailyLimit <= 0 || _goldCount >= AdShopBalance.GoldDailyLimit)
             {

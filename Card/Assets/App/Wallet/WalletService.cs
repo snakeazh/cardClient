@@ -1,4 +1,5 @@
 using System;
+using App.Net;
 using Framework.Save;
 
 namespace App.Wallet
@@ -25,7 +26,7 @@ namespace App.Wallet
 
         public void Add(int amount)
         {
-            if (amount <= 0)
+            if (amount <= 0 || !MetaLocalAuthority.AllowsLocalMutation("Wallet.Add"))
             {
                 return;
             }
@@ -59,6 +60,11 @@ namespace App.Wallet
             if (amount == 0)
             {
                 return true;
+            }
+
+            if (!MetaLocalAuthority.AllowsLocalMutation("Wallet.TrySpend"))
+            {
+                return false;
             }
 
             _gold -= amount;

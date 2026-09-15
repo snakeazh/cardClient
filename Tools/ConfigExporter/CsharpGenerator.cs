@@ -246,6 +246,78 @@ public static class CsharpGenerator
         return sb.ToString();
     }
 
+    public static void GenerateShared(
+        IReadOnlyList<ConfigTable> tables,
+        IReadOnlyList<EnumDefinition> enums,
+        string outputDir)
+    {
+        if (tables.Count == 0)
+            throw new InvalidOperationException("没有可生成的配置表。");
+
+        var runtimeTables = tables
+            .Where(table => table.Kind != ConfigTableKind.Enum)
+            .ToList();
+        var enumNames = enums.ToDictionary(
+            definition => definition.Name,
+            definition => definition.Name,
+            StringComparer.OrdinalIgnoreCase);
+
+        Directory.CreateDirectory(outputDir);
+        foreach (var old in Directory.GetFiles(outputDir, "*.cs"))
+            File.Delete(old);
+
+        foreach (var table in runtimeTables.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var path = Path.Combine(outputDir, $"{table.Name}.cs");
+            File.WriteAllText(path, GenerateSharedTableClass(table, enumNames), new UTF8Encoding(false));
+            Console.WriteLine($"[CSV→Contracts][{table.Kind}] {table.Name}.cs → {path}");
+        }
+
+        if (enums.Count > 0)
+        {
+            var enumPath = Path.Combine(outputDir, "Enums.g.cs");
+            File.WriteAllText(enumPath, GenerateEnums(enums).Replace("namespace App.Config", "namespace CardShare.Contracts.Config"), new UTF8Encoding(false));
+            Console.WriteLine($"[CSV→Contracts][Enum] Enums.g.cs → {enumPath}");
+        }
+    }
+
+    private static string GenerateSharedTableClass(
+        ConfigTable table,
+        IReadOnlyDictionary<string, string> enumNames)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(AutoHeader);
+        sb.AppendLine("using System;");
+        sb.AppendLine();
+        sb.AppendLine("namespace CardShare.Contracts.Config");
+        sb.AppendLine("{");
+        sb.AppendLine("    [Serializable]");
+        sb.AppendLine($"    public sealed class {table.Name}");
+        sb.AppendLine("    {");
+        if (table.Kind == ConfigTableKind.Const)
+        {
+            sb.AppendLine($"        public static {table.Name} Instance {{ get; private set; }} = new {table.Name}();");
+            sb.AppendLine();
+            sb.AppendLine($"        public static void Load({table.Name} data)");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            Instance = data ?? new {table.Name}();");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            AppendFields(sb, table, enumNames, skipId: false);
+        }
+        else
+        {
+            sb.AppendLine("        public int Id;");
+            sb.AppendLine();
+            AppendFields(sb, table, enumNames, skipId: true);
+        }
+
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        sb.AppendLine();
+        return sb.ToString();
+    }
+
     public static string MapType(
         string excelType,
         string tableName,

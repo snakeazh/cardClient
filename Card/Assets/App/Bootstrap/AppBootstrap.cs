@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using App.AdShop;
 using App.Atlas;
@@ -12,7 +13,9 @@ using App.Score;
 using App.Talent;
 using App.Unlock;
 using App.Wallet;
+using App.Net;
 using App.UI;
+using App.UI.Popup;
 using App.UI.Splash;
 using Framework.Assets;
 using Framework.Log;
@@ -54,6 +57,7 @@ namespace App.Bootstrap
             _services.Container.AddSingleton<MainResourceViewModel>();
 
             await ConfigTables.LoadAsync(_resources.Resources);
+            UnityGameConfigLoader.LoadFromAppConfig();
             await PortraitLoader.PreloadAsync(_resources.Resources);
             RegisterBag(_services);
             RegisterLevel(_services);
@@ -70,6 +74,8 @@ namespace App.Bootstrap
             // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
             _services.Container.AddSingleton<ToastService>();
             RegisterGuide(_services);
+
+            await LoginGuestAsync(_services);
 
             if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
@@ -207,6 +213,23 @@ namespace App.Bootstrap
                 targets);
             services.Register(guide);
             services.Register<IGuideService>(guide);
+        }
+
+        private static async Task LoginGuestAsync(AppServicesHost services)
+        {
+            var client = new GameApiClient(services.Resolve<ISaveService>());
+            services.Register(client);
+            GameApi.Bind(client);
+            try
+            {
+                var login = await client.LoginGuestAsync(SystemInfo.deviceUniqueIdentifier, "Editor");
+                GameApi.ApplyProfile(login.Profile);
+                AppLog.Info(LogChannel.Net, "guest login ok userId=" + login.Profile.UserId);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "guest login failed: " + ex.Message);
+            }
         }
 
         private static void LogConfigSmoke()

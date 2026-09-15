@@ -35,6 +35,19 @@ namespace App.Wallet
             Changed?.Invoke();
         }
 
+        public void ReplaceFromServer(int gold)
+        {
+            var next = gold < 0 ? 0 : gold;
+            if (_gold == next)
+            {
+                return;
+            }
+
+            _gold = next;
+            _dirty = true;
+            Changed?.Invoke();
+        }
+
         public bool TrySpend(int amount)
         {
             if (amount < 0 || _gold < amount)

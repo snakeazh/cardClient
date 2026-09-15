@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
 using App.Game;
+using App.Net;
 using App.Talent;
 using App.Wallet;
 using UnityEditor;
@@ -44,7 +45,7 @@ namespace App.Game.Editor
         }
 
         [MenuItem("Debug/外挂/局外金币 +99999", false, 10)]
-        public static void AddWalletGold()
+        public static async void AddWalletGold()
         {
             if (!Application.isPlaying || !AppServices.IsReady)
             {
@@ -52,10 +53,23 @@ namespace App.Game.Editor
                 return;
             }
 
-            var wallet = AppServices.Resolve<IWalletService>();
-            wallet.Add(99999);
-            wallet.Save();
-            Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
+            if (!GameApi.IsReady)
+            {
+                Debug.LogWarning("未连接服务器，无法发放局外金币");
+                return;
+            }
+
+            try
+            {
+                var profile = await GameApi.Client.DebugGrantGoldAsync(99999);
+                GameApi.ApplyProfile(profile);
+                var wallet = AppServices.Resolve<IWalletService>();
+                Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[外挂] 发放局外金币失败: " + ex.Message);
+            }
         }
 
         [MenuItem("Debug/外挂/随机获得一个天赋", false, 14)]

@@ -4,8 +4,10 @@ using App.Config;
 using App.Energy;
 using App.Game;
 using App.Level;
+using App.Net;
 using App.Talent;
 using App.UI.Popup;
+using CardShare.Contracts;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -372,29 +374,36 @@ namespace App.UI
                 return;
             }
 
-            _progress.SetLastHero(SelectedHeroId.Value);
-            _progress.SetLastLevel(SelectedLevelId.Value);
-            _progress.SetLastDifficulty(SelectedDifficulty.Value);
-            if (!await TrySpendEnergyWithPopupAsync())
+            if (!GameApi.IsReady)
             {
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            _session.StartNewRun();
-            await _ui.Close(this);
-            await _ui.Open(_tableVm);
-        }
-
-        /// <summary>扣开局体力。不足时弹 CommonTop，确定后打开体力商店；返回是否可开局。</summary>
-        private async Task<bool> TrySpendEnergyWithPopupAsync()
-        {
-            if (_energy.TrySpendRunCost())
+            _progress.SetLastHero(SelectedHeroId.Value);
+            _progress.SetLastLevel(SelectedLevelId.Value);
+            _progress.SetLastDifficulty(SelectedDifficulty.Value);
+            try
             {
-                return true;
+                var started = await GameApi.Client.StartPveAsync(SelectedLevelId.Value, SelectedHeroId.Value);
+                GameApi.ApplyProfile(started.Profile);
+                _session.StartNewRun();
+                _session.BindServerRun(started.Run);
+            }
+            catch (GameApiException ex)
+            {
+                if (ex.Code == ErrorCodes.InsufficientEnergy)
+                {
+                    await PresentEnergyInsufficientPopupAsync();
+                    return;
+                }
+
+                Toast.Error(GameApi.Describe(ex));
+                return;
             }
 
-            await PresentEnergyInsufficientPopupAsync();
-            return false;
+            await _ui.Close(this);
+            await _ui.Open(_tableVm);
         }
 
         private async Task PresentEnergyInsufficientPopupAsync()

@@ -1,4 +1,4 @@
-﻿namespace ConfigExporter;
+namespace ConfigExporter;
 
 internal static class Program
 {
@@ -14,6 +14,8 @@ internal static class Program
                 Console.WriteLine($"C# 输出: {options.CsharpDir}");
             if (!string.IsNullOrEmpty(options.UnityJsonDir))
                 Console.WriteLine($"Unity JSON: {options.UnityJsonDir}");
+            if (!string.IsNullOrEmpty(options.ContractsDir))
+                Console.WriteLine($"Contracts C#: {options.ContractsDir}");
             Console.WriteLine();
 
             var tables = ExcelToCsvConverter.ConvertDirectory(options.ConfigDir, options.CsvDir);
@@ -26,6 +28,12 @@ internal static class Program
             {
                 Console.WriteLine();
                 CsharpGenerator.Generate(tables, enums, options.CsharpDir);
+            }
+
+            if (!string.IsNullOrEmpty(options.ContractsDir))
+            {
+                Console.WriteLine();
+                CsharpGenerator.GenerateShared(tables, enums, options.ContractsDir);
             }
 
             if (!string.IsNullOrEmpty(options.UnityJsonDir))
@@ -72,6 +80,7 @@ internal static class Program
         var jsonDir = Path.Combine(tempConfigDir, "json");
         var csharpDir = Path.Combine(repoRoot, "Card", "Assets", "App", "Config", "Generated");
         var unityJsonDir = Path.Combine(repoRoot, "Card", "Assets", "Res", "Config");
+        var contractsDir = Path.Combine(repoRoot, "Server", "src", "Card.Contracts", "Config");
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -108,6 +117,12 @@ internal static class Program
                 case "--no-unity-json":
                     unityJsonDir = null!;
                     break;
+                case "--contracts":
+                    contractsDir = Path.GetFullPath(Next());
+                    break;
+                case "--no-contracts":
+                    contractsDir = null!;
+                    break;
                 case "--help":
                 case "-h":
                     PrintHelp();
@@ -121,7 +136,7 @@ internal static class Program
         if (!Directory.Exists(configDir))
             throw new DirectoryNotFoundException($"配置目录不存在: {configDir}");
 
-        return new ExportOptions(configDir, csvDir, jsonDir, csharpDir, unityJsonDir);
+        return new ExportOptions(configDir, csvDir, jsonDir, csharpDir, unityJsonDir, contractsDir);
     }
 
     private static string FindRepoRoot()
@@ -159,7 +174,8 @@ internal static class Program
                   --json          JSON 输出目录（默认: TempConfig/json）
                   --csharp        C# 输出目录（默认: Card/Assets/App/Config/Generated）
                   --no-csharp     不生成 C#
-                  --unity-json    Unity JSON 目录（默认: Card/Assets/Res/Config）
+                  --contracts     共享配表 class 目录（默认: Server/src/Card.Contracts/Config）
+                  --no-contracts  不生成共享配表 class
                   --no-unity-json 不复制 JSON 到 Unity
               -h, --help          显示帮助
 
@@ -198,5 +214,6 @@ internal static class Program
         string CsvDir,
         string JsonDir,
         string? CsharpDir,
-        string? UnityJsonDir);
+        string? UnityJsonDir,
+        string? ContractsDir);
 }

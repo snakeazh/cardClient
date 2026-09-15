@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using App.AdShop;
+using App.Net;
+using App.UI;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -86,26 +88,46 @@ namespace App.UI.Popup
             BuyCoinCommand.RaiseCanExecuteChanged();
         }
 
-        private void BuyStamina()
+        private async void BuyStamina()
         {
-            if (_shop.TryPurchaseStamina())
+            if (!GameApi.IsReady)
             {
-                _toast?.ShowSuccess($"体力 +{_shop.StaminaPerPurchase}");
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            Refresh();
+            try
+            {
+                var resp = await GameApi.Client.ClaimAdShopAsync("stamina");
+                GameApi.ApplyProfile(resp.Profile);
+                _toast?.ShowSuccess($"体力 +{_shop.StaminaPerPurchase}");
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                Refresh();
+            }
         }
 
-        private void BuyCoin()
+        private async void BuyCoin()
         {
-            if (_shop.TryPurchaseGold())
+            if (!GameApi.IsReady)
             {
-                _toast?.ShowSuccess($"金币 +{_shop.GoldPerPurchase}");
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            Refresh();
+            try
+            {
+                var resp = await GameApi.Client.ClaimAdShopAsync("gold");
+                GameApi.ApplyProfile(resp.Profile);
+                _toast?.ShowSuccess($"金币 +{_shop.GoldPerPurchase}");
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                Refresh();
+            }
         }
 
         private void Close()

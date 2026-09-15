@@ -22,6 +22,9 @@ namespace App.Bag
 
         void Clear();
 
+        /// <summary>用服务器主档覆盖背包。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(IReadOnlyList<BagEntry> entries);
+
         void Load();
     }
 }

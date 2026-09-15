@@ -29,6 +29,9 @@ namespace App.AdShop
         /// <summary>看广告购买金币（当前为模拟发放）。超出每日次数返回 false 且不改动。</summary>
         bool TryPurchaseGold();
 
+        /// <summary>用服务器主档覆盖当日已购次数。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(int staminaCount, int goldCount);
+
         void Load();
     }
 }

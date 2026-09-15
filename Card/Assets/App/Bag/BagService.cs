@@ -106,6 +106,28 @@ namespace App.Bag
             _dirty = true;
         }
 
+        public void ReplaceFromServer(IReadOnlyList<BagEntry> entries)
+        {
+            _counts.Clear();
+            if (entries != null)
+            {
+                for (var i = 0; i < entries.Count; i++)
+                {
+                    var entry = entries[i];
+                    if (entry == null || entry.ItemId <= 0 || entry.Count <= 0)
+                    {
+                        continue;
+                    }
+
+                    WarnIfUnknownItem(entry.ItemId);
+                    _counts.TryGetValue(entry.ItemId, out var current);
+                    _counts[entry.ItemId] = current + entry.Count;
+                }
+            }
+
+            _dirty = true;
+        }
+
         public void Load()
         {
             _counts.Clear();

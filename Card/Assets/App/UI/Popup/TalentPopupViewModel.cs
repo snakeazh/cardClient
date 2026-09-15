@@ -7,6 +7,8 @@ using App.Config;
 using App.Guide;
 using App.Resources;
 using App.Talent;
+using App.Net;
+using App.UI;
 using App.Wallet;
 using Framework.Assets;
 using Framework.Log;
@@ -160,34 +162,36 @@ namespace App.UI.Popup
             }
         }
 
-        private void Buy()
+        private async void Buy()
         {
             if (!GameConst.IsLoaded)
             {
                 return;
             }
 
-            var cost = _talent.GetDrawCost();
-            var talentId = _talent.DrawRandomId();
-            if (talentId <= 0)
+            if (!GameApi.IsReady)
             {
-                Toast.Show("天赋已全部满级");
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            if (!_wallet.TrySpend(cost))
+            try
             {
-                Toast.Show("金币不足");
-                return;
+                var drawn = await GameApi.Client.DrawTalentAsync();
+                GameApi.ApplyProfile(drawn.Profile);
+                BuyCostText.Value = _talent.GetDrawCost().ToString();
+                RebuildItems();
+                ListVersion.Value++;
+                GuideSignals.NotifyTalentDrawn();
+                if (drawn.TalentId > 0)
+                {
+                    _ = OpenDetail(drawn.TalentId, reward: true);
+                }
             }
-
-            _talent.Add(talentId);
-            _talent.RecordDraw();
-            BuyCostText.Value = _talent.GetDrawCost().ToString();
-            RebuildItems();
-            ListVersion.Value++;
-            GuideSignals.NotifyTalentDrawn();
-            _ = OpenDetail(talentId, reward: true);
+            catch (GameApiException ex)
+            {
+                Toast.Show(GameApi.Describe(ex));
+            }
         }
 
         private void RebuildItems()

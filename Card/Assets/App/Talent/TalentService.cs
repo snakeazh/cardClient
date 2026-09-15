@@ -197,6 +197,29 @@ namespace App.Talent
             _dirty = true;
         }
 
+        public void ReplaceFromServer(IReadOnlyList<TalentSaveEntry> entries, int drawCount)
+        {
+            _counts.Clear();
+            _drawCount = drawCount > 0 ? drawCount : 0;
+            if (entries != null)
+            {
+                for (var i = 0; i < entries.Count; i++)
+                {
+                    var entry = entries[i];
+                    if (entry == null || entry.TalentId <= 0 || entry.Count <= 0)
+                    {
+                        continue;
+                    }
+
+                    WarnIfUnknown(entry.TalentId);
+                    _counts.TryGetValue(entry.TalentId, out var current);
+                    _counts[entry.TalentId] = current + entry.Count;
+                }
+            }
+
+            _dirty = true;
+        }
+
         public void Load()
         {
             _counts.Clear();

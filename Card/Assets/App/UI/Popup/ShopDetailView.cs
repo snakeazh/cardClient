@@ -225,7 +225,7 @@ namespace App.UI.Popup
             BeginBuy(watchAd: true);
         }
 
-        private void OnBuyUseClicked()
+        private async void OnBuyUseClicked()
         {
             if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
             {
@@ -233,7 +233,7 @@ namespace App.UI.Popup
             }
 
             ViewModel.SetBusy(true);
-            if (!ViewModel.TryBeginBuyAndUse())
+            if (!await ViewModel.TryBeginBuyAndUseAsync())
             {
                 ViewModel.SetBusy(false);
                 return;
@@ -252,7 +252,7 @@ namespace App.UI.Popup
             ViewModel.TryUse();
         }
 
-        private void BeginBuy(bool watchAd)
+        private async void BeginBuy(bool watchAd)
         {
             if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
             {
@@ -263,7 +263,7 @@ namespace App.UI.Popup
             var relicId = ViewModel.RelicId;
             var shop = BattleShopPopView.FindOpen();
             shop?.HoldIncomingMine(relicId);
-            if (!ViewModel.TryBeginBuy(watchAd))
+            if (!await ViewModel.TryBeginBuyAsync(watchAd))
             {
                 shop?.ClearIncomingMine();
                 ViewModel.SetBusy(false);
@@ -380,12 +380,13 @@ namespace App.UI.Popup
             }
 
             var bar = GameResourceView.FindOpen()?.ViewModel;
-            if (!ViewModel.TryBeginSell(bar, out var gold))
+            if (!await ViewModel.TryBeginSellAsync(bar))
             {
                 ViewModel.SetBusy(false);
                 return;
             }
 
+            var gold = ViewModel.PendingSellGold;
             var flying = gold > 0 && TryPlayCoinFly(_sellBtn, bar, gold);
             ViewModel.CompleteSell(bar, gold, coinFxOwnsGold: flying);
         }

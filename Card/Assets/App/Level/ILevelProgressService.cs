@@ -55,6 +55,14 @@ namespace App.Level
 
         void Clear();
 
+        /// <summary>用服务器主档覆盖关卡进度。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(
+            IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            int lastHeroId,
+            int lastLevelId,
+            int lastDifficulty,
+            IReadOnlyList<int> unlockedHeroIds);
+
         void Load();
     }
 }

@@ -63,6 +63,15 @@ namespace App.Energy
             return true;
         }
 
+        public void ReplaceFromServer(int current, int adRefillCount)
+        {
+            _current = ClampToNonNegative(current);
+            _adRefillCount = adRefillCount < 0 ? 0 : adRefillCount;
+            _gameDay = TodayGameDay();
+            _dirty = true;
+            Changed?.Invoke();
+        }
+
         public void Add(int amount)
         {
             if (amount <= 0)

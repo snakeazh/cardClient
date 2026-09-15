@@ -197,6 +197,49 @@ namespace App.Level
             }
         }
 
+        public void ReplaceFromServer(
+            IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            int lastHeroId,
+            int lastLevelId,
+            int lastDifficulty,
+            IReadOnlyList<int> unlockedHeroIds)
+        {
+            _cleared.Clear();
+            _unlockedHeroes.Clear();
+            _highestCleared.Clear();
+            LastHeroId = lastHeroId;
+            LastLevelId = lastLevelId;
+            LastDifficulty = lastDifficulty > 0 ? lastDifficulty : _levels.DefaultDifficulty;
+            if (difficultyProgress != null)
+            {
+                for (var i = 0; i < difficultyProgress.Count; i++)
+                {
+                    var entry = difficultyProgress[i];
+                    if (entry == null || entry.Difficulty <= 0 || entry.HighestClearedLevel <= 0)
+                    {
+                        continue;
+                    }
+
+                    _highestCleared[entry.Difficulty] = entry.HighestClearedLevel;
+                }
+            }
+
+            if (unlockedHeroIds != null)
+            {
+                for (var i = 0; i < unlockedHeroIds.Count; i++)
+                {
+                    var heroId = unlockedHeroIds[i];
+                    if (heroId > 0)
+                    {
+                        _unlockedHeroes.Add(heroId);
+                    }
+                }
+            }
+
+            SyncClearedFromHighest();
+            _dirty = true;
+        }
+
         public void Load()
         {
             _cleared.Clear();

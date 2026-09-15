@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Game;
+using App.Net;
 using App.Score;
+using App.UI;
 using App.Wallet;
+using CardShare.Contracts;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
@@ -76,7 +79,7 @@ namespace App.UI.Popup
 
         public IRelayCommand AgainCommand { get; }
 
-        protected override Task OnOpen(object args)
+        protected override async Task OnOpen(object args)
         {
             _forfeitNoRevive = args is bool forfeit && forfeit;
             var success = !_forfeitNoRevive && Session.Phase == GamePhase.RunComplete;
@@ -88,11 +91,10 @@ namespace App.UI.Popup
             RefreshStageRows();
             if (success)
             {
-                GrantOutGameGold(funds);
+                await SettleAsync(cleared: true);
             }
 
             AgainCommand.RaiseCanExecuteChanged();
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -129,22 +131,31 @@ namespace App.UI.Popup
                    Session.Run.AdsReviveThisStage < 1;
         }
 
-        private void GrantOutGameGold(int funds)
+        private async Task SettleAsync(bool cleared)
         {
-            if (_granted || funds <= 0 || _wallet == null)
+            if (_granted || !Session.HasServerRun)
             {
                 return;
             }
 
-            _wallet.Add(funds);
-            _granted = true;
+            try
+            {
+                var resp = await GameApi.Client.SettlePveAsync(Session.BuildSettleRequest(cleared));
+                GameApi.ApplyProfile(resp.Profile);
+                CoinNum.Value = resp.GoldGranted.ToString();
+                _granted = true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
         }
 
-        private void Back()
+        private async void Back()
         {
             if (!_granted)
             {
-                GrantOutGameGold(ScoreBalance.PointsToGold(Session.Score.Total));
+                await SettleAsync(cleared: ShowSuccess.Value);
             }
 
             _ = _dialogs.CloseWithResult(BattleResultAction.Back);

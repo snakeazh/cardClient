@@ -30,6 +30,9 @@ namespace App.Unlock
         /// </summary>
         void Report(ContidionType type, int amount = 1);
 
+        /// <summary>用服务器主档覆盖解锁进度。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(IReadOnlyList<UnlockConditionProgressEntry> progress);
+
         void Load();
     }
 }

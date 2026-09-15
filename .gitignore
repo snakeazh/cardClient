@@ -1,5 +1,12 @@
-﻿Card/.idea
+Card/.idea
 Tools/**/bin/
 Tools/**/obj/
+Server/**/bin/
+Server/**/obj/
+Server/.vs/
+Server/.idea/
+Server/**/TestResults/
+Server/**/artifacts/
+Server/**/publish/
 Config/~$*
 TempConfig/

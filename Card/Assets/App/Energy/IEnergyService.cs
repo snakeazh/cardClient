@@ -24,6 +24,9 @@ namespace App.Energy
         /// <summary>扣除开局消耗。体力不足返回 false 且不改动。</summary>
         bool TrySpendRunCost();
 
+        /// <summary>用服务器主档覆盖本地体力。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(int current, int adRefillCount);
+
         /// <summary>直接增加体力（广告商店购买等），可超过上限。</summary>
         void Add(int amount);
 

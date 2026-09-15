@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CardShare.Server</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Card.Contracts\Card.Contracts.csproj" />
+    <ProjectReference Include="..\Card.Battle\Card.Battle.csproj" />
+    <ProjectReference Include="..\Card.Domain\Card.Domain.csproj" />
+    <ProjectReference Include="..\Card.Infrastructure\Card.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

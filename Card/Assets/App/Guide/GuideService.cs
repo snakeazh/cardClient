@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
 using App.Game;
+using App.Net;
 using App.Talent;
 using App.UI;
 using App.Wallet;
@@ -296,7 +297,23 @@ namespace App.Guide
 
             if (completed)
             {
-                _progress.MarkGroupCompleted(groupId);
+                if (GameApi.IsReady)
+                {
+                    try
+                    {
+                        var profile = await GameApi.Client.CompleteGuideAsync(groupId);
+                        GameApi.ApplyProfile(profile);
+                    }
+                    catch (Exception e)
+                    {
+                        AppLog.Exception(LogChannel.Net, e);
+                        _progress.MarkGroupCompleted(groupId);
+                    }
+                }
+                else
+                {
+                    _progress.MarkGroupCompleted(groupId);
+                }
             }
 
             var overlay = _overlay;
@@ -485,7 +502,7 @@ namespace App.Guide
             }
         }
 
-        private static void EnsureTalentDrawGold()
+        private static async void EnsureTalentDrawGold()
         {
             if (!AppServices.IsReady)
             {
@@ -505,8 +522,21 @@ namespace App.Guide
                 return;
             }
 
-            wallet.Add(cost - wallet.Gold);
-            AppLog.Info(LogChannel.UI, $"[Guide] granted gold for talent draw, now {wallet.Gold}");
+            if (!GameApi.IsReady)
+            {
+                return;
+            }
+
+            try
+            {
+                var profile = await GameApi.Client.DebugGrantGoldAsync(cost - wallet.Gold);
+                GameApi.ApplyProfile(profile);
+                AppLog.Info(LogChannel.UI, $"[Guide] granted gold for talent draw, now {wallet.Gold}");
+            }
+            catch (Exception e)
+            {
+                AppLog.Exception(LogChannel.Net, e);
+            }
         }
 
         private static bool ParamEquals(string configured, string actual)

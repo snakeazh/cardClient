@@ -3,6 +3,7 @@ using App.Atlas;
 using App.Config;
 using App.Game;
 using App.Resources;
+using App.UI;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -156,9 +157,8 @@ namespace App.UI.Popup
             CloseCommand.RaiseCanExecuteChanged();
         }
 
-        public bool TryBeginSell(GameResourceViewModel bar, out int gold)
+        public async Task<bool> TryBeginSellAsync(GameResourceViewModel bar)
         {
-            gold = 0;
             if (Buying || RelicId <= 0)
             {
                 return false;
@@ -170,7 +170,7 @@ namespace App.UI.Popup
                 return false;
             }
 
-            gold = Session.EffectiveSellPrice(RelicId);
+            var gold = Session.EffectiveSellPrice(RelicId);
             if (gold > 0)
             {
                 bar?.HoldGold(gold, refresh: false);
@@ -178,9 +178,7 @@ namespace App.UI.Popup
 
             _awaitingSellFx = true;
             _pendingSellGold = gold;
-            var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            Session.SellShopRelic(RelicId);
-            if (ownedBefore && !Session.OwnsRelicConfig(RelicId))
+            if (await Session.TrySellShopRelicAsync(RelicId) && !Session.OwnsRelicConfig(RelicId))
             {
                 return true;
             }
@@ -196,6 +194,8 @@ namespace App.UI.Popup
             return false;
         }
 
+        public int PendingSellGold => _pendingSellGold;
+
         public void CompleteSell(GameResourceViewModel bar, int gold, bool coinFxOwnsGold = false)
         {
             _coinFxOwnsGold = coinFxOwnsGold;
@@ -209,7 +209,7 @@ namespace App.UI.Popup
             Dismiss();
         }
 
-        public bool TryBeginBuy(bool watchAd)
+        public async Task<bool> TryBeginBuyAsync(bool watchAd)
         {
             if (!Buying || RelicId <= 0)
             {
@@ -224,16 +224,26 @@ namespace App.UI.Popup
 
             _awaitingBuyFx = true;
             var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            if (watchAd)
+            var ok = await Session.TryBuyShopRelicAsync(RelicId, watchAd);
+            if (ok && Session.OwnsRelicConfig(RelicId) && !ownedBefore)
             {
-                Session.WatchAdBuyShopRelic(RelicId);
-            }
-            else
-            {
-                Session.BuyShopRelic(RelicId);
+                return true;
             }
 
-            if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)
+            _awaitingBuyFx = false;
+            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
+            return false;
+        }
+
+        public async Task<bool> TryBeginBuyAndUseAsync()
+        {
+            if (!Buying || RelicId <= 0)
+            {
+                return false;
+            }
+
+            _awaitingBuyFx = true;
+            if (await Session.TryBuyAndUseShopRelicAsync(RelicId))
             {
                 return true;
             }
@@ -247,24 +257,6 @@ namespace App.UI.Popup
         {
             _awaitingBuyFx = false;
             Dismiss();
-        }
-
-        public bool TryBeginBuyAndUse()
-        {
-            if (!Buying || RelicId <= 0)
-            {
-                return false;
-            }
-
-            _awaitingBuyFx = true;
-            if (Session.TryBuyAndUseShopRelic(RelicId))
-            {
-                return true;
-            }
-
-            _awaitingBuyFx = false;
-            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
-            return false;
         }
 
         public void TryUse()

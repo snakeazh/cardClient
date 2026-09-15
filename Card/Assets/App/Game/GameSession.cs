@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
 using App.Guide;
 using App.Level;
+using App.Net;
 using App.Score;
 using App.Talent;
 using App.Unlock;
+using CardShare.Contracts;
 using Framework.Log;
 
 namespace App.Game
@@ -85,6 +88,13 @@ namespace App.Game
         private bool _stageStarted;
         /// <summary>FirstBattle 引导：下一次搓牌强制换成 A。</summary>
         private bool _forceGuideRubAce;
+        /// <summary>主线本手共享引擎。引导发牌为 null。</summary>
+        private CardShare.Battle.PveLocalSession _pveLocal;
+        private string _serverRunId;
+        private int _serverLevelId;
+        private Task _runGoldSync = Task.CompletedTask;
+        private Task _shopSync = Task.CompletedTask;
+        private readonly PveSettleStats _runStats = new PveSettleStats();
 
         public GameSession() : this(new Random())
         {
@@ -105,6 +115,11 @@ namespace App.Game
         }
 
         public event Action Changed;
+
+        /// <summary>本局服务端 runId。未开局或未登录为空。</summary>
+        public string ServerRunId => _serverRunId;
+
+        public bool HasServerRun => !string.IsNullOrEmpty(_serverRunId) && GameApi.IsReady;
 
         public RunState Run { get; }
         public SeatState Player { get; }
@@ -366,6 +381,11 @@ namespace App.Game
             Run.RelicConfigIds.Clear();
             Run.ShopOfferIds.Clear();
             Run.ShopRefreshCount = 0;
+            _serverRunId = null;
+            _serverLevelId = 0;
+            _runGoldSync = Task.CompletedTask;
+            _shopSync = Task.CompletedTask;
+            ResetSettleStats();
             Run.LoanTicket = false;
             Run.SplashThisRound = false;
             Run.MagnifierThisRound = false;
@@ -396,6 +416,77 @@ namespace App.Game
 
             UnlockSvc()?.BeginRun();
             StartStage(inheritPlayerHp: false);
+        }
+
+        public void BindServerRun(PveRunDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.RunId))
+            {
+                return;
+            }
+
+            _serverRunId = dto.RunId;
+            if (dto.LevelId > 0)
+            {
+                _serverLevelId = dto.LevelId;
+            }
+
+            ApplyPveRun(dto, notify: false);
+            var extra = InitialExtraGold();
+            if (extra > 0)
+            {
+                AddGold(extra);
+            }
+
+            Notify();
+        }
+
+        public void ApplyPveRun(PveRunDto dto, bool notify = true)
+        {
+            if (dto == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(dto.RunId))
+            {
+                _serverRunId = dto.RunId;
+            }
+
+            Run.Gold = dto.Gold;
+            Run.ShopRefreshCount = dto.ShopRefreshCount;
+            Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
+            ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
+            ReplaceIdList(Run.ShopOfferIds, dto.ShopOfferIds);
+            if (notify)
+            {
+                Notify();
+            }
+        }
+
+        public Task WaitShopReadyAsync() => _shopSync ?? Task.CompletedTask;
+
+        public PveSettleRequest BuildSettleRequest(bool cleared)
+        {
+            var score = ScoreSvc();
+            var levelId = Run.LevelId;
+            if (!cleared && _serverLevelId > 0)
+            {
+                levelId = _serverLevelId;
+            }
+            else if (cleared && _serverLevelId > 0 && levelId <= 0)
+            {
+                levelId = _serverLevelId;
+            }
+
+            return new PveSettleRequest
+            {
+                RunId = _serverRunId ?? string.Empty,
+                Cleared = cleared,
+                LevelId = levelId,
+                TotalScore = score != null ? score.Current.Total : 0,
+                Stats = CloneSettleStats()
+            };
         }
 
         /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
@@ -630,7 +721,7 @@ namespace App.Game
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
             Run.UsedSkillThisRun = true;
-            UnlockSvc()?.Report(ContidionType.ShuffleCard);
+            ReportUnlock(ContidionType.ShuffleCard);
             if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
             {
                 Run.RubRelicMagForever += RelicMechanics.SumValue(Run, MechanismType.RubbingCardRelic);
@@ -987,7 +1078,7 @@ namespace App.Game
             seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
             Run.UsedSkillThisRun = true;
-            UnlockSvc()?.Report(ContidionType.Perspective);
+            ReportUnlock(ContidionType.Perspective);
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
             Log($"透视 {seat.Name} {seat.PeekedType}");
@@ -1727,12 +1818,12 @@ namespace App.Game
             {
                 if (crit)
                 {
-                    UnlockSvc()?.Report(ContidionType.CriticalNum);
+                    ReportUnlock(ContidionType.CriticalNum);
                 }
 
                 if (damage > 0)
                 {
-                    UnlockSvc()?.Report(ContidionType.OneDamage, Math.Max(1, damage));
+                    ReportUnlock(ContidionType.OneDamage, Math.Max(1, damage));
                 }
             }
 
@@ -2136,6 +2227,11 @@ namespace App.Game
 
         public void RefreshShopOffers()
         {
+            _ = RefreshShopOffersAsync();
+        }
+
+        public async Task RefreshShopOffersAsync()
+        {
             if (Phase != GamePhase.Shop)
             {
                 return;
@@ -2145,6 +2241,28 @@ namespace App.Game
             {
                 Hint = "没有可刷新的遗物";
                 Notify();
+                return;
+            }
+
+            if (HasServerRun)
+            {
+                await FlushRunGoldAsync();
+                try
+                {
+                    var resp = await GameApi.Client.RefreshShopAsync(_serverRunId);
+                    ApplyPveRun(resp.Run);
+                    ReportUnlock(ContidionType.RefreshStore);
+                    Hint = Run.FreeShopRefreshLeft > 0
+                        ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
+                        : $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
+                    Notify();
+                }
+                catch (GameApiException ex)
+                {
+                    Hint = GameApi.Describe(ex);
+                    Notify();
+                }
+
                 return;
             }
 
@@ -2161,7 +2279,7 @@ namespace App.Game
             {
                 Run.FreeShopRefreshLeft--;
                 RollShopOffers();
-                UnlockSvc()?.Report(ContidionType.RefreshStore);
+                ReportUnlock(ContidionType.RefreshStore);
                 Log($"免费刷新商店（会员卡，下次 {ShopRefreshCost} 金币）");
                 Hint = Run.FreeShopRefreshLeft > 0
                     ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
@@ -2173,7 +2291,7 @@ namespace App.Game
             SpendGold(cost);
             Run.ShopRefreshCount++;
             RollShopOffers();
-            UnlockSvc()?.Report(ContidionType.RefreshStore);
+            ReportUnlock(ContidionType.RefreshStore);
             Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
             Hint = $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
             Notify();
@@ -2183,6 +2301,134 @@ namespace App.Game
 
         /// <summary>看广告免费购入货架遗物。广告当前为模拟发放，成功后不扣金币。</summary>
         public void WatchAdBuyShopRelic(int relicId) => AcquireShopRelic(relicId, watchAd: true);
+
+        public async Task<bool> TryBuyShopRelicAsync(int relicId, bool watchAd)
+        {
+            if (watchAd || !HasServerRun)
+            {
+                var ownedBefore = OwnsRelicConfig(relicId);
+                AcquireShopRelic(relicId, watchAd);
+                return OwnsRelicConfig(relicId) && !ownedBefore;
+            }
+
+            if (Phase != GamePhase.Shop || !Run.ShopOfferIds.Contains(relicId))
+            {
+                return false;
+            }
+
+            if (Run.RelicConfigIds.Count >= RelicCarryMax)
+            {
+                Hint = "遗物已满";
+                Notify();
+                return false;
+            }
+
+            await FlushRunGoldAsync();
+            try
+            {
+                var ownedBefore = OwnsRelicConfig(relicId);
+                var resp = await GameApi.Client.BuyShopRelicAsync(_serverRunId, relicId);
+                ApplyPveRun(resp.Run);
+                if (!OwnsRelicConfig(relicId) || ownedBefore)
+                {
+                    return false;
+                }
+
+                ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+                var relic = RelicConfig.Get(relicId);
+                Log($"购入遗物 {relic?.Name}");
+                Hint = $"已购买 {relic?.Name}";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Hint = GameApi.Describe(ex);
+                Notify();
+                return false;
+            }
+        }
+
+        public async Task<bool> TryBuyAndUseShopRelicAsync(int relicId)
+        {
+            if (!HasServerRun)
+            {
+                return TryBuyAndUseShopRelic(relicId);
+            }
+
+            if (Phase != GamePhase.Shop || !Run.ShopOfferIds.Contains(relicId))
+            {
+                return false;
+            }
+
+            if (TryGetRelicUseFailHint(relicId, requireOwned: false, out var failHint))
+            {
+                Hint = failHint;
+                Notify();
+                return false;
+            }
+
+            await FlushRunGoldAsync();
+            try
+            {
+                var resp = await GameApi.Client.BuyShopRelicAsync(_serverRunId, relicId);
+                ApplyPveRun(resp.Run);
+                if (!OwnsRelicConfig(relicId))
+                {
+                    return false;
+                }
+
+                ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+                ApplyConsumableUseCore(relicId);
+                var relic = RelicConfig.Get(relicId);
+                Log($"购入并使用遗物 {relic?.Name}");
+                Hint = $"已购买并使用 {relic?.Name}";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Hint = GameApi.Describe(ex);
+                Notify();
+                return false;
+            }
+        }
+
+        public async Task<bool> TrySellShopRelicAsync(int relicId)
+        {
+            if (!HasServerRun)
+            {
+                var owned = OwnsRelicConfig(relicId);
+                SellShopRelic(relicId);
+                return owned && !OwnsRelicConfig(relicId);
+            }
+
+            if (Phase != GamePhase.Shop || !OwnsRelicConfig(relicId))
+            {
+                Hint = "未拥有该遗物";
+                Notify();
+                return false;
+            }
+
+            await FlushRunGoldAsync();
+            try
+            {
+                var resp = await GameApi.Client.SellShopRelicAsync(_serverRunId, relicId);
+                ApplyPveRun(resp.Run);
+                ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+                var relic = RelicConfig.Get(relicId);
+                Log($"出售遗物 {relic?.Name}");
+                Hint = $"已出售 {relic?.Name}";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Hint = GameApi.Describe(ex);
+                Notify();
+                return false;
+            }
+        }
 
         /// <summary>
         /// 商店货架购买并立刻使用消耗品。不占携带上限：到手后马上消耗，因此遗物已满时仍可买用。
@@ -3058,7 +3304,7 @@ namespace App.Game
                 ApplyPlayerWinGold(playerScore);
                 if (_rubbedThisHand)
                 {
-                    UnlockSvc()?.Report(ContidionType.ShuffleCardAndVictory);
+                    ReportUnlock(ContidionType.ShuffleCardAndVictory);
                 }
             }
         }
@@ -3081,22 +3327,22 @@ namespace App.Game
             }
             if (score.Type == HandType.Straight)
             {
-                UnlockSvc()?.Report(ContidionType.Straight);
+                ReportUnlock(ContidionType.Straight);
             }
 
             if (score.Type == HandType.Flush)
             {
-                UnlockSvc()?.Report(ContidionType.Flush);
+                ReportUnlock(ContidionType.Flush);
             }
 
             if (score.Type == HandType.Pair)
             {
-                UnlockSvc()?.Report(ContidionType.Couplet);
+                ReportUnlock(ContidionType.Couplet);
             }
 
             if (HasShownSeven(score.UsedCards))
             {
-                UnlockSvc()?.Report(ContidionType.Seven);
+                ReportUnlock(ContidionType.Seven);
             }
         }
 
@@ -3221,6 +3467,7 @@ namespace App.Game
 
             Run.Gold -= amount;
             Run.GoldSpentThisRun += amount;
+            EnqueueRunGold(grant: false, amount);
         }
 
         private void AddGold(int amount)
@@ -3233,8 +3480,64 @@ namespace App.Game
             Run.Gold += amount;
             if (amount > 0)
             {
-                UnlockSvc()?.Report(ContidionType.AccumulateGold, amount);
-                UnlockSvc()?.Report(ContidionType.NumberOfCoinsOwned, Run.Gold);
+                ReportUnlock(ContidionType.AccumulateGold, amount);
+                ReportUnlock(ContidionType.NumberOfCoinsOwned, Run.Gold);
+                EnqueueRunGold(grant: true, amount);
+            }
+            else
+            {
+                EnqueueRunGold(grant: false, -amount);
+            }
+        }
+
+        private void EnqueueRunGold(bool grant, int amount)
+        {
+            if (!HasServerRun || amount <= 0)
+            {
+                return;
+            }
+
+            var previous = _runGoldSync;
+            _runGoldSync = ContinueRunGold(previous, grant, amount);
+        }
+
+        private async Task ContinueRunGold(Task previous, bool grant, int amount)
+        {
+            try
+            {
+                await previous;
+            }
+            catch (Exception)
+            {
+                // keep the queue moving
+            }
+
+            try
+            {
+                if (grant)
+                {
+                    await GameApi.Client.GrantRunGoldAsync(_serverRunId, amount, "combat");
+                }
+                else
+                {
+                    await GameApi.Client.SpendRunGoldAsync(_serverRunId, amount, "run");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "局内金币同步失败: " + ex.Message);
+            }
+        }
+
+        public async Task FlushRunGoldAsync()
+        {
+            try
+            {
+                await _runGoldSync;
+            }
+            catch (Exception)
+            {
+                // ignored
             }
         }
 
@@ -3437,7 +3740,17 @@ namespace App.Game
             ApplyRelicDisable();
             ApplyAttackSteal();
             ApplyMonsterRegen();
-            _deck = new Deck(_rng);
+            _pveLocal = SharedBattleBridge.TryStart(
+                UnityGameConfigLoader.Current,
+                _rng.Next(),
+                Player,
+                Enemies,
+                ShouldApplyFirstBattleDeal());
+            if (_pveLocal == null)
+            {
+                _deck = new Deck(_rng);
+            }
+
             DealAll();
             ApplyRoundStartRelics();
             ApplyEveryRoundHpUp();
@@ -3452,6 +3765,12 @@ namespace App.Game
             foreach (var seat in AllSeats())
             {
                 ClearSeatHand(seat);
+            }
+
+            if (SharedBattleBridge.TryDeal(_pveLocal, AllSeats(), CardsDealtFor))
+            {
+                SyncDeckWithTable();
+                return;
             }
 
             SyncDeckWithTable();
@@ -5189,12 +5508,12 @@ namespace App.Game
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
                     ApplyPracticePaperOnKill();
-                    UnlockSvc()?.Report(ContidionType.KillMonster);
+                    ReportUnlock(ContidionType.KillMonster);
                     ApplyVengefulSoulOnKill();
                 }
                 else
                 {
-                    UnlockSvc()?.Report(ContidionType.DeathNum);
+                    ReportUnlock(ContidionType.DeathNum);
                 }
             }
             else
@@ -5340,21 +5659,21 @@ namespace App.Game
             if (playerWon)
             {
                 _roundCompareWins++;
-                UnlockSvc()?.Report(ContidionType.Defeat);
+                ReportUnlock(ContidionType.Defeat);
                 ApplyWinBadges();
                 ApplySteppingStoneRoll();
                 ApplyWinHeal();
                 if (RelicMechanics.IsNaturalTwoThreeFive(playerScore.UsedCards) &&
                     enemyScore.Type == HandType.ThreeOfAKind)
                 {
-                    UnlockSvc()?.Report(ContidionType.TwoThreeFive);
+                    ReportUnlock(ContidionType.TwoThreeFive);
                 }
 
                 return;
             }
 
             _roundCompareLosses++;
-            UnlockSvc()?.Report(ContidionType.Failure);
+            ReportUnlock(ContidionType.Failure);
             if (RelicMechanics.HasMechanism(Run, MechanismType.Revenge) ||
                 RelicMechanics.HasMechanism(Run, MechanismType.Trap))
             {
@@ -5695,7 +6014,7 @@ namespace App.Game
                     ai.Banner = "濒死斩杀";
                     Log($"互助斩杀：{ai.Name} 血量不足继续，被你斩杀");
                     ApplyPracticePaperOnKill();
-                    UnlockSvc()?.Report(ContidionType.KillMonster);
+                    ReportUnlock(ContidionType.KillMonster);
                 }
                 else if (winner != null && !winner.IsPlayer && winner != ai)
                 {
@@ -5759,10 +6078,35 @@ namespace App.Game
             {
                 Run.ShopBuyDiscount = 0f;
             }
-            RollShopOffers();
+
+            if (HasServerRun)
+            {
+                _shopSync = SyncEnterShopAsync();
+            }
+            else
+            {
+                RollShopOffers();
+            }
+
             Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
+        }
+
+        private async Task SyncEnterShopAsync()
+        {
+            await FlushRunGoldAsync();
+            try
+            {
+                var resp = await GameApi.Client.EnterShopAsync(_serverRunId, Run.FreeShopRefreshLeft);
+                ApplyPveRun(resp.Run);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "进入商店同步失败: " + ex.Message);
+                RollShopOffers();
+                Notify();
+            }
         }
 
         private void CompleteLastLevel()
@@ -6605,6 +6949,169 @@ namespace App.Game
             return AppServices.IsReady ? AppServices.Resolve<IUnlockConditionService>() : null;
         }
 
+        private void ReportUnlock(ContidionType type, int amount = 1)
+        {
+            AccumulateSettleStat(type, amount);
+            UnlockSvc()?.Report(type, amount);
+        }
+
+        private void ResetSettleStats()
+        {
+            _runStats.KillMonster = 0;
+            _runStats.ShuffleCard = 0;
+            _runStats.RefreshStore = 0;
+            _runStats.Straight = 0;
+            _runStats.TwoThreeFive = 0;
+            _runStats.ShuffleCardAndVictory = 0;
+            _runStats.Seven = 0;
+            _runStats.Flush = 0;
+            _runStats.ClearDifficulty = 0;
+            _runStats.AccumulateGold = 0;
+            _runStats.SingleDamage = 0;
+            _runStats.Couplet = 0;
+            _runStats.Failure = 0;
+            _runStats.Defeat = 0;
+            _runStats.LuxuryGoods = 0;
+            _runStats.Angel = 0;
+            _runStats.DeathNum = 0;
+            _runStats.Perspective = 0;
+            _runStats.OneDamage = 0;
+            _runStats.NumberOfCoinsOwned = 0;
+            _runStats.CriticalNum = 0;
+            _runStats.ThreeCardAttack = 0;
+        }
+
+        private PveSettleStats CloneSettleStats()
+        {
+            return new PveSettleStats
+            {
+                KillMonster = _runStats.KillMonster,
+                ShuffleCard = _runStats.ShuffleCard,
+                RefreshStore = _runStats.RefreshStore,
+                Straight = _runStats.Straight,
+                TwoThreeFive = _runStats.TwoThreeFive,
+                ShuffleCardAndVictory = _runStats.ShuffleCardAndVictory,
+                Seven = _runStats.Seven,
+                Flush = _runStats.Flush,
+                ClearDifficulty = _runStats.ClearDifficulty,
+                AccumulateGold = _runStats.AccumulateGold,
+                SingleDamage = _runStats.SingleDamage,
+                Couplet = _runStats.Couplet,
+                Failure = _runStats.Failure,
+                Defeat = _runStats.Defeat,
+                LuxuryGoods = _runStats.LuxuryGoods,
+                Angel = _runStats.Angel,
+                DeathNum = _runStats.DeathNum,
+                Perspective = _runStats.Perspective,
+                OneDamage = _runStats.OneDamage,
+                NumberOfCoinsOwned = _runStats.NumberOfCoinsOwned,
+                CriticalNum = _runStats.CriticalNum,
+                ThreeCardAttack = _runStats.ThreeCardAttack
+            };
+        }
+
+        private void AccumulateSettleStat(ContidionType type, int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            switch (type)
+            {
+                case ContidionType.KillMonster:
+                    _runStats.KillMonster += amount;
+                    break;
+                case ContidionType.ShuffleCard:
+                    _runStats.ShuffleCard += amount;
+                    break;
+                case ContidionType.RefreshStore:
+                    _runStats.RefreshStore += amount;
+                    break;
+                case ContidionType.Straight:
+                    _runStats.Straight += amount;
+                    break;
+                case ContidionType.TwoThreeFive:
+                    _runStats.TwoThreeFive += amount;
+                    break;
+                case ContidionType.ShuffleCardAndVictory:
+                    _runStats.ShuffleCardAndVictory += amount;
+                    break;
+                case ContidionType.Seven:
+                    _runStats.Seven += amount;
+                    break;
+                case ContidionType.Flush:
+                    _runStats.Flush += amount;
+                    break;
+                case ContidionType.ClearDifficulty:
+                    _runStats.ClearDifficulty = Math.Max(_runStats.ClearDifficulty, amount);
+                    break;
+                case ContidionType.AccumulateGold:
+                    _runStats.AccumulateGold += amount;
+                    break;
+                case ContidionType.SingleDamage:
+                    _runStats.SingleDamage = Math.Max(_runStats.SingleDamage, amount);
+                    break;
+                case ContidionType.Couplet:
+                    _runStats.Couplet += amount;
+                    break;
+                case ContidionType.Failure:
+                    _runStats.Failure += amount;
+                    break;
+                case ContidionType.Defeat:
+                    _runStats.Defeat += amount;
+                    break;
+                case ContidionType.LuxuryGoods:
+                    _runStats.LuxuryGoods += amount;
+                    break;
+                case ContidionType.Angel:
+                    _runStats.Angel += amount;
+                    break;
+                case ContidionType.DeathNum:
+                    _runStats.DeathNum += amount;
+                    break;
+                case ContidionType.Perspective:
+                    _runStats.Perspective += amount;
+                    break;
+                case ContidionType.OneDamage:
+                    _runStats.OneDamage = Math.Max(_runStats.OneDamage, amount);
+                    break;
+                case ContidionType.NumberOfCoinsOwned:
+                    _runStats.NumberOfCoinsOwned = Math.Max(_runStats.NumberOfCoinsOwned, amount);
+                    break;
+                case ContidionType.CriticalNum:
+                    _runStats.CriticalNum += amount;
+                    break;
+                case ContidionType.ThreeCardAttack:
+                    _runStats.ThreeCardAttack += amount;
+                    break;
+            }
+        }
+
+        private int InitialExtraGold()
+        {
+            var talentGold = (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.InitialFunds));
+            var heroGold = (int)Math.Round(HeroMechanics.SumValue(ResolveHero(), MechanismType.InitialFunds));
+            return Math.Max(0, talentGold) + Math.Max(0, heroGold);
+        }
+
+        private static void ReplaceIdList(List<int> dest, int[] src)
+        {
+            dest.Clear();
+            if (src == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < src.Length; i++)
+            {
+                if (src[i] > 0)
+                {
+                    dest.Add(src[i]);
+                }
+            }
+        }
+
         private const int RelicIdFirstSlot = 233;
         private const int RelicIdSecondSlot = 234;
         private const int RelicIdThirdSlot = 235;
@@ -6614,7 +7121,7 @@ namespace App.Game
             var difficulty = LevelSvc()?.Current?.Difficulty ?? 0;
             if (difficulty > 0)
             {
-                UnlockSvc()?.Report(ContidionType.ClearDifficulty, difficulty);
+                ReportUnlock(ContidionType.ClearDifficulty, difficulty);
             }
 
             var defaultHeroId = GameConst.IsLoaded ? GameConst.Instance.DefaultHeroId : 1;
@@ -6622,12 +7129,12 @@ namespace App.Game
             {
                 if (difficulty >= 3)
                 {
-                    UnlockSvc()?.Report(ContidionType.Angel);
+                    ReportUnlock(ContidionType.Angel);
                 }
 
                 if (difficulty >= 10 && !Run.UsedSkillThisRun)
                 {
-                    UnlockSvc()?.Report(ContidionType.LuxuryGoods);
+                    ReportUnlock(ContidionType.LuxuryGoods);
                 }
             }
 
@@ -6635,7 +7142,7 @@ namespace App.Game
                 OwnsRelicConfig(RelicIdSecondSlot) &&
                 OwnsRelicConfig(RelicIdThirdSlot))
             {
-                UnlockSvc()?.Report(ContidionType.ThreeCardAttack);
+                ReportUnlock(ContidionType.ThreeCardAttack);
             }
         }
 

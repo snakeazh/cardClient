@@ -150,6 +150,28 @@ namespace App.Unlock
             SyncUnlockedRelics(toast: true);
         }
 
+        public void ReplaceFromServer(IReadOnlyList<UnlockConditionProgressEntry> progress)
+        {
+            _progress.Clear();
+            _unlockedRelics.Clear();
+            if (progress != null)
+            {
+                for (var i = 0; i < progress.Count; i++)
+                {
+                    var entry = progress[i];
+                    if (entry == null || entry.ConditionId <= 0 || entry.Amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    _progress[entry.ConditionId] = entry.Amount;
+                }
+            }
+
+            _dirty = true;
+            SyncUnlockedRelics(toast: false);
+        }
+
         private static bool UsesMaxProgress(ContidionType type)
         {
             return type == ContidionType.ClearDifficulty ||

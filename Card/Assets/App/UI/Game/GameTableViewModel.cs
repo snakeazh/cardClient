@@ -544,6 +544,8 @@ namespace App.UI
                         }
                     }
 
+                    await Session.WaitShopReadyAsync();
+
                     while (IsOpen && Session.Phase == GamePhase.Shop)
                     {
                         var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));

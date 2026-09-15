@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CardShare.Battle</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Card.Contracts\Card.Contracts.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyToUnityPlugins" AfterTargets="Build">
+    <PropertyGroup>
+      <UnityPlugins>$(MSBuildThisFileDirectory)..\..\..\Card\Assets\Plugins\Card</UnityPlugins>
+    </PropertyGroup>
+    <MakeDir Directories="$(UnityPlugins)" />
+    <Copy SourceFiles="$(OutputPath)Card.Contracts.dll;$(OutputPath)Card.Battle.dll" DestinationFolder="$(UnityPlugins)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(OutputPath)Card.Contracts.pdb;$(OutputPath)Card.Battle.pdb" DestinationFolder="$(UnityPlugins)" SkipUnchangedFiles="true" Condition="Exists('$(OutputPath)Card.Contracts.pdb')" />
+  </Target>
+</Project>

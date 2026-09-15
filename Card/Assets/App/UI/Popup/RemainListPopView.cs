@@ -306,6 +306,8 @@ namespace App.UI.Popup
                 card.gameObject.SetActive(true);
                 card.Bind(relic.Name, ViewModel.GetRelicIcon(relic), unlocked: true);
                 card.ApplyQuality(relic.Type);
+                // 收藏禁用：本手失效的圣物保留名字，只盖 Mask
+                card.SetMaskVisible(RelicMechanics.IsDisabled(ViewModel.Session.Run, relic.Id));
                 _bound[card] = relic;
                 slot++;
             }
@@ -387,7 +389,9 @@ namespace App.UI.Popup
             _shownRelicId = relic.Id;
             _tipAnchor = card;
             SetTipTexts(relic.Name, relic.Desc);
-            SetTipUseVisible(RelicMechanics.IsConsumable(relic));
+            var canUse = RelicMechanics.IsConsumable(relic)
+                && !RelicMechanics.IsDisabled(ViewModel.Session.Run, relic.Id);
+            SetTipUseVisible(canUse);
             EnsureTipCatcher();
             if (_tipCatcher != null)
             {

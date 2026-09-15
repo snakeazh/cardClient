@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Config;
+using App.Guide;
 using App.Item;
 using App.Resources;
 using Framework.UI.Binding;
@@ -35,18 +37,69 @@ namespace App.UI.Popup
         private readonly Dictionary<ItemCard, TalentItem> _entries =
             new Dictionary<ItemCard, TalentItem>();
         private GameObject _template;
+        private GuideTargetRegistry _guideTargets;
+        private readonly List<string> _guideTargetIds = new List<string>(2);
+
+        protected override Task OnViewOpen()
+        {
+            GuideSignals.NotifyTalentPopupOpen();
+            return Task.CompletedTask;
+        }
 
         protected override void OnBind()
         {
             BindBuyCost();
             BindRulesOpen();
             FillList();
+            RegisterGuideTargets();
         }
 
         protected override Task OnViewClose()
         {
             ClearCards();
+            UnregisterGuideTargets();
+            GuideSignals.NotifyTalentPopupClosed();
+            if (AppServices.IsReady)
+            {
+                var guide = AppServices.Resolve<IGuideService>();
+                if (guide != null &&
+                    guide.IsRunning &&
+                    guide.CurrentGroupId == GuideGroupIds.FirstTalentDraw)
+                {
+                    guide.Abort();
+                }
+            }
+
             return Task.CompletedTask;
+        }
+
+        private void RegisterGuideTargets()
+        {
+            UnregisterGuideTargets();
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var buyGo = UI.GetGameObject("BuyBtn");
+            if (buyGo == null)
+            {
+                return;
+            }
+
+            _guideTargets = AppServices.Resolve<GuideTargetRegistry>();
+            _guideTargets.RegisterUi(GuideTargetIds.TalentBuyBtn, (RectTransform)buyGo.transform);
+            _guideTargetIds.Add(GuideTargetIds.TalentBuyBtn);
+        }
+
+        private void UnregisterGuideTargets()
+        {
+            if (_guideTargets != null && _guideTargetIds.Count > 0)
+            {
+                _guideTargets.UnregisterAll(_guideTargetIds);
+            }
+
+            _guideTargetIds.Clear();
         }
 
         private void FillList()

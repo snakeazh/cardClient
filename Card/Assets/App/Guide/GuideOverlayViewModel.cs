@@ -14,8 +14,8 @@ namespace App.Guide
             SkipCommand = new RelayCommand(() => _guide.Skip(), () => ShowSkip.Value);
             NextCommand = new RelayCommand(() => _guide.Advance(), () => ShowNext.Value);
             HoleClickCommand = new RelayCommand(
-                () => _guide.Advance(),
-                () => StepType.Value == GuideStepType.Click && !ClickUsesButton.Value);
+                () => _guide.InvokeClickTarget(),
+                () => StepType.Value == GuideStepType.Click);
         }
 
         public ObservableProperty<string> Text { get; } = new ObservableProperty<string>(string.Empty);

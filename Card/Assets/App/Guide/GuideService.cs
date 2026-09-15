@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Config;
 using App.Game;
+using App.Talent;
 using App.UI;
+using App.Wallet;
 using Framework.Log;
 using Framework.UI;
 using Framework.UI.Navigation;
@@ -24,6 +27,7 @@ namespace App.Guide
         private GuideOverlayViewModel _overlay;
         private GuideStepConfig _step;
         private Button _clickButton;
+        private Toggle _clickToggle;
         private bool _advancing;
         private int _stepIndex = -1;
 
@@ -41,7 +45,13 @@ namespace App.Guide
             {
                 [GuideWaitIds.DealFinished] = new DealFinishedWaitHandler(session),
                 [GuideWaitIds.SelectCards] = new SelectCardsWaitHandler(session),
-                [GuideWaitIds.GamePhase] = new GamePhaseWaitHandler(session)
+                [GuideWaitIds.GamePhase] = new GamePhaseWaitHandler(session),
+                [GuideWaitIds.RubCard] = new RubCardWaitHandler(session),
+                [GuideWaitIds.SelectHandType] = new SelectHandTypeWaitHandler(session),
+                [GuideWaitIds.PeekGoodTipShown] = new PeekGoodTipShownWaitHandler(),
+                [GuideWaitIds.PeekGoodTipClosed] = new PeekGoodTipClosedWaitHandler(),
+                [GuideWaitIds.TalentPopupOpen] = new TalentPopupOpenWaitHandler(),
+                [GuideWaitIds.TalentDrawn] = new TalentDrawnWaitHandler()
             };
 
             _session.Changed += OnSessionChanged;
@@ -96,6 +106,11 @@ namespace App.Guide
 
         public void StartGroup(int groupId)
         {
+            StartGroup(groupId, 0);
+        }
+
+        public void StartGroup(int groupId, int fromOrder)
+        {
             if (IsRunning)
             {
                 return;
@@ -120,10 +135,24 @@ namespace App.Guide
                 return;
             }
 
+            var startIndex = 0;
+            if (fromOrder > 0)
+            {
+                for (var i = 0; i < _steps.Count; i++)
+                {
+                    if (_steps[i].Order >= fromOrder)
+                    {
+                        startIndex = i;
+                        break;
+                    }
+                }
+            }
+
             IsRunning = true;
             CurrentGroupId = groupId;
-            _stepIndex = -1;
-            AppLog.Info(LogChannel.UI, $"[Guide] start group {group.Name} ({groupId})");
+            _stepIndex = startIndex - 1;
+            GuideSignals.ResetTalentDrawn();
+            AppLog.Info(LogChannel.UI, $"[Guide] start group {group.Name} ({groupId}) fromOrder={fromOrder}");
             _ = RunGroupAsync(group);
         }
 
@@ -135,6 +164,39 @@ namespace App.Guide
             }
 
             _ = AdvanceAsync();
+        }
+
+        /// <summary>
+        /// 蒙版洞点击。优先触发目标 Button/Toggle，避免洞点不穿到下层 UI。
+        /// </summary>
+        public void InvokeClickTarget()
+        {
+            if (!IsRunning || _advancing || _step == null || _step.StepType != GuideStepType.Click)
+            {
+                return;
+            }
+
+            if (_clickButton != null)
+            {
+                _clickButton.onClick.Invoke();
+                return;
+            }
+
+            if (_clickToggle != null)
+            {
+                if (!_clickToggle.isOn)
+                {
+                    _clickToggle.isOn = true;
+                }
+                else
+                {
+                    Advance();
+                }
+
+                return;
+            }
+
+            Advance();
         }
 
         public void Skip()
@@ -229,6 +291,9 @@ namespace App.Guide
             _step = null;
             _steps.Clear();
 
+            _session.ClearGuideDealLocks();
+            GuideSignals.NotifyGuideEnded();
+
             if (completed)
             {
                 _progress.MarkGroupCompleted(groupId);
@@ -279,18 +344,23 @@ namespace App.Guide
 
             if (step.StepType == GuideStepType.Click)
             {
-                TryBindClickButton();
+                if (string.Equals(step.TargetId, GuideTargetIds.TalentBuyBtn, StringComparison.Ordinal))
+                {
+                    EnsureTalentDrawGold();
+                }
+
+                TryBindClickTarget();
             }
         }
 
-        private void TryBindClickButton()
+        private void TryBindClickTarget()
         {
             if (_step == null || _step.StepType != GuideStepType.Click)
             {
                 return;
             }
 
-            UnbindClickButton();
+            UnbindClickTarget();
             var ui = _targets.GetUi(_step.TargetId);
             if (ui == null)
             {
@@ -303,13 +373,31 @@ namespace App.Guide
                 button = ui.GetComponentInChildren<Button>(true);
             }
 
-            if (button == null)
+            if (button != null)
+            {
+                _clickButton = button;
+                _clickButton.onClick.AddListener(OnClickTarget);
+                if (_overlay != null)
+                {
+                    _overlay.ClickUsesButton.Value = true;
+                }
+
+                return;
+            }
+
+            var toggle = ui.GetComponent<Toggle>();
+            if (toggle == null)
+            {
+                toggle = ui.GetComponentInChildren<Toggle>(true);
+            }
+
+            if (toggle == null)
             {
                 return;
             }
 
-            _clickButton = button;
-            _clickButton.onClick.AddListener(OnClickTarget);
+            _clickToggle = toggle;
+            _clickToggle.onValueChanged.AddListener(OnToggleTarget);
             if (_overlay != null)
             {
                 _overlay.ClickUsesButton.Value = true;
@@ -321,12 +409,26 @@ namespace App.Guide
             Advance();
         }
 
-        private void UnbindClickButton()
+        private void OnToggleTarget(bool isOn)
+        {
+            if (isOn)
+            {
+                Advance();
+            }
+        }
+
+        private void UnbindClickTarget()
         {
             if (_clickButton != null)
             {
                 _clickButton.onClick.RemoveListener(OnClickTarget);
                 _clickButton = null;
+            }
+
+            if (_clickToggle != null)
+            {
+                _clickToggle.onValueChanged.RemoveListener(OnToggleTarget);
+                _clickToggle = null;
             }
 
             if (_overlay != null)
@@ -337,7 +439,7 @@ namespace App.Guide
 
         private void ClearStepRuntime()
         {
-            UnbindClickButton();
+            UnbindClickTarget();
             foreach (var kv in _handlers)
             {
                 kv.Value.Stop();
@@ -373,10 +475,38 @@ namespace App.Guide
 
         private void OnTargetsChanged()
         {
-            if (IsRunning && _step != null && _step.StepType == GuideStepType.Click && _clickButton == null)
+            if (IsRunning &&
+                _step != null &&
+                _step.StepType == GuideStepType.Click &&
+                _clickButton == null &&
+                _clickToggle == null)
             {
-                TryBindClickButton();
+                TryBindClickTarget();
             }
+        }
+
+        private static void EnsureTalentDrawGold()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var wallet = AppServices.Resolve<IWalletService>();
+            var talent = AppServices.Resolve<ITalentService>();
+            if (wallet == null || talent == null)
+            {
+                return;
+            }
+
+            var cost = talent.GetDrawCost();
+            if (cost <= 0 || wallet.Gold >= cost)
+            {
+                return;
+            }
+
+            wallet.Add(cost - wallet.Gold);
+            AppLog.Info(LogChannel.UI, $"[Guide] granted gold for talent draw, now {wallet.Gold}");
         }
 
         private static bool ParamEquals(string configured, string actual)

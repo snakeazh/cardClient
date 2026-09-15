@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
+using App.Guide;
 using App.Level;
 using App.Score;
 using App.Talent;
@@ -82,6 +83,8 @@ namespace App.Game
         private readonly List<StageScoreRecord> _stageScores = new List<StageScoreRecord>();
         /// <summary>当前章节是否已开过关（StartStage 置位，StartNewRun 复位）：0 分关也要落账占行。</summary>
         private bool _stageStarted;
+        /// <summary>FirstBattle 引导：下一次搓牌强制换成 A。</summary>
+        private bool _forceGuideRubAce;
 
         public GameSession() : this(new Random())
         {
@@ -536,17 +539,27 @@ namespace App.Game
                 return false;
             }
 
+            // DrawRubCard 成功后会清掉该标记，先记下以便退出点选模式，方便引导接着选 AAA。
+            var exitGuideRubSelect = _forceGuideRubAce;
             if (!ApplyRubReplace(index, out var message))
             {
                 return false;
             }
 
-            SelectingRubTarget = Run.PeekGoodCharges > 0 &&
-                                 !BossMechanics.SkillsDisabled(Run) &&
-                                 BossMechanics.CanAffordRub(Run);
-            Hint = SelectingRubTarget
-                ? $"{message}。可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）"
-                : message;
+            if (exitGuideRubSelect)
+            {
+                SelectingRubTarget = false;
+                Hint = message;
+            }
+            else
+            {
+                SelectingRubTarget = Run.PeekGoodCharges > 0 &&
+                                     !BossMechanics.SkillsDisabled(Run) &&
+                                     BossMechanics.CanAffordRub(Run);
+                Hint = SelectingRubTarget
+                    ? $"{message}。可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）"
+                    : message;
+            }
 
             Notify();
             return true;
@@ -554,16 +567,27 @@ namespace App.Game
 
         public bool CanRubPlayerCard(int index)
         {
-            return SelectingRubTarget &&
-                   !AiActing &&
-                   !Player.Folded &&
-                   Player.Looked &&
-                   Phase == GamePhase.WaitingOpen &&
-                   Run.PeekGoodCharges > 0 &&
-                   !BossMechanics.SkillsDisabled(Run) &&
-                   BossMechanics.CanAffordRub(Run) &&
-                   index >= 0 &&
-                   index < PlayerDealCount;
+            if (!SelectingRubTarget ||
+                AiActing ||
+                Player.Folded ||
+                !Player.Looked ||
+                Phase != GamePhase.WaitingOpen ||
+                Run.PeekGoodCharges <= 0 ||
+                BossMechanics.SkillsDisabled(Run) ||
+                !BossMechanics.CanAffordRub(Run) ||
+                index < 0 ||
+                index >= PlayerDealCount)
+            {
+                return false;
+            }
+
+            // FirstBattle：只允许搓掉固定的「3」，避免点到其他牌浪费次数。
+            if (_forceGuideRubAce && index != GuideDealScript.RubTargetIndex)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private bool ApplyRubReplace(int index, out string message)
@@ -2354,10 +2378,6 @@ namespace App.Game
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
-            if (Phase == GamePhase.Shop)
-            {
-                FillShopOffers();
-            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)
@@ -3428,16 +3448,25 @@ namespace App.Game
         private void DealAll()
         {
             DealSerial++;
+            _forceGuideRubAce = false;
             foreach (var seat in AllSeats())
             {
                 ClearSeatHand(seat);
             }
 
             SyncDeckWithTable();
+            var forceGuideHand = ShouldApplyFirstBattleDeal();
             foreach (var seat in AllSeats())
             {
                 if (!seat.IsPlayer && !seat.Alive)
                 {
+                    continue;
+                }
+
+                if (forceGuideHand && seat.IsPlayer && TryDealGuidePlayerHand(seat))
+                {
+                    _forceGuideRubAce = true;
+                    SyncDeckWithTable();
                     continue;
                 }
 
@@ -3465,6 +3494,40 @@ namespace App.Game
             }
         }
 
+        private bool ShouldApplyFirstBattleDeal()
+        {
+            var progress = GuideProgressSvc();
+            return progress != null && !progress.IsGroupCompleted(GuideDealScript.FirstBattleGroupId);
+        }
+
+        /// <summary>引导结束时清除强制搓牌目标等局内限制。</summary>
+        public void ClearGuideDealLocks()
+        {
+            _forceGuideRubAce = false;
+        }
+
+        private bool TryDealGuidePlayerHand(SeatState seat)
+        {
+            var script = GuideDealScript.PlayerHand;
+            var count = CardsDealtFor(seat);
+            if (script == null || count != script.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < seat.Hand.Length; i++)
+            {
+                seat.Hand[i] = i < count ? script[i] : default;
+            }
+
+            return true;
+        }
+
+        private static IGuideProgressService GuideProgressSvc()
+        {
+            return AppServices.IsReady ? AppServices.Resolve<IGuideProgressService>() : null;
+        }
+
         private static void ClearSeatHand(SeatState seat)
         {
             if (seat == null || seat.Hand == null)
@@ -3484,6 +3547,15 @@ namespace App.Game
         private Card DrawRubCard(Card original)
         {
             SyncDeckWithTable();
+            if (_forceGuideRubAce &&
+                _deck.TryDrawMatching(
+                    card => card.Rank == Rank.Ace && RubCardAllowed(card, original, false),
+                    out var guided))
+            {
+                _forceGuideRubAce = false;
+                return guided;
+            }
+
             if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, false), out var next))
             {
                 return next;

@@ -36,6 +36,8 @@ public sealed class BattleSnapshot
 
     public IReadOnlyList<int> Winners { get; init; } = Array.Empty<int>();
 
+    public IReadOnlyList<int> Damages { get; init; } = Array.Empty<int>();
+
     public IReadOnlyList<BattleEvent> Events { get; init; } = Array.Empty<BattleEvent>();
 }
 
@@ -47,6 +49,7 @@ public sealed class BattleEngine
     private readonly IGameTables _tables;
     private Deck? _deck;
     private BattleSnapshot _snapshot;
+    private int _showdownCount;
 
     public BattleEngine(BattleMode mode, int seed, IReadOnlyList<SeatSetup> seats, IGameTables tables)
     {
@@ -130,6 +133,7 @@ public sealed class BattleEngine
             Seats = _seats,
             Hands = hands,
             Scores = new HandScore[BattleLimits.RoomSeats],
+            Damages = new int[BattleLimits.RoomSeats],
             Events = new[] { new BattleEvent { Type = BattleEventType.Dealt, Message = "deal" } }
         };
     }
@@ -160,6 +164,60 @@ public sealed class BattleEngine
             }
         }
 
+        var rng = new Random(unchecked(_seed * 1103515245 + 12345));
+        var damages = new int[hands.Length];
+        var firstShow = _showdownCount == 0;
+        _showdownCount++;
+        var alive = 0;
+        for (var i = 0; i < hands.Length; i++)
+        {
+            if (IsSeatActive(i))
+            {
+                alive++;
+            }
+        }
+
+        var isPvp = _mode.Kind == BattleModeKind.Pvp;
+        for (var i = 0; i < scores.Length; i++)
+        {
+            if (!IsSeatActive(i) || !HasOpenHand(hands[i]))
+            {
+                continue;
+            }
+
+            var seat = i < _seats.Count ? _seats[i] : null;
+            CombatDamageInput input;
+            if (seat != null && seat.IsHuman)
+            {
+                input = CombatBonuses.BuildPlayerInput(
+                    _tables,
+                    seat,
+                    scores[i],
+                    new CombatSituation
+                    {
+                        FirstShow = firstShow,
+                        AliveOpponents = Math.Max(0, alive - 1),
+                        AttackerHp = seat.Hp,
+                        AttackerMaxHp = seat.MaxHp,
+                        DefenderIsPlayer = isPvp,
+                        DefenderIsBoss = false,
+                        DefenderHp = 0
+                    });
+            }
+            else
+            {
+                input = new CombatDamageInput
+                {
+                    IsPlayer = false,
+                    Attack = seat != null && seat.Attack > 0 ? seat.Attack : 1,
+                    HandTypeMag = scores[i].Multiplier,
+                    FlintMultiplier = 1f
+                };
+            }
+
+            damages[i] = CombatDamage.Resolve(input, rng).Damage;
+        }
+
         _snapshot = new BattleSnapshot
         {
             Seed = _seed,
@@ -169,6 +227,7 @@ public sealed class BattleEngine
             Hands = hands,
             Scores = scores,
             Winners = winners,
+            Damages = damages,
             Events = new[] { new BattleEvent { Type = BattleEventType.Compared, Message = "showdown" } }
         };
     }
@@ -197,7 +256,8 @@ public sealed class BattleEngine
             Phase = BattlePhase.Idle,
             Seats = _seats,
             Hands = Enumerable.Range(0, BattleLimits.RoomSeats).Select(_ => Array.Empty<Card>()).ToArray(),
-            Scores = new HandScore[BattleLimits.RoomSeats]
+            Scores = new HandScore[BattleLimits.RoomSeats],
+            Damages = new int[BattleLimits.RoomSeats]
         };
     }
 
@@ -253,7 +313,12 @@ public sealed class BattleEngine
             UserId = seat.UserId ?? string.Empty,
             NickName = seat.NickName ?? string.Empty,
             IsHuman = seat.IsHuman,
-            Alive = seat.Alive
+            Alive = seat.Alive,
+            Attack = seat.Attack,
+            Hp = seat.Hp,
+            MaxHp = seat.MaxHp,
+            HeroId = seat.HeroId,
+            Talents = CombatBonuses.CloneTalents(seat.Talents)
         };
     }
 }

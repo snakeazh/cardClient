@@ -18,6 +18,7 @@ namespace App.Net
     {
         public const string AccessTokenKey = "game.api.access.v1";
         public const string RefreshTokenKey = "game.api.refresh.v1";
+        public const string PendingSettleKey = "game.api.pending.settle.v1";
 
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
@@ -39,6 +40,103 @@ namespace App.Net
 
         public bool HasSession => !string.IsNullOrEmpty(_accessToken);
 
+        public bool HasRefreshToken => !string.IsNullOrEmpty(_refreshToken);
+
+        public async Task<LoginResponse> ConnectAsync(string deviceCode, string nickName = "")
+        {
+            if (HasRefreshToken)
+            {
+                try
+                {
+                    return await RefreshSessionAsync();
+                }
+                catch (GameApiException ex)
+                {
+                    if (string.Equals(ex.Code, "connection_error", StringComparison.Ordinal))
+                    {
+                        throw;
+                    }
+
+                    ClearTokens();
+                }
+            }
+
+            return await LoginGuestAsync(deviceCode, nickName);
+        }
+
+        public Task<PveRunResponse> GetActiveRunAsync()
+            => SendAsync<PveRunResponse>("GET", "/v1/pve/run/active", null);
+
+        public void SavePendingSettle(PveSettleRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            _save.SetString(PendingSettleKey, JsonConvert.SerializeObject(request, JsonSettings));
+            _save.Save();
+        }
+
+        public PveSettleRequest LoadPendingSettle()
+        {
+            if (!_save.HasKey(PendingSettleKey))
+            {
+                return null;
+            }
+
+            var json = _save.GetString(PendingSettleKey, string.Empty);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<PveSettleRequest>(json, JsonSettings);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "pending settle parse failed: " + ex.Message);
+                return null;
+            }
+        }
+
+        public void ClearPendingSettle()
+        {
+            _save.DeleteKey(PendingSettleKey);
+            _save.Save();
+        }
+
+        public async Task<PlayerProfileDto> FlushPendingSettleAsync()
+        {
+            var pending = LoadPendingSettle();
+            if (pending == null || string.IsNullOrEmpty(pending.RunId))
+            {
+                return null;
+            }
+
+            try
+            {
+                var resp = await SettlePveAsync(pending);
+                ClearPendingSettle();
+                return resp?.Profile;
+            }
+            catch (GameApiException ex)
+            {
+                if (string.Equals(ex.Code, ErrorCodes.RunNotFound, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.RunAlreadySettled, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.Conflict, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.InvalidRequest, StringComparison.Ordinal))
+                {
+                    ClearPendingSettle();
+                    return null;
+                }
+
+                throw;
+            }
+        }
+
         public async Task<LoginResponse> LoginGuestAsync(string deviceCode, string nickName = "")
         {
             var login = await SendAsync<LoginResponse>(
@@ -48,10 +146,12 @@ namespace App.Net
                 {
                     Provider = "guest",
                     Code = string.IsNullOrEmpty(deviceCode) ? "editor-device" : deviceCode,
-                    UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty }
+                    UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty },
+                    PendingSettle = LoadPendingSettle()
                 },
                 auth: false);
             StoreTokens(login);
+            ClearPendingSettle();
             return login;
         }
 
@@ -65,9 +165,14 @@ namespace App.Net
             var login = await SendAsync<LoginResponse>(
                 "POST",
                 "/v1/auth/refresh",
-                new RefreshTokenRequest { RefreshToken = _refreshToken },
+                new RefreshTokenRequest
+                {
+                    RefreshToken = _refreshToken,
+                    PendingSettle = LoadPendingSettle()
+                },
                 auth: false);
             StoreTokens(login);
+            ClearPendingSettle();
             return login;
         }
 
@@ -79,6 +184,14 @@ namespace App.Net
 
         public Task<PveSettleResponse> SettlePveAsync(PveSettleRequest request)
             => SendAsync<PveSettleResponse>("POST", "/v1/pve/settle", request);
+
+        public Task<PveRunResponse> ReportPveProgressAsync(string runId, bool clearedStage, int score)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/run/progress", new PveProgressRequest
+            {
+                RunId = runId ?? string.Empty,
+                ClearedStage = clearedStage,
+                Score = score
+            });
 
         public Task<TalentDrawResponse> DrawTalentAsync()
             => SendAsync<TalentDrawResponse>("POST", "/v1/talent/draw", new object());

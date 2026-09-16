@@ -94,6 +94,7 @@ namespace App.Game
         private int _serverLevelId;
         private Task _runGoldSync = Task.CompletedTask;
         private Task _shopSync = Task.CompletedTask;
+        private Task _progressSync = Task.CompletedTask;
         private readonly PveSettleStats _runStats = new PveSettleStats();
 
         public GameSession() : this(new Random())
@@ -385,6 +386,7 @@ namespace App.Game
             _serverLevelId = 0;
             _runGoldSync = Task.CompletedTask;
             _shopSync = Task.CompletedTask;
+            _progressSync = Task.CompletedTask;
             ResetSettleStats();
             Run.LoanTicket = false;
             Run.SplashThisRound = false;
@@ -418,7 +420,7 @@ namespace App.Game
             StartStage(inheritPlayerHp: false);
         }
 
-        public void BindServerRun(PveRunDto dto)
+        public void BindServerRun(PveRunDto dto, bool grantInitialExtra = true)
         {
             if (dto == null || string.IsNullOrEmpty(dto.RunId))
             {
@@ -432,10 +434,13 @@ namespace App.Game
             }
 
             ApplyPveRun(dto, notify: false);
-            var extra = InitialExtraGold();
-            if (extra > 0)
+            if (grantInitialExtra)
             {
-                AddGold(extra);
+                var extra = InitialExtraGold();
+                if (extra > 0)
+                {
+                    AddGold(extra);
+                }
             }
 
             Notify();
@@ -466,27 +471,43 @@ namespace App.Game
 
         public Task WaitShopReadyAsync() => _shopSync ?? Task.CompletedTask;
 
-        public PveSettleRequest BuildSettleRequest(bool cleared)
-        {
-            var score = ScoreSvc();
-            var levelId = Run.LevelId;
-            if (!cleared && _serverLevelId > 0)
-            {
-                levelId = _serverLevelId;
-            }
-            else if (cleared && _serverLevelId > 0 && levelId <= 0)
-            {
-                levelId = _serverLevelId;
-            }
+        public Task FlushProgressAsync() => _progressSync ?? Task.CompletedTask;
 
+        public async Task FlushServerRunAsync()
+        {
+            await FlushRunGoldAsync();
+            await WaitShopReadyAsync();
+            await FlushProgressAsync();
+        }
+
+        public PveSettleRequest BuildSettleRequest(bool cleared, bool forfeit = false)
+        {
             return new PveSettleRequest
             {
                 RunId = _serverRunId ?? string.Empty,
                 Cleared = cleared,
-                LevelId = levelId,
-                TotalScore = score != null ? score.Current.Total : 0,
-                Stats = CloneSettleStats()
+                Forfeit = forfeit
             };
+        }
+
+        public async Task ReportRunProgressAsync(bool clearedStage)
+        {
+            if (!HasServerRun)
+            {
+                return;
+            }
+
+            await FlushRunGoldAsync();
+            var score = ScoreSvc();
+            var amount = score != null ? score.Current.Stage : 0;
+            try
+            {
+                await GameApi.Client.ReportPveProgressAsync(_serverRunId, clearedStage, amount);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "关卡进度同步失败: " + ex.Message);
+            }
         }
 
         /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
@@ -1690,6 +1711,15 @@ namespace App.Game
             var firstShow = attacker.IsPlayer && _stageBetRound == 1;
             var talentMag = 0f;
             var talentAttack = 0;
+            var relicExtra = 0f;
+            var relicAttack = 0;
+            var dmgPercent = 0f;
+            var critMul = TalentBalance.DefaultCriticalDamage;
+            var extraAttackChance = 0f;
+            var executeChance = 0f;
+            var canExecute = false;
+            var peaceChance = 0f;
+            var critRate = 0f;
             if (attacker.IsPlayer)
             {
                 ctx = RelicMechanics.BuildCombatContext(
@@ -1703,30 +1733,8 @@ namespace App.Game
                 LastRelicContext = ctx;
                 talentMag = TalentMechanics.SumMultiplierExtra(talent, firstShow);
                 talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
-            }
-
-            var relicExtra = attacker.IsPlayer ? RelicMechanics.SumMultiplierExtra(Run, score, ctx) : 0f;
-            var relicAttack = attacker.IsPlayer
-                ? (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx))
-                : 0;
-            var extra = relicExtra + talentMag;
-            var attackExtra = relicAttack + talentAttack;
-            var flint = BossMechanics.FlintMultiplier(Run);
-            var totalMag = (mag + extra) * flint;
-            var relicMag = (mag + relicExtra) * flint;
-            var atk = attacker.Attack + attackExtra;
-            var damage = HandEvaluator.ComputeAttackDamage(atk, totalMag);
-            var formulaDamage = damage;
-            var withoutTalent = HandEvaluator.ComputeAttackDamage(
-                attacker.Attack + relicAttack,
-                relicMag);
-            var dmgPercent = 0f;
-            var crit = false;
-            var critMul = 0f;
-            var chaseAdd = 0;
-            var execute = false;
-            if (attacker.IsPlayer)
-            {
+                relicExtra = RelicMechanics.SumMultiplierExtra(Run, score, ctx);
+                relicAttack = (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx));
                 var hero = ResolveHero();
                 dmgPercent = TalentMechanics.SumDamagePercent(
                     talent,
@@ -1736,60 +1744,47 @@ namespace App.Game
                 dmgPercent += HeroMechanics.SumValue(hero, MechanismType.Damage);
                 dmgPercent += RelicOutgoingDamagePercent(defender);
                 dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
-                if (dmgPercent != 0f)
-                {
-                    damage = Math.Max(1, (int)Math.Round(damage * (1f + dmgPercent)));
-                }
-
-                var critRate = ResolveLivePlayerPanel().CritRate;
+                critRate = ResolveLivePlayerPanel().CritRate;
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero);
-                if (critRate > 0f && _rng.NextDouble() < critRate)
-                {
-                    crit = true;
-                    damage = Math.Max(1, (int)Math.Round(damage * critMul));
-                    withoutTalent = Math.Max(1, (int)Math.Round(withoutTalent * critMul));
-                }
-
-                var original = damage;
-                if (TalentMechanics.Roll(talent, MechanismType.ProOfExtraAttack, _rng))
-                {
-                    chaseAdd = (int)Math.Round(original * TalentBalance.ExtraAttackDamageRatio);
-                    damage += chaseAdd;
-                }
-
-                if (defender != null &&
-                    !defender.IsPlayer &&
-                    !defender.IsBoss &&
-                    TalentMechanics.IsBelowHpRatio(defender, TalentBalance.ExecuteHpRatio) &&
-                    TalentMechanics.Roll(talent, MechanismType.KillingProbabilityTen, _rng))
-                {
-                    execute = true;
-                    damage = Math.Max(damage, defender.Hp);
-                }
+                extraAttackChance = TalentMechanics.SumValue(talent, MechanismType.ProOfExtraAttack);
+                executeChance = TalentMechanics.SumValue(talent, MechanismType.KillingProbabilityTen);
+                canExecute = defender != null &&
+                             !defender.IsPlayer &&
+                             !defender.IsBoss &&
+                             TalentMechanics.IsBelowHpRatio(defender, TalentBalance.ExecuteHpRatio);
+                peaceChance = RelicMechanics.SumValue(Run, MechanismType.AllPeacePer);
             }
 
-            var talentDamage = attacker.IsPlayer ? damage - withoutTalent : 0;
-            _lastPlayerAttackCrit = attacker.IsPlayer && crit;
-            if (!attacker.IsPlayer)
-            {
-                var monsterPer = BossMechanics.MonsterOutgoingDamagePercent(Run);
-                if (monsterPer != 0f)
+            var resolved = CardShare.Battle.CombatDamage.Resolve(
+                new CardShare.Battle.CombatDamageInput
                 {
-                    damage = Math.Max(1, (int)Math.Round(damage * (1f + monsterPer)));
-                }
+                    IsPlayer = attacker.IsPlayer,
+                    Attack = attacker.Attack,
+                    HandTypeMag = mag,
+                    RelicMagExtra = relicExtra,
+                    RelicAttackExtra = relicAttack,
+                    TalentMagExtra = talentMag,
+                    TalentAttackExtra = talentAttack,
+                    FlintMultiplier = BossMechanics.FlintMultiplier(Run),
+                    OutgoingDamagePercent = dmgPercent,
+                    CritRate = critRate,
+                    CritMultiplier = critMul,
+                    ExtraAttackChance = extraAttackChance,
+                    ExtraAttackDamageRatio = TalentBalance.ExtraAttackDamageRatio,
+                    CanExecute = canExecute,
+                    ExecuteChance = executeChance,
+                    DefenderHp = defender != null ? defender.Hp : 0,
+                    MonsterOutgoingPercent = attacker.IsPlayer ? 0f : BossMechanics.MonsterOutgoingDamagePercent(Run),
+                    GoldThornExtra = attacker.IsPlayer ? 0 : BossMechanics.GoldThornExtra(Run),
+                    UseDamageFixed = attacker.IsPlayer ? Run.UseDamageFixed : 0,
+                    PeaceChance = peaceChance
+                },
+                _rng);
 
-                damage += BossMechanics.GoldThornExtra(Run);
-            }
-
-            if (attacker.IsPlayer && Run.UseDamageFixed > 0)
-            {
-                damage = Run.UseDamageFixed;
-            }
-
-            if (attacker.IsPlayer && RelicMechanics.Roll(Run, MechanismType.AllPeacePer, _rng))
+            _lastPlayerAttackCrit = attacker.IsPlayer && resolved.Crit;
+            if (resolved.Peace)
             {
                 Log("和平鸽：本次造成伤害变为 0");
-                damage = 0;
             }
 
             LogAttackDamage(
@@ -1798,41 +1793,36 @@ namespace App.Game
                 score,
                 relicExtra,
                 relicAttack,
-                attackExtra,
+                resolved.AttackExtra,
                 mag,
-                flint,
-                totalMag,
-                formulaDamage,
-                damage,
-                talentDamage,
+                BossMechanics.FlintMultiplier(Run),
+                resolved.TotalMag,
+                resolved.FormulaDamage,
+                resolved.Damage,
+                resolved.TalentDamage,
                 ctx,
                 firstShow,
                 talentMag,
                 talentAttack,
                 dmgPercent,
-                crit,
+                resolved.Crit,
                 critMul,
-                chaseAdd,
-                execute);
+                resolved.ChaseAdd,
+                resolved.Execute);
             if (attacker.IsPlayer)
             {
-                if (crit)
+                if (resolved.Crit)
                 {
                     ReportUnlock(ContidionType.CriticalNum);
                 }
 
-                if (damage > 0)
+                if (resolved.Damage > 0)
                 {
-                    ReportUnlock(ContidionType.OneDamage, Math.Max(1, damage));
+                    ReportUnlock(ContidionType.OneDamage, Math.Max(1, resolved.Damage));
                 }
             }
 
-            if (damage <= 0)
-            {
-                return 0;
-            }
-
-            return Math.Max(1, damage);
+            return resolved.Damage;
         }
 
         /// <summary>打玩家前的减伤：天赋 HeroTakeDamage 为固定加减，遗物圆盾等并进百分比，再乘条约/陷阱/差距胶囊。</summary>
@@ -6081,7 +6071,7 @@ namespace App.Game
 
             if (HasServerRun)
             {
-                _shopSync = SyncEnterShopAsync();
+                _shopSync = SyncStageThenShopAsync();
             }
             else
             {
@@ -6091,6 +6081,12 @@ namespace App.Game
             Hint = $"关卡胜利！通关获得 {gold} 金币。购买道具后进入下一关。";
             LastResult = Hint;
             Notify();
+        }
+
+        private async Task SyncStageThenShopAsync()
+        {
+            await ReportRunProgressAsync(true);
+            await SyncEnterShopAsync();
         }
 
         private async Task SyncEnterShopAsync()
@@ -6113,6 +6109,11 @@ namespace App.Game
         {
             ApplyTalentStageEndHeal();
             GrantStageGold();
+            if (HasServerRun)
+            {
+                _progressSync = ReportRunProgressAsync(true);
+            }
+
             if (!TryAdvanceLevel())
             {
                 Phase = GamePhase.RunComplete;
@@ -6979,35 +6980,6 @@ namespace App.Game
             _runStats.NumberOfCoinsOwned = 0;
             _runStats.CriticalNum = 0;
             _runStats.ThreeCardAttack = 0;
-        }
-
-        private PveSettleStats CloneSettleStats()
-        {
-            return new PveSettleStats
-            {
-                KillMonster = _runStats.KillMonster,
-                ShuffleCard = _runStats.ShuffleCard,
-                RefreshStore = _runStats.RefreshStore,
-                Straight = _runStats.Straight,
-                TwoThreeFive = _runStats.TwoThreeFive,
-                ShuffleCardAndVictory = _runStats.ShuffleCardAndVictory,
-                Seven = _runStats.Seven,
-                Flush = _runStats.Flush,
-                ClearDifficulty = _runStats.ClearDifficulty,
-                AccumulateGold = _runStats.AccumulateGold,
-                SingleDamage = _runStats.SingleDamage,
-                Couplet = _runStats.Couplet,
-                Failure = _runStats.Failure,
-                Defeat = _runStats.Defeat,
-                LuxuryGoods = _runStats.LuxuryGoods,
-                Angel = _runStats.Angel,
-                DeathNum = _runStats.DeathNum,
-                Perspective = _runStats.Perspective,
-                OneDamage = _runStats.OneDamage,
-                NumberOfCoinsOwned = _runStats.NumberOfCoinsOwned,
-                CriticalNum = _runStats.CriticalNum,
-                ThreeCardAttack = _runStats.ThreeCardAttack
-            };
         }
 
         private void AccumulateSettleStat(ContidionType type, int amount)

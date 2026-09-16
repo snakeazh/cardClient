@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using CardShare.Domain;
 using CardShare.Domain.Players;
+using CardShare.Domain.Pve;
 
 namespace CardShare.Infrastructure.Memory;
 
@@ -58,6 +59,25 @@ public sealed class MemoryPveRunRepository : IPveRunRepository
         return Task.FromResult(_store.TryGetValue(runId, out var run) ? Clone(run) : null);
     }
 
+    public Task<PveRun?> GetActiveByUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        PveRun? latest = null;
+        foreach (var run in _store.Values)
+        {
+            if (run.UserId != userId || run.Status != PveRunStatus.Active)
+            {
+                continue;
+            }
+
+            if (latest == null || run.StartedAt > latest.StartedAt)
+            {
+                latest = run;
+            }
+        }
+
+        return Task.FromResult(latest == null ? null : Clone(latest));
+    }
+
     public Task SaveAsync(PveRun run, CancellationToken cancellationToken)
     {
         _store[run.RunId] = Clone(run);
@@ -82,7 +102,11 @@ public sealed class MemoryPveRunRepository : IPveRunRepository
             StartedAt = run.StartedAt,
             SettledAt = run.SettledAt,
             SettleFingerprint = run.SettleFingerprint,
-            GoldGranted = run.GoldGranted
+            GoldGranted = run.GoldGranted,
+            ScoreTotal = run.ScoreTotal,
+            CurrentLevelId = run.CurrentLevelId,
+            HighestClearedLevelId = run.HighestClearedLevelId,
+            ScoredLevelId = run.ScoredLevelId
         };
     }
 }

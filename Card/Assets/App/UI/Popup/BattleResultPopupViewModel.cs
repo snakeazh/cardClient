@@ -40,6 +40,7 @@ namespace App.UI.Popup
         private readonly List<ResultStageRow> _stageRows = new List<ResultStageRow>();
         private bool _granted;
         private bool _forfeitNoRevive;
+        private bool _settling;
 
         public BattleResultPopupViewModel(
             GameSession session,
@@ -131,31 +132,88 @@ namespace App.UI.Popup
                    Session.Run.AdsReviveThisStage < 1;
         }
 
-        private async Task SettleAsync(bool cleared)
+        private async Task<bool> SettleAsync(bool cleared)
         {
-            if (_granted || !Session.HasServerRun)
+            if (_granted)
             {
-                return;
+                return true;
             }
 
+            if (!Session.HasServerRun)
+            {
+                _granted = true;
+                return true;
+            }
+
+            if (_settling)
+            {
+                return false;
+            }
+
+            _settling = true;
+            await Session.FlushServerRunAsync();
+            if (!cleared)
+            {
+                await Session.ReportRunProgressAsync(false);
+            }
+
+            var request = Session.BuildSettleRequest(cleared, _forfeitNoRevive);
+            GameApi.Client.SavePendingSettle(request);
             try
             {
-                var resp = await GameApi.Client.SettlePveAsync(Session.BuildSettleRequest(cleared));
-                GameApi.ApplyProfile(resp.Profile);
-                CoinNum.Value = resp.GoldGranted.ToString();
-                _granted = true;
+                while (true)
+                {
+                    try
+                    {
+                        var resp = await GameApi.Client.SettlePveAsync(request);
+                        GameApi.ApplyProfile(resp.Profile);
+                        GameApi.Client.ClearPendingSettle();
+                        CoinNum.Value = resp.GoldGranted.ToString();
+                        _granted = true;
+                        return true;
+                    }
+                    catch (GameApiException ex)
+                    {
+                        if (ex.Code == ErrorCodes.RunNotFound)
+                        {
+                            GameApi.Client.ClearPendingSettle();
+                            Toast.Error("对局已失效（服务器可能已重启）");
+                            _granted = true;
+                            return true;
+                        }
+
+                        var retry = await _dialogs.ConfirmAsync(
+                            "结算失败",
+                            GameApi.Describe(ex) + "\n请检查网络后重试，否则进度可能丢失。",
+                            DialogButtons.OkCancel,
+                            "重试",
+                            "返回");
+                        if (retry != DialogResult.Ok)
+                        {
+                            return false;
+                        }
+                    }
+                }
             }
-            catch (GameApiException ex)
+            finally
             {
-                Toast.Error(GameApi.Describe(ex));
+                _settling = false;
             }
         }
 
         private async void Back()
         {
+            if (_settling)
+            {
+                return;
+            }
+
             if (!_granted)
             {
-                await SettleAsync(cleared: ShowSuccess.Value);
+                if (!await SettleAsync(cleared: ShowSuccess.Value))
+                {
+                    return;
+                }
             }
 
             _ = _dialogs.CloseWithResult(BattleResultAction.Back);

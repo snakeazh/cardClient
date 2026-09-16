@@ -110,14 +110,17 @@ public class LoginUserInfoTests
     {
         var config = TestConfig.Create();
         var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var (pve, _) = TestApp.Create(players, config: config, clock: clock);
         return new AuthService(
             new ICodeSessionClient[] { new GuestClient() },
             new MemoryAuthBindingRepository(),
-            new MemoryPlayerRepository(),
+            players,
             new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1)),
             config,
             clock,
-            guestEnabled: true);
+            guestEnabled: true,
+            pve);
     }
 
     private sealed class GuestClient : ICodeSessionClient

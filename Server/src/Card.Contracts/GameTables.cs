@@ -10,9 +10,13 @@ public sealed class GameTables : IGameTables
     private readonly Dictionary<int, LevelConfig> _levels;
     private readonly Dictionary<int, int> _maxLevelByDifficulty;
     private readonly Dictionary<int, int> _talentMaxLevel;
+    private readonly Dictionary<(int TalentId, int Level), TalentConfig> _talentByLevel;
 
     private readonly Dictionary<int, ItemConfig> _items;
     private readonly Dictionary<int, RelicConfig> _relics;
+    private readonly Dictionary<int, HeroConfig> _heroes;
+    private readonly Dictionary<int, HeroEntryConfig> _heroEntries;
+    private readonly Dictionary<int, TalentEntryConfig> _talentEntries;
 
     public GameTables(
         GameConst gameConst,
@@ -24,7 +28,9 @@ public sealed class GameTables : IGameTables
         IReadOnlyList<TalentConfig> talentRows,
         IReadOnlyList<MonsterConfig> monsters,
         IReadOnlyList<ItemConfig>? items = null,
-        string configHash = "")
+        string configHash = "",
+        IReadOnlyList<HeroEntryConfig>? heroEntries = null,
+        IReadOnlyList<TalentEntryConfig>? talentEntries = null)
     {
         GameConst = gameConst ?? new GameConst();
         HandScores = handScores ?? Array.Empty<HandScoreConfig>();
@@ -35,15 +41,21 @@ public sealed class GameTables : IGameTables
         TalentRows = talentRows ?? Array.Empty<TalentConfig>();
         Monsters = monsters ?? Array.Empty<MonsterConfig>();
         Items = items ?? Array.Empty<ItemConfig>();
+        HeroEntries = heroEntries ?? Array.Empty<HeroEntryConfig>();
+        TalentEntries = talentEntries ?? Array.Empty<TalentEntryConfig>();
         ConfigHash = configHash ?? string.Empty;
         _levels = Levels.Where(l => l != null && l.Id > 0).ToDictionary(l => l.Id);
         _items = Items.Where(i => i != null && i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
         _relics = Relics.Where(r => r != null && r.Id > 0).GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
+        _heroes = Heroes.Where(h => h != null && h.Id > 0).GroupBy(h => h.Id).ToDictionary(g => g.Key, g => g.First());
+        _heroEntries = HeroEntries.Where(e => e != null && e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
+        _talentEntries = TalentEntries.Where(e => e != null && e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
         Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
         _maxLevelByDifficulty = Levels
             .GroupBy(l => l.Difficulty)
             .ToDictionary(g => g.Key, g => g.Max(l => l.Level));
         _talentMaxLevel = new Dictionary<int, int>();
+        _talentByLevel = new Dictionary<(int TalentId, int Level), TalentConfig>();
         foreach (var row in TalentRows)
         {
             if (row == null || row.TalentId <= 0)
@@ -55,6 +67,8 @@ public sealed class GameTables : IGameTables
             {
                 _talentMaxLevel[row.TalentId] = row.TalentLevel;
             }
+
+            _talentByLevel[(row.TalentId, row.TalentLevel)] = row;
         }
     }
 
@@ -78,6 +92,10 @@ public sealed class GameTables : IGameTables
 
     public IReadOnlyList<ItemConfig> Items { get; }
 
+    public IReadOnlyList<HeroEntryConfig> HeroEntries { get; }
+
+    public IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
+
     public IReadOnlyList<int> Difficulties { get; }
 
     public bool TryGetLevel(int id, out LevelConfig level) => _levels.TryGetValue(id, out level!);
@@ -85,6 +103,15 @@ public sealed class GameTables : IGameTables
     public bool TryGetItem(int id, out ItemConfig item) => _items.TryGetValue(id, out item!);
 
     public bool TryGetRelic(int id, out RelicConfig relic) => _relics.TryGetValue(id, out relic!);
+
+    public bool TryGetHero(int id, out HeroConfig hero) => _heroes.TryGetValue(id, out hero!);
+
+    public bool TryGetHeroEntry(int id, out HeroEntryConfig entry) => _heroEntries.TryGetValue(id, out entry!);
+
+    public bool TryGetTalentEntry(int id, out TalentEntryConfig entry) => _talentEntries.TryGetValue(id, out entry!);
+
+    public bool TryGetTalentRow(int talentId, int level, out TalentConfig row)
+        => _talentByLevel.TryGetValue((talentId, level), out row!);
 
     public int GetMaxLevel(int difficulty)
         => _maxLevelByDifficulty.TryGetValue(difficulty, out var max) ? max : 0;

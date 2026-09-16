@@ -130,7 +130,7 @@ public static class PvpWebSocketHost
                     }
 
                     var evt = matchmaker.Enqueue(snapshot);
-                    await BroadcastAsync(hub, battles, evt, userId.Value, incoming.Seq, cancellationToken);
+                    await BroadcastAsync(hub, battles, scopes, evt, userId.Value, incoming.Seq, cancellationToken);
                     continue;
                 }
 
@@ -256,6 +256,7 @@ public static class PvpWebSocketHost
     private static async Task BroadcastAsync(
         PvpConnectionHub hub,
         PvpBattleHost battles,
+        IServiceScopeFactory scopes,
         MatchEvent evt,
         Guid joiner,
         long seq,
@@ -263,7 +264,8 @@ public static class PvpWebSocketHost
     {
         if (evt.RoomOpened && evt.Room != null)
         {
-            var table = battles.Open(evt.Room);
+            var combatSeats = await PvpCombatSeats.LoadAsync(scopes, evt.Room, cancellationToken);
+            var table = battles.Open(evt.Room, combatSeats);
             var payload = new WsRoomReadyPayload
             {
                 RoomId = evt.Room.RoomId.ToString("N"),

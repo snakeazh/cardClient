@@ -7,6 +7,7 @@
 - 1～3 人时只排队，不生成 `roomId`，不发种子，不开始比牌。队内广播当前名单（含微信/抖音头像 URL 与昵称）。
 - 排队中可 `cancel` / `leave` / 断线出队，空位由后续进队的人补。
 - 开房后立刻用房间 `seed` 走共享 `BattleEngine(PvpMode)` 发牌；比牌指令与单机主线同一套 `Apply`。
+- 出伤与 PVE 玩家同一公式：开房读各人主档 `LastHeroId` 和天赋袋，摊牌时 `CombatBonuses` 填英雄攻击/生命、天赋加攻与倍率、英雄伤害%、暴击、追击。PVP 没有闯关圣物、BOSS、燧石；斩杀不对玩家生效。
 - 头像是登录时客户端上报的社交头像 URL，不是局内英雄 `People1`。WebSocket **不传图片**，只传 URL。
 - 牌面不上内部 `Card` struct，只下发 `suit`/`rank` 整数。摊牌前只能看到自己的 3 张。
 
@@ -91,7 +92,7 @@ POST /v1/auth/login
 }
 ```
 
-`suit`：1 红桃 2 方片 3 梅花 4 黑桃。`rank`：1=A … 13=K。摊牌后 `phase` 为 `showdown`，四人 `cards` 都有值，并带 `handType` / `level` / `label` 与 `winners`（座位下标）。
+`suit`：1 红桃 2 方片 3 梅花 4 黑桃。`rank`：1=A … 13=K。摊牌后 `phase` 为 `showdown`，四人 `cards` 都有值，并带 `handType` / `level` / `label` / `damage` 与 `winners`（座位下标）。`damage` 是该座位按玩家出伤公式算出的伤害。
 
 ## 客户端画头像
 

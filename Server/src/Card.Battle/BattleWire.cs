@@ -41,7 +41,12 @@ public static class BattleWire
                 HandType = scored ? score.Type.ToString() : null,
                 Label = scored ? score.Label : null,
                 Level = scored ? score.Level : (int?)null,
-                Multiplier = scored ? score.Multiplier : (float?)null
+                Multiplier = scored ? score.Multiplier : (float?)null,
+                Damage = snapshot.Phase == BattlePhase.Showdown &&
+                         snapshot.Damages != null &&
+                         i < snapshot.Damages.Count
+                    ? snapshot.Damages[i]
+                    : null
             };
         }
 

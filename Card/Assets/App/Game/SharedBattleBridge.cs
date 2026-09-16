@@ -101,7 +101,10 @@ namespace App.Game
                 UserId = userId,
                 NickName = seat != null ? seat.Name : string.Empty,
                 IsHuman = human,
-                Alive = seat != null && (human || seat.Alive)
+                Alive = seat != null && (human || seat.Alive),
+                Attack = seat != null ? seat.Attack : 0,
+                Hp = seat != null ? seat.Hp : 0,
+                MaxHp = seat != null ? seat.MaxHp : 0
             };
         }
     }

@@ -25,6 +25,10 @@ public interface IGameTables
 
     IReadOnlyList<ItemConfig> Items { get; }
 
+    IReadOnlyList<HeroEntryConfig> HeroEntries { get; }
+
+    IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
+
     IReadOnlyList<int> Difficulties { get; }
 
     bool TryGetLevel(int id, out LevelConfig level);
@@ -32,6 +36,14 @@ public interface IGameTables
     bool TryGetItem(int id, out ItemConfig item);
 
     bool TryGetRelic(int id, out RelicConfig relic);
+
+    bool TryGetHero(int id, out HeroConfig hero);
+
+    bool TryGetHeroEntry(int id, out HeroEntryConfig entry);
+
+    bool TryGetTalentEntry(int id, out TalentEntryConfig entry);
+
+    bool TryGetTalentRow(int talentId, int level, out TalentConfig row);
 
     int GetMaxLevel(int difficulty);
 

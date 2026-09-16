@@ -17,7 +17,7 @@ public sealed class PvpBattleHost
         _tables = tables ?? throw new ArgumentNullException(nameof(tables));
     }
 
-    public PvpBattleTable Open(PvpRoom room)
+    public PvpBattleTable Open(PvpRoom room, IReadOnlyList<SeatSetup>? combatSeats = null)
     {
         if (room == null)
         {
@@ -31,7 +31,7 @@ public sealed class PvpBattleHost
                 return existing;
             }
 
-            var table = PvpBattleTable.Open(room.RoomId, room.Seed, room.Players, _tables);
+            var table = PvpBattleTable.Open(room.RoomId, room.Seed, room.Players, _tables, combatSeats);
             _byRoom[room.RoomId] = table;
             foreach (var player in room.Players)
             {

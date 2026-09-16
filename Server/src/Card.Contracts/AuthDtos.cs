@@ -16,11 +16,16 @@ public sealed class LoginRequest
 
     /// <summary>Optional social profile from the client SDK. Not used for identity.</summary>
     public LoginUserInfo? UserInfo { get; set; }
+    /// <summary>Optional leftover settle from the client. Applied before any forfeit of an active run.</summary>
+    public PveSettleRequest? PendingSettle { get; set; }
 }
 
 public sealed class RefreshTokenRequest
 {
     public string RefreshToken { get; set; } = string.Empty;
+
+    /// <summary>Optional leftover settle from the client. Applied before any forfeit of an active run.</summary>
+    public PveSettleRequest? PendingSettle { get; set; }
 }
 
 public sealed class LoginResponse

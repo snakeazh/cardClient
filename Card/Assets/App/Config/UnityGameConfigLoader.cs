@@ -8,7 +8,10 @@ using SharedItem = CardShare.Contracts.Config.ItemConfig;
 using SharedMonster = CardShare.Contracts.Config.MonsterConfig;
 using SharedRelic = CardShare.Contracts.Config.RelicConfig;
 using SharedTalent = CardShare.Contracts.Config.TalentConfig;
+using SharedTalentEntry = CardShare.Contracts.Config.TalentEntryConfig;
+using SharedHeroEntry = CardShare.Contracts.Config.HeroEntryConfig;
 using SharedUnlock = CardShare.Contracts.Config.UnlockConditionConfig;
+using SharedMechanism = CardShare.Contracts.Config.MechanismType;
 using SharedHandType = CardShare.Contracts.Config.HandType;
 using SharedQuality = CardShare.Contracts.Config.QualityType;
 using SharedMonsterType = CardShare.Contracts.Config.MonsterType;
@@ -35,7 +38,9 @@ namespace App.Config
                 Map(TalentConfig.All.Values, ToTalent),
                 Map(MonsterConfig.All.Values, ToMonster),
                 Map(ItemConfig.All.Values, ToItem),
-                "unity");
+                "unity",
+                Map(HeroEntryConfig.All.Values, ToHeroEntry),
+                Map(TalentEntryConfig.All.Values, ToTalentEntry));
             SharedConst.Load(tables.GameConst);
             Current = tables;
             return tables;
@@ -176,6 +181,30 @@ namespace App.Config
                 Icon = row.Icon,
                 TalentLevel = row.TalentLevel,
                 TalentEntry = row.TalentEntry,
+                Desc = row.Desc
+            };
+        }
+
+        private static SharedHeroEntry ToHeroEntry(HeroEntryConfig row)
+        {
+            return new SharedHeroEntry
+            {
+                Id = row.Id,
+                Name = row.Name,
+                Type = (SharedMechanism)(int)row.Type,
+                Value = row.Value,
+                Desc = row.Desc
+            };
+        }
+
+        private static SharedTalentEntry ToTalentEntry(TalentEntryConfig row)
+        {
+            return new SharedTalentEntry
+            {
+                Id = row.Id,
+                Name = row.Name,
+                Type = (SharedMechanism)(int)row.Type,
+                Value = row.Value,
                 Desc = row.Desc
             };
         }

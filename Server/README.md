@@ -1,18 +1,25 @@
 # Card.Server
 
-炸牌兄弟服务端：局外 HTTP 短链管账号主档，PVP 走 WebSocket 长链。第一期不模拟发牌，客户端仍跑 `GameSession`。
+炸牌兄弟服务端：局外 HTTP 短链管账号主档，PVP 走 WebSocket 长链。
 
 不使用 Docker。Postgres / Redis 以系统服务跑在本机或小机器上，进程直连。
 
 ## 结构
 
-| 项目 | 作用 |
-|------|------|
-| `src/Card.Contracts` | netstandard2.1，DTO / 错误码，以后可给 Unity 引用 |
-| `src/Card.Domain` | 主档规则、PVE 开局结算、PVP 匹配 |
-| `src/Card.Infrastructure` | 内存或 Postgres 仓储、可选 Redis 锁/匹配、微信/抖音/游客登录 |
-| `src/Card.Server` | ASP.NET Host |
-| `tests/Card.Domain.Tests` | 体力重置、抽天赋、结算幂等 |
+四层，依赖只允许向下：`Server → Domain / Infrastructure`，`Infrastructure → Domain`，`Domain → Contracts`。
+
+| 项目 | 允许 | 不允许 |
+|------|------|--------|
+| `src/Card.Contracts` | DTO、错误码（netstandard2.1，Unity 可引用） | 规则、仓储 |
+| `src/Card.Battle` | 对局引擎、牌桌、出伤公式 `CombatDamage` / `CombatBonuses` | HTTP、档 |
+| `src/Card.Domain` | 用例服务、规则、仓储接口 | EF、Redis、ASP.NET |
+| `src/Card.Infrastructure` | 仓储实现、token/锁/队列、配表加载、微信/抖音/游客客户端 | HTTP 路由、用例编排 |
+| `src/Card.Server` | 路由、中间件、WS 传输、组 DI、启动探活 | 改档规则 |
+| `tests/Card.Domain.Tests` | 体力重置、抽天赋、结算幂等、登录弃局 | |
+
+Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 只经过 `IPveRunService`，Auth 不依赖整份 PVE 服务。
+
+组合根在 `Card.Server/Composition`：`AddCardInfrastructure` 只接线存适配器，`AddCardApplication` 注册用例服务。HTTP 按 `health` / `auth` / `player` / `pve` / `debug` 分文件映射，路径不变。
 
 ## 本地跑起来（无需 Postgres）
 
@@ -28,8 +35,10 @@ Development 默认 `Persistence:Provider=Memory`，`GuestAuth:Enabled=true`。�
 
 | 文件 | 作用 |
 |------|------|
-| `start-server.bat` / `开启Server.bat` | `dotnet run --project src/Card.Server` |
-| `stop-server.bat` / `关闭Server.bat` | 结束占用 5254 的进程和 `Card.Server.exe` |
+| `start-server.bat` | 内存模式 `dotnet run`（Development，无需 Postgres） |
+| `start-server-pg.bat` | Postgres + Redis，游客登录仍开，给 Editor 用 |
+| `setup-postgres.bat` | 用 `psql` 建用户/库 `card`（需本机已装 PostgreSQL） |
+| `stop-server.bat` | 结束占用 5254 的进程和 `Card.Server.exe` |
 
 ### Windows bat 两个坑（已踩过）
 
@@ -59,11 +68,34 @@ POST /v1/auth/login
 
 之后 HTTP 带 `Authorization: Bearer <accessToken>`。微信/抖音登录同样带 `userInfo`（SDK 授权后的 nickName + avatarUrl）。
 
-## 小机器上用 Postgres + Redis
+## 小机器 / 本机 Postgres + Redis
 
-1. 用发行版安装 PostgreSQL、Redis（systemd / Windows 服务均可），不要装 Docker。
-2. 建库：`CREATE DATABASE card;` 建用户并授权。
-3. 生产配置（`appsettings.Production.json` 或环境变量）：
+不使用 Docker。PostgreSQL、Redis 以系统服务跑在本机，进程直连。
+
+**职责：**
+
+| 组件 | 存什么 |
+|------|--------|
+| Postgres | 主档 `players`、登录绑定 `auth_bindings`、PVE `pve_runs` |
+| Redis | access/refresh token、单玩家锁、PVP 匹配队列 |
+| 都不配 | Development 默认 Memory，重启丢档、掉登录 |
+
+**本机第一次：**
+
+1. 安装 PostgreSQL（把 `psql` 加进 PATH）、Redis（监听 `127.0.0.1:6379`）。
+2. 双击 `setup-postgres.bat`，或手动：
+
+```
+psql -U postgres -f setup-postgres.sql
+```
+
+默认连接串：`Host=127.0.0.1;Port=5432;Database=card;Username=card;Password=card`。
+3. 双击 `start-server-pg.bat`（或 Visual Studio 选 launch profile `postgres`）。
+4. 启动时连不上 Postgres/Redis 会直接退出。探活：`GET /v1/health`，返回 `persistence` / `postgres` / `redis`。
+
+Editor 这条路径仍 `GuestAuth=true`。主档和 token 会跨进程重启保留。
+
+**生产配置**（`appsettings.Production.json` 或环境变量）：
 
 ```
 Persistence__Provider=Postgres
@@ -79,11 +111,9 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 启动时 `EnsureCreated` 会建 `players` / `auth_bindings` / `pve_runs`。
 
-- 只配 Postgres：主档和 run 落库，锁和 PVP 匹配仍用进程内存。
-- 再配 Redis：单玩家锁和 PVP 队列走 Redis。
-- `ConnectionStrings:Redis` 留空即不用 Redis。
-
-微信 / 抖音未填 AppId 时，对应 `provider` 登录返回 `501` + `provider_not_configured`。
+- 只配 Postgres、Redis 留空：主档落库，token/锁/PVP 队列仍在进程内存，重启掉登录。
+- `ConnectionStrings:Redis` 非空：token、锁、PVP 队列走 Redis。
+- 微信 / 抖音未填 AppId 时，对应 `provider` 登录返回 `501` + `provider_not_configured`。
 
 ## HTTP `/v1`
 
@@ -92,16 +122,18 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 两种金币：
 
 - **局外 Wallet**：账号金币，在 `PlayerProfileDto.gold`。结算、广告商店、抽天赋才会改。
-- **局内 `PveRun.gold`**：闯关筹码。通关商店买/卖/刷新圣物、搓牌花费走下面的 shop/run 接口；伤害换金第一期由客户端 `grant-gold` 上报。
+- **局内 `PveRun.gold`**：闯关筹码。通关商店买/卖/刷新圣物、搓牌花费走下面的 shop/run 接口；伤害换金第一期仍由客户端 `grant-gold` 上报金额。局外结算金不再信客户端分数。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/health` | 探活 |
-| POST | `/auth/login` | `{ provider, code, userInfo? }` |
-| POST | `/auth/refresh` | `{ refreshToken }` |
-| GET | `/player/profile` | 拉主档（体力已按服务器时区跨日回满） |
-| POST | `/pve/start` | 扣体力，发 `runId`、初始金币与货架 |
-| POST | `/pve/settle` | 幂等结算：通关、兑金、解锁进度 |
+| GET | `/v1/health` | 探活：`persistence` / `postgres` / `redis`，后端挂了返回 503 |
+| POST | `/auth/login` | `{ provider, code, userInfo?, pendingSettle? }`。登录时处理未结算 run |
+| POST | `/auth/refresh` | `{ refreshToken, pendingSettle? }`。同样在登录态刷新时处理未结算 run |
+| GET | `/player/profile` | 拉主档。跨日才写回体力/广告计数，同一天的 GET 不落库 |
+| POST | `/pve/start` | 扣体力，发 `runId`、初始金币与货架。已有未结算 run 时返回 `active_run_exists` |
+| GET | `/pve/run/active` | 当前未结算 run；没有则为 `{ "run": null }` |
+| POST | `/pve/run/progress` | `{ runId, clearedStage, score }` 上报本关进度。服务端钳制分数、累计积分、推进关卡 |
+| POST | `/pve/settle` | `{ runId, cleared, forfeit? }`。奖励由服务端按进度判定，忽略客户端 `totalScore` / `stats` / `levelId` |
 | POST | `/pve/shop/enter` | 进店：免费重滚货架，写入免费刷新次数 |
 | POST | `/pve/shop/buy` | `{ runId, relicId }` 扣局内金、拿圣物 |
 | POST | `/pve/shop/sell` | `{ runId, relicId }` 卖圣物 |
@@ -127,4 +159,17 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave`  
 服务端：`hello` / `authed` / `queued` / `queue_update` / `room_ready` / `pong` / `error`
 
-未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、四人 `players`。比牌尚未实现。
+未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、四人 `players`。开房立刻 Deal，摊牌走共享 `BattleEngine`。PVP 出伤与 PVE 玩家同一套 `CombatDamage`：开房读主档 `LastHeroId` + 天赋袋，由 `CombatBonuses` 填英雄面板、天赋加攻/倍率/伤害%、暴击、追击；无局内圣物、BOSS、燧石；斩杀不对玩家生效。
+
+## 登录与未结算对局
+
+客户端启动先 `refresh` 已有 token，失败再游客登录。连不上弹窗重试，不会静默进主页。
+
+**未结算 run 在 `POST /auth/login` 和 `POST /auth/refresh` 里判定并处理，不另发 `GET /pve/run/active`。**
+
+1. 请求可带 `pendingSettle`（`runId` + `cleared` + `forfeit`）。有则先按挂单结算，**奖励按服务端已记录的关卡进度和积分**，不信客户端 `totalScore` / `stats`。
+2. 通关（`cleared=true`）要求本局已 `POST /pve/run/progress` 且至少清过一关；否则视为无效挂单，再按放弃处理。
+3. 若之后仍有 active run：服务端按放弃结算，`forfeit=true`，不兑积分金。已推进的最高关仍写入主档。开局已扣体力不退。
+4. 返回的 `PlayerProfileDto` 已是处理后的主档。客户端只 `ApplyServerProfile`。
+5. 选关若仍碰到 `active_run_exists`（同一次启动里未结算就再开一局）：客户端再按失败结算并提示。
+6. Memory 存储下重启 Server 会清空 run。挂单补报得到 `run_not_found` / `conflict` / `invalid_request` 即忽略，视为对局已失效。

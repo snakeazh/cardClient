@@ -2,7 +2,6 @@ using CardShare.Contracts;
 using CardShare.Domain;
 using CardShare.Domain.Config;
 using CardShare.Domain.Pvp;
-using CardShare.Domain.Services;
 using CardShare.Infrastructure.Auth;
 using CardShare.Infrastructure.Config;
 using CardShare.Infrastructure.Memory;
@@ -51,41 +50,44 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<IPveRunRepository>(sp => sp.GetRequiredService<MemoryPveRunRepository>());
         }
 
+        var accessMinutes = configuration.GetValue("Auth:AccessTokenMinutes", 120);
+        var refreshDays = configuration.GetValue("Auth:RefreshTokenDays", 14);
+        var accessTtl = TimeSpan.FromMinutes(accessMinutes);
+        var refreshTtl = TimeSpan.FromDays(refreshDays);
+
         var redisCs = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisCs))
         {
-            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisCs));
+            services.AddSingleton<IConnectionMultiplexer>(_ =>
+            {
+                var options = ConfigurationOptions.Parse(redisCs);
+                options.AbortOnConnectFail = true;
+                options.ConnectTimeout = 5000;
+                options.ConnectRetry = 2;
+                return ConnectionMultiplexer.Connect(options);
+            });
             services.AddSingleton<IPlayerLock, RedisPlayerLock>();
             services.AddSingleton<IPvpMatchmaker, RedisPvpMatchmaker>();
+            services.AddSingleton<ITokenService>(sp => new RedisTokenService(
+                sp.GetRequiredService<IConnectionMultiplexer>(),
+                accessTtl,
+                refreshTtl));
         }
         else
         {
             services.AddSingleton<IPlayerLock, MemoryPlayerLock>();
             services.AddSingleton<IPvpMatchmaker, InMemoryPvpMatchmaker>();
+            services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
+                sp.GetRequiredService<IClock>(),
+                accessTtl,
+                refreshTtl));
         }
-
-        var accessMinutes = configuration.GetValue("Auth:AccessTokenMinutes", 120);
-        var refreshDays = configuration.GetValue("Auth:RefreshTokenDays", 14);
-        services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
-            sp.GetRequiredService<IClock>(),
-            TimeSpan.FromMinutes(accessMinutes),
-            TimeSpan.FromDays(refreshDays)));
 
         services.AddHttpClient<WeChatCodeSessionClient>();
         services.AddHttpClient<DouyinCodeSessionClient>();
         services.AddSingleton<ICodeSessionClient, GuestCodeSessionClient>();
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<WeChatCodeSessionClient>());
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<DouyinCodeSessionClient>());
-
-        services.AddScoped(sp => new AuthService(
-            sp.GetServices<ICodeSessionClient>(),
-            sp.GetRequiredService<IAuthBindingRepository>(),
-            sp.GetRequiredService<IPlayerRepository>(),
-            sp.GetRequiredService<ITokenService>(),
-            sp.GetRequiredService<IGameConfig>(),
-            sp.GetRequiredService<IClock>(),
-            configuration.GetValue("GuestAuth:Enabled", false)));
-        services.AddScoped<PlayerCommandService>();
         return services;
     }
 }

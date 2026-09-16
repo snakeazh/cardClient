@@ -21,6 +21,7 @@ using Framework.Assets;
 using Framework.Log;
 using Framework.Save;
 using Framework.UI;
+using Framework.UI.Dialog;
 using UnityEngine;
 
 namespace App.Bootstrap
@@ -75,7 +76,7 @@ namespace App.Bootstrap
             _services.Container.AddSingleton<ToastService>();
             RegisterGuide(_services);
 
-            await LoginGuestAsync(_services);
+            await ConnectAndPrepareAsync();
 
             if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
@@ -215,21 +216,17 @@ namespace App.Bootstrap
             services.Register<IGuideService>(guide);
         }
 
-        private static async Task LoginGuestAsync(AppServicesHost services)
+        private async Task ConnectAndPrepareAsync()
         {
-            var client = new GameApiClient(services.Resolve<ISaveService>());
-            services.Register(client);
+            var client = new GameApiClient(_services.Resolve<ISaveService>());
+            _services.Register(client);
             GameApi.Bind(client);
-            try
-            {
-                var login = await client.LoginGuestAsync(SystemInfo.deviceUniqueIdentifier, "Editor");
-                GameApi.ApplyProfile(login.Profile);
-                AppLog.Info(LogChannel.Net, "guest login ok userId=" + login.Profile.UserId);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Warn(LogChannel.Net, "guest login failed: " + ex.Message);
-            }
+
+            var dialogs = _services.Resolve<IDialogService>();
+            await PveSessionGate.ConnectWithRetryAsync(
+                dialogs,
+                SystemInfo.deviceUniqueIdentifier,
+                "Editor");
         }
 
         private static void LogConfigSmoke()

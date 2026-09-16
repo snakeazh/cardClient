@@ -30,6 +30,13 @@ public sealed class BattleEvent
     public string Message { get; set; } = string.Empty;
 }
 
+public sealed class CombatTalentCount
+{
+    public int TalentId { get; set; }
+
+    public int Count { get; set; }
+}
+
 public sealed class SeatSetup
 {
     public int SeatId { get; set; }
@@ -41,6 +48,16 @@ public sealed class SeatSetup
     public bool IsHuman { get; set; }
 
     public bool Alive { get; set; } = true;
+
+    public int Attack { get; set; }
+
+    public int Hp { get; set; }
+
+    public int MaxHp { get; set; }
+
+    public int HeroId { get; set; }
+
+    public IReadOnlyList<CombatTalentCount> Talents { get; set; } = Array.Empty<CombatTalentCount>();
 }
 
 public enum BattleModeKind
@@ -85,6 +102,8 @@ public sealed class BattleSeatDto
     public int? Level { get; set; }
 
     public float? Multiplier { get; set; }
+
+    public int? Damage { get; set; }
 }
 
 public sealed class BattleStateDto

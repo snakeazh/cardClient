@@ -66,13 +66,14 @@ public sealed class PlayerProfile
         }
     }
 
-    public void EnsureDailyReset(IGameConfig config, DateTimeOffset utcNow)
+    /// <summary>跨日则回满体力并清广告计数。返回是否改了档（调用方只有这时才该保存）。</summary>
+    public bool EnsureDailyReset(IGameConfig config, DateTimeOffset utcNow)
     {
         var today = GameDay.Of(utcNow, config.TimeZone, config.Balance.EnergyDailyResetHour);
         var last = GameDay.Of(Energy.LastResetAt, config.TimeZone, config.Balance.EnergyDailyResetHour);
         if (today == last)
         {
-            return;
+            return false;
         }
 
         Energy.Current = config.Balance.EnergyMax;
@@ -80,6 +81,7 @@ public sealed class PlayerProfile
         Energy.LastResetAt = utcNow;
         AdShop.StaminaCount = 0;
         AdShop.GoldCount = 0;
+        return true;
     }
 
     public void SpendEnergyForRun(IGameConfig config)

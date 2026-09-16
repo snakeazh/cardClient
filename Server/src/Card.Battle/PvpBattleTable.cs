@@ -26,7 +26,8 @@ public sealed class PvpBattleTable
         Guid roomId,
         int seed,
         IReadOnlyList<PlayerPublic> players,
-        IGameTables tables)
+        IGameTables tables,
+        IReadOnlyList<SeatSetup>? combatSeats = null)
     {
         if (players == null || players.Count != BattleLimits.RoomSeats)
         {
@@ -42,6 +43,25 @@ public sealed class PvpBattleTable
         for (var i = 0; i < seats.Length; i++)
         {
             var player = players[i];
+            if (combatSeats != null && i < combatSeats.Count && combatSeats[i] != null)
+            {
+                var combat = combatSeats[i];
+                seats[i] = new SeatSetup
+                {
+                    SeatId = i,
+                    UserId = string.IsNullOrEmpty(combat.UserId) ? player?.UserId ?? string.Empty : combat.UserId,
+                    NickName = string.IsNullOrEmpty(combat.NickName) ? player?.NickName ?? string.Empty : combat.NickName,
+                    IsHuman = true,
+                    Alive = combat.Alive,
+                    Attack = combat.Attack,
+                    Hp = combat.Hp,
+                    MaxHp = combat.MaxHp,
+                    HeroId = combat.HeroId,
+                    Talents = CombatBonuses.CloneTalents(combat.Talents)
+                };
+                continue;
+            }
+
             seats[i] = new SeatSetup
             {
                 SeatId = i,

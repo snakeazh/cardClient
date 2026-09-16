@@ -46,7 +46,9 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
             ReadArray<TalentConfig>("TalentConfig.json"),
             ReadArray<MonsterConfig>("MonsterConfig.json"),
             ReadArray<ItemConfig>("ItemConfig.json"),
-            HashLoaded());
+            HashLoaded(),
+            ReadArray<HeroEntryConfig>("HeroEntryConfig.json"),
+            ReadArray<TalentEntryConfig>("TalentEntryConfig.json"));
         if (tables.Levels.Count == 0)
         {
             return GameTables.Fallback();
@@ -82,7 +84,8 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
         var names = new[]
         {
             "GameConst.json", "HandScoreConfig.json", "LevelConfig.json", "HeroConfig.json",
-            "RelicConfig.json", "UnlockConditionConfig.json", "TalentConfig.json", "MonsterConfig.json"
+            "HeroEntryConfig.json", "RelicConfig.json", "UnlockConditionConfig.json",
+            "TalentConfig.json", "TalentEntryConfig.json", "MonsterConfig.json"
         };
         using var sha = SHA256.Create();
         foreach (var name in names.OrderBy(n => n, StringComparer.Ordinal))

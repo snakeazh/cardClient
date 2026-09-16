@@ -9,6 +9,18 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "postgres": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5254",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Persistence__Provider": "Postgres",
+        "ConnectionStrings__Redis": "127.0.0.1:6379",
+        "GuestAuth__Enabled": "true"
+      }
     }
   }
 }

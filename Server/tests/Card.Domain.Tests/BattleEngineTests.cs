@@ -134,6 +134,176 @@ public class BattleEngineTests
         Assert.Equal(3, shown.Seats[3].Cards!.Count);
         Assert.False(string.IsNullOrEmpty(shown.Seats[0].HandType));
         Assert.NotEmpty(shown.Winners);
+        Assert.Equal(4, table.Engine.Snapshot.Damages.Count);
+        Assert.True(shown.Seats[0].Damage >= 1);
+        Assert.True(shown.Seats[1].Damage >= 1);
+    }
+
+    [Fact]
+    public void CombatDamageStacksAttackMagPercentAndCrit()
+    {
+        var result = CombatDamage.Resolve(new CombatDamageInput
+        {
+            IsPlayer = true,
+            Attack = 10,
+            HandTypeMag = 2f,
+            RelicMagExtra = 0.5f,
+            TalentMagExtra = 0.5f,
+            RelicAttackExtra = 2,
+            TalentAttackExtra = 3,
+            FlintMultiplier = 1f,
+            OutgoingDamagePercent = 0.2f,
+            CritHit = true,
+            CritMultiplier = 2f
+        });
+        Assert.Equal(45, result.FormulaDamage);
+        Assert.Equal(108, result.Damage);
+        Assert.True(result.Crit);
+    }
+
+    [Fact]
+    public void CombatDamagePeaceZerosPlayerHit()
+    {
+        var result = CombatDamage.Resolve(new CombatDamageInput
+        {
+            IsPlayer = true,
+            Attack = 10,
+            HandTypeMag = 2f,
+            PeaceHit = true
+        });
+        Assert.Equal(0, result.Damage);
+        Assert.True(result.Peace);
+    }
+
+    [Fact]
+    public void CombatDamageMonsterUsesOutgoingPercentAndThorns()
+    {
+        var result = CombatDamage.Resolve(new CombatDamageInput
+        {
+            IsPlayer = false,
+            Attack = 10,
+            HandTypeMag = 2f,
+            MonsterOutgoingPercent = 0.5f,
+            GoldThornExtra = 3
+        });
+        Assert.Equal(33, result.Damage);
+    }
+
+    [Fact]
+    public void CombatBonusesMatchesPvePlayerFormula()
+    {
+        var tables = CombatTables();
+        HandEvaluator.Tables = tables;
+        var talents = new[] { new CombatTalentCount { TalentId = 101, Count = 1 } };
+        var seat = CombatBonuses.BuildSeat(0, "u", "n", 1, talents, tables);
+        Assert.Equal(10, seat.Attack);
+        Assert.Equal(100, seat.Hp);
+
+        var score = HandEvaluator.Evaluate(new[]
+        {
+            new PlayingCard(Suit.Heart, Rank.Two),
+            new PlayingCard(Suit.Spade, Rank.Two),
+            new PlayingCard(Suit.Club, Rank.Three)
+        });
+        var input = CombatBonuses.BuildPlayerInput(
+            tables,
+            seat,
+            score,
+            new CombatSituation
+            {
+                FirstShow = false,
+                AliveOpponents = 3,
+                AttackerHp = 100,
+                AttackerMaxHp = 100,
+                DefenderIsPlayer = true
+            });
+        input.CritHit = false;
+        input.ExtraAttackHit = false;
+        var result = CombatDamage.Resolve(input);
+        Assert.Equal(10, input.TalentAttackExtra);
+        Assert.Equal(0.2f, input.OutgoingDamagePercent);
+        Assert.False(input.CanExecute);
+        Assert.Equal(40, result.FormulaDamage);
+        Assert.Equal(48, result.Damage);
+    }
+
+    [Fact]
+    public void PvpShowdownUsesHeroAndTalentLoadout()
+    {
+        var tables = CombatTables();
+        var players = new[]
+        {
+            Public("甲"),
+            Public("乙"),
+            Public("丙"),
+            Public("丁")
+        };
+        var talents = new[] { new CombatTalentCount { TalentId = 101, Count = 1 } };
+        var seats = new SeatSetup[4];
+        for (var i = 0; i < seats.Length; i++)
+        {
+            seats[i] = CombatBonuses.BuildSeat(i, players[i].UserId, players[i].NickName, 1, talents, tables);
+        }
+
+        var table = PvpBattleTable.Open(Guid.NewGuid(), 8, players, tables, seats);
+        table.Showdown();
+        Assert.Equal(10, table.Engine.Snapshot.Seats[0].Attack);
+        Assert.Equal(101, table.Engine.Snapshot.Seats[0].Talents[0].TalentId);
+        Assert.True(table.Engine.Snapshot.Damages[0] >= 10);
+    }
+
+    private static GameTables CombatTables()
+    {
+        var fallback = GameTables.Fallback();
+        return new GameTables(
+            fallback.GameConst,
+            fallback.HandScores,
+            fallback.Levels,
+            new[]
+            {
+                new CardShare.Contracts.Config.HeroConfig
+                {
+                    Id = 1,
+                    HeroDamage = 10,
+                    Hp = 100,
+                    Critical = 0f,
+                    CriticalDamage = 2f,
+                    HeroEntryId = new[] { 1 }
+                }
+            },
+            fallback.Relics,
+            fallback.UnlockConditions,
+            new[]
+            {
+                new CardShare.Contracts.Config.TalentConfig
+                {
+                    Id = 1,
+                    TalentId = 101,
+                    TalentLevel = 1,
+                    TalentEntry = 2
+                }
+            },
+            fallback.Monsters,
+            fallback.Items,
+            "test-combat",
+            new[]
+            {
+                new CardShare.Contracts.Config.HeroEntryConfig
+                {
+                    Id = 1,
+                    Type = CardShare.Contracts.Config.MechanismType.Damage,
+                    Value = 0.2f
+                }
+            },
+            new[]
+            {
+                new CardShare.Contracts.Config.TalentEntryConfig
+                {
+                    Id = 2,
+                    Type = CardShare.Contracts.Config.MechanismType.TwoCardAttack,
+                    Value = 5f
+                }
+            });
     }
 
     private static PlayerPublic Public(string nick)

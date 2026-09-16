@@ -803,6 +803,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3278109387886059471, guid: 26d3617d5c2bdbf43a060b7c02a1452f, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4108525021844029131, guid: 26d3617d5c2bdbf43a060b7c02a1452f, type: 3}
       propertyPath: m_SortingLayer
       value: 0
@@ -862,6 +866,10 @@ PrefabInstance:
     - target: {fileID: 4366666685263013878, guid: 26d3617d5c2bdbf43a060b7c02a1452f, type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6067918978717396998, guid: 26d3617d5c2bdbf43a060b7c02a1452f, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6850330029914603737, guid: 26d3617d5c2bdbf43a060b7c02a1452f, type: 3}
       propertyPath: m_SortingLayer
@@ -966,6 +974,10 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2134757305865346400, guid: 5d014ab24f008e5428e65202b3c9f447, type: 3}
+      propertyPath: m_SortingLayer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5442276670892144846, guid: 5d014ab24f008e5428e65202b3c9f447, type: 3}
       propertyPath: m_Name
       value: TianfuRed02
@@ -980,7 +992,7 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5442276670892144846, guid: 5d014ab24f008e5428e65202b3c9f447, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2155053974067838416}
+      addedObject: {fileID: 8373667766386865168}
   m_SourcePrefab: {fileID: 100100000, guid: 5d014ab24f008e5428e65202b3c9f447, type: 3}
 --- !u!4 &395644687190435244 stripped
 Transform:
@@ -992,7 +1004,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 5442276670892144846, guid: 5d014ab24f008e5428e65202b3c9f447, type: 3}
   m_PrefabInstance: {fileID: 2137779737997307737}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2155053974067838416
+--- !u!114 &8373667766386865168
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

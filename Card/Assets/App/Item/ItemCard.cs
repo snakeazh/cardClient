@@ -41,8 +41,8 @@ namespace App.Item
         /// <summary>抽卡翻卡演出（Res/Animations/Chouka/ItemRoot.controller 的主动画，5 秒一次性）。</summary>
         public const string RewardRevealAnim = "ItemRoot";
 
-        /// <summary>物品预制体内嵌的三个品质特效实例名（稀有/史诗/传说），翻卡前统一清掉。</summary>
-        private static readonly string[] RewardFxNames = { "TianfuBlue01", "TianfuPurple01", "TianfuRed01" };
+        /// <summary>物品预制体内嵌的四个品质特效实例名（稀有/史诗/传说，传说为 Red01+Red02 两层），翻卡前统一清掉。</summary>
+        private static readonly string[] RewardFxNames = { "TianfuBlue01", "TianfuPurple01", "TianfuRed01", "TianfuRed02" };
 
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂。</summary>
         public event Action<ItemCard> Clicked;
@@ -328,7 +328,7 @@ namespace App.Item
 
         /// <summary>
         /// 抽卡结果翻卡演出：播 ItemRoot 翻面动画（Res/Animations/Chouka），并按品质点亮
-        /// 内嵌的天赋特效实例（红=传说、紫=史诗、蓝=稀有；普通无特效只播动画）。
+        /// 内嵌的天赋特效实例（红01+红02=传说、紫=史诗、蓝=稀有；普通无特效只播动画）。
         /// 特效默认隐藏、在 Default 层且粒子不吃 Canvas 层级——激活前整组换 UI 层并挂排序继承。
         /// </summary>
         /// <param name="showChoukaEffect">是否点亮 ChoukaEffect01；解锁弹窗等入口传 false。</param>
@@ -354,7 +354,7 @@ namespace App.Item
             ApplyQualityFx(quality);
         }
 
-        /// <summary>清掉三个品质特效后点亮目标品质（普通品质只清不亮）。</summary>
+        /// <summary>清掉全部品质特效后点亮目标品质（普通品质只清不亮）。</summary>
         private void ApplyQualityFx(QualityType quality)
         {
             for (var i = 0; i < RewardFxNames.Length; i++)
@@ -362,15 +362,15 @@ namespace App.Item
                 SetRewardFxActive(RewardFxNames[i], false);
             }
 
-            var fxName = RewardFxName(quality);
-            if (fxName != null)
+            var fxNames = RewardFxNamesOf(quality);
+            for (var i = 0; i < fxNames.Length; i++)
             {
-                PrepareRewardFx(fxName);
+                PrepareRewardFx(fxNames[i]);
             }
         }
 
         /// <summary>
-        /// 激活并重播指定特效。三个品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
+        /// 激活并重播指定特效。品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
         /// 故整树按名深查找，不能只在 itemRoot 下找。
         /// </summary>
         private void PrepareRewardFx(string fxName)
@@ -407,18 +407,19 @@ namespace App.Item
             }
         }
 
-        private static string RewardFxName(QualityType quality)
+        /// <summary>品质 → 特效实例名；传说为 Red01+Red02 两层同时点亮。</summary>
+        private static string[] RewardFxNamesOf(QualityType quality)
         {
             switch (quality)
             {
                 case QualityType.Legend:
-                    return "TianfuRed01";
+                    return new[] { "TianfuRed01", "TianfuRed02" };
                 case QualityType.Epic:
-                    return "TianfuPurple01";
+                    return new[] { "TianfuPurple01" };
                 case QualityType.Rare:
-                    return "TianfuBlue01";
+                    return new[] { "TianfuBlue01" };
                 default:
-                    return null;
+                    return Array.Empty<string>();
             }
         }
 

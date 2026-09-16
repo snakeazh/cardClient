@@ -262,6 +262,8 @@ namespace App.Game
         public string Name;
         public bool IsPlayer;
         public bool IsBoss;
+        /// <summary>敌人怪物类型（普通/精英/领主）。玩家为 <see cref="MonsterType.Normal"/>。</summary>
+        public MonsterType MonsterType;
         /// <summary>本关是否上场。敌人座位固定 3 个，未上场的 Hp=0。</summary>
         public bool ActiveInStage;
         /// <summary>头像配置名。玩家来自 HeroConfig.Icon，敌人来自 MonsterConfig.Icon。</summary>

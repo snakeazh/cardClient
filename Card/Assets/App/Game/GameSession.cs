@@ -1610,7 +1610,8 @@ namespace App.Game
                     _rubbedThisHand,
                     _rng);
                 LastRelicContext = ctx;
-                talentMag = TalentMechanics.SumMultiplierExtra(talent, firstShow);
+                talentMag = TalentMechanics.SumMultiplierExtra(talent, firstShow) +
+                            HeroMechanics.SumMultiplierExtra(ResolveHero(), firstShow);
                 talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
             }
 
@@ -1643,6 +1644,11 @@ namespace App.Game
                     Player,
                     CountAliveEnemies());
                 dmgPercent += HeroMechanics.SumValue(hero, MechanismType.Damage);
+                dmgPercent += HeroMechanics.SumDamagePercent(
+                    hero,
+                    defender,
+                    Player,
+                    CountAliveEnemies());
                 dmgPercent += RelicOutgoingDamagePercent(defender);
                 dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
                 if (dmgPercent != 0f)
@@ -1670,7 +1676,10 @@ namespace App.Game
                     !defender.IsPlayer &&
                     !defender.IsBoss &&
                     TalentMechanics.IsBelowHpRatio(defender, TalentBalance.ExecuteHpRatio) &&
-                    TalentMechanics.Roll(talent, MechanismType.KillingProbabilityTen, _rng))
+                    HeroMechanics.RollCombined(
+                        TalentMechanics.SumValue(talent, MechanismType.KillingProbabilityTen),
+                        HeroMechanics.SumValue(hero, MechanismType.KillingProbabilityTen),
+                        _rng))
                 {
                     execute = true;
                     damage = Math.Max(damage, defender.Hp);
@@ -2104,10 +2113,12 @@ namespace App.Game
         public int EffectiveShopRefreshCost => Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost;
 
         /// <summary>
-        /// 可携带圣物上限：<see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
+        /// 可携带圣物上限：<see cref="GameBalance.MaxRelics"/> + 天赋 / 英雄 RelicNumMax。
         /// </summary>
         public int RelicCarryMax =>
-            GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
+            GameBalance.MaxRelics +
+            (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax)) +
+            (int)Math.Round(HeroMechanics.SumValue(Run, MechanismType.RelicNumMax));
 
         public int EffectiveSellPrice(int relicId) => RelicMechanics.SellPrice(Run, relicId);
 
@@ -2898,7 +2909,8 @@ namespace App.Game
         public float RelicMultiplier(HandScore score)
         {
             var extra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext) +
-                        TalentMechanics.SumMultiplierExtra(TalentSvc(), _stageBetRound == 1);
+                        TalentMechanics.SumMultiplierExtra(TalentSvc(), _stageBetRound == 1) +
+                        HeroMechanics.SumMultiplierExtra(ResolveHero(), _stageBetRound == 1);
             var flint = BossMechanics.FlintMultiplier(Run);
             return (1f + extra) * flint;
         }
@@ -3269,7 +3281,9 @@ namespace App.Game
             Run.PeekGoodCharges = Math.Max(
                 0,
                 GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - BossMechanics.RubChargeDelta(Run));
-            var xrayDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum));
+            var xrayDelta = (int)Math.Round(
+                RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum) +
+                HeroMechanics.SumValue(Run, MechanismType.PerspectiveNum));
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges + xrayDelta;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
         }
@@ -5188,6 +5202,7 @@ namespace App.Game
                     ScoreSvc()?.TrackStageKill();
                     ApplyKillSellBonus();
                     ApplyTalentKillRewards();
+                    ApplyHeroKillRewards();
                     ApplyPracticePaperOnKill();
                     UnlockSvc()?.Report(ContidionType.KillMonster);
                     ApplyVengefulSoulOnKill();
@@ -6332,6 +6347,7 @@ namespace App.Game
                         var monster = snapshot.Monsters[i];
                         seat.ActiveInStage = true;
                         seat.IsBoss = monster.IsBoss;
+                        seat.MonsterType = monster.Type;
                         seat.Profile = monster.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
                         seat.Name = EnemyDisplayName(monster, i);
                         seat.MonsterId = monster.MonsterId;
@@ -6367,6 +6383,7 @@ namespace App.Game
                 var seat = Enemies[i];
                 seat.ActiveInStage = i < fallbackCount;
                 seat.IsBoss = Run.HasBoss && i == 0;
+                seat.MonsterType = seat.IsBoss ? MonsterType.Boss : MonsterType.Normal;
                 seat.Profile = seat.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
                 seat.Name = i < fallbackCount ? names[i] : $"敌人{i + 1}";
                 var maxHp = GameBalance.EnemyHp(Run.Stage, seat.IsBoss);
@@ -6405,6 +6422,7 @@ namespace App.Game
         {
             seat.ActiveInStage = false;
             seat.IsBoss = false;
+            seat.MonsterType = MonsterType.Normal;
             seat.Profile = DefaultEnemyProfile(seat.Id);
             seat.Name = $"敌人{index + 1}";
             ApplySeatHp(seat, 0, 0);
@@ -6661,6 +6679,29 @@ namespace App.Game
             }
         }
 
+        /// <summary>拾荒者 / 修炼者：击杀立刻加金币、永久攻击。</summary>
+        private void ApplyHeroKillRewards()
+        {
+            var gold = (int)Math.Round(HeroMechanics.SumValue(Run, MechanismType.KillingGetGold));
+            if (gold > 0)
+            {
+                AddGold(gold);
+                Log($"拾荒者 +{gold} 金币（总金币 {Run.Gold}）");
+            }
+
+            var atk = (int)Math.Round(HeroMechanics.SumValue(Run, MechanismType.KillingGetAttack));
+            if (atk != 0)
+            {
+                Run.PermanentAttackBonus += atk;
+                if (Player != null)
+                {
+                    Player.Attack = Math.Max(0, Player.Attack + atk);
+                }
+
+                Log($"修炼者 +{atk} 攻击（当前 {Player?.Attack ?? 0}）");
+            }
+        }
+
         private void ApplyTalentRoundGold()
         {
             if (!TalentMechanics.Roll(TalentSvc(), MechanismType.ProOfObtainingFundsEverySettlement, _rng))
@@ -6672,9 +6713,11 @@ namespace App.Game
             Log($"资本家 +1 金币（总金币 {Run.Gold}）");
         }
 
+        /// <summary>通关回血：天赋 + 英雄（营养师）HeroHpReplyEveryLevelEnding。</summary>
         private void ApplyTalentStageEndHeal()
         {
-            var ratio = TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpReplyEveryLevelEnding);
+            var ratio = TalentMechanics.SumValue(TalentSvc(), MechanismType.HeroHpReplyEveryLevelEnding) +
+                        HeroMechanics.SumValue(Run, MechanismType.HeroHpReplyEveryLevelEnding);
             var heal = HealPlayer((int)Math.Round(Player.MaxHp * ratio));
             if (heal > 0)
             {

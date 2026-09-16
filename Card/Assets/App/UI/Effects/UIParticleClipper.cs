@@ -6,7 +6,8 @@ namespace App.UI
     /// <summary>
     /// 粒子视口裁剪：按参考矩形把世界坐标 _ClipRect/_UseClipRect 经 MaterialPropertyBlock
     /// 写进所有子 Renderer（shader LTY/FX/Simple 支持；矩形变化时才重写，滚动/适配自动跟随）。
-    /// 矩形来源优先父链上的 RectMask2D，其次父链上 ScrollRect 的 viewport——
+    /// 矩形来源优先父链上的 RectMask2D，其次父链上 ScrollRect 自身矩形（ScrollRect 常与 Mask
+    /// 同节点，取自身与图片裁剪区一致；不取 viewport——它常比可视区小，曾致特效提前被裁）。
     /// 都没有时不写入、特效保持不裁剪，可无脑挂。
     /// 注意不走 RectMask2D 的原生裁剪（那套只作用于 UGUI 图片，曾把视口内图片全部裁没）。
     /// </summary>
@@ -94,7 +95,7 @@ namespace App.UI
             }
 
             var scroll = GetComponentInParent<ScrollRect>();
-            return scroll != null ? scroll.viewport : null;
+            return scroll != null ? (RectTransform)scroll.transform : null;
         }
     }
 }

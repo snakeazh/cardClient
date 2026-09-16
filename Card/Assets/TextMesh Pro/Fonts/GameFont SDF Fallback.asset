@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!21 &-5547044547143247692
+--- !u!21 &-2381606273038123680
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
@@ -24,7 +24,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 6504865867989132735}
+        m_Texture: {fileID: 2746029695817018206}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -79,7 +79,7 @@ MonoBehaviour:
   m_Name: GameFont SDF Fallback
   m_EditorClassIdentifier: 
   hashCode: 896535040
-  material: {fileID: -5547044547143247692}
+  material: {fileID: -2381606273038123680}
   materialHashCode: -1017850464
   m_Version: 1.1.0
   m_SourceFontFileGUID: 036629fc7166e8542bbb8d79345503e4
@@ -111,7 +111,7 @@ MonoBehaviour:
   m_GlyphTable: []
   m_CharacterTable: []
   m_AtlasTextures:
-  - {fileID: 6504865867989132735}
+  - {fileID: 2746029695817018206}
   m_AtlasTextureIndex: 0
   m_IsMultiAtlasTexturesEnabled: 0
   m_ClearDynamicDataOnBuild: 0
@@ -200,7 +200,7 @@ MonoBehaviour:
   boldSpacing: 7
   italicStyle: 35
   tabSize: 10
---- !u!28 &6504865867989132735
+--- !u!28 &2746029695817018206
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

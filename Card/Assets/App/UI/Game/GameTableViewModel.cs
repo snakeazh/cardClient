@@ -291,7 +291,8 @@ namespace App.UI
                 Session.Run.ChaKanGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
+                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
+                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
             TiHuanGoodLabel.Value = FormatCharges(
                 "替换",
                 Session.Run.TiHuanGoodCharges,

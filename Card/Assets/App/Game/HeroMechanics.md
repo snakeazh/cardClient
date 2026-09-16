@@ -23,7 +23,7 @@
 
 访问：`HeroConfig.Get(id)` / `HeroEntryConfig.Get(id)`。Excel 源在仓库 `Config/`。
 
-`HeroMechanics.SumValue` / `Roll` / `BuyPrice` / `ShopWeight` 只扫当前英雄词条。与天赋、遗物同类 Type 在 `GameSession` 挂钩点相加。
+`HeroMechanics.SumValue` / `Roll` / `SumDamagePercent` / `SumMultiplierExtra` / `BuyPrice` / `ShopWeight` 只扫当前英雄词条。与天赋、遗物同类 Type 在 `GameSession` 挂钩点相加。
 
 ---
 
@@ -43,8 +43,22 @@
 | 暴发户 | EpicLegendRelicProUp | `PickWeightedRelic` | 史诗/传说权重 `× (1 + Value)` |
 | 关系户 | RelicPricePer | 购买价 | `round(Price × (1 + Value))`，下限 0。不改售价 |
 | 经济教授 | GetGoldAfterLevel | `EnterShop` | `GetGold × (1 + Value)`，再加击杀数 × `KillMonsterGetGold`，然后广告双倍翻整笔 |
+| 死灵法师 | AttackBossDamage | `ComputeAttackDamage` | `SumDamagePercent`：目标 `MonsterType` 为 Elite 或 Boss 时并入 `dmgPercent`。天赋同 Type 仍只吃 Boss |
+| 裁决使 | KillingProbabilityTen | `ComputeAttackDamage` | 非领主且攻击前血量 &lt; 10%：天赋概率 + 英雄概率求和后掷一次，成功则伤害至少等于剩余血量 |
+| 亡命徒 | HpUnderDamage | `ComputeAttackDamage` | 玩家血量 &lt; 20%（`TalentBalance.LowHpRatio`）时并入 `dmgPercent` |
+| 囤货王 | RelicNumMax | `RelicCarryMax` | 与天赋同 Type 相加 |
+| 阴阳师 | PerspectiveNum | `ResetSkillCharges` | 与遗物透视次数相加；HUD max 同步 |
+| 营养师 | HeroHpReplyEveryLevelEnding | 通关回血 | 与天赋同 Type 相加，按 `MaxHp × Value` 回血 |
+| 拾荒者 | KillingGetGold | 击杀敌人 | 立刻 `AddGold(Value)` |
+| 修炼者 | KillingGetAttack | 击杀敌人 | `PermanentAttackBonus` + Value，并同步 `Player.Attack`（本局永久） |
+| 决斗大师 | OneMonsterDamage | `ComputeAttackDamage` | 存活敌人 == 1 时并入 `dmgPercent` |
+| 孩子王 | ManyMonsterDamage | `ComputeAttackDamage` | 存活敌人 &gt; 1 时并入 `dmgPercent` |
+| 急性子 | FirstShowCardEveryLevel | `ComputeAttackDamage` | 每关第一轮比牌时倍率 +Value（`SumMultiplierExtra`） |
+| 锦鲤 | （无词条） | 面板 / 暴击 | 只靠 `HeroConfig.Critical` / `CriticalDamage`，无 `HeroEntryId` |
 
 `Damage` 名字过泛，按枚举 Id 84 使用即可。英雄词条 Id 与遗物词条 Id 都从 10001 起，但是两张表，没有冲突。
+
+敌人类型：进关时写入 `SeatState.MonsterType`（来自 `LevelMonster.Type`），供死灵法师判定精英。
 
 ---
 
@@ -53,11 +67,14 @@
 | 时机 | 方法 |
 |------|------|
 | 开局金币 | `StartNewRun` |
-| 造成伤害百分比 / 暴击 | `ComputeAttackDamage` |
+| 造成伤害百分比 / 暴击 / 斩杀 / 条件加伤 / 首轮倍率 | `ComputeAttackDamage` |
 | AOE / 溅射 / 额外一刀 | `ApplyPendingAttackHits`（受击开始）；无演出时 `FinishPlayerAttack` 兜底 |
 | 受伤百分比 | `ApplyDamage`；演出飘字读 `TakenDamage` |
 | 闪避 | `ApplyDamage` |
-| 搓牌次数 | `ResetSkillCharges` |
+| 击杀金币 / 击杀加攻 | `ApplyDamage` → `ApplyHeroKillRewards` |
+| 搓牌 / 透视次数 | `ResetSkillCharges` |
+| 通关回血 | `ApplyTalentStageEndHeal`（含英雄） |
 | 通关金币 | `EnterShop`（GetGold × 经济教授 + 击杀加成，再双倍） |
+| 圣物携带上限 | `RelicCarryMax` |
 | 商店权重 | `PickWeightedRelic` |
 | 购买价 | `BuyShopRelic` / `EffectiveBuyPrice`；货架 UI 同步显示折后价 |

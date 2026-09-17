@@ -60,6 +60,8 @@ namespace App.Resources
         public const string SfxRevealCards3 = "Audio/Effect/reveal_cards_3";
         /// <summary>攻击/受击卡牌碰撞音效 Assets/Res/Audio/Effect/hurt_big_02.wav。</summary>
         public const string SfxHurtBig02 = "Audio/Effect/hurt_big_02";
+        /// <summary>搓牌技能音效 Assets/Res/Audio/Effect/rub_cards_02.wav。</summary>
+        public const string SfxRubCards02 = "Audio/Effect/rub_cards_02";
         /// <summary>通用按钮点击音效 Assets/Res/Audio/Effect/ui_click_03.wav。</summary>
         public const string SfxUiClick = "Audio/Effect/ui_click_03";
         /// <summary>攻击演出参数 Assets/Res/SO/AttackTuning.asset（<see cref="App.UI.AttackTuningConfig"/>）。</summary>

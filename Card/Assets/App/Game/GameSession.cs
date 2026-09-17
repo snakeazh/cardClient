@@ -58,6 +58,12 @@ namespace App.Game
         private readonly List<SeatState> _compareQueue = new List<SeatState>();
         private int _compareCursor;
         private int _roundDamageDealt;
+        /// <summary>本关累计造成的伤害（牌局积分口径 + 直杀旁路），结算换金用，StartStage 清零。</summary>
+        private int _stageDamageDealt;
+        /// <summary>本关结算里伤害换金部分，已含在 _shopGoldGranted 内，供显示拆分。</summary>
+        private int _stageDamageGoldGranted;
+        /// <summary>本关配表基础奖励（GetGold×(1+天赋)），不含击杀/技能/伤害成分。</summary>
+        private int _baseGoldGranted;
         private bool _sequentialCompare;
         /// <summary>本回合在血量换算之外额外获得的勇气值（借贷券 / 广告借贷）。</summary>
         private int _loanCourageBonus;
@@ -127,8 +133,14 @@ namespace App.Game
         public int RaiseLowUnits => RaiseUnits(GameBalance.RaiseLowMult);
         public int RaiseHighUnits => RaiseUnits(GameBalance.RaiseHighMult);
         public ScoreSnapshot Score => ScoreSvc()?.Current ?? new ScoreSnapshot(0, 0, 0);
-        /// <summary>本关结算刚发放的金币（含双倍）。</summary>
+        /// <summary>本关结算刚发放的金币（基础 + 伤害换金 + 双倍）。</summary>
         public int ShopGoldGranted => _shopGoldGranted;
+        /// <summary>本关结算里伤害换得的金币（含在 ShopGoldGranted 内；弹窗"基础奖励"= 两者之差）。</summary>
+        public int StageDamageGoldGranted => _stageDamageGoldGranted;
+        /// <summary>本关配表基础奖励（GetGold×(1+天赋)，不含击杀/技能/伤害换金），弹窗"基础奖励"显示值。</summary>
+        public int BaseGoldGranted => _baseGoldGranted;
+        /// <summary>本关结算时三项技能（搓牌/透视/替换）的剩余次数，弹窗显示用。</summary>
+        public int UnusedSkillChargesLeft => UnusedSkillCharges();
         /// <summary>本关每回合积分，进下一关 BeginStage 后清空。</summary>
         public IReadOnlyList<int> StageRoundScores =>
             ScoreSvc()?.StageRoundScores ?? Array.Empty<int>();
@@ -1499,12 +1511,9 @@ namespace App.Game
         {
             _sequentialCompare = false;
             IncomingAttack = false;
-            // 玩家全程挨打未造成伤害的手也要占一行 0 分；伤害换金仍只在有伤害时发。
+            // 玩家全程挨打未造成伤害的手也要占一行 0 分；伤害不再当场换金，累计到关卡结算统一发。
             AwardPlayerRoundScore(_roundDamageDealt);
-            if (_roundDamageDealt > 0)
-            {
-                GrantDamageGold(_roundDamageDealt);
-            }
+            _stageDamageDealt += _roundDamageDealt;
 
             ApplyRoundCompareRelics();
 
@@ -2775,6 +2784,7 @@ namespace App.Game
             }
 
             ScoreSvc()?.RecordDirectKillDamage(dealt);
+            _stageDamageDealt += dealt;
             Log($"[编辑器] 直接击杀 {target.Name}（伤害 {dealt} 已记入结算明细，不入积分）");
             if (!AnyEnemyAlive())
             {
@@ -3315,6 +3325,9 @@ namespace App.Game
             _stageBetRound = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
+            _stageDamageDealt = 0;
+            _stageDamageGoldGranted = 0;
+            _baseGoldGranted = 0;
             PickLevelEntries();
             if (AppServices.IsReady)
             {
@@ -5811,13 +5824,19 @@ namespace App.Game
                 gold = Math.Max(0, (int)Math.Round(gold * (1f + goldPer)));
             }
 
+            _baseGoldGranted = gold;
+
             gold += CountStageKills() * KillMonsterGoldBonus();
             var unusedSkills = UnusedSkillCharges();
             var unusedGold = unusedSkills * EverySkillProvideGold();
             gold += unusedGold;
+            var damageGold = DamageToGold(_stageDamageDealt);
+            gold += damageGold;
+            _stageDamageGoldGranted = damageGold;
             if (Run.DoubleGoldThisStage)
             {
                 gold *= 2;
+                _stageDamageGoldGranted *= 2;
             }
 
             _shopGoldGranted = gold;
@@ -5827,6 +5846,11 @@ namespace App.Game
             if (unusedGold > 0)
             {
                 Log($"未使用技能 +{unusedGold} 金币（剩余 {unusedSkills} 次）");
+            }
+
+            if (damageGold > 0)
+            {
+                Log($"伤害换金 +{damageGold}（本关累计伤害 {_stageDamageDealt}）");
             }
 
             Log($"关卡结算：通关 +{gold} 金币（本关积分 {stage}，章节累计 {total}，总金币 {Run.Gold}）");
@@ -6729,22 +6753,6 @@ namespace App.Game
         private void AwardPlayerRoundScore(int potWon)
         {
             ScoreSvc()?.AwardRoundScore(potWon);
-        }
-
-        /// <summary>
-        /// 本手攻击值按 <see cref="GameConst.DamageTurnToGold"/> 当场换成局内金币。
-        /// 比例 [a, b]：floor(伤害 × b / a)。每手单独取整，不计入商店双倍。
-        /// </summary>
-        private void GrantDamageGold(int damage)
-        {
-            var gold = DamageToGold(damage);
-            if (gold <= 0)
-            {
-                return;
-            }
-
-            AddGold(gold);
-            Log($"伤害换金 +{gold}（本手 {damage} 伤害，总金币 {Run.Gold}）");
         }
 
         private static int DamageToGold(int damage)

@@ -348,7 +348,7 @@ namespace App.UI.Popup
             _monsterRecycler.SetSections(sections);
         }
 
-        /// <summary>克隆 PlayerItem 槽位（一次性装饰：0.9 缩放、藏 cardMask、补点击），
+        /// <summary>克隆 PlayerItem 槽位（一次性装饰：0.9 缩放、藏 cardMask 与敌人攻/血块、补点击），
         /// 数据绑定走 BindMonsterSlot。</summary>
         private Component CreateMonsterSlot(Transform parent)
         {
@@ -362,6 +362,9 @@ namespace App.UI.Popup
                 Destroy(bind);
             }
 
+            // 图鉴条目不显示敌人攻/血块（BindMonsterSlot 不再调 SetAttack/SetHp，
+            // 但两节点 prefab 默认激活，须在此关掉）
+            HideEnemyStatBlocks(go.transform);
             var card = go.GetComponent<PlayerItem>();
             if (card == null)
             {
@@ -379,18 +382,34 @@ namespace App.UI.Popup
         }
 
         /// <summary>怪物槽数据绑定（行复用时反复调用）：敌人形态底图（enemycard 走
-        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径）、
-        /// 攻/血块显示最低等级真实数值（>0 才显块），刷新选中态。</summary>
+        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径），
+        /// 敌人攻/血块不显示（CreateMonsterSlot 已隐藏节点，这里不能再调 SetAttack/SetHp
+        /// ——那会在数值 >0 时把节点重新点亮），刷新选中态。</summary>
         private void BindMonsterSlot(Component slot, IllustratedBookEntry entry)
         {
             var card = (PlayerItem)slot;
             card.ApplyEnemyTheme(entry.Id);
             card.SetName(entry.Unlocked ? entry.Name : "？？？");
             card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
-            card.SetAttack(entry.Attack);
-            card.SetHp(entry.Hp);
             _entries[card] = entry;
             card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
+        }
+
+        /// <summary>隐藏敌人形态攻/血块容器（enemycardattack/enemycardheart，位于 enemycard 下，
+        /// 须整树深查找）。PlayerItem.SetAttack/SetHp 会按显隐控制这两个节点，图鉴全程不用它们。</summary>
+        private static void HideEnemyStatBlocks(Transform root)
+        {
+            var attack = FindDeep(root, "enemycardattack");
+            if (attack != null)
+            {
+                attack.gameObject.SetActive(false);
+            }
+
+            var heart = FindDeep(root, "enemycardheart");
+            if (heart != null)
+            {
+                heart.gameObject.SetActive(false);
+            }
         }
 
         /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。</summary>

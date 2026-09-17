@@ -114,7 +114,7 @@ namespace App.UI
 
             try
             {
-                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.Bgm);
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmLobby);
                 _audio.PlayBgm(clip);
             }
             catch (Exception ex)

@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Audio;
+using App.Bootstrap;
 using App.Config;
 using App.Game;
 using App.Resources;
@@ -33,6 +36,8 @@ namespace App.UI
 
         private IResourceService _resources;
         private GameObject _prefab;
+        private AudioClip _dealSfx;
+        private AudioClip _revealSfx;
         private readonly CardShadowPool _shadows = new CardShadowPool();
 
         private Transform _hud;
@@ -130,6 +135,62 @@ namespace App.UI
             BindEnemySlots(hud);
             HideLegacyIcons(mine);
             HideLegacyIcons(_other != null ? _other.Node : null);
+            _ = PreloadDealSfxAsync();
+            _ = PreloadRevealSfxAsync();
+        }
+
+        private async Task PreloadDealSfxAsync()
+        {
+            if (_dealSfx != null || _resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _dealSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxDeal5Cards);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Deal SFX load failed: " + ex.Message);
+            }
+        }
+
+        private async Task PreloadRevealSfxAsync()
+        {
+            if (_revealSfx != null || _resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _revealSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRevealCards3);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Reveal SFX load failed: " + ex.Message);
+            }
+        }
+
+        private void PlayDealSfx()
+        {
+            if (_dealSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_dealSfx);
+        }
+
+        private void PlayRevealSfx()
+        {
+            if (_revealSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_revealSfx);
         }
 
         public void Sync(GameSession session)
@@ -679,6 +740,8 @@ namespace App.UI
             }
 
             _prefab = null;
+            _dealSfx = null;
+            _revealSfx = null;
             _resources = null;
         }
 
@@ -703,6 +766,7 @@ namespace App.UI
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
+            var dealSfxPlayed = false;
             var maxRound = Math.Max(GameBalance.EnemyCardsDealt, session.PlayerDealCount);
             for (var round = 0; round < maxRound; round++)
             {
@@ -722,11 +786,18 @@ namespace App.UI
 
                     var cardIndex = round;
                     var capturedOrder = order;
+                    var playSfx = !dealSfxPlayed;
+                    dealSfxPlayed = true;
                     seq.InsertCallback(delay, () =>
                     {
                         if (token != _dealToken)
                         {
                             return;
+                        }
+
+                        if (playSfx)
+                        {
+                            PlayDealSfx();
                         }
 
                         SpawnAndFly(view, seat, cardIndex, capturedOrder, token);
@@ -894,6 +965,7 @@ namespace App.UI
             var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
             var winnerSeat = SeatById(session, session.RevealWinnerId);
             var settleCount = CardCount(winnerView, winnerSeat, session);
+            var revealSfxPlayed = false;
             for (var i = 0; i < settleCount; i++)
             {
                 if (winnerSeat != null && !winnerSeat.IsCardSelected(i))
@@ -902,11 +974,18 @@ namespace App.UI
                 }
 
                 var cardIndex = i;
+                var playSfx = !revealSfxPlayed;
+                revealSfxPlayed = true;
                 seq.InsertCallback(delay, () =>
                 {
                     if (token != _revealToken)
                     {
                         return;
+                    }
+
+                    if (playSfx)
+                    {
+                        PlayRevealSfx();
                     }
 
                     PlaySettleCard(winnerView, cardIndex);

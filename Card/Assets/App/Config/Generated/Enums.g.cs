@@ -1229,6 +1229,16 @@ namespace App.Config
 
         TwoThreeFive = 1113,
 
+        /// <summary>
+        /// 每击杀敌人,英雄额外获得金币
+        /// </summary>
+        KillingGetGold = 1114,
+
+        /// <summary>
+        /// 每击杀敌人,英雄永久提高攻击力
+        /// </summary>
+        KillingGetAttack = 1115,
+
     }
 
     /// <summary>

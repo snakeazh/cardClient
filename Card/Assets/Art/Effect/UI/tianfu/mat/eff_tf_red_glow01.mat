@@ -14,6 +14,7 @@ Material:
   m_ValidKeywords:
   - _ALPHACLIP_ON
   - _A_R_ON
+  - _MASK2_ON
   - _MASK_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -47,13 +48,13 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MASKTEX:
-        m_Texture: {fileID: 2800000, guid: c888f71286c5f3f4d98666985eae3ede, type: 3}
+        m_Texture: {fileID: 2800000, guid: f102a5cbc319011439db9e2d8bbea5f6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MASKTEX2:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Texture: {fileID: 2800000, guid: cf44122547e5c504aaf9402337f0a6d7, type: 3}
+        m_Scale: {x: 0.3, y: 0.3}
+        m_Offset: {x: 0, y: -0.06}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -71,8 +72,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _maintex:
-        m_Texture: {fileID: 2800000, guid: 498d3e1ee467ba3429e0005610820452, type: 3}
-        m_Scale: {x: 1, y: 0.3}
+        m_Texture: {fileID: 2800000, guid: 5f789d736ecfe964e9d5150a879cf955, type: 3}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
@@ -89,11 +90,11 @@ Material:
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _MASK2_u_speed: 0
-    - _MASK2_v_speed: 0
+    - _MASK2_v_speed: -0.5
     - _MASK_u_speed: 0
     - _MASK_v_speed: 0
     - _Main_u_speed: 0
-    - _Main_v_speed: -0.5
+    - _Main_v_speed: 0
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -104,7 +105,7 @@ Material:
     - _UVSec: 0
     - _UseAlphaClip: 1
     - _UseMask: 1
-    - _UseMask2: 0
+    - _UseMask2: 1
     - _UseSoftParticle: 0
     - _ZWrite: 1
     - _one_UV: 0

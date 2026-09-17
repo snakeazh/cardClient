@@ -5,8 +5,10 @@ using App.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
+using App.UI.List;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
+using Framework.Log;
 using Framework.UI.View;
 using TMPro;
 using UnityEngine;
@@ -40,13 +42,17 @@ namespace App.UI.Popup
         private const string NormalBannerName = "NormalBanner";
         private const string NormalGridName = "NormalGrid";
 
-        private readonly List<ItemCard> _collectCards = new List<ItemCard>();
-        private readonly List<ItemCard> _relicCards = new List<ItemCard>();
-        private readonly List<PlayerItem> _monsterCards = new List<PlayerItem>();
         private readonly Dictionary<Component, IllustratedBookEntry> _entries =
             new Dictionary<Component, IllustratedBookEntry>();
         private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
         private readonly Vector3[] _corners = new Vector3[4];
+        // 已构建（或构建中）的页签：打开只建当前页，其余页首次切换时再建
+        private readonly HashSet<IllustratedBookTab> _builtTabs = new HashSet<IllustratedBookTab>();
+        private readonly List<Component> _activeSlots = new List<Component>();
+        private CardRowRecycler<IllustratedBookEntry> _collectRecycler;
+        private CardRowRecycler<IllustratedBookEntry> _relicRecycler;
+        private CardRowRecycler<IllustratedBookEntry> _monsterRecycler;
+        private bool _tipLoading;
         private GameObject _itemPrefab;
         private GameObject _monsterPrefab;
         private GameObject _tip;
@@ -59,10 +65,10 @@ namespace App.UI.Popup
         protected override async Task OnViewOpen()
         {
             ViewModel.RefreshEntries();
+            // 重开时数据可能已变：页签标记全部重置（SetSections 重建数据，行池与横幅克隆重绑）
+            _builtTabs.Clear();
+            // 只预载当前页（默认遗物）要用的 Item 预制体；PlayerItem/ItemTip/收藏图标延迟到首次需要
             await EnsureItemPrefab();
-            await EnsureMonsterPrefab();
-            await LoadIcons();
-            await EnsureTip();
         }
 
         protected override void OnBind()
@@ -83,9 +89,8 @@ namespace App.UI.Popup
             BindTab(UI.Get<Toggle>("CollectToggle"), ViewModel.CollectOn, IllustratedBookTab.Collect);
             BindTab(UI.Get<Toggle>("RelicToggle"), ViewModel.RelicOn, IllustratedBookTab.Relic);
             BindTab(UI.Get<Toggle>("MonsterToggle"), ViewModel.MonsterOn, IllustratedBookTab.Monster);
-            FillList(UI.Get<ScrollRect>("CollectSCView"), ViewModel.CollectEntries, _collectCards);
-            FillRelicList(UI.Get<ScrollRect>("RelicSCView"), ViewModel.RelicEntries);
-            FillMonsterList(UI.Get<ScrollRect>("MonsterSCView"), ViewModel.MonsterEntries);
+            // 打开只构建当前页（默认遗物），避免一帧克隆三页全部卡片造成卡顿
+            StartBuildTab(ViewModel.Tab);
             Binding.Add(ViewModel.ShowTip.Subscribe(_ => ApplyTip(), emitCurrent: true));
             Binding.Add(ViewModel.TipTitle.Subscribe(OnTipTitle, emitCurrent: true));
             Binding.Add(ViewModel.TipText.Subscribe(OnTipText, emitCurrent: true));
@@ -116,40 +121,43 @@ namespace App.UI.Popup
                     ViewModel.SelectTab(tab);
                     RefreshSelected();
                     ApplyTip();
+                    // 首次切到该页才克隆卡片（StartBuildTab 幂等）
+                    StartBuildTab(tab);
                 }
             }, emitCurrent: false));
         }
 
-        private void FillList(
-            ScrollRect scroll,
-            IReadOnlyList<IllustratedBookEntry> entries,
-            List<ItemCard> cards)
+        /// <summary>收藏页构建：单区无横幅，Content 自身的 GridLayoutGroup 即布局模板。</summary>
+        private void BuildCollectPage()
         {
-            cards.Clear();
-            if (scroll == null || scroll.content == null || _itemPrefab == null)
+            var scroll = UI.Get<ScrollRect>("CollectSCView");
+            var content = scroll != null ? scroll.content : null;
+            if (content == null || _itemPrefab == null)
             {
                 return;
             }
 
-            var content = scroll.content;
-            ClearContent(content);
-            for (var i = 0; i < entries.Count; i++)
+            var grid = content.GetComponent<GridLayoutGroup>();
+            if (_collectRecycler == null)
             {
-                var card = InstantiateItemCard(content, entries[i]);
-                if (card != null)
-                {
-                    cards.Add(card);
-                }
+                CleanContent(content);
+                _collectRecycler = new CardRowRecycler<IllustratedBookEntry>();
+                _collectRecycler.Initialize(scroll, grid, null, CreateCardSlot, BindCardSlot);
             }
 
-            FitContentHeight(scroll, content, cards.Count);
+            var section = new CardRowRecycler<IllustratedBookEntry>.Section
+            {
+                GridTemplate = grid,
+                Items = new List<IllustratedBookEntry>(ViewModel.CollectEntries)
+            };
+            _collectRecycler.SetSections(new[] { section });
         }
 
-        /// <summary>克隆 ItemCard 并按图鉴口径装饰（0.9 缩放、品质边框、未解锁黑剪影、点击打开详情）。</summary>
-        private ItemCard InstantiateItemCard(Transform parent, IllustratedBookEntry entry)
+        /// <summary>克隆 ItemCard 槽位（一次性装饰：0.9 缩放、关阴影动画、订阅点击），数据绑定走 BindCardSlot。</summary>
+        private Component CreateCardSlot(Transform parent)
         {
             var go = Instantiate(_itemPrefab, parent, false);
-            go.name = entry.Tab + "_" + entry.Id;
+            go.name = "CardSlot";
             go.SetActive(true);
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
             var bind = go.GetComponent<UIBind>();
@@ -166,35 +174,40 @@ namespace App.UI.Popup
 
             card.SetShadowVisible(false);
             card.SetAnimationEnabled(false);
-            // 品质卡面边框（遗物页=RelicConfig.Type，缺图回退普通品质）
-            card.ApplyQuality(entry.Quality);
-            card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
-            // 图标随解锁态染色：未拥有黑色剪影，拥有原色（同天赋列表口径）
-            card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
             card.Clicked += OnCardClicked;
-            _entries[card] = entry;
             return card;
         }
 
-        /// <summary>
-        /// 遗物页按品质分四区（传说/史诗/稀有/普通，同怪物页格式：横幅 + Grid 交替）；
-        /// 对应品质没有遗物时连横幅一起隐藏。
-        /// </summary>
-        private void FillRelicList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
+        /// <summary>卡槽数据绑定（行复用时反复调用）：品质边框（遗物页=RelicConfig.Type，缺图回退普通品质）、
+        /// 未解锁黑剪影（同天赋列表口径）、刷新选中态。</summary>
+        private void BindCardSlot(Component slot, IllustratedBookEntry entry)
         {
-            _relicCards.Clear();
+            var card = (ItemCard)slot;
+            card.ApplyQuality(entry.Quality);
+            card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
+            card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
+            _entries[card] = entry;
+            card.SetSelected(ViewModel.IsSelected(entry));
+        }
+
+        /// <summary>
+        /// 遗物页按品质分四区（传说/史诗/稀有/普通，横幅 + 卡片行交替）；
+        /// 对应品质没有遗物时连横幅一起隐藏。行虚拟化：视口内才生成，行与卡槽池化复用。
+        /// </summary>
+        private void BuildRelicPage()
+        {
+            var scroll = UI.Get<ScrollRect>("RelicSCView");
             var content = scroll != null ? scroll.content : null;
             if (content == null || _itemPrefab == null)
             {
                 return;
             }
 
-            EnsureRelicContentLayout(content);
-
             var legends = new List<IllustratedBookEntry>();
             var epics = new List<IllustratedBookEntry>();
             var rares = new List<IllustratedBookEntry>();
             var normals = new List<IllustratedBookEntry>();
+            var entries = ViewModel.RelicEntries;
             for (var i = 0; i < entries.Count; i++)
             {
                 switch (entries[i].Quality)
@@ -214,32 +227,70 @@ namespace App.UI.Popup
                 }
             }
 
-            FillRelicSection(content.Find(LegendBannerName), content.Find(LegendGridName), legends);
-            FillRelicSection(content.Find(EpicBannerName), content.Find(EpicGridName), epics);
-            FillRelicSection(content.Find(RareBannerName), content.Find(RareGridName), rares);
-            FillRelicSection(content.Find(NormalBannerName), content.Find(NormalGridName), normals);
-        }
-
-        /// <summary>
-        /// 预制体里 Content 只挂了 VLG：运行时补 ContentSizeFitter（竖直 Preferred，同怪物页），
-        /// 并清掉美术预放的示例卡（Content 下不属于分区节点的子物体，不参与分区填充）。
-        /// </summary>
-        private static void EnsureRelicContentLayout(RectTransform content)
-        {
-            if (content.GetComponent<ContentSizeFitter>() == null)
+            if (_relicRecycler == null)
             {
-                var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-                fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                CleanContent(content, LegendBannerName, LegendGridName, EpicBannerName, EpicGridName,
+                    RareBannerName, RareGridName, NormalBannerName, NormalGridName);
+                _relicRecycler = new CardRowRecycler<IllustratedBookEntry>();
+                _relicRecycler.Initialize(
+                    scroll, FindGrid(content, LegendGridName, EpicGridName, RareGridName, NormalGridName),
+                    content.GetComponent<VerticalLayoutGroup>(), CreateCardSlot, BindCardSlot);
             }
 
+            var sections = new List<CardRowRecycler<IllustratedBookEntry>.Section>(4);
+            AddSection(sections, (RectTransform)content.Find(LegendBannerName), FindGrid(content, LegendGridName), legends);
+            AddSection(sections, (RectTransform)content.Find(EpicBannerName), FindGrid(content, EpicGridName), epics);
+            AddSection(sections, (RectTransform)content.Find(RareBannerName), FindGrid(content, RareGridName), rares);
+            AddSection(sections, (RectTransform)content.Find(NormalBannerName), FindGrid(content, NormalGridName), normals);
+            _relicRecycler.SetSections(sections);
+        }
+
+        private static GridLayoutGroup FindGrid(Transform content, params string[] names)
+        {
+            for (var i = 0; i < names.Length; i++)
+            {
+                var node = content.Find(names[i]);
+                if (node != null)
+                {
+                    return node.GetComponent<GridLayoutGroup>();
+                }
+            }
+
+            return null;
+        }
+
+        private static void AddSection(
+            List<CardRowRecycler<IllustratedBookEntry>.Section> sections,
+            RectTransform banner,
+            GridLayoutGroup grid,
+            List<IllustratedBookEntry> items)
+        {
+            sections.Add(new CardRowRecycler<IllustratedBookEntry>.Section
+            {
+                BannerTemplate = banner,
+                GridTemplate = grid,
+                Items = items
+            });
+        }
+
+        /// <summary>清掉 Content 下不在分区名单里的节点（美术预放的示例卡等）。只在建页签 recycler 前清一次，
+        /// 之后 Content 下的横幅克隆与虚拟化行节点都由 recycler 管理。</summary>
+        private static void CleanContent(RectTransform content, params string[] keepNames)
+        {
             for (var i = content.childCount - 1; i >= 0; i--)
             {
                 var child = content.GetChild(i);
-                if (child.name != LegendBannerName && child.name != LegendGridName &&
-                    child.name != EpicBannerName && child.name != EpicGridName &&
-                    child.name != RareBannerName && child.name != RareGridName &&
-                    child.name != NormalBannerName && child.name != NormalGridName)
+                var keep = false;
+                for (var k = 0; k < keepNames.Length; k++)
+                {
+                    if (child.name == keepNames[k])
+                    {
+                        keep = true;
+                        break;
+                    }
+                }
+
+                if (!keep)
                 {
                     child.SetParent(null, false);
                     Destroy(child.gameObject);
@@ -247,51 +298,13 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>遗物品质分区填充：清 Grid 旧卡再克隆 ItemCard（收藏/遗物两页卡面同口径）。</summary>
-        private void FillRelicSection(Transform banner, Transform grid, List<IllustratedBookEntry> entries)
-        {
-            if (grid == null)
-            {
-                return;
-            }
-
-            var visible = entries.Count > 0;
-            if (banner != null)
-            {
-                banner.gameObject.SetActive(visible);
-            }
-
-            grid.gameObject.SetActive(visible);
-            if (!visible)
-            {
-                return;
-            }
-
-            for (var i = grid.childCount - 1; i >= 0; i--)
-            {
-                var child = grid.GetChild(i);
-                child.SetParent(null, false);
-                Destroy(child.gameObject);
-            }
-
-            for (var i = 0; i < entries.Count; i++)
-            {
-                var card = InstantiateItemCard(grid, entries[i]);
-                if (card != null)
-                {
-                    _relicCards.Add(card);
-                }
-            }
-        }
-
         /// <summary>
-        /// 怪物页按 MonsterType 分三区（同遗物页格式：横幅 + Grid 交替，Content 由
-        /// VLG+ContentSizeFitter 自适应高度）：Boss / 精英 / 普通；
-        /// 对应类型没有怪物时连横幅一起隐藏。
+        /// 怪物页按 MonsterType 分三区（横幅 + 卡片行交替）：Boss / 精英 / 普通；
+        /// 对应类型没有怪物时连横幅一起隐藏。行虚拟化：视口内才生成，行与卡槽池化复用。
         /// </summary>
-        private void FillMonsterList(ScrollRect scroll, IReadOnlyList<IllustratedBookEntry> entries)
+        private void BuildMonsterPage()
         {
-            _monsterCards.Clear();
+            var scroll = UI.Get<ScrollRect>("MonsterSCView");
             var content = scroll != null ? scroll.content : null;
             if (content == null || _monsterPrefab == null)
             {
@@ -301,6 +314,7 @@ namespace App.UI.Popup
             var bosses = new List<IllustratedBookEntry>();
             var elites = new List<IllustratedBookEntry>();
             var normals = new List<IllustratedBookEntry>();
+            var entries = ViewModel.MonsterEntries;
             for (var i = 0; i < entries.Count; i++)
             {
                 switch (entries[i].MonsterType)
@@ -317,74 +331,66 @@ namespace App.UI.Popup
                 }
             }
 
-            FillMonsterSection(content.Find(UltimateBannerName), content.Find(UltimateGridName), bosses);
-            FillMonsterSection(content.Find(EliteBannerName), content.Find(EliteGridName), elites);
-            FillMonsterSection(content.Find(NormalBannerName), content.Find(NormalGridName), normals);
+            if (_monsterRecycler == null)
+            {
+                CleanContent(content, UltimateBannerName, UltimateGridName,
+                    EliteBannerName, EliteGridName, NormalBannerName, NormalGridName);
+                _monsterRecycler = new CardRowRecycler<IllustratedBookEntry>();
+                _monsterRecycler.Initialize(
+                    scroll, FindGrid(content, UltimateGridName, EliteGridName, NormalGridName),
+                    content.GetComponent<VerticalLayoutGroup>(), CreateMonsterSlot, BindMonsterSlot);
+            }
+
+            var sections = new List<CardRowRecycler<IllustratedBookEntry>.Section>(3);
+            AddSection(sections, (RectTransform)content.Find(UltimateBannerName), FindGrid(content, UltimateGridName), bosses);
+            AddSection(sections, (RectTransform)content.Find(EliteBannerName), FindGrid(content, EliteGridName), elites);
+            AddSection(sections, (RectTransform)content.Find(NormalBannerName), FindGrid(content, NormalGridName), normals);
+            _monsterRecycler.SetSections(sections);
         }
 
-        /// <summary>对应类型没有怪物时连横幅一起隐藏；格子为 PlayerItem 敌人形态（enemycard 底图走
-        /// MonsterConfig.BaseMap/HealthBar，攻血块隐藏，点击打开详情），卡面 0.9 缩放沿旧版。</summary>
-        private void FillMonsterSection(Transform banner, Transform grid, List<IllustratedBookEntry> entries)
+        /// <summary>克隆 PlayerItem 槽位（一次性装饰：0.9 缩放、藏 cardMask、补点击），
+        /// 数据绑定走 BindMonsterSlot。</summary>
+        private Component CreateMonsterSlot(Transform parent)
         {
-            if (grid == null)
+            var go = Instantiate(_monsterPrefab, parent, false);
+            go.name = "MonsterSlot";
+            go.SetActive(true);
+            go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            var bind = go.GetComponent<UIBind>();
+            if (bind != null)
             {
-                return;
+                Destroy(bind);
             }
 
-            var visible = entries.Count > 0;
-            if (banner != null)
+            var card = go.GetComponent<PlayerItem>();
+            if (card == null)
             {
-                banner.gameObject.SetActive(visible);
+                return null;
             }
 
-            grid.gameObject.SetActive(visible);
-            if (!visible)
+            var cardMask = FindDeep(card.transform, "cardMask");
+            if (cardMask != null)
             {
-                return;
+                cardMask.gameObject.SetActive(false);
             }
 
-            for (var i = grid.childCount - 1; i >= 0; i--)
-            {
-                var child = grid.GetChild(i);
-                child.SetParent(null, false);
-                Destroy(child.gameObject);
-            }
+            HookMonsterClick(card);
+            return card;
+        }
 
-            for (var i = 0; i < entries.Count; i++)
-            {
-                var entry = entries[i];
-                var go = Instantiate(_monsterPrefab, grid, false);
-                go.name = entry.Tab + "_" + entry.Id;
-                go.SetActive(true);
-                go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
-                var bind = go.GetComponent<UIBind>();
-                if (bind != null)
-                {
-                    Destroy(bind);
-                }
-
-                var card = go.GetComponent<PlayerItem>();
-                if (card == null)
-                {
-                    continue;
-                }
-
-                card.ApplyEnemyTheme(entry.Id);
-                var cardMask = FindDeep(card.transform, "cardMask");
-                if (cardMask != null)
-                {
-                    cardMask.gameObject.SetActive(false);
-                }
-
-                card.SetName(entry.Unlocked ? entry.Name : "？？？");
-                card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
-                card.SetAttack(0);
-                card.SetHp(0);
-
-                HookMonsterClick(card);
-                _entries[card] = entry;
-                _monsterCards.Add(card);
-            }
+        /// <summary>怪物槽数据绑定（行复用时反复调用）：敌人形态底图（enemycard 走
+        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径）、
+        /// 攻/血块显示最低等级真实数值（>0 才显块），刷新选中态。</summary>
+        private void BindMonsterSlot(Component slot, IllustratedBookEntry entry)
+        {
+            var card = (PlayerItem)slot;
+            card.ApplyEnemyTheme(entry.Id);
+            card.SetName(entry.Unlocked ? entry.Name : "？？？");
+            card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
+            card.SetAttack(entry.Attack);
+            card.SetHp(entry.Hp);
+            _entries[card] = entry;
+            card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
         }
 
         /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。</summary>
@@ -433,77 +439,6 @@ namespace App.UI.Popup
             return null;
         }
 
-        private static void ClearContent(RectTransform content)
-        {
-            for (var i = content.childCount - 1; i >= 0; i--)
-            {
-                var child = content.GetChild(i);
-                child.SetParent(null, false);
-                Destroy(child.gameObject);
-            }
-        }
-
-        private static void FitContentHeight(ScrollRect scroll, RectTransform content, int itemCount)
-        {
-            var grid = content.GetComponent<GridLayoutGroup>();
-            var size = content.sizeDelta;
-            if (grid == null)
-            {
-                size.y = 0f;
-                content.sizeDelta = size;
-                return;
-            }
-
-            var columns = ResolveColumnCount(grid, ResolveContentWidth(scroll, content));
-            var rows = itemCount <= 0 ? 0 : Mathf.CeilToInt(itemCount / (float)columns);
-            var height = (float)grid.padding.top + grid.padding.bottom;
-            if (rows > 0)
-            {
-                height += rows * grid.cellSize.y + (rows - 1) * grid.spacing.y;
-            }
-
-            size.y = height;
-            content.sizeDelta = size;
-            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-        }
-
-        private static float ResolveContentWidth(ScrollRect scroll, RectTransform content)
-        {
-            var width = content.rect.width;
-            if (width > 1f)
-            {
-                return width;
-            }
-
-            var viewport = scroll.viewport != null ? scroll.viewport : (RectTransform)scroll.transform;
-            width = viewport.rect.width;
-            if (width > 1f)
-            {
-                return width;
-            }
-
-            var host = (RectTransform)scroll.transform;
-            width = host.rect.width;
-            return width > 1f ? width : Mathf.Max(1f, host.sizeDelta.x);
-        }
-
-        private static int ResolveColumnCount(GridLayoutGroup grid, float width)
-        {
-            if (grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount)
-            {
-                return Mathf.Max(1, grid.constraintCount);
-            }
-
-            var stride = grid.cellSize.x + grid.spacing.x;
-            if (stride <= 0f)
-            {
-                return 1;
-            }
-
-            var inner = width - grid.padding.horizontal + grid.spacing.x + 0.001f;
-            return Mathf.Max(1, Mathf.FloorToInt(inner / stride));
-        }
-
         private void OnCardClicked(ItemCard card)
         {
             if (_entries.TryGetValue(card, out var entry))
@@ -522,36 +457,37 @@ namespace App.UI.Popup
 
         private void RefreshSelected()
         {
-            RefreshSelected(_collectCards);
-            RefreshSelected(_relicCards);
-            RefreshSelected(_monsterCards);
+            RefreshSelected(_collectRecycler);
+            RefreshSelected(_relicRecycler);
+            RefreshSelected(_monsterRecycler);
         }
 
-        private void RefreshSelected(List<ItemCard> cards)
+        /// <summary>只刷当前视口内生成的卡槽（虚拟化：视口外的行在池中，无可见状态可刷）。</summary>
+        private void RefreshSelected(CardRowRecycler<IllustratedBookEntry> recycler)
         {
-            for (var i = 0; i < cards.Count; i++)
+            if (recycler == null)
             {
-                var card = cards[i];
-                if (card == null || !_entries.TryGetValue(card, out var entry))
-                {
-                    continue;
-                }
-
-                card.SetSelected(ViewModel.IsSelected(entry));
+                return;
             }
-        }
 
-        private void RefreshSelected(List<PlayerItem> cards)
-        {
-            for (var i = 0; i < cards.Count; i++)
+            recycler.CollectActiveSlots(_activeSlots);
+            for (var i = 0; i < _activeSlots.Count; i++)
             {
-                var card = cards[i];
-                if (card == null || !_entries.TryGetValue(card, out var entry))
+                var slot = _activeSlots[i];
+                if (slot == null || !_entries.TryGetValue(slot, out var entry))
                 {
                     continue;
                 }
 
-                card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
+                if (slot is ItemCard itemCard)
+                {
+                    itemCard.SetSelected(ViewModel.IsSelected(entry));
+                }
+                else if (slot is PlayerItem playerItem)
+                {
+                    playerItem.SetSelectLift(
+                        ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
+                }
             }
         }
 
@@ -587,11 +523,41 @@ namespace App.UI.Popup
             }
         }
 
-        private async Task LoadIcons()
+        /// <summary>
+        /// 按需构建页签（幂等）：只加载该页需要的预制体与图标，再以虚拟化方式填充
+        /// （视口内的卡片行才生成，行与卡槽池化复用）；打开瞬间只建当前页，其余页首次切换时才构建。
+        /// </summary>
+        private async void StartBuildTab(IllustratedBookTab tab)
         {
-            await LoadEntryIcons(ViewModel.CollectEntries);
-            await LoadEntryIcons(ViewModel.RelicEntries);
-            await LoadEntryIcons(ViewModel.MonsterEntries);
+            if (!_builtTabs.Add(tab))
+            {
+                return;
+            }
+
+            try
+            {
+                switch (tab)
+                {
+                    case IllustratedBookTab.Collect:
+                        await EnsureItemPrefab();
+                        await LoadEntryIcons(ViewModel.CollectEntries);
+                        BuildCollectPage();
+                        break;
+                    case IllustratedBookTab.Monster:
+                        await EnsureMonsterPrefab();
+                        BuildMonsterPage();
+                        break;
+                    default:
+                        await EnsureItemPrefab();
+                        await LoadEntryIcons(ViewModel.RelicEntries);
+                        BuildRelicPage();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
 
         private async Task LoadEntryIcons(IReadOnlyList<IllustratedBookEntry> entries)
@@ -786,6 +752,33 @@ namespace App.UI.Popup
             }
         }
 
+        /// <summary>首次显示浮层时异步加载 ItemTip 预制体（防重入），完成后若仍在显示态则补一次 ApplyTip。</summary>
+        private async void EnsureTipLazy()
+        {
+            if (_tipLoading || _tip != null)
+            {
+                return;
+            }
+
+            _tipLoading = true;
+            try
+            {
+                await EnsureTip();
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                _tipLoading = false;
+            }
+
+            if (_tip != null && ViewModel != null && ViewModel.ShowTip.Value)
+            {
+                ApplyTip();
+            }
+        }
+
         private void OnTipTitle(string text)
         {
             ApplyTipTitle(text);
@@ -815,6 +808,12 @@ namespace App.UI.Popup
         {
             if (_tip == null)
             {
+                // ItemTip 预制体延迟到首次显示浮层时加载，完成后补一次应用
+                if (ViewModel.ShowTip.Value)
+                {
+                    EnsureTipLazy();
+                }
+
                 return;
             }
 

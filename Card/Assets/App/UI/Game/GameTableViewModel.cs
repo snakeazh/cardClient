@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Audio;
 using App.Bootstrap;
 using App.Game;
 using App.Guide;
@@ -25,6 +26,7 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
+        private readonly IAudioService _audio;
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -41,7 +43,8 @@ namespace App.UI
             ILevelProgressService progress,
             IAtlasService atlas,
             IGuideService guide,
-            ISaveService save)
+            ISaveService save,
+            IAudioService audio)
         {
             Session = session;
             Resources = resources;
@@ -51,6 +54,7 @@ namespace App.UI
             _navigation = navigation;
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             _save = save ?? throw new ArgumentNullException(nameof(save));
+            _audio = audio;
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -291,7 +295,8 @@ namespace App.UI
                 Session.Run.ChaKanGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
+                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
+                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
             TiHuanGoodLabel.Value = FormatCharges(
                 "替换",
                 Session.Run.TiHuanGoodCharges,
@@ -374,8 +379,27 @@ namespace App.UI
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
+            await StartBattleBgmAsync();
             await ShowGameResource();
             _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+        }
+
+        private async Task StartBattleBgmAsync()
+        {
+            if (_audio == null || Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmBattle);
+                _audio.PlayBgm(clip);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Battle BGM load failed: " + ex.Message);
+            }
         }
 
         protected override async Task OnClose()

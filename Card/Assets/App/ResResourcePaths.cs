@@ -48,8 +48,18 @@ namespace App.Resources
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";
-        /// <summary>主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
+        /// <summary>旧主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
         public const string Bgm = "Audio/BGM/BGM";
+        /// <summary>大厅 BGM Assets/Res/Audio/BGM/BGM_Lobby_Loop.wav。</summary>
+        public const string BgmLobby = "Audio/BGM/BGM_Lobby_Loop";
+        /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.wav。</summary>
+        public const string BgmBattle = "Audio/BGM/BGM_Battle_Loop";
+        /// <summary>回合发牌音效 Assets/Res/Audio/Effect/deal_5cards_01.wav。</summary>
+        public const string SfxDeal5Cards = "Audio/Effect/deal_5cards_01";
+        /// <summary>比牌亮牌放大音效 Assets/Res/Audio/Effect/reveal_cards_3.wav。</summary>
+        public const string SfxRevealCards3 = "Audio/Effect/reveal_cards_3";
+        /// <summary>通用按钮点击音效 Assets/Res/Audio/Effect/ui_click_03.wav。</summary>
+        public const string SfxUiClick = "Audio/Effect/ui_click_03";
         /// <summary>攻击演出参数 Assets/Res/SO/AttackTuning.asset（<see cref="App.UI.AttackTuningConfig"/>）。</summary>
         public const string AttackTuning = "SO/AttackTuning";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>

@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using Framework.Assets;
 using Framework.Save;
 using UnityEngine;
 
@@ -24,6 +26,12 @@ namespace App.Audio
         void StopBgm();
 
         void PlaySfx(AudioClip clip, float volumeScale = 1f);
+
+        /// <summary>播预载的通用 UI 点击音；未预载或开关关闭则无声。</summary>
+        void PlayUiClick();
+
+        /// <summary>预载通用 UI 点击音效（<c>ui_click_03</c>）。</summary>
+        Task PreloadUiClickAsync(IResourceService resources);
 
         void Load();
     }

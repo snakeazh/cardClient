@@ -48,6 +48,7 @@ namespace App.Bootstrap
 
             _services.Register(SaveFramework.Create());
             RegisterAudio(_services);
+            await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
             _services.Register(new GameSession());
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();

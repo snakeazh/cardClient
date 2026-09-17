@@ -1,7 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Audio;
+using App.Bootstrap;
 using App.Game;
+using App.Resources;
 using DG.Tweening;
+using Framework.Assets;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.UI
@@ -40,6 +46,7 @@ namespace App.UI
         private int _impactLevel = 1;
         private AttackTuningConfig.LevelTuning _impactBeat;
         private Vector3 _impactAttackerPos;
+        private AudioClip _impactSfx;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
@@ -58,6 +65,8 @@ namespace App.UI
             {
                 BindEnemy(i, enemies[i]);
             }
+
+            _ = PreloadImpactSfxAsync();
         }
 
         public Vector3 HitPosition(int visualSlot)
@@ -334,6 +343,35 @@ namespace App.UI
             RestoreHitTarget();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
+            _impactSfx = null;
+        }
+
+        private async Task PreloadImpactSfxAsync()
+        {
+            if (_impactSfx != null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            try
+            {
+                var resources = AppServices.Resolve<IResourceService>();
+                _impactSfx = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxHurtBig02);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Impact SFX load failed: " + ex.Message);
+            }
+        }
+
+        private void PlayImpactSfx()
+        {
+            if (_impactSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_impactSfx);
         }
 
         private void BindPlayer(PlayerItem player)
@@ -474,6 +512,7 @@ namespace App.UI
             _impactLevel = level;
             _impactBeat = beat;
             _impactAttackerPos = attackerWorldPos;
+            PlayImpactSfx();
             var missed = onHit != null && onHit();
             PlayClip(attacker, Clip(level, "end"));
             if (missed)

@@ -14,16 +14,11 @@ public sealed class PvpBattleHost
 
     public PvpBattleHost(IGameTables tables)
     {
-        _tables = tables ?? throw new ArgumentNullException(nameof(tables));
+        _tables = tables;
     }
 
-    public PvpBattleTable Open(PvpRoom room, IReadOnlyList<SeatSetup>? combatSeats = null)
+    public PvpBattleTable Open(PvpRoom room, IReadOnlyList<SeatSetup> combatSeats)
     {
-        if (room == null)
-        {
-            throw new ArgumentNullException(nameof(room));
-        }
-
         lock (_gate)
         {
             if (_byRoom.TryGetValue(room.RoomId, out var existing))

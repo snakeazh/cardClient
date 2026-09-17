@@ -146,8 +146,8 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         return new PlayerPublic
         {
             UserId = player.UserId,
-            NickName = player.NickName ?? string.Empty,
-            AvatarUrl = player.AvatarUrl ?? string.Empty
+            NickName = player.NickName,
+            AvatarUrl = player.AvatarUrl
         };
     }
 }

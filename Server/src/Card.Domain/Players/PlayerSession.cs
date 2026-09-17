@@ -32,7 +32,7 @@ public sealed class PlayerSession
             throw DomainException.Unauthorized("Player not found.");
         }
 
-        profile.EnsureDailyReset(_config, _clock.UtcNow);
+        profile.ApplyDailyReset(_config, _clock.UtcNow);
         return profile;
     }
 
@@ -49,7 +49,7 @@ public sealed class PlayerSession
             throw DomainException.Unauthorized("Player not found.");
         }
 
-        var dirty = profile.EnsureDailyReset(_config, _clock.UtcNow);
+        var dirty = profile.ApplyDailyReset(_config, _clock.UtcNow);
         var result = project(profile);
         if (dirty)
         {

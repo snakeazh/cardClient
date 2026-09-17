@@ -11,8 +11,8 @@ public static class ProfileMapper
         {
             UserId = profile.UserId.ToString("N"),
             SaveVersion = profile.SaveVersion,
-            NickName = profile.NickName ?? string.Empty,
-            AvatarUrl = profile.AvatarUrl ?? string.Empty,
+            NickName = profile.NickName,
+            AvatarUrl = profile.AvatarUrl,
             Gold = profile.Gold,
             Energy = new EnergyDto
             {
@@ -52,9 +52,9 @@ public static class ProfileMapper
                     .Select(e => new UnlockProgressDto { ConditionId = e.ConditionId, Amount = e.Amount })
                     .ToArray()
             },
-            GuideCompletedGroupIds = profile.GuideCompletedGroupIds ?? Array.Empty<int>(),
-            Bag = (profile.Bag?.Entries ?? new List<CardShare.Domain.Players.BagEntryState>())
-                .Where(e => e != null && e.Count > 0)
+            GuideCompletedGroupIds = profile.GuideCompletedGroupIds,
+            Bag = profile.Bag.Entries
+                .Where(e => e.Count > 0)
                 .Select(e => new BagEntryDto { ItemId = e.ItemId, Count = e.Count })
                 .ToArray()
         };
@@ -65,8 +65,8 @@ public static class ProfileMapper
         return new PlayerPublic
         {
             UserId = profile.UserId.ToString("N"),
-            NickName = profile.NickName ?? string.Empty,
-            AvatarUrl = profile.AvatarUrl ?? string.Empty
+            NickName = profile.NickName,
+            AvatarUrl = profile.AvatarUrl
         };
     }
 }

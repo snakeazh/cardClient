@@ -98,7 +98,7 @@ public sealed class PveSettleRequest
     /// <summary>通关整次 run。奖励由服务端按已上报进度判定，忽略客户端分数/统计。</summary>
     public bool Cleared { get; set; }
 
-    /// <summary>中途放弃。为 true 时不兑局外积分金。</summary>
+    /// <summary>中途放弃。奖励与失败结算相同：按服务端已上报积分和关卡进度发放，不发整章通关金。</summary>
     public bool Forfeit { get; set; }
 
     /// <summary>兼容旧客户端；服务端结算不再读取。</summary>

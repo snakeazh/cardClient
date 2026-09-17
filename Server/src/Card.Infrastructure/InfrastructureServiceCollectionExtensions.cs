@@ -10,6 +10,7 @@ using CardShare.Infrastructure.Redis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace CardShare.Infrastructure;
@@ -58,13 +59,28 @@ public static class InfrastructureServiceCollectionExtensions
         var redisCs = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisCs))
         {
-            services.AddSingleton<IConnectionMultiplexer>(_ =>
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
+                var log = sp.GetRequiredService<ILoggerFactory>().CreateLogger("CardShare.Redis");
                 var options = ConfigurationOptions.Parse(redisCs);
                 options.AbortOnConnectFail = true;
                 options.ConnectTimeout = 5000;
                 options.ConnectRetry = 2;
-                return ConnectionMultiplexer.Connect(options);
+                log.LogInformation("Redis multiplexer connecting {Target} ...", redisCs);
+                try
+                {
+                    var mux = ConnectionMultiplexer.Connect(options);
+                    log.LogInformation(
+                        "Redis multiplexer connected. endpoints={Endpoints} isConnected={IsConnected}",
+                        string.Join(",", mux.GetEndPoints().Select(e => e.ToString())),
+                        mux.IsConnected);
+                    return mux;
+                }
+                catch (Exception ex)
+                {
+                    log.LogError(ex, "Redis multiplexer connect failed. target={Target}", redisCs);
+                    throw;
+                }
             });
             services.AddSingleton<IPlayerLock, RedisPlayerLock>();
             services.AddSingleton<IPvpMatchmaker, RedisPvpMatchmaker>();

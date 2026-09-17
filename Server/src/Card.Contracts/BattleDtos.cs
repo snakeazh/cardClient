@@ -58,6 +58,8 @@ public sealed class SeatSetup
     public int HeroId { get; set; }
 
     public IReadOnlyList<CombatTalentCount> Talents { get; set; } = Array.Empty<CombatTalentCount>();
+
+    public IReadOnlyList<int> RelicIds { get; set; } = Array.Empty<int>();
 }
 
 public enum BattleModeKind

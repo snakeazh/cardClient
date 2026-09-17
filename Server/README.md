@@ -11,15 +11,46 @@
 | 项目 | 允许 | 不允许 |
 |------|------|--------|
 | `src/Card.Contracts` | DTO、错误码（netstandard2.1，Unity 可引用） | 规则、仓储 |
-| `src/Card.Battle` | 对局引擎、牌桌、出伤公式 `CombatDamage` / `CombatBonuses` | HTTP、档 |
+| `src/Card.Battle` | 对局引擎、牌桌、出伤、`RelicCombat` | HTTP、档 |
 | `src/Card.Domain` | 用例服务、规则、仓储接口 | EF、Redis、ASP.NET |
 | `src/Card.Infrastructure` | 仓储实现、token/锁/队列、配表加载、微信/抖音/游客客户端 | HTTP 路由、用例编排 |
 | `src/Card.Server` | 路由、中间件、WS 传输、组 DI、启动探活 | 改档规则 |
 | `tests/Card.Domain.Tests` | 体力重置、抽天赋、结算幂等、登录弃局 | |
 
+共享库规则：[`src/Card.Battle/README.md`](src/Card.Battle/README.md)、[`src/Card.Contracts/README.md`](src/Card.Contracts/README.md)。
+
 Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 只经过 `IPveRunService`，Auth 不依赖整份 PVE 服务。
 
 组合根在 `Card.Server/Composition`：`AddCardInfrastructure` 只接线存适配器，`AddCardApplication` 注册用例服务。HTTP 按 `health` / `auth` / `player` / `pve` / `debug` 分文件映射，路径不变。
+
+## 编程规则
+
+少做防御性编程。调用方保证入参有效，被调用方直接用。空了就让它炸，方便找调用错误。
+
+**不要：**
+
+- `x?.Foo`、`x ?? fallback` 把 null 吞成 0 / 空串 / 空列表
+- 参数写成 `T?`，函数开头 `if (x == null) return`
+- `EnsureXxx`、`?? throw new ArgumentNullException` 当业务空值补丁
+- 列表字段再 `??= new List<>()`（构造时就给空列表）
+
+**可以：**
+
+- 业务上的「没有」：空列表、0、`TryGet*` 找不到配表就跳过
+- 边界一次性转正：HTTP JSON、配表反序列化、数据库缺字段 → 进 Domain / Battle 后不再判空
+- 启动探活：`Database.EnsureCreated` 这类基础设施
+
+```
+// 不要
+RelicIds = seat?.RelicIds ?? Array.Empty<int>();
+if (tables == null || snapshot == null) return Empty;
+
+// 要
+RelicIds = seat.RelicIds;
+Evaluate(tables, snapshot, score);
+```
+
+日切、补货架用业务名（`ApplyDailyReset`、`FillOffers`），不要叫 `Ensure`。
 
 ## 本地跑起来（无需 Postgres）
 
@@ -159,7 +190,7 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave`  
 服务端：`hello` / `authed` / `queued` / `queue_update` / `room_ready` / `pong` / `error`
 
-未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、四人 `players`。开房立刻 Deal，摊牌走共享 `BattleEngine`。PVP 出伤与 PVE 玩家同一套 `CombatDamage`：开房读主档 `LastHeroId` + 天赋袋，由 `CombatBonuses` 填英雄面板、天赋加攻/倍率/伤害%、暴击、追击；无局内圣物、BOSS、燧石；斩杀不对玩家生效。
+未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、四人 `players`。开房立刻 Deal，摊牌走共享 `BattleEngine`。PVP 出伤与 PVE 玩家同一套 `CombatDamage`：开房读主档 `LastHeroId` + 天赋袋 + 已解锁圣物，由 `CombatBonuses` / `RelicCombat` 填英雄面板、天赋加攻/倍率、圣物本手倍率/加攻、伤害%、暴击、追击；无局内商店叠层、BOSS、燧石；斩杀不对玩家生效。
 
 ## 登录与未结算对局
 
@@ -169,7 +200,7 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 1. 请求可带 `pendingSettle`（`runId` + `cleared` + `forfeit`）。有则先按挂单结算，**奖励按服务端已记录的关卡进度和积分**，不信客户端 `totalScore` / `stats`。
 2. 通关（`cleared=true`）要求本局已 `POST /pve/run/progress` 且至少清过一关；否则视为无效挂单，再按放弃处理。
-3. 若之后仍有 active run：服务端按放弃结算，`forfeit=true`，不兑积分金。已推进的最高关仍写入主档。开局已扣体力不退。
+3. 若之后仍有 active run：服务端按失败结算（与局内放弃相同）。积分金、已推进最高关、商店/局内金相关解锁照发；不发整章通关金。开局已扣体力不退。
 4. 返回的 `PlayerProfileDto` 已是处理后的主档。客户端只 `ApplyServerProfile`。
 5. 选关若仍碰到 `active_run_exists`（同一次启动里未结算就再开一局）：客户端再按失败结算并提示。
 6. Memory 存储下重启 Server 会清空 run。挂单补报得到 `run_not_found` / `conflict` / `invalid_request` 即忽略，视为对局已失效。

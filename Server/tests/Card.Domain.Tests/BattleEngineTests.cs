@@ -303,7 +303,8 @@ public class BattleEngineTests
                     Type = CardShare.Contracts.Config.MechanismType.TwoCardAttack,
                     Value = 5f
                 }
-            });
+            },
+            fallback.RelicEntries);
     }
 
     private static PlayerPublic Public(string nick)

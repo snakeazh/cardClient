@@ -33,7 +33,7 @@ public sealed class AuthService
         _config = config;
         _clock = clock;
         _guestEnabled = guestEnabled;
-        _runs = runs ?? throw new ArgumentNullException(nameof(runs));
+        _runs = runs;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
@@ -71,7 +71,7 @@ public sealed class AuthService
             profile = await LoadProfileAsync(userId.Value, cancellationToken);
         }
 
-        profile.EnsureDailyReset(_config, _clock.UtcNow);
+        profile.ApplyDailyReset(_config, _clock.UtcNow);
         profile.ApplyUserInfo(request.UserInfo);
         await _players.SaveAsync(profile, cancellationToken);
 
@@ -118,7 +118,7 @@ public sealed class AuthService
             throw DomainException.Unauthorized("Player not found.");
         }
 
-        profile.EnsureDailyReset(_config, _clock.UtcNow);
+        profile.ApplyDailyReset(_config, _clock.UtcNow);
         return profile;
     }
 }

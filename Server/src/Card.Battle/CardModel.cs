@@ -132,7 +132,7 @@ namespace CardShare.Battle
 
         public Deck(Random rng)
         {
-            _rng = rng ?? throw new ArgumentNullException(nameof(rng));
+            _rng = rng;
             Reset();
         }
 
@@ -255,11 +255,6 @@ namespace CardShare.Battle
 
         public bool TryDrawMatching(Func<Card, bool> predicate, out Card card)
         {
-            if (predicate == null)
-            {
-                return TryDraw(out card);
-            }
-
             var matches = new List<int>();
             for (var i = 0; i < _cards.Count; i++)
             {
@@ -302,9 +297,9 @@ namespace CardShare.Battle
             Level = HandEvaluator.TypeLevel(type);
             BaseChips = baseChips;
             Multiplier = multiplier;
-            Keys = keys ?? Array.Empty<int>();
-            UsedCards = usedCards ?? Array.Empty<Card>();
-            Label = label ?? string.Empty;
+            Keys = keys;
+            UsedCards = usedCards;
+            Label = label;
             BeatsAll = beatsAll;
             CompareLevelBonus = compareLevelBonus;
         }
@@ -411,9 +406,9 @@ namespace CardShare.Battle
         [ThreadStatic]
         private static IGameTables _tables;
 
-        private static IReadOnlyList<HandScoreConfig> Scores(IGameTables tables)
+        private static IReadOnlyList<HandScoreConfig> Scores()
         {
-            return (tables ?? Tables)?.HandScores ?? Array.Empty<HandScoreConfig>();
+            return Tables.HandScores;
         }
 
         public static string TypeName(HandType type)
@@ -534,9 +529,9 @@ namespace CardShare.Battle
         {
             row = null;
             var configType = ToConfigHandType(type);
-            foreach (var candidate in Scores(null))
+            foreach (var candidate in Scores())
             {
-                if (candidate != null && candidate.Type == configType)
+                if (candidate.Type == configType)
                 {
                     row = candidate;
                     return true;
@@ -549,9 +544,9 @@ namespace CardShare.Battle
         private static bool TryGetTypeByLevel(int level, out HandType type)
         {
             type = HandType.HighCard;
-            foreach (var candidate in Scores(null))
+            foreach (var candidate in Scores())
             {
-                if (candidate != null && candidate.Level == level)
+                if (candidate.Level == level)
                 {
                     type = FromConfigHandType((int)candidate.Type);
                     return true;
@@ -564,9 +559,9 @@ namespace CardShare.Battle
         private static int MinLevel()
         {
             var min = 0;
-            foreach (var row in Scores(null))
+            foreach (var row in Scores())
             {
-                if (row == null || row.Level <= 0)
+                if (row.Level <= 0)
                 {
                     continue;
                 }
@@ -583,13 +578,8 @@ namespace CardShare.Battle
         private static int MaxLevel()
         {
             var max = 0;
-            foreach (var row in Scores(null))
+            foreach (var row in Scores())
             {
-                if (row == null)
-                {
-                    continue;
-                }
-
                 if (row.Level > max)
                 {
                     max = row.Level;
@@ -787,17 +777,9 @@ namespace CardShare.Battle
             Suit? bannedSuit3 = null,
             int maxHandScoreLevel = 0)
         {
-            if (selected != null)
+            for (var i = 0; i < selected.Length; i++)
             {
-                for (var i = 0; i < selected.Length; i++)
-                {
-                    selected[i] = false;
-                }
-            }
-
-            if (hand == null)
-            {
-                return Evaluate(Array.Empty<Card>(), bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
+                selected[i] = false;
             }
 
             dealt = Math.Min(dealt, hand.Length);
@@ -834,7 +816,7 @@ namespace CardShare.Battle
                 }
             }
 
-            if (selected != null && any)
+            if (any)
             {
                 if (bestI < selected.Length)
                 {
@@ -880,11 +862,6 @@ namespace CardShare.Battle
 
         public static Card[] CopySelectedCards(Card[] hand, bool[] selected)
         {
-            if (hand == null || selected == null)
-            {
-                return Array.Empty<Card>();
-            }
-
             var picked = new List<Card>(BattleLimits.OpenHandSize);
             var limit = Math.Min(hand.Length, selected.Length);
             for (var i = 0; i < limit; i++)
@@ -954,11 +931,6 @@ namespace CardShare.Battle
             Suit? bannedSuit3 = null)
         {
             var list = new List<Card>(3);
-            if (cards == null)
-            {
-                return list;
-            }
-
             for (var i = 0; i < cards.Count; i++)
             {
                 var card = cards[i];
@@ -994,11 +966,6 @@ namespace CardShare.Battle
         public static bool TryColorFlushDisplaySuit(IReadOnlyList<Card> cards, out Suit displaySuit)
         {
             displaySuit = default;
-            if (cards == null)
-            {
-                return false;
-            }
-
             var n = 0;
             var color = -1;
             var first = Suit.Heart;

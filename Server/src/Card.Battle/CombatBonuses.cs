@@ -8,7 +8,7 @@ namespace CardShare.Battle;
 /// <summary>
 /// 把英雄面板和天赋词条填进 <see cref="CombatDamageInput"/>。
 /// 口径与 Unity <c>TalentMechanics</c> / <c>HeroMechanics</c> / 英雄面板一致：有效值 = Entry.Value × Level。
-/// PVP 无局内圣物、BOSS、燧石；斩杀不对玩家生效。
+/// PVP 带已解锁圣物的本手倍率/加攻；无局内商店叠层、BOSS、燧石；斩杀不对玩家生效。
 /// </summary>
 public sealed class CombatSituation
 {
@@ -31,6 +31,20 @@ public sealed class CombatSituation
     public int DefenderHp { get; set; }
 
     public int DefenderMaxHp { get; set; }
+
+    public IReadOnlyList<Card> Shown { get; set; } = Array.Empty<Card>();
+
+    public IReadOnlyList<Card> Unshown { get; set; } = Array.Empty<Card>();
+
+    public int RubsUsedThisHand { get; set; }
+
+    public int PeekLeft { get; set; }
+
+    public int XRayLeft { get; set; }
+
+    public int ReplaceLeft { get; set; }
+
+    public int LuckySevenHits { get; set; }
 }
 
 public readonly struct CombatPanelStats
@@ -67,41 +81,63 @@ public static class CombatBonuses
         string userId,
         string nickName,
         int heroId,
-        IReadOnlyList<CombatTalentCount>? talents,
+        IReadOnlyList<CombatTalentCount> talents,
         IGameTables tables)
+    {
+        return BuildSeat(seatId, userId, nickName, heroId, talents, tables, Array.Empty<int>());
+    }
+
+    public static SeatSetup BuildSeat(
+        int seatId,
+        string userId,
+        string nickName,
+        int heroId,
+        IReadOnlyList<CombatTalentCount> talents,
+        IGameTables tables,
+        IReadOnlyList<int> relicIds)
     {
         var panel = EvaluatePanel(tables, heroId, talents);
         return new SeatSetup
         {
             SeatId = seatId,
-            UserId = userId ?? string.Empty,
-            NickName = nickName ?? string.Empty,
+            UserId = userId,
+            NickName = nickName,
             IsHuman = true,
             Alive = true,
             HeroId = ResolveHeroId(tables, heroId),
             Attack = panel.Attack,
             Hp = panel.Hp,
             MaxHp = panel.Hp,
-            Talents = CloneTalents(talents)
+            Talents = CloneTalents(talents),
+            RelicIds = CloneRelicIds(relicIds)
         };
     }
 
     public static CombatPanelStats EvaluatePanel(
         IGameTables tables,
         int heroId,
-        IReadOnlyList<CombatTalentCount>? talents)
+        IReadOnlyList<CombatTalentCount> talents)
     {
         TryResolveHero(tables, heroId, out var hero);
-        var attack = hero != null ? Math.Max(0, hero.HeroDamage) : 0;
-        var hp = hero != null ? Math.Max(0, hero.Hp) : 0;
-        var crit = hero != null ? hero.Critical : 0f;
-        crit += SumHeroEntry(tables, hero, MechanismType.HeroCritical);
+        var attack = 0;
+        var hp = 0;
+        var crit = 0f;
+        var critMul = CombatDamage.DefaultCritMultiplier;
+        if (hero != null)
+        {
+            attack = hero.HeroDamage;
+            hp = hero.Hp;
+            crit = hero.Critical;
+            crit += SumHeroEntry(tables, hero, MechanismType.HeroCritical);
+            if (hero.CriticalDamage > 0f)
+            {
+                critMul = hero.CriticalDamage;
+            }
+        }
+
         crit += SumTalent(tables, talents, MechanismType.HeroCritical);
         attack += (int)Math.Round(SumTalent(tables, talents, MechanismType.HeroAttack));
         hp += (int)Math.Round(SumTalent(tables, talents, MechanismType.HeroHpMax));
-        var critMul = hero != null && hero.CriticalDamage > 0f
-            ? hero.CriticalDamage
-            : CombatDamage.DefaultCritMultiplier;
         return new CombatPanelStats(attack, hp, crit, critMul);
     }
 
@@ -109,12 +145,11 @@ public static class CombatBonuses
         IGameTables tables,
         SeatSetup seat,
         HandScore score,
-        CombatSituation? situation)
+        CombatSituation situation)
     {
-        situation ??= new CombatSituation();
-        var talents = seat?.Talents;
-        var panel = EvaluatePanel(tables, seat?.HeroId ?? 0, talents);
-        var attack = seat != null && seat.Attack > 0 ? seat.Attack : panel.Attack;
+        var talents = seat.Talents;
+        var panel = EvaluatePanel(tables, seat.HeroId, talents);
+        var attack = seat.Attack > 0 ? seat.Attack : panel.Attack;
         if (attack <= 0)
         {
             attack = 1;
@@ -122,15 +157,18 @@ public static class CombatBonuses
 
         var attackerHp = situation.AttackerMaxHp > 0 || situation.AttackerHp > 0
             ? situation.AttackerHp
-            : seat?.Hp ?? 0;
-        var attackerMaxHp = situation.AttackerMaxHp > 0 ? situation.AttackerMaxHp : seat?.MaxHp ?? 0;
-        TryResolveHero(tables, seat?.HeroId ?? 0, out var hero);
+            : seat.Hp;
+        var attackerMaxHp = situation.AttackerMaxHp > 0 ? situation.AttackerMaxHp : seat.MaxHp;
+        TryResolveHero(tables, seat.HeroId, out var hero);
+        var relic = RelicCombat.Evaluate(tables, SnapshotFromSeat(seat, situation), score);
 
         return new CombatDamageInput
         {
             IsPlayer = true,
             Attack = attack,
             HandTypeMag = score.Multiplier,
+            RelicMagExtra = relic.MagExtra,
+            RelicAttackExtra = (int)Math.Round(relic.AttackExtra),
             TalentMagExtra = situation.FirstShow
                 ? SumTalent(tables, talents, MechanismType.FirstShowCardEveryLevel)
                 : 0f,
@@ -150,34 +188,53 @@ public static class CombatBonuses
         };
     }
 
-    public static IReadOnlyList<CombatTalentCount> CloneTalents(IReadOnlyList<CombatTalentCount>? talents)
+    public static IReadOnlyList<CombatTalentCount> CloneTalents(IReadOnlyList<CombatTalentCount> talents)
     {
-        if (talents == null || talents.Count == 0)
-        {
-            return Array.Empty<CombatTalentCount>();
-        }
-
         var copy = new CombatTalentCount[talents.Count];
         for (var i = 0; i < talents.Count; i++)
         {
             var row = talents[i];
-            copy[i] = row == null
-                ? new CombatTalentCount()
-                : new CombatTalentCount { TalentId = row.TalentId, Count = row.Count };
+            copy[i] = new CombatTalentCount { TalentId = row.TalentId, Count = row.Count };
         }
 
         return copy;
     }
 
-    private static int ResolveHeroId(IGameTables? tables, int heroId)
+    public static IReadOnlyList<int> CloneRelicIds(IReadOnlyList<int> relicIds)
     {
-        if (tables != null && tables.TryGetHero(heroId, out _))
+        var copy = new int[relicIds.Count];
+        for (var i = 0; i < relicIds.Count; i++)
+        {
+            copy[i] = relicIds[i];
+        }
+
+        return copy;
+    }
+
+    private static RelicCombatSnapshot SnapshotFromSeat(SeatSetup seat, CombatSituation situation)
+    {
+        return new RelicCombatSnapshot
+        {
+            RelicIds = seat.RelicIds,
+            Shown = situation.Shown,
+            Unshown = situation.Unshown,
+            RubsUsedThisHand = situation.RubsUsedThisHand,
+            PeekLeft = situation.PeekLeft,
+            XRayLeft = situation.XRayLeft,
+            ReplaceLeft = situation.ReplaceLeft,
+            LuckySevenHits = situation.LuckySevenHits
+        };
+    }
+
+    private static int ResolveHeroId(IGameTables tables, int heroId)
+    {
+        if (tables.TryGetHero(heroId, out _))
         {
             return heroId;
         }
 
-        var fallback = tables?.GameConst != null ? tables.GameConst.DefaultHeroId : 0;
-        if (fallback > 0 && tables != null && tables.TryGetHero(fallback, out _))
+        var fallback = tables.GameConst.DefaultHeroId;
+        if (fallback > 0 && tables.TryGetHero(fallback, out _))
         {
             return fallback;
         }
@@ -185,34 +242,24 @@ public static class CombatBonuses
         return heroId;
     }
 
-    private static bool TryResolveHero(IGameTables? tables, int heroId, out HeroConfig? hero)
+    private static bool TryResolveHero(IGameTables tables, int heroId, out HeroConfig hero)
     {
-        hero = null;
-        if (tables == null)
-        {
-            return false;
-        }
-
         if (tables.TryGetHero(heroId, out hero))
         {
             return true;
         }
 
-        var fallback = tables.GameConst != null ? tables.GameConst.DefaultHeroId : 0;
+        var fallback = tables.GameConst.DefaultHeroId;
         return fallback > 0 && tables.TryGetHero(fallback, out hero);
     }
 
-    private static float SumHeroEntry(IGameTables? tables, HeroConfig? hero, MechanismType type)
+    private static float SumHeroEntry(IGameTables tables, HeroConfig hero, MechanismType type)
     {
-        if (tables == null || hero?.HeroEntryId == null)
-        {
-            return 0f;
-        }
-
+        var ids = hero.HeroEntryId;
         var sum = 0f;
-        for (var i = 0; i < hero.HeroEntryId.Length; i++)
+        for (var i = 0; i < ids.Length; i++)
         {
-            if (tables.TryGetHeroEntry(hero.HeroEntryId[i], out var entry) && entry.Type == type)
+            if (tables.TryGetHeroEntry(ids[i], out var entry) && entry.Type == type)
             {
                 sum += entry.Value;
             }
@@ -222,8 +269,8 @@ public static class CombatBonuses
     }
 
     private static float SumTalent(
-        IGameTables? tables,
-        IReadOnlyList<CombatTalentCount>? talents,
+        IGameTables tables,
+        IReadOnlyList<CombatTalentCount> talents,
         MechanismType type)
     {
         var sum = 0f;
@@ -238,8 +285,8 @@ public static class CombatBonuses
     }
 
     private static float SumAttackExtra(
-        IGameTables? tables,
-        IReadOnlyList<CombatTalentCount>? talents,
+        IGameTables tables,
+        IReadOnlyList<CombatTalentCount> talents,
         HandScore score,
         CombatSituation situation)
     {
@@ -252,8 +299,8 @@ public static class CombatBonuses
     }
 
     private static float SumDamagePercent(
-        IGameTables? tables,
-        IReadOnlyList<CombatTalentCount>? talents,
+        IGameTables tables,
+        IReadOnlyList<CombatTalentCount> talents,
         CombatSituation situation,
         int attackerHp,
         int attackerMaxHp)
@@ -323,11 +370,6 @@ public static class CombatBonuses
     private static int CountRank(HandScore score, Rank rank)
     {
         var cards = score.UsedCards;
-        if (cards == null)
-        {
-            return 0;
-        }
-
         var count = 0;
         for (var i = 0; i < cards.Length; i++)
         {
@@ -343,11 +385,6 @@ public static class CombatBonuses
     private static int CountFace(HandScore score, bool treatAllAsFace)
     {
         var cards = score.UsedCards;
-        if (cards == null)
-        {
-            return 0;
-        }
-
         if (treatAllAsFace)
         {
             return cards.Length;
@@ -366,19 +403,14 @@ public static class CombatBonuses
     }
 
     private static void ForEachOwned(
-        IGameTables? tables,
-        IReadOnlyList<CombatTalentCount>? talents,
+        IGameTables tables,
+        IReadOnlyList<CombatTalentCount> talents,
         Action<int, TalentEntryConfig> action)
     {
-        if (tables == null || talents == null || action == null)
-        {
-            return;
-        }
-
         for (var i = 0; i < talents.Count; i++)
         {
             var owned = talents[i];
-            if (owned == null || owned.TalentId <= 0 || owned.Count <= 0)
+            if (owned.TalentId <= 0 || owned.Count <= 0)
             {
                 continue;
             }
@@ -390,7 +422,7 @@ public static class CombatBonuses
                 continue;
             }
 
-            if (!tables.TryGetTalentEntry(row.TalentEntry, out var entry) || entry == null)
+            if (!tables.TryGetTalentEntry(row.TalentEntry, out var entry))
             {
                 continue;
             }

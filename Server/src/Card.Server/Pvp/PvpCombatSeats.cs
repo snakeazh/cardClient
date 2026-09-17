@@ -1,6 +1,7 @@
 using CardShare.Battle;
 using CardShare.Contracts;
 using CardShare.Domain;
+using CardShare.Domain.Config;
 using CardShare.Domain.Players;
 using CardShare.Domain.Pvp;
 
@@ -16,23 +17,33 @@ internal static class PvpCombatSeats
         using var scope = scopes.CreateScope();
         var players = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
         var tables = scope.ServiceProvider.GetRequiredService<IGameTables>();
+        var config = scope.ServiceProvider.GetRequiredService<IGameConfig>();
         var seats = new SeatSetup[room.Players.Count];
         for (var i = 0; i < room.Players.Count; i++)
         {
             var pub = room.Players[i];
             PlayerProfile? profile = null;
-            if (pub != null && Guid.TryParse(pub.UserId, out var userId))
+            if (Guid.TryParse(pub.UserId, out var userId))
             {
                 profile = await players.GetAsync(userId, cancellationToken);
             }
 
+            var heroId = 0;
+            var relicIds = Array.Empty<int>();
+            if (profile != null)
+            {
+                heroId = profile.Level.LastHeroId;
+                relicIds = profile.ShopRelicIds(config);
+            }
+
             seats[i] = CombatBonuses.BuildSeat(
                 i,
-                pub?.UserId ?? string.Empty,
-                pub?.NickName ?? string.Empty,
-                profile?.Level.LastHeroId ?? 0,
+                pub.UserId,
+                pub.NickName,
+                heroId,
                 MapTalents(profile),
-                tables);
+                tables,
+                relicIds);
         }
 
         return seats;
@@ -40,16 +51,16 @@ internal static class PvpCombatSeats
 
     private static CombatTalentCount[] MapTalents(PlayerProfile? profile)
     {
-        var entries = profile?.Talent?.Entries;
-        if (entries == null || entries.Count == 0)
+        if (profile == null)
         {
             return Array.Empty<CombatTalentCount>();
         }
 
+        var entries = profile.Talent.Entries;
         var list = new List<CombatTalentCount>(entries.Count);
         foreach (var entry in entries)
         {
-            if (entry == null || entry.TalentId <= 0 || entry.Count <= 0)
+            if (entry.TalentId <= 0 || entry.Count <= 0)
             {
                 continue;
             }

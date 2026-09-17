@@ -90,13 +90,8 @@ public static class CombatDamage
 
     public const float DefaultCritMultiplier = 2f;
 
-    public static CombatDamageResult Resolve(CombatDamageInput input, Random? rng = null)
+    public static CombatDamageResult Resolve(CombatDamageInput input, Random rng = null)
     {
-        if (input == null)
-        {
-            return new CombatDamageResult { Damage = 1, FormulaDamage = 1, WithoutTalent = 1 };
-        }
-
         var flint = input.FlintMultiplier > 0f ? input.FlintMultiplier : 1f;
         var extra = input.RelicMagExtra + input.TalentMagExtra;
         var attackExtra = input.RelicAttackExtra + input.TalentAttackExtra;
@@ -202,7 +197,7 @@ public static class CombatDamage
         };
     }
 
-    private static bool Hit(bool? forced, float chance, Random? rng)
+    private static bool Hit(bool? forced, float chance, Random rng)
     {
         if (forced.HasValue)
         {

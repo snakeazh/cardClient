@@ -29,6 +29,8 @@ public interface IGameTables
 
     IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
 
+    IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
+
     IReadOnlyList<int> Difficulties { get; }
 
     bool TryGetLevel(int id, out LevelConfig level);
@@ -42,6 +44,8 @@ public interface IGameTables
     bool TryGetHeroEntry(int id, out HeroEntryConfig entry);
 
     bool TryGetTalentEntry(int id, out TalentEntryConfig entry);
+
+    bool TryGetRelicEntry(int id, out RelicEntryConfig entry);
 
     bool TryGetTalentRow(int talentId, int level, out TalentConfig row);
 

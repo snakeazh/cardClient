@@ -152,7 +152,12 @@ public sealed class PostgresAuthBindingRepository : IAuthBindingRepository
     {
         var row = await _db.AuthBindings.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Provider == provider && b.OpenId == openId, cancellationToken);
-        return row?.UserId;
+        if (row == null)
+        {
+            return null;
+        }
+
+        return row.UserId;
     }
 
     public async Task BindAsync(string provider, string openId, Guid userId, CancellationToken cancellationToken)
@@ -207,8 +212,8 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             row.SettleFingerprint = run.SettleFingerprint;
             row.GoldGranted = run.GoldGranted;
             row.Gold = run.Gold;
-            row.RelicIdsJson = JsonSerializer.Serialize(run.RelicIds ?? new List<int>());
-            row.ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds ?? new List<int>());
+            row.RelicIdsJson = JsonSerializer.Serialize(run.RelicIds);
+            row.ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds);
             row.ShopRefreshCount = run.ShopRefreshCount;
             row.FreeShopRefreshLeft = run.FreeShopRefreshLeft;
             row.ScoreTotal = run.ScoreTotal;
@@ -230,8 +235,8 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             HeroId = run.HeroId,
             ShopRelicIdsJson = JsonSerializer.Serialize(run.ShopRelicIds),
             Gold = run.Gold,
-            RelicIdsJson = JsonSerializer.Serialize(run.RelicIds ?? new List<int>()),
-            ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds ?? new List<int>()),
+            RelicIdsJson = JsonSerializer.Serialize(run.RelicIds),
+            ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds),
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
             Status = (int)run.Status,

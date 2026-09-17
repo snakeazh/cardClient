@@ -10,55 +10,44 @@ public static class BattleWire
     public static BattleStateDto ForViewer(
         BattleSnapshot snapshot,
         int viewerSeat,
-        string roomId = "",
-        IReadOnlyList<PlayerPublic>? players = null)
+        string roomId,
+        IReadOnlyList<PlayerPublic> players)
     {
-        if (snapshot == null)
-        {
-            throw new ArgumentNullException(nameof(snapshot));
-        }
-
         var showAll = snapshot.Phase == BattlePhase.Showdown;
         var seats = new BattleSeatDto[BattleLimits.RoomSeats];
         for (var i = 0; i < seats.Length; i++)
         {
-            var setup = i < snapshot.Seats.Count ? snapshot.Seats[i] : null;
-            var player = players != null && i < players.Count ? players[i] : null;
-            var hand = i < snapshot.Hands.Length ? snapshot.Hands[i] : Array.Empty<Card>();
+            var setup = snapshot.Seats[i];
+            var player = players[i];
+            var hand = snapshot.Hands[i];
             var reveal = showAll || i == viewerSeat;
-            var score = snapshot.Phase == BattlePhase.Showdown && i < snapshot.Scores.Length
-                ? snapshot.Scores[i]
-                : default;
+            var score = snapshot.Scores[i];
             var scored = snapshot.Phase == BattlePhase.Showdown && HasOpenHand(hand);
             seats[i] = new BattleSeatDto
             {
-                SeatId = setup?.SeatId ?? i,
-                UserId = FirstNonEmpty(setup?.UserId, player?.UserId),
-                NickName = FirstNonEmpty(player?.NickName, setup?.NickName),
-                IsHuman = setup?.IsHuman ?? true,
-                Alive = setup?.Alive ?? true,
+                SeatId = setup.SeatId,
+                UserId = FirstNonEmpty(setup.UserId, player.UserId),
+                NickName = FirstNonEmpty(player.NickName, setup.NickName),
+                IsHuman = setup.IsHuman,
+                Alive = setup.Alive,
                 Cards = reveal ? ToCards(hand) : null,
                 HandType = scored ? score.Type.ToString() : null,
                 Label = scored ? score.Label : null,
                 Level = scored ? score.Level : (int?)null,
                 Multiplier = scored ? score.Multiplier : (float?)null,
-                Damage = snapshot.Phase == BattlePhase.Showdown &&
-                         snapshot.Damages != null &&
-                         i < snapshot.Damages.Count
-                    ? snapshot.Damages[i]
-                    : null
+                Damage = snapshot.Phase == BattlePhase.Showdown ? snapshot.Damages[i] : (int?)null
             };
         }
 
         return new BattleStateDto
         {
-            RoomId = roomId ?? string.Empty,
+            RoomId = roomId,
             Seed = snapshot.Seed,
             Mode = snapshot.Mode == BattleModeKind.Pve ? "pve" : "pvp",
             Phase = PhaseName(snapshot.Phase),
             ViewerSeat = viewerSeat,
             Seats = seats,
-            Winners = snapshot.Winners ?? Array.Empty<int>()
+            Winners = snapshot.Winners
         };
     }
 
@@ -67,7 +56,7 @@ public static class BattleWire
 
     private static IReadOnlyList<CardDto> ToCards(IReadOnlyList<Card> hand)
     {
-        if (hand == null || hand.Count == 0)
+        if (hand.Count == 0)
         {
             return Array.Empty<CardDto>();
         }
@@ -86,7 +75,7 @@ public static class BattleWire
 
     private static bool HasOpenHand(IReadOnlyList<Card> hand)
     {
-        if (hand == null || hand.Count < BattleLimits.OpenHandSize)
+        if (hand.Count < BattleLimits.OpenHandSize)
         {
             return false;
         }
@@ -112,13 +101,13 @@ public static class BattleWire
         }
     }
 
-    private static string FirstNonEmpty(string? a, string? b)
+    private static string FirstNonEmpty(string a, string b)
     {
         if (!string.IsNullOrEmpty(a))
         {
             return a;
         }
 
-        return b ?? string.Empty;
+        return b;
     }
 }

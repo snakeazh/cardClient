@@ -7,6 +7,7 @@ using SharedLevel = CardShare.Contracts.Config.LevelConfig;
 using SharedItem = CardShare.Contracts.Config.ItemConfig;
 using SharedMonster = CardShare.Contracts.Config.MonsterConfig;
 using SharedRelic = CardShare.Contracts.Config.RelicConfig;
+using SharedRelicEntry = CardShare.Contracts.Config.RelicEntryConfig;
 using SharedTalent = CardShare.Contracts.Config.TalentConfig;
 using SharedTalentEntry = CardShare.Contracts.Config.TalentEntryConfig;
 using SharedHeroEntry = CardShare.Contracts.Config.HeroEntryConfig;
@@ -40,7 +41,8 @@ namespace App.Config
                 Map(ItemConfig.All.Values, ToItem),
                 "unity",
                 Map(HeroEntryConfig.All.Values, ToHeroEntry),
-                Map(TalentEntryConfig.All.Values, ToTalentEntry));
+                Map(TalentEntryConfig.All.Values, ToTalentEntry),
+                Map(RelicEntryConfig.All.Values, ToRelicEntry));
             SharedConst.Load(tables.GameConst);
             Current = tables;
             return tables;
@@ -200,6 +202,18 @@ namespace App.Config
         private static SharedTalentEntry ToTalentEntry(TalentEntryConfig row)
         {
             return new SharedTalentEntry
+            {
+                Id = row.Id,
+                Name = row.Name,
+                Type = (SharedMechanism)(int)row.Type,
+                Value = row.Value,
+                Desc = row.Desc
+            };
+        }
+
+        private static SharedRelicEntry ToRelicEntry(RelicEntryConfig row)
+        {
+            return new SharedRelicEntry
             {
                 Id = row.Id,
                 Name = row.Name,

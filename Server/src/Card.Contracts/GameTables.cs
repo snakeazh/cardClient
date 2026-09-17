@@ -17,6 +17,7 @@ public sealed class GameTables : IGameTables
     private readonly Dictionary<int, HeroConfig> _heroes;
     private readonly Dictionary<int, HeroEntryConfig> _heroEntries;
     private readonly Dictionary<int, TalentEntryConfig> _talentEntries;
+    private readonly Dictionary<int, RelicEntryConfig> _relicEntries;
 
     public GameTables(
         GameConst gameConst,
@@ -27,29 +28,32 @@ public sealed class GameTables : IGameTables
         IReadOnlyList<UnlockConditionConfig> unlockConditions,
         IReadOnlyList<TalentConfig> talentRows,
         IReadOnlyList<MonsterConfig> monsters,
-        IReadOnlyList<ItemConfig>? items = null,
-        string configHash = "",
-        IReadOnlyList<HeroEntryConfig>? heroEntries = null,
-        IReadOnlyList<TalentEntryConfig>? talentEntries = null)
+        IReadOnlyList<ItemConfig> items,
+        string configHash,
+        IReadOnlyList<HeroEntryConfig> heroEntries,
+        IReadOnlyList<TalentEntryConfig> talentEntries,
+        IReadOnlyList<RelicEntryConfig> relicEntries)
     {
-        GameConst = gameConst ?? new GameConst();
-        HandScores = handScores ?? Array.Empty<HandScoreConfig>();
-        Levels = levels ?? Array.Empty<LevelConfig>();
-        Heroes = heroes ?? Array.Empty<HeroConfig>();
-        Relics = relics ?? Array.Empty<RelicConfig>();
-        UnlockConditions = unlockConditions ?? Array.Empty<UnlockConditionConfig>();
-        TalentRows = talentRows ?? Array.Empty<TalentConfig>();
-        Monsters = monsters ?? Array.Empty<MonsterConfig>();
-        Items = items ?? Array.Empty<ItemConfig>();
-        HeroEntries = heroEntries ?? Array.Empty<HeroEntryConfig>();
-        TalentEntries = talentEntries ?? Array.Empty<TalentEntryConfig>();
-        ConfigHash = configHash ?? string.Empty;
-        _levels = Levels.Where(l => l != null && l.Id > 0).ToDictionary(l => l.Id);
-        _items = Items.Where(i => i != null && i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
-        _relics = Relics.Where(r => r != null && r.Id > 0).GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
-        _heroes = Heroes.Where(h => h != null && h.Id > 0).GroupBy(h => h.Id).ToDictionary(g => g.Key, g => g.First());
-        _heroEntries = HeroEntries.Where(e => e != null && e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
-        _talentEntries = TalentEntries.Where(e => e != null && e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
+        GameConst = gameConst;
+        HandScores = handScores;
+        Levels = levels;
+        Heroes = heroes;
+        Relics = relics;
+        UnlockConditions = unlockConditions;
+        TalentRows = talentRows;
+        Monsters = monsters;
+        Items = items;
+        HeroEntries = heroEntries;
+        TalentEntries = talentEntries;
+        RelicEntries = relicEntries;
+        ConfigHash = configHash;
+        _levels = Levels.Where(l => l.Id > 0).ToDictionary(l => l.Id);
+        _items = Items.Where(i => i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
+        _relics = Relics.Where(r => r.Id > 0).GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
+        _heroes = Heroes.Where(h => h.Id > 0).GroupBy(h => h.Id).ToDictionary(g => g.Key, g => g.First());
+        _heroEntries = HeroEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
+        _talentEntries = TalentEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
+        _relicEntries = RelicEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
         Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
         _maxLevelByDifficulty = Levels
             .GroupBy(l => l.Difficulty)
@@ -58,7 +62,7 @@ public sealed class GameTables : IGameTables
         _talentByLevel = new Dictionary<(int TalentId, int Level), TalentConfig>();
         foreach (var row in TalentRows)
         {
-            if (row == null || row.TalentId <= 0)
+            if (row.TalentId <= 0)
             {
                 continue;
             }
@@ -96,6 +100,8 @@ public sealed class GameTables : IGameTables
 
     public IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
 
+    public IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
+
     public IReadOnlyList<int> Difficulties { get; }
 
     public bool TryGetLevel(int id, out LevelConfig level) => _levels.TryGetValue(id, out level!);
@@ -109,6 +115,8 @@ public sealed class GameTables : IGameTables
     public bool TryGetHeroEntry(int id, out HeroEntryConfig entry) => _heroEntries.TryGetValue(id, out entry!);
 
     public bool TryGetTalentEntry(int id, out TalentEntryConfig entry) => _talentEntries.TryGetValue(id, out entry!);
+
+    public bool TryGetRelicEntry(int id, out RelicEntryConfig entry) => _relicEntries.TryGetValue(id, out entry!);
 
     public bool TryGetTalentRow(int talentId, int level, out TalentConfig row)
         => _talentByLevel.TryGetValue((talentId, level), out row!);
@@ -155,13 +163,13 @@ public sealed class GameTables : IGameTables
             },
             new[]
             {
-                new HeroConfig { Id = 1, UnlockCondition = 0 },
-                new HeroConfig { Id = 2, UnlockCondition = 1 }
+                new HeroConfig { Id = 1, UnlockCondition = 0, HeroEntryId = Array.Empty<int>() },
+                new HeroConfig { Id = 2, UnlockCondition = 1, HeroEntryId = Array.Empty<int>() }
             },
             new[]
             {
-                new RelicConfig { Id = 1, UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f },
-                new RelicConfig { Id = 2, UnlockConditionId = 10401, Price = 20, SellingPrice = 8, RefreshProbability = 1f }
+                new RelicConfig { Id = 1, UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = Array.Empty<int>() },
+                new RelicConfig { Id = 2, UnlockConditionId = 10401, Price = 20, SellingPrice = 8, RefreshProbability = 1f, MechanismId = Array.Empty<int>() }
             },
             new[]
             {
@@ -180,6 +188,9 @@ public sealed class GameTables : IGameTables
             },
             Array.Empty<MonsterConfig>(),
             new[] { new ItemConfig { Id = 101, Name = "测试道具" } },
-            "fallback");
+            "fallback",
+            Array.Empty<HeroEntryConfig>(),
+            Array.Empty<TalentEntryConfig>(),
+            Array.Empty<RelicEntryConfig>());
     }
 }

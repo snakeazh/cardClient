@@ -203,7 +203,7 @@ public class PveFlowTests
     }
 
     [Fact]
-    public async Task ForfeitIgnoresRunScoreForWalletGold()
+    public async Task ForfeitGrantsRunScoreLikeFailSettle()
     {
         var (pve, _, userId) = await CreateApp();
         var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
@@ -215,7 +215,8 @@ public class PveFlowTests
             userId,
             new PveSettleRequest { RunId = started.RunId, Cleared = false, Forfeit = true },
             CancellationToken.None);
-        Assert.Equal(0, settled.GoldGranted);
+        Assert.Equal(9, settled.GoldGranted);
+        Assert.Equal(9, settled.Profile.Gold);
         Assert.Equal(1, settled.Profile.Level.DifficultyProgress[0].HighestClearedLevel);
     }
 
@@ -288,11 +289,16 @@ public class AuthServiceTests
         var userId = Guid.Parse(login.Profile.UserId);
         var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
         Assert.False(string.IsNullOrEmpty(started.RunId));
+        await pve.ReportProgressAsync(
+            userId,
+            new PveProgressRequest { RunId = started.RunId, ClearedStage = true, Score = 99 },
+            CancellationToken.None);
 
         var again = await auth.LoginAsync(new LoginRequest { Provider = "guest", Code = "forfeit-device" }, CancellationToken.None);
         var active = await pve.GetActiveRunAsync(userId, CancellationToken.None);
         Assert.True(active.Run == null || string.IsNullOrEmpty(active.Run.RunId));
-        Assert.Equal(login.Profile.Gold, again.Profile.Gold);
+        Assert.Equal(login.Profile.Gold + 9, again.Profile.Gold);
+        Assert.Equal(1, again.Profile.Level.DifficultyProgress[0].HighestClearedLevel);
     }
 
     [Fact]

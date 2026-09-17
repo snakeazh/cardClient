@@ -79,7 +79,7 @@ public sealed class PveRunService : IPveRunService
             try
             {
                 var settled = await SettlePveAsync(userId, pending, cancellationToken);
-                return await ForfeitActiveRunAsync(userId, cancellationToken, settled.Profile);
+                return await ForfeitActiveRunAsync(userId, cancellationToken);
             }
             catch (DomainException ex) when (
                 ex.Code == ErrorCodes.RunNotFound ||
@@ -95,8 +95,7 @@ public sealed class PveRunService : IPveRunService
 
     public async Task<PlayerProfileDto> ForfeitActiveRunAsync(
         Guid userId,
-        CancellationToken cancellationToken,
-        PlayerProfileDto? alreadyLoaded = null)
+        CancellationToken cancellationToken)
     {
         await using var gate = await _session.AcquireAsync(userId, cancellationToken);
         var run = await _runs.GetActiveByUserAsync(userId, cancellationToken);
@@ -104,7 +103,7 @@ public sealed class PveRunService : IPveRunService
         if (run == null)
         {
             await _session.SaveAsync(profile, cancellationToken);
-            return alreadyLoaded ?? ProfileMapper.ToDto(profile);
+            return ProfileMapper.ToDto(profile);
         }
 
         var request = new PveSettleRequest
@@ -168,7 +167,7 @@ public sealed class PveRunService : IPveRunService
         };
         lock (_random)
         {
-            PveShopRules.EnsureOffers(run, _config.Tables, _config.Balance, _random);
+            PveShopRules.FillOffers(run, _config.Tables, _config.Balance, _random);
         }
 
         await _runs.AddAsync(run, cancellationToken);
@@ -401,8 +400,7 @@ public sealed class PveRunService : IPveRunService
         }
 
         var clearGold = request.Cleared && clearedLevel != null ? clearedLevel.GetGold : 0;
-        var scoreGold = request.Forfeit ? 0 : run.ScoreTotal;
-        var gold = profile.GrantSettleGold(scoreGold, _config, clearGold);
+        var gold = profile.GrantSettleGold(run.ScoreTotal, _config, clearGold);
 
         run.Status = PveRunStatus.Settled;
         run.SettledAt = _clock.UtcNow;
@@ -437,8 +435,6 @@ public sealed class PveRunService : IPveRunService
             throw DomainException.Invalid("Run already settled.");
         }
 
-        run.RelicIds ??= new List<int>();
-        run.ShopOfferIds ??= new List<int>();
         return run;
     }
 

@@ -31,14 +31,14 @@ public sealed class PveLocalSession
         };
     }
 
-    public static PveLocalSession Create(IGameTables tables, int seed, IReadOnlyList<SeatSetup>? seats = null)
+    public static PveLocalSession Create(IGameTables tables, int seed)
     {
-        if (tables == null)
-        {
-            throw new ArgumentNullException(nameof(tables));
-        }
+        return Create(tables, seed, DefaultSeats());
+    }
 
-        var engine = new BattleEngine(new PveMode(), seed, seats ?? DefaultSeats(), tables);
+    public static PveLocalSession Create(IGameTables tables, int seed, IReadOnlyList<SeatSetup> seats)
+    {
+        var engine = new BattleEngine(new PveMode(), seed, seats, tables);
         return new PveLocalSession(engine);
     }
 

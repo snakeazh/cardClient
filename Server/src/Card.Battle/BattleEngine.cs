@@ -53,10 +53,10 @@ public sealed class BattleEngine
 
     public BattleEngine(BattleMode mode, int seed, IReadOnlyList<SeatSetup> seats, IGameTables tables)
     {
-        _mode = mode ?? throw new ArgumentNullException(nameof(mode));
+        _mode = mode;
         _seed = seed;
         _seats = PadSeats(seats, mode.Kind);
-        _tables = tables ?? throw new ArgumentNullException(nameof(tables));
+        _tables = tables;
         _snapshot = EmptySnapshot();
     }
 
@@ -64,11 +64,6 @@ public sealed class BattleEngine
 
     public BattleSnapshot Apply(BattleCommand cmd)
     {
-        if (cmd == null)
-        {
-            return _snapshot;
-        }
-
         var prev = HandEvaluator.Tables;
         HandEvaluator.Tables = _tables;
         try
@@ -103,7 +98,7 @@ public sealed class BattleEngine
             Deal();
         }
 
-        return _deck != null ? _deck.Draw() : default;
+        return _deck.Draw();
     }
 
     private void Deal()
@@ -185,9 +180,9 @@ public sealed class BattleEngine
                 continue;
             }
 
-            var seat = i < _seats.Count ? _seats[i] : null;
+            var seat = _seats[i];
             CombatDamageInput input;
-            if (seat != null && seat.IsHuman)
+            if (seat.IsHuman)
             {
                 input = CombatBonuses.BuildPlayerInput(
                     _tables,
@@ -201,7 +196,8 @@ public sealed class BattleEngine
                         AttackerMaxHp = seat.MaxHp,
                         DefenderIsPlayer = isPvp,
                         DefenderIsBoss = false,
-                        DefenderHp = 0
+                        DefenderHp = 0,
+                        Shown = hands[i]
                     });
             }
             else
@@ -209,7 +205,7 @@ public sealed class BattleEngine
                 input = new CombatDamageInput
                 {
                     IsPlayer = false,
-                    Attack = seat != null && seat.Attack > 0 ? seat.Attack : 1,
+                    Attack = seat.Attack > 0 ? seat.Attack : 1,
                     HandTypeMag = scores[i].Multiplier,
                     FlintMultiplier = 1f
                 };
@@ -263,7 +259,7 @@ public sealed class BattleEngine
 
     private static bool HasOpenHand(IReadOnlyList<Card> hand)
     {
-        if (hand == null || hand.Count < BattleLimits.OpenHandSize)
+        if (hand.Count < BattleLimits.OpenHandSize)
         {
             return false;
         }
@@ -279,16 +275,15 @@ public sealed class BattleEngine
         return true;
     }
 
-    private static IReadOnlyList<SeatSetup> PadSeats(IReadOnlyList<SeatSetup>? seats, BattleModeKind kind)
+    private static IReadOnlyList<SeatSetup> PadSeats(IReadOnlyList<SeatSetup> seats, BattleModeKind kind)
     {
         var padded = new SeatSetup[BattleLimits.RoomSeats];
-        var source = seats ?? Array.Empty<SeatSetup>();
-        var fillAll = source.Count == 0;
+        var fillAll = seats.Count == 0;
         for (var i = 0; i < padded.Length; i++)
         {
-            if (i < source.Count && source[i] != null)
+            if (i < seats.Count)
             {
-                padded[i] = CloneSeat(source[i], i);
+                padded[i] = CloneSeat(seats[i], i);
                 continue;
             }
 
@@ -310,15 +305,16 @@ public sealed class BattleEngine
         return new SeatSetup
         {
             SeatId = seat.SeatId >= 0 ? seat.SeatId : index,
-            UserId = seat.UserId ?? string.Empty,
-            NickName = seat.NickName ?? string.Empty,
+            UserId = seat.UserId,
+            NickName = seat.NickName,
             IsHuman = seat.IsHuman,
             Alive = seat.Alive,
             Attack = seat.Attack,
             Hp = seat.Hp,
             MaxHp = seat.MaxHp,
             HeroId = seat.HeroId,
-            Talents = CombatBonuses.CloneTalents(seat.Talents)
+            Talents = CombatBonuses.CloneTalents(seat.Talents),
+            RelicIds = CombatBonuses.CloneRelicIds(seat.RelicIds)
         };
     }
 }

@@ -38,6 +38,7 @@ namespace App.UI
         private GameObject _prefab;
         private AudioClip _dealSfx;
         private AudioClip _revealSfx;
+        private AudioClip _rubSfx;
         private readonly CardShadowPool _shadows = new CardShadowPool();
 
         private Transform _hud;
@@ -137,6 +138,7 @@ namespace App.UI
             HideLegacyIcons(_other != null ? _other.Node : null);
             _ = PreloadDealSfxAsync();
             _ = PreloadRevealSfxAsync();
+            _ = PreloadRubSfxAsync();
         }
 
         private async Task PreloadDealSfxAsync()
@@ -173,6 +175,23 @@ namespace App.UI
             }
         }
 
+        private async Task PreloadRubSfxAsync()
+        {
+            if (_rubSfx != null || _resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _rubSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRubCards02);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Rub SFX load failed: " + ex.Message);
+            }
+        }
+
         private void PlayDealSfx()
         {
             if (_dealSfx == null || !AppServices.IsReady)
@@ -191,6 +210,16 @@ namespace App.UI
             }
 
             AppServices.Resolve<IAudioService>().PlaySfx(_revealSfx);
+        }
+
+        private void PlayRubSfx()
+        {
+            if (_rubSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_rubSfx);
         }
 
         public void Sync(GameSession session)
@@ -379,6 +408,7 @@ namespace App.UI
             SetPlayerChangeSelectFx(false);
             item.PlayChangeReplaceFx();
             TintPlayerCard(index, Color.white);
+            PlayRubSfx();
 
             var replaced = false;
 
@@ -742,6 +772,7 @@ namespace App.UI
             _prefab = null;
             _dealSfx = null;
             _revealSfx = null;
+            _rubSfx = null;
             _resources = null;
         }
 

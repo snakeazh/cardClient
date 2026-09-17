@@ -761,12 +761,12 @@ namespace App.UI
             _dealing = true;
             ClearAllItems();
             ShowDealPile();
-            PlayDealSfx();
 
             var seats = CollectDealSeats(session);
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
+            var dealSfxPlayed = false;
             var maxRound = Math.Max(GameBalance.EnemyCardsDealt, session.PlayerDealCount);
             for (var round = 0; round < maxRound; round++)
             {
@@ -786,11 +786,18 @@ namespace App.UI
 
                     var cardIndex = round;
                     var capturedOrder = order;
+                    var playSfx = !dealSfxPlayed;
+                    dealSfxPlayed = true;
                     seq.InsertCallback(delay, () =>
                     {
                         if (token != _dealToken)
                         {
                             return;
+                        }
+
+                        if (playSfx)
+                        {
+                            PlayDealSfx();
                         }
 
                         SpawnAndFly(view, seat, cardIndex, capturedOrder, token);

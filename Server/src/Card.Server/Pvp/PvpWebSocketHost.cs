@@ -50,9 +50,9 @@ public static class PvpWebSocketHost
             var tokens = context.RequestServices.GetRequiredService<ITokenService>();
             var matchmaker = context.RequestServices.GetRequiredService<IPvpMatchmaker>();
             var hub = context.RequestServices.GetRequiredService<PvpConnectionHub>();
-            var battles = context.RequestServices.GetRequiredService<PvpBattleHost>();
+            var matches = context.RequestServices.GetRequiredService<PvpMatchHost>();
             var scopes = context.RequestServices.GetRequiredService<IServiceScopeFactory>();
-            await HandleAsync(socket, tokens, matchmaker, hub, battles, scopes, context.RequestAborted);
+            await HandleAsync(socket, tokens, matchmaker, hub, matches, scopes, context.RequestAborted);
         });
     }
 
@@ -67,7 +67,7 @@ public static class PvpWebSocketHost
         ITokenService tokens,
         IPvpMatchmaker matchmaker,
         PvpConnectionHub hub,
-        PvpBattleHost battles,
+        PvpMatchHost matches,
         IServiceScopeFactory scopes,
         CancellationToken cancellationToken)
     {
@@ -130,19 +130,19 @@ public static class PvpWebSocketHost
                     }
 
                     var evt = matchmaker.Enqueue(snapshot);
-                    await BroadcastAsync(hub, battles, scopes, evt, userId.Value, incoming.Seq, cancellationToken);
+                    await BroadcastAsync(hub, matches, scopes, evt, userId.Value, incoming.Seq, cancellationToken);
                     continue;
                 }
 
                 if (t == WsMessageTypes.Battle)
                 {
-                    await HandleBattleAsync(socket, hub, battles, userId.Value, incoming, cancellationToken);
+                    await HandleBattleAsync(socket, hub, matches, userId.Value, incoming, cancellationToken);
                     continue;
                 }
 
                 if (t == WsMessageTypes.Cancel || t == WsMessageTypes.Leave)
                 {
-                    battles.Leave(userId.Value);
+                    matches.Leave(userId.Value);
                     var evt = matchmaker.Cancel(userId.Value);
                     await SendAsync(socket, new WsEnvelope { T = t, Seq = incoming.Seq }, cancellationToken);
                     if (evt != null)
@@ -162,7 +162,7 @@ public static class PvpWebSocketHost
         {
             if (userId != null)
             {
-                battles.Leave(userId.Value);
+                matches.Leave(userId.Value);
                 var evt = matchmaker.Cancel(userId.Value);
                 hub.Remove(userId.Value);
                 if (evt != null)
@@ -193,69 +193,105 @@ public static class PvpWebSocketHost
     private static async Task HandleBattleAsync(
         WebSocket socket,
         PvpConnectionHub hub,
-        PvpBattleHost battles,
+        PvpMatchHost matches,
         Guid userId,
         WsEnvelope incoming,
         CancellationToken cancellationToken)
     {
-        if (!battles.TryGet(userId, out var table))
+        if (!matches.TryGet(userId, out var match))
         {
             await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Not in a battle.", cancellationToken);
             return;
         }
 
-        var action = ReadAction(incoming.Payload);
-        if (action != "showdown" && action != "open")
+        var cmd = ReadBattle(incoming.Payload);
+        if (string.IsNullOrEmpty(cmd.Action))
         {
             await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Unknown battle action.", cancellationToken);
             return;
         }
 
-        table.Showdown();
-        await BroadcastBattleAsync(hub, table, incoming.Seq, cancellationToken);
+        try
+        {
+            matches.Act(userId, cmd.Action, cmd.Index, cmd.Indexes);
+        }
+        catch (DomainException ex)
+        {
+            await SendError(socket, incoming.Seq, ex.Code, ex.Message, cancellationToken);
+            return;
+        }
+
+        await BroadcastMatchAsync(hub, match, incoming.Seq, cancellationToken);
+        if (matches.AdvanceIfReady(userId))
+        {
+            await BroadcastMatchAsync(hub, match, incoming.Seq, cancellationToken);
+        }
     }
 
-    private static async Task BroadcastBattleAsync(
+    private static async Task BroadcastMatchAsync(
         PvpConnectionHub hub,
-        CardShare.Battle.PvpBattleTable table,
+        CardShare.Battle.PvpMatch match,
         long seq,
         CancellationToken cancellationToken)
     {
-        foreach (var player in table.Players)
+        foreach (var player in match.Players)
         {
             if (!Guid.TryParse(player.UserId, out var id))
             {
                 continue;
             }
 
+            var view = match.ViewFor(player.UserId);
             await hub.SendAsync(id, new WsEnvelope
             {
-                T = WsMessageTypes.BattleUpdate,
+                T = WsMessageTypes.MatchUpdate,
                 Seq = seq,
-                Payload = table.ViewFor(player.UserId)
+                Payload = view
             }, cancellationToken);
+            if (view.Duel != null)
+            {
+                await hub.SendAsync(id, new WsEnvelope
+                {
+                    T = WsMessageTypes.BattleUpdate,
+                    Seq = seq,
+                    Payload = view.Duel
+                }, cancellationToken);
+            }
         }
     }
 
-    private static string ReadAction(object? payload)
+    private static WsBattleActionPayload ReadBattle(object? payload)
     {
-        if (payload is JsonElement element && element.TryGetProperty("action", out var action))
+        if (payload is JsonElement element)
         {
-            return (action.GetString() ?? string.Empty).Trim().ToLowerInvariant();
+            var parsed = element.Deserialize<WsBattleActionPayload>(Json);
+            return Normalize(parsed);
         }
 
         if (payload != null)
         {
             var parsed = JsonSerializer.Deserialize<WsBattleActionPayload>(payload.ToString() ?? "{}", Json);
-            return (parsed?.Action ?? string.Empty).Trim().ToLowerInvariant();
+            return Normalize(parsed);
         }
 
-        return string.Empty;
+        return new WsBattleActionPayload();
+    }
+
+    private static WsBattleActionPayload Normalize(WsBattleActionPayload? parsed)
+    {
+        var cmd = parsed ?? new WsBattleActionPayload();
+        cmd.Action = (cmd.Action ?? string.Empty).Trim().ToLowerInvariant();
+        if (cmd.Indexes == null)
+        {
+            cmd.Indexes = Array.Empty<int>();
+        }
+
+        return cmd;
     }
 
     private static async Task BroadcastAsync(
         PvpConnectionHub hub,
-        PvpBattleHost battles,
+        PvpMatchHost matches,
         IServiceScopeFactory scopes,
         MatchEvent evt,
         Guid joiner,
@@ -265,11 +301,12 @@ public static class PvpWebSocketHost
         if (evt.RoomOpened && evt.Room != null)
         {
             var combatSeats = await PvpCombatSeats.LoadAsync(scopes, evt.Room, cancellationToken);
-            var table = battles.Open(evt.Room, combatSeats);
+            var match = matches.Open(evt.Room, combatSeats);
             var payload = new WsRoomReadyPayload
             {
                 RoomId = evt.Room.RoomId.ToString("N"),
                 Seed = evt.Room.Seed,
+                ModeId = match.ModeId,
                 Players = evt.Room.Players.ToArray()
             };
             foreach (var id in evt.Recipients)
@@ -277,7 +314,7 @@ public static class PvpWebSocketHost
                 await hub.SendAsync(id, new WsEnvelope { T = WsMessageTypes.RoomReady, Payload = payload }, cancellationToken);
             }
 
-            await BroadcastBattleAsync(hub, table, 0, cancellationToken);
+            await BroadcastMatchAsync(hub, match, 0, cancellationToken);
             return;
         }
 

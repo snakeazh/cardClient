@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 GuideGroupConfig。访问：GuideGroupConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class GuideGroupConfig
     {

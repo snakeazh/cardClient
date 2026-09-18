@@ -1,0 +1,106 @@
+[
+  {
+    "Id": 101,
+    "ModeId": 1,
+    "Round": 1,
+    "FightKind": 1,
+    "MonsterGroup": 10011,
+    "GoldBase": 10
+  },
+  {
+    "Id": 102,
+    "ModeId": 1,
+    "Round": 2,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 103,
+    "ModeId": 1,
+    "Round": 3,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 104,
+    "ModeId": 1,
+    "Round": 4,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 105,
+    "ModeId": 1,
+    "Round": 5,
+    "FightKind": 1,
+    "MonsterGroup": 10041,
+    "GoldBase": 20
+  },
+  {
+    "Id": 106,
+    "ModeId": 1,
+    "Round": 6,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 107,
+    "ModeId": 1,
+    "Round": 7,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 108,
+    "ModeId": 1,
+    "Round": 8,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 109,
+    "ModeId": 1,
+    "Round": 9,
+    "FightKind": 1,
+    "MonsterGroup": 10071,
+    "GoldBase": 25
+  },
+  {
+    "Id": 110,
+    "ModeId": 1,
+    "Round": 10,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 111,
+    "ModeId": 1,
+    "Round": 11,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 112,
+    "ModeId": 1,
+    "Round": 12,
+    "FightKind": 2,
+    "MonsterGroup": 0,
+    "GoldBase": 15
+  },
+  {
+    "Id": 113,
+    "ModeId": 1,
+    "Round": 13,
+    "FightKind": 1,
+    "MonsterGroup": 10101,
+    "GoldBase": 30
+  }
+]

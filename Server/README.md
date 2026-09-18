@@ -25,6 +25,8 @@ Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`Play
 
 ## 编程规则
 
+面对问题，不要绕开。先对准真正缺的那一层再改代码，不要为了让当前请求马上变绿，换一条不该承担这件事的路径。根因在 Redis / 配置 / 协议 / 调用方，就修那一层；不要把职责塞进 Postgres、内存、客户端或别的模块顶上。当前范围做不完：留下接口、TODO、空实现或明确的未接线入口，写清以后谁来填。不要用临时存储、静默降级、假成功、复制一套逻辑来「先跑起来」。
+
 少做防御性编程。调用方保证入参有效，被调用方直接用。空了就让它炸，方便找调用错误。
 
 **不要：**
@@ -52,7 +54,7 @@ Evaluate(tables, snapshot, score);
 
 日切、补货架用业务名（`ApplyDailyReset`、`FillOffers`），不要叫 `Ensure`。
 
-## 本地跑起来（无需 Postgres）
+## 本地跑起来
 
 ```
 cd Server
@@ -60,14 +62,16 @@ dotnet test
 dotnet run --project src/Card.Server
 ```
 
-Development 默认 `Persistence:Provider=Memory`，`GuestAuth:Enabled=true`。监听 `http://localhost:5254`。
+Development 默认 `Persistence:Provider=Postgres`，`ConnectionStrings:Redis=127.0.0.1:6379`，`GuestAuth:Enabled=true`，`Pvp:FillWithBots=true`。监听 `http://localhost:5254`。主档进 Postgres；token / 锁 / PVP 排队进 Redis。Postgres 模式下 Redis 必填，连不上会直接退出。
+
+第一次先装 PostgreSQL，双击 `setup-postgres.bat` 建库，再 `start-server.bat`。
 
 也可以双击 bat（不要在 PowerShell 里粘贴运行）：
 
 | 文件 | 作用 |
 |------|------|
-| `start-server.bat` | 内存模式 `dotnet run`（Development，无需 Postgres） |
-| `start-server-pg.bat` | Postgres + Redis，游客登录仍开，给 Editor 用 |
+| `start-server.bat` | Development：Postgres 存档 + Redis token + 游客 + PVP 机器人 |
+| `start-server-pg.bat` | 同上（显式 launch profile `postgres`） |
 | `setup-postgres.bat` | 用 `psql` 建用户/库 `card`（需本机已装 PostgreSQL） |
 | `stop-server.bat` | 结束占用 5254 的进程和 `Card.Server.exe` |
 
@@ -108,8 +112,8 @@ POST /v1/auth/login
 | 组件 | 存什么 |
 |------|--------|
 | Postgres | 主档 `players`、登录绑定 `auth_bindings`、PVE `pve_runs` |
-| Redis | access/refresh token、单玩家锁、PVP 匹配队列 |
-| 都不配 | Development 默认 Memory，重启丢档、掉登录 |
+| Redis | access token、单玩家锁、PVP 匹配队列 |
+| Memory（无 Postgres） | 全进程内存，仅测试/无库场景 |
 
 **本机第一次：**
 
@@ -121,7 +125,7 @@ psql -U postgres -f setup-postgres.sql
 ```
 
 默认连接串：`Host=127.0.0.1;Port=5432;Database=card;Username=card;Password=card`。
-3. 双击 `start-server-pg.bat`（或 Visual Studio 选 launch profile `postgres`）。
+3. 双击 `start-server.bat`（或 Visual Studio 选 Development / `http`）。
 4. 启动时连不上 Postgres/Redis 会直接退出。探活：`GET /v1/health`，返回 `persistence` / `postgres` / `redis`。
 
 Editor 这条路径仍 `GuestAuth=true`。主档和 token 会跨进程重启保留。
@@ -142,8 +146,8 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 启动时 `EnsureCreated` 会建 `players` / `auth_bindings` / `pve_runs`。
 
-- 只配 Postgres、Redis 留空：主档落库，token/锁/PVP 队列仍在进程内存，重启掉登录。
-- `ConnectionStrings:Redis` 非空：token、锁、PVP 队列走 Redis。
+- `Persistence:Provider=Postgres` 必须同时配 `ConnectionStrings:Redis`：主档落库，token/锁/PVP 队列走 Redis。
+- `Persistence:Provider=Memory` 且 Redis 留空：全部在进程内存，仅本地测试。
 - 微信 / 抖音未填 AppId 时，对应 `provider` 登录返回 `501` + `provider_not_configured`。
 
 ## HTTP `/v1`
@@ -159,7 +163,6 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 |------|------|------|
 | GET | `/v1/health` | 探活：`persistence` / `postgres` / `redis`，后端挂了返回 503 |
 | POST | `/auth/login` | `{ provider, code, userInfo?, pendingSettle? }`。登录时处理未结算 run |
-| POST | `/auth/refresh` | `{ refreshToken, pendingSettle? }`。同样在登录态刷新时处理未结算 run |
 | GET | `/player/profile` | 拉主档。跨日才写回体力/广告计数，同一天的 GET 不落库 |
 | POST | `/pve/start` | 扣体力，发 `runId`、初始金币与货架。已有未结算 run 时返回 `active_run_exists` |
 | GET | `/pve/run/active` | 当前未结算 run；没有则为 `{ "run": null }` |
@@ -185,18 +188,22 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 规则见 [`docs/pvp.md`](docs/pvp.md)。**产品规则：4 人一房，人齐才开房。** 未满 4 人只处于排队，不发 `room_ready`、不开局。
 
+多轮 1v1（配表轮次、扣血、淘汰）见 [`docs/pvp-match.md`](docs/pvp-match.md)。开房后按 `PvpModeConfig` 第 1 轮开 1v1 子桌，不再四人同桌摊一张。
+
+Development 默认 `Pvp:FillWithBots=true`：一人 `queue` 即用 3 个机器人补满开房，没有真人的子桌服务端自动摊牌。正式服保持关闭。
+
 消息：`{ "t", "seq", "payload" }`。
 
-客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave`  
-服务端：`hello` / `authed` / `queued` / `queue_update` / `room_ready` / `pong` / `error`
+客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave` / `battle`（`pick` / `rub` / `replace` / `peek` / `showdown`）  
+服务端：`hello` / `authed` / `queued` / `queue_update` / `room_ready` / `match_update` / `battle_update` / `pong` / `error`
 
-未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、四人 `players`。开房立刻 Deal，摊牌走共享 `BattleEngine`。PVP 出伤与 PVE 玩家同一套 `CombatDamage`：开房读主档 `LastHeroId` + 天赋袋 + 已解锁圣物，由 `CombatBonuses` / `RelicCombat` 填英雄面板、天赋加攻/倍率、圣物本手倍率/加攻、伤害%、暴击、追击；无局内商店叠层、BOSS、燧石；斩杀不对玩家生效。
+未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、`modeId`、四人 `players`，随即 `match_update`。第一轮按配表开 1v1 子桌（经典模式为野怪热身）。摊牌只结算自己那桌；出伤仍走 `CombatDamage` / `CombatBonuses`，再乘模式表的轮次系数后扣败者 HP。无局内商店叠层、BOSS、燧石；对玩家不斩杀。
 
 ## 登录与未结算对局
 
-客户端启动先 `refresh` 已有 token，失败再游客登录。连不上弹窗重试，不会静默进主页。
+客户端启动若已有 access token，先 `GET /player/profile`；401 再游客登录。连不上弹窗重试，不会静默进主页。
 
-**未结算 run 在 `POST /auth/login` 和 `POST /auth/refresh` 里判定并处理，不另发 `GET /pve/run/active`。**
+**未结算 run 在 `POST /auth/login` 里判定并处理。**
 
 1. 请求可带 `pendingSettle`（`runId` + `cleared` + `forfeit`）。有则先按挂单结算，**奖励按服务端已记录的关卡进度和积分**，不信客户端 `totalScore` / `stats`。
 2. 通关（`cleared=true`）要求本局已 `POST /pve/run/progress` 且至少清过一关；否则视为无效挂单，再按放弃处理。

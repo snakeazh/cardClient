@@ -9,7 +9,5 @@ public static class AuthEndpoints
     {
         v1.MapPost("/auth/login", async (LoginRequest request, AuthService auth, CancellationToken ct)
             => Results.Json(await auth.LoginAsync(request, ct)));
-        v1.MapPost("/auth/refresh", async (RefreshTokenRequest request, AuthService auth, CancellationToken ct)
-            => Results.Json(await auth.RefreshAsync(request, ct)));
     }
 }

@@ -947,6 +947,12 @@ namespace App.UI
                 item.SetCard(card);
             }
 
+            // PVP/透视后对手可能已是正面；先盖回再翻，才能播开牌动画。
+            if (!seat.IsPlayer && item.FaceState == CardFaceState.Front)
+            {
+                item.SetFace(CardFaceState.Back);
+            }
+
             ApplyFace(item, CardFaceState.Front, true);
         }
 

@@ -243,7 +243,7 @@ public class AuthServiceTests
         var clock = new TestClock();
         var players = new MemoryPlayerRepository();
         var bindings = new MemoryAuthBindingRepository();
-        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1));
+        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1));
         var guest = new FakeGuestClient();
         var (pve, _) = TestApp.Create(players, config: config, clock: clock);
         var auth = new AuthService(
@@ -273,7 +273,7 @@ public class AuthServiceTests
         var players = new MemoryPlayerRepository();
         var runs = new MemoryPveRunRepository();
         var bindings = new MemoryAuthBindingRepository();
-        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1));
+        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1));
         var (pve, _) = TestApp.Create(players, runs, config, clock);
         var auth = new AuthService(
             new ICodeSessionClient[] { new FakeGuestClient() },
@@ -309,7 +309,7 @@ public class AuthServiceTests
         var players = new MemoryPlayerRepository();
         var runs = new MemoryPveRunRepository();
         var bindings = new MemoryAuthBindingRepository();
-        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1));
+        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1));
         var (pve, _) = TestApp.Create(players, runs, config, clock);
         var auth = new AuthService(
             new ICodeSessionClient[] { new FakeGuestClient() },

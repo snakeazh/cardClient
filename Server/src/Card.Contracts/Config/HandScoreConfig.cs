@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 HandScoreConfig。访问：HandScoreConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class HandScoreConfig
     {

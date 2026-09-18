@@ -5,6 +5,7 @@ using CardShare.Contracts;
 using Framework.Log;
 using Framework.Save;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -12,12 +13,11 @@ using UnityEngine.Networking;
 namespace App.Net
 {
     /// <summary>
-    /// 局外 HTTP 客户端。登录后带 Bearer；401 时刷新一次 token。
+    /// 局外 HTTP 客户端。登录后带 Bearer；access 失效则重新登录。
     /// </summary>
     public sealed class GameApiClient
     {
-        public const string AccessTokenKey = "game.api.access.v1";
-        public const string RefreshTokenKey = "game.api.refresh.v1";
+        public const string AccessTokenKey = "game.api.access";
         public const string PendingSettleKey = "game.api.pending.settle.v1";
 
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
@@ -28,27 +28,39 @@ namespace App.Net
 
         private readonly ISaveService _save;
         private string _accessToken = string.Empty;
-        private string _refreshToken = string.Empty;
-        private bool _refreshing;
 
         public GameApiClient(ISaveService save)
         {
             _save = save ?? throw new ArgumentNullException(nameof(save));
+            DropLegacyTokens();
             _accessToken = _save.GetString(AccessTokenKey, string.Empty) ?? string.Empty;
-            _refreshToken = _save.GetString(RefreshTokenKey, string.Empty) ?? string.Empty;
         }
 
         public bool HasSession => !string.IsNullOrEmpty(_accessToken);
 
-        public bool HasRefreshToken => !string.IsNullOrEmpty(_refreshToken);
+        public string AccessToken => _accessToken;
+
+        public string UserId { get; private set; } = string.Empty;
 
         public async Task<LoginResponse> ConnectAsync(string deviceCode, string nickName = "")
         {
-            if (HasRefreshToken)
+            if (HasSession)
             {
                 try
                 {
-                    return await RefreshSessionAsync();
+                    var profile = await GetProfileAsync();
+                    var flushed = await FlushPendingSettleAsync();
+                    if (flushed != null)
+                    {
+                        profile = flushed;
+                    }
+
+                    UserId = profile != null ? profile.UserId ?? string.Empty : string.Empty;
+                    return new LoginResponse
+                    {
+                        AccessToken = _accessToken,
+                        Profile = profile
+                    };
                 }
                 catch (GameApiException ex)
                 {
@@ -155,27 +167,6 @@ namespace App.Net
             return login;
         }
 
-        public async Task<LoginResponse> RefreshSessionAsync()
-        {
-            if (string.IsNullOrEmpty(_refreshToken))
-            {
-                throw new GameApiException(ErrorCodes.Unauthorized, "未登录");
-            }
-
-            var login = await SendAsync<LoginResponse>(
-                "POST",
-                "/v1/auth/refresh",
-                new RefreshTokenRequest
-                {
-                    RefreshToken = _refreshToken,
-                    PendingSettle = LoadPendingSettle()
-                },
-                auth: false);
-            StoreTokens(login);
-            ClearPendingSettle();
-            return login;
-        }
-
         public Task<PlayerProfileDto> GetProfileAsync()
             => SendAsync<PlayerProfileDto>("GET", "/v1/player/profile", null);
 
@@ -248,19 +239,42 @@ namespace App.Net
 
         private void StoreTokens(LoginResponse login)
         {
-            _accessToken = login?.AccessToken ?? string.Empty;
-            _refreshToken = login?.RefreshToken ?? string.Empty;
+            if (login == null || string.IsNullOrEmpty(login.AccessToken))
+            {
+                throw new GameApiException("invalid_request", "登录响应缺少 token");
+            }
+
+            _accessToken = login.AccessToken;
+            UserId = login.Profile != null ? login.Profile.UserId ?? string.Empty : string.Empty;
             _save.SetString(AccessTokenKey, _accessToken);
-            _save.SetString(RefreshTokenKey, _refreshToken);
             _save.Save();
+        }
+
+        private void DropLegacyTokens()
+        {
+            _save.DeleteKey("game.api.access.v1");
+            _save.DeleteKey("game.api.access.v2");
+            _save.DeleteKey("game.api.refresh.v1");
+            _save.DeleteKey("game.api.refresh.v2");
+            _save.Save();
+        }
+
+        private static void ApplyLoginJson(LoginResponse login, string text)
+        {
+            if (!string.IsNullOrEmpty(login.AccessToken))
+            {
+                return;
+            }
+
+            var jo = JObject.Parse(text);
+            login.AccessToken = (string)jo["accessToken"] ?? (string)jo["AccessToken"] ?? string.Empty;
         }
 
         private void ClearTokens()
         {
             _accessToken = string.Empty;
-            _refreshToken = string.Empty;
+            UserId = string.Empty;
             _save.SetString(AccessTokenKey, string.Empty);
-            _save.SetString(RefreshTokenKey, string.Empty);
             _save.Save();
         }
 
@@ -272,28 +286,9 @@ namespace App.Net
                 return result.Value;
             }
 
-            if (auth && result.Status == 401 && !_refreshing && !string.IsNullOrEmpty(_refreshToken))
+            if (auth && result.Status == 401)
             {
-                _refreshing = true;
-                try
-                {
-                    await RefreshSessionAsync();
-                }
-                catch (GameApiException)
-                {
-                    ClearTokens();
-                    throw;
-                }
-                finally
-                {
-                    _refreshing = false;
-                }
-
-                result = await SendOnceAsync<T>(method, path, body, auth: true);
-                if (result.Succeeded)
-                {
-                    return result.Value;
-                }
+                ClearTokens();
             }
 
             throw new GameApiException(result.Code, result.Message, result.Status);
@@ -346,6 +341,11 @@ namespace App.Net
                 try
                 {
                     var value = JsonConvert.DeserializeObject<T>(text, JsonSettings);
+                    if (value is LoginResponse login)
+                    {
+                        ApplyLoginJson(login, text);
+                    }
+
                     return ApiResult<T>.Ok(value);
                 }
                 catch (Exception ex)

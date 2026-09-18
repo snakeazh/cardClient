@@ -17,6 +17,10 @@ using SharedHandType = CardShare.Contracts.Config.HandType;
 using SharedQuality = CardShare.Contracts.Config.QualityType;
 using SharedMonsterType = CardShare.Contracts.Config.MonsterType;
 using SharedCondition = CardShare.Contracts.Config.ContidionType;
+using SharedMonsterGroup = CardShare.Contracts.Config.MonsterGroupConfig;
+using SharedPvpMode = CardShare.Contracts.Config.PvpModeConfig;
+using SharedPvpRound = CardShare.Contracts.Config.PvpRoundConfig;
+using SharedPvpFightKind = CardShare.Contracts.Config.PvpFightKind;
 
 namespace App.Config
 {
@@ -42,7 +46,10 @@ namespace App.Config
                 "unity",
                 Map(HeroEntryConfig.All.Values, ToHeroEntry),
                 Map(TalentEntryConfig.All.Values, ToTalentEntry),
-                Map(RelicEntryConfig.All.Values, ToRelicEntry));
+                Map(RelicEntryConfig.All.Values, ToRelicEntry),
+                Map(MonsterGroupConfig.All.Values, ToMonsterGroup),
+                Map(PvpModeConfig.All.Values, ToPvpMode),
+                Map(PvpRoundConfig.All.Values, ToPvpRound));
             SharedConst.Load(tables.GameConst);
             Current = tables;
             return tables;
@@ -251,6 +258,44 @@ namespace App.Config
                 BaseMap = row.BaseMap,
                 HealthBar = row.HealthBar,
                 MonsterEntry = row.MonsterEntry
+            };
+        }
+
+        private static SharedMonsterGroup ToMonsterGroup(MonsterGroupConfig row)
+        {
+            return new SharedMonsterGroup
+            {
+                Id = row.Id,
+                MonsterId = row.MonsterId,
+                MonsterLevel = row.MonsterLevel
+            };
+        }
+
+        private static SharedPvpMode ToPvpMode(PvpModeConfig row)
+        {
+            return new SharedPvpMode
+            {
+                Id = row.Id,
+                Name = row.Name,
+                PlayerCount = row.PlayerCount,
+                InitialGold = row.InitialGold,
+                ShopSeconds = row.ShopSeconds,
+                SkipMonsterWhenTwoLeft = row.SkipMonsterWhenTwoLeft,
+                RankReward = row.RankReward,
+                DamageRoundScale = row.DamageRoundScale
+            };
+        }
+
+        private static SharedPvpRound ToPvpRound(PvpRoundConfig row)
+        {
+            return new SharedPvpRound
+            {
+                Id = row.Id,
+                ModeId = row.ModeId,
+                Round = row.Round,
+                FightKind = (SharedPvpFightKind)(int)row.FightKind,
+                MonsterGroup = row.MonsterGroup,
+                GoldBase = row.GoldBase
             };
         }
     }

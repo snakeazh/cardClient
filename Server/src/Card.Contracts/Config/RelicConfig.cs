@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 RelicConfig。访问：RelicConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class RelicConfig
     {

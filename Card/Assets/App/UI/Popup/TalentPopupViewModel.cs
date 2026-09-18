@@ -190,7 +190,7 @@ namespace App.UI.Popup
             }
             catch (GameApiException ex)
             {
-                Toast.Show(GameApi.Describe(ex));
+                Toast.Error(GameApi.Describe(ex));
             }
         }
 

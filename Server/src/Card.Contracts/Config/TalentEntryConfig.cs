@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 TalentEntryConfig。访问：TalentEntryConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class TalentEntryConfig
     {

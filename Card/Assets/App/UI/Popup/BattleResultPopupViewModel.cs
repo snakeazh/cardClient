@@ -174,10 +174,10 @@ namespace App.UI.Popup
                     }
                     catch (GameApiException ex)
                     {
+                        Toast.Error(GameApi.Describe(ex));
                         if (ex.Code == ErrorCodes.RunNotFound)
                         {
                             GameApi.Client.ClearPendingSettle();
-                            Toast.Error("对局已失效（服务器可能已重启）");
                             _granted = true;
                             return true;
                         }

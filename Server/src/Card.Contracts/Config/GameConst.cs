@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 常量表 GameConst。访问：GameConst.Instance
-    /// </summary>
     [Serializable]
     public sealed class GameConst
     {

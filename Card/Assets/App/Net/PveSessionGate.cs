@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using App.UI;
 using CardShare.Contracts;
 using Framework.Log;
 using Framework.UI.Dialog;
@@ -22,13 +23,13 @@ namespace App.Net
                     AppLog.Info(LogChannel.Net, "session ok userId=" + login.Profile.UserId);
                     return;
                 }
-                catch (Exception ex)
+                catch (GameApiException ex)
                 {
-                    var message = ex is GameApiException api ? GameApi.Describe(api) : "无法连接服务器";
+                    Toast.Error(GameApi.Describe(ex));
                     AppLog.Warn(LogChannel.Net, "connect failed: " + ex.Message);
                     await dialogs.ConfirmAsync(
                         "连接失败",
-                        message + "\n请先启动 Server 后重试。",
+                        GameApi.Describe(ex) + "\n请先启动 Server 后重试。",
                         DialogButtons.Ok,
                         "重试");
                 }
@@ -50,13 +51,13 @@ namespace App.Net
 
                     return;
                 }
-                catch (Exception ex)
+                catch (GameApiException ex)
                 {
-                    var message = ex is GameApiException api ? GameApi.Describe(api) : "结算补报失败";
+                    Toast.Error(GameApi.Describe(ex));
                     AppLog.Warn(LogChannel.Net, "flush settle failed: " + ex.Message);
                     await dialogs.ConfirmAsync(
                         "结算未完成",
-                        message + "\n请检查网络后重试，否则进度可能丢失。",
+                        GameApi.Describe(ex) + "\n请检查网络后重试，否则进度可能丢失。",
                         DialogButtons.Ok,
                         "重试");
                 }
@@ -72,9 +73,9 @@ namespace App.Net
                 var resp = await GameApi.Client.GetActiveRunAsync();
                 run = resp != null ? resp.Run : null;
             }
-            catch (Exception ex)
+            catch (GameApiException ex)
             {
-                AppLog.Warn(LogChannel.Net, "query active run failed: " + ex.Message);
+                Toast.Error(GameApi.Describe(ex));
                 return;
             }
 

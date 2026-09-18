@@ -35,6 +35,8 @@ namespace App.Config
             var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
             var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
             var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
+            var pvpModeConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpModeConfig);
+            var pvpRoundConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpRoundConfig);
             var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
             var talentConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentConfig);
@@ -55,6 +57,8 @@ namespace App.Config
             MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
             MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
             MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
+            PvpModeConfig.Load(ConfigJson.FromArrayJson<PvpModeConfig>(pvpModeConfigAsset.text));
+            PvpRoundConfig.Load(ConfigJson.FromArrayJson<PvpRoundConfig>(pvpRoundConfigAsset.text));
             RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
             RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
             TalentConfig.Load(ConfigJson.FromArrayJson<TalentConfig>(talentConfigAsset.text));

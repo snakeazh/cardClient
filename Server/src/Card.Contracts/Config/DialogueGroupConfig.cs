@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 DialogueGroupConfig。访问：DialogueGroupConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class DialogueGroupConfig
     {

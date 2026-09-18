@@ -73,13 +73,15 @@ public static class BackendStartup
         var postgresCs = config.GetConnectionString("Postgres");
         var redisCs = config.GetConnectionString("Redis");
         var guest = config.GetValue("GuestAuth:Enabled", false);
+        var fillBots = config.GetValue("Pvp:FillWithBots", false);
         var usePostgres = string.Equals(persistence, "Postgres", StringComparison.OrdinalIgnoreCase);
         log.LogInformation(
-            "Server starting. persistence={Persistence} postgres={Postgres} redis={Redis} guest={Guest}",
+            "Server starting. persistence={Persistence} postgres={Postgres} redis={Redis} guest={Guest} fillBots={FillBots}",
             persistence,
             usePostgres ? Redact(postgresCs) : "off",
             string.IsNullOrWhiteSpace(redisCs) ? "off" : Redact(redisCs),
-            guest);
+            guest,
+            fillBots);
 
         if (usePostgres)
         {
@@ -88,6 +90,12 @@ public static class BackendStartup
         else
         {
             log.LogInformation("Postgres off. Player/auth/pve data stays in process memory.");
+        }
+
+        if (app.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(redisCs))
+        {
+            throw new InvalidOperationException(
+                "Development requires ConnectionStrings:Redis. Access tokens live in Redis.");
         }
 
         if (!string.IsNullOrWhiteSpace(redisCs))
@@ -132,6 +140,7 @@ public static class BackendStartup
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "HighestClearedLevelId" integer NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync(
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "ScoredLevelId" integer NOT NULL DEFAULT 0;""");
+            await db.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS auth_tokens;""");
             log.LogInformation("Postgres ready, schema ensured.");
         }
         catch (InvalidOperationException)

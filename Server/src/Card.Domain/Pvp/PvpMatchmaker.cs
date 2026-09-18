@@ -147,7 +147,8 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         {
             UserId = player.UserId,
             NickName = player.NickName,
-            AvatarUrl = player.AvatarUrl
+            AvatarUrl = player.AvatarUrl,
+            IsBot = player.IsBot
         };
     }
 }

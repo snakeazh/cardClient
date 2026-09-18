@@ -18,6 +18,9 @@ public sealed class GameTables : IGameTables
     private readonly Dictionary<int, HeroEntryConfig> _heroEntries;
     private readonly Dictionary<int, TalentEntryConfig> _talentEntries;
     private readonly Dictionary<int, RelicEntryConfig> _relicEntries;
+    private readonly Dictionary<int, MonsterGroupConfig> _monsterGroups;
+    private readonly Dictionary<(int MonsterId, int MonsterLevel), MonsterConfig> _monsters;
+    private readonly Dictionary<int, PvpModeConfig> _pvpModes;
 
     public GameTables(
         GameConst gameConst,
@@ -32,7 +35,10 @@ public sealed class GameTables : IGameTables
         string configHash,
         IReadOnlyList<HeroEntryConfig> heroEntries,
         IReadOnlyList<TalentEntryConfig> talentEntries,
-        IReadOnlyList<RelicEntryConfig> relicEntries)
+        IReadOnlyList<RelicEntryConfig> relicEntries,
+        IReadOnlyList<MonsterGroupConfig>? monsterGroups = null,
+        IReadOnlyList<PvpModeConfig>? pvpModes = null,
+        IReadOnlyList<PvpRoundConfig>? pvpRounds = null)
     {
         GameConst = gameConst;
         HandScores = handScores;
@@ -46,6 +52,9 @@ public sealed class GameTables : IGameTables
         HeroEntries = heroEntries;
         TalentEntries = talentEntries;
         RelicEntries = relicEntries;
+        MonsterGroups = monsterGroups ?? Array.Empty<MonsterGroupConfig>();
+        PvpModes = pvpModes ?? Array.Empty<PvpModeConfig>();
+        PvpRounds = pvpRounds ?? Array.Empty<PvpRoundConfig>();
         ConfigHash = configHash;
         _levels = Levels.Where(l => l.Id > 0).ToDictionary(l => l.Id);
         _items = Items.Where(i => i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
@@ -54,6 +63,19 @@ public sealed class GameTables : IGameTables
         _heroEntries = HeroEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
         _talentEntries = TalentEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
         _relicEntries = RelicEntries.Where(e => e.Id > 0).GroupBy(e => e.Id).ToDictionary(g => g.Key, g => g.First());
+        _monsterGroups = MonsterGroups.Where(g => g.Id > 0).GroupBy(g => g.Id).ToDictionary(g => g.Key, g => g.First());
+        _monsters = new Dictionary<(int MonsterId, int MonsterLevel), MonsterConfig>();
+        foreach (var monster in Monsters)
+        {
+            if (monster.MonsterId <= 0)
+            {
+                continue;
+            }
+
+            _monsters[(monster.MonsterId, monster.MonsterLevel)] = monster;
+        }
+
+        _pvpModes = PvpModes.Where(m => m.Id > 0).GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First());
         Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
         _maxLevelByDifficulty = Levels
             .GroupBy(l => l.Difficulty)
@@ -102,6 +124,12 @@ public sealed class GameTables : IGameTables
 
     public IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
 
+    public IReadOnlyList<MonsterGroupConfig> MonsterGroups { get; }
+
+    public IReadOnlyList<PvpModeConfig> PvpModes { get; }
+
+    public IReadOnlyList<PvpRoundConfig> PvpRounds { get; }
+
     public IReadOnlyList<int> Difficulties { get; }
 
     public bool TryGetLevel(int id, out LevelConfig level) => _levels.TryGetValue(id, out level!);
@@ -117,6 +145,16 @@ public sealed class GameTables : IGameTables
     public bool TryGetTalentEntry(int id, out TalentEntryConfig entry) => _talentEntries.TryGetValue(id, out entry!);
 
     public bool TryGetRelicEntry(int id, out RelicEntryConfig entry) => _relicEntries.TryGetValue(id, out entry!);
+
+    public bool TryGetMonsterGroup(int id, out MonsterGroupConfig group) => _monsterGroups.TryGetValue(id, out group!);
+
+    public bool TryGetMonster(int monsterId, int monsterLevel, out MonsterConfig monster)
+        => _monsters.TryGetValue((monsterId, monsterLevel), out monster!);
+
+    public bool TryGetPvpMode(int id, out PvpModeConfig mode) => _pvpModes.TryGetValue(id, out mode!);
+
+    public IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId)
+        => PvpRounds.Where(r => r.ModeId == modeId).OrderBy(r => r.Round).ToArray();
 
     public bool TryGetTalentRow(int talentId, int level, out TalentConfig row)
         => _talentByLevel.TryGetValue((talentId, level), out row!);

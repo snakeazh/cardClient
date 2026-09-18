@@ -15,6 +15,6 @@ psql -U postgres -d postgres -v ON_ERROR_STOP=0 -f setup-postgres.sql
 echo.
 echo If user/database already exist, the errors above can be ignored.
 echo Redis: install as a Windows service and listen on 127.0.0.1:6379
-echo Then double-click start-server-pg.bat
+echo Then double-click start-server.bat
 pause
 exit /b 0

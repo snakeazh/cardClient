@@ -31,6 +31,12 @@ public interface IGameTables
 
     IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
 
+    IReadOnlyList<MonsterGroupConfig> MonsterGroups { get; }
+
+    IReadOnlyList<PvpModeConfig> PvpModes { get; }
+
+    IReadOnlyList<PvpRoundConfig> PvpRounds { get; }
+
     IReadOnlyList<int> Difficulties { get; }
 
     bool TryGetLevel(int id, out LevelConfig level);
@@ -46,6 +52,14 @@ public interface IGameTables
     bool TryGetTalentEntry(int id, out TalentEntryConfig entry);
 
     bool TryGetRelicEntry(int id, out RelicEntryConfig entry);
+
+    bool TryGetMonsterGroup(int id, out MonsterGroupConfig group);
+
+    bool TryGetMonster(int monsterId, int monsterLevel, out MonsterConfig monster);
+
+    bool TryGetPvpMode(int id, out PvpModeConfig mode);
+
+    IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId);
 
     bool TryGetTalentRow(int talentId, int level, out TalentConfig row);
 

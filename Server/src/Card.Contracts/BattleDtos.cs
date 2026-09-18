@@ -4,7 +4,11 @@ public enum BattleCommandType
 {
     Deal = 1,
     Open = 2,
-    Showdown = 3
+    Showdown = 3,
+    DealHole = 4,
+    Pick = 5,
+    Rub = 6,
+    Replace = 7
 }
 
 public sealed class BattleCommand
@@ -12,6 +16,10 @@ public sealed class BattleCommand
     public BattleCommandType Type { get; set; }
 
     public int SeatId { get; set; }
+
+    public int Index { get; set; }
+
+    public int[] Indexes { get; set; } = Array.Empty<int>();
 }
 
 public enum BattleEventType
@@ -94,8 +102,14 @@ public sealed class BattleSeatDto
 
     public bool Alive { get; set; } = true;
 
-    /// <summary>未摊牌时对手为 null，只亮自己的手牌。</summary>
+    /// <summary>已锁定本轮 3 张。双方都锁定后才比牌。</summary>
+    public bool Locked { get; set; }
+
+    /// <summary>未摊牌时对手为 null，只亮自己的手牌。PVP 洞牌为 5 张。</summary>
     public IReadOnlyList<CardDto>? Cards { get; set; }
+
+    /// <summary>5 选 3 的下标；未揭示时为 null。</summary>
+    public IReadOnlyList<int>? Selected { get; set; }
 
     public string? HandType { get; set; }
 
@@ -128,4 +142,8 @@ public sealed class BattleStateDto
 public sealed class WsBattleActionPayload
 {
     public string Action { get; set; } = string.Empty;
+
+    public int Index { get; set; }
+
+    public int[] Indexes { get; set; } = Array.Empty<int>();
 }

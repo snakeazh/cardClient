@@ -1271,6 +1271,23 @@ namespace CardShare.Contracts.Config
     }
 
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 PvpFightKind 枚举。
+    /// </summary>
+    public enum PvpFightKind
+    {
+        /// <summary>
+        /// 野怪轮
+        /// </summary>
+        Monster = 1,
+
+        /// <summary>
+        /// 玩家对战轮
+        /// </summary>
+        Pvp = 2,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 QualityType 枚举。
     /// </summary>
     public enum QualityType

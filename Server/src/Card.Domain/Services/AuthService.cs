@@ -80,31 +80,6 @@ public sealed class AuthService
         return new LoginResponse
         {
             AccessToken = ticket.AccessToken,
-            RefreshToken = ticket.RefreshToken,
-            ExpiresInSeconds = ticket.ExpiresInSeconds,
-            Profile = profileDto
-        };
-    }
-
-    public async Task<LoginResponse> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
-    {
-        if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
-        {
-            throw DomainException.Invalid("refreshToken is required.");
-        }
-
-        var ticket = await _tokens.RefreshAsync(request.RefreshToken, cancellationToken);
-        if (ticket == null)
-        {
-            throw DomainException.Unauthorized("Invalid refresh token.");
-        }
-
-        await LoadProfileAsync(ticket.UserId, cancellationToken);
-        var profileDto = await _runs.ResolveRunsOnLoginAsync(ticket.UserId, request.PendingSettle, cancellationToken);
-        return new LoginResponse
-        {
-            AccessToken = ticket.AccessToken,
-            RefreshToken = ticket.RefreshToken,
             ExpiresInSeconds = ticket.ExpiresInSeconds,
             Profile = profileDto
         };

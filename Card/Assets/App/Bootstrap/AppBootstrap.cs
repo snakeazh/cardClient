@@ -53,6 +53,8 @@ namespace App.Bootstrap
             _services.Register(SaveFramework.Create());
             RegisterAudio(_services);
             _services.Register(new GameSession());
+            _services.Container.AddSingleton<PvpWsClient>();
+            _services.Container.AddSingleton<PvpMatchSession>();
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();
             _services.Container.AddSingleton<MainResourceViewModel>();

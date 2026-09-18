@@ -108,6 +108,48 @@ public class BattleEngineTests
     }
 
     [Fact]
+    public void DealHoleGivesFiveCardsAndShowdownScoresPickedThree()
+    {
+        var tables = GameTables.Fallback();
+        HandEvaluator.Tables = tables;
+        var seats = new[]
+        {
+            new SeatSetup { SeatId = 0, IsHuman = true, Alive = true },
+            new SeatSetup { SeatId = 1, IsHuman = true, Alive = true }
+        };
+        var engine = new BattleEngine(new PvpMode(), 42, seats, tables);
+        engine.Apply(new BattleCommand { Type = BattleCommandType.DealHole });
+        Assert.Equal(5, engine.Snapshot.Hands[0].Count);
+        Assert.Equal(new[] { 0, 1, 2 }, engine.Snapshot.Picked[0]);
+
+        var hole = engine.Snapshot.Hands[0];
+        var pick = new[] { 0, 2, 4 };
+        var expected = HandEvaluator.Evaluate(new[] { hole[0], hole[2], hole[4] });
+        engine.Apply(new BattleCommand { Type = BattleCommandType.Pick, SeatId = 0, Indexes = pick });
+        var snap = engine.Apply(new BattleCommand { Type = BattleCommandType.Showdown });
+        Assert.Equal(expected.Type, snap.Scores[0].Type);
+        Assert.Equal(expected.Level, snap.Scores[0].Level);
+        Assert.Equal(pick, snap.Picked[0]);
+    }
+
+    [Fact]
+    public void RubReplacesOneHoleCard()
+    {
+        var tables = GameTables.Fallback();
+        var seats = new[]
+        {
+            new SeatSetup { SeatId = 0, IsHuman = true, Alive = true },
+            new SeatSetup { SeatId = 1, IsHuman = true, Alive = true }
+        };
+        var engine = new BattleEngine(new PvpMode(), 9, seats, tables);
+        engine.Apply(new BattleCommand { Type = BattleCommandType.DealHole });
+        var before = engine.Snapshot.Hands[0][2];
+        engine.Apply(new BattleCommand { Type = BattleCommandType.Rub, SeatId = 0, Index = 2 });
+        Assert.NotEqual(before, engine.Snapshot.Hands[0][2]);
+        Assert.Equal(5, engine.Snapshot.Hands[0].Count);
+    }
+
+    [Fact]
     public void PvpTableHidesOpponentCardsUntilShowdown()
     {
         var players = new[]

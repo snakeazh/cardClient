@@ -52,11 +52,20 @@ public static class InfrastructureServiceCollectionExtensions
         }
 
         var accessMinutes = configuration.GetValue("Auth:AccessTokenMinutes", 120);
-        var refreshDays = configuration.GetValue("Auth:RefreshTokenDays", 14);
         var accessTtl = TimeSpan.FromMinutes(accessMinutes);
-        var refreshTtl = TimeSpan.FromDays(refreshDays);
 
         var redisCs = configuration.GetConnectionString("Redis");
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                          ?? configuration["ASPNETCORE_ENVIRONMENT"]
+                          ?? string.Empty;
+        var isDevelopment = string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase);
+        if ((isDevelopment || string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase)) &&
+            string.IsNullOrWhiteSpace(redisCs))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:Redis is required in Development and when Persistence:Provider=Postgres. Access tokens live in Redis, not Postgres.");
+        }
+
         if (!string.IsNullOrWhiteSpace(redisCs))
         {
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -83,20 +92,24 @@ public static class InfrastructureServiceCollectionExtensions
                 }
             });
             services.AddSingleton<IPlayerLock, RedisPlayerLock>();
-            services.AddSingleton<IPvpMatchmaker, RedisPvpMatchmaker>();
+            services.AddSingleton<RedisPvpMatchmaker>();
+            services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
+                sp.GetRequiredService<RedisPvpMatchmaker>(),
+                configuration.GetValue("Pvp:FillWithBots", false)));
             services.AddSingleton<ITokenService>(sp => new RedisTokenService(
                 sp.GetRequiredService<IConnectionMultiplexer>(),
-                accessTtl,
-                refreshTtl));
+                accessTtl));
         }
         else
         {
             services.AddSingleton<IPlayerLock, MemoryPlayerLock>();
-            services.AddSingleton<IPvpMatchmaker, InMemoryPvpMatchmaker>();
+            services.AddSingleton<InMemoryPvpMatchmaker>();
+            services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
+                sp.GetRequiredService<InMemoryPvpMatchmaker>(),
+                configuration.GetValue("Pvp:FillWithBots", false)));
             services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
                 sp.GetRequiredService<IClock>(),
-                accessTtl,
-                refreshTtl));
+                accessTtl));
         }
 
         services.AddHttpClient<WeChatCodeSessionClient>();
@@ -105,5 +118,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<WeChatCodeSessionClient>());
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<DouyinCodeSessionClient>());
         return services;
+    }
+
+    private static IPvpMatchmaker WrapMatchmaker(IPvpMatchmaker inner, bool fillWithBots)
+    {
+        return fillWithBots ? new PvpBotFillMatchmaker(inner) : inner;
     }
 }

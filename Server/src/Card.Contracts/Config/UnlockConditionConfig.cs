@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 UnlockConditionConfig。访问：UnlockConditionConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class UnlockConditionConfig
     {

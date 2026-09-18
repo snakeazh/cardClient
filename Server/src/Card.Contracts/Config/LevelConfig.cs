@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 LevelConfig。访问：LevelConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class LevelConfig
     {

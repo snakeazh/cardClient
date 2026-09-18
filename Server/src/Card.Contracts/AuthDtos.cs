@@ -20,19 +20,9 @@ public sealed class LoginRequest
     public PveSettleRequest? PendingSettle { get; set; }
 }
 
-public sealed class RefreshTokenRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
-
-    /// <summary>Optional leftover settle from the client. Applied before any forfeit of an active run.</summary>
-    public PveSettleRequest? PendingSettle { get; set; }
-}
-
 public sealed class LoginResponse
 {
     public string AccessToken { get; set; } = string.Empty;
-
-    public string RefreshToken { get; set; } = string.Empty;
 
     public int ExpiresInSeconds { get; set; }
 

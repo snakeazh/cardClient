@@ -32,6 +32,8 @@ public sealed class BattleSnapshot
 
     public IReadOnlyList<Card>[] Hands { get; init; } = Array.Empty<Card[]>();
 
+    public IReadOnlyList<int>[] Picked { get; init; } = Array.Empty<int[]>();
+
     public HandScore[] Scores { get; init; } = Array.Empty<HandScore>();
 
     public IReadOnlyList<int> Winners { get; init; } = Array.Empty<int>();
@@ -50,6 +52,9 @@ public sealed class BattleEngine
     private Deck? _deck;
     private BattleSnapshot _snapshot;
     private int _showdownCount;
+    private int[][] _picked = EmptyPicked();
+    private bool[] _rubbed = new bool[BattleLimits.RoomSeats];
+    private int[] _rubsUsed = new int[BattleLimits.RoomSeats];
 
     public BattleEngine(BattleMode mode, int seed, IReadOnlyList<SeatSetup> seats, IGameTables tables)
     {
@@ -70,13 +75,29 @@ public sealed class BattleEngine
         {
             if (cmd.Type == BattleCommandType.Deal)
             {
-                Deal();
+                Deal(BattleLimits.OpenHandSize);
+            }
+            else if (cmd.Type == BattleCommandType.DealHole)
+            {
+                Deal(BattleLimits.MaxCardsPerSeat);
+            }
+            else if (cmd.Type == BattleCommandType.Pick)
+            {
+                Pick(cmd.SeatId, cmd.Indexes);
+            }
+            else if (cmd.Type == BattleCommandType.Rub)
+            {
+                Rub(cmd.SeatId, cmd.Index);
+            }
+            else if (cmd.Type == BattleCommandType.Replace)
+            {
+                Replace(cmd.SeatId);
             }
             else if (cmd.Type == BattleCommandType.Showdown || cmd.Type == BattleCommandType.Open)
             {
                 if (_snapshot.Phase == BattlePhase.Idle)
                 {
-                    Deal();
+                    Deal(BattleLimits.OpenHandSize);
                 }
 
                 ScoreHands();
@@ -95,20 +116,26 @@ public sealed class BattleEngine
     {
         if (_deck == null)
         {
-            Deal();
+            Deal(BattleLimits.OpenHandSize);
         }
 
-        return _deck.Draw();
+        return _deck!.Draw();
     }
 
-    private void Deal()
+    public IReadOnlyList<Card> OpenCards(int seat)
+        => TakeOpen(_snapshot.Hands[seat], _picked[seat]);
+
+    private void Deal(int size)
     {
         _deck = new Deck(_seed);
+        _rubbed = new bool[BattleLimits.RoomSeats];
+        _rubsUsed = new int[BattleLimits.RoomSeats];
+        _picked = EmptyPicked();
         var hands = new Card[BattleLimits.RoomSeats][];
         for (var i = 0; i < BattleLimits.RoomSeats; i++)
         {
             var active = IsSeatActive(i);
-            var hand = new Card[BattleLimits.OpenHandSize];
+            var hand = new Card[size];
             if (active)
             {
                 for (var c = 0; c < hand.Length; c++)
@@ -118,19 +145,84 @@ public sealed class BattleEngine
             }
 
             hands[i] = hand;
+            _picked[i] = AutoPick(i, hand);
         }
 
-        _snapshot = new BattleSnapshot
+        PublishDealt(hands, "deal");
+    }
+
+    private void Pick(int seatId, int[] indexes)
+    {
+        RequireDealt(seatId);
+        var hand = _snapshot.Hands[seatId];
+        if (indexes == null || indexes.Length != BattleLimits.OpenHandSize)
         {
-            Seed = _seed,
-            Mode = _mode.Kind,
-            Phase = BattlePhase.Dealt,
-            Seats = _seats,
-            Hands = hands,
-            Scores = new HandScore[BattleLimits.RoomSeats],
-            Damages = new int[BattleLimits.RoomSeats],
-            Events = new[] { new BattleEvent { Type = BattleEventType.Dealt, Message = "deal" } }
-        };
+            throw new InvalidOperationException("Pick needs 3 indexes.");
+        }
+
+        var seen = new bool[hand.Count];
+        for (var n = 0; n < indexes.Length; n++)
+        {
+            var index = indexes[n];
+            if (index < 0 || index >= hand.Count || seen[index] || !hand[index].IsValid)
+            {
+                throw new InvalidOperationException("Invalid pick.");
+            }
+
+            seen[index] = true;
+        }
+
+        _picked[seatId] = (int[])indexes.Clone();
+        PublishDealt(CloneHands(), "pick");
+    }
+
+    private void Rub(int seatId, int index)
+    {
+        RequireDealt(seatId);
+        var hands = CloneHands();
+        var hand = hands[seatId];
+        if (index < 0 || index >= hand.Length || !hand[index].IsValid)
+        {
+            throw new InvalidOperationException("Invalid rub index.");
+        }
+
+        var next = _deck!.Draw();
+        if (!next.IsValid)
+        {
+            throw new InvalidOperationException("Deck empty.");
+        }
+
+        hand[index] = next;
+        _rubbed[seatId] = true;
+        _rubsUsed[seatId]++;
+        if (!_seats[seatId].IsHuman)
+        {
+            _picked[seatId] = PickBest(hand);
+        }
+
+        PublishDealt(hands, "rub");
+    }
+
+    private void Replace(int seatId)
+    {
+        RequireDealt(seatId);
+        var hands = CloneHands();
+        var size = Math.Max(hands[seatId].Length, BattleLimits.MaxCardsPerSeat);
+        var hand = new Card[size];
+        for (var c = 0; c < hand.Length; c++)
+        {
+            var next = _deck!.Draw();
+            if (!next.IsValid)
+            {
+                throw new InvalidOperationException("Deck empty.");
+            }
+
+            hand[c] = next;
+        }
+
+        hands[seatId] = hand;
+        _picked[seatId] = AutoPick(seatId, hand);
+        PublishDealt(hands, "replace");
     }
 
     private void ScoreHands()
@@ -141,12 +233,13 @@ public sealed class BattleEngine
         var winners = new List<int>();
         for (var i = 0; i < hands.Length; i++)
         {
-            if (!IsSeatActive(i) || !HasOpenHand(hands[i]))
+            var open = OpenCards(i);
+            if (!IsSeatActive(i) || !HasOpenHand(open))
             {
                 continue;
             }
 
-            scores[i] = HandEvaluator.Evaluate(hands[i]);
+            scores[i] = HandEvaluator.Evaluate(open);
             if (best == null || scores[i].CompareTo(best.Value) > 0)
             {
                 best = scores[i];
@@ -175,7 +268,8 @@ public sealed class BattleEngine
         var isPvp = _mode.Kind == BattleModeKind.Pvp;
         for (var i = 0; i < scores.Length; i++)
         {
-            if (!IsSeatActive(i) || !HasOpenHand(hands[i]))
+            var open = OpenCards(i);
+            if (!IsSeatActive(i) || !HasOpenHand(open))
             {
                 continue;
             }
@@ -191,13 +285,16 @@ public sealed class BattleEngine
                     new CombatSituation
                     {
                         FirstShow = firstShow,
+                        RubbedThisHand = _rubbed[i],
+                        RubsUsedThisHand = _rubsUsed[i],
                         AliveOpponents = Math.Max(0, alive - 1),
                         AttackerHp = seat.Hp,
                         AttackerMaxHp = seat.MaxHp,
                         DefenderIsPlayer = isPvp,
                         DefenderIsBoss = false,
                         DefenderHp = 0,
-                        Shown = hands[i]
+                        Shown = open,
+                        Unshown = UnshownCards(i)
                     });
             }
             else
@@ -221,11 +318,185 @@ public sealed class BattleEngine
             Phase = BattlePhase.Showdown,
             Seats = _seats,
             Hands = hands,
+            Picked = SnapshotPicked(),
             Scores = scores,
             Winners = winners,
             Damages = damages,
             Events = new[] { new BattleEvent { Type = BattleEventType.Compared, Message = "showdown" } }
         };
+    }
+
+    private void RequireDealt(int seatId)
+    {
+        if (_snapshot.Phase != BattlePhase.Dealt)
+        {
+            throw new InvalidOperationException("Hand is locked.");
+        }
+
+        if (!IsSeatActive(seatId))
+        {
+            throw new InvalidOperationException("Seat is inactive.");
+        }
+    }
+
+    private int[] AutoPick(int seat, Card[] hand)
+    {
+        if (!_seats[seat].IsHuman && hand.Length >= BattleLimits.OpenHandSize)
+        {
+            return PickBest(hand);
+        }
+
+        return DefaultPick(hand.Length);
+    }
+
+    private void PublishDealt(IReadOnlyList<Card>[] hands, string message)
+    {
+        _snapshot = new BattleSnapshot
+        {
+            Seed = _seed,
+            Mode = _mode.Kind,
+            Phase = BattlePhase.Dealt,
+            Seats = _seats,
+            Hands = hands,
+            Picked = SnapshotPicked(),
+            Scores = new HandScore[BattleLimits.RoomSeats],
+            Damages = new int[BattleLimits.RoomSeats],
+            Events = new[] { new BattleEvent { Type = BattleEventType.Dealt, Message = message } }
+        };
+    }
+
+    private Card[][] CloneHands()
+    {
+        var src = _snapshot.Hands;
+        var hands = new Card[src.Length][];
+        for (var i = 0; i < src.Length; i++)
+        {
+            var row = src[i];
+            var copy = new Card[row.Count];
+            for (var c = 0; c < row.Count; c++)
+            {
+                copy[c] = row[c];
+            }
+
+            hands[i] = copy;
+        }
+
+        return hands;
+    }
+
+    private IReadOnlyList<int>[] SnapshotPicked()
+    {
+        var arr = new int[_picked.Length][];
+        for (var i = 0; i < _picked.Length; i++)
+        {
+            arr[i] = (int[])_picked[i].Clone();
+        }
+
+        return arr;
+    }
+
+    private IReadOnlyList<Card> UnshownCards(int seat)
+    {
+        var hand = _snapshot.Hands[seat];
+        var pick = _picked[seat];
+        if (hand.Count <= BattleLimits.OpenHandSize)
+        {
+            return Array.Empty<Card>();
+        }
+
+        var used = new bool[hand.Count];
+        for (var n = 0; n < pick.Length; n++)
+        {
+            var index = pick[n];
+            if (index >= 0 && index < used.Length)
+            {
+                used[index] = true;
+            }
+        }
+
+        var list = new List<Card>();
+        for (var c = 0; c < hand.Count; c++)
+        {
+            if (!used[c] && hand[c].IsValid)
+            {
+                list.Add(hand[c]);
+            }
+        }
+
+        return list;
+    }
+
+    private static IReadOnlyList<Card> TakeOpen(IReadOnlyList<Card> hand, int[] pick)
+    {
+        if (hand.Count < BattleLimits.OpenHandSize)
+        {
+            return hand;
+        }
+
+        if (pick == null || pick.Length < BattleLimits.OpenHandSize)
+        {
+            if (hand.Count == BattleLimits.OpenHandSize)
+            {
+                return hand;
+            }
+
+            var first = new Card[BattleLimits.OpenHandSize];
+            for (var n = 0; n < first.Length; n++)
+            {
+                first[n] = hand[n];
+            }
+
+            return first;
+        }
+
+        var open = new Card[BattleLimits.OpenHandSize];
+        for (var n = 0; n < open.Length; n++)
+        {
+            var index = pick[n];
+            open[n] = index >= 0 && index < hand.Count ? hand[index] : default;
+        }
+
+        return open;
+    }
+
+    private static int[] DefaultPick(int handSize)
+    {
+        var n = Math.Min(BattleLimits.OpenHandSize, Math.Max(0, handSize));
+        var pick = new int[BattleLimits.OpenHandSize];
+        for (var i = 0; i < pick.Length; i++)
+        {
+            pick[i] = i < n ? i : 0;
+        }
+
+        return pick;
+    }
+
+    private static int[] PickBest(Card[] hand)
+    {
+        var flags = new bool[hand.Length];
+        HandEvaluator.SelectBestOpen(hand, flags, hand.Length);
+        var pick = DefaultPick(hand.Length);
+        var n = 0;
+        for (var i = 0; i < flags.Length && n < pick.Length; i++)
+        {
+            if (flags[i])
+            {
+                pick[n++] = i;
+            }
+        }
+
+        return pick;
+    }
+
+    private static int[][] EmptyPicked()
+    {
+        var arr = new int[BattleLimits.RoomSeats][];
+        for (var i = 0; i < arr.Length; i++)
+        {
+            arr[i] = DefaultPick(0);
+        }
+
+        return arr;
     }
 
     private bool IsSeatActive(int index)
@@ -252,6 +523,7 @@ public sealed class BattleEngine
             Phase = BattlePhase.Idle,
             Seats = _seats,
             Hands = Enumerable.Range(0, BattleLimits.RoomSeats).Select(_ => Array.Empty<Card>()).ToArray(),
+            Picked = EmptyPicked(),
             Scores = new HandScore[BattleLimits.RoomSeats],
             Damages = new int[BattleLimits.RoomSeats]
         };

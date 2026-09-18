@@ -383,6 +383,15 @@ namespace App.UI
             TryScheduleAiDelay();
         }
 
+        private void LateUpdate()
+        {
+            // PVP 翻牌回调里启攻击时，偶发同一帧订阅未刷到；兜底轮询。
+            if (ViewModel != null && ViewModel.Session != null && ViewModel.Session.IsPvp)
+            {
+                TryPlayAttack();
+            }
+        }
+
         private async Task EnsureBattlePortraits()
         {
             var serial = ++_portraitLoadSerial;
@@ -516,6 +525,34 @@ namespace App.UI
             }
 
             _playedAttack = session.AttackPlaySerial;
+            // PVP 只要撞击，不走圣物点数结算链，避免中间卡住。
+            if (session.IsPvp)
+            {
+                _attackFx.Bind(transform, _playerItem, _enemyItems);
+                var slot = session.AttackVisualSlot;
+                if (slot >= 0 && slot < _enemyItems.Length && _enemyItems[slot] != null)
+                {
+                    _enemyItems[slot].gameObject.SetActive(true);
+                    CancelDeathDissolve(_enemyItems[slot]);
+                    _enemyItems[slot].ResetDissolve();
+                }
+
+                _holdAttackDisplay = true;
+                _heldAttackItem = session.IncomingAttack
+                    ? AttackItemAtSlot(slot)
+                    : _playerItem;
+                _heldAttackValue = Math.Max(1, session.AttackDamage);
+                if (_heldAttackItem != null)
+                {
+                    _heldAttackItem.SetAttack(_heldAttackValue);
+                }
+
+                HideBeilvInfo();
+                ViewModel.ShowMask.Value = true;
+                PlayAttackCutscene(session, 1f);
+                return;
+            }
+
             PlaySettleThenAttack(session);
         }
 

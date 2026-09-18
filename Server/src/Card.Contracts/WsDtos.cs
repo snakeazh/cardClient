@@ -25,6 +25,7 @@ public static class WsMessageTypes
     public const string Error = "error";
     public const string Battle = "battle";
     public const string BattleUpdate = "battle_update";
+    public const string MatchUpdate = "match_update";
 }
 
 public sealed class WsAuthPayload
@@ -42,6 +43,8 @@ public sealed class WsRoomReadyPayload
     public string RoomId { get; set; } = string.Empty;
 
     public int Seed { get; set; }
+
+    public int ModeId { get; set; }
 
     public PlayerPublic[] Players { get; set; } = System.Array.Empty<PlayerPublic>();
 }

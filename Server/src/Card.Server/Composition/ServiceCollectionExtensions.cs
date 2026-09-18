@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
             configuration.GetValue("GuestAuth:Enabled", false),
             sp.GetRequiredService<IPveRunService>()));
         services.AddSingleton<PvpConnectionHub>();
-        services.AddSingleton<PvpBattleHost>();
+        services.AddSingleton<PvpMatchHost>();
         return services;
     }
 }

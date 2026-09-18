@@ -116,7 +116,7 @@ public class LoginUserInfoTests
             new ICodeSessionClient[] { new GuestClient() },
             new MemoryAuthBindingRepository(),
             players,
-            new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1)),
+            new MemoryTokenService(clock, TimeSpan.FromHours(1)),
             config,
             clock,
             guestEnabled: true,
@@ -247,6 +247,18 @@ public class PvpMatchmakerTests
         Assert.Equal(profile.UserId.ToString("N"), pub.UserId);
         Assert.Equal("游客甲", pub.NickName);
         Assert.Equal("https://wx.qlogo.cn/x", pub.AvatarUrl);
+    }
+
+    [Fact]
+    public void FillWithBotsOpensRoomWhenFirstHumanQueues()
+    {
+        var matchmaker = new PvpBotFillMatchmaker(new InMemoryPvpMatchmaker());
+        var evt = matchmaker.Enqueue(Public("你"));
+        Assert.True(evt.RoomOpened);
+        Assert.Equal(4, evt.Players.Count);
+        Assert.Single(evt.Players, p => !p.IsBot);
+        Assert.Equal(3, evt.Players.Count(p => p.IsBot));
+        Assert.Equal("你", evt.Players[0].NickName);
     }
 
     private static PlayerPublic Public(string nick, string avatar = "")

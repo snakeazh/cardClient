@@ -5,9 +5,6 @@ using System;
 
 namespace CardShare.Contracts.Config
 {
-    /// <summary>
-    /// 配置表 MonsterLogicConfig。访问：MonsterLogicConfig.Get(id) / TryGet / All
-    /// </summary>
     [Serializable]
     public sealed class MonsterLogicConfig
     {

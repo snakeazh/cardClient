@@ -89,6 +89,8 @@ namespace App.UI
             var enemyAnim = visualSlot >= 0 && visualSlot < _enemyAnims.Length ? _enemyAnims[visualSlot] : null;
             if (_playerRoot == null || enemyRoot == null)
             {
+                Debug.LogWarning(
+                    $"[AttackCutscene] PlayIncoming skipped: playerRoot={_playerRoot != null} slot={visualSlot} enemyRoot={enemyRoot != null}");
                 onHit?.Invoke();
                 onCollisionDone?.Invoke();
                 onReturned?.Invoke();
@@ -184,6 +186,8 @@ namespace App.UI
             if (_playerRoot == null || visualSlot < 0 || visualSlot >= _enemyRoots.Length ||
                 _enemyRoots[visualSlot] == null)
             {
+                Debug.LogWarning(
+                    $"[AttackCutscene] Play skipped: playerRoot={_playerRoot != null} slot={visualSlot} enemyRoot={(visualSlot >= 0 && visualSlot < _enemyRoots.Length ? _enemyRoots[visualSlot] != null : false)}");
                 onHit?.Invoke();
                 onCollisionDone?.Invoke();
                 onReturned?.Invoke();

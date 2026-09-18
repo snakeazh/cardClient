@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using App.AdShop;
 using App.Atlas;
@@ -56,17 +57,61 @@ namespace App.Bootstrap
             await _resources.InitializeAsync();
             _services.Register(_resources.Resources);
 
-            await RegisterAtlas(_services, _resources.Resources);
-            await CardShadowPool.PreloadAsync(_resources.Resources);
-            await AttackTuningConfig.PreloadAsync(_resources.Resources);
-
+            // 忠告页只需最小初始化：存档（钱包/体力依赖它）、UIRoot 与 UI 框架。
+            // 重型初始化（图集/配置表/头像/业务服务/列表项预热）在忠告展示期间并发执行。
             _services.Register(SaveFramework.Create());
-            RegisterAudio(_services);
-            await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
+            RegisterWallet(_services);
+            RegisterEnergy(_services);
             _services.Register(new GameSession());
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();
             _services.Container.AddSingleton<MainResourceViewModel>();
+
+            await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
+            _ui = UIFramework.Create(_services.Container);
+
+            // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
+            _services.Container.AddSingleton<ToastService>();
+
+            var launchInit = new LaunchInitialization();
+            _services.Register(launchInit);
+
+            if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
+            {
+                // 先开忠告页（独占资源加载），再并发跑重型初始化；
+                // 忠告页倒计时与初始化两者都完成后由忠告页自行进首页。
+                await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
+                _ = RunHeavyInitAsync(launchInit);
+            }
+            else
+            {
+                await RunHeavyInitAsync(launchInit);
+                await OpenHomeWithNavigation();
+            }
+        }
+
+        private async Task RunHeavyInitAsync(LaunchInitialization launchInit)
+        {
+            try
+            {
+                await InitializeHeavyAsync();
+                launchInit.Complete();
+            }
+            catch (Exception ex)
+            {
+                launchInit.Fail(ex);
+                throw;
+            }
+        }
+
+        private async Task InitializeHeavyAsync()
+        {
+            await RegisterAtlas(_services, _resources.Resources);
+            await CardShadowPool.PreloadAsync(_resources.Resources);
+            await AttackTuningConfig.PreloadAsync(_resources.Resources);
+
+            RegisterAudio(_services);
+            await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
 
             await ConfigTables.LoadAsync(_resources.Resources);
             await PortraitLoader.PreloadAsync(_resources.Resources);
@@ -74,27 +119,34 @@ namespace App.Bootstrap
             RegisterLevel(_services);
             RegisterScore(_services);
             RegisterTalent(_services);
-            RegisterWallet(_services);
-            RegisterEnergy(_services);
             RegisterAdShop(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
-            await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
-            _ui = UIFramework.Create(_services.Container);
-
-            // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
-            _services.Container.AddSingleton<ToastService>();
             RegisterGuide(_services);
 
-            if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
+            await PrewarmLevelItemsAsync();
+        }
+
+        /// <summary>趁忠告展示期把选关列表项实例化进对象池，首次打开 LevelUI 不再逐个 Instantiate。</summary>
+        private async Task PrewarmLevelItemsAsync()
+        {
+            var heroCount = HeroConfig.All != null ? HeroConfig.All.Count : 0;
+            var levelCount = 0;
+            var levels = _services.Resolve<ILevelService>();
+            var diffs = levels.GetDifficulties();
+            if (diffs != null)
             {
-                await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
+                for (var i = 0; i < diffs.Count; i++)
+                {
+                    if (levels.Get(diffs[i], 1) != null)
+                    {
+                        levelCount++;
+                    }
+                }
             }
-            else
-            {
-                await OpenHomeWithNavigation();
-            }
+
+            await LevelItemPool.PrewarmAsync(_resources.Resources, heroCount, levelCount);
         }
 
         private async Task OpenHomeWithNavigation()

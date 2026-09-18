@@ -33,6 +33,15 @@ namespace App.Bootstrap
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
 
+        // 发布包关闭全部日志输出（编辑器保留）。Debug/AppLog 最终都走 unityLogger。
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        private static void DisableReleaseLogging()
+        {
+#if !UNITY_EDITOR
+            Debug.unityLogger.logEnabled = false;
+#endif
+        }
+
         private async void Start()
         {
             Application.targetFrameRate = 120;

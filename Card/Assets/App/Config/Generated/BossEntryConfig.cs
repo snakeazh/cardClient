@@ -31,6 +31,11 @@ namespace App.Config
         /// </summary>
         public string Desc;
 
+        /// <summary>
+        /// 机制池:0=关卡随机池,1=Boss专属(不参与随机)
+        /// </summary>
+        public int EntryPool;
+
     }
 }
 

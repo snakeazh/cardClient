@@ -33,6 +33,15 @@ namespace App.Bootstrap
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
 
+        // 发布包关闭全部日志输出（编辑器保留）。Debug/AppLog 最终都走 unityLogger。
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        private static void DisableReleaseLogging()
+        {
+#if !UNITY_EDITOR
+            Debug.unityLogger.logEnabled = false;
+#endif
+        }
+
         private async void Start()
         {
             Application.targetFrameRate = 120;
@@ -66,6 +75,7 @@ namespace App.Bootstrap
             RegisterUnlock(_services);
             LogConfigSmoke();
 
+            await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
             _ui = UIFramework.Create(_services.Container);
 
             // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化

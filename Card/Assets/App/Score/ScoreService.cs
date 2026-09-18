@@ -7,7 +7,7 @@ using UnityEngine;
 namespace App.Score
 {
     /// <summary>
-    /// In-memory chapter score with dirty-flag persistence via ISaveService.
+    /// In-memory chapter score; mutations save immediately via ISaveService.
     /// </summary>
     public sealed class ScoreService : IScoreService
     {
@@ -54,6 +54,7 @@ namespace App.Score
             _stageRoundKills[index]++;
             _lastKillIndex = index;
             _dirty = true;
+            Save();
         }
 
         /// <summary>把直接击杀（不走牌局积分，编辑器外挂）造成的伤害补记到最近一次击杀行，仅供结算明细显示。</summary>
@@ -92,6 +93,7 @@ namespace App.Score
             _round = 0;
             _grantedGold = 0;
             _dirty = true;
+            Save();
         }
 
         public void BeginStage()
@@ -108,6 +110,7 @@ namespace App.Score
             _stage = 0;
             _round = 0;
             _dirty = true;
+            Save();
         }
 
         public void BeginRound()
@@ -120,6 +123,7 @@ namespace App.Score
 
             _round = 0;
             _dirty = true;
+            Save();
         }
 
         public void AwardRoundScore(int chipsWon)
@@ -141,6 +145,7 @@ namespace App.Score
             PadRoundKills();
             _roundScoreAwarded = true;
             _dirty = true;
+            Save();
         }
 
         /// <summary>回合无击杀时补 0，保证与 <see cref="_stageRoundScores"/> 一一对应。</summary>
@@ -163,6 +168,7 @@ namespace App.Score
 
             _grantedGold += delta;
             _dirty = true;
+            Save();
             return delta;
         }
 

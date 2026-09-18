@@ -7,7 +7,7 @@ namespace Framework.Save
     {
         public static ISaveService Create()
         {
-#if WECHAT_MINIGAME
+#if (WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME) && !UNITY_EDITOR
             return new WeChatSaveService();
 #else
             return new PlayerPrefsSaveService();

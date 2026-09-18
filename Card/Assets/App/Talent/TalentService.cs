@@ -9,7 +9,7 @@ namespace App.Talent
 {
     /// <summary>
     /// Indexes TalentConfig at construction. Ownership is count-based: each copy raises one level.
-    /// Mutations stay in memory; Save() (or pause/quit auto-flush) writes disk.
+    /// Mutations save immediately (pause/quit auto-flush is unreliable on WeChat mini-game).
     /// </summary>
     public sealed class TalentService : ITalentService
     {
@@ -137,6 +137,7 @@ namespace App.Talent
         {
             _drawCount++;
             _dirty = true;
+            Save();
         }
 
         public int DrawRandomId()
@@ -174,6 +175,7 @@ namespace App.Talent
             _counts.TryGetValue(talentId, out var current);
             _counts[talentId] = current + amount;
             _dirty = true;
+            Save();
             var snapshot = GetCurrent(talentId);
             if (snapshot.Level > previousLevel)
             {
@@ -195,6 +197,7 @@ namespace App.Talent
             _counts.Clear();
             _drawCount = 0;
             _dirty = true;
+            Save();
         }
 
         public void Load()

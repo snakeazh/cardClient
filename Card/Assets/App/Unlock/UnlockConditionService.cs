@@ -8,7 +8,7 @@ using UnityEngine;
 namespace App.Unlock
 {
     /// <summary>
-    /// 按 UnlockConditionConfig 累计进度并解锁遗物，脏标记落盘 unlock.condition.v1。
+    /// 按 UnlockConditionConfig 累计进度并解锁遗物，变更即落盘 unlock.condition.v1。
     /// </summary>
     public sealed class UnlockConditionService : IUnlockConditionService
     {
@@ -86,6 +86,8 @@ namespace App.Unlock
                     _shopSnapshot.Add(relic.Id);
                 }
             }
+
+            Save();
         }
 
         public IReadOnlyList<int> ConsumePendingUnlockRelicIds()
@@ -148,6 +150,7 @@ namespace App.Unlock
 
             _dirty = true;
             SyncUnlockedRelics(toast: true);
+            Save();
         }
 
         private static bool UsesMaxProgress(ContidionType type)

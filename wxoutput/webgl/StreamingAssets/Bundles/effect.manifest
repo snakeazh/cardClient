@@ -1,0 +1,37 @@
+ManifestFileVersion: 0
+CRC: 2128827989
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 81d105d04c0a401f7f6ddcdba5073232
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: bf39d736e904aba56b6d8ba38870b0de
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 81d105d04c0a401f7f6ddcdba5073232
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 96
+  Script: {instanceID: 0}
+- Class: 198
+  Script: {instanceID: 0}
+- Class: 199
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Effect/UI/Chouka/ChoukaEffect01.prefab
+- Assets/Res/Effect/UI/Card/CardPointEffect01.prefab
+- Assets/Res/Effect/UI/Card/CardPointEffect03.prefab
+- Assets/Res/Effect/UI/Card/CardPointEffect02.prefab
+Dependencies: []

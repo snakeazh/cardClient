@@ -381,8 +381,13 @@ namespace App.UI
             }
 
             _session.StartNewRun();
-            await _ui.Close(this);
+            _tableVm.ResetOpeningGate();
+            BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
+            // 等局内 OnViewOpen/预加载完成后再关选关，避免露底闪一下。
             await _ui.Open(_tableVm);
+            BattleTrace.Log("StartGame GameUI ready, closing LevelUI");
+            await _ui.Close(this);
+            BattleTrace.Log("StartGame LevelUI closed");
         }
 
         /// <summary>扣开局体力。不足时弹 CommonTop，确定后打开体力商店；返回是否可开局。</summary>

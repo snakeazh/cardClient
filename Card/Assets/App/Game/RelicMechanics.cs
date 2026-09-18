@@ -182,6 +182,37 @@ namespace App.Game
                 var piece = add == (int)add ? $"{name}+{(int)add}" : $"{name}+{add}";
                 text = text == null ? piece : text + ", " + piece;
             });
+
+            // 与 SumMultiplierExtra 一致：对应圣物已不在栏时，永久累计仍计入遗物加成。
+            if (!HasMechanism(run, MechanismType.RubbingCardRelic) &&
+                run != null &&
+                run.RubRelicMagForever != 0f)
+            {
+                var add = run.RubRelicMagForever;
+                var piece = add == (int)add ? $"老搓家+{(int)add}" : $"老搓家+{add}";
+                text = text == null ? piece : text + ", " + piece;
+            }
+
+            if (!HasMechanism(run, MechanismType.ProOfUpCardType) &&
+                run != null)
+            {
+                var add = run.HandTypeMagBonus(score.Type);
+                if (add != 0f)
+                {
+                    var piece = add == (int)add ? $"牌型永久+{(int)add}" : $"牌型永久+{add}";
+                    text = text == null ? piece : text + ", " + piece;
+                }
+            }
+
+            if (!HasMechanism(run, MechanismType.NoKillMonsterGetMagnification) &&
+                run != null &&
+                run.PracticeMagForever != 0f)
+            {
+                var add = run.PracticeMagForever;
+                var piece = add == (int)add ? $"练习卷+{(int)add}" : $"练习卷+{add}";
+                text = text == null ? piece : text + ", " + piece;
+            }
+
             return text ?? string.Empty;
         }
 

@@ -126,17 +126,24 @@ namespace Framework.UI.Navigation
         private async Task OpenCore(ScreenRegistration registration, ViewModelBase viewModel, object args)
         {
             var stack = _stacks[registration.Layer];
+            // 先把新界面加载完，再藏上一页，避免 AB/await 期间露底闪一下。
+            var covered = stack.Count > 0 ? stack.Peek() : null;
+            var coverGo = covered != null && covered.View != null ? covered.View.gameObject : null;
 
-            if (stack.Count > 0)
+            var instance = await CreateInstanceAsync(registration, viewModel, args, coverGo);
+
+            if (covered != null && coverGo != null)
             {
-                var current = stack.Peek();
-                await current.View.Hide();
-                await _transition.PlayExit(current.View.gameObject);
+                coverGo.transform.SetAsLastSibling();
+                await covered.View.Hide();
+                await _transition.PlayExit(coverGo);
+                // 先关掉遮罩页再改局内 Camera/Fit，避免选关界面被撑宽一帧。
+                coverGo.SetActive(false);
             }
 
-            var instance = await CreateInstanceAsync(registration, viewModel, args);
             stack.Push(instance);
             await _transition.PlayEnter(instance.View.gameObject);
+            instance.View.OnPresented();
         }
 
         private async Task CloseByViewModel(ViewModelBase viewModel)
@@ -155,27 +162,83 @@ namespace Framework.UI.Navigation
                     await Close(layer);
                     return;
                 }
+
+                // 压在下面的页（例如开局先 Open GameUI 再关 LevelUI）直接拆掉，不要 Reveal。
+                if (TryRemoveBuried(stack, viewModel, out var buried))
+                {
+                    await DestroyInstance(buried);
+                    return;
+                }
             }
 
             throw new InvalidOperationException(
-                $"ViewModel '{viewModel.GetType().Name}' is not the top screen on any layer.");
+                $"ViewModel '{viewModel.GetType().Name}' is not open on any layer.");
+        }
+
+        private static bool TryRemoveBuried(
+            Stack<ScreenInstance> stack,
+            ViewModelBase viewModel,
+            out ScreenInstance buried)
+        {
+            buried = null;
+            if (stack == null || stack.Count == 0)
+            {
+                return false;
+            }
+
+            var kept = new List<ScreenInstance>(stack.Count);
+            while (stack.Count > 0)
+            {
+                var top = stack.Pop();
+                if (buried == null && ReferenceEquals(top.ViewModel, viewModel))
+                {
+                    buried = top;
+                    continue;
+                }
+
+                kept.Add(top);
+            }
+
+            for (var i = kept.Count - 1; i >= 0; i--)
+            {
+                stack.Push(kept[i]);
+            }
+
+            return buried != null;
         }
 
         private async Task<ScreenInstance> CreateInstanceAsync(
             ScreenRegistration registration,
             ViewModelBase viewModel,
-            object args)
+            object args,
+            GameObject keepCoverOnTop = null)
         {
+            UnityEngine.Debug.LogWarning(
+                $"[BattleTrace] CreateInstance begin id={registration.Id} key={registration.AssetKey} vm={viewModel?.GetType().Name}");
             var prefab = registration.Prefab;
             if (prefab == null)
             {
+                UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance LoadAsync prefab… {registration.AssetKey}");
                 prefab = await _resources.LoadAsync<GameObject>(registration.AssetKey);
+                UnityEngine.Debug.LogWarning(
+                    $"[BattleTrace] CreateInstance prefab loaded={(prefab != null)} {registration.AssetKey}");
+                if (keepCoverOnTop != null)
+                {
+                    keepCoverOnTop.transform.SetAsLastSibling();
+                }
             }
 
             var parent = _root.GetLayer(registration.Layer);
             var go = UnityEngine.Object.Instantiate(prefab, parent, false);
             go.name = prefab.name;
             go.SetActive(true);
+            // 新页一出来就可能盖住旧页；加载期间始终把遮罩页按在最上。
+            if (keepCoverOnTop != null)
+            {
+                keepCoverOnTop.transform.SetAsLastSibling();
+            }
+
+            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance instantiated {go.name}");
 
             var view = go.GetComponent<IView>();
             if (view == null)
@@ -185,7 +248,14 @@ namespace Framework.UI.Navigation
                     $"Prefab for screen '{registration.Id}' must have a component implementing IView.");
             }
 
+            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance view.Open… {registration.Id}");
             await view.Open(viewModel, args);
+            if (keepCoverOnTop != null)
+            {
+                keepCoverOnTop.transform.SetAsLastSibling();
+            }
+
+            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance view.Open done {registration.Id}");
             return new ScreenInstance(registration, view, viewModel);
         }
 

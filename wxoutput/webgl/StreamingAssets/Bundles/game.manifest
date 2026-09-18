@@ -1,0 +1,54 @@
+ManifestFileVersion: 0
+CRC: 3021840030
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 5891547d17651e5bd88550a73ac1b928
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 919f036469d2c591ef0c6805d1e685c1
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 5891547d17651e5bd88550a73ac1b928
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7c4e91a2b8d04f6e9a3c5d1e0f2b4876, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 50efa7441ac948b449f813da6fb679e1, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 198
+  Script: {instanceID: 0}
+- Class: 199
+  Script: {instanceID: 0}
+- Class: 212
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 687078895
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Game/CardIcon.prefab
+- Assets/Res/Game/GameHud.prefab
+Dependencies:
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/animations
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/materials
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/textures

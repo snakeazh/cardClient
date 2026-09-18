@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
 using App.Game;
@@ -65,7 +66,49 @@ namespace App.UI
             }
 
             _uiCanvas = uiRoot != null ? uiRoot.GetComponentInParent<Canvas>() : null;
-            Preload();
+            // 不在 Bind 里同步加载：WebGL/微信主线程 GetResult 会卡死模拟器。
+            if (_resources != null)
+            {
+                _resources.TryGetCached(ResResourcePaths.CardPointEffect01, out _fx01Prefab);
+                _resources.TryGetCached(ResResourcePaths.CardPointEffect02, out _fx02Prefab);
+                _resources.TryGetCached(ResResourcePaths.CardPointEffect03, out _fx03Prefab);
+            }
+        }
+
+        /// <summary>进局前 await 调用。禁止改回同步 GetResult。</summary>
+        public async Task PreloadAsync(IResourceService resources)
+        {
+            _resources = resources ?? _resources;
+            if (_resources == null)
+            {
+                return;
+            }
+
+            _fx01Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect01);
+            _fx02Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect02);
+            _fx03Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect03);
+        }
+
+        private async Task<GameObject> LoadPrefabAsync(string key)
+        {
+            if (_resources == null || string.IsNullOrEmpty(key))
+            {
+                return null;
+            }
+
+            if (_resources.TryGetCached(key, out GameObject cached) && cached != null)
+            {
+                return cached;
+            }
+
+            try
+            {
+                return await _resources.LoadAsync<GameObject>(key);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public void Play(
@@ -296,30 +339,6 @@ namespace App.UI
             if (high)
             {
                 animator.SetBool("high", false);
-            }
-        }
-
-        private void Preload()
-        {
-            _fx01Prefab = LoadPrefab(ResResourcePaths.CardPointEffect01);
-            _fx02Prefab = LoadPrefab(ResResourcePaths.CardPointEffect02);
-            _fx03Prefab = LoadPrefab(ResResourcePaths.CardPointEffect03);
-        }
-
-        private GameObject LoadPrefab(string key)
-        {
-            if (_resources == null || string.IsNullOrEmpty(key))
-            {
-                return null;
-            }
-
-            try
-            {
-                return _resources.LoadAsync<GameObject>(key).GetAwaiter().GetResult();
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

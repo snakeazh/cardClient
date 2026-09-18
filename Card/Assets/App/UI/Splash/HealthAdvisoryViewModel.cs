@@ -1,8 +1,11 @@
+using System;
 using System.Threading.Tasks;
 using App.UI;
+using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI.Splash
 {
@@ -41,15 +44,45 @@ namespace App.UI.Splash
             Footer.Value = HealthAdvisoryText.WeChatFooter;
 
             // OnOpen 在 UINavigator 入栈前 await 完毕；计时须延后到 Open 流程完成之后。
+            // WebGL/微信小游戏上 Task.Delay 依赖的计时器续跑不稳定，改用 realtime + Yield。
             _ = RunFlowAsync();
             return Task.CompletedTask;
         }
 
         private async Task RunFlowAsync()
         {
-            await Task.Yield();
-            await Task.Delay(HealthAdvisoryText.DisplayDurationMs);
-            await EnterHomeAsync();
+            try
+            {
+                await Task.Yield();
+                await DelayRealtimeAsync(HealthAdvisoryText.DisplayDurationMs);
+                await EnterHomeAsync();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                try
+                {
+                    await EnterHomeAsync();
+                }
+                catch (Exception retryEx)
+                {
+                    AppLog.Exception(LogChannel.UI, retryEx);
+                }
+            }
+        }
+
+        private static async Task DelayRealtimeAsync(int milliseconds)
+        {
+            if (milliseconds <= 0)
+            {
+                return;
+            }
+
+            var end = Time.realtimeSinceStartup + milliseconds / 1000f;
+            while (Time.realtimeSinceStartup < end)
+            {
+                await Task.Yield();
+            }
         }
 
         private async Task EnterHomeAsync()

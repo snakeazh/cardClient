@@ -9,7 +9,7 @@ using UnityEngine;
 namespace App.Audio
 {
     /// <summary>
-    /// 在宿主物体上挂 BGM / SFX 两个 AudioSource，脏标记落盘开关。
+    /// 在宿主物体上挂 BGM / SFX 两个 AudioSource，开关变更即落盘。
     /// </summary>
     public sealed class AudioService : IAudioService
     {
@@ -52,6 +52,7 @@ namespace App.Audio
 
             _bgmEnabled = enabled;
             _dirty = true;
+            Save();
             ApplyBgmState();
             Changed?.Invoke();
         }
@@ -65,6 +66,7 @@ namespace App.Audio
 
             _sfxEnabled = enabled;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 

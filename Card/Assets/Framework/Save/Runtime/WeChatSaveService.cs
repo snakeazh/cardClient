@@ -1,65 +1,94 @@
-using System;
+#if (WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME) && !UNITY_EDITOR
+using System.Runtime.InteropServices;
 
 namespace Framework.Save
 {
     /// <summary>
-    /// WeChat mini-game ISaveService stub. Replace with wx storage when the SDK is integrated.
+    /// WeChat mini-game ISaveService backed by the WX-WASM-SDK storage adapter
+    /// (the SDK's PlayerPrefs-to-wx.storage bridge). Reads are synchronous via a
+    /// memory cache over wx.getStorageSync; writes update the cache and flush to
+    /// wx.setStorage on an async queue, so Save() is a no-op.
+    /// Only compiled into WeChat mini-game player builds; editor and other
+    /// platforms use PlayerPrefsSaveService instead.
     /// </summary>
     public sealed class WeChatSaveService : ISaveService
     {
+        [DllImport("__Internal")]
+        private static extern int WXStorageHasKeySync(string key);
+
+        [DllImport("__Internal")]
+        private static extern string WXStorageGetStringSync(string key, string defaultValue);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageSetStringSync(string key, string value);
+
+        [DllImport("__Internal")]
+        private static extern int WXStorageGetIntSync(string key, int defaultValue);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageSetIntSync(string key, int value);
+
+        [DllImport("__Internal")]
+        private static extern float WXStorageGetFloatSync(string key, float defaultValue);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageSetFloatSync(string key, float value);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageDeleteKeySync(string key);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageDeleteAllSync();
+
         public bool HasKey(string key)
         {
-            throw NotImplemented();
+            return WXStorageHasKeySync(key) != 0;
         }
 
         public string GetString(string key, string defaultValue = "")
         {
-            throw NotImplemented();
+            return WXStorageGetStringSync(key, defaultValue);
         }
 
         public void SetString(string key, string value)
         {
-            throw NotImplemented();
+            WXStorageSetStringSync(key, value);
         }
 
         public int GetInt(string key, int defaultValue = 0)
         {
-            throw NotImplemented();
+            return WXStorageGetIntSync(key, defaultValue);
         }
 
         public void SetInt(string key, int value)
         {
-            throw NotImplemented();
+            WXStorageSetIntSync(key, value);
         }
 
         public float GetFloat(string key, float defaultValue = 0f)
         {
-            throw NotImplemented();
+            return WXStorageGetFloatSync(key, defaultValue);
         }
 
         public void SetFloat(string key, float value)
         {
-            throw NotImplemented();
+            WXStorageSetFloatSync(key, value);
         }
 
         public void DeleteKey(string key)
         {
-            throw NotImplemented();
+            WXStorageDeleteKeySync(key);
         }
 
         public void DeleteAll()
         {
-            throw NotImplemented();
+            WXStorageDeleteAllSync();
         }
 
         public void Save()
         {
-            throw NotImplemented();
-        }
-
-        private static NotImplementedException NotImplemented()
-        {
-            return new NotImplementedException("WeChatSaveService is not implemented yet.");
+            // The adapter flushes writes to wx storage asynchronously; nothing to force here.
         }
     }
 }
+#endif

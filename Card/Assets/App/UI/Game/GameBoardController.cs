@@ -206,11 +206,13 @@ namespace App.UI
 
             if (_vm.ShouldHoldDealVisual())
             {
+                BattleTrace.Log("Board.OnSessionChanged hold deal visual (no PlayDeal)");
                 _cards.SyncHoldingDeal(_vm.Session);
                 RefreshGuideTargets();
                 return;
             }
 
+            BattleTrace.Log("Board.OnSessionChanged Sync cards");
             _cards.Sync(_vm.Session);
             RefreshGuideTargets();
         }
@@ -222,6 +224,7 @@ namespace App.UI
                 return;
             }
 
+            BattleTrace.Log("Board.SyncCards");
             _cards.Sync(_vm.Session);
             RefreshGuideTargets();
         }

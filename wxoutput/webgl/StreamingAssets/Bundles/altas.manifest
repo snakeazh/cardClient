@@ -1,0 +1,33 @@
+ManifestFileVersion: 0
+CRC: 1786828694
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: fc12ef0f0aae0d7627ba25caac215969
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 033fafe2c9f6c610c3a734393882fd4c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: fc12ef0f0aae0d7627ba25caac215969
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 687078895
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Altas/ShopNum.spriteatlasv2
+- Assets/Res/Altas/Relic.spriteatlasv2
+- Assets/Res/Altas/Card.spriteatlasv2
+- Assets/Res/Altas/Talent.spriteatlasv2
+- Assets/Res/Altas/BG.spriteatlasv2
+- Assets/Res/Altas/ItemBg.spriteatlasv2
+- Assets/Res/Altas/CardType.spriteatlasv2
+- Assets/Res/Altas/ItemBgStyle.spriteatlasv2
+- Assets/Res/Altas/cardTypeValue.spriteatlasv2
+Dependencies:
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/textures

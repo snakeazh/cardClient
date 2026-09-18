@@ -2008,17 +2008,41 @@ namespace App.UI
                 return null;
             }
 
-            try
+            // WebGL/微信单线程：禁止 GetResult 等 UnityWebRequest，否则模拟器直接未响应。
+            if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
             {
-                _prefab = _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon).GetAwaiter().GetResult();
-            }
-            catch (System.Exception ex)
-            {
-                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
-                return null;
+                _prefab = cached;
+                return _prefab;
             }
 
-            return _prefab;
+            AppLog.Warn(
+                LogChannel.UI,
+                "CardIcon not cached. Preload with await LoadAsync before dealing. key=" + ResResourcePaths.CardIcon);
+            return null;
+        }
+
+        /// <summary>发牌前 await。替代已删除的同步 GetResult 加载。</summary>
+        public async Task EnsurePrefabAsync()
+        {
+            if (_prefab != null || _resources == null)
+            {
+                return;
+            }
+
+            if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
+            {
+                _prefab = cached;
+                return;
+            }
+
+            try
+            {
+                _prefab = await _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
+            }
         }
 
         private static Transform FindChild(Transform root, string name)

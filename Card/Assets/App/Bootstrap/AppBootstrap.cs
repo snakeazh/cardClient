@@ -66,6 +66,7 @@ namespace App.Bootstrap
             RegisterUnlock(_services);
             LogConfigSmoke();
 
+            await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
             _ui = UIFramework.Create(_services.Container);
 
             // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化

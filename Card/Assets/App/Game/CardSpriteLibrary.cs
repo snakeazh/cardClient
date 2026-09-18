@@ -40,6 +40,12 @@ namespace App.Game
 
         public static Sprite GetFace(Card card)
         {
+            // 洗牌牌堆占位会用 default Card（尚未赋值），只显示背面，不要去查 "0"。
+            if (!card.IsValid)
+            {
+                return Back;
+            }
+
             var id = card.ResourceId;
             if (_faces.TryGetValue(id, out var cached) && cached != null)
             {

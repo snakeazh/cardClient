@@ -1,0 +1,263 @@
+ManifestFileVersion: 0
+CRC: 531555116
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 52e50342e4915d94e1769a5d04ff5d34
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9bcecf555d0fa89cb8a9024151c5f03b
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 52e50342e4915d94e1769a5d04ff5d34
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 20
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 81
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 111
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c8e4a17b6d2f4a3e9b1c5d8e0f2a4b6c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7c4e91a2b8d04f6e9a13c5d8e0f2a4b6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b61e567f559365f43b26e369a9422896, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 54589863867e33848b6905c6c58988fe, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0c4a33801a3b46928d21b5cd978d5402, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: a904cdf5c2b96d267b36e6acd074396a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: f4a8b2c16e3d54789012abcdef345678, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0832d4614732e2d4ca2f6b4c911389ed, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 63fdcd5c2c07f494ea680275073fa1e7, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2fafe2cfe61f6974895a912c3755e8f1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 84475e359034fab43a123f68342063aa, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b313dcb1dd3afb7499e9db69e228f3df, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 29f95888137343e1a62859e087a7600a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 19c77b515bcdea74e866fa43fbba50d0, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 46437b472bdc98f4da94f659ac35bb87, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 31a19414c41e5ae4aae2af33fee712f6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8b607e1c7c2fc1341ba5cf1fbd6c7d74, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 4c8e1a92b7d640f3a5e6c9d0b1f2a384, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 74d8f90913d206440aa5f664ac41ad45, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 76fea7c64b8293c4f92dc2fdde67eef3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5fcc4817596a49e1bb3f3bf24cdd114b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2a9b42c4ea5e05646abf975de0789688, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: a8f3c2d14b6e4e7a91d05c3b8e2f4a17, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 9085046f02f69544eb97fd06b6048fe2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e3b1c7a94d2f48a6b8c0d1e2f3a4b5c6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 672ee4515f7be4a4b8799e4732d455f0, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0d7308c9b0998774eb676a95ddc7375d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c4f8a21e9d7b4e6a8c3f5d1b0e9a7c42, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 381d03ce8770861448fed5e68a9b4221, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 53e9f7bb3bfa4842b4f511d22dbea58b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e7c4a91b2d8f4e6a9c1d3b5f7a0e2c48, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e7bbcb2dd7e24d7c8f040e098f0ed003, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: da53fadcdcee9e44880c4291bbe683de, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c4e8b17a9d2f4c6e8a1b3d5f7e9c0a2b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7e4c1d2a9b8f4e6c91a03d5f7b2e8c14, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 033ccb0297d340aaa3a48e93e622ca8b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e7a1c3b59d4e48f2a6b0c8d1e2f3a4b5, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c8e4f1a27b3d4e6a9c0d5f8b1a2e3c47, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b7e4c91a2d8f4e6b9c1a3f5d7e8b0c2a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 1aa08ab6e0800fa44ae55d278d1423e3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 00d78ae17201fa646ad190c3677e8419, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8816eb823fcac85439f7e9992511e133, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: d4e8f1a27b3d4e6a9c0d5f8b1a2e3d58, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: bb76d5f030b275f4ba350f805b028368, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e47b049ef4c07194e97f8c4e1a28a6ca, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 198
+  Script: {instanceID: 0}
+- Class: 199
+  Script: {instanceID: 0}
+- Class: 212
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 222
+  Script: {instanceID: 0}
+- Class: 223
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+- Class: 225
+  Script: {instanceID: 0}
+- Class: 687078895
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers:
+- AssemblyName: Assembly-CSharp
+  ClassName: Framework.UI.Binding.UIReference/Entry
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.FaceInfo_Legacy
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.FontAssetCreationSettings
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.KerningTable
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_Character
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_FontFeatureTable
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_FontWeightPair
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.VertexGradient
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentCallGroup
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.RectOffset
+- AssemblyName: UnityEngine.TextCoreFontEngineModule
+  ClassName: UnityEngine.TextCore.FaceInfo
+- AssemblyName: UnityEngine.TextCoreFontEngineModule
+  ClassName: UnityEngine.TextCore.Glyph
+- AssemblyName: UnityEngine.TextCoreFontEngineModule
+  ClassName: UnityEngine.TextCore.GlyphMetrics
+- AssemblyName: UnityEngine.TextCoreFontEngineModule
+  ClassName: UnityEngine.TextCore.GlyphRect
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.AnimationTriggers
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Button/ButtonClickedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.ColorBlock
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Navigation
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.ScrollRect/ScrollRectEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.SpriteState
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Toggle/ToggleEvent
+Assets:
+- Assets/Res/UI/ConfirmDialog.prefab
+- Assets/Res/UI/Env/Env.prefab
+- Assets/Res/UI/Popup/RemainListPop.prefab
+- Assets/Res/UI/Icon/cardinfoItem.prefab
+- Assets/Res/UI/Icon/EquipShopIcon.prefab
+- Assets/Res/UI/Bottom/MainInterfaceBottom.prefab
+- Assets/Res/UI/Bottom/GameResource.prefab
+- Assets/Res/UI/Icon/Item.prefab
+- Assets/Res/UI/Popup/BattleShopPop.prefab
+- Assets/Res/UI/Popup/TalentPopup.prefab
+- Assets/Res/UI/Top/ItemTip.prefab
+- Assets/Res/UI/HealthAdvisory.prefab
+- Assets/Res/UI/Popup/ToastPanel.prefab
+- Assets/Res/UI/Popup/BattleFailPopup.prefab
+- Assets/Res/UI/Top/CommonTop.prefab
+- Assets/Res/UI/Bottom/MainResource.prefab
+- Assets/Res/UI/Icon/ShopItem.prefab
+- Assets/Res/UI/Icon/GameResourceBar.prefab
+- Assets/Res/UI/Icon/PlayerItem.prefab
+- Assets/Res/UI/Icon/coinitem.prefab
+- Assets/Res/UI/Popup/IllustratedBookPop.prefab
+- Assets/Res/UI/Home.prefab
+- Assets/Res/UI/Icon/ResourceBar.prefab
+- Assets/Res/UI/Icon/ResourceItem.prefab
+- Assets/Res/UI/Popup/StaminaPurchasePop.prefab
+- Assets/Res/UI/Icon/CardShadow.prefab
+- Assets/Res/UI/Popup/TalentDetail.prefab
+- Assets/Res/UI/UIRoot.prefab
+- Assets/Res/UI/Popup/BattleResultPopup.prefab
+- Assets/Res/UI/Popup/EnergyPopup.prefab
+- Assets/Res/UI/Popup/RemainItem.prefab
+- Assets/Res/UI/Top/ShopDetail.prefab
+- Assets/Res/UI/LevelUI.prefab
+- Assets/Res/UI/Popup/GamePopupInfo.prefab
+- Assets/Res/UI/Popup/BattleSettleUpPop.prefab
+- Assets/Res/UI/GameUI.prefab
+- Assets/Res/UI/Popup/GetEquipDetail.prefab
+- Assets/Res/UI/Popup/ShowTag.prefab
+- Assets/Res/UI/Popup/TalentRulesPop.prefab
+- Assets/Res/UI/Top/WinTip.prefab
+- Assets/Res/UI/BattleStartUI.prefab
+- Assets/Res/UI/Guide/GuideOverlay.prefab
+Dependencies:
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/animations
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/healthadvisory
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/materials
+- D:/UnityProject/cardclient/Card/Bundles/1.0.5/textures

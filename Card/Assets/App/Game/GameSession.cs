@@ -2022,6 +2022,39 @@ namespace App.Game
             return HandEvaluator.TypeMultiplier(type);
         }
 
+        /// <summary>
+        /// 与 <see cref="ComputeAttackDamage"/> 相同的总倍率：
+        /// (牌型 + 遗物/永久加成 + 天赋/英雄) × 燧石。玩家侧用 <see cref="LastRelicContext"/>。
+        /// </summary>
+        public float ResolveAttackMagnification(SeatState attacker, HandScore score)
+        {
+            if (attacker == null)
+            {
+                return 1f;
+            }
+
+            var mag = HandTypeMagnification(score.Type);
+            var flint = BossMechanics.FlintMultiplier(Run);
+            if (!attacker.IsPlayer)
+            {
+                return mag * flint;
+            }
+
+            var firstShow = _stageBetRound == 1;
+            var relicExtra = RelicMechanics.SumMultiplierExtra(Run, score, LastRelicContext);
+            var talentMag = TalentMechanics.SumMultiplierExtra(TalentSvc(), firstShow) +
+                            HeroMechanics.SumMultiplierExtra(ResolveHero(), firstShow);
+            return (mag + relicExtra + talentMag) * flint;
+        }
+
+        /// <summary>本关首次亮牌时的天赋/英雄倍率加成（与伤害结算一致）。</summary>
+        public float ResolveTalentMultiplierExtra()
+        {
+            var firstShow = _stageBetRound == 1;
+            return TalentMechanics.SumMultiplierExtra(TalentSvc(), firstShow) +
+                   HeroMechanics.SumMultiplierExtra(ResolveHero(), firstShow);
+        }
+
         private void DealPlayerLossDamage(SeatState winner)
         {
             if (winner == null || winner.IsPlayer)

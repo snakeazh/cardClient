@@ -87,6 +87,7 @@ namespace App.Level
             {
                 _highestCleared[snapshot.Difficulty] = snapshot.Level;
                 _dirty = true;
+                Save();
             }
 
             if (_levels.TryGetNext(snapshot.Difficulty, snapshot.Level, out _))
@@ -97,6 +98,7 @@ namespace App.Level
             if (_cleared.Add(snapshot.Difficulty))
             {
                 _dirty = true;
+                Save();
             }
         }
 
@@ -109,6 +111,7 @@ namespace App.Level
 
             LastHeroId = heroId;
             _dirty = true;
+            Save();
         }
 
         public void SetLastLevel(int levelId)
@@ -120,6 +123,7 @@ namespace App.Level
 
             LastLevelId = levelId;
             _dirty = true;
+            Save();
         }
 
         public void SetLastDifficulty(int difficulty)
@@ -131,6 +135,7 @@ namespace App.Level
 
             LastDifficulty = difficulty;
             _dirty = true;
+            Save();
         }
 
         public bool IsHeroUnlocked(int heroId)
@@ -146,6 +151,7 @@ namespace App.Level
             }
 
             _dirty = true;
+            Save();
             return true;
         }
 
@@ -194,6 +200,7 @@ namespace App.Level
             if (hadData)
             {
                 _dirty = true;
+                Save();
             }
         }
 

@@ -141,7 +141,16 @@ namespace Framework.Assets
 
         private async Task InitializeInternalAsync()
         {
-            BundleVersion = await FetchTextAsync(_bundleRoot + "/version.txt");
+            var versionUrl = _bundleRoot + "/version.txt";
+            BundleVersion = await FetchTextAsync(versionUrl);
+            if (string.IsNullOrEmpty(BundleVersion))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to fetch bundle version from '{versionUrl}'. " +
+                    "Check DATA_CDN / StreamingAssets deployment and WeChat downloadFile domains.");
+            }
+
+            AppLog.Info(LogChannel.Assets, $"WebGL bundles version={BundleVersion} root={_bundleRoot}");
             await LoadManifestBundleAsync();
             _initialized = true;
         }

@@ -36,12 +36,12 @@ namespace Framework.UI
                     "IResourceService is not initialized. Call await InitializeAsync() first.");
             }
 
-            var rootPrefab = resources.LoadAsync<GameObject>(UIRoot.ResourcesPath).GetAwaiter().GetResult();
-            if (rootPrefab == null)
+            // WebGL/微信：禁止 LoadAsync(...).GetResult()，主线程会死锁。启动前须已 await 预加载。
+            if (!resources.TryGetCached<GameObject>(UIRoot.ResourcesPath, out var rootPrefab) || rootPrefab == null)
             {
                 throw new InvalidOperationException(
-                    $"Missing UIRoot asset for key '{UIRoot.ResourcesPath}'. " +
-                    "Build bundles: menu Res/Build AssetBundles");
+                    $"UIRoot '{UIRoot.ResourcesPath}' is not cached. " +
+                    "Await resources.LoadAsync<GameObject>(UIRoot.ResourcesPath) before UIFramework.Create().");
             }
 
             var root = UIRoot.Instantiate(rootPrefab, parent);

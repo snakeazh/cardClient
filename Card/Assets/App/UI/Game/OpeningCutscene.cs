@@ -83,7 +83,7 @@ namespace App.UI
             CapturePoseHomes(player, playerLayoutHome);
             ApplyPoseIn();
             var token = ++_playToken;
-            var seq = DOTween.Sequence();
+            var seq = DOTween.Sequence().SetUpdate(true);
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -136,7 +136,7 @@ namespace App.UI
                 return;
             }
 
-            var seq = DOTween.Sequence();
+            var seq = DOTween.Sequence().SetUpdate(true);
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -283,6 +283,7 @@ namespace App.UI
                 rt.DOKill();
                 rt.DOAnchorPos(_poseHomes[i], PoseOutDuration)
                     .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
                     .SetLink(rt.gameObject, LinkBehaviour.KillOnDestroy);
             }
         }
@@ -331,11 +332,11 @@ namespace App.UI
             }
 
             seq.AppendCallback(PrepareVs);
-            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack));
-            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack));
+            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
+            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
             if (_vsGroup != null)
             {
-                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f));
+                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f).SetUpdate(true));
             }
 
             seq.AppendInterval(VsHold);
@@ -350,7 +351,7 @@ namespace App.UI
 
             if (_vsGroup != null)
             {
-                seq.Append(_vsGroup.DOFade(0f, VsFade));
+                seq.Append(_vsGroup.DOFade(0f, VsFade).SetUpdate(true));
             }
 
             seq.AppendCallback(HideVs);

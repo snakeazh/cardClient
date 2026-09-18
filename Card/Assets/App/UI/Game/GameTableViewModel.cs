@@ -238,6 +238,12 @@ namespace App.UI
             }
         }
 
+        /// <summary>进局前调用。单例 VM 会残留上一局的开场完成标记。</summary>
+        public void ResetOpeningGate()
+        {
+            _openingCompletedSerial = -1;
+        }
+
         public void NotifyDealReady()
         {
             ShowTableButtons.Value = true;
@@ -375,13 +381,18 @@ namespace App.UI
 
         protected override async Task OnOpen(object args)
         {
+            BattleTrace.Log(
+                $"GameTableVM.OnOpen begin deal={Session?.DealSerial} stageRound={Session?.StageRoundIndex} hold={ShouldHoldDealVisual()}");
             _shownInfoKey = null;
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
+            BattleTrace.Log("GameTableVM StartBattleBgmAsync…");
             await StartBattleBgmAsync();
+            BattleTrace.Log("GameTableVM ShowGameResource…");
             await ShowGameResource();
             _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+            BattleTrace.Log("GameTableVM.OnOpen end");
         }
 
         private async Task StartBattleBgmAsync()
@@ -781,7 +792,11 @@ namespace App.UI
             }
 
             var score = Session.EvaluateSeat(Session.Player);
-            ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, CardTypeNum);
+            ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, null);
+            // 亮牌结算显示与伤害一致的总倍率；选牌预览仍只显示牌型基础倍率。
+            CardTypeNum.Value = IsHandSettling
+                ? FormatMultiplier(Session.ResolveAttackMagnification(Session.Player, score))
+                : FormatMultiplier(GameSession.HandTypeMagnification(score.Type));
             ShowCardInfo.Value = true;
         }
 

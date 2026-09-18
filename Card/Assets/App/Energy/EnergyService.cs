@@ -7,7 +7,7 @@ namespace App.Energy
 {
     /// <summary>
     /// 局外体力。每日固定时刻（GameConst.EnergyDailyResetHour）回满，跨日在读取时懒检查；
-    /// 脏标记落盘，存档记录游戏日编号与当日广告补充次数。
+    /// 变更即落盘，存档记录游戏日编号与当日广告补充次数。
     /// </summary>
     public sealed class EnergyService : IEnergyService
     {
@@ -59,6 +59,7 @@ namespace App.Energy
 
             _current -= cost;
             _dirty = true;
+            Save();
             Changed?.Invoke();
             return true;
         }
@@ -73,6 +74,7 @@ namespace App.Energy
             EnsureDailyReset();
             _current += amount;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 
@@ -88,6 +90,7 @@ namespace App.Energy
             _current = EnergyBalance.Max;
             _adRefillCount++;
             _dirty = true;
+            Save();
             Changed?.Invoke();
             return true;
         }
@@ -155,6 +158,7 @@ namespace App.Energy
             _current = EnergyBalance.Max;
             _adRefillCount = 0;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 

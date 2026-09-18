@@ -72,6 +72,13 @@ namespace App.UI
 
             CancelRubPreviewIfNeeded();
             UnregisterGuideTargets();
+            // 卸载本局加载的 Boss 背景（与 LoadHudBossBackground 的 LoadAsync 计数对齐）
+            if (_hudBossBg != null && _vm?.Resources != null)
+            {
+                _vm.Resources.Release(ResResourcePaths.GameHudBossBg);
+                _hudBossBg = null;
+            }
+
             _vm = null;
             enabled = false;
         }

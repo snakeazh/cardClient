@@ -15,7 +15,7 @@ MonoBehaviour:
   ProjectConf:
     projectName: "\u5929\u9009\u52C7\u58EB"
     Appid: wxe11329edae4de537
-    CDN: https://cardwxgame-1319599505.cos.ap-shanghai.myqcloud.com/WxGame
+    CDN: https://cardwxgame-1319599505.cos.ap-shanghai.myqcloud.com/WxGame2
     assetLoadType: 0
     compressDataPackage: 1
     VideoUrl: 
@@ -51,11 +51,11 @@ MonoBehaviour:
     DevelopBuild: 0
     AutoProfile: 0
     ScriptOnly: 0
-    Il2CppOptimizeSize: 1
-    profilingFuncs: 1
+    Il2CppOptimizeSize: 0
+    profilingFuncs: 0
     Webgl2: 1
-    fbslim: 0
-    DeleteStreamingAssets: 1
+    fbslim: 1
+    DeleteStreamingAssets: 0
     ProfilingMemory: 0
     CleanBuild: 0
     CustomNodePath: 
@@ -65,7 +65,7 @@ MonoBehaviour:
     enableRenderAnalysis: 0
     enablePerfAnalysis: 0
     iOSAutoGCInterval: 10000
-    enableIOSPerformancePlus: 0
+    enableIOSPerformancePlus: 1
     enableiOSMetal: 0
     enableEmscriptenGLX: 0
     brotliMT: 1
@@ -73,12 +73,12 @@ MonoBehaviour:
     enableRenderThread: 0
   CompressTexture:
     halfSize: 0
-    useDXT5: 0
+    useDXT5: 1
     bundleSuffix: bundle
     parallelWithBundle: 0
     bundleDir: 
     dstMinDir: 
-    debugMode: 0
+    debugMode: 1
     force: 0
   PlayerPrefsKeys: []
   FontOptions:

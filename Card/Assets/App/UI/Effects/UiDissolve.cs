@@ -51,6 +51,15 @@ namespace App.UI
         public bool IsPlaying => _tween != null && _tween.IsActive();
         public bool IsDissolved => _amount >= 1f && !IsPlaying;
 
+        /// <summary>进局前预热：提前解析溶解 shader，避免首张卡致死时 Shader.Find 卡顿。</summary>
+        public static void WarmupShader()
+        {
+            if (_cachedShader == null)
+            {
+                _cachedShader = Shader.Find(ShaderName);
+            }
+        }
+
         [ContextMenu("Play Dissolve")]
         private void DebugPlay()
         {

@@ -21,8 +21,12 @@ namespace TMPro.EditorUtilities
             @"^\s*m_[Tt]ext:\s*(?:""(?<quoted>(?:\\.|[^""\\])*)""|'(?<single>(?:\\.|[^'\\])*)'|(?<plain>[^\r\n]+?))\s*$",
             RegexOptions.Compiled | RegexOptions.Multiline);
 
-        private static readonly Regex JsonStringFieldRegex = new Regex(
-            @"""([^""\\]+)""\s*:\s*""((?:\\.|[^""\\])*)""",
+        private static readonly Regex JsonFieldNameRegex = new Regex(
+            @"""([^""\\]+)""\s*:",
+            RegexOptions.Compiled);
+
+        private static readonly Regex JsonStringValueRegex = new Regex(
+            @"""((?:\\.|[^""\\])*)""",
             RegexOptions.Compiled);
 
         private static readonly Regex UnicodeEscapeRegex = new Regex(
@@ -178,7 +182,10 @@ namespace TMPro.EditorUtilities
             }
 
             var generatedFiles = Directory.GetFiles(generatedConfigRoot, "*.cs", SearchOption.TopDirectoryOnly);
-            var fieldRegex = new Regex(@"public\s+string\s+(\w+)\s*;", RegexOptions.Compiled);
+            // 支持 string / string[] / List<string>，数组文案字段（如 TalentDesc）同样进白名单。
+            var fieldRegex = new Regex(
+                @"public\s+(?:string\s*(?:\[\]|<[^>]*>)?|List\s*<\s*string\s*>)\s*(\w+)\s*;",
+                RegexOptions.Compiled);
             foreach (var file in generatedFiles)
             {
                 var source = File.ReadAllText(file, Encoding.UTF8);
@@ -214,7 +221,7 @@ namespace TMPro.EditorUtilities
         private static void AddCharactersFromJson(string jsonPath, HashSet<string> textFieldNames, ISet<int> characters)
         {
             var json = File.ReadAllText(jsonPath, Encoding.UTF8);
-            foreach (Match match in JsonStringFieldRegex.Matches(json))
+            foreach (Match match in JsonFieldNameRegex.Matches(json))
             {
                 var fieldName = match.Groups[1].Value;
                 if (!textFieldNames.Contains(fieldName))
@@ -222,7 +229,30 @@ namespace TMPro.EditorUtilities
                     continue;
                 }
 
-                AddText(UnescapeJsonString(match.Groups[2].Value), characters);
+                var rest = json.Substring(match.Index + match.Length).TrimStart();
+                if (rest.Length == 0)
+                {
+                    continue;
+                }
+
+                if (rest[0] == '"')
+                {
+                    var value = JsonStringValueRegex.Match(rest);
+                    if (value.Success)
+                    {
+                        AddText(UnescapeJsonString(value.Groups[1].Value), characters);
+                    }
+                }
+                else if (rest[0] == '[')
+                {
+                    // 数组字段（string[]）：收集首个 ] 前的全部字符串元素。
+                    var close = rest.IndexOf(']');
+                    var elements = close > 0 ? rest.Substring(0, close) : rest;
+                    foreach (Match element in JsonStringValueRegex.Matches(elements))
+                    {
+                        AddText(UnescapeJsonString(element.Groups[1].Value), characters);
+                    }
+                }
             }
         }
 

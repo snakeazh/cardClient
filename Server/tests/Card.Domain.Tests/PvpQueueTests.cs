@@ -252,13 +252,42 @@ public class PvpMatchmakerTests
     [Fact]
     public void FillWithBotsOpensRoomWhenFirstHumanQueues()
     {
-        var matchmaker = new PvpBotFillMatchmaker(new InMemoryPvpMatchmaker());
+        var matchmaker = new PvpBotFillMatchmaker(new InMemoryPvpMatchmaker(), GameTables.Fallback());
         var evt = matchmaker.Enqueue(Public("你"));
         Assert.True(evt.RoomOpened);
         Assert.Equal(4, evt.Players.Count);
         Assert.Single(evt.Players, p => !p.IsBot);
         Assert.Equal(3, evt.Players.Count(p => p.IsBot));
         Assert.Equal("你", evt.Players[0].NickName);
+        var bots = evt.Players.Where(p => p.IsBot).ToArray();
+        Assert.Equal(new[] { 100001, 100002, 100003 }, bots.Select(p => p.BotConfigId).ToArray());
+        Assert.Equal(new[] { "机器人甲", "机器人乙", "机器人丙" }, bots.Select(p => p.NickName).ToArray());
+        Assert.All(bots, p => Assert.True(Guid.TryParse(p.UserId, out _)));
+    }
+
+    [Fact]
+    public void CreateThrowsWhenNoEnabledBots()
+    {
+        var fallback = GameTables.Fallback();
+        var empty = new GameTables(
+            fallback.GameConst,
+            fallback.HandScores,
+            fallback.Levels,
+            fallback.Heroes,
+            fallback.Relics,
+            fallback.UnlockConditions,
+            fallback.TalentRows,
+            fallback.Monsters,
+            fallback.Items,
+            "no-bots",
+            fallback.HeroEntries,
+            fallback.TalentEntries,
+            fallback.RelicEntries,
+            fallback.MonsterGroups,
+            fallback.PvpModes,
+            fallback.PvpRounds,
+            Array.Empty<CardShare.Contracts.Config.PvpBotConfig>());
+        Assert.Throws<InvalidOperationException>(() => PvpBots.Create(empty, 0));
     }
 
     private static PlayerPublic Public(string nick, string avatar = "")

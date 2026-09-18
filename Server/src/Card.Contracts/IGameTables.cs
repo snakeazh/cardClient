@@ -37,6 +37,8 @@ public interface IGameTables
 
     IReadOnlyList<PvpRoundConfig> PvpRounds { get; }
 
+    IReadOnlyList<PvpBotConfig> PvpBots { get; }
+
     IReadOnlyList<int> Difficulties { get; }
 
     bool TryGetLevel(int id, out LevelConfig level);
@@ -58,6 +60,8 @@ public interface IGameTables
     bool TryGetMonster(int monsterId, int monsterLevel, out MonsterConfig monster);
 
     bool TryGetPvpMode(int id, out PvpModeConfig mode);
+
+    bool TryGetPvpBot(int id, out PvpBotConfig bot);
 
     IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId);
 

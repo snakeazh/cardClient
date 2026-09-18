@@ -21,6 +21,7 @@ public sealed class GameTables : IGameTables
     private readonly Dictionary<int, MonsterGroupConfig> _monsterGroups;
     private readonly Dictionary<(int MonsterId, int MonsterLevel), MonsterConfig> _monsters;
     private readonly Dictionary<int, PvpModeConfig> _pvpModes;
+    private readonly Dictionary<int, PvpBotConfig> _pvpBots;
 
     public GameTables(
         GameConst gameConst,
@@ -38,7 +39,8 @@ public sealed class GameTables : IGameTables
         IReadOnlyList<RelicEntryConfig> relicEntries,
         IReadOnlyList<MonsterGroupConfig>? monsterGroups = null,
         IReadOnlyList<PvpModeConfig>? pvpModes = null,
-        IReadOnlyList<PvpRoundConfig>? pvpRounds = null)
+        IReadOnlyList<PvpRoundConfig>? pvpRounds = null,
+        IReadOnlyList<PvpBotConfig>? pvpBots = null)
     {
         GameConst = gameConst;
         HandScores = handScores;
@@ -55,6 +57,7 @@ public sealed class GameTables : IGameTables
         MonsterGroups = monsterGroups ?? Array.Empty<MonsterGroupConfig>();
         PvpModes = pvpModes ?? Array.Empty<PvpModeConfig>();
         PvpRounds = pvpRounds ?? Array.Empty<PvpRoundConfig>();
+        PvpBots = pvpBots ?? Array.Empty<PvpBotConfig>();
         ConfigHash = configHash;
         _levels = Levels.Where(l => l.Id > 0).ToDictionary(l => l.Id);
         _items = Items.Where(i => i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
@@ -76,6 +79,7 @@ public sealed class GameTables : IGameTables
         }
 
         _pvpModes = PvpModes.Where(m => m.Id > 0).GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First());
+        _pvpBots = PvpBots.Where(b => b.Id > 0).GroupBy(b => b.Id).ToDictionary(g => g.Key, g => g.First());
         Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
         _maxLevelByDifficulty = Levels
             .GroupBy(l => l.Difficulty)
@@ -130,6 +134,8 @@ public sealed class GameTables : IGameTables
 
     public IReadOnlyList<PvpRoundConfig> PvpRounds { get; }
 
+    public IReadOnlyList<PvpBotConfig> PvpBots { get; }
+
     public IReadOnlyList<int> Difficulties { get; }
 
     public bool TryGetLevel(int id, out LevelConfig level) => _levels.TryGetValue(id, out level!);
@@ -152,6 +158,8 @@ public sealed class GameTables : IGameTables
         => _monsters.TryGetValue((monsterId, monsterLevel), out monster!);
 
     public bool TryGetPvpMode(int id, out PvpModeConfig mode) => _pvpModes.TryGetValue(id, out mode!);
+
+    public bool TryGetPvpBot(int id, out PvpBotConfig bot) => _pvpBots.TryGetValue(id, out bot!);
 
     public IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId)
         => PvpRounds.Where(r => r.ModeId == modeId).OrderBy(r => r.Round).ToArray();
@@ -229,6 +237,12 @@ public sealed class GameTables : IGameTables
             "fallback",
             Array.Empty<HeroEntryConfig>(),
             Array.Empty<TalentEntryConfig>(),
-            Array.Empty<RelicEntryConfig>());
+            Array.Empty<RelicEntryConfig>(),
+            pvpBots: new[]
+            {
+                new PvpBotConfig { Id = 100001, NickName = "机器人甲", AvatarUrl = string.Empty, HeroId = 0, Enabled = true },
+                new PvpBotConfig { Id = 100002, NickName = "机器人乙", AvatarUrl = string.Empty, HeroId = 0, Enabled = true },
+                new PvpBotConfig { Id = 100003, NickName = "机器人丙", AvatarUrl = string.Empty, HeroId = 0, Enabled = true }
+            });
     }
 }

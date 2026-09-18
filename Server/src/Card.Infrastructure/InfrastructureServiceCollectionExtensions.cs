@@ -95,7 +95,8 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<RedisPvpMatchmaker>();
             services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
                 sp.GetRequiredService<RedisPvpMatchmaker>(),
-                configuration.GetValue("Pvp:FillWithBots", false)));
+                configuration.GetValue("Pvp:FillWithBots", false),
+                sp.GetRequiredService<IGameTables>()));
             services.AddSingleton<ITokenService>(sp => new RedisTokenService(
                 sp.GetRequiredService<IConnectionMultiplexer>(),
                 accessTtl));
@@ -106,7 +107,8 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<InMemoryPvpMatchmaker>();
             services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
                 sp.GetRequiredService<InMemoryPvpMatchmaker>(),
-                configuration.GetValue("Pvp:FillWithBots", false)));
+                configuration.GetValue("Pvp:FillWithBots", false),
+                sp.GetRequiredService<IGameTables>()));
             services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
                 sp.GetRequiredService<IClock>(),
                 accessTtl));
@@ -120,8 +122,8 @@ public static class InfrastructureServiceCollectionExtensions
         return services;
     }
 
-    private static IPvpMatchmaker WrapMatchmaker(IPvpMatchmaker inner, bool fillWithBots)
+    private static IPvpMatchmaker WrapMatchmaker(IPvpMatchmaker inner, bool fillWithBots, IGameTables tables)
     {
-        return fillWithBots ? new PvpBotFillMatchmaker(inner) : inner;
+        return fillWithBots ? new PvpBotFillMatchmaker(inner, tables) : inner;
     }
 }

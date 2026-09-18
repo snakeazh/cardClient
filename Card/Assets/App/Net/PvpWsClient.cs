@@ -56,6 +56,8 @@ namespace App.Net
 
         public Task QueueAsync() => SendAsync(WsMessageTypes.Queue, null);
 
+        public Task CancelAsync() => SendAsync(WsMessageTypes.Cancel, null);
+
         public Task LeaveAsync() => SendAsync(WsMessageTypes.Leave, null);
 
         public Task BattleAsync(string action, int index = 0, int[] indexes = null)

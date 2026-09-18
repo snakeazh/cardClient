@@ -205,7 +205,8 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
             UserId = player.UserId,
             NickName = player.NickName,
             AvatarUrl = player.AvatarUrl,
-            IsBot = player.IsBot
+            IsBot = player.IsBot,
+            BotConfigId = player.BotConfigId
         };
     }
 }

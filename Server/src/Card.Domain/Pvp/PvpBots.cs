@@ -1,19 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CardShare.Contracts;
+using CardShare.Contracts.Config;
 
 namespace CardShare.Domain.Pvp;
 
 public static class PvpBots
 {
-    private static readonly string[] Nicks = { "机器人甲", "机器人乙", "机器人丙" };
-
-    public static PlayerPublic Create(int index)
+    public static PlayerPublic Create(IGameTables tables, int index)
     {
+        if (tables == null)
+        {
+            throw new ArgumentNullException(nameof(tables));
+        }
+
+        var row = Pick(tables.PvpBots, index);
         return new PlayerPublic
         {
             UserId = Guid.NewGuid().ToString("N"),
-            NickName = Nicks[index % Nicks.Length],
-            IsBot = true
+            NickName = string.IsNullOrWhiteSpace(row.NickName) ? $"机器人{index + 1}" : row.NickName,
+            AvatarUrl = row.AvatarUrl ?? string.Empty,
+            IsBot = true,
+            BotConfigId = row.Id
         };
+    }
+
+    private static PvpBotConfig Pick(IReadOnlyList<PvpBotConfig> bots, int index)
+    {
+        var enabled = bots
+            .Where(b => b != null && b.Id > 0 && b.Enabled)
+            .OrderBy(b => b.Id)
+            .ToArray();
+        if (enabled.Length == 0)
+        {
+            throw new InvalidOperationException("PvpBotConfig 无可用机器人，无法补房。");
+        }
+
+        return enabled[index % enabled.Length];
     }
 }
 
@@ -21,10 +45,12 @@ public static class PvpBots
 public sealed class PvpBotFillMatchmaker : IPvpMatchmaker
 {
     private readonly IPvpMatchmaker _inner;
+    private readonly IGameTables _tables;
 
-    public PvpBotFillMatchmaker(IPvpMatchmaker inner)
+    public PvpBotFillMatchmaker(IPvpMatchmaker inner, IGameTables tables)
     {
-        _inner = inner;
+        _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+        _tables = tables ?? throw new ArgumentNullException(nameof(tables));
     }
 
     public MatchEvent Enqueue(PlayerPublic player)
@@ -38,7 +64,7 @@ public sealed class PvpBotFillMatchmaker : IPvpMatchmaker
         var pad = 0;
         while (!evt.RoomOpened && pad < PvpRules.RoomSize)
         {
-            evt = _inner.Enqueue(PvpBots.Create(pad));
+            evt = _inner.Enqueue(PvpBots.Create(_tables, pad));
             pad++;
         }
 

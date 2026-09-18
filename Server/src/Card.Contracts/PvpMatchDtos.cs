@@ -10,6 +10,11 @@ public sealed class PvpFighterDto
 
     public int MaxHp { get; set; }
 
+    public int HeroId { get; set; }
+
+    /// <summary>基础攻击力：英雄底值 + 天赋加成（BuildSeat 时的面板攻击），比牌前的展示值。</summary>
+    public int Attack { get; set; }
+
     public int Gold { get; set; }
 
     public bool Alive { get; set; } = true;

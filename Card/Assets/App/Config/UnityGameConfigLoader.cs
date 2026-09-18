@@ -20,6 +20,7 @@ using SharedCondition = CardShare.Contracts.Config.ContidionType;
 using SharedMonsterGroup = CardShare.Contracts.Config.MonsterGroupConfig;
 using SharedPvpMode = CardShare.Contracts.Config.PvpModeConfig;
 using SharedPvpRound = CardShare.Contracts.Config.PvpRoundConfig;
+using SharedPvpBot = CardShare.Contracts.Config.PvpBotConfig;
 using SharedPvpFightKind = CardShare.Contracts.Config.PvpFightKind;
 
 namespace App.Config
@@ -49,7 +50,8 @@ namespace App.Config
                 Map(RelicEntryConfig.All.Values, ToRelicEntry),
                 Map(MonsterGroupConfig.All.Values, ToMonsterGroup),
                 Map(PvpModeConfig.All.Values, ToPvpMode),
-                Map(PvpRoundConfig.All.Values, ToPvpRound));
+                Map(PvpRoundConfig.All.Values, ToPvpRound),
+                Map(PvpBotConfig.All.Values, ToPvpBot));
             SharedConst.Load(tables.GameConst);
             Current = tables;
             return tables;
@@ -296,6 +298,18 @@ namespace App.Config
                 FightKind = (SharedPvpFightKind)(int)row.FightKind,
                 MonsterGroup = row.MonsterGroup,
                 GoldBase = row.GoldBase
+            };
+        }
+
+        private static SharedPvpBot ToPvpBot(PvpBotConfig row)
+        {
+            return new SharedPvpBot
+            {
+                Id = row.Id,
+                NickName = row.NickName,
+                AvatarUrl = row.AvatarUrl,
+                HeroId = row.HeroId,
+                Enabled = row.Enabled
             };
         }
     }

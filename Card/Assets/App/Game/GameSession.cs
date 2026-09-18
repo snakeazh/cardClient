@@ -7898,6 +7898,9 @@ namespace App.Game
             Player.Folded = false;
             Player.ActiveInStage = true;
             Player.ShowCards = true;
+            var hero = ResolveHero();
+            Player.Icon = hero != null ? hero.Icon : Player.Icon;
+            Player.Attack = ResolvePlayerPanel(hero).Attack;
             Player.ClearCardSelected();
             for (var i = 0; i < Enemies.Length; i++)
             {
@@ -7906,6 +7909,7 @@ namespace App.Game
                 enemy.Folded = false;
                 enemy.Looked = true;
                 enemy.ShowCards = false;
+                enemy.Attack = 0;
                 enemy.ClearCardSelected();
                 ClearHand(enemy);
             }
@@ -8000,6 +8004,11 @@ namespace App.Game
             }
             Enemies[1].ActiveInStage = false;
             Enemies[2].ActiveInStage = false;
+            if (mine != null && mine.Damage != null && mine.Damage.Value > 0)
+            {
+                Player.Attack = Math.Max(1, mine.Damage.Value);
+            }
+
             if (foe != null)
             {
                 enemy.Name = string.IsNullOrEmpty(foe.NickName) ? enemy.Name : foe.NickName;
@@ -8120,6 +8129,7 @@ namespace App.Game
                 IncomingAttack = false;
                 _pendingAttackTarget = enemy;
                 _pendingDamageSource = Player;
+                Player.Attack = scaled;
                 AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
                 LastResult = $"{HandDrama(winScore.Type)}！你的{winScore.Label}压过 {enemy.Name} 的{loseScore.Label}，造成 {scaled} 伤害";
                 Hint = LastResult;
@@ -8130,6 +8140,7 @@ namespace App.Game
                 IncomingAttack = true;
                 _pendingAttackTarget = Player;
                 _pendingDamageSource = enemy;
+                enemy.Attack = scaled;
                 AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
                 LastResult = $"{enemy.Name} 的{winScore.Label}压过你的{loseScore.Label}，受到 {scaled} 伤害";
                 Hint = LastResult;
@@ -8257,6 +8268,7 @@ namespace App.Game
                 Player.Hp = Math.Max(0, self.Hp);
                 Player.MaxHp = Math.Max(1, self.MaxHp);
                 Player.Courage = Player.Hp;
+                Player.Attack = Math.Max(0, self.Attack);
             }
 
             Run.Gold = self.Gold;
@@ -8314,6 +8326,7 @@ namespace App.Game
                     enemy.Hp = Math.Max(0, foeFighter.Hp);
                     enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
                     enemy.Courage = enemy.Hp;
+                    enemy.Attack = Math.Max(0, foeFighter.Attack);
                 }
                 else
                 {

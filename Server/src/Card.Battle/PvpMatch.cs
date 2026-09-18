@@ -257,6 +257,8 @@ public sealed class PvpMatch
                     NickName = f.NickName,
                     Hp = Math.Max(0, f.Hp),
                     MaxHp = f.MaxHp,
+                    HeroId = f.Combat.HeroId,
+                    Attack = f.Combat.Attack,
                     Gold = f.Gold,
                     Alive = f.Alive,
                     Rank = f.Rank,

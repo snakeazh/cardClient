@@ -1,0 +1,23 @@
+[
+  {
+    "Id": 100001,
+    "NickName": "机器人甲",
+    "AvatarUrl": "",
+    "HeroId": 1,
+    "Enabled": true
+  },
+  {
+    "Id": 100002,
+    "NickName": "机器人乙",
+    "AvatarUrl": "",
+    "HeroId": 1,
+    "Enabled": true
+  },
+  {
+    "Id": 100003,
+    "NickName": "机器人丙",
+    "AvatarUrl": "",
+    "HeroId": 1,
+    "Enabled": true
+  }
+]

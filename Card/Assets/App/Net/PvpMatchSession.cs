@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Game;
 using App.UI;
@@ -7,12 +8,17 @@ using Newtonsoft.Json.Linq;
 
 namespace App.Net
 {
-    /// <summary>客户端 PVP 会话：只信 match_update，操作只发 battle。</summary>
+    /// <summary>
+    /// 客户端 PVP 会话：对局只信 match_update，操作只发 battle；
+    /// 匹配阶段抛出排队名单（RosterUpdated）与开房（RoomReady）事件。
+    /// </summary>
     public sealed class PvpMatchSession
     {
         private readonly PvpWsClient _ws;
+        private readonly Dictionary<string, PlayerPublic> _players = new Dictionary<string, PlayerPublic>();
         private TaskCompletionSource<bool> _authed;
         private TaskCompletionSource<PvpMatchStateDto> _opened;
+        private TaskCompletionSource<bool> _cancelled;
 
         public PvpMatchSession(PvpWsClient ws)
         {
@@ -29,6 +35,12 @@ namespace App.Net
         public event Action Updated;
         public event Action<string> Failed;
         public event Action Finished;
+
+        /// <summary>排队名单变化（queued / queue_update），PlayerPublic 带昵称与头像。</summary>
+        public event Action<PlayerPublic[]> RosterUpdated;
+
+        /// <summary>满 4 人开房：RoomId / Seed / ModeId 与最终 4 人名单。头像只在此时下发，已缓存进 <see cref="TryGetPlayer"/>。</summary>
+        public event Action<WsRoomReadyPayload> RoomReady;
 
         public PvpFighterDto Self
         {
@@ -60,6 +72,7 @@ namespace App.Net
                 throw new GameApiException("unauthorized", "请先登录", 401);
             }
 
+            _players.Clear();
             _authed = new TaskCompletionSource<bool>();
             _opened = new TaskCompletionSource<PvpMatchStateDto>();
             await _ws.ConnectAsync(GameApi.Client.AccessToken);
@@ -80,10 +93,25 @@ namespace App.Net
 
         public Task ShowdownAsync() => _ws.BattleAsync("showdown");
 
+        /// <summary>取消匹配：发 cancel 并等服务端回 ack。</summary>
+        public async Task CancelAsync()
+        {
+            _cancelled = new TaskCompletionSource<bool>();
+            await _ws.CancelAsync();
+            await Wait(_cancelled.Task, 5000, "取消匹配超时");
+        }
+
+        /// <summary>按 UserId 查匹配/开房阶段缓存的玩家公开信息（昵称、头像）。match_update 的 Fighter 不带头像，走这里。</summary>
+        public bool TryGetPlayer(string userId, out PlayerPublic player)
+        {
+            return _players.TryGetValue(NormalizeUserId(userId), out player);
+        }
+
         public async Task StopAsync()
         {
             IsActive = false;
             State = null;
+            _players.Clear();
             try
             {
                 if (_ws.IsConnected)
@@ -126,6 +154,38 @@ namespace App.Net
                 return;
             }
 
+            if (type == WsMessageTypes.Queued || type == WsMessageTypes.QueueUpdate)
+            {
+                var roster = payload != null ? payload.ToObject<WsQueueRosterPayload>() : null;
+                if (roster == null)
+                {
+                    return;
+                }
+
+                Remember(roster.Players);
+                RosterUpdated?.Invoke(roster.Players ?? Array.Empty<PlayerPublic>());
+                return;
+            }
+
+            if (type == WsMessageTypes.RoomReady)
+            {
+                var ready = payload != null ? payload.ToObject<WsRoomReadyPayload>() : null;
+                if (ready == null)
+                {
+                    return;
+                }
+
+                Remember(ready.Players);
+                RoomReady?.Invoke(ready);
+                return;
+            }
+
+            if (type == WsMessageTypes.Cancel)
+            {
+                _cancelled?.TrySetResult(true);
+                return;
+            }
+
             if (type == WsMessageTypes.MatchUpdate)
             {
                 var state = payload != null ? payload.ToObject<PvpMatchStateDto>() : null;
@@ -150,6 +210,7 @@ namespace App.Net
             var message = string.IsNullOrEmpty(error) ? "对战连接断开" : error;
             _authed?.TrySetException(new GameApiException("connection_error", message, 0));
             _opened?.TrySetException(new GameApiException("connection_error", message, 0));
+            _cancelled?.TrySetException(new GameApiException("connection_error", message, 0));
             Failed?.Invoke(message);
         }
 
@@ -185,6 +246,28 @@ namespace App.Net
             return string.IsNullOrEmpty(message) ? "对战请求失败" : message;
         }
 
+        private void Remember(PlayerPublic[] players)
+        {
+            if (players == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < players.Length; i++)
+            {
+                var player = players[i];
+                if (player != null && !string.IsNullOrEmpty(player.UserId))
+                {
+                    _players[NormalizeUserId(player.UserId)] = player;
+                }
+            }
+        }
+
+        private static string NormalizeUserId(string userId)
+        {
+            return string.IsNullOrEmpty(userId) ? string.Empty : userId.Replace("-", string.Empty).ToUpperInvariant();
+        }
+
         public static bool SameUser(string a, string b)
         {
             if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))
@@ -192,7 +275,7 @@ namespace App.Net
                 return false;
             }
 
-            return string.Equals(a.Replace("-", string.Empty), b.Replace("-", string.Empty), StringComparison.OrdinalIgnoreCase);
+            return string.Equals(NormalizeUserId(a), NormalizeUserId(b), StringComparison.Ordinal);
         }
     }
 }

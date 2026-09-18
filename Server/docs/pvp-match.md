@@ -9,6 +9,7 @@
 |---|---|
 | `PvpModeConfig` | 一行一个模式：人数、初始金、商店秒数、剩 2 人跳过野怪、排名奖励、轮次伤害系数 |
 | `PvpRoundConfig` | 一个模式多行：`Round` + `FightKind`（Monster / Pvp）+ `MonsterGroup` + `GoldBase` |
+| `PvpBotConfig` | 开发补房机器人基础数据：`Id`（100000 段）、昵称、头像、英雄；运行时 `UserId` 仍是 Guid |
 
 野怪组走已有 `MonsterGroupConfig` → `MonsterConfig`。当前数据：模式 1「经典」共 13 轮（1/5/9/13 野怪，其余 PvP）。
 
@@ -18,9 +19,9 @@
 
 ## 开发机器人
 
-Development 默认 `Pvp:FillWithBots=true`：真人一 `queue` 就用 3 个机器人补满开房。机器人没有 WebSocket，服务端会：
+Development 默认 `Pvp:FillWithBots=true`：真人一 `queue` 就从 `PvpBotConfig` 取启用行补满开房。机器人没有 WebSocket，服务端会：
 
-- 座位按非人类处理，自动选炸金花最大 3 张
+- 座位按非人类处理，自动选炸金花最大 3 张；英雄读表里 `HeroId`（0 则用 `DefaultHeroId`）
 - 没有真人的子桌立刻摊牌（机器人打野怪、机器人打机器人）
 - 有真人的桌子等双方都 `showdown`（锁定 3 张）后才比牌；对野怪/机器人时对方已锁定，你一锁就比
 

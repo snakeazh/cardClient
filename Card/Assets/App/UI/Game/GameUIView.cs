@@ -103,6 +103,7 @@ namespace App.UI
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
         private int _heldAttackValue;
+        private readonly Dictionary<PlayerItem, int> _lastAttackShown = new Dictionary<PlayerItem, int>(4);
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
@@ -1599,10 +1600,12 @@ namespace App.UI
                     }
                 }
 
+                var playerAttack = AttackDisplay(_playerItem, session.Player.Attack);
                 _playerItem.Bind(
                     session.Player,
                     PortraitLoader.Get(session.Player),
-                    AttackDisplay(_playerItem, session.Player.Attack));
+                    playerAttack);
+                ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
             }
 
             var activeCount = 0;
@@ -1638,14 +1641,29 @@ namespace App.UI
                     item.gameObject.SetActive(true);
                 }
 
+                var enemyAttack = AttackDisplay(item, enemy.Attack);
                 item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    AttackDisplay(item, enemy.Attack));
+                    enemyAttack);
+                ShakeOnPvpAttackChange(session, item, enemyAttack);
             }
 
             SyncEnemyCompareStand(session);
             EnsurePlayerAtOpeningPose();
+        }
+
+        /// <summary>PVP 攻击力跳动：显示值变化时播数字抖动（涨 high / 跌 low）。基础攻击 → 比牌伤害都走这里。</summary>
+        private void ShakeOnPvpAttackChange(GameSession session, PlayerItem item, int value)
+        {
+            var last = _lastAttackShown.TryGetValue(item, out var shown) ? shown : -1;
+            _lastAttackShown[item] = value;
+            if (!session.IsPvp || item == null || last < 0 || value == last || value <= 0)
+            {
+                return;
+            }
+
+            item.PlayAttackNumberShake(value < last, value > last);
         }
 
         /// <summary>

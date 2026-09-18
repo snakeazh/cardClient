@@ -24,11 +24,19 @@ internal static class PvpCombatSeats
             var pub = room.Players[i];
             if (pub.IsBot)
             {
+                var botHeroId = tables.GameConst.DefaultHeroId;
+                if (pub.BotConfigId > 0
+                    && tables.TryGetPvpBot(pub.BotConfigId, out var bot)
+                    && bot.HeroId > 0)
+                {
+                    botHeroId = bot.HeroId;
+                }
+
                 seats[i] = CombatBonuses.BuildSeat(
                     i,
                     pub.UserId,
                     pub.NickName,
-                    0,
+                    botHeroId,
                     Array.Empty<CombatTalentCount>(),
                     tables);
                 seats[i].IsHuman = false;

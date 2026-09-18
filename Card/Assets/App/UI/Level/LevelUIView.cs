@@ -15,13 +15,19 @@ namespace App.UI
 {
     /// <summary>
     /// 选角 / 选关。节点通过 UIReference / UIBind 解析。
-    /// heroSelect / levelSelect 是 ScrollRect，列表项生成到 content（网格）上。
+    /// heroSelect 是 ScrollRect，列表项生成到 content（网格）上；
+    /// levelSelect 换用 IevelItem 难度卡后网格已移除，模板取 content 第一个子节点，行布局由代码排布。
     /// </summary>
     [AutoScreen(AppScreenIds.LevelUI, UILayer.Page, ResResourcePaths.LevelUI)]
     public sealed class LevelUIView : ViewBase<LevelUIViewModel>
     {
+        // 难度卡布局常量（IevelItem 卡面 168×173），需要微调时改这里按差值挪
+        private const float LevelCardWidth = 168f;
+        private const float LevelCardSpacingX = 55f;
+        private const float LevelRowTopOffset = 200f;
+
         private readonly List<HeroItem> _heroItems = new List<HeroItem>();
-        private readonly List<ItemCard> _levelItems = new List<ItemCard>();
+        private readonly List<LevelItemCard> _levelItems = new List<LevelItemCard>();
         private PlayerItem _playerItem;
         private Coroutine _scrollHeroRoutine;
         private Coroutine _scrollLevelRoutine;
@@ -141,11 +147,25 @@ namespace App.UI
 
         private void SpawnLevelItems()
         {
-            var template = UI.GetGameObject("levelItem").GetComponent<ItemCard>();
+            // levelItem 的 UIReference 注册表指向旧实例已悬空（换模板时丢了），
+            // 模板改从 levelSelect content 的第一个子节点取。
+            var content = UI.GetGameObject("levelSelect").GetComponent<ScrollRect>().content;
+            var template = content.GetChild(0).GetComponent<LevelItemCard>();
             template.gameObject.SetActive(false);
             _levelItems.Clear();
 
-            var parent = ResolveListContent("levelSelect", template.transform.parent);
+            // 编辑器在 content 上挂了 LayoutGroup（如 GridLayoutGroup）就由它接管布局；
+            // 否则走代码排布，并把没有 LayoutGroup 供源的 ContentSizeFitter 清掉（会把 content 高度压成 0）。
+            var useLayoutGroup = content.GetComponent<LayoutGroup>() != null;
+            if (!useLayoutGroup)
+            {
+                var fitter = content.GetComponent<ContentSizeFitter>();
+                if (fitter != null)
+                {
+                    Object.Destroy(fitter);
+                }
+            }
+
             var stages = ViewModel.Stages;
             for (var i = 0; i < stages.Count; i++)
             {
@@ -164,7 +184,33 @@ namespace App.UI
                 _levelItems.Add(item);
             }
 
-            RebuildListLayout(parent);
+            // 克隆完立即重建布局：网格当帧就把克隆体 rect 算好，
+            // 否则首次 SetSelected 读不到卡高，抬升量会走兜底值
+            RebuildListLayout(content);
+
+            if (!useLayoutGroup)
+            {
+                LayoutLevelRow(content);
+            }
+        }
+
+        /// <summary>难度卡单行排布：以 content 顶边为基准，水平居中、卡中心距顶 LevelRowTopOffset。</summary>
+        private void LayoutLevelRow(RectTransform content)
+        {
+            var count = _levelItems.Count;
+            if (count == 0)
+            {
+                return;
+            }
+
+            var step = LevelCardWidth + LevelCardSpacingX;
+            for (var i = 0; i < count; i++)
+            {
+                var rt = _levelItems[i].transform as RectTransform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2((i - (count - 1) * 0.5f) * step, -LevelRowTopOffset);
+            }
         }
 
         private Transform ResolveListContent(string listKey, Transform fallback)
@@ -224,15 +270,10 @@ namespace App.UI
             {
                 var item = _levelItems[i];
                 var stage = stages[i];
-                var unlocked = ViewModel.IsLevelUnlocked(stage);
-                item.SetUnlocked(unlocked);
-                if (unlocked)
-                {
-                    item.SetName($"难度{stage.Difficulty}");
-                }
-
+                item.SetUnlocked(ViewModel.IsLevelUnlocked(stage));
+                item.SetDifficulty(stage.Difficulty);
                 var isSelected = stage.Id == selected;
-                item.PlaySelected(isSelected, forceSelect);
+                item.SetSelected(isSelected, forceSelect);
                 if (isSelected)
                 {
                     selectedRt = item.transform as RectTransform;

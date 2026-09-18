@@ -18,7 +18,7 @@ namespace App.UI
     {
         private static Transform _root;
         private static readonly Stack<HeroItem> _heroes = new Stack<HeroItem>();
-        private static readonly Stack<ItemCard> _levels = new Stack<ItemCard>();
+        private static readonly Stack<LevelItemCard> _levels = new Stack<LevelItemCard>();
 
         /// <summary>
         /// 冷启动预热（健康忠告展示期调用）：按最终数量提前实例化进池，
@@ -52,9 +52,24 @@ namespace App.UI
                 return;
             }
 
+            // 英雄卡模板在 LevelUI 预制体内（heroItem 节点）；
+            // 难度卡模板是嵌套的 IevelItem 预制体实例，直接按其资源路径加载。
+            GameObject levelPrefab = null;
+            if (levelCount > 0)
+            {
+                try
+                {
+                    levelPrefab = await resources.LoadAsync<GameObject>(ResResourcePaths.LevelItem);
+                }
+                catch (System.Exception ex)
+                {
+                    AppLog.Warn(LogChannel.UI, $"LevelItemPool prewarm failed to load IevelItem prefab: {ex.Message}");
+                }
+            }
+
             var root = PoolRoot();
             Prewarm(_heroes, FindDeep(prefab.transform, "heroItem"), heroCount, root);
-            Prewarm(_levels, FindDeep(prefab.transform, "levelItem"), levelCount, root);
+            Prewarm(_levels, levelPrefab != null ? levelPrefab.transform : null, levelCount, root);
         }
 
         private static void Prewarm<T>(Stack<T> pool, Transform template, int count, Transform root)
@@ -119,12 +134,12 @@ namespace App.UI
             return item;
         }
 
-        public static ItemCard RentLevel(ItemCard template, Transform parent)
+        public static LevelItemCard RentLevel(LevelItemCard template, Transform parent)
         {
             var item = Rent(_levels);
             if (item == null)
             {
-                item = Object.Instantiate(template.gameObject, parent, false).GetComponent<ItemCard>();
+                item = Object.Instantiate(template.gameObject, parent, false).GetComponent<LevelItemCard>();
             }
             else
             {
@@ -147,7 +162,7 @@ namespace App.UI
             Release(_heroes, item);
         }
 
-        public static void ReleaseLevel(ItemCard item)
+        public static void ReleaseLevel(LevelItemCard item)
         {
             if (item == null)
             {
@@ -155,8 +170,12 @@ namespace App.UI
             }
 
             item.ClearClicked();
-            item.PlaySelected(false, force: true);
-            Release(_levels, item);
+            // 先停用再复位选中态：停用后 SetSelected 走瞬时归零分支，不会起抬卡协程
+            // （协程随停用中断会把 ItemRoot 残留半程位移）。
+            item.gameObject.SetActive(false);
+            item.SetSelected(false, replay: true);
+            item.transform.SetParent(PoolRoot(), false);
+            _levels.Push(item);
         }
 
         private static T Rent<T>(Stack<T> pool) where T : Component

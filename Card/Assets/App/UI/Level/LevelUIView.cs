@@ -170,7 +170,7 @@ namespace App.UI
             for (var i = 0; i < stages.Count; i++)
             {
                 var stage = stages[i];
-                var item = LevelItemPool.RentLevel(template, parent);
+                var item = LevelItemPool.RentLevel(template, content);
                 item.gameObject.name = $"levelItem_{stage.Id}";
                 var bind = item.GetComponent<UIBind>();
                 if (bind != null)

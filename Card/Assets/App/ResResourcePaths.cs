@@ -13,6 +13,8 @@ namespace App.Resources
         public const string GameResource = "UI/Bottom/GameResource";
         public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
+        /// <summary>选关难度卡预制体 Assets/Res/UI/Icon/IevelItem.prefab（文件名首字母是大写 I）。</summary>
+        public const string LevelItem = "UI/Icon/IevelItem";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";

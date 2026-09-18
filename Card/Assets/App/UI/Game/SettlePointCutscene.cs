@@ -43,6 +43,9 @@ namespace App.UI
         private GameObject _fx01Prefab;
         private GameObject _fx02Prefab;
         private GameObject _fx03Prefab;
+        private bool _fx01Owned;
+        private bool _fx02Owned;
+        private bool _fx03Owned;
         private Sequence _seq;
         private int _playToken;
         private readonly List<GameObject> _spawned = new List<GameObject>(8);
@@ -84,30 +87,38 @@ namespace App.UI
                 return;
             }
 
-            _fx01Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect01);
-            _fx02Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect02);
-            _fx03Prefab = await LoadPrefabAsync(ResResourcePaths.CardPointEffect03);
+            var r1 = await LoadPrefabAsync(ResResourcePaths.CardPointEffect01);
+            _fx01Prefab = r1.Prefab;
+            _fx01Owned = r1.Owned;
+            var r2 = await LoadPrefabAsync(ResResourcePaths.CardPointEffect02);
+            _fx02Prefab = r2.Prefab;
+            _fx02Owned = r2.Owned;
+            var r3 = await LoadPrefabAsync(ResResourcePaths.CardPointEffect03);
+            _fx03Prefab = r3.Prefab;
+            _fx03Owned = r3.Owned;
         }
 
-        private async Task<GameObject> LoadPrefabAsync(string key)
+        // Owned=false 表示命中缓存（引用计数未增加），Dispose 时不释放
+        private async Task<(GameObject Prefab, bool Owned)> LoadPrefabAsync(string key)
         {
             if (_resources == null || string.IsNullOrEmpty(key))
             {
-                return null;
+                return (null, false);
             }
 
             if (_resources.TryGetCached(key, out GameObject cached) && cached != null)
             {
-                return cached;
+                return (cached, false);
             }
 
             try
             {
-                return await _resources.LoadAsync<GameObject>(key);
+                var prefab = await _resources.LoadAsync<GameObject>(key);
+                return (prefab, prefab != null);
             }
             catch (Exception)
             {
-                return null;
+                return (null, false);
             }
         }
 
@@ -251,9 +262,31 @@ namespace App.UI
         public void Dispose()
         {
             Kill();
+            if (_resources != null)
+            {
+                // 只释放 PreloadAsync 经 LoadAsync 持有的计数（缓存命中的不归这里放）
+                if (_fx01Owned)
+                {
+                    _resources.Release(ResResourcePaths.CardPointEffect01);
+                }
+
+                if (_fx02Owned)
+                {
+                    _resources.Release(ResResourcePaths.CardPointEffect02);
+                }
+
+                if (_fx03Owned)
+                {
+                    _resources.Release(ResResourcePaths.CardPointEffect03);
+                }
+            }
+
             _fx01Prefab = null;
             _fx02Prefab = null;
             _fx03Prefab = null;
+            _fx01Owned = false;
+            _fx02Owned = false;
+            _fx03Owned = false;
             _resources = null;
             _uiRoot = null;
             _uiCanvas = null;

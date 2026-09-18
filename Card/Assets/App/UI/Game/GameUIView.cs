@@ -9,6 +9,7 @@ using App.Guide;
 using App.Resources;
 using App.Talent;
 using DG.Tweening;
+using Framework.Assets;
 using Framework.Log;
 using Framework.UI.Binding;
 using Framework.UI.Core;
@@ -177,6 +178,7 @@ namespace App.UI
                 BattleTrace.Log("GameUI preload CardIcon + settle FX…");
                 await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon);
                 await _settleFx.PreloadAsync(ViewModel.Resources);
+                await PreloadBattleFxAsync();
                 BattleTrace.Log("GameUI preload done");
 
                 _board = _gameHud.GetComponent<GameBoardController>();
@@ -232,6 +234,51 @@ namespace App.UI
             }
 
             BattleTrace.Log("GameUI.OnViewOpen end");
+        }
+
+        /// <summary>
+        /// 局内演出资源预热：牌桌/受击音效、Boss 背景、致死溶解 shader。
+        /// 音效进 IResourceService 缓存后，CardTableAnimator/AttackCutscene 的 fire-and-forget 预热即变缓存命中。
+        /// </summary>
+        private async Task PreloadBattleFxAsync()
+        {
+            var resources = ViewModel?.Resources;
+            if (resources == null)
+            {
+                return;
+            }
+
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxDeal5Cards);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxRevealCards3);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxRubCards02);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
+
+            var run = ViewModel.Session?.Run;
+            if (run != null && run.HasBoss)
+            {
+                try
+                {
+                    await resources.LoadAsync<Sprite>(ResResourcePaths.GameHudBossBg);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn(LogChannel.UI, "Boss hud bg preload failed: " + ex.Message);
+                }
+            }
+
+            UiDissolve.WarmupShader();
+        }
+
+        private static async Task PreloadAudioAsync(IResourceService resources, string key)
+        {
+            try
+            {
+                await resources.LoadAsync<AudioClip>(key);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, $"Battle SFX preload failed '{key}': {ex.Message}");
+            }
         }
 
         public override void OnPresented()
@@ -402,6 +449,7 @@ namespace App.UI
                 Destroy(_winTip);
                 _winTip = null;
                 _winTipTemplate = null;
+                ViewModel?.Resources?.Release(ResResourcePaths.WinTip);
             }
 
             _winTipRows.Clear();
@@ -413,6 +461,7 @@ namespace App.UI
                 _equipTipText = null;
                 _equipTipUse = null;
                 _equipTipUseBtn = null;
+                ViewModel?.Resources?.Release(ResResourcePaths.ItemTip);
             }
 
             if (_equipTipCatcher != null)
@@ -425,6 +474,20 @@ namespace App.UI
             {
                 Destroy(_gameHud);
                 _gameHud = null;
+            }
+
+            // 退局卸载本界面预热的资源（与 OnViewOpen/PreloadBattleFxAsync 的 LoadAsync 一一对应；
+            // 未进缓存的 key Release 为空操作）
+            var resources = ViewModel?.Resources;
+            if (resources != null)
+            {
+                resources.Release(ResResourcePaths.GameHud);
+                resources.Release(ResResourcePaths.CardIcon);
+                resources.Release(ResResourcePaths.SfxDeal5Cards);
+                resources.Release(ResResourcePaths.SfxRevealCards3);
+                resources.Release(ResResourcePaths.SfxRubCards02);
+                resources.Release(ResResourcePaths.SfxHurtBig02);
+                resources.Release(ResResourcePaths.GameHudBossBg);
             }
 
             return Task.CompletedTask;
@@ -2327,8 +2390,8 @@ namespace App.UI
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
+            // 开场期间按技能会 Notify → RefreshPlayerItems。home 必须留着，否则会把已抬高的坐标再加一次偏移，对话跟着跳。
             var playerLayoutHome = _playerOpeningLayoutHome;
-            _playerOpeningLayoutHome = null;
             _openingFx.Play(
                 _openingTalks,
                 _playerItem,
@@ -2563,6 +2626,7 @@ namespace App.UI
             if (ViewModel != null)
             {
                 ViewModel.CompleteOpening();
+                _playerOpeningLayoutHome = null;
                 RefreshPlayerItems();
             }
 

@@ -47,9 +47,11 @@ namespace App.UI
         private AttackTuningConfig.LevelTuning _impactBeat;
         private Vector3 _impactAttackerPos;
         private AudioClip _impactSfx;
+        private bool _disposed;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
+            _disposed = false;
             _hud = hud;
             BindPlayer(player);
 
@@ -343,6 +345,12 @@ namespace App.UI
             RestoreHitTarget();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
+            _disposed = true;
+            if (_impactSfx != null && AppServices.IsReady)
+            {
+                AppServices.Resolve<IResourceService>().Release(ResResourcePaths.SfxHurtBig02);
+            }
+
             _impactSfx = null;
         }
 
@@ -356,7 +364,15 @@ namespace App.UI
             try
             {
                 var resources = AppServices.Resolve<IResourceService>();
-                _impactSfx = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxHurtBig02);
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxHurtBig02);
+                if (_disposed)
+                {
+                    // await 期间已退局：立即释放，避免计数泄漏
+                    resources.Release(ResResourcePaths.SfxHurtBig02);
+                    return;
+                }
+
+                _impactSfx = clip;
             }
             catch (Exception ex)
             {

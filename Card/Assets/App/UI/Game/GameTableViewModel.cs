@@ -417,6 +417,7 @@ namespace App.UI
         {
             RestorePlaybackSpeed();
             _guide.Abort();
+            ReleaseBattleResources();
             await CloseGameResource();
         }
 
@@ -424,7 +425,15 @@ namespace App.UI
         {
             RestorePlaybackSpeed();
             Session.Changed -= Refresh;
+            ReleaseBattleResources();
             _ = CloseGameResource();
+        }
+
+        /// <summary>退局卸载：战斗 BGM 与 _damage/_dead 立绘（与加载点一一对应；未进缓存时 Release 为空操作，重复调用安全）。</summary>
+        private void ReleaseBattleResources()
+        {
+            Resources?.Release(ResResourcePaths.BgmBattle);
+            PortraitLoader.ReleaseBattleStates();
         }
 
         private void TogglePlaybackSpeed()

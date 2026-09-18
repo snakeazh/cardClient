@@ -44,7 +44,12 @@ namespace App.Bootstrap
 
         private async void Start()
         {
+            // 微信小游戏端锁 60：设 120 会在高刷屏上满负载发热降频，帧率反而更低更不稳
+#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            Application.targetFrameRate = 60;
+#else
             Application.targetFrameRate = 120;
+#endif
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();

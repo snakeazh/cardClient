@@ -36,6 +36,7 @@ namespace App.UI
 
         private IResourceService _resources;
         private GameObject _prefab;
+        private bool _prefabOwned;
         private AudioClip _dealSfx;
         private AudioClip _revealSfx;
         private AudioClip _rubSfx;
@@ -143,14 +144,23 @@ namespace App.UI
 
         private async Task PreloadDealSfxAsync()
         {
-            if (_dealSfx != null || _resources == null)
+            var resources = _resources;
+            if (_dealSfx != null || resources == null)
             {
                 return;
             }
 
             try
             {
-                _dealSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxDeal5Cards);
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxDeal5Cards);
+                if (_resources == null)
+                {
+                    // await 期间已退局：立即释放，避免计数泄漏
+                    resources.Release(ResResourcePaths.SfxDeal5Cards);
+                    return;
+                }
+
+                _dealSfx = clip;
             }
             catch (Exception ex)
             {
@@ -160,14 +170,22 @@ namespace App.UI
 
         private async Task PreloadRevealSfxAsync()
         {
-            if (_revealSfx != null || _resources == null)
+            var resources = _resources;
+            if (_revealSfx != null || resources == null)
             {
                 return;
             }
 
             try
             {
-                _revealSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRevealCards3);
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRevealCards3);
+                if (_resources == null)
+                {
+                    resources.Release(ResResourcePaths.SfxRevealCards3);
+                    return;
+                }
+
+                _revealSfx = clip;
             }
             catch (Exception ex)
             {
@@ -177,14 +195,22 @@ namespace App.UI
 
         private async Task PreloadRubSfxAsync()
         {
-            if (_rubSfx != null || _resources == null)
+            var resources = _resources;
+            if (_rubSfx != null || resources == null)
             {
                 return;
             }
 
             try
             {
-                _rubSfx = await _resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRubCards02);
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRubCards02);
+                if (_resources == null)
+                {
+                    resources.Release(ResResourcePaths.SfxRubCards02);
+                    return;
+                }
+
+                _rubSfx = clip;
             }
             catch (Exception ex)
             {
@@ -763,13 +789,30 @@ namespace App.UI
             _shadows.Dispose();
             if (_resources != null)
             {
-                if (_prefab != null)
+                // 只释放本实例通过 LoadAsync 持有的计数（缓存命中的不归这里放）
+                if (_prefab != null && _prefabOwned)
                 {
                     _resources.Release(ResResourcePaths.CardIcon);
+                }
+
+                if (_dealSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxDeal5Cards);
+                }
+
+                if (_revealSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxRevealCards3);
+                }
+
+                if (_rubSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxRubCards02);
                 }
             }
 
             _prefab = null;
+            _prefabOwned = false;
             _dealSfx = null;
             _revealSfx = null;
             _rubSfx = null;
@@ -2012,6 +2055,7 @@ namespace App.UI
             if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
             {
                 _prefab = cached;
+                _prefabOwned = false;
                 return _prefab;
             }
 
@@ -2032,12 +2076,14 @@ namespace App.UI
             if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
             {
                 _prefab = cached;
+                _prefabOwned = false;
                 return;
             }
 
             try
             {
                 _prefab = await _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon);
+                _prefabOwned = _prefab != null;
             }
             catch (Exception ex)
             {

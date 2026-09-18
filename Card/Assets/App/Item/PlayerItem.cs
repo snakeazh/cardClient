@@ -230,6 +230,7 @@ namespace App.Game
             }
 
             var full = text ?? string.Empty;
+            root.SetActive(true);
             if (label != null)
             {
                 label.text = full;
@@ -237,9 +238,10 @@ namespace App.Game
                 label.ForceMeshUpdate();
             }
 
-            root.SetActive(true);
-            _activeDialog = root;
             var rt = root.transform as RectTransform;
+            // 气泡带 ContentSizeFitter。点其他按钮会触发布局重算，高度一变中心轴就会把气泡顶走。先按全文排好再关掉。
+            FreezeDialogLayout(rt);
+            _activeDialog = root;
             var group = EnsureCanvasGroup(root);
             group.alpha = 0f;
             if (rt != null)
@@ -821,6 +823,26 @@ namespace App.Game
             }
 
             _activeDialog = null;
+        }
+
+        private static void FreezeDialogLayout(RectTransform rt)
+        {
+            if (rt == null)
+            {
+                return;
+            }
+
+            var fitter = rt.GetComponent<ContentSizeFitter>();
+            if (fitter != null)
+            {
+                fitter.enabled = true;
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+            if (fitter != null)
+            {
+                fitter.enabled = false;
+            }
         }
 
         private static void ResetDialogText(TMP_Text label)

@@ -370,12 +370,12 @@ namespace App.Game
 
             _enemyVisual = enemy;
             _visualReady = true;
-            if (cardBg != null)
+            if (cardBg != null && cardBg.gameObject.activeSelf == enemy)
             {
                 cardBg.gameObject.SetActive(!enemy);
             }
 
-            if (enemyCardBg != null)
+            if (enemyCardBg != null && enemyCardBg.gameObject.activeSelf != enemy)
             {
                 enemyCardBg.gameObject.SetActive(enemy);
             }
@@ -475,7 +475,11 @@ namespace App.Game
             var label = ActiveName;
             if (label != null)
             {
-                label.text = name ?? string.Empty;
+                var value = name ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
         }
 
@@ -568,15 +572,22 @@ namespace App.Game
             var label = ActiveAttackValue;
             if (label != null)
             {
-                label.text = text ?? string.Empty;
+                var value = text ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
 
             var root = ActiveAttackRoot;
             if (root != null)
             {
-                root.SetActive(visible);
+                if (root.activeSelf != visible)
+                {
+                    root.SetActive(visible);
+                }
             }
-            else if (label != null)
+            else if (label != null && label.gameObject.activeSelf != visible)
             {
                 label.gameObject.SetActive(visible);
             }
@@ -587,15 +598,22 @@ namespace App.Game
             var label = ActiveHeart;
             if (label != null)
             {
-                label.text = text ?? string.Empty;
+                var value = text ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
 
             var bg = ActiveHeartBg;
             if (bg != null)
             {
-                bg.gameObject.SetActive(visible);
+                if (bg.gameObject.activeSelf != visible)
+                {
+                    bg.gameObject.SetActive(visible);
+                }
             }
-            else if (label != null)
+            else if (label != null && label.gameObject.activeSelf != visible)
             {
                 label.gameObject.SetActive(visible);
             }
@@ -604,7 +622,7 @@ namespace App.Game
         private void SetCardMaskVisible(bool visible)
         {
             EnsureRefs();
-            if (cardMask != null)
+            if (cardMask != null && cardMask.activeSelf != visible)
             {
                 cardMask.SetActive(visible);
             }

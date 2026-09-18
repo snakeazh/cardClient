@@ -94,6 +94,26 @@ namespace App.UI
             return Task.CompletedTask;
         }
 
+        protected override Task OnViewClose()
+        {
+            // 视图实例随界面关闭销毁，列表项回收进池供下次打开复用。
+            for (var i = 0; i < _heroItems.Count; i++)
+            {
+                LevelItemPool.ReleaseHero(_heroItems[i]);
+            }
+
+            _heroItems.Clear();
+
+            for (var i = 0; i < _levelItems.Count; i++)
+            {
+                LevelItemPool.ReleaseLevel(_levelItems[i]);
+            }
+
+            _levelItems.Clear();
+            _playerItem = null;
+            return Task.CompletedTask;
+        }
+
         private T GetNode<T>(string key) where T : Component
         {
             return UI.GetGameObject(key).GetComponent<T>();
@@ -110,16 +130,14 @@ namespace App.UI
             for (var i = 0; i < heroes.Count; i++)
             {
                 var hero = heroes[i];
-                var go = Object.Instantiate(template.gameObject, parent, false);
-                go.name = $"heroItem_{hero.Id}";
-                go.SetActive(true);
-                var bind = go.GetComponent<UIBind>();
+                var item = LevelItemPool.RentHero(template, parent);
+                item.gameObject.name = $"heroItem_{hero.Id}";
+                var bind = item.GetComponent<UIBind>();
                 if (bind != null)
                 {
                     Object.Destroy(bind);
                 }
 
-                var item = go.GetComponent<HeroItem>();
                 item.BindClick(clicked => ViewModel.SelectHero(clicked.Data.Id));
                 _heroItems.Add(item);
             }
@@ -152,10 +170,15 @@ namespace App.UI
             for (var i = 0; i < stages.Count; i++)
             {
                 var stage = stages[i];
-                var go = Object.Instantiate(template.gameObject, content, false);
-                go.name = $"levelItem_{stage.Difficulty}";
-                go.SetActive(true);
-                var item = go.GetComponent<LevelItemCard>();
+                var item = LevelItemPool.RentLevel(template, content);
+                item.gameObject.name = $"levelItem_{stage.Id}";
+                var bind = item.GetComponent<UIBind>();
+                if (bind != null)
+                {
+                    Object.Destroy(bind);
+                }
+
+                item.ClearClicked();
                 var levelId = stage.Id;
                 item.Clicked += _ => ViewModel.SelectLevel(levelId);
                 _levelItems.Add(item);

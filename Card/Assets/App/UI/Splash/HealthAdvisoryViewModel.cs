@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.UI;
 using Framework.Log;
 using Framework.UI;
@@ -14,16 +15,19 @@ namespace App.UI.Splash
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
+        private readonly LaunchInitialization _launchInit;
         private bool _enteredHome;
 
         public HealthAdvisoryViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
-            MainResourceViewModel mainResource)
+            MainResourceViewModel mainResource,
+            LaunchInitialization launchInit)
         {
             _ui = ui;
             _navigation = navigation;
             _mainResource = mainResource;
+            _launchInit = launchInit;
             Title = new ObservableProperty<string>(HealthAdvisoryText.Title);
             Body = new ObservableProperty<string>(HealthAdvisoryText.Body);
             Footer = new ObservableProperty<string>(HealthAdvisoryText.WeChatFooter);
@@ -54,7 +58,12 @@ namespace App.UI.Splash
             try
             {
                 await Task.Yield();
-                await DelayRealtimeAsync(HealthAdvisoryText.DisplayDurationMs);
+                // 展示倒计时与重型初始化并发：两者都完成才进首页，初始化快则不等、慢则兜底。
+                var delay = DelayRealtimeAsync(HealthAdvisoryText.DisplayDurationMs);
+                var init = _launchInit != null && _launchInit.Completion != null
+                    ? _launchInit.Completion
+                    : Task.CompletedTask;
+                await Task.WhenAll(delay, init);
                 await EnterHomeAsync();
             }
             catch (Exception ex)

@@ -28,6 +28,12 @@ namespace App.UI
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂（同 ItemCard 模式）。</summary>
         public event System.Action<LevelItemCard> Clicked;
 
+        /// <summary>清空 Clicked 订阅；对象池复用前调用，避免旧界面的闭包残留。</summary>
+        public void ClearClicked()
+        {
+            Clicked = null;
+        }
+
         public bool IsSelected => _selected;
 
         private float LiftHeight

@@ -47,6 +47,12 @@ namespace App.Item
         /// <summary>根节点 Button 点击转发；预制体 OnClick 列表为空，监听在这里挂。</summary>
         public event Action<ItemCard> Clicked;
 
+        /// <summary>清空 Clicked 订阅；对象池复用前调用，避免旧界面的闭包残留。</summary>
+        public void ClearClicked()
+        {
+            Clicked = null;
+        }
+
         public bool Interactable
         {
             get => Button != null && Button.interactable;
@@ -127,7 +133,11 @@ namespace App.Item
             EnsureRefs();
             if (cardName != null)
             {
-                cardName.text = string.IsNullOrEmpty(text) ? UnknownNameText : text;
+                var value = string.IsNullOrEmpty(text) ? UnknownNameText : text;
+                if (cardName.text != value)
+                {
+                    cardName.text = value;
+                }
             }
         }
 
@@ -143,8 +153,12 @@ namespace App.Item
             }
 
             var visible = !string.IsNullOrEmpty(text);
-            levelText.gameObject.SetActive(visible);
-            if (visible)
+            if (levelText.gameObject.activeSelf != visible)
+            {
+                levelText.gameObject.SetActive(visible);
+            }
+
+            if (visible && levelText.text != text)
             {
                 levelText.text = text;
             }
@@ -202,7 +216,11 @@ namespace App.Item
                 return;
             }
 
-            lockMask.SetActive(visible);
+            if (lockMask.activeSelf != visible)
+            {
+                lockMask.SetActive(visible);
+            }
+
             if (!visible)
             {
                 return;

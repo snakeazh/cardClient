@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.UI;
 using CardShare.Contracts;
+using Framework.Log;
 using Newtonsoft.Json.Linq;
 
 namespace App.Net
@@ -188,6 +189,7 @@ namespace App.Net
                     return;
                 }
 
+                AppLog.Info(LogChannel.Net, Describe(state));
                 State = state;
                 _opened?.TrySetResult(state);
                 Updated?.Invoke();
@@ -197,6 +199,68 @@ namespace App.Net
                     Finished?.Invoke();
                 }
             }
+        }
+
+        /// <summary>match_update 的一行摘要：轮次/阶段/伤害/倒计时 + 各家血量和攻击，Info 级正式包也可见。</summary>
+        private static string Describe(PvpMatchStateDto state)
+        {
+            var players = state.Players ?? Array.Empty<PvpFighterDto>();
+            var alive = 0;
+            var sb = new System.Text.StringBuilder();
+            for (var i = 0; i < players.Length; i++)
+            {
+                var p = players[i];
+                if (p.Alive)
+                {
+                    alive++;
+                }
+
+                if (sb.Length > 0)
+                {
+                    sb.Append(" | ");
+                }
+
+                sb.Append(p.NickName);
+                if (p.IsBot)
+                {
+                    sb.Append("(bot)");
+                }
+
+                if (!p.Alive)
+                {
+                    sb.Append("[淘汰#").Append(p.Rank).Append(']');
+                }
+
+                sb.Append(" hp=").Append(p.Hp).Append('/').Append(p.MaxHp)
+                    .Append(" atk=").Append(p.Attack);
+            }
+
+            var duel = string.Empty;
+            if (state.Duel != null && state.Duel.Seats != null && state.Duel.Seats.Count > 0)
+            {
+                var names = new System.Text.StringBuilder();
+                for (var i = 0; i < state.Duel.Seats.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        names.Append(" vs ");
+                    }
+
+                    names.Append(state.Duel.Seats[i].NickName);
+                    if (state.Duel.Seats[i].Locked)
+                    {
+                        names.Append("(锁)");
+                    }
+                }
+
+                duel = " duel=" + names;
+            }
+            var countdown = state.PhaseDeadlineUtcMs > 0
+                ? " 剩" + Math.Max(0, (state.PhaseDeadlineUtcMs - state.ServerNowUtcMs) / 1000) + "s"
+                : string.Empty;
+            return "pvp match_update ← 第" + state.Round + "轮 phase=" + state.Phase
+                + " fight=" + state.FightKind + " 存活" + alive + "/" + players.Length
+                + " dmg=" + state.DuelDamage + countdown + duel + " [" + sb + "]";
         }
 
         private void OnFaulted(string error)

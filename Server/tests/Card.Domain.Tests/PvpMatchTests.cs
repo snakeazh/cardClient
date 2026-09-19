@@ -239,6 +239,43 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void UnpickedSeatsAutoPickAtShowdown()
+    {
+        var you = Pub("你");
+        var match = Open(
+            PvpTestTables.Classic(),
+            new[] { you, Bot("甲"), Bot("乙"), Bot("丙") });
+
+        // 发牌后（选牌阶段）双方都未显式选牌。
+        var duel = match.Duels.First(d => d.Involves(you.UserId));
+        var snap = duel.Engine.Snapshot;
+        Assert.False(snap.PickedExplicit[0]);
+        Assert.False(snap.PickedExplicit[1]);
+
+        // 亮牌流程：真人没选自动补 3 张，野怪取最高牌型 3 张，都显式化。
+        match.Showdown(you.UserId);
+        Assert.True(duel.Resolved);
+        snap = duel.Engine.Snapshot;
+        Assert.True(snap.PickedExplicit[0]);
+        Assert.True(snap.PickedExplicit[1]);
+        Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[0].Count);
+        Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Count);
+        Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Distinct().Count());
+
+        // PVP 轮：只锁真人、机器人座位未选时，亮牌同样给机器人补最高牌型。
+        var botDuel = match.Duels.First(d => d.Involves(you.UserId));
+        snap = botDuel.Engine.Snapshot;
+        var botSeat = PvpBattleTable.SameUser(botDuel.LeftUserId, you.UserId) ? 1 : 0;
+        Assert.False(snap.PickedExplicit[botSeat]);
+        match.Showdown(you.UserId);
+        Assert.True(botDuel.Resolved);
+        snap = botDuel.Engine.Snapshot;
+        Assert.True(snap.PickedExplicit[botSeat]);
+        Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[botSeat].Count);
+        Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[botSeat].Distinct().Count());
+    }
+
+    [Fact]
     public void BothHumansMustLockBeforeCompareThenLoserTakesScaledDamage()
     {
         var match = OpenClassic();

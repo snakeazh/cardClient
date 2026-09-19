@@ -8171,7 +8171,13 @@ namespace App.Game
                 }
 
                 enemy.ShowCards = showdown || foe.Cards != null;
-                CopyPvpHand(enemy, foe, showdown);
+                // 摊牌快照已带对方实际比的 3 张：选中态跟牌面一起走，不能被 deferHp 压住，
+                // 否则亮牌动画播时 CardSelected 为空，SkipEnemyUnselectedFlip 失效会 5 张全翻。
+                // 注意用 duelShowdown 而不是 foe.Selected != null：透视（peek）预摊牌也带
+                // 对方显式选牌，但透视要看全部 5 张，不能应用选中态。
+                var duelShowdown = match.Duel != null &&
+                                   string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
+                CopyPvpHand(enemy, foe, duelShowdown);
             }
             else
             {

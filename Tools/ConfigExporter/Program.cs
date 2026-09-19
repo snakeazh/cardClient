@@ -80,7 +80,7 @@ internal static class Program
         var jsonDir = Path.Combine(tempConfigDir, "json");
         var csharpDir = Path.Combine(repoRoot, "Card", "Assets", "App", "Config", "Generated");
         var unityJsonDir = Path.Combine(repoRoot, "Card", "Assets", "Res", "Config");
-        var contractsDir = Path.Combine(repoRoot, "Server", "src", "Card.Contracts", "Config");
+        var contractsDir = Path.Combine(repoRoot, "Card", "Assets", "Shared", "Contracts", "Config");
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -174,7 +174,7 @@ internal static class Program
                   --json          JSON 输出目录（默认: TempConfig/json）
                   --csharp        C# 输出目录（默认: Card/Assets/App/Config/Generated）
                   --no-csharp     不生成 C#
-                  --contracts     共享配表 class 目录（默认: Server/src/Card.Contracts/Config）
+                  --contracts     共享配表 class 目录（默认: Card/Assets/Shared/Contracts/Config）
                   --no-contracts  不生成共享配表 class
                   --no-unity-json 不复制 JSON 到 Unity
               -h, --help          显示帮助

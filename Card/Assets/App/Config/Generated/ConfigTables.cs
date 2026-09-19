@@ -4,13 +4,14 @@
 using System;
 using System.Threading.Tasks;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Assets;
 using UnityEngine;
 
 namespace App.Config
 {
     /// <summary>
-    /// 启动时加载全部配置表。业务访问走各表自身静态接口。
+    /// 启动时加载全部配置表（共享类），业务访问走各表自身静态接口。
     /// </summary>
     public static class ConfigTables
     {

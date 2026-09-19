@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Guide;
 using App.Item;
 using App.Resources;

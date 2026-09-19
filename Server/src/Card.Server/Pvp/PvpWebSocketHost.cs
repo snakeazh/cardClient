@@ -228,7 +228,7 @@ public static class PvpWebSocketHost
         }
     }
 
-    private static async Task BroadcastMatchAsync(
+    internal static async Task BroadcastMatchAsync(
         PvpConnectionHub hub,
         CardShare.Battle.PvpMatch match,
         long seq,

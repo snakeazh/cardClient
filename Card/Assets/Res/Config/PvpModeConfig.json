@@ -12,6 +12,7 @@
       60,
       30
     ],
-    "DamageRoundScale": 0.1
+    "DamageRoundScale": 0.1,
+    "OpenPhaseSeconds": 20
   }
 ]

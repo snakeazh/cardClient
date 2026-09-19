@@ -5,6 +5,7 @@ using App.Atlas;
 using App.Audio;
 using App.Bag;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
 using App.Guide;

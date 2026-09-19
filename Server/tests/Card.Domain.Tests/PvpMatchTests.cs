@@ -109,12 +109,20 @@ public class PvpMatchTests
         Assert.Equal(2, view.Duel!.Seats.Count);
         Assert.NotNull(view.Duel.Seats[0].Cards);
         Assert.Equal(5, view.Duel.Seats[0].Cards!.Count);
-        Assert.Equal(new[] { 0, 1, 2 }, view.Duel.Seats[0].Selected);
+        Assert.Null(view.Duel.Seats[0].Selected);
         Assert.Null(view.Duel.Seats[1].Cards);
         Assert.Equal(a, view.Duel.Seats[0].UserId);
         Assert.Equal(3, view.Players[0].RubLeft);
         Assert.Equal(1, view.Players[0].ReplaceLeft);
         Assert.Equal(1, view.Players[0].PeekLeft);
+
+        match.Act(a, "pick", 0, new[] { 1, 2, 3 });
+        view = match.ViewFor(a);
+        Assert.Equal(new[] { 1, 2, 3 }, view.Duel!.Seats[0].Selected);
+
+        match.Act(a, "replace", 0, Array.Empty<int>());
+        view = match.ViewFor(a);
+        Assert.Null(view.Duel!.Seats[0].Selected);
     }
 
     [Fact]
@@ -259,6 +267,8 @@ public class PvpMatchTests
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
         var expected = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 2));
+        Assert.Equal(expected, match.ViewFor(a.UserId).DuelDamage);
+        Assert.Equal(expected, match.ViewFor(b.UserId).DuelDamage);
         var loseId = snap.Winners[0] == 0 ? duel.RightUserId : duel.LeftUserId;
         if (PvpBattleTable.SameUser(loseId, a.UserId))
         {
@@ -293,6 +303,36 @@ public class PvpMatchTests
         Assert.Equal(0, loser.Hp);
         Assert.Equal(4, loser.Rank);
         Assert.Equal(3, match.Fighters.Count(f => f.Alive));
+    }
+
+    [Fact]
+    public void PhaseTimeoutLocksUnlockedSeatsWithAutoPickAndSettles()
+    {
+        var match = Open(PvpTestTables.OnePvpRound());
+        var a = match.Fighters[0].UserId;
+        var view = match.ViewFor(a);
+        Assert.InRange(view.PhaseDeadlineUtcMs - view.ServerNowUtcMs, 1, 20_000);
+        Assert.All(match.Duels, d => Assert.False(d.Resolved));
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.False(match.ApplyTimeouts(now));
+        Assert.True(match.ApplyTimeouts(now + 20_000 + 1));
+
+        Assert.All(match.Duels, d => Assert.True(d.Resolved));
+        Assert.All(match.Duels, d => Assert.True(d.HpApplied));
+        Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
+        var after = match.ViewFor(a);
+        Assert.Equal(0, after.PhaseDeadlineUtcMs);
+        Assert.True(after.ServerNowUtcMs > 0);
+        var duel = match.Duels.First(d => d.Involves(a));
+        var snap = duel.Engine.Snapshot;
+        if (snap.Winners.Count == 1)
+        {
+            var expected = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
+            Assert.Equal(expected, after.DuelDamage);
+        }
+
+        Assert.False(match.ApplyTimeouts(now + 40_000));
     }
 
     private static PvpMatch OpenClassic() => Open(PvpTestTables.Classic());
@@ -415,7 +455,8 @@ internal static class PvpTestTables
                     ShopSeconds = 30,
                     SkipMonsterWhenTwoLeft = true,
                     RankReward = new[] { 200, 120, 60, 30 },
-                    DamageRoundScale = 0.1f
+                    DamageRoundScale = 0.1f,
+                    OpenPhaseSeconds = 20
                 }
             },
             rounds);

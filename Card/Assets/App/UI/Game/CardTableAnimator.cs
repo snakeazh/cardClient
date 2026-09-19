@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;

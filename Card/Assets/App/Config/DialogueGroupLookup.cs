@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CardShare.Contracts.Config;
 using UnityEngine;
 
 namespace App.Config

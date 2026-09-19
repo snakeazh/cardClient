@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IPveRunService>()));
         services.AddSingleton<PvpConnectionHub>();
         services.AddSingleton<PvpMatchHost>();
+        services.AddHostedService<PvpTimeoutSweeper>();
         return services;
     }
 }

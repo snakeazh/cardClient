@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using App.Game;
 using App.UI;
 using CardShare.Contracts;
 using Newtonsoft.Json.Linq;
@@ -26,7 +25,11 @@ namespace App.Net
             _ws.Message += OnMessage;
             _ws.Faulted += OnFaulted;
             _ws.Closed += OnClosed;
+            Invoker = new PvpWsCommandInvoker(this);
         }
+
+        /// <summary>用户操作命令队列：所有经长链接下发的操作（pick/rub/replace/peek/showdown/queue）从这里串行走。</summary>
+        public PvpWsCommandInvoker Invoker { get; }
 
         public PvpMatchStateDto State { get; private set; }
 
@@ -112,6 +115,7 @@ namespace App.Net
             IsActive = false;
             State = null;
             _players.Clear();
+            Invoker.Clear();
             try
             {
                 if (_ws.IsConnected)
@@ -125,16 +129,6 @@ namespace App.Net
             }
 
             await _ws.DisconnectAsync();
-        }
-
-        public void ApplyTo(GameSession session)
-        {
-            if (session == null || State == null)
-            {
-                return;
-            }
-
-            session.ApplyPvpMatch(State, GameApi.Client != null ? GameApi.Client.UserId : string.Empty);
         }
 
         private void OnMessage(string type, JToken payload)

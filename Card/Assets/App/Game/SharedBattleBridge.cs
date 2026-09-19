@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using CardShare.Battle;
 using CardShare.Contracts;
 using SharedCard = CardShare.Battle.Card;

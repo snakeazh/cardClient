@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Guide;
 using App.Level;
 using App.Net;
@@ -19,7 +20,7 @@ namespace App.Game
     /// 炸金花闯关对局状态机：发牌并看牌 → 开牌或技能 → 与敌人逐个比牌 → 攻击力×牌型倍率结算伤害。
     /// 敌人座位固定 3 个，人格在 <see cref="CreateSeat"/> 绑定，BOSS 关覆盖成 Expert。
     /// </summary>
-    public sealed class GameSession
+    public sealed class GameSession : IBattleStage
     {
         public const int MaxEnemies = 3;
 
@@ -122,17 +123,14 @@ namespace App.Game
 
         public bool PvpHandLocked => IsPvp && _pvpHandLocked;
 
+        /// <summary>PVP 演出完成事件：发牌/翻牌/攻击。由 App.UI.Game.Director 的命令订阅。</summary>
+        public event Action PvpDealFinished;
+        public event Action PvpRevealFinished;
+        public event Action PvpCombatFinished;
+
         public bool IsRevealPlaying => _revealKind != RevealKind.None;
 
-        private int _pvpRound;
-        private bool _pvpEnemyShown;
         private bool _pvpHandLocked;
-        private bool _pvpComparePlayed;
-        private bool _pvpAttackPending;
-        private PvpMatchStateDto _pvpShowdownMatch;
-        private string _pvpShowdownUserId;
-        private PvpMatchStateDto _pendingPvpMatch;
-        private string _pendingPvpUserId;
 
         /// <summary>本局服务端 runId。未开局或未登录为空。</summary>
         public string ServerRunId => _serverRunId;
@@ -1385,7 +1383,19 @@ namespace App.Game
             _revealKind = RevealKind.None;
             if (IsPvp)
             {
-                FinishPvpCompare();
+                CardsRevealed = true;
+                if (Player != null)
+                {
+                    Player.ShowCards = true;
+                }
+
+                if (Enemies[0] != null)
+                {
+                    Enemies[0].ShowCards = true;
+                }
+
+                PvpRevealFinished?.Invoke();
+                Notify();
                 return;
             }
 
@@ -1421,7 +1431,7 @@ namespace App.Game
 
             if (IsPvp)
             {
-                FinishPvpCombatAndApply(_pvpShowdownMatch, _pvpShowdownUserId);
+                EndPvpCombat();
                 return;
             }
 
@@ -7881,15 +7891,7 @@ namespace App.Game
         public void BeginPvp()
         {
             IsPvp = true;
-            _pvpRound = 0;
-            _pvpEnemyShown = false;
             _pvpHandLocked = false;
-            _pvpComparePlayed = false;
-            _pvpAttackPending = false;
-            _pvpShowdownMatch = null;
-            _pvpShowdownUserId = null;
-            _pendingPvpMatch = null;
-            _pendingPvpUserId = null;
             Phase = GamePhase.WaitingOpen;
             CardsRevealed = false;
             SelectingRubTarget = false;
@@ -7927,14 +7929,7 @@ namespace App.Game
             }
 
             IsPvp = false;
-            _pvpRound = 0;
             _pvpHandLocked = false;
-            _pvpComparePlayed = false;
-            _pvpAttackPending = false;
-            _pvpShowdownMatch = null;
-            _pvpShowdownUserId = null;
-            _pendingPvpMatch = null;
-            _pendingPvpUserId = null;
             Phase = GamePhase.Idle;
             DealSerial = 0;
             CardsRevealed = false;
@@ -7943,83 +7938,68 @@ namespace App.Game
             Notify();
         }
 
-        public void ApplyPvpMatch(PvpMatchStateDto match, string userId)
+        /// <summary>PVP 状态同步：座位/手牌/HP/技能/Hint 即时写入，不触发演出。演出由 App.UI.Game.Director 的命令驱动。</summary>
+        public void ApplyPvpState(PvpMatchStateDto match, string userId)
+        {
+            ApplyPvpState(match, userId, deferHp: false);
+        }
+
+        /// <param name="deferHp">比牌快照先不同步 HP/攻击：等攻击命令播完再应用，避免提前剧透结果。</param>
+        public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp)
         {
             if (!IsPvp || match == null)
             {
                 return;
             }
 
-            if (_revealKind != RevealKind.None || _pvpAttackPending)
-            {
-                _pendingPvpMatch = match;
-                _pendingPvpUserId = userId;
-                return;
-            }
-
-            if (match.Round != _pvpRound)
-            {
-                _pvpRound = match.Round;
-                DealSerial++;
-                _pvpEnemyShown = false;
-                _pvpHandLocked = false;
-                _pvpComparePlayed = false;
-                SelectingRubTarget = false;
-                SelectingXRayTarget = false;
-                CardsRevealed = false;
-            }
-
-            SplitPvpSeats(match, userId, out var mine, out var foe, out var viewer);
-            var showdown = match.Duel != null &&
+            var showdown = !deferHp && match.Duel != null &&
                            string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
-            if (showdown && !_pvpComparePlayed)
-            {
-                BindPvpFighters(match, userId, applyHp: false);
-                StartPvpCompareReveal(match, userId, mine, foe, viewer);
-                return;
-            }
-
-            BindPvpFighters(match, userId, applyHp: true);
+            SplitPvpSeats(match, userId, out var mine, out var foe, out _);
+            BindPvpFighters(match, userId, applyHp: !deferHp);
             ApplyPvpTable(match, userId, mine, foe, showdown);
             Notify();
         }
 
-        private void StartPvpCompareReveal(
-            PvpMatchStateDto match,
-            string userId,
-            BattleSeatDto mine,
-            BattleSeatDto foe,
-            int viewer)
+        /// <summary>新一轮发牌（Director.DealCommand）：拨 DealSerial，动画完成经 NotifyDealReady → PvpDealFinished。</summary>
+        public void BeginPvpDeal()
         {
-            _pvpShowdownMatch = match;
-            _pvpShowdownUserId = userId;
-            _pendingPvpMatch = null;
-            _pendingPvpUserId = null;
-            CopyPvpHand(Player, mine, true);
-            var enemy = Enemies[0];
-            enemy.ActiveInStage = true;
-            if (enemy.Hp <= 0)
+            DealSerial++;
+            _pvpHandLocked = false;
+            SelectingRubTarget = false;
+            SelectingXRayTarget = false;
+            CardsRevealed = false;
+            ClearPvpSelection();
+            Notify();
+        }
+
+        /// <summary>新一轮发牌或换牌时清掉本地选中态：牌变了，旧选中的下标已失效。</summary>
+        public void ClearPvpSelection()
+        {
+            Player?.ClearCardSelected();
+            Enemies[0]?.ClearCardSelected();
+        }
+
+        /// <summary>发牌动画播完（GameTableViewModel.NotifyDealReady 转发），推进 Director 队列。</summary>
+        public void NotifyPvpDealFinished()
+        {
+            if (IsPvp)
             {
-                enemy.Hp = Math.Max(1, enemy.MaxHp);
+                PvpDealFinished?.Invoke();
             }
+        }
+
+        /// <summary>比牌翻牌（Director.RevealCommand）：摆好双方座位与胜方，播逐座翻牌，完成走 FinishRevealPlay → PvpRevealFinished。</summary>
+        public bool BeginPvpReveal(bool playerWon)
+        {
+            var enemy = Enemies[0];
+            if (enemy == null || Player == null)
+            {
+                return false;
+            }
+
+            enemy.ActiveInStage = true;
             Enemies[1].ActiveInStage = false;
             Enemies[2].ActiveInStage = false;
-            if (mine != null && mine.Damage != null && mine.Damage.Value > 0)
-            {
-                Player.Attack = Math.Max(1, mine.Damage.Value);
-            }
-
-            if (foe != null)
-            {
-                enemy.Name = string.IsNullOrEmpty(foe.NickName) ? enemy.Name : foe.NickName;
-                CopyPvpHand(enemy, foe, true);
-                if (foe.Damage != null && foe.Damage.Value > 0)
-                {
-                    enemy.Attack = Math.Max(1, foe.Damage.Value);
-                }
-            }
-
-            // 翻牌前对手必须背面；选中 3 张由 PlayReveal 翻开。
             enemy.ShowCards = false;
             Player.ShowCards = true;
             CardsRevealed = false;
@@ -8027,230 +8007,86 @@ namespace App.Game
             Player.Looked = true;
             _pendingOpener = Player;
             _pendingOpenTarget = enemy;
-            SeatState winner = null;
-            if (match.Duel != null && match.Duel.Winners != null && match.Duel.Winners.Count == 1)
-            {
-                winner = match.Duel.Winners[0] == viewer ? Player : enemy;
-            }
-
+            var winner = playerWon ? Player : enemy;
             _pendingWinner = winner;
-            _pendingOpenerWins = winner != null && winner.IsPlayer;
+            _pendingOpenerWins = playerWon;
             BeginRevealPlay(RevealKind.OpenDuel, BuildDuelRevealOrder(Player, enemy), winner);
             Hint = $"开牌：你 vs {enemy.Name}";
             LastResult = Hint;
             Notify();
+            return true;
         }
 
-        private void FinishPvpCompare()
+        /// <summary>攻击力数值（Director.SetAttackCommand）：改座位攻击并刷新，UI 侦测变化播抖动。</summary>
+        public void SetPvpAttackDisplay(bool playerSide, int value)
         {
-            _pvpComparePlayed = true;
-            CardsRevealed = true;
-            if (Player != null)
+            var seat = playerSide ? Player : Enemies[0];
+            if (seat == null)
             {
-                Player.ShowCards = true;
+                return;
             }
 
-            if (Enemies[0] != null)
-            {
-                Enemies[0].ShowCards = true;
-            }
-
-            var match = _pvpShowdownMatch;
-            var userId = _pvpShowdownUserId;
-            if (match == null || !TryStartPvpAttack(match, userId))
-            {
-                AppLog.Warn(LogChannel.UI, "pvp attack skipped; syncing match state");
-                FinishPvpCombatAndApply(match, userId);
-            }
+            seat.Attack = Math.Max(0, value);
+            Notify();
         }
 
-        private bool TryStartPvpAttack(PvpMatchStateDto match, string userId)
+        /// <summary>攻击撞击（Director.AttackCommand）：摆状态拨 AttackPlaySerial；伤害数值由驱动器按服务端快照算好传入。</summary>
+        public bool BeginPvpAttack(bool incoming, int damage, HandType winType, string winLabel, string loseLabel)
         {
-            SplitPvpSeats(match, userId, out var mine, out var foe, out var viewer);
             var enemy = Enemies[0];
-            if (enemy == null)
+            if (enemy == null || Player == null)
             {
-                AppLog.Warn(LogChannel.UI, "pvp attack skipped: enemy null");
                 return false;
             }
 
-            // 撞击前强制双方可打：清残留 pending，保证 Active/Hp，避免 Begin* 静默 return。
             enemy.ActiveInStage = true;
             Enemies[1].ActiveInStage = false;
             Enemies[2].ActiveInStage = false;
-            if (enemy.MaxHp <= 0)
-            {
-                enemy.MaxHp = 1;
-            }
-
-            if (enemy.Hp <= 0)
-            {
-                enemy.Hp = enemy.MaxHp;
-            }
-
-            if (Player.MaxHp <= 0)
-            {
-                Player.MaxHp = 1;
-            }
-
-            if (Player.Hp <= 0)
-            {
-                Player.Hp = Player.MaxHp;
-            }
-
             _pendingAttackTarget = null;
             ResetAttackWaves();
-
-            // 胜负优先信服务器 winners；没有/平局时用桌上已亮牌型本地判，避免跳过撞击。
-            var playerWon = ResolvePvpPlayerWon(match, mine, foe, viewer, enemy);
-            var winScore = EvaluateSeat(playerWon ? Player : enemy);
-            var loseScore = EvaluateSeat(playerWon ? enemy : Player);
-            var scaled = ResolvePvpAttackDamage(match, userId, mine, foe, playerWon, enemy, winScore);
-            if (scaled <= 0)
-            {
-                scaled = 1;
-            }
-
+            var scaled = Math.Max(1, damage);
             PendingAttackDamage = scaled;
-            AttackLevel = MapAttackLevel(winScore.Type);
+            AttackLevel = MapAttackLevel(winType);
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;
             }
 
-            _pvpAttackPending = true;
             Phase = GamePhase.WaitingAttack;
             LastAttackMissed = false;
             AttackDamage = scaled;
             TakenDamage = scaled;
-            if (playerWon)
-            {
-                _pendingOpenerWins = true;
-                IncomingAttack = false;
-                _pendingAttackTarget = enemy;
-                _pendingDamageSource = Player;
-                Player.Attack = scaled;
-                AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
-                LastResult = $"{HandDrama(winScore.Type)}！你的{winScore.Label}压过 {enemy.Name} 的{loseScore.Label}，造成 {scaled} 伤害";
-                Hint = LastResult;
-            }
-            else
-            {
-                _pendingOpenerWins = false;
-                IncomingAttack = true;
-                _pendingAttackTarget = Player;
-                _pendingDamageSource = enemy;
-                enemy.Attack = scaled;
-                AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
-                LastResult = $"{enemy.Name} 的{winScore.Label}压过你的{loseScore.Label}，受到 {scaled} 伤害";
-                Hint = LastResult;
-            }
-
+            _pendingOpenerWins = !incoming;
+            IncomingAttack = incoming;
+            _pendingAttackTarget = incoming ? Player : enemy;
+            _pendingDamageSource = incoming ? enemy : Player;
+            AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
+            LastResult = incoming
+                ? $"{enemy.Name} 的{winLabel}压过你的{loseLabel}，受到 {scaled} 伤害"
+                : $"{HandDrama(winType)}！你的{winLabel}压过 {enemy.Name} 的{loseLabel}，造成 {scaled} 伤害";
+            Hint = LastResult;
             AttackPlaySerial++;
             Notify();
             return true;
         }
 
-        private bool ResolvePvpPlayerWon(
-            PvpMatchStateDto match,
-            BattleSeatDto mine,
-            BattleSeatDto foe,
-            int viewer,
-            SeatState enemy)
+        /// <summary>服务器没带伤害时的本地兜底（驱动器调用）：用共享出伤公式保证撞击一定能播。</summary>
+        public int ComputePvpAttackFallback(bool playerWon, HandScore winScore)
         {
-            if (match.Duel != null && match.Duel.Winners != null && match.Duel.Winners.Count == 1)
-            {
-                return match.Duel.Winners[0] == viewer;
-            }
-
-            if (mine != null && foe != null && mine.Damage != null && foe.Damage != null)
-            {
-                if (mine.Damage.Value != foe.Damage.Value)
-                {
-                    return mine.Damage.Value > foe.Damage.Value;
-                }
-            }
-
-            var playerScore = EvaluateSeat(Player);
-            var enemyScore = EvaluateSeat(enemy);
-            return playerScore.CompareTo(enemyScore) >= 0;
-        }
-
-        private int ResolvePvpAttackDamage(
-            PvpMatchStateDto match,
-            string userId,
-            BattleSeatDto mine,
-            BattleSeatDto foe,
-            bool playerWon,
-            SeatState enemy,
-            HandScore winScore)
-        {
-            var winnerDto = playerWon ? mine : foe;
-            var raw = winnerDto != null && winnerDto.Damage != null ? Math.Max(0, winnerDto.Damage.Value) : 0;
-            var scaled = (int)Math.Floor(raw * (1f + 0.1f * Math.Max(1, match.Round)));
-            if (playerWon)
-            {
-                var post = foe != null ? FindPvpSelf(match, foe.UserId) : null;
-                if (post != null)
-                {
-                    scaled = Math.Max(scaled, Math.Max(0, enemy.Hp - post.Hp));
-                }
-            }
-            else
-            {
-                var post = FindPvpSelf(match, userId);
-                if (post != null)
-                {
-                    scaled = Math.Max(scaled, Math.Max(0, Player.Hp - post.Hp));
-                }
-            }
-
-            if (scaled > 0)
-            {
-                return scaled;
-            }
-
-            if (raw > 0)
-            {
-                return raw;
-            }
-
-            // 服务器没带伤害时，用本地出伤公式兜底，保证撞击一定能播。
+            var enemy = Enemies[0];
             return Math.Max(1, ComputeAttackDamage(playerWon ? Player : enemy, winScore, playerWon ? enemy : Player));
         }
 
-        private void FinishPvpCombatAndApply(PvpMatchStateDto showdown, string showdownUserId)
+        private void EndPvpCombat()
         {
-            _pvpAttackPending = false;
             IncomingAttack = false;
             PendingAttackDamage = 0;
             _pendingAttackTarget = null;
             AttackVisualSlot = -1;
             _pendingOpenTarget = null;
             _pendingOpener = null;
-            var followUp = _pendingPvpMatch;
-            var followUser = _pendingPvpUserId;
-            _pendingPvpMatch = null;
-            _pendingPvpUserId = null;
-            _pvpShowdownMatch = null;
-            _pvpShowdownUserId = null;
-
-            if (showdown != null)
-            {
-                BindPvpFighters(showdown, showdownUserId, applyHp: true);
-                SplitPvpSeats(showdown, showdownUserId, out var mine, out var foe, out _);
-                ApplyPvpTable(showdown, showdownUserId, mine, foe, showdown: true);
-            }
-
-            if (followUp != null &&
-                (showdown == null ||
-                 followUp.Round != showdown.Round ||
-                 !string.Equals(followUp.Phase, showdown.Phase, StringComparison.OrdinalIgnoreCase)))
-            {
-                ApplyPvpMatch(followUp, followUser);
-                return;
-            }
-
+            Phase = GamePhase.WaitingOpen;
+            PvpCombatFinished?.Invoke();
             Notify();
         }
 
@@ -8336,11 +8172,6 @@ namespace App.Game
 
                 enemy.ShowCards = showdown || foe.Cards != null;
                 CopyPvpHand(enemy, foe, showdown);
-                if (foe.Cards != null && !_pvpEnemyShown && !showdown)
-                {
-                    _pvpEnemyShown = true;
-                    DealSerial++;
-                }
             }
             else
             {
@@ -8432,7 +8263,6 @@ namespace App.Game
         private static void CopyPvpHand(SeatState seat, BattleSeatDto dto, bool applySelected)
         {
             ClearHand(seat);
-            seat.ClearCardSelected();
             if (dto == null || dto.Cards == null)
             {
                 return;
@@ -8450,11 +8280,13 @@ namespace App.Game
                 seat.Hand[i] = new Card((Suit)card.Suit, (Rank)card.Rank);
             }
 
+            // 快照没带显式选牌时不动本地选中态：玩家点了一半的选择不能被无关快照冲掉。
             if (!applySelected || dto.Selected == null)
             {
                 return;
             }
 
+            seat.ClearCardSelected();
             for (var i = 0; i < dto.Selected.Count; i++)
             {
                 var index = dto.Selected[i];

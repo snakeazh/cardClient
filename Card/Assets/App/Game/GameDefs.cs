@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Game
 {
@@ -374,7 +375,7 @@ namespace App.Game
         public int AdsExtraRubThisStage;
         public int AdsDoubleGoldToday;
         public bool DoubleGoldThisStage;
-        /// <summary>本关随机抽中的 <see cref="App.Config.BossEntryConfig.Id"/>，数量来自 <c>LevelConfig.LevelEntryNum</c>。</summary>
+        /// <summary>本关随机抽中的 <see cref="CardShare.Contracts.Config.BossEntryConfig.Id"/>，数量来自 <c>LevelConfig.LevelEntryNum</c>。</summary>
         public readonly List<int> LevelEntryIds = new List<int>();
         /// <summary>收藏禁用：本手失效的 RelicConfig Id。</summary>
         public readonly HashSet<int> DisabledRelicIds = new HashSet<int>();
@@ -393,7 +394,7 @@ namespace App.Game
         public int ShopRefreshCount;
         /// <summary>当前关卡 <see cref="App.Level.LevelSnapshot.Id"/>。</summary>
         public int LevelId;
-        /// <summary>当前上场英雄 <see cref="App.Config.HeroConfig.Id"/>。</summary>
+        /// <summary>当前上场英雄 <see cref="CardShare.Contracts.Config.HeroConfig.Id"/>。</summary>
         public int HeroId;
         /// <summary>本关是否含 BOSS，来自关卡配置。</summary>
         public bool HasBoss;

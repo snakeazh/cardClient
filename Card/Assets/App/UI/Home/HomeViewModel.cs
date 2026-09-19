@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using App.Audio;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
 using App.Level;
@@ -189,9 +190,8 @@ namespace App.UI
 
                 _navigation.HideBar();
                 Toast.Show("正在匹配…");
-                await _pvp.StartQueueAsync();
+                await _pvp.Invoker.EnqueueStartQueue();
                 _session.BeginPvp();
-                _pvp.ApplyTo(_session);
                 await _ui.Open(_table);
             }
             catch (GameApiException ex)

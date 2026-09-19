@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Game
 {
@@ -460,48 +461,48 @@ namespace App.Game
             return FallbackTypeByLevel(level);
         }
 
-        public static App.Config.HandType ToConfigHandType(HandType type)
+        public static CardShare.Contracts.Config.HandType ToConfigHandType(HandType type)
         {
             switch (type)
             {
                 case HandType.Pair:
-                    return App.Config.HandType.Couplet;
+                    return CardShare.Contracts.Config.HandType.Couplet;
                 case HandType.Flush:
-                    return App.Config.HandType.Flush;
+                    return CardShare.Contracts.Config.HandType.Flush;
                 case HandType.Straight:
-                    return App.Config.HandType.Straight;
+                    return CardShare.Contracts.Config.HandType.Straight;
                 case HandType.StraightFlush:
-                    return App.Config.HandType.StraightFlush;
+                    return CardShare.Contracts.Config.HandType.StraightFlush;
                 case HandType.ThreeOfAKind:
-                    return App.Config.HandType.Leopard;
+                    return CardShare.Contracts.Config.HandType.Leopard;
                 default:
-                    return App.Config.HandType.HighCard;
+                    return CardShare.Contracts.Config.HandType.HighCard;
             }
         }
 
         public static HandType FromConfigHandType(int configId)
         {
-            if (configId == (int)App.Config.HandType.Couplet)
+            if (configId == (int)CardShare.Contracts.Config.HandType.Couplet)
             {
                 return HandType.Pair;
             }
 
-            if (configId == (int)App.Config.HandType.Flush)
+            if (configId == (int)CardShare.Contracts.Config.HandType.Flush)
             {
                 return HandType.Flush;
             }
 
-            if (configId == (int)App.Config.HandType.Straight)
+            if (configId == (int)CardShare.Contracts.Config.HandType.Straight)
             {
                 return HandType.Straight;
             }
 
-            if (configId == (int)App.Config.HandType.StraightFlush)
+            if (configId == (int)CardShare.Contracts.Config.HandType.StraightFlush)
             {
                 return HandType.StraightFlush;
             }
 
-            if (configId == (int)App.Config.HandType.Leopard)
+            if (configId == (int)CardShare.Contracts.Config.HandType.Leopard)
             {
                 return HandType.ThreeOfAKind;
             }

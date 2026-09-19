@@ -93,6 +93,25 @@ public sealed class PvpMatchHost
         }
     }
 
+    /// <summary>扫描所有房间，结算选牌超时的座位。返回有状态变化、需要广播的比赛。</summary>
+    public List<PvpMatch> SweepTimeouts()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        lock (_gate)
+        {
+            var changed = new List<PvpMatch>();
+            foreach (var pair in _byRoom)
+            {
+                if (pair.Value.ApplyTimeouts(now))
+                {
+                    changed.Add(pair.Value);
+                }
+            }
+
+            return changed;
+        }
+    }
+
     public void Leave(Guid userId)
     {
         lock (_gate)

@@ -10,14 +10,14 @@
 
 | 项目 | 允许 | 不允许 |
 |------|------|--------|
-| `src/Card.Contracts` | DTO、错误码（netstandard2.1，Unity 可引用） | 规则、仓储 |
-| `src/Card.Battle` | 对局引擎、牌桌、出伤、`RelicCombat` | HTTP、档 |
+| `src/Card.Contracts` | DTO、错误码（netstandard2.1，源码链自 `Card/Assets/Shared/Contracts`） | 规则、仓储 |
+| `src/Card.Battle` | 对局引擎、牌桌、出伤、`RelicCombat`（源码链自 `Card/Assets/Shared/Battle`） | HTTP、档 |
 | `src/Card.Domain` | 用例服务、规则、仓储接口 | EF、Redis、ASP.NET |
 | `src/Card.Infrastructure` | 仓储实现、token/锁/队列、配表加载、微信/抖音/游客客户端 | HTTP 路由、用例编排 |
 | `src/Card.Server` | 路由、中间件、WS 传输、组 DI、启动探活 | 改档规则 |
 | `tests/Card.Domain.Tests` | 体力重置、抽天赋、结算幂等、登录弃局 | |
 
-共享库规则：[`src/Card.Battle/README.md`](src/Card.Battle/README.md)、[`src/Card.Contracts/README.md`](src/Card.Contracts/README.md)。
+共享库规则（ET 式源码共享，源文件在 Unity 侧）：[`../Card/Assets/Shared/Battle/README.md`](../Card/Assets/Shared/Battle/README.md)、[`../Card/Assets/Shared/Contracts/README.md`](../Card/Assets/Shared/Contracts/README.md)。
 
 Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 只经过 `IPveRunService`，Auth 不依赖整份 PVE 服务。
 

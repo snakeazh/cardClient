@@ -1,5 +1,6 @@
 using System;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Talent;
 
 namespace App.Game

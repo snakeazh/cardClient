@@ -9,6 +9,7 @@ using App.Level;
 using App.Net;
 using App.Resources;
 using App.UI.Popup;
+using App.UI.Game.Director;
 using Framework.Assets;
 using Framework.Log;
 using Framework.Save;
@@ -27,6 +28,8 @@ namespace App.UI
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
         private readonly PvpMatchSession _pvp;
+        private readonly BattleDirector _pvpDirector;
+        private readonly PvpBattleDriver _pvpDriver;
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -35,6 +38,7 @@ namespace App.UI
         private bool _settleShownThisShop;
         private string _shownInfoKey;
         private bool _pvpLeaveAfterReveal;
+        private long _pvpDeadlineLocalMs;
 
         public GameTableViewModel(
             GameSession session,
@@ -56,6 +60,8 @@ namespace App.UI
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             _save = save ?? throw new ArgumentNullException(nameof(save));
             _pvp = pvp;
+            _pvpDirector = new BattleDirector(session);
+            _pvpDriver = new PvpBattleDriver(session, _pvpDirector);
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -73,7 +79,7 @@ namespace App.UI
                 {
                     if (Session.IsPvp)
                     {
-                        SendPvp(_pvp.ShowdownAsync());
+                        SendPvp(_pvp.Invoker.EnqueueShowdown());
                         return;
                     }
 
@@ -87,7 +93,7 @@ namespace App.UI
                 {
                     if (Session.IsPvp)
                     {
-                        SendPvp(_pvp.PeekAsync());
+                        SendPvp(_pvp.Invoker.EnqueuePeek());
                         return;
                     }
 
@@ -102,7 +108,8 @@ namespace App.UI
                 {
                     if (Session.IsPvp)
                     {
-                        SendPvp(_pvp.ReplaceAsync());
+                        Session.ClearPvpSelection();
+                        SendPvp(_pvp.Invoker.EnqueueReplace());
                         return;
                     }
 
@@ -276,6 +283,11 @@ namespace App.UI
             ShowTableButtons.Value = true;
             ShowRoundInfo.Value = true;
             GuideSignals.NotifyDealFinished(Session.DealSerial);
+            if (Session.IsPvp)
+            {
+                Session.NotifyPvpDealFinished();
+            }
+
             Refresh();
         }
 
@@ -297,7 +309,7 @@ namespace App.UI
                 }
             }
 
-            SendPvp(_pvp.PickAsync(pick));
+            SendPvp(_pvp.Invoker.EnqueuePick(pick));
         }
 
         public bool TryRubPlayerCard(int index)
@@ -309,7 +321,7 @@ namespace App.UI
                     return false;
                 }
 
-                SendPvp(_pvp.RubAsync(index));
+                SendPvp(_pvp.Invoker.EnqueueRub(index));
                 return true;
             }
 
@@ -343,12 +355,45 @@ namespace App.UI
 
         private void OnPvpUpdated()
         {
-            if (!Session.IsPvp)
+            if (!Session.IsPvp || _pvp == null)
             {
                 return;
             }
 
-            _pvp.ApplyTo(Session);
+            var state = _pvp.State;
+            _pvpDeadlineLocalMs = state != null && state.PhaseDeadlineUtcMs > 0
+                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (state.PhaseDeadlineUtcMs - state.ServerNowUtcMs)
+                : 0;
+            _pvpDriver.OnMatch(state, GameApi.Client != null ? GameApi.Client.UserId : string.Empty);
+        }
+
+        /// <summary>PVP 选牌倒计时：服务器快照下发 deadline + 服务器当前时刻，换算成本地截止点后本地秒级跳动。到期不做任何事，等服务器快照驱动。</summary>
+        public void TickPvpCountdown()
+        {
+            if (!Session.IsPvp || _pvpDeadlineLocalMs <= 0)
+            {
+                return;
+            }
+
+            RoundInfo.Value = FormatRoundInfo();
+        }
+
+        private string FormatRoundInfo()
+        {
+            if (Session.IsPvp && _pvp != null && _pvp.State != null)
+            {
+                var round = $"第{_pvp.State.Round}轮";
+                if (_pvpDeadlineLocalMs <= 0)
+                {
+                    return round;
+                }
+
+                var leftMs = _pvpDeadlineLocalMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var seconds = (int)Math.Max(0, (leftMs + 999) / 1000);
+                return $"{round} · 选牌 {seconds}s";
+            }
+
+            return $"第{Session.StageRoundIndex}轮";
         }
 
         private async void OnPvpFinished()
@@ -358,7 +403,7 @@ namespace App.UI
                 return;
             }
 
-            if (Session.IsRevealPlaying || Session.AttackPlaying)
+            if (_pvpDirector.IsBusy || _pvpDriver.HasPending)
             {
                 _pvpLeaveAfterReveal = true;
                 return;
@@ -383,6 +428,7 @@ namespace App.UI
 
         private async Task StopPvpAndLeave()
         {
+            _pvpDriver.Reset();
             if (_pvp != null)
             {
                 await _pvp.StopAsync();
@@ -397,7 +443,7 @@ namespace App.UI
 
         public void Refresh()
         {
-            if (_pvpLeaveAfterReveal && !Session.IsRevealPlaying && !Session.AttackPlaying)
+            if (_pvpLeaveAfterReveal && !_pvpDirector.IsBusy && !_pvpDriver.HasPending)
             {
                 _pvpLeaveAfterReveal = false;
                 _ = LeaveAfterPvpFinished();
@@ -442,9 +488,7 @@ namespace App.UI
                 : $"勇气 {Session.Player.Courage}";
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            RoundInfo.Value = Session.IsPvp && _pvp != null && _pvp.State != null
-                ? $"第{_pvp.State.Round}轮"
-                : $"第{Session.StageRoundIndex}轮";
+            RoundInfo.Value = FormatRoundInfo();
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
@@ -454,15 +498,15 @@ namespace App.UI
                 Session.Run.PeekGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
-                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum)));
+                    RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
+                    HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum)));
             PeekGoodArmed.Value = Session.SelectingRubTarget;
             ChaKanGoodLabel.Value = FormatCharges(
                 "透视",
                 Session.Run.ChaKanGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
+                    RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum)));
             TiHuanGoodLabel.Value = FormatCharges(
                 "替换",
                 Session.Run.TiHuanGoodCharges,
@@ -550,7 +594,7 @@ namespace App.UI
             await ShowGameResource();
             if (!Session.IsPvp)
             {
-                _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+                _guide.TryStart(CardShare.Contracts.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
             }
 
             if (_pvp != null)
@@ -558,6 +602,10 @@ namespace App.UI
                 _pvp.Updated += OnPvpUpdated;
                 _pvp.Finished += OnPvpFinished;
                 _pvp.Failed += OnPvpFailed;
+                if (Session.IsPvp && _pvp.State != null)
+                {
+                    OnPvpUpdated();
+                }
             }
         }
 
@@ -1091,7 +1139,7 @@ namespace App.UI
             return $"{name}({Math.Max(0, current)}/{Math.Max(0, max)})";
         }
 
-        private static string FormatEntryNames(List<App.Config.BossEntryConfig> entries)
+        private static string FormatEntryNames(List<CardShare.Contracts.Config.BossEntryConfig> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -1107,7 +1155,7 @@ namespace App.UI
             return string.Join("、", parts);
         }
 
-        private static string FormatEntryDescs(List<App.Config.BossEntryConfig> entries)
+        private static string FormatEntryDescs(List<CardShare.Contracts.Config.BossEntryConfig> entries)
         {
             if (entries == null || entries.Count == 0)
             {

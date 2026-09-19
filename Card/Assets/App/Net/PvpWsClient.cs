@@ -139,6 +139,9 @@ namespace App.Net
                 Payload = payload
             };
             var json = JsonConvert.SerializeObject(envelope, Json);
+            AppLog.Debug(LogChannel.Net, "pvp ws → " + (type == WsMessageTypes.Auth
+                ? "{\"t\":\"auth\",\"seq\":" + envelope.Seq + ",\"payload\":{\"accessToken\":\"***\"}}"
+                : json));
             var bytes = Encoding.UTF8.GetBytes(json);
             await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, _cts.Token);
         }
@@ -168,6 +171,7 @@ namespace App.Net
                     while (!result.EndOfMessage);
 
                     var json = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+                    AppLog.Debug(LogChannel.Net, "pvp ws ← " + json);
                     var env = JsonConvert.DeserializeObject<WsWire>(json, Json);
                     if (env == null || string.IsNullOrEmpty(env.T))
                     {

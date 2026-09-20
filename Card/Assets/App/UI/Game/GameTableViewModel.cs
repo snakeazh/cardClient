@@ -664,10 +664,21 @@ namespace App.UI
 
         private async Task LeaveToHome()
         {
+            // 关闭 GameUI 后 navigator 自动重新显示压在栈底的 Home（开局时未销毁），
+            // 直接复用并刷新；栈里没有 Home 的异常路径兜底新建打开。
             await _ui.Close(this);
-            var home = (HomeViewModel)_ui.Registry.CreateViewModel(
-                _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
-            await _ui.Open(home);
+            var home = _ui.FindOpen<HomeViewModel>();
+            if (home != null)
+            {
+                await home.RefreshOnReturnAsync();
+            }
+            else
+            {
+                home = (HomeViewModel)_ui.Registry.CreateViewModel(
+                    _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
+                await _ui.Open(home);
+            }
+
             await _navigation.EnsureShown();
             TryStartFirstTalentGuide();
         }

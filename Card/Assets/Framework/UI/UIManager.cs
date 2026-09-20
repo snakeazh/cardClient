@@ -25,6 +25,11 @@ namespace Framework.UI
         Task Close(UILayer layer);
         bool HasScreen(UILayer layer);
 
+        /// <summary>
+        /// 查找已打开的指定类型 ViewModel（含被压住未销毁的页，如开局后压在栈底的 Home），未找到返回 null。
+        /// </summary>
+        T FindOpen<T>() where T : ViewModelBase;
+
         IUIManager RegisterScreen<TView, TVm>(
             ScreenId id,
             UILayer layer,
@@ -85,6 +90,9 @@ namespace Framework.UI
 
         public bool HasScreen(UILayer layer) =>
             _navigator.HasScreen(layer);
+
+        public T FindOpen<T>() where T : ViewModelBase =>
+            _navigator.FindOpen<T>();
 
         public IUIManager RegisterScreen<TView, TVm>(
             ScreenId id,

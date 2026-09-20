@@ -39,6 +39,8 @@ namespace App.UI.Popup
         // 池化复用：卡槽对象反复重绑不同条目，_entries 覆盖式写入（同图鉴口径）
         private readonly Dictionary<ItemCard, TalentItem> _entries =
             new Dictionary<ItemCard, TalentItem>();
+        // 本视图创建的全部卡槽（含行池里隐藏中的）：关闭时回收到 UiCardPool 供下次打开复用
+        private readonly List<ItemCard> _ownedSlots = new List<ItemCard>();
         private GameObject _template;
         private CardRowRecycler<TalentItem> _recycler;
         private GuideTargetRegistry _guideTargets;
@@ -72,6 +74,13 @@ namespace App.UI.Popup
                 }
             }
 
+            // 视图销毁前把卡槽脱离 Content 回收进池，下次打开直接复用，不再整批 Instantiate
+            for (var i = 0; i < _ownedSlots.Count; i++)
+            {
+                UiCardPool.ReleaseItemCard(_ownedSlots[i]);
+            }
+
+            _ownedSlots.Clear();
             return Task.CompletedTask;
         }
 
@@ -236,27 +245,30 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>克隆 Item 模板做卡槽（一次性装饰：关阴影动画、订阅点击），数据绑定走 BindCardSlot。</summary>
+        /// <summary>向 UiCardPool 租用 ItemCard 槽位（装饰幂等：关阴影动画、清旧订阅再订阅点击），
+        /// 数据绑定走 BindCardSlot；视图关闭时槽位回收进池复用。</summary>
         private Component CreateCardSlot(Transform parent)
         {
-            var go = Instantiate(_template, parent, false);
+            var card = UiCardPool.RentItemCard(_template, parent);
+            if (card == null)
+            {
+                return null;
+            }
+
+            var go = card.gameObject;
             go.name = "Talent_" + go.GetInstanceID();
-            go.SetActive(true);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
             {
                 Destroy(bind);
             }
 
-            var card = go.GetComponent<ItemCard>();
-            if (card == null)
-            {
-                return null;
-            }
-
             card.SetShadowVisible(false);
             card.SetAnimationEnabled(false);
+            // 池化复用：先清掉上一任视图的订阅再挂自己的
+            card.ClearClicked();
             card.Clicked += OnCardClicked;
+            _ownedSlots.Add(card);
             return card;
         }
 

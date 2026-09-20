@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Game;
 using App.Item;
 using App.Resources;
+using Framework.Log;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -150,7 +151,22 @@ namespace App.UI
             // levelItem 的 UIReference 注册表指向旧实例已悬空（换模板时丢了），
             // 模板改从 levelSelect content 的第一个子节点取。
             var content = UI.GetGameObject("levelSelect").GetComponent<ScrollRect>().content;
-            var template = content.GetChild(0).GetComponent<LevelItemCard>();
+            var template = content.childCount > 0
+                ? content.GetChild(0).GetComponent<LevelItemCard>()
+                : null;
+            if (template == null)
+            {
+                // 预制体与代码版本不匹配（如 bundle 未重打/缓存未更新）时不再空引用炸掉整个界面；
+                // 同时把旧预制体里美术预放的占位卡全部藏掉，避免旧关卡卡直接显示在界面上。
+                AppLog.Warn(LogChannel.UI, "LevelUI 未找到 LevelItemCard 模板（levelSelect content 首子节点），跳过难度列表生成。");
+                for (var i = 0; i < content.childCount; i++)
+                {
+                    content.GetChild(i).gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
             template.gameObject.SetActive(false);
             _levelItems.Clear();
 

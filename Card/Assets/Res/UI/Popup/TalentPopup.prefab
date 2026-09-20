@@ -2290,6 +2290,10 @@ PrefabInstance:
       propertyPath: m_SortingLayer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1981530676368399451, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2619534792112674872, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
       propertyPath: m_SortingLayer
       value: 0
@@ -2302,6 +2306,10 @@ PrefabInstance:
       propertyPath: m_SortingLayer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5266379119784448548, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 4959200930923700274, guid: 156412da13ac86f4e8342406c60be42d, type: 2}
     - target: {fileID: 5305813165339781700, guid: f2f0d54543fb78b4daea08d9549c67af, type: 3}
       propertyPath: m_SortingLayer
       value: 0

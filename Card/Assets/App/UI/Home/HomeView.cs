@@ -20,7 +20,6 @@ namespace App.UI
         protected override void OnBind()
         {
             _playerItem = GetComponentInChildren<PlayerItem>(true);
-            Binding.BindText(UI.GetGameObject("LastStageInfo").GetComponent<TMP_Text>(), ViewModel.LastStageInfo);
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             BindHero();

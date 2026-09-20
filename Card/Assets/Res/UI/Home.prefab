@@ -4081,12 +4081,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _entries:
-  - Key: LastStage
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
-  - Key: LastStageInfo
-    Component: {fileID: 0}
-    Bind: {fileID: 0}
   - Key: startBtn
     Component: {fileID: 1221527738609495919}
     Bind: {fileID: 1511804437596951104}

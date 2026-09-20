@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using App.Audio;
 using App.Config;
 using App.Energy;
-using App.Level;
 using App.Resources;
 using App.Talent;
 using App.Unlock;
@@ -21,8 +20,6 @@ namespace App.UI
     {
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
-        private readonly ILevelService _levels;
-        private readonly ILevelProgressService _progress;
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
@@ -31,8 +28,6 @@ namespace App.UI
         public HomeViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
-            ILevelService levels,
-            ILevelProgressService progress,
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
@@ -41,14 +36,11 @@ namespace App.UI
         {
             _ui = ui;
             _navigation = navigation;
-            _levels = levels;
-            _progress = progress;
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
             _toast = toast;
             Resources = resources;
-            LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
@@ -60,8 +52,6 @@ namespace App.UI
 
         public HeroPanelStats PanelStats =>
             _talentBonus != null ? _talentBonus.Evaluate(Hero) : TalentBonusManager.EvaluateBase(Hero);
-
-        public ObservableProperty<string> LastStageInfo { get; }
 
         /// <summary>开始按钮上的每局体力消耗标注，如 "x1"。当前体力在顶部资源栏显示。</summary>
         public ObservableProperty<string> StaminaText { get; }
@@ -75,11 +65,10 @@ namespace App.UI
 
         /// <summary>
         /// 从对局返回时复用压在 Page 栈底、未销毁的 Home：重跑打开时的刷新
-        /// （最近关卡/体力/BGM/待解锁弹窗）。View 绑定在 Hide 期间保持存活，属性刷新直接生效。
+        /// （体力/BGM/待解锁弹窗）。View 绑定在 Hide 期间保持存活，属性刷新直接生效。
         /// </summary>
         public async Task RefreshOnReturnAsync()
         {
-            RefreshLastStage();
             RefreshStamina();
             await StartHomeBgmAsync();
             await PresentPendingUnlocksAsync();
@@ -138,18 +127,6 @@ namespace App.UI
         private void RefreshStamina()
         {
             StaminaText.Value = $"x{EnergyBalance.CostPerRun}";
-        }
-
-        private void RefreshLastStage()
-        {
-            if (_progress.LastLevelId > 0 && _levels.TryGetById(_progress.LastLevelId, out var snapshot) &&
-                snapshot != null)
-            {
-                LastStageInfo.Value = $"难度{snapshot.Difficulty} 第{snapshot.Level}关";
-                return;
-            }
-
-            LastStageInfo.Value = "尚未闯关";
         }
 
         private async void OpenLevelUI()

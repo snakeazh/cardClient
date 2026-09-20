@@ -17,7 +17,8 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换三份 ScrollRect。
+    /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换页签；
+    /// 收藏页 CollectSCView 已删除（切到收藏页为空页），遗物/怪物页各一份 ScrollRect。
     /// 收藏/遗物两页用 Item(ItemCard)，怪物页用 PlayerItem（卡面带攻击/血量块）。
     /// </summary>
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
@@ -81,7 +82,7 @@ namespace App.UI.Popup
             }
 
             Binding.BindText(UI.Get<TMP_Text>("CurItemNum"), ViewModel.CurItemNum);
-            Binding.BindActive(UI.GetGameObject("CollectSCView"), ViewModel.ShowCollect);
+            // CollectSCView 节点已从预制体删除（收藏页签保留但无滚动区）
             Binding.BindActive(UI.GetGameObject("RelicSCView"), ViewModel.ShowRelic);
             Binding.BindActive(UI.GetGameObject("MonsterSCView"), ViewModel.ShowMonster);
             // 怪物页隐藏界面顶部标题横幅（分区横幅自带标题，UIReference 键由编辑器注册）
@@ -127,11 +128,15 @@ namespace App.UI.Popup
             }, emitCurrent: false));
         }
 
-        /// <summary>收藏页构建：单区无横幅，Content 自身的 GridLayoutGroup 即布局模板。</summary>
+        /// <summary>收藏页构建：CollectSCView 已从预制体删除，无滚动区可填充（切到此页为空页）。</summary>
         private void BuildCollectPage()
         {
-            var scroll = UI.Get<ScrollRect>("CollectSCView");
-            var content = scroll != null ? scroll.content : null;
+            if (!UI.TryGet<ScrollRect>("CollectSCView", out var scroll) || scroll == null)
+            {
+                return;
+            }
+
+            var content = scroll.content;
             if (content == null || _itemPrefab == null)
             {
                 return;

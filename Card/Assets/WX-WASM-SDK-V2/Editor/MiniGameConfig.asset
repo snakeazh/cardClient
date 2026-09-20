@@ -15,16 +15,16 @@ MonoBehaviour:
   ProjectConf:
     projectName: "\u5929\u9009\u52C7\u58EB"
     Appid: wxe11329edae4de537
-    CDN: https://cardwxgame-1319599505.cos.ap-shanghai.myqcloud.com/WxGame2
+    CDN: http://192.168.1.109:8080/webgl/
     assetLoadType: 0
-    compressDataPackage: 1
+    compressDataPackage: 0
     VideoUrl: 
     relativeDST: D:/UnityProject/cardclient/wxoutput
     DST: D:/UnityProject/cardclient/wxoutput
     StreamCDN: 
     bundleHashLength: 32
     bundlePathIdentifier: StreamingAssets;
-    bundleExcludeExtensions: json;
+    bundleExcludeExtensions: json;txt;
     AssetsUrl: 
     MemorySize: 256
     HideAfterCallMain: 1
@@ -55,7 +55,7 @@ MonoBehaviour:
     profilingFuncs: 0
     Webgl2: 1
     fbslim: 1
-    DeleteStreamingAssets: 0
+    DeleteStreamingAssets: 1
     ProfilingMemory: 0
     CleanBuild: 0
     CustomNodePath: 
@@ -65,10 +65,10 @@ MonoBehaviour:
     enableRenderAnalysis: 0
     enablePerfAnalysis: 0
     iOSAutoGCInterval: 10000
-    enableIOSPerformancePlus: 1
+    enableIOSPerformancePlus: 0
     enableiOSMetal: 0
     enableEmscriptenGLX: 0
-    brotliMT: 1
+    brotliMT: 0
     enableWasm2023: 0
     enableRenderThread: 0
   CompressTexture:

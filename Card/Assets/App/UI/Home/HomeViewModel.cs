@@ -26,6 +26,7 @@ namespace App.UI
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
+        private readonly ToastService _toast;
 
         public HomeViewModel(
             IUIManager ui,
@@ -35,7 +36,8 @@ namespace App.UI
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
-            IUnlockConditionService unlock)
+            IUnlockConditionService unlock,
+            ToastService toast)
         {
             _ui = ui;
             _navigation = navigation;
@@ -44,6 +46,7 @@ namespace App.UI
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
+            _toast = toast;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
@@ -66,6 +69,15 @@ namespace App.UI
         public IRelayCommand StartCommand { get; }
 
         protected override async Task OnOpen(object args)
+        {
+            await RefreshOnReturnAsync();
+        }
+
+        /// <summary>
+        /// 从对局返回时复用压在 Page 栈底、未销毁的 Home：重跑打开时的刷新
+        /// （最近关卡/体力/BGM/待解锁弹窗）。View 绑定在 Hide 期间保持存活，属性刷新直接生效。
+        /// </summary>
+        public async Task RefreshOnReturnAsync()
         {
             RefreshLastStage();
             RefreshStamina();
@@ -142,10 +154,20 @@ namespace App.UI
 
         private async void OpenLevelUI()
         {
-            _navigation.HideBar();
-            var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
-            var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
-            await _ui.Open(vm);
+            try
+            {
+                _navigation.HideBar();
+                var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
+                var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                // async void 吞异常会让按钮"点了没反应"：记录并恢复导航栏，提示重试。
+                AppLog.Exception(LogChannel.UI, ex);
+                await _navigation.EnsureShown();
+                _toast?.ShowWarning("选关界面打开失败，请重试");
+            }
         }
     }
 }

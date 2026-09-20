@@ -30,6 +30,11 @@ namespace Framework.UI.Navigation
         Task Close(UILayer layer);
 
         bool HasScreen(UILayer layer);
+
+        /// <summary>
+        /// 在全部层栈中查找已打开的指定类型 ViewModel（含被压住未销毁的页），未找到返回 null。
+        /// </summary>
+        T FindOpen<T>() where T : ViewModelBase;
     }
 
     public sealed class UINavigator : IUINavigator
@@ -101,6 +106,22 @@ namespace Framework.UI.Navigation
         public bool HasScreen(UILayer layer)
         {
             return _stacks.TryGetValue(layer, out var stack) && stack.Count > 0;
+        }
+
+        public T FindOpen<T>() where T : ViewModelBase
+        {
+            foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
+            {
+                foreach (var instance in _stacks[layer])
+                {
+                    if (instance.ViewModel is T typed)
+                    {
+                        return typed;
+                    }
+                }
+            }
+
+            return null;
         }
 
         public async Task Close(UILayer layer)

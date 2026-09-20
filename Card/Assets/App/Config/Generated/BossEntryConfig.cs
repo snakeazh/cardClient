@@ -27,14 +27,14 @@ namespace App.Config
         public float[] Value;
 
         /// <summary>
-        /// 描述
-        /// </summary>
-        public string Desc;
-
-        /// <summary>
         /// 机制池:0=关卡随机池,1=Boss专属(不参与随机)
         /// </summary>
         public int EntryPool;
+
+        /// <summary>
+        /// 描述
+        /// </summary>
+        public string Desc;
 
     }
 }

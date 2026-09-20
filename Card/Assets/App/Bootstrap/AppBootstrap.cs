@@ -35,10 +35,11 @@ namespace App.Bootstrap
         private UIFrameworkContext _ui;
 
         // 发布包关闭全部日志输出（编辑器保留）。Debug/AppLog 最终都走 unityLogger。
+        // 调黑屏问题临时打开：定位完恢复为 false 再发布。
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
         private static void DisableReleaseLogging()
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !ENABLE_APP_LOG
             Debug.unityLogger.logEnabled = false;
 #endif
         }
@@ -56,6 +57,7 @@ namespace App.Bootstrap
             _resources = ResourceFramework.Create();
             await _resources.InitializeAsync();
             _services.Register(_resources.Resources);
+            AppLog.Info(LogChannel.UI, "[Boot] resources initialized"); // 临时排查黑屏，定位后删除
 
             // 忠告页只需最小初始化：存档（钱包/体力依赖它）、UIRoot 与 UI 框架。
             // 重型初始化（图集/配置表/头像/业务服务/列表项预热）在忠告展示期间并发执行。
@@ -69,6 +71,7 @@ namespace App.Bootstrap
 
             await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
             _ui = UIFramework.Create(_services.Container);
+            AppLog.Info(LogChannel.UI, "[Boot] ui framework ready"); // 临时排查黑屏，定位后删除
 
             // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
             _services.Container.AddSingleton<ToastService>();
@@ -78,6 +81,7 @@ namespace App.Bootstrap
 
             if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
+                AppLog.Info(LogChannel.UI, "[Boot] show health advisory"); // 临时排查黑屏，定位后删除
                 // 先开忠告页（独占资源加载），再并发跑重型初始化；
                 // 忠告页倒计时与初始化两者都完成后由忠告页自行进首页。
                 await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
@@ -85,8 +89,11 @@ namespace App.Bootstrap
             }
             else
             {
+                AppLog.Info(LogChannel.UI, "[Boot] skip advisory, heavy init"); // 临时排查黑屏，定位后删除
                 await RunHeavyInitAsync(launchInit);
+                AppLog.Info(LogChannel.UI, "[Boot] heavy init done, open home"); // 临时排查黑屏，定位后删除
                 await OpenHomeWithNavigation();
+                AppLog.Info(LogChannel.UI, "[Boot] home opened"); // 临时排查黑屏，定位后删除
             }
         }
 
@@ -128,7 +135,8 @@ namespace App.Bootstrap
             await PrewarmLevelItemsAsync();
         }
 
-        /// <summary>趁忠告展示期把选关列表项实例化进对象池，首次打开 LevelUI 不再逐个 Instantiate。</summary>
+        /// <summary>趁忠告展示期把选关列表项与图鉴/天赋卡槽实例化进对象池，
+        /// 首次打开这些界面不再逐个 Instantiate。卡槽数量按视口可见量估，不足由 Rent 兜底补建。</summary>
         private async Task PrewarmLevelItemsAsync()
         {
             var heroCount = HeroConfig.All != null ? HeroConfig.All.Count : 0;
@@ -147,6 +155,7 @@ namespace App.Bootstrap
             }
 
             await LevelItemPool.PrewarmAsync(_resources.Resources, heroCount, levelCount);
+            await UiCardPool.PrewarmAsync(_resources.Resources, itemCardCount: 16, playerItemCount: 8);
         }
 
         private async Task OpenHomeWithNavigation()

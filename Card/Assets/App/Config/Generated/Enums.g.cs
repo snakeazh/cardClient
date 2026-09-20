@@ -253,6 +253,56 @@ namespace App.Config
         /// </summary>
         DisableHeadUesd = 49,
 
+        /// <summary>
+        /// BOSS开牌前偷看玩家手牌,弃掉自己最差的牌重抽
+        /// </summary>
+        PeekSwap = 50,
+
+        /// <summary>
+        /// 玩家被点燃,每回合开始受伤,赢下比牌可压制一回合
+        /// </summary>
+        VengefulFlame = 51,
+
+        /// <summary>
+        /// BOSS每回合叠加冰甲吸收伤害,大伤害一击击碎
+        /// </summary>
+        FrostArmor = 52,
+
+        /// <summary>
+        /// BOSS每损失10%生命,造成的伤害提高,有上限
+        /// </summary>
+        BloodDebt = 53,
+
+        /// <summary>
+        /// BOSS开场沉睡,苏醒后攻击强化且首击加倍
+        /// </summary>
+        StoneDormancy = 54,
+
+        /// <summary>
+        /// BOSS赢比牌加攻,输比牌变脆
+        /// </summary>
+        WinLust = 55,
+
+        /// <summary>
+        /// 每回合收割玩家生命上限
+        /// </summary>
+        SoulHarvest = 56,
+
+        /// <summary>
+        /// BOSS周期蓄力,赢牌则重击,输牌则被打断眩晕
+        /// </summary>
+        ChargeSmash = 57,
+
+        /// <summary>
+        /// BOSS比牌顺位复制玩家上回合牌型,惩罚重复套路
+        /// </summary>
+        MirrorHand = 58,
+
+        /// <summary>
+        /// BOSS存活时,其他敌人受到伤害降低且造成伤害提高
+        /// </summary>
+        CanopyAura = 59,
+
     }
 
     /// <summary>

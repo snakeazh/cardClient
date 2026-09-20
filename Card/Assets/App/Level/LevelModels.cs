@@ -70,7 +70,7 @@ namespace App.Level
             MonsterType type,
             int hp,
             int damage,
-            int monsterEntry,
+            int[] monsterEntry,
             string icon,
             string name)
         {
@@ -80,7 +80,7 @@ namespace App.Level
             Type = type;
             Hp = hp;
             Damage = damage;
-            MonsterEntry = monsterEntry;
+            MonsterEntry = monsterEntry ?? Array.Empty<int>();
             Icon = icon;
             Name = name ?? string.Empty;
         }
@@ -98,7 +98,8 @@ namespace App.Level
         /// <summary>`MonsterConfig.MonsterDamage`。</summary>
         public int Damage { get; }
 
-        public int MonsterEntry { get; }
+        /// <summary>`MonsterConfig.MonsterEntry`：上怪时附加的 <see cref="App.Config.BossEntryConfig.Id"/> 列表。</summary>
+        public int[] MonsterEntry { get; }
 
         /// <summary>`MonsterConfig.Icon`，拼 `_attack` / `_damage` / `_dead` 加载头像。</summary>
         public string Icon { get; }

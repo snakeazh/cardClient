@@ -32,6 +32,7 @@ namespace App.Resources
         public const string GamePopupInfo = "UI/Popup/GamePopupInfo";
         public const string EnergyPopup = "UI/Popup/EnergyPopup";
         public const string StaminaPurchasePop = "UI/Popup/StaminaPurchasePop";
+        public const string TTRewardPop = "UI/Popup/TTRewardPop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";

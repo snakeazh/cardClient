@@ -147,7 +147,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+7攻击力"
+    "Desc": "亮出的炸弹牌型在结算时提供+7攻击力"
   },
   {
     "Id": 111,
@@ -447,7 +447,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+7倍率"
+    "Desc": "亮出的炸弹牌型在结算时提供+7倍率"
   },
   {
     "Id": 210,
@@ -1204,7 +1204,7 @@
     "Id": 325,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "豹子精髓",
+    "Name": "炸弹精髓",
     "Icon": "LeopardEssence",
     "Price": 160,
     "SellingPrice": 80,
@@ -1213,7 +1213,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 2,
-    "Desc": "使用后,本局内你亮出豹子时,就会获得300金币"
+    "Desc": "使用后,本局内你亮出炸弹时,就会获得300金币"
   },
   {
     "Id": 326,
@@ -1303,7 +1303,7 @@
     ],
     "UnlockConditionId": 11001,
     "UseType": 0,
-    "Desc": "高牌235等同于豹子牌型,并且可以战胜所有牌型"
+    "Desc": "高牌235等同于炸弹牌型,并且可以战胜所有牌型"
   },
   {
     "Id": 402,

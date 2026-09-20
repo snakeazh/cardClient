@@ -14,7 +14,7 @@ namespace App.Editor
     /// <summary>
     /// 图片引用查看器：扫描 Assets 下所有图片，列出引用它们的资源
     /// （预制体/场景/材质/图集等；统计的是递归依赖，预制体经由材质用到贴图也会记到预制体头上）。
-    /// 支持按名称搜索、按引用数排序、筛选未被引用的图片。
+    /// 支持按名称搜索、限定文件夹范围（含子目录）、按引用数排序、筛选未被引用的图片。
     /// 注意：代码里按资源 key 字符串加载的图片、Resources 目录不计入引用，未被引用不代表可删除。
     /// 菜单：Tools/图片引用查看器
     /// </summary>
@@ -116,11 +116,16 @@ namespace App.Editor
         private readonly Dictionary<string, string> _typeCache = new Dictionary<string, string>();
         private float _scanSeconds;
 
+        [SerializeField] private DefaultAsset _folderAsset;
+        private string _folderFilter = "";
+
         private RefFilter _filter = RefFilter.All;
         private SortMode _sortMode = SortMode.Name;
         private string _search = "";
         private bool _syncing;
         private ImageInfo _currentDetail;
+        private Texture2D _detailPreview;
+        private bool _previewIsRuntime;
 
         private ListView _imageList;
         private Label _statusLabel;
@@ -148,9 +153,30 @@ namespace App.Editor
         private void CreateGUI()
         {
             var root = rootVisualElement;
+            _folderFilter = _folderAsset != null ? AssetDatabase.GetAssetPath(_folderAsset) : "";
 
             // ── 顶部工具栏 ──
             var toolbar = new Toolbar();
+
+            // 文件夹范围限定（含子目录）；清空后回到全项目。引用者仍全项目扫描，只影响左侧显示范围
+            var folderField = new ObjectField
+            {
+                objectType = typeof(DefaultAsset),
+                value = _folderAsset,
+                allowSceneObjects = false,
+                tooltip = "限定显示该文件夹（含子目录）下的图片，清空则显示全部"
+            };
+            folderField.label = "";
+            folderField.style.width = 300;
+            folderField.style.marginRight = 8;
+            folderField.RegisterValueChangedCallback(e =>
+            {
+                _folderAsset = e.newValue as DefaultAsset;
+                _folderFilter = _folderAsset != null ? AssetDatabase.GetAssetPath(_folderAsset) : "";
+                ApplyFilter();
+            });
+            toolbar.Add(folderField);
+
             var search = new ToolbarSearchField { value = _search };
             search.style.width = 220;
             search.RegisterValueChangedCallback(e =>
@@ -227,9 +253,11 @@ namespace App.Editor
             header.style.flexDirection = FlexDirection.Row;
             header.style.marginBottom = 6;
             _detailIcon = new Image();
-            _detailIcon.style.width = 64;
-            _detailIcon.style.height = 64;
-            _detailIcon.style.marginRight = 8;
+            _detailIcon.style.width = 128;
+            _detailIcon.style.height = 128;
+            _detailIcon.style.marginRight = 10;
+            _detailIcon.scaleMode = ScaleMode.ScaleToFit;
+            _detailIcon.style.backgroundColor = new Color(0.16f, 0.16f, 0.16f);
             var titleCol = new VisualElement();
             titleCol.style.justifyContent = Justify.Center;
             _detailName = new Label();
@@ -289,6 +317,50 @@ namespace App.Editor
             // 首次打开自动扫描（域重载后数据丢失也会走到这里重新扫）
             if (_all == null)
                 Rescan();
+        }
+
+        private void OnDisable()
+        {
+            ReleasePreview();
+        }
+
+        /// <summary>
+        /// 预览纹理优先从磁盘源文件解码（PNG/JPG 原始像素，绕开导入管线的 DXT/BC 压缩，
+        /// 小图 1:1 显示不发虚）；其它格式（psd/tga 等）回退加载导入后的资产纹理。
+        /// </summary>
+        private static Texture2D LoadPreviewTexture(string path, out bool isRuntime)
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+            {
+                try
+                {
+                    var bytes = File.ReadAllBytes(path);
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (tex.LoadImage(bytes, false))
+                    {
+                        isRuntime = true;
+                        return tex;
+                    }
+                    DestroyImmediate(tex);
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
+            isRuntime = false;
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        private void ReleasePreview()
+        {
+            if (_detailPreview == null)
+                return;
+            _detailIcon.image = null;
+            if (_previewIsRuntime)
+                DestroyImmediate(_detailPreview);
+            else
+                UnityEngine.Resources.UnloadAsset(_detailPreview);
+            _detailPreview = null;
         }
 
         /// <summary>建立 图片 → 引用者 反向索引。返回 false 表示被用户取消。</summary>
@@ -356,6 +428,8 @@ namespace App.Editor
                 return;
 
             IEnumerable<ImageInfo> q = _all;
+            if (!string.IsNullOrEmpty(_folderFilter))
+                q = q.Where(i => i.Path.StartsWith(_folderFilter + "/", StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrEmpty(_search))
                 q = q.Where(i => i.Path.IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0);
             q = _filter switch
@@ -382,7 +456,8 @@ namespace App.Editor
                 return;
             }
             var unrefCount = _all.Count(i => i.Referencers.Count == 0);
-            var text = $"共 {_all.Count} 张图片，{unrefCount} 张未被引用（扫描耗时 {_scanSeconds:0.0}s）";
+            var scope = string.IsNullOrEmpty(_folderFilter) ? "" : $"，范围 {_folderFilter}";
+            var text = $"共 {_all.Count} 张图片，{unrefCount} 张未被引用{scope}（扫描耗时 {_scanSeconds:0.0}s）";
             if (_view.Count != _all.Count)
                 text += $",当前显示 {_view.Count} 张";
             _statusLabel.text = text;
@@ -396,6 +471,16 @@ namespace App.Editor
 
             _emptyHint.style.display = DisplayStyle.None;
             _detailRoot.style.display = DisplayStyle.Flex;
+            // 预览必须用源文件原始像素：导入管线对小图有 DXT/BC 块压缩，"发虚"的根源就在这
+            ReleasePreview();
+            _detailPreview = LoadPreviewTexture(info.Path, out _previewIsRuntime);
+            _detailIcon.image = _detailPreview;
+            // 显示区跟随源图尺寸：小图 1:1 最锐利，大图封顶 256
+            _detailIcon.style.width = _detailPreview != null ? Math.Min(_detailPreview.width, 256) : 128;
+            _detailIcon.style.height = _detailPreview != null ? Math.Min(_detailPreview.height, 256) : 128;
+            _detailPath.text = _detailPreview != null
+                ? $"{info.Path}（源图 {_detailPreview.width}x{_detailPreview.height}）"
+                : info.Path;
             if (info.Icon == null)
                 info.Icon = AssetDatabase.GetCachedIcon(info.Path);
             _detailIcon.image = info.Icon;

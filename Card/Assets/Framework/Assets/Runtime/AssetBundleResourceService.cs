@@ -243,9 +243,23 @@ namespace Framework.Assets
             return File.ReadAllText(path).Trim();
         }
 
+        /// WebGL 目标打 bundle 时只写版本子目录（平铺目录 WebGL 运行时读不到，写了只是膨胀包体）；
+        /// 编辑器 Bundle 模式遇到这种布局时，回退到 {root}/{version}/{name} 读取。
+        private string ResolveBundleFilePath(string bundleName)
+        {
+            var flat = Path.Combine(_bundleRoot, bundleName);
+            if (File.Exists(flat) || string.IsNullOrEmpty(BundleVersion))
+            {
+                return flat;
+            }
+
+            var versioned = Path.Combine(_bundleRoot, BundleVersion, bundleName);
+            return File.Exists(versioned) ? versioned : flat;
+        }
+
         private void LoadManifestBundle()
         {
-            var manifestPath = Path.Combine(_bundleRoot, ManifestBundleName);
+            var manifestPath = ResolveBundleFilePath(ManifestBundleName);
             if (!File.Exists(manifestPath))
             {
                 AppLog.Warn(
@@ -294,7 +308,7 @@ namespace Framework.Assets
                 return loaded;
             }
 
-            var bundlePath = Path.Combine(_bundleRoot, bundleName);
+            var bundlePath = ResolveBundleFilePath(bundleName);
             if (!File.Exists(bundlePath))
             {
                 throw new FileNotFoundException(
@@ -337,7 +351,7 @@ namespace Framework.Assets
                 return;
             }
 
-            var path = Path.Combine(_bundleRoot, bundleName);
+            var path = ResolveBundleFilePath(bundleName);
             if (!File.Exists(path))
             {
                 return;

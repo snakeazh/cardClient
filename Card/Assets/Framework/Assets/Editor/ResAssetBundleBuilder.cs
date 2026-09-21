@@ -270,56 +270,20 @@ namespace Framework.Assets.Editor
                 }
             }
 
-            // 清掉历史构建平铺拷贝的版本号命名文件（1.0.7 / 1.0.7.manifest / .meta 等）：
-            // 运行时只读固定名 "Bundles"，这些文件既冗余又会与 WebGL 的版本子目录撞名。
+            // 清掉根目录所有平铺文件（含 .meta）：version.txt / catalog.txt 随后重写，
+            // bundle 按目标平台重新拷贝，残留的旧文件只会膨胀包体。
             foreach (var file in Directory.GetFiles(dest))
             {
-                var baseName = Path.GetFileName(file);
-                if (baseName.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseName = baseName.Substring(0, baseName.Length - ".meta".Length);
-                }
-
-                if (baseName.EndsWith(".manifest", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseName = baseName.Substring(0, baseName.Length - ".manifest".Length);
-                }
-
-                if (BundleVersionManager.IsValidSemVer(baseName))
-                {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                }
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
             }
 
-            foreach (var file in Directory.GetFiles(versionOutput))
-            {
-                var name = Path.GetFileName(file);
-                // 版本号命名的 manifest bundle 不再平铺拷贝：运行时只读 "Bundles"，
-                // 且该文件会与 WebGL 的同名版本子目录冲突。
-                if (string.IsNullOrEmpty(name) ||
-                    name == version ||
-                    name == version + ".manifest")
-                {
-                    continue;
-                }
-
-                File.Copy(file, Path.Combine(dest, name), overwrite: true);
-            }
-
-            // The manifest bundle is named after the version folder (e.g. "1.0.4");
-            // also copy it under the fixed name the runtime looks for.
             var manifestBundle = Path.Combine(versionOutput, version);
-            if (File.Exists(manifestBundle))
-            {
-                File.Copy(manifestBundle, Path.Combine(dest, "Bundles"), overwrite: true);
-            }
-
-            // WebGL/微信端按 URL 路径里的版本号破缓存（query 参数会被 SDK 剥掉，无效）：
-            // 运行时用 {root}/Bundles/{version}/{name} 下载，这里生成对应版本子目录。
-            // 仅 WebGL 目标需要；Android 从包内平铺目录读，多一份子目录只会白占 APK 体积。
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
             {
+                // WebGL/微信/抖音端按 URL 路径里的版本号破缓存（query 参数会被 SDK 剥掉，无效）：
+                // 运行时只用 {root}/Bundles/{version}/{name} 下载，平铺拷贝它根本读不到，
+                // 写两份等于同一份资源占两倍包体，所以 WebGL 目标只生成版本子目录。
                 var versionDir = Path.Combine(dest, version);
                 Directory.CreateDirectory(versionDir);
                 foreach (var file in Directory.GetFiles(versionOutput))
@@ -335,9 +299,33 @@ namespace Framework.Assets.Editor
                     File.Copy(file, Path.Combine(versionDir, name), overwrite: true);
                 }
 
+                // The manifest bundle is named after the version folder (e.g. "1.0.4");
+                // also copy it under the fixed name the runtime looks for.
                 if (File.Exists(manifestBundle))
                 {
                     File.Copy(manifestBundle, Path.Combine(versionDir, "Bundles"), overwrite: true);
+                }
+            }
+            else
+            {
+                // Android/iOS/PC 从包内平铺目录 LoadFromFile；多拷一份版本子目录只会白占包体。
+                foreach (var file in Directory.GetFiles(versionOutput))
+                {
+                    var name = Path.GetFileName(file);
+                    // 版本号命名的 manifest bundle 不再平铺拷贝：运行时只读固定名 "Bundles"。
+                    if (string.IsNullOrEmpty(name) ||
+                        name == version ||
+                        name == version + ".manifest")
+                    {
+                        continue;
+                    }
+
+                    File.Copy(file, Path.Combine(dest, name), overwrite: true);
+                }
+
+                if (File.Exists(manifestBundle))
+                {
+                    File.Copy(manifestBundle, Path.Combine(dest, "Bundles"), overwrite: true);
                 }
             }
         }

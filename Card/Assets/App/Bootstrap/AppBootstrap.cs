@@ -177,6 +177,7 @@ namespace App.Bootstrap
             services.Register<IAtlasService>(atlas);
             CardSpriteLibrary.Bind(atlas);
             ItemBgSpriteLibrary.Bind(atlas);
+            PlayItemSpriteLibrary.Bind(atlas);
         }
 
         private static void RegisterAudio(AppServicesHost services)

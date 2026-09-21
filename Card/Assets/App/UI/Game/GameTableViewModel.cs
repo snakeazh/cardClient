@@ -35,6 +35,22 @@ namespace App.UI
         private bool _settleShownThisShop;
         private string _shownInfoKey;
 
+        // Refresh 挂在 Session.Changed 上(每个动作/演出帧都进):字符串只在源值变化时重建
+        private int _lastStage = -1;
+        private bool _lastHasBoss = true;
+        private int _lastGold = -1;
+        private int _lastCourage = -1;
+        private int _lastRoundIndex = -1;
+        private int _lastRubCur = -1;
+        private int _lastRubMax = -1;
+        private int _lastXrayCur = -1;
+        private int _lastXrayMax = -1;
+        private int _lastReplaceCur = -1;
+        private int _lastReplaceMax = -1;
+        private readonly System.Text.StringBuilder _logBuilder = new System.Text.StringBuilder(256);
+        private int _lastLogCount = -1;
+        private string _lastLogTail;
+
         public GameTableViewModel(
             GameSession session,
             IResourceService resources,
@@ -265,48 +281,79 @@ namespace App.UI
             }
 
             var run = Session.Run;
+            if (run.Stage != _lastStage || run.HasBoss != _lastHasBoss)
+            {
+                _lastStage = run.Stage;
+                _lastHasBoss = run.HasBoss;
+                Title.Value = run.HasBoss
+                    ? $"第{run.Stage}关 BOSS"
+                    : $"第{run.Stage}关";
+                StageInfoText.Value = $"第{run.Stage}关";
+            }
+
             var entries = BossMechanics.ResolveAll(run);
-            Title.Value = run.HasBoss
-                ? $"第{run.Stage}关 BOSS"
-                : $"第{run.Stage}关";
-            StageInfoText.Value = $"第{run.Stage}关";
             RoundBuffVisible.Value = entries.Count > 0;
             RoundBuffName.Value = FormatEntryNames(entries);
             RoundBuffDesc.Value = FormatEntryDescs(entries);
             Hint.Value = Session.Hint ?? string.Empty;
-            GoldText.Value = run.Gold.ToString();
+            if (run.Gold != _lastGold)
+            {
+                _lastGold = run.Gold;
+                GoldText.Value = _lastGold.ToString();
+            }
             if (_gameResource != null)
             {
                 _gameResource.ShowBackBtn.Value = !_shopPopupOpen && !_resultPopupOpen;
             }
             PotText.Value = string.Empty;
-            PlayerChips.Value = $"勇气 {Session.Player.Courage}";
+            if (Session.Player.Courage != _lastCourage)
+            {
+                _lastCourage = Session.Player.Courage;
+                PlayerChips.Value = $"勇气 {_lastCourage}";
+            }
+
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
-            RoundInfo.Value = $"第{Session.StageRoundIndex}轮";
+            if (Session.StageRoundIndex != _lastRoundIndex)
+            {
+                _lastRoundIndex = Session.StageRoundIndex;
+                RoundInfo.Value = $"第{_lastRoundIndex}轮";
+            }
+
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
-            PeekGoodLabel.Value = FormatCharges(
-                "搓牌",
-                Session.Run.PeekGoodCharges,
-                SkillChargeMax(
-                    GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
-                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum)));
+            var rubMax = SkillChargeMax(
+                GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
+                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum));
+            if (Session.Run.PeekGoodCharges != _lastRubCur || rubMax != _lastRubMax)
+            {
+                _lastRubCur = Session.Run.PeekGoodCharges;
+                _lastRubMax = rubMax;
+                PeekGoodLabel.Value = FormatCharges("搓牌", _lastRubCur, _lastRubMax);
+            }
+
             PeekGoodArmed.Value = Session.SelectingRubTarget;
-            ChaKanGoodLabel.Value = FormatCharges(
-                "透视",
-                Session.Run.ChaKanGoodCharges,
-                SkillChargeMax(
-                    GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                    RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
-                    HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum)));
-            TiHuanGoodLabel.Value = FormatCharges(
-                "替换",
-                Session.Run.TiHuanGoodCharges,
-                GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges);
+            var xrayMax = SkillChargeMax(
+                GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
+                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
+                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum));
+            if (Session.Run.ChaKanGoodCharges != _lastXrayCur || xrayMax != _lastXrayMax)
+            {
+                _lastXrayCur = Session.Run.ChaKanGoodCharges;
+                _lastXrayMax = xrayMax;
+                ChaKanGoodLabel.Value = FormatCharges("透视", _lastXrayCur, _lastXrayMax);
+            }
+
+            var replaceMax = GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges;
+            if (Session.Run.TiHuanGoodCharges != _lastReplaceCur || replaceMax != _lastReplaceMax)
+            {
+                _lastReplaceCur = Session.Run.TiHuanGoodCharges;
+                _lastReplaceMax = replaceMax;
+                TiHuanGoodLabel.Value = FormatCharges("替换", _lastReplaceCur, _lastReplaceMax);
+            }
             ShowLook.Value = false;
             ShowBlind.Value = false;
             ShowActions.Value = false;
@@ -340,19 +387,27 @@ namespace App.UI
             RefreshEnemies();
             RefreshCardInfo();
 
-            var start = run.Log.Count > 8 ? run.Log.Count - 8 : 0;
-            var log = string.Empty;
-            for (var i = start; i < run.Log.Count; i++)
+            // 日志 O(n²) 拼接 → StringBuilder 复用,且仅在条数或末行变化时重建
+            var logCount = run.Log.Count;
+            var logTail = logCount > 0 ? run.Log[logCount - 1] : null;
+            if (logCount != _lastLogCount || !ReferenceEquals(logTail, _lastLogTail))
             {
-                if (i > start)
+                _lastLogCount = logCount;
+                _lastLogTail = logTail;
+                var start = logCount > 8 ? logCount - 8 : 0;
+                _logBuilder.Clear();
+                for (var i = start; i < logCount; i++)
                 {
-                    log += "\n";
+                    if (i > start)
+                    {
+                        _logBuilder.Append('\n');
+                    }
+
+                    _logBuilder.Append(run.Log[i]);
                 }
 
-                log += run.Log[i];
+                LogText.Value = _logBuilder.ToString();
             }
-
-            LogText.Value = log;
 
             BlindBetCommand.RaiseCanExecuteChanged();
             RaiseCommand.RaiseCanExecuteChanged();

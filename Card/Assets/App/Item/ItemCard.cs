@@ -13,6 +13,7 @@ namespace App.Item
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
     /// 界面结构：Item(Button) / ItemRoot(Animator) / cardFrame(IconBG + Mask + card(card_Name、card_icon) + CardBG)。
     /// card 节点 Image 为品质卡面图、CardBG 为品质卡背背景，ApplyQuality 时按品质从 Altas/ItemBg 图集取图；
+    /// card 下 bg/direct/di 三层卡背按品质取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
     /// Mask 为未解锁遮罩，SetUnlocked 控制。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
@@ -25,6 +26,9 @@ namespace App.Item
         [SerializeField] private Image iconBg;
         [SerializeField] private Image cardImage;
         [SerializeField] private Image cardBack;
+        [SerializeField] private Image cardQualityBg;
+        [SerializeField] private Image cardQualityDirect;
+        [SerializeField] private Image cardQualityDi;
         [SerializeField] private GameObject lockMask;
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private TMP_Text levelText;
@@ -278,6 +282,29 @@ namespace App.Item
         {
             ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, type);
             ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, type);
+            ApplyQualityLayer(cardQualityBg, type, 1);
+            ApplyQualityLayer(cardQualityDirect, type, 2);
+            ApplyQualityLayer(cardQualityDi, type, 3);
+        }
+
+        /// <summary>card 下 bg/direct/di 三层卡背按品质取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）。</summary>
+        private static void ApplyQualityLayer(Image target, QualityType type, int layer)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            var sprite = PlayItemSpriteLibrary.GetCardFrameBack(type, layer);
+            if (sprite == null && type != QualityType.Ordinary)
+            {
+                sprite = PlayItemSpriteLibrary.GetCardFrameBack(QualityType.Ordinary, layer);
+            }
+
+            if (sprite != null)
+            {
+                target.sprite = sprite;
+            }
         }
 
         /// <summary>
@@ -288,6 +315,9 @@ namespace App.Item
         {
             ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, QualityType.Ordinary);
             ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, QualityType.Ordinary);
+            ApplyQualityLayer(cardQualityBg, QualityType.Ordinary, 1);
+            ApplyQualityLayer(cardQualityDirect, QualityType.Ordinary, 2);
+            ApplyQualityLayer(cardQualityDi, QualityType.Ordinary, 3);
         }
 
         private static void ApplySprite(Image target, Func<QualityType, Sprite> resolve, QualityType type)
@@ -560,6 +590,21 @@ namespace App.Item
             if (cardBack == null)
             {
                 cardBack = FindImage("CardBG");
+            }
+
+            if (cardQualityBg == null)
+            {
+                cardQualityBg = FindImage("bg");
+            }
+
+            if (cardQualityDirect == null)
+            {
+                cardQualityDirect = FindImage("direct");
+            }
+
+            if (cardQualityDi == null)
+            {
+                cardQualityDi = FindImage("di");
             }
 
             if (lockMask == null)

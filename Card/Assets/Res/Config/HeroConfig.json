@@ -14,8 +14,8 @@
   {
     "Id": 2,
     "Name": "大壮",
-    "Hp": 300,
-    "HeroDamage": 34,
+    "Hp": 260,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People2",
@@ -29,13 +29,12 @@
     "Id": 3,
     "Name": "狠人",
     "Hp": 320,
-    "HeroDamage": 34,
-    "Critical": 0.05,
+    "HeroDamage": 27,
+    "Critical": 0.15,
     "CriticalDamage": 2,
     "Icon": "People3",
     "HeroEntryId": [
-      10002,
-      100021
+      10002
     ],
     "UnlockCondition": 2,
     "Desc": "造成的伤害+25%,且拥有15%暴击率"
@@ -44,7 +43,7 @@
     "Id": 4,
     "Name": "多面手",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 32,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People4",
@@ -58,7 +57,7 @@
     "Id": 5,
     "Name": "射手",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 30,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People5",
@@ -72,7 +71,7 @@
     "Id": 6,
     "Name": "灰烬术士",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 30,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People6",
@@ -86,7 +85,7 @@
     "Id": 7,
     "Name": "富豪",
     "Hp": 330,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People7",
@@ -99,23 +98,22 @@
   {
     "Id": 8,
     "Name": "武林高手",
-    "Hp": 320,
-    "HeroDamage": 34,
-    "Critical": 0.05,
+    "Hp": 260,
+    "HeroDamage": 35,
+    "Critical": 0.15,
     "CriticalDamage": 2,
     "Icon": "People8",
     "HeroEntryId": [
-      10007,
-      100071
+      10007
     ],
     "UnlockCondition": 7,
-    "Desc": "承受伤害时有25%概率免疫伤害,且拥有15%暴击率"
+    "Desc": "初始拥有15%暴击率,25%闪避率"
   },
   {
     "Id": 9,
     "Name": "赌神",
-    "Hp": 340,
-    "HeroDamage": 34,
+    "Hp": 330,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People9",
@@ -123,13 +121,13 @@
       10008
     ],
     "UnlockCondition": 8,
-    "Desc": "每关[搓牌]使用次数+2"
+    "Desc": "每关[搓牌]使用次数+1"
   },
   {
     "Id": 10,
     "Name": "暴发户",
     "Hp": 330,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People10",
@@ -137,13 +135,13 @@
       10009
     ],
     "UnlockCondition": 9,
-    "Desc": "商店刷到史诗及以上品质的圣物概率+25%"
+    "Desc": "商店刷到史诗及以上品质的圣物概率+10%"
   },
   {
     "Id": 11,
     "Name": "关系户",
     "Hp": 330,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People11",
@@ -156,8 +154,8 @@
   {
     "Id": 12,
     "Name": "经济教授",
-    "Hp": 340,
-    "HeroDamage": 34,
+    "Hp": 330,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People12",
@@ -171,7 +169,7 @@
     "Id": 13,
     "Name": "死灵法师",
     "Hp": 300,
-    "HeroDamage": 34,
+    "HeroDamage": 33,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People13",
@@ -185,7 +183,7 @@
     "Id": 14,
     "Name": "裁决使",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People14",
@@ -193,13 +191,13 @@
       10013
     ],
     "UnlockCondition": 13,
-    "Desc": "对血量小于10%的非领主敌人造成伤害时,有20%概率直接斩杀"
+    "Desc": "攻击血量小于10%的非领主敌人时,有20%概率直接斩杀"
   },
   {
     "Id": 15,
     "Name": "亡命徒",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 36,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People15",
@@ -213,7 +211,7 @@
     "Id": 16,
     "Name": "囤货王",
     "Hp": 300,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People16",
@@ -221,13 +219,13 @@
       10015
     ],
     "UnlockCondition": 15,
-    "Desc": "圣物携带上限+2"
+    "Desc": "圣物携带上限+1"
   },
   {
     "Id": 17,
     "Name": "阴阳师",
     "Hp": 330,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People17",
@@ -241,7 +239,7 @@
     "Id": 18,
     "Name": "营养师",
     "Hp": 320,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People18",
@@ -249,13 +247,13 @@
       10017
     ],
     "UnlockCondition": 17,
-    "Desc": "每次通关后额外回复自身10%血量"
+    "Desc": "每回合开始时回复自身2%血量"
   },
   {
     "Id": 19,
     "Name": "拾荒者",
     "Hp": 330,
-    "HeroDamage": 34,
+    "HeroDamage": 38,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People19",
@@ -269,7 +267,7 @@
     "Id": 20,
     "Name": "修炼者",
     "Hp": 300,
-    "HeroDamage": 34,
+    "HeroDamage": 30,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People20",
@@ -283,7 +281,7 @@
     "Id": 21,
     "Name": "决斗大师",
     "Hp": 310,
-    "HeroDamage": 34,
+    "HeroDamage": 33,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People21",
@@ -311,7 +309,7 @@
     "Id": 23,
     "Name": "急性子",
     "Hp": 310,
-    "HeroDamage": 34,
+    "HeroDamage": 32,
     "Critical": 0,
     "CriticalDamage": 2,
     "Icon": "People23",
@@ -319,13 +317,13 @@
       10022
     ],
     "UnlockCondition": 22,
-    "Desc": "每关第一轮比牌时,结算时的倍率+2"
+    "Desc": "每关首回合比牌时,结算时的倍率+5"
   },
   {
     "Id": 24,
     "Name": "锦鲤",
     "Hp": 300,
-    "HeroDamage": 34,
+    "HeroDamage": 26,
     "Critical": 0.4,
     "CriticalDamage": 2.4,
     "Icon": "People24",

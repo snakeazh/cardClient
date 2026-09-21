@@ -10,6 +10,11 @@ namespace App.Guide
         private readonly Dictionary<string, Target> _targets =
             new Dictionary<string, Target>(StringComparer.Ordinal);
 
+        // 引导期间 Overlay 每帧取洞矩形:角点缓冲静态复用避免每帧分配。
+        // 单线程顺序消费、即取即用;Group 目标逐个顺序调用同一缓冲亦安全。
+        private static readonly Vector3[] UiCorners = new Vector3[4];
+        private static readonly Vector3[] WorldCorners = new Vector3[8];
+
         public event Action Changed;
 
         public void RegisterUi(string id, RectTransform rect)
@@ -252,7 +257,7 @@ namespace App.Guide
                     return false;
                 }
 
-                var corners = new Vector3[4];
+                var corners = UiCorners;
                 rect.GetWorldCorners(corners);
                 var canvas = rect.GetComponentInParent<Canvas>();
                 var cam = EventCamera(canvas);
@@ -273,7 +278,7 @@ namespace App.Guide
                     return false;
                 }
 
-                var corners = new Vector3[8];
+                var corners = WorldCorners;
                 var count = FillWorldCorners(t, corners);
                 var first = true;
                 var xMin = 0f;

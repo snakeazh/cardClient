@@ -20,13 +20,14 @@
 | `cardMask` | 卡面遮罩图（`BlackBaseFrameMask`），美术摆位；人物/敌人共用，不随角色开关 |
 | `IconTitleBG` | 标题底，纯色，颜色以预制体为准（代码不染色） |
 | `card` | 人物卡面图，预制体默认 `OrdinaryCardFrame` |
+| `card/bg`、`card/bg/direct`、`card/bg/direct/di` | 品质卡背三层，按品质取 `Altas/playitem` 的 `{品质}CardFrameBack{1,2,3}`（稀有为 `BlueCardFrame{1,2,3}`），随 `ApplyTheme` 切换 |
 | `card_icon` | 人物头像 |
 | `card_Name` | 人物名字 |
 | `card_attackValue` | 人物攻击力数字 |
 | `card_attackHeart` | 人物当前血量 |
 | `attack` | 人物攻击力整块；值为 0 时隐藏。底图按品质取 `Altas/ItemBg` 的 `{品质}RectangleFrame` |
 | `heart` | 人物血量整块。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 0 |
-| `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap` |
+| `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap`（贴图在 `Altas/playitem`，如 `KhakiMonsterBaseFrame`） |
 | `enemycard_icon` | 敌人头像 |
 | `enemycard_Name` | 敌人名字 |
 | `enemycard_attackValue` | 敌人攻击力数字 |
@@ -47,10 +48,10 @@
 
 | 调用 | 显示 | 底图 |
 |------|------|------|
-| `ApplyTheme()`、`Bind(玩家)` | `card` 开、`enemycard` 关 | attack/heart → `{品质}RectangleFrame` |
+| `ApplyTheme()`、`Bind(玩家)` | `card` 开、`enemycard` 关 | attack/heart → `{品质}RectangleFrame`；bg/direct/di → `{品质}CardFrameBack{1,2,3}` |
 | `Bind(敌人)` | `enemycard` 开、`card` 关 | enemycard → `BaseMap`；enemycardattack/heart → `HealthBar` |
 
-缺配置或缺图保留当前 sprite。`CardIconRect` / `AttackValueRect` / `AttackValueAnimator` 返回当前可见套，结算抖动挂对节点。`SetSelectLift` 只动人物 `card`（选角）。
+缺配置或缺图保留当前 sprite。显隐切换按 `card` / `enemycard` 节点做（`card` 节点无 Image 组件，不能按 Image 查找切换）。`CardIconRect` / `AttackValueRect` / `AttackValueAnimator` 返回当前可见套，结算抖动挂对节点。`SetSelectLift` 只动人物 `card`（选角）。
 
 ---
 

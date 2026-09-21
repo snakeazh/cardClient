@@ -125,10 +125,15 @@ namespace App.Resources
 
         /// <summary>
         /// <see cref="App.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
+        /// normal 态（_attack）已挪到 Textures/enemytujian 并打进图集（图鉴整页展示用）；
+        /// _damage / _dead 仍在 Textures/enemy 按张加载（局内懒加载、退局释放）。
         /// </summary>
         public static string EnemyPortrait(string icon, string suffix)
         {
-            return ComposeIcon("Textures/enemy", icon, suffix);
+            var folder = string.Equals(suffix, PortraitAttack, System.StringComparison.Ordinal)
+                ? "Textures/enemytujian"
+                : "Textures/enemy";
+            return ComposeIcon(folder, icon, suffix);
         }
 
         /// <summary>
@@ -139,7 +144,7 @@ namespace App.Resources
             return ComposeIcon("Textures/Relic", icon, null);
         }
 
-        public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
+        public static string EnemyAttack(int index) => $"Textures/enemytujian/enemy{index}_attack";
 
         /// <summary>
         /// <see cref="App.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。

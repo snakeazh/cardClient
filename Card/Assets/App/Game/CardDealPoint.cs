@@ -115,12 +115,10 @@ namespace App.Game
 
         public void Clear()
         {
+            // 回收到对象池而不是 Destroy：下局发牌直接复用，避免每局几十次销毁/重建。
             for (var i = 0; i < _stack.Count; i++)
             {
-                if (_stack[i] != null)
-                {
-                    Destroy(_stack[i].gameObject);
-                }
+                CardItemPool.Return(_stack[i]);
             }
 
             _stack.Clear();

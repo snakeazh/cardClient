@@ -417,6 +417,26 @@ namespace App.Game
             _successFxHide?.Kill();
         }
 
+        /// <summary>对象池回收：停掉全部 tween 与洗牌/飞牌动画、隐藏特效；
+        /// 显示状态（牌面/朝向/透明度）由下次租用的 Initialize 全量重置。</summary>
+        public void ResetForPool()
+        {
+            _moveTween?.Kill();
+            _moveTween = null;
+            _rotateTween?.Kill();
+            _rotateTween = null;
+            _flipTween?.Kill();
+            _flipTween = null;
+            _backFadeTween?.Kill();
+            _backFadeTween = null;
+            _successFxHide?.Kill();
+            _successFxHide = null;
+            _successFxTween?.Kill();
+            _successFxTween = null;
+            StopTweenAnimation();
+            HideDragEffects();
+        }
+
         private static void SetEffectActive(GameObject go, bool visible)
         {
             if (go == null)

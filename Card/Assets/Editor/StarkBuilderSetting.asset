@@ -32,16 +32,16 @@ MonoBehaviour:
   assetBundleBufferCapacity: 128
   assetBundleBufferTTL: 5
   preloadFiles: 
-  CDN: http://192.168.1.109:8080/webgl
+  CDN: https://cardwar-1328828696.cos.ap-shanghai.myqcloud.com/CardClient/DYGame/
   preloadDataListUrl: 
   dataLoadType: 0
   dataFileSubPrefix: 
   iOSDevicePixelRatio: 0
   urlCacheList:
-  - 192.168.1.109
+  - https://cardwar-1328828696.cos.ap-shanghai.myqcloud.com/CardClient/DYGame/
   dontCacheFileNames:
   - txt
-  enableEmscriptenGlx: 0
+  enableEmscriptenGlx: 1
   isDevBuild: 0
   stripEngineCode: 0
   appHost: 2

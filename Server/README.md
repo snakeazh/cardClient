@@ -190,7 +190,7 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 多轮 1v1（配表轮次、扣血、淘汰）见 [`docs/pvp-match.md`](docs/pvp-match.md)。开房后按 `PvpModeConfig` 第 1 轮开 1v1 子桌，不再四人同桌摊一张。
 
-Development 默认 `Pvp:FillWithBots=true`：一人 `queue` 即用 3 个机器人补满开房，没有真人的子桌服务端自动摊牌。正式服保持关闭。
+Development 默认 `Pvp:FillWithBots=true`：真人排队超过 `GameConst.PvpBotFillDelaySeconds` 秒（10，配 0 = 立即补满）未满 4 人即用机器人补满开房，没有真人的子桌服务端自动摊牌。正式服保持关闭。
 
 消息：`{ "t", "seq", "payload" }`。
 

@@ -408,7 +408,7 @@ public static class PvpWebSocketHost
         return Guid.Empty;
     }
 
-    private static async Task BroadcastAsync(
+    internal static async Task BroadcastAsync(
         PvpMessageRouter router,
         PvpMatchHost matches,
         IServiceScopeFactory scopes,

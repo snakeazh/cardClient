@@ -186,6 +186,22 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
 
     public void Leave(Guid userId) => Cancel(userId);
 
+    public bool IsWaiting(Guid userId)
+    {
+        var uid = userId.ToString("N");
+        var members = _db.SortedSetRangeByScore(QueueKey);
+        foreach (var member in members)
+        {
+            var raw = (string?)member;
+            if (raw != null && raw.StartsWith(uid, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
     {
         var maxScore = timeoutMs > 0 ? nowUtcMs - timeoutMs : long.MinValue;

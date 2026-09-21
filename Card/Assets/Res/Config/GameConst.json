@@ -39,5 +39,6 @@
   "DefaultSkillReplaceNum": 1,
   "DefaultSkillPerspectiveNum": 1,
   "TalentNeedChestGold": 50,
-  "EverySkillProvideGold": 20
+  "EverySkillProvideGold": 20,
+  "PvpBotFillDelaySeconds": 10
 }

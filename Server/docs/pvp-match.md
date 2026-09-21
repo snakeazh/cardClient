@@ -19,7 +19,7 @@
 
 ## 开发机器人
 
-Development 默认 `Pvp:FillWithBots=true`：真人一 `queue` 就从 `PvpBotConfig` 取启用行补满开房。机器人没有 WebSocket，服务端会：
+Development 默认 `Pvp:FillWithBots=true`：真人排队超过 `GameConst.PvpBotFillDelaySeconds` 秒（当前 10，配 0 = 立即补满）还没满 4 人，就从 `PvpBotConfig` 取启用行补满开房。到期检测由 `PvpTimeoutSweeper`（500ms 一跳）驱动。机器人没有 WebSocket，服务端会：
 
 - 座位按非人类处理，自动选炸金花最大 3 张；英雄读表里 `HeroId`（0 则用 `DefaultHeroId`）
 - 没有真人的子桌立刻摊牌（机器人打野怪、机器人打机器人）

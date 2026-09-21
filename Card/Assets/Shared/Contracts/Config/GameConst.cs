@@ -181,6 +181,11 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int EverySkillProvideGold;
 
+        /// <summary>
+        /// PVP排队多少秒未满4人时用机器人补满(0=立即补满)
+        /// </summary>
+        public int PvpBotFillDelaySeconds;
+
     }
 }
 

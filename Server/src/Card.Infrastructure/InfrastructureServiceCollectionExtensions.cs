@@ -94,10 +94,7 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<IPlayerLock, RedisPlayerLock>();
             services.AddSingleton<IPvpBus, RedisPvpBus>();
             services.AddSingleton<RedisPvpMatchmaker>();
-            services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
-                sp.GetRequiredService<RedisPvpMatchmaker>(),
-                configuration.GetValue("Pvp:FillWithBots", false),
-                sp.GetRequiredService<IGameTables>()));
+            AddMatchmaker<RedisPvpMatchmaker>(services, configuration.GetValue("Pvp:FillWithBots", false));
             services.AddSingleton<ITokenService>(sp => new RedisTokenService(
                 sp.GetRequiredService<IConnectionMultiplexer>(),
                 accessTtl));
@@ -107,10 +104,7 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<IPlayerLock, MemoryPlayerLock>();
             services.AddSingleton<IPvpBus, NullPvpBus>();
             services.AddSingleton<InMemoryPvpMatchmaker>();
-            services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
-                sp.GetRequiredService<InMemoryPvpMatchmaker>(),
-                configuration.GetValue("Pvp:FillWithBots", false),
-                sp.GetRequiredService<IGameTables>()));
+            AddMatchmaker<InMemoryPvpMatchmaker>(services, configuration.GetValue("Pvp:FillWithBots", false));
             services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
                 sp.GetRequiredService<IClock>(),
                 accessTtl));
@@ -124,8 +118,18 @@ public static class InfrastructureServiceCollectionExtensions
         return services;
     }
 
-    private static IPvpMatchmaker WrapMatchmaker(IPvpMatchmaker inner, bool fillWithBots, IGameTables tables)
+    private static void AddMatchmaker<TInner>(IServiceCollection services, bool fillWithBots)
+        where TInner : class, IPvpMatchmaker
     {
-        return fillWithBots ? new PvpBotFillMatchmaker(inner, tables) : inner;
+        if (fillWithBots)
+        {
+            services.AddSingleton<PvpBotFillMatchmaker>(sp => new PvpBotFillMatchmaker(
+                sp.GetRequiredService<TInner>(),
+                sp.GetRequiredService<IGameTables>()));
+            services.AddSingleton<IPvpMatchmaker>(sp => sp.GetRequiredService<PvpBotFillMatchmaker>());
+            return;
+        }
+
+        services.AddSingleton<IPvpMatchmaker>(sp => sp.GetRequiredService<TInner>());
     }
 }

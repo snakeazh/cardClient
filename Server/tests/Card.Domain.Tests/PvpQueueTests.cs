@@ -266,6 +266,119 @@ public class PvpMatchmakerTests
     }
 
     [Fact]
+    public void DelayedFillWaitsForDeadlineThenOpensRoomWithBots()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new PvpBotFillMatchmaker(
+            new InMemoryPvpMatchmaker(() => now),
+            TablesWithBotDelay(10),
+            () => now);
+
+        var evt = matchmaker.Enqueue(Public("你"));
+        Assert.False(evt.RoomOpened);
+
+        now += 9_999;
+        Assert.Null(matchmaker.FillDueBots());
+
+        now += 1;
+        var opened = matchmaker.FillDueBots();
+        Assert.NotNull(opened);
+        Assert.True(opened!.RoomOpened);
+        Assert.Equal(4, opened.Players.Count);
+        Assert.Single(opened.Players, p => !p.IsBot);
+        Assert.Equal(3, opened.Players.Count(p => p.IsBot));
+    }
+
+    [Fact]
+    public void DelayedFillSkipsPlayerWhoCancelledBeforeDeadline()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new PvpBotFillMatchmaker(
+            new InMemoryPvpMatchmaker(() => now),
+            TablesWithBotDelay(10),
+            () => now);
+
+        var player = Public("你");
+        matchmaker.Enqueue(player);
+        matchmaker.Cancel(Guid.Parse(player.UserId));
+
+        now += 20_000;
+        Assert.Null(matchmaker.FillDueBots());
+        Assert.False(matchmaker.IsWaiting(Guid.Parse(player.UserId)));
+    }
+
+    [Fact]
+    public void DelayedFillNotNeededWhenFourHumansQueueInTime()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new PvpBotFillMatchmaker(
+            new InMemoryPvpMatchmaker(() => now),
+            TablesWithBotDelay(10),
+            () => now);
+
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.Enqueue(Public("乙"));
+        matchmaker.Enqueue(Public("丙"));
+        var opened = matchmaker.Enqueue(Public("丁"));
+        Assert.True(opened.RoomOpened);
+        Assert.Equal(0, opened.Players.Count(p => p.IsBot));
+
+        now += 20_000;
+        Assert.Null(matchmaker.FillDueBots());
+    }
+
+    [Fact]
+    public void DelayedFillFillsRemainingSeatsAroundWaitingHumans()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new PvpBotFillMatchmaker(
+            new InMemoryPvpMatchmaker(() => now),
+            TablesWithBotDelay(10),
+            () => now);
+
+        matchmaker.Enqueue(Public("甲"));
+        now += 5_000;
+        matchmaker.Enqueue(Public("乙"));
+
+        // 甲到期：补 2 个机器人，带着乙一起开房
+        now += 5_000;
+        var opened = matchmaker.FillDueBots();
+        Assert.NotNull(opened);
+        Assert.Equal(4, opened!.Players.Count);
+        Assert.Equal(2, opened.Players.Count(p => !p.IsBot));
+        Assert.Equal(2, opened.Players.Count(p => p.IsBot));
+        Assert.Null(matchmaker.FillDueBots());
+    }
+
+    private static IGameTables TablesWithBotDelay(int seconds)
+    {
+        var fallback = GameTables.Fallback();
+        var gameConst = new CardShare.Contracts.Config.GameConst
+        {
+            DefaultHeroId = 1,
+            PvpBotFillDelaySeconds = seconds
+        };
+        return new GameTables(
+            gameConst,
+            fallback.HandScores,
+            fallback.Levels,
+            fallback.Heroes,
+            fallback.Relics,
+            fallback.UnlockConditions,
+            fallback.TalentRows,
+            fallback.Monsters,
+            fallback.Items,
+            "bot-delay-test",
+            fallback.HeroEntries,
+            fallback.TalentEntries,
+            fallback.RelicEntries,
+            fallback.MonsterGroups,
+            fallback.PvpModes,
+            fallback.PvpRounds,
+            fallback.PvpBots);
+    }
+
+    [Fact]
     public void CreateThrowsWhenNoEnabledBots()
     {
         var fallback = GameTables.Fallback();

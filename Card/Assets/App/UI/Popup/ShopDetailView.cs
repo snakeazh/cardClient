@@ -145,7 +145,7 @@ namespace App.UI.Popup
         private void BindVideoBuyButton()
         {
             var go = UI.GetGameObject("VideoBuyBtn");
-            Binding.BindActive(go, ViewModel.ShowBuy);
+            Binding.BindActive(go, ViewModel.ShowVideoBuy);
             _videoBuyBtn = go.GetComponent<Button>();
             if (_videoBuyBtn != null)
             {

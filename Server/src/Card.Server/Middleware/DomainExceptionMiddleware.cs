@@ -62,6 +62,7 @@ public sealed class DomainExceptionMiddleware
             ErrorCodes.ProviderNotConfigured => HttpStatusCode.NotImplemented,
             ErrorCodes.RunNotFound => HttpStatusCode.NotFound,
             ErrorCodes.RunAlreadySettled => HttpStatusCode.Conflict,
+            ErrorCodes.ActiveRunExists => HttpStatusCode.Conflict,
             ErrorCodes.Conflict => HttpStatusCode.Conflict,
             ErrorCodes.InsufficientEnergy => HttpStatusCode.BadRequest,
             ErrorCodes.InsufficientGold => HttpStatusCode.BadRequest,

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
@@ -945,6 +946,12 @@ namespace App.UI
             if (!item.Card.Equals(card))
             {
                 item.SetCard(card);
+            }
+
+            // PVP/透视后对手可能已是正面；先盖回再翻，才能播开牌动画。
+            if (!seat.IsPlayer && item.FaceState == CardFaceState.Front)
+            {
+                item.SetFace(CardFaceState.Back);
             }
 
             ApplyFace(item, CardFaceState.Front, true);

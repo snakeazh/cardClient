@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Net;
 using App.Talent;
@@ -304,10 +305,9 @@ namespace App.Guide
                         var profile = await GameApi.Client.CompleteGuideAsync(groupId);
                         GameApi.ApplyProfile(profile);
                     }
-                    catch (Exception e)
+                    catch (GameApiException ex)
                     {
-                        AppLog.Exception(LogChannel.Net, e);
-                        _progress.MarkGroupCompleted(groupId);
+                        Toast.Error(GameApi.Describe(ex));
                     }
                 }
                 else
@@ -533,9 +533,9 @@ namespace App.Guide
                 GameApi.ApplyProfile(profile);
                 AppLog.Info(LogChannel.UI, $"[Guide] granted gold for talent draw, now {wallet.Gold}");
             }
-            catch (Exception e)
+            catch (GameApiException ex)
             {
-                AppLog.Exception(LogChannel.Net, e);
+                Toast.Error(GameApi.Describe(ex));
             }
         }
 

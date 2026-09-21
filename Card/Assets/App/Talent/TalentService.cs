@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;

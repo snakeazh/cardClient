@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using Framework.Save;
 
 namespace App.Talent

@@ -8,7 +8,6 @@ public sealed class AccessTokenMiddleware
     {
         "/v1/health",
         "/v1/auth/login",
-        "/v1/auth/refresh",
         "/v1/pvp/ws"
     };
 

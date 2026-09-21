@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
 using App.Level;
@@ -11,6 +12,7 @@ using CardShare.Contracts;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
+using Framework.UI.Dialog;
 using Framework.UI.View;
 
 namespace App.UI
@@ -376,8 +378,15 @@ namespace App.UI
 
             if (!GameApi.IsReady)
             {
-                Toast.Error("未连接服务器");
-                return;
+                await PveSessionGate.ConnectWithRetryAsync(
+                    _ui.Dialogs,
+                    UnityEngine.SystemInfo.deviceUniqueIdentifier,
+                    "Editor");
+                if (!GameApi.IsReady)
+                {
+                    Toast.Error("未连接服务器");
+                    return;
+                }
             }
 
             _progress.SetLastHero(SelectedHeroId.Value);
@@ -395,6 +404,13 @@ namespace App.UI
                 if (ex.Code == ErrorCodes.InsufficientEnergy)
                 {
                     await PresentEnergyInsufficientPopupAsync();
+                    return;
+                }
+
+                if (ex.Code == PveSessionGate.ActiveRunExists || ex.Code == "active_run_exists")
+                {
+                    await PveSessionGate.ForfeitActiveRunIfAnyAsync(_ui.Dialogs);
+                    Toast.Show("上次未完成的闯关已按失败结算");
                     return;
                 }
 

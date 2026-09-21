@@ -30,7 +30,7 @@ public class EnergyResetTests
         profile.Energy.AdRefillCount = 2;
         profile.AdShop.GoldCount = 3;
 
-        profile.EnsureDailyReset(config, now);
+        profile.ApplyDailyReset(config, now);
 
         Assert.Equal(config.Balance.EnergyMax, profile.Energy.Current);
         Assert.Equal(0, profile.Energy.AdRefillCount);
@@ -45,7 +45,7 @@ public class EnergyResetTests
         var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, now);
         profile.Energy.Current = 2;
 
-        profile.EnsureDailyReset(config, now.AddHours(1));
+        profile.ApplyDailyReset(config, now.AddHours(1));
 
         Assert.Equal(2, profile.Energy.Current);
     }

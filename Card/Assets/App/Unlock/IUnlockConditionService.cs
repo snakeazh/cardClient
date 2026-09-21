@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Framework.Save;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Unlock
 {

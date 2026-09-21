@@ -10,3 +10,4 @@ Server/**/artifacts/
 Server/**/publish/
 Config/~$*
 TempConfig/
+Temp

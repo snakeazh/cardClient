@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Level;
 using App.Unlock;
 using Framework.Assets;

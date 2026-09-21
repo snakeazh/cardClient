@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Game
 {
@@ -56,37 +57,12 @@ namespace App.Game
 
         public static float SumMultiplierExtra(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
-            var extra = 0f;
-            ForEachEntry(run, (_, entry) =>
-            {
-                extra += MultiplierFromEntry(entry, score, run, ctx);
-            });
-            if (!HasMechanism(run, MechanismType.RubbingCardRelic))
-            {
-                extra += run != null ? run.RubRelicMagForever : 0f;
-            }
-
-            if (!HasMechanism(run, MechanismType.ProOfUpCardType) && run != null)
-            {
-                extra += run.HandTypeMagBonus(score.Type);
-            }
-
-            if (!HasMechanism(run, MechanismType.NoKillMonsterGetMagnification) && run != null)
-            {
-                extra += run.PracticeMagForever;
-            }
-
-            return extra;
+            return EvaluateShared(run, score, ctx).MagExtra;
         }
 
         public static float SumAttackExtra(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
-            var extra = 0f;
-            ForEachEntry(run, (_, entry) =>
-            {
-                extra += AttackFromEntry(entry, score, run, ctx);
-            });
-            return extra;
+            return EvaluateShared(run, score, ctx).AttackExtra;
         }
 
         /// <summary>按装备栏顺序收集本手触发的倍率/攻击加成，一件装备一条。</summary>
@@ -97,39 +73,16 @@ namespace App.Game
             RelicCombatContext ctx = default)
         {
             dest?.Clear();
-            if (dest == null || run?.RelicConfigIds == null)
+            if (dest == null)
             {
                 return;
             }
 
-            var ids = run.RelicConfigIds;
-            for (var i = 0; i < ids.Count; i++)
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var relicId = ids[i];
-                if (relicId <= 0 || IsDisabled(run, relicId))
-                {
-                    continue;
-                }
-
-                var relic = RelicConfig.Get(relicId);
-                if (relic == null)
-                {
-                    continue;
-                }
-
-                var multiplierAdd = 0f;
-                var attackAdd = 0f;
-                ForEachRelicEntry(relic, entry =>
-                {
-                    multiplierAdd += MultiplierFromEntry(entry, score, run, ctx);
-                    attackAdd += AttackFromEntry(entry, score, run, ctx);
-                });
-                if (multiplierAdd == 0f && attackAdd == 0f)
-                {
-                    continue;
-                }
-
-                dest.Add(new RelicBonusPart(relic.Id, multiplierAdd, attackAdd));
+                var part = parts[i];
+                dest.Add(new RelicBonusPart(part.RelicId, part.MagAdd, part.AttackAdd));
             }
         }
 
@@ -146,61 +99,56 @@ namespace App.Game
                 return;
             }
 
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                if (relic == null || relic.Id <= 0)
+                var part = parts[i];
+                if ((part.MagAdd != 0f || part.AttackAdd != 0f) && !dest.Contains(part.RelicId))
                 {
-                    return;
+                    dest.Add(part.RelicId);
                 }
-
-                if (MultiplierFromEntry(entry, score, run, ctx) == 0f &&
-                    AttackFromEntry(entry, score, run, ctx) == 0f)
-                {
-                    return;
-                }
-
-                if (!dest.Contains(relic.Id))
-                {
-                    dest.Add(relic.Id);
-                }
-            });
+            }
         }
 
         /// <summary>已触发的倍率词条，如「粗制长剑+1, 青铜项链+1」。未触发的不写。</summary>
         public static string CollectMultiplierParts(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
             string text = null;
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var add = MultiplierFromEntry(entry, score, run, ctx);
-                if (add == 0f)
+                var part = parts[i];
+                if (part.MagAdd == 0f)
                 {
-                    return;
+                    continue;
                 }
 
-                var name = relic != null && !string.IsNullOrEmpty(relic.Name) ? relic.Name : entry.Name;
+                var add = part.MagAdd;
+                var name = !string.IsNullOrEmpty(part.Name) ? part.Name : part.RelicId.ToString();
                 var piece = add == (int)add ? $"{name}+{(int)add}" : $"{name}+{add}";
                 text = text == null ? piece : text + ", " + piece;
-            });
+            }
+
             return text ?? string.Empty;
         }
 
         public static string CollectAttackParts(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
             string text = null;
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var add = AttackFromEntry(entry, score, run, ctx);
-                if (add == 0f)
+                var part = parts[i];
+                if (part.AttackAdd == 0f)
                 {
-                    return;
+                    continue;
                 }
 
-                var name = relic != null && !string.IsNullOrEmpty(relic.Name) ? relic.Name : entry.Name;
-                var rounded = (int)Math.Round(add);
-                var piece = $"{name}+{rounded}";
+                var name = !string.IsNullOrEmpty(part.Name) ? part.Name : part.RelicId.ToString();
+                var piece = $"{name}+{(int)Math.Round(part.AttackAdd)}";
                 text = text == null ? piece : text + ", " + piece;
-            });
+            }
+
             return text ?? string.Empty;
         }
 
@@ -636,329 +584,56 @@ namespace App.Game
             }
         }
 
-        private static float MultiplierFromEntry(
-            RelicEntryConfig entry,
-            HandScore score,
+        private static CardShare.Battle.RelicCombatResult EvaluateShared(
             RunState run,
+            HandScore score,
             RelicCombatContext ctx)
         {
-            var value = ValueAt(entry);
-            switch (entry.Type)
-            {
-                case MechanismType.CardMagnification:
-                    return value;
-                case MechanismType.SquarePlate:
-                    return CountSuit(score, Suit.Diamond, run) * value;
-                case MechanismType.Spades:
-                    return CountSuit(score, Suit.Spade, run) * value;
-                case MechanismType.RedHeart:
-                    return CountSuit(score, Suit.Heart, run) * value;
-                case MechanismType.PlumBlossom:
-                    return CountSuit(score, Suit.Club, run) * value;
-                case MechanismType.Couplet:
-                    return score.Type == HandType.Pair ? value : 0f;
-                case MechanismType.Flush:
-                    return score.Type == HandType.Flush ? value : 0f;
-                case MechanismType.Straight:
-                    return score.Type == HandType.Straight ? value : 0f;
-                case MechanismType.StraightFlush:
-                    return score.Type == HandType.StraightFlush ? value : 0f;
-                case MechanismType.Leopard:
-                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
-                case MechanismType.EvenNumberCard:
-                    return CountEven(score) * value;
-                case MechanismType.OddNumberCard:
-                    return CountOdd(score) * value;
-                case MechanismType.HeadCard:
-                    return CountFace(score, ctx) * value;
-                case MechanismType.SpecialACard:
-                    return CountRank(score, Rank.Ace) * value;
-                case MechanismType.Camera:
-                    return CountUnshown(ctx, black: true) * value;
-                case MechanismType.Cupid:
-                    return CountUnshown(ctx, black: false) * value;
-                case MechanismType.EveryUseRubbingNum:
-                    return ctx.RubsUsedThisHand * value;
-                case MechanismType.NoSkill:
-                    return ctx.PeekLeft == 0 && ctx.XRayLeft == 0 && ctx.ReplaceLeft == 0 ? value : 0f;
-                case MechanismType.EveryRelic:
-                    return (run?.RelicConfigIds != null ? run.RelicConfigIds.Count : 0) * value;
-                case MechanismType.NoUseRubbingEveryRubbingNum:
-                    return ctx.PeekLeft * value;
-                case MechanismType.AccumulatedNumOfCardType:
-                    return (run != null ? run.HandTypeShowCount(score.Type) : 0) * value;
-                case MechanismType.RubbingCardRelic:
-                    return run != null ? run.RubRelicMagForever : 0f;
-                case MechanismType.ProOfUpCardType:
-                    return run != null ? run.HandTypeMagBonus(score.Type) : 0f;
-                case MechanismType.SpecialSevenCard:
-                    return ctx.LuckySevenHits * value;
-                case MechanismType.DefeatGetMagnification:
-                    return StackedValue(run, MechanismType.DefeatGetMagnification, run != null ? run.DefeatMagStacks : 0);
-                case MechanismType.NoKillMonsterGetMagnification:
-                    return run != null ? run.PracticeMagForever : 0f;
-                default:
-                    return 0f;
-            }
+            return CardShare.Battle.RelicCombat.Evaluate(
+                UnityGameConfigLoader.Current,
+                ToSnapshot(run, score, ctx),
+                SharedBattleBridge.ToShared(score));
         }
 
-        private static float AttackFromEntry(
-            RelicEntryConfig entry,
-            HandScore score,
+        private static CardShare.Battle.RelicCombatSnapshot ToSnapshot(
             RunState run,
+            HandScore score,
             RelicCombatContext ctx)
         {
-            var value = ValueAt(entry);
-            switch (entry.Type)
+            var ids = run != null && run.RelicConfigIds != null
+                ? (IReadOnlyList<int>)run.RelicConfigIds
+                : Array.Empty<int>();
+            var disabled = run != null && run.DisabledRelicIds != null && run.DisabledRelicIds.Count > 0
+                ? new List<int>(run.DisabledRelicIds)
+                : (IReadOnlyList<int>)Array.Empty<int>();
+            var rankBonus = new int[14];
+            if (run != null)
             {
-                case MechanismType.SquarePlateAttack:
-                    return CountSuit(score, Suit.Diamond, run) * value;
-                case MechanismType.SpadesAttack:
-                    return CountSuit(score, Suit.Spade, run) * value;
-                case MechanismType.RedHeartAttack:
-                    return CountSuit(score, Suit.Heart, run) * value;
-                case MechanismType.PlumBlossomAttack:
-                    return CountSuit(score, Suit.Club, run) * value;
-                case MechanismType.CoupletAttack:
-                    return score.Type == HandType.Pair ? value : 0f;
-                case MechanismType.StraightAttack:
-                    return score.Type == HandType.Straight ? value : 0f;
-                case MechanismType.FlushAttack:
-                    return score.Type == HandType.Flush ? value : 0f;
-                case MechanismType.StraightFlushAttack:
-                    return score.Type == HandType.StraightFlush ? value : 0f;
-                case MechanismType.LeopardAttack:
-                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
-                case MechanismType.SpecialEightCard:
-                    return CountRank(score, Rank.Eight) * value;
-                case MechanismType.DoubleCardAttack:
-                    return Math.Max(0, score.BaseChips) * value;
-                case MechanismType.HeadCardAttack:
-                    return CountFace(score, ctx) * value;
-                case MechanismType.ACardAttack:
-                    return CountRank(score, Rank.Ace) * value;
-                case MechanismType.TheSwordOfVictory:
-                    var maxChip = MaxUnshownChip(ctx);
-                    var factor = value == 0f ? 1f : value;
-                    return maxChip * factor;
-                case MechanismType.ConsumeFundsGetAttack:
-                    if (run == null || value <= 0f)
-                    {
-                        return 0f;
-                    }
-
-                    return (float)Math.Floor(run.GoldSpentThisRun / (double)value);
-                case MechanismType.SpecialSevenCardAttack:
-                    return ctx.LuckySevenHits * value;
-                case MechanismType.CardProvideAttack:
-                    return SumCardProvideAttack(entry, run, ctx);
-                case MechanismType.EveryRubbingNum:
-                    return ctx.PeekLeft * value;
-                default:
-                    return 0f;
-            }
-        }
-
-        private static float SumCardProvideAttack(RelicEntryConfig entry, RunState run, RelicCombatContext ctx)
-        {
-            if (entry?.Value == null || ctx.Shown == null)
-            {
-                return 0f;
-            }
-
-            var extra = 0f;
-            for (var i = 0; i < entry.Value.Length; i++)
-            {
-                var index = (int)Math.Round(entry.Value[i]) - 1;
-                if (index < 0 || index >= ctx.Shown.Length)
+                for (var i = 0; i < rankBonus.Length; i++)
                 {
-                    continue;
-                }
-
-                var card = ctx.Shown[index];
-                if (!card.IsValid)
-                {
-                    continue;
-                }
-
-                extra += BossMechanics.ChipValueOf(run, card);
-                extra += run != null ? run.RankAttackBonus(card.Rank) : 0;
-            }
-
-            return extra;
-        }
-
-        private static int CountSuit(HandScore score, Suit suit, RunState run)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var dual = false;
-            var displaySuit = default(Suit);
-            if (HasMechanism(run, MechanismType.SpecialFlush) &&
-                (score.Type == HandType.Flush || score.Type == HandType.StraightFlush))
-            {
-                dual = HandEvaluator.TryColorFlushDisplaySuit(cards, out displaySuit);
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var real = cards[i].Suit;
-                if (real == suit)
-                {
-                    count++;
-                }
-                else if (dual && displaySuit == suit)
-                {
-                    count++;
+                    rankBonus[i] = run.RankAttackBonus((Rank)i);
                 }
             }
 
-            return count;
-        }
-
-        private static int CountRank(HandScore score, Rank rank)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
+            return new CardShare.Battle.RelicCombatSnapshot
             {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (cards[i].Rank == rank)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountFace(HandScore score, RelicCombatContext ctx)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            if (ctx.TreatAllAsFace)
-            {
-                return cards.Length;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (cards[i].IsFace)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountEven(HandScore score)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var rank = cards[i].Rank;
-                if (rank == Rank.Two || rank == Rank.Four || rank == Rank.Six || rank == Rank.Eight || rank == Rank.Ten)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountOdd(HandScore score)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var rank = cards[i].Rank;
-                if (rank == Rank.Ace || rank == Rank.Three || rank == Rank.Five || rank == Rank.Seven || rank == Rank.Nine)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountUnshown(RelicCombatContext ctx, bool black)
-        {
-            var cards = ctx.Unshown;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var card = cards[i];
-                if (!card.IsValid)
-                {
-                    continue;
-                }
-
-                var isBlack = card.Suit == Suit.Spade || card.Suit == Suit.Club;
-                if (black == isBlack)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int MaxUnshownChip(RelicCombatContext ctx)
-        {
-            var cards = ctx.Unshown;
-            if (cards == null || cards.Length == 0)
-            {
-                return 0;
-            }
-
-            var max = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (!cards[i].IsValid)
-                {
-                    continue;
-                }
-
-                var chip = cards[i].ChipValue;
-                if (chip > max)
-                {
-                    max = chip;
-                }
-            }
-
-            return max;
+                RelicIds = ids,
+                DisabledRelicIds = disabled,
+                Shown = SharedBattleBridge.ToShared(ctx.Shown),
+                Unshown = SharedBattleBridge.ToShared(ctx.Unshown),
+                RubsUsedThisHand = ctx.RubsUsedThisHand,
+                PeekLeft = ctx.PeekLeft,
+                XRayLeft = ctx.XRayLeft,
+                ReplaceLeft = ctx.ReplaceLeft,
+                LuckySevenHits = ctx.LuckySevenHits,
+                HandTypeShowCount = run != null ? run.HandTypeShowCount(score.Type) : 0,
+                RubRelicMagForever = run != null ? run.RubRelicMagForever : 0f,
+                HandTypeMagBonus = run != null ? run.HandTypeMagBonus(score.Type) : 0f,
+                PracticeMagForever = run != null ? run.PracticeMagForever : 0f,
+                DefeatMagStacks = run != null ? run.DefeatMagStacks : 0,
+                GoldSpentThisRun = run != null ? run.GoldSpentThisRun : 0,
+                RankAttackBonus = rankBonus
+            };
         }
 
         /// <summary>亮出用牌恰好是 2+3+5，不依赖遗物改牌型。</summary>

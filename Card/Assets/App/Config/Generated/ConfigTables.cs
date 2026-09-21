@@ -4,13 +4,14 @@
 using System;
 using System.Threading.Tasks;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Assets;
 using UnityEngine;
 
 namespace App.Config
 {
     /// <summary>
-    /// 启动时加载全部配置表。业务访问走各表自身静态接口。
+    /// 启动时加载全部配置表（共享类），业务访问走各表自身静态接口。
     /// </summary>
     public static class ConfigTables
     {
@@ -35,6 +36,9 @@ namespace App.Config
             var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
             var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
             var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
+            var pvpBotConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpBotConfig);
+            var pvpModeConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpModeConfig);
+            var pvpRoundConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpRoundConfig);
             var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
             var talentConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentConfig);
@@ -55,6 +59,9 @@ namespace App.Config
             MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
             MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
             MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
+            PvpBotConfig.Load(ConfigJson.FromArrayJson<PvpBotConfig>(pvpBotConfigAsset.text));
+            PvpModeConfig.Load(ConfigJson.FromArrayJson<PvpModeConfig>(pvpModeConfigAsset.text));
+            PvpRoundConfig.Load(ConfigJson.FromArrayJson<PvpRoundConfig>(pvpRoundConfigAsset.text));
             RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
             RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
             TalentConfig.Load(ConfigJson.FromArrayJson<TalentConfig>(talentConfigAsset.text));

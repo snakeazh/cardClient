@@ -1,13 +1,13 @@
 using CardShare.Infrastructure;
-using CardShare.Infrastructure.Postgres;
+using CardShare.Server.Composition;
 using CardShare.Server.Endpoints;
+using CardShare.Server.Hosting;
 using CardShare.Server.Middleware;
 using CardShare.Server.Pvp;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCardInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<PvpConnectionHub>();
-builder.Services.AddSingleton<PvpBattleHost>();
+builder.Services.AddCardApplication(builder.Configuration);
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -21,11 +21,6 @@ app.UseMiddleware<AccessTokenMiddleware>();
 app.MapCardApi();
 app.MapPvpWebSocket();
 
-if (string.Equals(app.Configuration["Persistence:Provider"], "Postgres", StringComparison.OrdinalIgnoreCase))
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<CardDbContext>();
-    db.Database.EnsureCreated();
-}
+await BackendStartup.EnsureAsync(app);
 
 app.Run();

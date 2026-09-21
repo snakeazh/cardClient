@@ -100,7 +100,7 @@ namespace App.Resources
         }
 
         /// <summary>
-        /// <see cref="App.Config.HeroConfig.Icon"/> + _attack / _damage / _dead。
+        /// <see cref="CardShare.Contracts.Config.HeroConfig.Icon"/> + _attack / _damage / _dead。
         /// </summary>
         public static string RolePortrait(string icon, string suffix)
         {
@@ -108,7 +108,7 @@ namespace App.Resources
         }
 
         /// <summary>
-        /// <see cref="App.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
+        /// <see cref="CardShare.Contracts.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
         /// </summary>
         public static string EnemyPortrait(string icon, string suffix)
         {
@@ -116,7 +116,7 @@ namespace App.Resources
         }
 
         /// <summary>
-        /// <see cref="App.Config.RelicConfig.Icon"/> 对应 Assets/Res/Textures/Relic 下的文件名（无扩展名）。
+        /// <see cref="CardShare.Contracts.Config.RelicConfig.Icon"/> 对应 Assets/Res/Textures/Relic 下的文件名（无扩展名）。
         /// </summary>
         public static string RelicIcon(string icon)
         {
@@ -126,7 +126,7 @@ namespace App.Resources
         public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
 
         /// <summary>
-        /// <see cref="App.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
+        /// <see cref="CardShare.Contracts.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
         /// </summary>
         public static string CommonIcon(string icon)
         {

@@ -42,6 +42,10 @@ namespace App.Net
                     return "关卡未解锁";
                 case ErrorCodes.HeroLocked:
                     return "英雄未解锁";
+                case ErrorCodes.RunNotFound:
+                    return "对局已失效";
+                case PveSessionGate.ActiveRunExists:
+                    return "已有未结束的闯关";
                 case "connection_error":
                     return "无法连接服务器";
                 default:

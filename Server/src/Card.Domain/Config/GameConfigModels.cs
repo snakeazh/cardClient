@@ -47,11 +47,6 @@ public sealed class GameBalance
 
     public static GameBalance From(GameConst c)
     {
-        if (c == null)
-        {
-            return Fallback;
-        }
-
         return new GameBalance
         {
             EnergyMax = c.EnergyMax > 0 ? c.EnergyMax : 5,

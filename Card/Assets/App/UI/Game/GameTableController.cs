@@ -77,7 +77,13 @@ namespace App.UI
 
         private void Update()
         {
-            if (_vm == null || _cards.IsDealing)
+            if (_vm == null)
+            {
+                return;
+            }
+
+            _vm.TickPvpCountdown();
+            if (_cards.IsDealing)
             {
                 return;
             }

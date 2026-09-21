@@ -170,6 +170,31 @@ namespace Framework.UI.Binding
                 _map[entry.Key] = entry.Component;
             }
 
+            var binds = new List<UIBind>();
+            CollectBinds(transform, binds);
+            for (var i = 0; i < binds.Count; i++)
+            {
+                var bind = binds[i];
+                if (bind == null)
+                {
+                    continue;
+                }
+
+                var key = bind.Key;
+                if (string.IsNullOrWhiteSpace(key) || _map.ContainsKey(key))
+                {
+                    continue;
+                }
+
+                var target = bind.Target;
+                if (target == null)
+                {
+                    continue;
+                }
+
+                _map[key] = target;
+            }
+
             _built = true;
         }
 

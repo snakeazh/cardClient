@@ -60,17 +60,54 @@ public sealed class RedisPlayerLock : IPlayerLock
     }
 }
 
+/// <summary>队列存 Redis Sorted Set（member = userId("N", 32字符) + 条目 JSON，score = 入队毫秒），三个操作各一条 Lua 脚本原子执行。</summary>
 public sealed class RedisPvpMatchmaker : IPvpMatchmaker
 {
     private const string QueueKey = "pvp:queue";
+
+    private const int UserIdPrefixLength = 32;
+
     private static readonly JsonSerializerOptions Json = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
+    private static readonly LuaScript EnqueueScript = LuaScript.Prepare(
+        "local all = redis.call('ZRANGE', @key, 0, -1) " +
+        "for i, m in ipairs(all) do " +
+        "  if string.sub(m, 1, @prefixLen) == @uid then redis.call('ZREM', @key, m) end " +
+        "end " +
+        "redis.call('ZADD', @key, tonumber(@score), @member) " +
+        "if redis.call('ZCARD', @key) < tonumber(@roomSize) then " +
+        "  return {0, redis.call('ZRANGE', @key, 0, -1)} " +
+        "end " +
+        "local seated = redis.call('ZRANGE', @key, 0, tonumber(@roomSize) - 1) " +
+        "for i, m in ipairs(seated) do redis.call('ZREM', @key, m) end " +
+        "return {1, seated}");
+
+    private static readonly LuaScript CancelScript = LuaScript.Prepare(
+        "local all = redis.call('ZRANGE', @key, 0, -1) " +
+        "local removed = false " +
+        "for i, m in ipairs(all) do " +
+        "  if string.sub(m, 1, @prefixLen) == @uid then redis.call('ZREM', @key, m) removed = true end " +
+        "end " +
+        "if not removed then return {0, {}} end " +
+        "return {1, redis.call('ZRANGE', @key, 0, -1)}");
+
+    private static readonly LuaScript SweepScript = LuaScript.Prepare(
+        "local stale = redis.call('ZRANGEBYSCORE', @key, '-inf', @maxScore) " +
+        "for i, m in ipairs(stale) do redis.call('ZREM', @key, m) end " +
+        "return {stale, redis.call('ZRANGE', @key, 0, -1)}");
+
+    private sealed class QueueEntry
+    {
+        public PlayerPublic Player { get; set; } = new PlayerPublic();
+
+        public long EnqueuedUtcMs { get; set; }
+    }
+
     private readonly IDatabase _db;
-    private readonly object _gate = new object();
     private readonly Random _random = new Random();
 
     public RedisPvpMatchmaker(IConnectionMultiplexer redis)
@@ -85,109 +122,121 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
             throw DomainException.Invalid("Invalid player.");
         }
 
-        lock (_gate)
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var member = Member(userId, new QueueEntry { Player = Clone(player), EnqueuedUtcMs = now });
+        var result = Evaluate(EnqueueScript, new
         {
-            RemoveLocked(userId);
-            var waiting = LoadLocked();
-            waiting.Add(Clone(player));
-            if (waiting.Count < PvpRules.RoomSize)
-            {
-                SaveLocked(waiting);
-                return new MatchEvent
-                {
-                    RoomOpened = false,
-                    Players = waiting,
-                    Recipients = Ids(waiting),
-                    Joiner = userId
-                };
-            }
-
-            var seated = waiting.Take(PvpRules.RoomSize).Select(Clone).ToArray();
-            var remain = waiting.Skip(PvpRules.RoomSize).ToList();
-            SaveLocked(remain);
+            key = (RedisKey)QueueKey,
+            prefixLen = UserIdPrefixLength,
+            uid = userId.ToString("N"),
+            score = now,
+            member,
+            roomSize = PvpRules.RoomSize
+        });
+        var parts = (RedisResult[])result!;
+        var opened = (int)parts[0] == 1;
+        var players = ParseMembers((RedisResult[])parts[1]!);
+        if (!opened)
+        {
             return new MatchEvent
             {
-                RoomOpened = true,
-                Room = new PvpRoom
-                {
-                    RoomId = Guid.NewGuid(),
-                    Seed = _random.Next(),
-                    Players = seated
-                },
-                Players = seated,
-                Recipients = Ids(seated)
+                RoomOpened = false,
+                Players = players,
+                Recipients = Ids(players),
+                Joiner = userId
             };
         }
+
+        return new MatchEvent
+        {
+            RoomOpened = true,
+            Room = new PvpRoom
+            {
+                RoomId = Guid.NewGuid(),
+                Seed = _random.Next(),
+                Players = players
+            },
+            Players = players,
+            Recipients = Ids(players)
+        };
     }
 
     public MatchEvent? Cancel(Guid userId)
     {
-        lock (_gate)
+        var result = Evaluate(CancelScript, new
         {
-            var waiting = LoadLocked();
-            var removed = waiting.RemoveAll(p => SameUser(p, userId));
-            if (removed <= 0)
-            {
-                return null;
-            }
-
-            SaveLocked(waiting);
-            return new MatchEvent
-            {
-                RoomOpened = false,
-                Players = waiting,
-                Recipients = Ids(waiting)
-            };
+            key = (RedisKey)QueueKey,
+            prefixLen = UserIdPrefixLength,
+            uid = userId.ToString("N")
+        });
+        var parts = (RedisResult[])result!;
+        if ((int)parts[0] != 1)
+        {
+            return null;
         }
+
+        var players = ParseMembers((RedisResult[])parts[1]!);
+        return new MatchEvent
+        {
+            RoomOpened = false,
+            Players = players,
+            Recipients = Ids(players)
+        };
     }
 
     public void Leave(Guid userId) => Cancel(userId);
 
-    private void RemoveLocked(Guid userId)
+    public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
     {
-        var waiting = LoadLocked();
-        if (waiting.RemoveAll(p => SameUser(p, userId)) > 0)
+        var maxScore = timeoutMs > 0 ? nowUtcMs - timeoutMs : long.MinValue;
+        var result = Evaluate(SweepScript, new
         {
-            SaveLocked(waiting);
+            key = (RedisKey)QueueKey,
+            maxScore
+        });
+        var parts = (RedisResult[])result!;
+        var stale = (RedisResult[])parts[0]!;
+        var expired = new List<Guid>(stale.Length);
+        foreach (var member in stale)
+        {
+            if (Guid.TryParse(Prefix((string)member!), out var id))
+            {
+                expired.Add(id);
+            }
         }
+
+        remaining = ParseMembers((RedisResult[])parts[1]!);
+        return expired;
     }
 
-    private List<PlayerPublic> LoadLocked()
+    private RedisResult Evaluate(LuaScript script, object parameters)
+        => _db.ScriptEvaluate(script, parameters);
+
+    private static string Member(Guid userId, QueueEntry entry)
+        => userId.ToString("N") + JsonSerializer.Serialize(entry, Json);
+
+    private static string Prefix(string member)
+        => member.Length >= UserIdPrefixLength ? member.Substring(0, UserIdPrefixLength) : member;
+
+    private static PlayerPublic[] ParseMembers(RedisResult[] members)
     {
-        var values = _db.ListRange(QueueKey);
-        var list = new List<PlayerPublic>();
-        foreach (var value in values)
+        var players = new List<PlayerPublic>(members.Length);
+        foreach (var member in members)
         {
-            if (!value.HasValue)
+            var raw = (string?)member;
+            if (string.IsNullOrEmpty(raw) || raw.Length <= UserIdPrefixLength)
             {
                 continue;
             }
 
-            var parsed = JsonSerializer.Deserialize<PlayerPublic>((string)value!, Json);
-            if (parsed != null)
+            var entry = JsonSerializer.Deserialize<QueueEntry>(raw.Substring(UserIdPrefixLength), Json);
+            if (entry?.Player != null && Guid.TryParse(entry.Player.UserId, out _))
             {
-                list.Add(parsed);
+                players.Add(Clone(entry.Player));
             }
         }
 
-        return list;
-    }
-
-    private void SaveLocked(IReadOnlyList<PlayerPublic> waiting)
-    {
-        _db.KeyDelete(QueueKey);
-        if (waiting.Count == 0)
-        {
-            return;
-        }
-
-        var payload = waiting.Select(p => (RedisValue)JsonSerializer.Serialize(Clone(p), Json)).ToArray();
-        _db.ListRightPush(QueueKey, payload);
-    }
-
-    private static bool SameUser(PlayerPublic player, Guid userId)
-    {
-        return Guid.TryParse(player.UserId, out var id) && id == userId;
+        return players.ToArray();
     }
 
     private static Guid[] Ids(IReadOnlyList<PlayerPublic> players)
@@ -203,8 +252,10 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
         return new PlayerPublic
         {
             UserId = player.UserId,
-            NickName = player.NickName ?? string.Empty,
-            AvatarUrl = player.AvatarUrl ?? string.Empty
+            NickName = player.NickName,
+            AvatarUrl = player.AvatarUrl,
+            IsBot = player.IsBot,
+            BotConfigId = player.BotConfigId
         };
     }
 }

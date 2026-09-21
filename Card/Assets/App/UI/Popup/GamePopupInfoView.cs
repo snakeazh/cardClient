@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Resources;
 using DG.Tweening;
 using Framework.Log;

@@ -19,6 +19,9 @@ public sealed class PvpConnectionHub
         _sockets.TryRemove(userId, out _);
     }
 
+    public bool Contains(Guid userId)
+        => _sockets.TryGetValue(userId, out var socket) && socket.State == WebSocketState.Open;
+
     public async Task SendAsync(Guid userId, WsEnvelope envelope, CancellationToken cancellationToken)
     {
         if (_sockets.TryGetValue(userId, out var socket) && socket.State == WebSocketState.Open)
@@ -50,9 +53,11 @@ public static class PvpWebSocketHost
             var tokens = context.RequestServices.GetRequiredService<ITokenService>();
             var matchmaker = context.RequestServices.GetRequiredService<IPvpMatchmaker>();
             var hub = context.RequestServices.GetRequiredService<PvpConnectionHub>();
-            var battles = context.RequestServices.GetRequiredService<PvpBattleHost>();
+            var matches = context.RequestServices.GetRequiredService<PvpMatchHost>();
+            var rewards = context.RequestServices.GetRequiredService<PvpRewardService>();
+            var router = context.RequestServices.GetRequiredService<PvpMessageRouter>();
             var scopes = context.RequestServices.GetRequiredService<IServiceScopeFactory>();
-            await HandleAsync(socket, tokens, matchmaker, hub, battles, scopes, context.RequestAborted);
+            await HandleAsync(socket, tokens, matchmaker, hub, matches, rewards, router, scopes, context.RequestAborted);
         });
     }
 
@@ -67,7 +72,9 @@ public static class PvpWebSocketHost
         ITokenService tokens,
         IPvpMatchmaker matchmaker,
         PvpConnectionHub hub,
-        PvpBattleHost battles,
+        PvpMatchHost matches,
+        PvpRewardService rewards,
+        PvpMessageRouter router,
         IServiceScopeFactory scopes,
         CancellationToken cancellationToken)
     {
@@ -130,25 +137,31 @@ public static class PvpWebSocketHost
                     }
 
                     var evt = matchmaker.Enqueue(snapshot);
-                    await BroadcastAsync(hub, battles, evt, userId.Value, incoming.Seq, cancellationToken);
+                    await BroadcastAsync(router, matches, scopes, evt, userId.Value, incoming.Seq, cancellationToken);
                     continue;
                 }
 
                 if (t == WsMessageTypes.Battle)
                 {
-                    await HandleBattleAsync(socket, hub, battles, userId.Value, incoming, cancellationToken);
+                    await HandleBattleAsync(socket, router, matches, rewards, userId.Value, incoming, cancellationToken);
+                    continue;
+                }
+
+                if (t == WsMessageTypes.Sync)
+                {
+                    await HandleSyncAsync(socket, router, matches, userId.Value, incoming, cancellationToken);
                     continue;
                 }
 
                 if (t == WsMessageTypes.Cancel || t == WsMessageTypes.Leave)
                 {
-                    battles.Leave(userId.Value);
+                    matches.Leave(userId.Value);
                     var evt = matchmaker.Cancel(userId.Value);
                     await SendAsync(socket, new WsEnvelope { T = t, Seq = incoming.Seq }, cancellationToken);
                     if (evt != null)
                     {
                         await BroadcastRosterAsync(
-                            hub,
+                            router,
                             evt.Recipients,
                             WsMessageTypes.QueueUpdate,
                             evt.Players,
@@ -162,19 +175,182 @@ public static class PvpWebSocketHost
         {
             if (userId != null)
             {
-                battles.Leave(userId.Value);
+                // WS 断开 = 代管，不退赛：置断线标志，有变化（含自动锁定结算）则广播。
+                if (matches.SetConnected(userId.Value, false, out var left) && left != null)
+                {
+                    await BroadcastMatchAsync(router, left, 0, cancellationToken);
+                }
+
                 var evt = matchmaker.Cancel(userId.Value);
                 hub.Remove(userId.Value);
                 if (evt != null)
                 {
                     await BroadcastRosterAsync(
-                        hub,
+                        router,
                         evt.Recipients,
                         WsMessageTypes.QueueUpdate,
                         evt.Players,
                         0,
                         cancellationToken);
                 }
+            }
+        }
+    }
+
+    /// <summary>本实例收到 battle：本地是对局房主则直接处理，否则经总线转发房主（无总线时按本地未命中回错）。</summary>
+    private static async Task HandleBattleAsync(
+        WebSocket socket,
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        PvpRewardService rewards,
+        Guid userId,
+        WsEnvelope incoming,
+        CancellationToken cancellationToken)
+    {
+        if (!matches.TryGet(userId, out _))
+        {
+            if (!await router.Bus.PublishCommandAsync(Guid.Empty, userId, incoming, cancellationToken))
+            {
+                await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Not in a battle.", cancellationToken);
+            }
+
+            return;
+        }
+
+        await ProcessBattleCommandAsync(router, matches, rewards, userId, incoming, cancellationToken);
+    }
+
+    /// <summary>房主侧 battle 处理：Act、发奖、广播。房主未命中（房间已回收）静默丢，客户端靠 sync 超时判死。</summary>
+    internal static async Task ProcessBattleCommandAsync(
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        PvpRewardService rewards,
+        Guid userId,
+        WsEnvelope incoming,
+        CancellationToken cancellationToken)
+    {
+        if (!matches.TryGet(userId, out var match))
+        {
+            return;
+        }
+
+        var cmd = ReadBattle(incoming.Payload);
+        if (string.IsNullOrEmpty(cmd.Action))
+        {
+            await SendErrorTo(router, userId, incoming.Seq, ErrorCodes.InvalidRequest, "Unknown battle action.", cancellationToken);
+            return;
+        }
+
+        try
+        {
+            matches.Act(userId, cmd.Action, cmd.Index, cmd.Indexes);
+        }
+        catch (DomainException ex)
+        {
+            await SendErrorTo(router, userId, incoming.Seq, ex.Code, ex.Message, cancellationToken);
+            return;
+        }
+
+        await rewards.GrantIfFinishedAsync(match, cancellationToken);
+        await BroadcastMatchAsync(router, match, incoming.Seq, cancellationToken);
+        if (matches.AdvanceIfReady(userId))
+        {
+            await rewards.GrantIfFinishedAsync(match, cancellationToken);
+            await BroadcastMatchAsync(router, match, incoming.Seq, cancellationToken);
+        }
+    }
+
+    /// <summary>本实例收到 sync：本地是房主则直接处理，否则经总线转发房主（无总线时回 not_in_battle）。</summary>
+    private static async Task HandleSyncAsync(
+        WebSocket socket,
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        Guid userId,
+        WsEnvelope incoming,
+        CancellationToken cancellationToken)
+    {
+        if (!matches.TryGet(userId, out _))
+        {
+            if (!await router.Bus.PublishCommandAsync(ReadSyncRoomId(incoming.Payload), userId, incoming, cancellationToken))
+            {
+                await SendError(socket, incoming.Seq, ErrorCodes.NotInBattle, "Not in a battle.", cancellationToken);
+            }
+
+            return;
+        }
+
+        await ProcessSyncCommandAsync(router, matches, userId, incoming, cancellationToken);
+    }
+
+    /// <summary>房主侧 sync 处理：标记上线、回全量快照（Seq 回显）、有变化广播 player_online。</summary>
+    internal static async Task ProcessSyncCommandAsync(
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        Guid userId,
+        WsEnvelope incoming,
+        CancellationToken cancellationToken)
+    {
+        if (!matches.TryGet(userId, out var match))
+        {
+            return;
+        }
+
+        var changed = matches.SetConnected(userId, true, out _);
+        await router.SendToUser(userId, new WsEnvelope
+        {
+            T = WsMessageTypes.MatchUpdate,
+            Seq = incoming.Seq,
+            Payload = match.ViewFor(userId.ToString("N"))
+        }, cancellationToken);
+        if (changed)
+        {
+            await BroadcastMatchAsync(router, match, 0, cancellationToken);
+        }
+    }
+
+    internal static async Task BroadcastMatchAsync(
+        PvpMessageRouter router,
+        CardShare.Battle.PvpMatch match,
+        long seq,
+        CancellationToken cancellationToken)
+    {
+        var events = match.DrainEvents();
+        foreach (var player in match.Players)
+        {
+            if (player.IsBot || !Guid.TryParse(player.UserId, out var id))
+            {
+                continue;
+            }
+
+            var view = match.ViewFor(player.UserId);
+            await router.SendToUser(id, new WsEnvelope
+            {
+                T = WsMessageTypes.MatchUpdate,
+                Seq = seq,
+                Payload = view
+            }, cancellationToken);
+        }
+
+        if (events.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var player in match.Players)
+        {
+            if (player.IsBot || !Guid.TryParse(player.UserId, out var id))
+            {
+                continue;
+            }
+
+            foreach (var evt in events)
+            {
+                await router.SendToUser(id, new WsEnvelope
+                {
+                    T = WsMessageTypes.MatchEvent,
+                    Seq = seq,
+                    Payload = evt
+                }, cancellationToken);
             }
         }
     }
@@ -190,72 +366,52 @@ public static class PvpWebSocketHost
         return profile == null ? null : ProfileMapper.ToPublic(profile);
     }
 
-    private static async Task HandleBattleAsync(
-        WebSocket socket,
-        PvpConnectionHub hub,
-        PvpBattleHost battles,
-        Guid userId,
-        WsEnvelope incoming,
-        CancellationToken cancellationToken)
+    private static WsBattleActionPayload ReadBattle(object? payload)
     {
-        if (!battles.TryGet(userId, out var table))
+        if (payload is JsonElement element)
         {
-            await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Not in a battle.", cancellationToken);
-            return;
-        }
-
-        var action = ReadAction(incoming.Payload);
-        if (action != "showdown" && action != "open")
-        {
-            await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Unknown battle action.", cancellationToken);
-            return;
-        }
-
-        table.Showdown();
-        await BroadcastBattleAsync(hub, table, incoming.Seq, cancellationToken);
-    }
-
-    private static async Task BroadcastBattleAsync(
-        PvpConnectionHub hub,
-        CardShare.Battle.PvpBattleTable table,
-        long seq,
-        CancellationToken cancellationToken)
-    {
-        foreach (var player in table.Players)
-        {
-            if (!Guid.TryParse(player.UserId, out var id))
-            {
-                continue;
-            }
-
-            await hub.SendAsync(id, new WsEnvelope
-            {
-                T = WsMessageTypes.BattleUpdate,
-                Seq = seq,
-                Payload = table.ViewFor(player.UserId)
-            }, cancellationToken);
-        }
-    }
-
-    private static string ReadAction(object? payload)
-    {
-        if (payload is JsonElement element && element.TryGetProperty("action", out var action))
-        {
-            return (action.GetString() ?? string.Empty).Trim().ToLowerInvariant();
+            var parsed = element.Deserialize<WsBattleActionPayload>(Json);
+            return Normalize(parsed);
         }
 
         if (payload != null)
         {
             var parsed = JsonSerializer.Deserialize<WsBattleActionPayload>(payload.ToString() ?? "{}", Json);
-            return (parsed?.Action ?? string.Empty).Trim().ToLowerInvariant();
+            return Normalize(parsed);
         }
 
-        return string.Empty;
+        return new WsBattleActionPayload();
+    }
+
+    private static WsBattleActionPayload Normalize(WsBattleActionPayload? parsed)
+    {
+        var cmd = parsed ?? new WsBattleActionPayload();
+        cmd.Action = (cmd.Action ?? string.Empty).Trim().ToLowerInvariant();
+        if (cmd.Indexes == null)
+        {
+            cmd.Indexes = Array.Empty<int>();
+        }
+
+        return cmd;
+    }
+
+    private static Guid ReadSyncRoomId(object? payload)
+    {
+        if (payload is JsonElement element
+            && element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty("roomId", out var roomId)
+            && Guid.TryParse(roomId.GetString(), out var id))
+        {
+            return id;
+        }
+
+        return Guid.Empty;
     }
 
     private static async Task BroadcastAsync(
-        PvpConnectionHub hub,
-        PvpBattleHost battles,
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        IServiceScopeFactory scopes,
         MatchEvent evt,
         Guid joiner,
         long seq,
@@ -263,23 +419,25 @@ public static class PvpWebSocketHost
     {
         if (evt.RoomOpened && evt.Room != null)
         {
-            var table = battles.Open(evt.Room);
+            var combatSeats = await PvpCombatSeats.LoadAsync(scopes, evt.Room, cancellationToken);
+            var match = matches.Open(evt.Room, combatSeats);
             var payload = new WsRoomReadyPayload
             {
                 RoomId = evt.Room.RoomId.ToString("N"),
                 Seed = evt.Room.Seed,
+                ModeId = match.ModeId,
                 Players = evt.Room.Players.ToArray()
             };
             foreach (var id in evt.Recipients)
             {
-                await hub.SendAsync(id, new WsEnvelope { T = WsMessageTypes.RoomReady, Payload = payload }, cancellationToken);
+                await router.SendToUser(id, new WsEnvelope { T = WsMessageTypes.RoomReady, Payload = payload }, cancellationToken);
             }
 
-            await BroadcastBattleAsync(hub, table, 0, cancellationToken);
+            await BroadcastMatchAsync(router, match, 0, cancellationToken);
             return;
         }
 
-        await hub.SendAsync(joiner, Roster(WsMessageTypes.Queued, evt.Players, seq), cancellationToken);
+        await router.SendToUser(joiner, Roster(WsMessageTypes.Queued, evt.Players, seq), cancellationToken);
         foreach (var id in evt.Recipients)
         {
             if (id == joiner)
@@ -287,12 +445,12 @@ public static class PvpWebSocketHost
                 continue;
             }
 
-            await hub.SendAsync(id, Roster(WsMessageTypes.QueueUpdate, evt.Players, 0), cancellationToken);
+            await router.SendToUser(id, Roster(WsMessageTypes.QueueUpdate, evt.Players, 0), cancellationToken);
         }
     }
 
     private static async Task BroadcastRosterAsync(
-        PvpConnectionHub hub,
+        PvpMessageRouter router,
         IReadOnlyList<Guid> recipients,
         string type,
         IReadOnlyList<PlayerPublic> players,
@@ -302,7 +460,7 @@ public static class PvpWebSocketHost
         var envelope = Roster(type, players, seq);
         foreach (var id in recipients)
         {
-            await hub.SendAsync(id, envelope, cancellationToken);
+            await router.SendToUser(id, envelope, cancellationToken);
         }
     }
 
@@ -312,7 +470,11 @@ public static class PvpWebSocketHost
         {
             T = type,
             Seq = seq,
-            Payload = new WsQueueRosterPayload { Players = players.ToArray() }
+            Payload = new WsQueueRosterPayload
+            {
+                Players = players.ToArray(),
+                TimeoutMs = PvpRules.QueueTimeoutMs
+            }
         };
     }
 
@@ -355,6 +517,22 @@ public static class PvpWebSocketHost
             Payload = new { userId = userId.Value.ToString("N") }
         }, cancellationToken);
         return userId;
+    }
+
+    private static Task SendErrorTo(
+        PvpMessageRouter router,
+        Guid userId,
+        long seq,
+        string code,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        return router.SendToUser(userId, new WsEnvelope
+        {
+            T = WsMessageTypes.Error,
+            Seq = seq,
+            Payload = new ApiError { Code = code, Message = message }
+        }, cancellationToken);
     }
 
     private static Task SendError(WebSocket socket, long seq, string code, string message, CancellationToken cancellationToken)

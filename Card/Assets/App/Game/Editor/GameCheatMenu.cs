@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Net;
 using App.Talent;
+using App.UI;
 using App.Wallet;
 using UnityEditor;
 using UnityEngine;
@@ -55,7 +57,7 @@ namespace App.Game.Editor
 
             if (!GameApi.IsReady)
             {
-                Debug.LogWarning("未连接服务器，无法发放局外金币");
+                Toast.Error("未连接服务器");
                 return;
             }
 
@@ -66,9 +68,9 @@ namespace App.Game.Editor
                 var wallet = AppServices.Resolve<IWalletService>();
                 Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
             }
-            catch (Exception ex)
+            catch (GameApiException ex)
             {
-                Debug.LogWarning("[外挂] 发放局外金币失败: " + ex.Message);
+                Toast.Error(GameApi.Describe(ex));
             }
         }
 

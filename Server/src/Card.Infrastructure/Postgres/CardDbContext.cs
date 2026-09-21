@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CardShare.Domain;
 using CardShare.Domain.Players;
+using CardShare.Domain.Pve;
 using Microsoft.EntityFrameworkCore;
 
 namespace CardShare.Infrastructure.Postgres;
@@ -56,6 +57,14 @@ public sealed class PveRunRow
     public string? SettleFingerprint { get; set; }
 
     public int GoldGranted { get; set; }
+
+    public int ScoreTotal { get; set; }
+
+    public int CurrentLevelId { get; set; }
+
+    public int HighestClearedLevelId { get; set; }
+
+    public int ScoredLevelId { get; set; }
 }
 
 public sealed class CardDbContext : DbContext
@@ -91,6 +100,7 @@ public sealed class CardDbContext : DbContext
             e.ToTable("pve_runs");
             e.HasKey(x => x.RunId);
             e.HasIndex(x => x.UserId);
+            e.HasIndex(x => new { x.UserId, x.Status });
         });
     }
 }
@@ -142,7 +152,12 @@ public sealed class PostgresAuthBindingRepository : IAuthBindingRepository
     {
         var row = await _db.AuthBindings.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Provider == provider && b.OpenId == openId, cancellationToken);
-        return row?.UserId;
+        if (row == null)
+        {
+            return null;
+        }
+
+        return row.UserId;
     }
 
     public async Task BindAsync(string provider, string openId, Guid userId, CancellationToken cancellationToken)
@@ -174,6 +189,15 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
         return row == null ? null : FromRow(row);
     }
 
+    public async Task<PveRun?> GetActiveByUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var row = await _db.PveRuns.AsNoTracking()
+            .Where(r => r.UserId == userId && r.Status == (int)PveRunStatus.Active)
+            .OrderByDescending(r => r.StartedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        return row == null ? null : FromRow(row);
+    }
+
     public async Task SaveAsync(PveRun run, CancellationToken cancellationToken)
     {
         var row = await _db.PveRuns.FirstOrDefaultAsync(r => r.RunId == run.RunId, cancellationToken);
@@ -188,10 +212,14 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             row.SettleFingerprint = run.SettleFingerprint;
             row.GoldGranted = run.GoldGranted;
             row.Gold = run.Gold;
-            row.RelicIdsJson = JsonSerializer.Serialize(run.RelicIds ?? new List<int>());
-            row.ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds ?? new List<int>());
+            row.RelicIdsJson = JsonSerializer.Serialize(run.RelicIds);
+            row.ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds);
             row.ShopRefreshCount = run.ShopRefreshCount;
             row.FreeShopRefreshLeft = run.FreeShopRefreshLeft;
+            row.ScoreTotal = run.ScoreTotal;
+            row.CurrentLevelId = run.CurrentLevelId;
+            row.HighestClearedLevelId = run.HighestClearedLevelId;
+            row.ScoredLevelId = run.ScoredLevelId;
         }
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -207,15 +235,19 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             HeroId = run.HeroId,
             ShopRelicIdsJson = JsonSerializer.Serialize(run.ShopRelicIds),
             Gold = run.Gold,
-            RelicIdsJson = JsonSerializer.Serialize(run.RelicIds ?? new List<int>()),
-            ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds ?? new List<int>()),
+            RelicIdsJson = JsonSerializer.Serialize(run.RelicIds),
+            ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds),
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
             Status = (int)run.Status,
             StartedAt = run.StartedAt,
             SettledAt = run.SettledAt,
             SettleFingerprint = run.SettleFingerprint,
-            GoldGranted = run.GoldGranted
+            GoldGranted = run.GoldGranted,
+            ScoreTotal = run.ScoreTotal,
+            CurrentLevelId = run.CurrentLevelId,
+            HighestClearedLevelId = run.HighestClearedLevelId,
+            ScoredLevelId = run.ScoredLevelId
         };
     }
 
@@ -237,7 +269,11 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             StartedAt = row.StartedAt,
             SettledAt = row.SettledAt,
             SettleFingerprint = row.SettleFingerprint,
-            GoldGranted = row.GoldGranted
+            GoldGranted = row.GoldGranted,
+            ScoreTotal = row.ScoreTotal,
+            CurrentLevelId = row.CurrentLevelId > 0 ? row.CurrentLevelId : row.LevelId,
+            HighestClearedLevelId = row.HighestClearedLevelId,
+            ScoredLevelId = row.ScoredLevelId
         };
     }
 }

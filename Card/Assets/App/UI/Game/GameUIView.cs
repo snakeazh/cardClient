@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Guide;
 using App.Resources;
@@ -103,6 +104,7 @@ namespace App.UI
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
         private int _heldAttackValue;
+        private readonly Dictionary<PlayerItem, int> _lastAttackShown = new Dictionary<PlayerItem, int>(4);
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
@@ -383,6 +385,15 @@ namespace App.UI
             TryScheduleAiDelay();
         }
 
+        private void LateUpdate()
+        {
+            // PVP 翻牌回调里启攻击时，偶发同一帧订阅未刷到；兜底轮询。
+            if (ViewModel != null && ViewModel.Session != null && ViewModel.Session.IsPvp)
+            {
+                TryPlayAttack();
+            }
+        }
+
         private async Task EnsureBattlePortraits()
         {
             var serial = ++_portraitLoadSerial;
@@ -516,6 +527,34 @@ namespace App.UI
             }
 
             _playedAttack = session.AttackPlaySerial;
+            // PVP 只要撞击，不走圣物点数结算链，避免中间卡住。
+            if (session.IsPvp)
+            {
+                _attackFx.Bind(transform, _playerItem, _enemyItems);
+                var slot = session.AttackVisualSlot;
+                if (slot >= 0 && slot < _enemyItems.Length && _enemyItems[slot] != null)
+                {
+                    _enemyItems[slot].gameObject.SetActive(true);
+                    CancelDeathDissolve(_enemyItems[slot]);
+                    _enemyItems[slot].ResetDissolve();
+                }
+
+                _holdAttackDisplay = true;
+                _heldAttackItem = session.IncomingAttack
+                    ? AttackItemAtSlot(slot)
+                    : _playerItem;
+                _heldAttackValue = Math.Max(1, session.AttackDamage);
+                if (_heldAttackItem != null)
+                {
+                    _heldAttackItem.SetAttack(_heldAttackValue);
+                }
+
+                HideBeilvInfo();
+                ViewModel.ShowMask.Value = true;
+                PlayAttackCutscene(session, 1f);
+                return;
+            }
+
             PlaySettleThenAttack(session);
         }
 
@@ -1562,10 +1601,12 @@ namespace App.UI
                     }
                 }
 
+                var playerAttack = AttackDisplay(_playerItem, session.Player.Attack);
                 _playerItem.Bind(
                     session.Player,
                     PortraitLoader.Get(session.Player),
-                    AttackDisplay(_playerItem, session.Player.Attack));
+                    playerAttack);
+                ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
             }
 
             var activeCount = 0;
@@ -1601,14 +1642,29 @@ namespace App.UI
                     item.gameObject.SetActive(true);
                 }
 
+                var enemyAttack = AttackDisplay(item, enemy.Attack);
                 item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    AttackDisplay(item, enemy.Attack));
+                    enemyAttack);
+                ShakeOnPvpAttackChange(session, item, enemyAttack);
             }
 
             SyncEnemyCompareStand(session);
             EnsurePlayerAtOpeningPose();
+        }
+
+        /// <summary>PVP 攻击力跳动：显示值变化时播数字抖动（涨 high / 跌 low）。基础攻击 → 比牌伤害都走这里。</summary>
+        private void ShakeOnPvpAttackChange(GameSession session, PlayerItem item, int value)
+        {
+            var last = _lastAttackShown.TryGetValue(item, out var shown) ? shown : -1;
+            _lastAttackShown[item] = value;
+            if (!session.IsPvp || item == null || last < 0 || value == last || value <= 0)
+            {
+                return;
+            }
+
+            item.PlayAttackNumberShake(value < last, value > last);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Resources;
 using Framework.Log;
 using UnityEngine;

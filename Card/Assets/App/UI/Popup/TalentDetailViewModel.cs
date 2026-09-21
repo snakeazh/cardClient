@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Talent;
 using Framework.UI;
 using Framework.UI.Core;

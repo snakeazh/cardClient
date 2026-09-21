@@ -1,6 +1,7 @@
 using CardShare.Contracts;
 using CardShare.Domain.Config;
 using CardShare.Domain.Players;
+using CardShare.Domain.Pve;
 
 namespace CardShare.Domain.Services;
 
@@ -13,6 +14,7 @@ public sealed class AuthService
     private readonly IGameConfig _config;
     private readonly IClock _clock;
     private readonly bool _guestEnabled;
+    private readonly IPveRunService _runs;
 
     public AuthService(
         IEnumerable<ICodeSessionClient> clients,
@@ -21,7 +23,8 @@ public sealed class AuthService
         ITokenService tokens,
         IGameConfig config,
         IClock clock,
-        bool guestEnabled)
+        bool guestEnabled,
+        IPveRunService runs)
     {
         _clients = clients;
         _bindings = bindings;
@@ -30,6 +33,7 @@ public sealed class AuthService
         _config = config;
         _clock = clock;
         _guestEnabled = guestEnabled;
+        _runs = runs;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
@@ -67,40 +71,17 @@ public sealed class AuthService
             profile = await LoadProfileAsync(userId.Value, cancellationToken);
         }
 
-        profile.EnsureDailyReset(_config, _clock.UtcNow);
+        profile.ApplyDailyReset(_config, _clock.UtcNow);
         profile.ApplyUserInfo(request.UserInfo);
         await _players.SaveAsync(profile, cancellationToken);
 
+        var profileDto = await _runs.ResolveRunsOnLoginAsync(userId.Value, request.PendingSettle, cancellationToken);
         var ticket = await _tokens.IssueAsync(userId.Value, cancellationToken);
         return new LoginResponse
         {
             AccessToken = ticket.AccessToken,
-            RefreshToken = ticket.RefreshToken,
             ExpiresInSeconds = ticket.ExpiresInSeconds,
-            Profile = ProfileMapper.ToDto(profile)
-        };
-    }
-
-    public async Task<LoginResponse> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(refreshToken))
-        {
-            throw DomainException.Invalid("refreshToken is required.");
-        }
-
-        var ticket = await _tokens.RefreshAsync(refreshToken, cancellationToken);
-        if (ticket == null)
-        {
-            throw DomainException.Unauthorized("Invalid refresh token.");
-        }
-
-        var profile = await LoadProfileAsync(ticket.UserId, cancellationToken);
-        return new LoginResponse
-        {
-            AccessToken = ticket.AccessToken,
-            RefreshToken = ticket.RefreshToken,
-            ExpiresInSeconds = ticket.ExpiresInSeconds,
-            Profile = ProfileMapper.ToDto(profile)
+            Profile = profileDto
         };
     }
 
@@ -112,7 +93,7 @@ public sealed class AuthService
             throw DomainException.Unauthorized("Player not found.");
         }
 
-        profile.EnsureDailyReset(_config, _clock.UtcNow);
+        profile.ApplyDailyReset(_config, _clock.UtcNow);
         return profile;
     }
 }

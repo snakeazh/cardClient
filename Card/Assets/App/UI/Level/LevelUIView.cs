@@ -331,7 +331,7 @@ namespace App.UI
                 return;
             }
 
-            var hero = App.Config.HeroConfig.Get(ViewModel.SelectedHeroId.Value);
+            var hero = CardShare.Contracts.Config.HeroConfig.Get(ViewModel.SelectedHeroId.Value);
             var unlocked = ViewModel.IsHeroUnlocked(hero);
             _playerItem.ApplyTheme();
             var portrait = hero != null ? PortraitLoader.GetRole(hero.Icon) : null;

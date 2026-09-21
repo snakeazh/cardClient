@@ -1,6 +1,7 @@
 using System;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.UI;
 using DG.Tweening;
 using TMPro;

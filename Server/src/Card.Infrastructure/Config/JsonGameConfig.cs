@@ -12,7 +12,10 @@ public static class JsonGameConfig
         return new SharedGameConfig(tables, zone);
     }
 
-    public static SharedGameConfig CreateFallback(TimeZoneInfo? zone = null)
+    public static SharedGameConfig CreateFallback()
+        => SharedGameConfig.Fallback();
+
+    public static SharedGameConfig CreateFallback(TimeZoneInfo zone)
         => SharedGameConfig.Fallback(zone);
 
     private static TimeZoneInfo ResolveTimeZone(string timeZoneId)

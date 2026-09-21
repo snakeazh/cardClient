@@ -14,9 +14,9 @@ public static class PveRunMapper
             LevelId = run.LevelId,
             HeroId = run.HeroId,
             Gold = run.Gold,
-            RelicIds = (run.RelicIds ?? new List<int>()).ToArray(),
-            ShopOfferIds = (run.ShopOfferIds ?? new List<int>()).ToArray(),
-            ShopRelicIds = run.ShopRelicIds ?? Array.Empty<int>(),
+            RelicIds = run.RelicIds.ToArray(),
+            ShopOfferIds = run.ShopOfferIds.ToArray(),
+            ShopRelicIds = run.ShopRelicIds,
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
             Status = run.Status == PveRunStatus.Settled ? "settled" : "active"
@@ -35,10 +35,8 @@ public static class PveShopRules
         return first + ups * after;
     }
 
-    public static void EnsureOffers(PveRun run, IGameTables tables, GameBalance balance, Random rng)
+    public static void FillOffers(PveRun run, IGameTables tables, GameBalance balance, Random rng)
     {
-        run.ShopOfferIds ??= new List<int>();
-        run.RelicIds ??= new List<int>();
         var target = Math.Max(1, balance.ShopOfferCount);
         while (run.ShopOfferIds.Count > target)
         {
@@ -62,22 +60,22 @@ public static class PveShopRules
     public static void RerollOffers(PveRun run, IGameTables tables, GameBalance balance, Random rng)
     {
         run.ShopOfferIds = new List<int>();
-        EnsureOffers(run, tables, balance, rng);
+        FillOffers(run, tables, balance, rng);
     }
 
-    public static int BuyPrice(RelicConfig relic) => relic == null ? 0 : Math.Max(0, relic.Price);
+    public static int BuyPrice(RelicConfig relic) => Math.Max(0, relic.Price);
 
-    public static int SellPrice(RelicConfig relic) => relic == null ? 0 : Math.Max(0, relic.SellingPrice);
+    public static int SellPrice(RelicConfig relic) => Math.Max(0, relic.SellingPrice);
 
     private static List<RelicConfig> BuildPool(PveRun run, IGameTables tables)
     {
-        var unlocked = new HashSet<int>(run.ShopRelicIds ?? Array.Empty<int>());
-        var owned = new HashSet<int>(run.RelicIds ?? new List<int>());
-        var onShelf = new HashSet<int>(run.ShopOfferIds ?? new List<int>());
+        var unlocked = new HashSet<int>(run.ShopRelicIds);
+        var owned = new HashSet<int>(run.RelicIds);
+        var onShelf = new HashSet<int>(run.ShopOfferIds);
         var pool = new List<RelicConfig>();
         foreach (var relic in tables.Relics)
         {
-            if (relic == null || relic.Id <= 0 || relic.RefreshProbability <= 0f)
+            if (relic.Id <= 0 || relic.RefreshProbability <= 0f)
             {
                 continue;
             }

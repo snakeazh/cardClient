@@ -110,14 +110,17 @@ public class LoginUserInfoTests
     {
         var config = TestConfig.Create();
         var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var (pve, _) = TestApp.Create(players, config: config, clock: clock);
         return new AuthService(
             new ICodeSessionClient[] { new GuestClient() },
             new MemoryAuthBindingRepository(),
-            new MemoryPlayerRepository(),
-            new MemoryTokenService(clock, TimeSpan.FromHours(1), TimeSpan.FromDays(1)),
+            players,
+            new MemoryTokenService(clock, TimeSpan.FromHours(1)),
             config,
             clock,
-            guestEnabled: true);
+            guestEnabled: true,
+            pve);
     }
 
     private sealed class GuestClient : ICodeSessionClient
@@ -246,6 +249,112 @@ public class PvpMatchmakerTests
         Assert.Equal("https://wx.qlogo.cn/x", pub.AvatarUrl);
     }
 
+    [Fact]
+    public void FillWithBotsOpensRoomWhenFirstHumanQueues()
+    {
+        var matchmaker = new PvpBotFillMatchmaker(new InMemoryPvpMatchmaker(), GameTables.Fallback());
+        var evt = matchmaker.Enqueue(Public("你"));
+        Assert.True(evt.RoomOpened);
+        Assert.Equal(4, evt.Players.Count);
+        Assert.Single(evt.Players, p => !p.IsBot);
+        Assert.Equal(3, evt.Players.Count(p => p.IsBot));
+        Assert.Equal("你", evt.Players[0].NickName);
+        var bots = evt.Players.Where(p => p.IsBot).ToArray();
+        Assert.Equal(new[] { 100001, 100002, 100003 }, bots.Select(p => p.BotConfigId).ToArray());
+        Assert.Equal(new[] { "机器人甲", "机器人乙", "机器人丙" }, bots.Select(p => p.NickName).ToArray());
+        Assert.All(bots, p => Assert.True(Guid.TryParse(p.UserId, out _)));
+    }
+
+    [Fact]
+    public void CreateThrowsWhenNoEnabledBots()
+    {
+        var fallback = GameTables.Fallback();
+        var empty = new GameTables(
+            fallback.GameConst,
+            fallback.HandScores,
+            fallback.Levels,
+            fallback.Heroes,
+            fallback.Relics,
+            fallback.UnlockConditions,
+            fallback.TalentRows,
+            fallback.Monsters,
+            fallback.Items,
+            "no-bots",
+            fallback.HeroEntries,
+            fallback.TalentEntries,
+            fallback.RelicEntries,
+            fallback.MonsterGroups,
+            fallback.PvpModes,
+            fallback.PvpRounds,
+            Array.Empty<CardShare.Contracts.Config.PvpBotConfig>());
+        Assert.Throws<InvalidOperationException>(() => PvpBots.Create(empty, 0));
+    }
+
+    [Fact]
+    public void SweepExpiredKicksStaleEntriesAndKeepsFresh()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        var stale = Public("旧");
+        var fresh = Public("新");
+        matchmaker.Enqueue(stale);
+        now += 30_000;
+        matchmaker.Enqueue(fresh);
+
+        var expired = matchmaker.SweepExpired(now + 30_001, 60_000, out var remaining);
+
+        Assert.Single(expired);
+        Assert.Equal(Guid.Parse(stale.UserId), expired[0]);
+        Assert.Single(remaining);
+        Assert.Equal(fresh.UserId, remaining[0].UserId);
+    }
+
+    [Fact]
+    public void SweepExpiredKeepsAllWhenNoneStale()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.Enqueue(Public("乙"));
+
+        var expired = matchmaker.SweepExpired(now + 59_999, 60_000, out var remaining);
+        Assert.Empty(expired);
+        Assert.Equal(2, remaining.Count);
+
+        var kicked = matchmaker.SweepExpired(now + 60_000, 60_000, out var after);
+        Assert.Equal(2, kicked.Count);
+        Assert.Empty(after);
+    }
+
+    [Fact]
+    public void QueueAcceptsNewEnqueuesAfterSweep()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.SweepExpired(now + 61_000, 60_000, out _);
+
+        var again = matchmaker.Enqueue(Public("乙"));
+        Assert.False(again.RoomOpened);
+        Assert.Single(again.Players);
+        Assert.Equal("乙", again.Players[0].NickName);
+    }
+
+    [Fact]
+    public void RequeueRefreshesEnqueueTimestamp()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        var one = Public("甲");
+        matchmaker.Enqueue(one);
+        now += 50_000;
+        matchmaker.Enqueue(one);
+
+        var expired = matchmaker.SweepExpired(now + 30_000, 60_000, out var remaining);
+        Assert.Empty(expired);
+        Assert.Single(remaining);
+    }
+
     private static PlayerPublic Public(string nick, string avatar = "")
     {
         return new PlayerPublic
@@ -254,5 +363,18 @@ public class PvpMatchmakerTests
             NickName = nick,
             AvatarUrl = avatar
         };
+    }
+}
+
+public class NullPvpBusTests
+{
+    [Fact]
+    public async Task PublishIsNoOpAndCommandReportsNoBus()
+    {
+        var bus = new NullPvpBus();
+        Assert.NotEqual(Guid.Empty, bus.InstanceId);
+        await bus.PublishToUserAsync(Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.MatchUpdate }, CancellationToken.None);
+        var published = await bus.PublishCommandAsync(Guid.NewGuid(), Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.Battle }, CancellationToken.None);
+        Assert.False(published);
     }
 }

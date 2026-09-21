@@ -24,7 +24,7 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
 
     public FileGameConfigLoader(string directory)
     {
-        _directory = directory ?? string.Empty;
+        _directory = directory;
     }
 
     public IGameTables Load()
@@ -46,7 +46,14 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
             ReadArray<TalentConfig>("TalentConfig.json"),
             ReadArray<MonsterConfig>("MonsterConfig.json"),
             ReadArray<ItemConfig>("ItemConfig.json"),
-            HashLoaded());
+            HashLoaded(),
+            ReadArray<HeroEntryConfig>("HeroEntryConfig.json"),
+            ReadArray<TalentEntryConfig>("TalentEntryConfig.json"),
+            ReadArray<RelicEntryConfig>("RelicEntryConfig.json"),
+            ReadArray<MonsterGroupConfig>("MonsterGroupConfig.json"),
+            ReadArray<PvpModeConfig>("PvpModeConfig.json"),
+            ReadArray<PvpRoundConfig>("PvpRoundConfig.json"),
+            ReadArray<PvpBotConfig>("PvpBotConfig.json"));
         if (tables.Levels.Count == 0)
         {
             return GameTables.Fallback();
@@ -82,7 +89,9 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
         var names = new[]
         {
             "GameConst.json", "HandScoreConfig.json", "LevelConfig.json", "HeroConfig.json",
-            "RelicConfig.json", "UnlockConditionConfig.json", "TalentConfig.json", "MonsterConfig.json"
+            "HeroEntryConfig.json", "RelicConfig.json", "RelicEntryConfig.json", "UnlockConditionConfig.json",
+            "TalentConfig.json", "TalentEntryConfig.json", "MonsterConfig.json",
+            "MonsterGroupConfig.json", "PvpModeConfig.json", "PvpRoundConfig.json", "PvpBotConfig.json"
         };
         using var sha = SHA256.Create();
         foreach (var name in names.OrderBy(n => n, StringComparer.Ordinal))
@@ -106,8 +115,8 @@ public sealed class SharedGameConfig : IGameConfig
 {
     public SharedGameConfig(IGameTables tables, TimeZoneInfo timeZone)
     {
-        Tables = tables ?? throw new ArgumentNullException(nameof(tables));
-        TimeZone = timeZone ?? TimeZoneInfo.Utc;
+        Tables = tables;
+        TimeZone = timeZone;
         Balance = GameBalance.From(Tables.GameConst);
     }
 
@@ -117,6 +126,9 @@ public sealed class SharedGameConfig : IGameConfig
 
     public GameBalance Balance { get; }
 
-    public static SharedGameConfig Fallback(TimeZoneInfo? zone = null)
-        => new SharedGameConfig(GameTables.Fallback(), zone ?? TimeZoneInfo.Utc);
+    public static SharedGameConfig Fallback()
+        => Fallback(TimeZoneInfo.Utc);
+
+    public static SharedGameConfig Fallback(TimeZoneInfo zone)
+        => new SharedGameConfig(GameTables.Fallback(), zone);
 }

@@ -4,8 +4,12 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>CardShare.Contracts</RootNamespace>
   </PropertyGroup>
+
+  <!-- 与 Unity 客户端共享源码（ET 式源码共享）：源文件在 Card/Assets/Shared/Contracts，两端各自编译。 -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Card\Assets\Shared\Contracts\**\*.cs" />
+  </ItemGroup>
 
 </Project>

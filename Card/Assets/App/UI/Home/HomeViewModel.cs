@@ -2,8 +2,11 @@ using System;
 using System.Threading.Tasks;
 using App.Audio;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
+using App.Game;
 using App.Level;
+using App.Net;
 using App.Resources;
 using App.Talent;
 using App.Unlock;
@@ -26,6 +29,10 @@ namespace App.UI
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
+        private readonly GameSession _session;
+        private readonly GameTableViewModel _table;
+        private readonly PvpMatchSession _pvp;
+        private bool _pvpStarting;
 
         public HomeViewModel(
             IUIManager ui,
@@ -35,7 +42,10 @@ namespace App.UI
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
-            IUnlockConditionService unlock)
+            IUnlockConditionService unlock,
+            GameSession session,
+            GameTableViewModel table,
+            PvpMatchSession pvp)
         {
             _ui = ui;
             _navigation = navigation;
@@ -44,10 +54,14 @@ namespace App.UI
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
+            _session = session;
+            _table = table;
+            _pvp = pvp;
             Resources = resources;
             LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
+            PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -64,6 +78,8 @@ namespace App.UI
         public ObservableProperty<string> StaminaText { get; }
 
         public IRelayCommand StartCommand { get; }
+
+        public IRelayCommand PvpCommand { get; }
 
         protected override async Task OnOpen(object args)
         {
@@ -146,6 +162,58 @@ namespace App.UI
             var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
             var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
             await _ui.Open(vm);
+        }
+
+        private async void StartPvp()
+        {
+            if (_pvpStarting)
+            {
+                return;
+            }
+
+            _pvpStarting = true;
+            PvpCommand.RaiseCanExecuteChanged();
+            try
+            {
+                if (!GameApi.IsReady)
+                {
+                    await PveSessionGate.ConnectWithRetryAsync(
+                        _ui.Dialogs,
+                        UnityEngine.SystemInfo.deviceUniqueIdentifier,
+                        "Editor");
+                    if (!GameApi.IsReady)
+                    {
+                        Toast.Error("未连接服务器");
+                        return;
+                    }
+                }
+
+                _navigation.HideBar();
+                Toast.Show("正在匹配…");
+                await _pvp.Invoker.EnqueueStartQueue();
+                _session.BeginPvp();
+                await _ui.Open(_table);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                await _pvp.StopAsync();
+                _session.EndPvp();
+                await _navigation.EnsureShown();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                Toast.Error("匹配失败");
+                await _pvp.StopAsync();
+                _session.EndPvp();
+                await _navigation.EnsureShown();
+            }
+            finally
+            {
+                _pvpStarting = false;
+                PvpCommand.RaiseCanExecuteChanged();
+            }
         }
     }
 }

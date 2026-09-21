@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using CardShare.Battle;
 using CardShare.Contracts;
 using SharedCard = CardShare.Battle.Card;
+using BattleHandScore = CardShare.Battle.HandScore;
+using BattleHandType = CardShare.Battle.HandType;
 
 namespace App.Game
 {
@@ -93,6 +96,45 @@ namespace App.Game
             return new Card((Suit)(int)card.Suit, (Rank)(int)card.Rank);
         }
 
+        public static SharedCard ToShared(Card card)
+        {
+            if (!card.IsValid)
+            {
+                return default;
+            }
+
+            return new SharedCard((CardShare.Battle.Suit)(int)card.Suit, (CardShare.Battle.Rank)(int)card.Rank);
+        }
+
+        public static SharedCard[] ToShared(Card[] cards)
+        {
+            if (cards == null || cards.Length == 0)
+            {
+                return Array.Empty<SharedCard>();
+            }
+
+            var copy = new SharedCard[cards.Length];
+            for (var i = 0; i < cards.Length; i++)
+            {
+                copy[i] = ToShared(cards[i]);
+            }
+
+            return copy;
+        }
+
+        public static BattleHandScore ToShared(HandScore score)
+        {
+            return new BattleHandScore(
+                (BattleHandType)(int)score.Type,
+                score.BaseChips,
+                score.Multiplier,
+                score.Keys,
+                ToShared(score.UsedCards),
+                score.Label,
+                score.BeatsAll,
+                score.CompareLevelBonus);
+        }
+
         private static SeatSetup ToSetup(int seatId, string userId, SeatState seat, bool human)
         {
             return new SeatSetup
@@ -101,7 +143,10 @@ namespace App.Game
                 UserId = userId,
                 NickName = seat != null ? seat.Name : string.Empty,
                 IsHuman = human,
-                Alive = seat != null && (human || seat.Alive)
+                Alive = seat != null && (human || seat.Alive),
+                Attack = seat != null ? seat.Attack : 0,
+                Hp = seat != null ? seat.Hp : 0,
+                MaxHp = seat != null ? seat.MaxHp : 0
             };
         }
     }

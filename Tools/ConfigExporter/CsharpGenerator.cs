@@ -24,31 +24,15 @@ public static class CsharpGenerator
         var runtimeTables = tables
             .Where(table => table.Kind != ConfigTableKind.Enum)
             .ToList();
-        var enumNames = enums.ToDictionary(
-            definition => definition.Name,
-            definition => definition.Name,
-            StringComparer.OrdinalIgnoreCase);
 
         Directory.CreateDirectory(outputDir);
 
-        // 生成目录全部归工具管理，删表或删枚举后不保留旧代码。
+        // 生成目录全部归工具管理，删表后不保留旧代码。
         foreach (var old in Directory.GetFiles(outputDir, "*.cs"))
             File.Delete(old);
 
-        foreach (var table in runtimeTables.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
-        {
-            var path = Path.Combine(outputDir, $"{table.Name}.cs");
-            File.WriteAllText(path, GenerateTableClass(table, enumNames), new UTF8Encoding(false));
-            Console.WriteLine($"[CSV→C#][{table.Kind}] {table.Name}.cs → {path}");
-        }
-
-        if (enums.Count > 0)
-        {
-            var enumPath = Path.Combine(outputDir, "Enums.g.cs");
-            File.WriteAllText(enumPath, GenerateEnums(enums), new UTF8Encoding(false));
-            Console.WriteLine($"[CSV→C#][Enum] Enums.g.cs → {enumPath}");
-        }
-
+        // 配表行类与枚举只生成到共享层（Card/Assets/Shared/Contracts/Config），客户端直接用。
+        // 这里只生成客户端加载层：ConfigTables（读 JSON 灌进各表静态注册表）+ 资源路径。
         var tablesPath = Path.Combine(outputDir, "ConfigTables.cs");
         File.WriteAllText(tablesPath, GenerateConfigTables(runtimeTables), new UTF8Encoding(false));
         Console.WriteLine($"[CSV→C#] ConfigTables.cs → {tablesPath}");
@@ -56,45 +40,6 @@ public static class CsharpGenerator
         var pathsFile = Path.Combine(outputDir, "ResResourcePaths.Config.g.cs");
         File.WriteAllText(pathsFile, GenerateResourcePaths(runtimeTables), new UTF8Encoding(false));
         Console.WriteLine($"[CSV→C#] ResResourcePaths.Config.g.cs → {pathsFile}");
-    }
-
-    private static string GenerateTableClass(
-        ConfigTable table,
-        IReadOnlyDictionary<string, string> enumNames)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine(AutoHeader);
-        sb.AppendLine("using System;");
-        sb.AppendLine();
-        sb.AppendLine("namespace App.Config");
-        sb.AppendLine("{");
-
-        if (table.Kind == ConfigTableKind.Const)
-        {
-            sb.AppendLine("    /// <summary>");
-            sb.AppendLine($"    /// 常量表 {table.Name}。访问：{table.Name}.Instance");
-            sb.AppendLine("    /// </summary>");
-            sb.AppendLine("    [Serializable]");
-            sb.AppendLine($"    public sealed class {table.Name} : ConfigConstBase<{table.Name}>");
-            sb.AppendLine("    {");
-            AppendFields(sb, table, enumNames, skipId: false);
-            sb.AppendLine("    }");
-        }
-        else
-        {
-            sb.AppendLine("    /// <summary>");
-            sb.AppendLine($"    /// 配置表 {table.Name}。访问：{table.Name}.Get(id) / TryGet / All");
-            sb.AppendLine("    /// </summary>");
-            sb.AppendLine("    [Serializable]");
-            sb.AppendLine($"    public sealed class {table.Name} : ConfigRowBase<{table.Name}>");
-            sb.AppendLine("    {");
-            AppendFields(sb, table, enumNames, skipId: true);
-            sb.AppendLine("    }");
-        }
-
-        sb.AppendLine("}");
-        sb.AppendLine();
-        return sb.ToString();
     }
 
     private static void AppendFields(
@@ -135,13 +80,14 @@ public static class CsharpGenerator
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Threading.Tasks;");
         sb.AppendLine("using App.Resources;");
+        sb.AppendLine("using CardShare.Contracts.Config;");
         sb.AppendLine("using Framework.Assets;");
         sb.AppendLine("using UnityEngine;");
         sb.AppendLine();
         sb.AppendLine("namespace App.Config");
         sb.AppendLine("{");
         sb.AppendLine("    /// <summary>");
-        sb.AppendLine("    /// 启动时加载全部配置表。业务访问走各表自身静态接口。");
+        sb.AppendLine("    /// 启动时加载全部配置表（共享类），业务访问走各表自身静态接口。");
         sb.AppendLine("    /// </summary>");
         sb.AppendLine("    public static class ConfigTables");
         sb.AppendLine("    {");
@@ -203,11 +149,11 @@ public static class CsharpGenerator
         return sb.ToString();
     }
 
-    private static string GenerateEnums(IReadOnlyList<EnumDefinition> enums)
+    private static string GenerateEnums(IReadOnlyList<EnumDefinition> enums, string ns)
     {
         var sb = new StringBuilder();
         sb.AppendLine(AutoHeader);
-        sb.AppendLine("namespace App.Config");
+        sb.AppendLine($"namespace {ns}");
         sb.AppendLine("{");
 
         foreach (var definition in enums.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
@@ -276,7 +222,7 @@ public static class CsharpGenerator
         if (enums.Count > 0)
         {
             var enumPath = Path.Combine(outputDir, "Enums.g.cs");
-            File.WriteAllText(enumPath, GenerateEnums(enums).Replace("namespace App.Config", "namespace CardShare.Contracts.Config"), new UTF8Encoding(false));
+            File.WriteAllText(enumPath, GenerateEnums(enums, "CardShare.Contracts.Config"), new UTF8Encoding(false));
             Console.WriteLine($"[CSV→Contracts][Enum] Enums.g.cs → {enumPath}");
         }
     }
@@ -291,24 +237,24 @@ public static class CsharpGenerator
         sb.AppendLine();
         sb.AppendLine("namespace CardShare.Contracts.Config");
         sb.AppendLine("{");
-        sb.AppendLine("    [Serializable]");
-        sb.AppendLine($"    public sealed class {table.Name}");
-        sb.AppendLine("    {");
         if (table.Kind == ConfigTableKind.Const)
         {
-            sb.AppendLine($"        public static {table.Name} Instance {{ get; private set; }} = new {table.Name}();");
-            sb.AppendLine();
-            sb.AppendLine($"        public static void Load({table.Name} data)");
-            sb.AppendLine("        {");
-            sb.AppendLine($"            Instance = data ?? new {table.Name}();");
-            sb.AppendLine("        }");
-            sb.AppendLine();
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine($"    /// 常量表 {table.Name}。访问：{table.Name}.Instance");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine("    [Serializable]");
+            sb.AppendLine($"    public sealed class {table.Name} : ConfigConstBase<{table.Name}>");
+            sb.AppendLine("    {");
             AppendFields(sb, table, enumNames, skipId: false);
         }
         else
         {
-            sb.AppendLine("        public int Id;");
-            sb.AppendLine();
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine($"    /// 配置表 {table.Name}。访问：{table.Name}.Get(id) / TryGet / All");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine("    [Serializable]");
+            sb.AppendLine($"    public sealed class {table.Name} : ConfigRowBase<{table.Name}>");
+            sb.AppendLine("    {");
             AppendFields(sb, table, enumNames, skipId: true);
         }
 

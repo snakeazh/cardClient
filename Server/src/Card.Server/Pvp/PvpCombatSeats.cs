@@ -40,6 +40,7 @@ internal static class PvpCombatSeats
                     Array.Empty<CombatTalentCount>(),
                     tables);
                 seats[i].IsHuman = false;
+                seats[i].ShopPoolIds = DefaultRelicIds(tables);
                 continue;
             }
 
@@ -50,11 +51,11 @@ internal static class PvpCombatSeats
             }
 
             var heroId = 0;
-            var relicIds = Array.Empty<int>();
+            var shopPoolIds = Array.Empty<int>();
             if (profile != null)
             {
                 heroId = profile.Level.LastHeroId;
-                relicIds = profile.ShopRelicIds(config);
+                shopPoolIds = profile.ShopRelicIds(config);
             }
 
             seats[i] = CombatBonuses.BuildSeat(
@@ -63,11 +64,26 @@ internal static class PvpCombatSeats
                 pub.NickName,
                 heroId,
                 MapTalents(profile),
-                tables,
-                relicIds);
+                tables);
+            seats[i].ShopPoolIds = shopPoolIds;
         }
 
         return seats;
+    }
+
+    private static int[] DefaultRelicIds(IGameTables tables)
+    {
+        var ids = new List<int>();
+        foreach (var relic in tables.Relics)
+        {
+            if (relic.Id > 0 && relic.UnlockConditionId <= 0)
+            {
+                ids.Add(relic.Id);
+            }
+        }
+
+        ids.Sort();
+        return ids.ToArray();
     }
 
     private static CombatTalentCount[] MapTalents(PlayerProfile? profile)

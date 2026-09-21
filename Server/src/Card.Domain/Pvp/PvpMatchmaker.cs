@@ -6,6 +6,9 @@ namespace CardShare.Domain.Pvp;
 public static class PvpRules
 {
     public const int RoomSize = 4;
+
+    /// <summary>排队超时（毫秒）：超过该时长未开房的玩家被踢出队列。</summary>
+    public const long QueueTimeoutMs = 60_000;
 }
 
 public sealed class PvpRoom
@@ -37,13 +40,29 @@ public interface IPvpMatchmaker
     MatchEvent? Cancel(Guid userId);
 
     void Leave(Guid userId);
+
+    /// <summary>踢出排队超过 timeoutMs 的玩家，返回被踢名单；remaining 为踢出后的当前队列。</summary>
+    IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining);
 }
 
 public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
 {
+    private sealed class QueueEntry
+    {
+        public PlayerPublic Player { get; init; } = new PlayerPublic();
+
+        public long EnqueuedUtcMs { get; init; }
+    }
+
     private readonly object _gate = new object();
-    private readonly List<PlayerPublic> _waiting = new List<PlayerPublic>();
+    private readonly List<QueueEntry> _waiting = new List<QueueEntry>();
     private readonly Random _random = new Random();
+    private readonly Func<long> _nowUtcMs;
+
+    public InMemoryPvpMatchmaker(Func<long>? nowUtcMs = null)
+    {
+        _nowUtcMs = nowUtcMs ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
 
     public MatchEvent Enqueue(PlayerPublic player)
     {
@@ -55,7 +74,7 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         lock (_gate)
         {
             RemoveLocked(userId);
-            _waiting.Add(Clone(player));
+            _waiting.Add(new QueueEntry { Player = Clone(player), EnqueuedUtcMs = _nowUtcMs() });
             if (_waiting.Count < PvpRules.RoomSize)
             {
                 var snapshot = SnapshotLocked();
@@ -68,7 +87,7 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
                 };
             }
 
-            var seated = _waiting.Take(PvpRules.RoomSize).Select(Clone).ToArray();
+            var seated = _waiting.Take(PvpRules.RoomSize).Select(e => Clone(e.Player)).ToArray();
             _waiting.RemoveRange(0, PvpRules.RoomSize);
             var room = new PvpRoom
             {
@@ -107,14 +126,42 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
 
     public void Leave(Guid userId) => Cancel(userId);
 
+    public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
+    {
+        lock (_gate)
+        {
+            var expired = new List<Guid>();
+            if (timeoutMs > 0)
+            {
+                for (var i = _waiting.Count - 1; i >= 0; i--)
+                {
+                    if (nowUtcMs - _waiting[i].EnqueuedUtcMs < timeoutMs)
+                    {
+                        continue;
+                    }
+
+                    if (Guid.TryParse(_waiting[i].Player.UserId, out var id))
+                    {
+                        expired.Insert(0, id);
+                    }
+
+                    _waiting.RemoveAt(i);
+                }
+            }
+
+            remaining = SnapshotLocked();
+            return expired;
+        }
+    }
+
     private bool RemoveLocked(Guid userId)
     {
         var key = userId.ToString("N");
         var alt = userId.ToString();
         for (var i = 0; i < _waiting.Count; i++)
         {
-            if (string.Equals(_waiting[i].UserId, key, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(_waiting[i].UserId, alt, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(_waiting[i].Player.UserId, key, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(_waiting[i].Player.UserId, alt, StringComparison.OrdinalIgnoreCase))
             {
                 _waiting.RemoveAt(i);
                 return true;
@@ -125,7 +172,7 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
     }
 
     private IReadOnlyList<PlayerPublic> SnapshotLocked()
-        => _waiting.Select(Clone).ToArray();
+        => _waiting.Select(e => Clone(e.Player)).ToArray();
 
     private static Guid[] Ids(IReadOnlyList<PlayerPublic> players)
     {

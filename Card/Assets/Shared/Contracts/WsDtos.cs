@@ -28,6 +28,9 @@ namespace CardShare.Contracts
         public const string Battle = "battle";
         public const string BattleUpdate = "battle_update";
         public const string MatchUpdate = "match_update";
+        public const string MatchEvent = "match_event";
+        public const string Sync = "sync";
+        public const string QueueTimeout = "queue_timeout";
     }
 
     public sealed class WsAuthPayload
@@ -38,6 +41,15 @@ namespace CardShare.Contracts
     public sealed class WsQueueRosterPayload
     {
         public PlayerPublic[] Players { get; set; } = System.Array.Empty<PlayerPublic>();
+
+        /// <summary>排队超时时长（毫秒），仅 queued 回包带；0 = 不超时。</summary>
+        public long TimeoutMs { get; set; }
+    }
+
+    public sealed class WsSyncPayload
+    {
+        /// <summary>要同步的房间 Id；空则按 userId 查当前对局。</summary>
+        public string RoomId { get; set; } = string.Empty;
     }
 
     public sealed class WsRoomReadyPayload

@@ -73,6 +73,9 @@ namespace CardShare.Contracts
         public IReadOnlyList<CombatTalentCount> Talents { get; set; } = Array.Empty<CombatTalentCount>();
 
         public IReadOnlyList<int> RelicIds { get; set; } = Array.Empty<int>();
+
+        /// <summary>商店可购圣物池（已解锁集合）；仅 PvP 开局时由服务端填入。</summary>
+        public int[] ShopPoolIds { get; set; } = Array.Empty<int>();
     }
 
     public enum BattleModeKind

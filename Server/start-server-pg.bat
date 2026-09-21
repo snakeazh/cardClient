@@ -7,7 +7,7 @@ set ConnectionStrings__Redis=127.0.0.1:6379
 set GuestAuth__Enabled=true
 
 echo Starting Card.Server with Postgres + Redis on port %PORT% ...
-echo URL: http://localhost:%PORT%
+echo URL: http://0.0.0.0:%PORT% (LAN accessible)
 echo Close this window or Ctrl+C to stop.
 echo.
 

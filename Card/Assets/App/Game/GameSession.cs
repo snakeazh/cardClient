@@ -121,6 +121,19 @@ namespace App.Game
 
         public bool IsPvp { get; private set; }
 
+        /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
+        private PvpMatchSession _pvpSession;
+        private readonly Dictionary<int, int> _pvpOfferPrices = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _pvpSellPrices = new Dictionary<int, int>();
+        private int _pvpShopRefreshCost;
+        private bool _pvpShopDone;
+        private bool _pvpShopDoneSent;
+
+        public void AttachPvpSession(PvpMatchSession pvp)
+        {
+            _pvpSession = pvp;
+        }
+
         public bool PvpHandLocked => IsPvp && _pvpHandLocked;
 
         /// <summary>PVP 演出完成事件：发牌/翻牌/攻击。由 App.UI.Game.Director 的命令订阅。</summary>
@@ -2248,19 +2261,47 @@ namespace App.Game
             }
         }
 
-        /// <summary>会员卡免费刷新时为 0，否则为下次付费刷新价。</summary>
-        public int EffectiveShopRefreshCost => Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost;
+        /// <summary>会员卡免费刷新时为 0，否则为下次付费刷新价。PVP 读服务端快照的 RefreshCost。</summary>
+        public int EffectiveShopRefreshCost => IsPvp
+            ? (Run.FreeShopRefreshLeft > 0 ? 0 : _pvpShopRefreshCost)
+            : (Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost);
 
         /// <summary>
-        /// 可携带圣物上限：<see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
+        /// 可携带圣物上限：<see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。PVP 用 GameConst.DefaultRelicNumMax（与服务端一致）。
         /// </summary>
-        public int RelicCarryMax =>
-            GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
+        public int RelicCarryMax => IsPvp
+            ? (GameConst.IsLoaded && GameConst.Instance.DefaultRelicNumMax > 0 ? GameConst.Instance.DefaultRelicNumMax : 3)
+            : GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
 
-        public int EffectiveSellPrice(int relicId) => RelicMechanics.SellPrice(Run, relicId);
+        public int EffectiveSellPrice(int relicId)
+        {
+            if (IsPvp)
+            {
+                if (_pvpSellPrices.TryGetValue(relicId, out var pvpSell))
+                {
+                    return pvpSell;
+                }
+
+                var pvpRelic = RelicConfig.Get(relicId);
+                return pvpRelic != null ? pvpRelic.SellingPrice : 0;
+            }
+
+            return RelicMechanics.SellPrice(Run, relicId);
+        }
 
         public int EffectiveBuyPrice(int relicId)
         {
+            if (IsPvp)
+            {
+                if (_pvpOfferPrices.TryGetValue(relicId, out var pvpPrice))
+                {
+                    return pvpPrice;
+                }
+
+                var pvpRelic = RelicConfig.Get(relicId);
+                return pvpRelic != null ? pvpRelic.Price : 0;
+            }
+
             var price = HeroMechanics.BuyPrice(Run, RelicConfig.Get(relicId));
             if (Run.ShopBuyDiscount <= 0f)
             {
@@ -2278,9 +2319,14 @@ namespace App.Game
         public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
 
         public bool CanRefreshShop =>
-            Phase == GamePhase.Shop &&
-            HasUnownedRelicConfig() &&
-            (Run.FreeShopRefreshLeft > 0 || RelicMechanics.CanAfford(Run, ShopRefreshCost));
+            IsPvp
+                ? Phase == GamePhase.Shop &&
+                  !_pvpShopDone &&
+                  Run.ShopOfferIds.Count > 0 &&
+                  (Run.FreeShopRefreshLeft > 0 || RelicMechanics.CanAfford(Run, EffectiveShopRefreshCost))
+                : Phase == GamePhase.Shop &&
+                  HasUnownedRelicConfig() &&
+                  (Run.FreeShopRefreshLeft > 0 || RelicMechanics.CanAfford(Run, ShopRefreshCost));
 
         public void RefreshShopOffers()
         {
@@ -2289,6 +2335,12 @@ namespace App.Game
 
         public async Task RefreshShopOffersAsync()
         {
+            if (IsPvp)
+            {
+                await RefreshPvpShopAsync();
+                return;
+            }
+
             if (Phase != GamePhase.Shop)
             {
                 return;
@@ -2355,6 +2407,107 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>PVP 商店刷新：命令走长链接，货架等下一个 match_update 快照回来刷新。</summary>
+        private async Task RefreshPvpShopAsync()
+        {
+            var pvp = _pvpSession;
+            if (pvp == null || Phase != GamePhase.Shop || _pvpShopDone)
+            {
+                return;
+            }
+
+            if (!CanRefreshShop)
+            {
+                Hint = "金币不足";
+                Notify();
+                return;
+            }
+
+            try
+            {
+                await pvp.Invoker.EnqueueShopRefresh();
+                await pvp.WaitNextUpdateAsync(3000);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        /// <summary>PVP 商店购买：命令走长链接，等服务端快照确认入手；服务端校验失败（金币不足等）经 Notice 提示。</summary>
+        private async Task<bool> TryPvpBuyShopRelicAsync(int relicId)
+        {
+            var pvp = _pvpSession;
+            if (pvp == null || Phase != GamePhase.Shop || _pvpShopDone || !Run.ShopOfferIds.Contains(relicId))
+            {
+                return false;
+            }
+
+            if (Run.RelicConfigIds.Count >= RelicCarryMax)
+            {
+                Hint = "遗物已满";
+                Notify();
+                return false;
+            }
+
+            if (!RelicMechanics.CanAfford(Run, EffectiveBuyPrice(relicId)))
+            {
+                Hint = "金币不足";
+                Notify();
+                return false;
+            }
+
+            try
+            {
+                await pvp.Invoker.EnqueueShopBuy(relicId);
+                await pvp.WaitNextUpdateAsync(3000);
+                if (!OwnsRelicConfig(relicId))
+                {
+                    return false;
+                }
+
+                var relic = RelicConfig.Get(relicId);
+                Hint = $"已购买 {relic?.Name}";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+        }
+
+        /// <summary>PVP 商店出售：命令走长链接，等服务端快照确认移除。</summary>
+        private async Task<bool> TryPvpSellShopRelicAsync(int relicId)
+        {
+            var pvp = _pvpSession;
+            if (pvp == null || Phase != GamePhase.Shop || _pvpShopDone || !OwnsRelicConfig(relicId))
+            {
+                return false;
+            }
+
+            try
+            {
+                await pvp.Invoker.EnqueueShopSell(relicId);
+                await pvp.WaitNextUpdateAsync(3000);
+                if (OwnsRelicConfig(relicId))
+                {
+                    return false;
+                }
+
+                var relic = RelicConfig.Get(relicId);
+                Hint = $"已出售 {relic?.Name}";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+        }
+
         public void BuyShopRelic(int relicId) => AcquireShopRelic(relicId, watchAd: false);
 
         /// <summary>看广告免费购入货架遗物。广告当前为模拟发放，成功后不扣金币。</summary>
@@ -2362,6 +2515,12 @@ namespace App.Game
 
         public async Task<bool> TryBuyShopRelicAsync(int relicId, bool watchAd)
         {
+            if (IsPvp)
+            {
+                // PVP 无广告免费买；买卖只信服务端快照。
+                return !watchAd && await TryPvpBuyShopRelicAsync(relicId);
+            }
+
             if (watchAd || !HasServerRun)
             {
                 var ownedBefore = OwnsRelicConfig(relicId);
@@ -2410,6 +2569,12 @@ namespace App.Game
 
         public async Task<bool> TryBuyAndUseShopRelicAsync(int relicId)
         {
+            if (IsPvp)
+            {
+                // PVP 圣物即买即生效，不支持购买并使用。
+                return false;
+            }
+
             if (!HasServerRun)
             {
                 return TryBuyAndUseShopRelic(relicId);
@@ -2456,6 +2621,11 @@ namespace App.Game
 
         public async Task<bool> TrySellShopRelicAsync(int relicId)
         {
+            if (IsPvp)
+            {
+                return await TryPvpSellShopRelicAsync(relicId);
+            }
+
             if (!HasServerRun)
             {
                 var owned = OwnsRelicConfig(relicId);
@@ -2542,10 +2712,10 @@ namespace App.Game
             return true;
         }
 
-        /// <summary>当前阶段能否使用该消耗品。货架预览传 <paramref name="requireOwned"/> = false。</summary>
+        /// <summary>当前阶段能否使用该消耗品。货架预览传 <paramref name="requireOwned"/> = false。PVP 一律不可用（无使用入口）。</summary>
         public bool CanUseRelicNow(int relicId, bool requireOwned = true)
         {
-            return relicId > 0 && !TryGetRelicUseFailHint(relicId, requireOwned, out _);
+            return !IsPvp && relicId > 0 && !TryGetRelicUseFailHint(relicId, requireOwned, out _);
         }
 
         private void AcquireShopRelic(int relicId, bool watchAd)
@@ -2848,6 +3018,18 @@ namespace App.Game
 
         public void LeaveShop()
         {
+            if (IsPvp)
+            {
+                // PVP：发 shop_done 后等服务端推进阶段，本地不改 Phase（弹窗由 ViewModel 关）。
+                if (_pvpSession != null && Phase == GamePhase.Shop && !_pvpShopDoneSent)
+                {
+                    _pvpShopDoneSent = true;
+                    _ = _pvpSession.Invoker.EnqueueShopDone();
+                }
+
+                return;
+            }
+
             if (Phase != GamePhase.Shop)
             {
                 return;
@@ -7944,7 +8126,7 @@ namespace App.Game
             ApplyPvpState(match, userId, deferHp: false);
         }
 
-        /// <param name="deferHp">比牌快照先不同步 HP/攻击：等攻击命令播完再应用，避免提前剧透结果。</param>
+        /// <param name="deferHp">比牌快照先不同双方座位的 HP/攻击（含对方，淘汰/死亡动画由座位 Hp=0 触发）：等攻击命令播完再应用，避免提前剧透结果。</param>
         public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp)
         {
             if (!IsPvp || match == null)
@@ -7956,8 +8138,72 @@ namespace App.Game
                            string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
             SplitPvpSeats(match, userId, out var mine, out var foe, out _);
             BindPvpFighters(match, userId, applyHp: !deferHp);
-            ApplyPvpTable(match, userId, mine, foe, showdown);
+            ApplyPvpShop(match);
+            ApplyPvpTable(match, userId, mine, foe, showdown, deferHp);
             Notify();
+        }
+
+        /// <summary>
+        /// PVP 商店镜像：shop 阶段把快照的货架/已购/刷新信息镜像进 Run，让 PvE 商店 UI（BattleShopPop/ShopDetail）原样复用；
+        /// 离开 shop 立即清空——战斗期 Run.RelicConfigIds 保持为空（与改造前一致，圣物效果全部由服务端结算进座位面板）。
+        /// </summary>
+        private void ApplyPvpShop(PvpMatchStateDto match)
+        {
+            if (!string.Equals(match.Phase, "shop", StringComparison.OrdinalIgnoreCase))
+            {
+                Run.ShopOfferIds.Clear();
+                Run.RelicConfigIds.Clear();
+                _pvpOfferPrices.Clear();
+                _pvpSellPrices.Clear();
+                _pvpShopDone = false;
+                _pvpShopDoneSent = false;
+                return;
+            }
+
+            var shop = match.Shop;
+            if (shop == null)
+            {
+                // 已淘汰观战：本人无商店，不镜像。
+                return;
+            }
+
+            MirrorPvpIds(Run.ShopOfferIds, shop.OfferIds);
+            MirrorPvpIds(Run.RelicConfigIds, shop.OwnedRelicIds);
+            MirrorPvpPrices(_pvpOfferPrices, shop.OfferIds, shop.OfferPrices);
+            MirrorPvpPrices(_pvpSellPrices, shop.OwnedRelicIds, shop.OwnedSellPrices);
+            Run.FreeShopRefreshLeft = shop.FreeRefreshLeft;
+            _pvpShopRefreshCost = shop.RefreshCost;
+            _pvpShopDone = shop.Done;
+            _pvpShopDoneSent = _pvpShopDoneSent || shop.Done;
+        }
+
+        private static void MirrorPvpIds(List<int> target, int[] source)
+        {
+            target.Clear();
+            if (source == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < source.Length; i++)
+            {
+                target.Add(source[i]);
+            }
+        }
+
+        private static void MirrorPvpPrices(Dictionary<int, int> target, int[] ids, int[] prices)
+        {
+            target.Clear();
+            if (ids == null || prices == null)
+            {
+                return;
+            }
+
+            var n = Math.Min(ids.Length, prices.Length);
+            for (var i = 0; i < n; i++)
+            {
+                target[ids[i]] = prices[i];
+            }
         }
 
         /// <summary>新一轮发牌（Director.DealCommand）：拨 DealSerial，动画完成经 NotifyDealReady → PvpDealFinished。</summary>
@@ -8148,8 +8394,11 @@ namespace App.Game
             string userId,
             BattleSeatDto mine,
             BattleSeatDto foe,
-            bool showdown)
+            bool showdown,
+            bool deferHp)
         {
+            var shopPhase = string.Equals(match.Phase, "shop", StringComparison.OrdinalIgnoreCase);
+            var settlePhase = string.Equals(match.Phase, "settle", StringComparison.OrdinalIgnoreCase);
             CopyPvpHand(Player, mine, true);
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
@@ -8159,10 +8408,17 @@ namespace App.Game
                 var foeFighter = FindPvpSelf(match, foe.UserId);
                 if (foeFighter != null)
                 {
-                    enemy.Hp = Math.Max(0, foeFighter.Hp);
-                    enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
-                    enemy.Courage = enemy.Hp;
-                    enemy.Attack = Math.Max(0, foeFighter.Attack);
+                    // deferHp：比牌演出播完前不写对方面板——服务端快照已扣血/淘汰（Hp=0、Alive=false），
+                    // 提前应用会让座位立刻判死：RefreshEnemies 隐藏座位（牌消失）+ 头像播死亡溶解。
+                    if (!deferHp)
+                    {
+                        enemy.Hp = Math.Max(0, foeFighter.Hp);
+                        enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
+                        enemy.Courage = enemy.Hp;
+                        enemy.Attack = Math.Max(0, foeFighter.Attack);
+                    }
+
+                    enemy.Status = foeFighter.Disconnected ? "离线" : string.Empty;
                 }
                 else
                 {
@@ -8183,6 +8439,7 @@ namespace App.Game
             {
                 enemy.Name = "对手";
                 enemy.ShowCards = false;
+                enemy.Status = string.Empty;
                 ClearHand(enemy);
             }
 
@@ -8191,12 +8448,20 @@ namespace App.Game
             _pvpHandLocked = showdown || (mine != null && mine.Locked);
             var foeLocked = foe != null && foe.Locked;
             CardsRevealed = showdown;
-            Phase = showdown ? GamePhase.Showdown : GamePhase.WaitingOpen;
+            Phase = shopPhase ? GamePhase.Shop : (showdown ? GamePhase.Showdown : GamePhase.WaitingOpen);
             Player.Looked = true;
             var self = FindPvpSelf(match, userId);
             if (string.Equals(match.Phase, "finished", StringComparison.OrdinalIgnoreCase))
             {
                 Hint = FormatPvpRank(self);
+            }
+            else if (shopPhase)
+            {
+                Hint = _pvpShopDone || match.Shop == null ? "等待其他玩家结束选购" : "商店时间：选购圣物强化";
+            }
+            else if (settlePhase)
+            {
+                Hint = "结算中…";
             }
             else if (showdown)
             {

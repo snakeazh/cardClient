@@ -5,7 +5,8 @@ using CardShare.Contracts;
 namespace App.UI.Game.Director
 {
     /// <summary>
-    /// PVP 服务器驱动：把 match_update 快照 diff 成演出命令，交给 <see cref="BattleDirector"/> 顺序播放。
+    /// PVP 服务器驱动：把 match_update 快照 diff 成演出命令，交给 <see cref="BattleDirector"/> 顺序播放；
+    /// match_event（round_start / duel_resolved / settle_start）为主触发，快照 diff 保留兜底。
     /// 状态同步（座位/手牌/HP/Hint）即时写入 GameSession；比牌期间的 HP 延后到攻击播完再应用，避免提前剧透。
     /// 队列忙时新快照整体暂存，排空后重放——时序由队列保证，不再散落各处打补丁。
     /// </summary>
@@ -14,9 +15,14 @@ namespace App.UI.Game.Director
         private readonly GameSession _session;
         private readonly BattleDirector _director;
         private int _lastRound;
+        private int _dealtRound;
         private bool _compareEnqueued;
         private PvpMatchStateDto _pending;
         private string _pendingUserId;
+        private PvpMatchStateDto _lastMatch;
+        private string _lastUserId;
+        private int _dealPendingRound;
+        private bool _compareRetryOnDrain;
 
         public PvpBattleDriver(GameSession session, BattleDirector director)
         {
@@ -30,9 +36,14 @@ namespace App.UI.Game.Director
         public void Reset()
         {
             _lastRound = 0;
+            _dealtRound = 0;
             _compareEnqueued = false;
             _pending = null;
             _pendingUserId = null;
+            _lastMatch = null;
+            _lastUserId = null;
+            _dealPendingRound = 0;
+            _compareRetryOnDrain = false;
             _director.Clear();
         }
 
@@ -53,22 +64,100 @@ namespace App.UI.Game.Director
             Process(match, userId);
         }
 
-        private void OnDrained()
+        /// <summary>
+        /// match_event 主触发（同批 match_update 先到，快照已处理或压在 pending）：
+        /// round_start → 发牌；duel_resolved（本人这桌）→ 比牌链；settle_start → 兜底补排比牌。
+        /// </summary>
+        public void OnEvent(PvpMatchEventDto evt, string userId)
         {
-            var pending = _pending;
-            if (pending == null)
+            if (evt == null)
             {
                 return;
             }
 
-            _pending = null;
-            var userId = _pendingUserId;
-            _pendingUserId = null;
-            OnMatch(pending, userId);
+            if (evt.Kind == "round_start")
+            {
+                RequestDeal(evt.Round);
+                return;
+            }
+
+            if (evt.Kind == "settle_start")
+            {
+                TryEnqueueCompare();
+                return;
+            }
+
+            if (evt.Kind == "duel_resolved" && App.Net.PvpMatchSession.SameUser(evt.UserId, userId))
+            {
+                TryEnqueueCompare();
+            }
+        }
+
+        private void OnDrained()
+        {
+            var pending = _pending;
+            if (pending != null)
+            {
+                _pending = null;
+                var userId = _pendingUserId;
+                _pendingUserId = null;
+                OnMatch(pending, userId);
+            }
+
+            if (_dealPendingRound > 0)
+            {
+                var round = _dealPendingRound;
+                _dealPendingRound = 0;
+                RequestDeal(round);
+            }
+
+            if (_compareRetryOnDrain)
+            {
+                _compareRetryOnDrain = false;
+                TryEnqueueCompare();
+            }
+        }
+
+        /// <summary>发牌：队列忙时只记轮次，等 pending 快照重放（新牌先写入座位）后再排 DealCommand，避免发牌动画发到旧牌。</summary>
+        private void RequestDeal(int round)
+        {
+            if (round <= 0 || round == _dealtRound)
+            {
+                return;
+            }
+
+            if (_director.IsBusy)
+            {
+                _dealPendingRound = round;
+                return;
+            }
+
+            _compareEnqueued = false;
+            _dealtRound = round;
+            _director.Enqueue(new DealCommand());
+        }
+
+        /// <summary>比牌入队：最新快照已显示自己这桌摊牌才排；快照还压在 pending 里时等排空重试（settle 窗口内一定补排上）。</summary>
+        private void TryEnqueueCompare()
+        {
+            if (_compareEnqueued)
+            {
+                return;
+            }
+
+            if (_director.IsBusy || !IsShowdown(_lastMatch))
+            {
+                _compareRetryOnDrain = true;
+                return;
+            }
+
+            EnqueueCompare(_lastMatch, _lastUserId);
         }
 
         private void Process(PvpMatchStateDto match, string userId)
         {
+            _lastMatch = match;
+            _lastUserId = userId;
             var showdown = IsShowdown(match);
             if (showdown && _compareEnqueued)
             {
@@ -86,9 +175,10 @@ namespace App.UI.Game.Director
             }
 
             _session.ApplyPvpState(match, userId);
-            if (match.Round != _lastRound)
+            if (match.Round != _lastRound && match.Round != _dealtRound)
             {
                 _compareEnqueued = false;
+                _dealtRound = match.Round;
                 _director.Enqueue(new DealCommand());
             }
 

@@ -60,6 +60,9 @@ namespace App.Net
 
         public Task LeaveAsync() => SendAsync(WsMessageTypes.Leave, null);
 
+        /// <summary>断线重连后的对局同步：RoomId 空表示按 userId 查当前对局。</summary>
+        public Task SyncAsync() => SendAsync(WsMessageTypes.Sync, new WsSyncPayload { RoomId = string.Empty });
+
         public Task BattleAsync(string action, int index = 0, int[] indexes = null)
         {
             return SendAsync(WsMessageTypes.Battle, new WsBattleActionPayload

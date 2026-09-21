@@ -74,4 +74,7 @@ public sealed class PvpBotFillMatchmaker : IPvpMatchmaker
     public MatchEvent? Cancel(Guid userId) => _inner.Cancel(userId);
 
     public void Leave(Guid userId) => _inner.Leave(userId);
+
+    public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
+        => _inner.SweepExpired(nowUtcMs, timeoutMs, out remaining);
 }

@@ -92,6 +92,9 @@ public class PvpMatchTests
             match.Showdown(fighter.UserId);
         }
 
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        AdvanceThrough(match);
+
         Assert.Equal(2, match.Round);
         Assert.Equal(PvpFightKind.Pvp, match.FightKind);
         Assert.Equal(2, match.Duels.Count);
@@ -134,6 +137,8 @@ public class PvpMatchTests
             match.Showdown(fighter.UserId);
         }
 
+        AdvanceThrough(match);
+
         var a = match.Fighters[0].UserId;
         var duel = match.Duels.First(d => d.Involves(a));
         var b = PvpBattleTable.SameUser(duel.LeftUserId, a) ? duel.RightUserId : duel.LeftUserId;
@@ -168,6 +173,8 @@ public class PvpMatchTests
         {
             match.Showdown(fighter.UserId);
         }
+
+        AdvanceThrough(match);
 
         Assert.Equal(2, match.Round);
         Assert.Equal(3, match.Fighters[0].RubLeft);
@@ -213,6 +220,9 @@ public class PvpMatchTests
             match.Showdown(fighter.UserId);
         }
 
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        AdvanceThrough(match);
+
         Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
         Assert.Equal(4, match.Fighters.Count(f => f.Rank >= 1));
         Assert.Contains(match.Fighters, f => f.Rank == 1);
@@ -232,6 +242,9 @@ public class PvpMatchTests
         Assert.Contains(match.ViewFor(you.UserId).Players, p => p.IsBot);
 
         match.Showdown(you.UserId);
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        AdvanceThrough(match);
+
         Assert.Equal(2, match.Round);
         Assert.Equal(PvpFightKind.Pvp, match.FightKind);
         Assert.Equal(1, match.Duels.Count(d => !d.Resolved));
@@ -262,6 +275,8 @@ public class PvpMatchTests
         Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Count);
         Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Distinct().Count());
 
+        AdvanceThrough(match);
+
         // PVP 轮：只锁真人、机器人座位未选时，亮牌同样给机器人补最高牌型。
         var botDuel = match.Duels.First(d => d.Involves(you.UserId));
         snap = botDuel.Engine.Snapshot;
@@ -283,6 +298,8 @@ public class PvpMatchTests
         {
             match.Showdown(fighter.UserId);
         }
+
+        AdvanceThrough(match);
 
         Assert.Equal(2, match.Round);
         var a = match.Fighters[0];
@@ -348,15 +365,19 @@ public class PvpMatchTests
         var match = Open(PvpTestTables.OnePvpRound());
         var a = match.Fighters[0].UserId;
         var view = match.ViewFor(a);
-        Assert.InRange(view.PhaseDeadlineUtcMs - view.ServerNowUtcMs, 1, 20_000);
+        Assert.InRange(view.PhaseDeadlineUtcMs - view.ServerNowUtcMs, 1, PvpTiming.DealAnimMs + 20_000);
         Assert.All(match.Duels, d => Assert.False(d.Resolved));
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Assert.False(match.ApplyTimeouts(now));
-        Assert.True(match.ApplyTimeouts(now + 20_000 + 1));
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + 20_000 + 1));
 
         Assert.All(match.Duels, d => Assert.True(d.Resolved));
         Assert.All(match.Duels, d => Assert.True(d.HpApplied));
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+
+        // 最后一轮：settle 演出窗到点后才置 finished。
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + 20_000 + 1 + PvpTiming.SettleAnimMs + 1));
         Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
         var after = match.ViewFor(a);
         Assert.Equal(0, after.PhaseDeadlineUtcMs);
@@ -372,18 +393,355 @@ public class PvpMatchTests
         Assert.False(match.ApplyTimeouts(now + 40_000));
     }
 
+    [Fact]
+    public void WinnerEarnsGoldAndLoserGetsHalf()
+    {
+        var match = Open(PvpTestTables.OnePvpRound());
+        var a = match.Fighters[0];
+        var duel = match.Duels.First(d => d.Involves(a.UserId));
+        var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
+        var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
+        var goldA = a.Gold;
+        var goldB = b.Gold;
+
+        match.Showdown(a.UserId);
+        match.Showdown(b.UserId);
+
+        Assert.True(duel.Resolved);
+        var snap = duel.Engine.Snapshot;
+        Assert.Single(snap.Winners);
+        var damage = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
+        // 胜 = GoldBase(15) + damage/12 + 20×未用技能(3+1+1)。
+        var winGold = 15 + damage / 12 + 20 * (3 + 1 + 1);
+        var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
+        if (aWon)
+        {
+            Assert.Equal(goldA + winGold, a.Gold);
+            Assert.Equal(goldB + winGold / 2, b.Gold);
+        }
+        else
+        {
+            Assert.Equal(goldB + winGold, b.Gold);
+            Assert.Equal(goldA + winGold / 2, a.Gold);
+        }
+    }
+
+    [Fact]
+    public void MonsterRoundPlayerWinAlsoPaysGold()
+    {
+        var match = OpenClassic();
+        var goldBefore = match.Fighters.Select(f => f.Gold).ToArray();
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        for (var i = 0; i < match.Fighters.Count; i++)
+        {
+            var fighter = match.Fighters[i];
+            var duel = match.Duels.First(d => d.Involves(fighter.UserId));
+            var snap = duel.Engine.Snapshot;
+            if (snap.Winners == null || snap.Winners.Count != 1)
+            {
+                Assert.Equal(goldBefore[i], fighter.Gold);
+                continue;
+            }
+
+            var damage = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
+            if (snap.Winners[0] == 0)
+            {
+                // 野怪轮玩家胜：GoldBase(10) + damage/12 + 20×未用技能(3+1+1)。
+                Assert.Equal(goldBefore[i] + 10 + damage / 12 + 20 * (3 + 1 + 1), fighter.Gold);
+            }
+            else
+            {
+                // 败给野怪：半额（野怪无技能加成）。
+                Assert.Equal(goldBefore[i] + (10 + damage / 12) / 2, fighter.Gold);
+            }
+        }
+    }
+
+    [Fact]
+    public void SettleThenShopThenNextRoundByDeadlines()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        var a = match.Fighters[0].UserId;
+        Assert.Throws<InvalidOperationException>(() => match.Act(a, "pick", 0, new[] { 1, 2, 3 }));
+        Assert.Throws<InvalidOperationException>(() => match.Act(a, "buy", 1, Array.Empty<int>()));
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.False(match.ApplyTimeouts(now + 1_000));
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1));
+
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+        var view = match.ViewFor(a);
+        Assert.NotNull(view.Shop);
+        Assert.True(view.Shop!.OfferIds.Length > 0);
+        Assert.True(view.Shop.OfferIds.Length <= PvpShopRules.OfferCount);
+        Assert.Equal(view.Shop.OfferIds.Length, view.Shop.OfferPrices.Length);
+        Assert.False(view.Shop.Done);
+        Assert.InRange(view.PhaseDeadlineUtcMs - view.ServerNowUtcMs, 1, 30_000);
+
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1 + 30_000 + 1));
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+        Assert.Null(match.ViewFor(a).Shop);
+    }
+
+    [Fact]
+    public void AllShopDoneAdvancesBeforeDeadline()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+
+        for (var i = 0; i < 3; i++)
+        {
+            match.Act(match.Fighters[i].UserId, "shop_done", 0, Array.Empty<int>());
+            Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+        }
+
+        match.Act(match.Fighters[3].UserId, "shop_done", 0, Array.Empty<int>());
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+        Assert.Throws<InvalidOperationException>(
+            () => match.Act(match.Fighters[0].UserId, "shop_done", 0, Array.Empty<int>()));
+    }
+
+    [Fact]
+    public void ShopBuySellRefreshAdjustGoldAndShelf()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+
+        var a = match.Fighters[0];
+        var shop = match.ViewFor(a.UserId).Shop!;
+        Assert.Equal(5, shop.RefreshCost);
+        Assert.True(shop.OfferIds.Length > 0);
+
+        var relicId = shop.OfferIds[0];
+        var price = relicId == 1 ? 10 : 20;
+        var sellPrice = relicId == 1 ? 5 : 8;
+        var gold = a.Gold;
+        match.Act(a.UserId, "buy", relicId, Array.Empty<int>());
+        Assert.Equal(gold - price, a.Gold);
+        Assert.Contains(relicId, a.OwnedRelicIds);
+        Assert.DoesNotContain(relicId, a.ShopOfferIds);
+        Assert.Contains(relicId, match.ViewFor(a.UserId).Players[0].RelicIds);
+        Assert.Throws<InvalidOperationException>(() => match.Act(a.UserId, "buy", relicId, Array.Empty<int>()));
+
+        match.Act(a.UserId, "sell", relicId, Array.Empty<int>());
+        Assert.Equal(gold - price + sellPrice, a.Gold);
+        Assert.DoesNotContain(relicId, a.OwnedRelicIds);
+
+        gold = a.Gold;
+        match.Act(a.UserId, "refresh", 0, Array.Empty<int>());
+        Assert.Equal(gold - 5, a.Gold);
+        Assert.Equal(1, a.ShopRefreshCount);
+        Assert.True(a.ShopOfferIds.Count > 0);
+    }
+
+    [Fact]
+    public void BoughtRelicPersistsIntoNextRoundView()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        var a = match.Fighters[0];
+        var relicId = match.ViewFor(a.UserId).Shop!.OfferIds[0];
+        match.Act(a.UserId, "buy", relicId, Array.Empty<int>());
+        foreach (var fighter in match.Fighters)
+        {
+            if (!fighter.ShopDone)
+            {
+                match.Act(fighter.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+        Assert.Contains(relicId, match.ViewFor(a.UserId).Players[0].RelicIds);
+    }
+
+    [Fact]
+    public void FightDeadlineIncludesDealAnimationBuffer()
+    {
+        var match = Open(PvpTestTables.OnePvpRound());
+        var view = match.ViewFor(match.Fighters[0].UserId);
+        var budget = PvpTiming.DealAnimMs + 20_000;
+        Assert.InRange(view.PhaseDeadlineUtcMs - view.ServerNowUtcMs, budget - 1_000, budget);
+    }
+
+    [Fact]
+    public void StateVersionIncreasesAndEventsDrainOnce()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        Assert.True(match.StateVersion > 0);
+        var events = match.DrainEvents();
+        Assert.Contains(events, e => e.Kind == "round_start" && e.Round == 1);
+        Assert.Empty(match.DrainEvents());
+
+        var version = match.StateVersion;
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        Assert.True(match.StateVersion > version);
+        events = match.DrainEvents();
+        Assert.Contains(events, e => e.Kind == "duel_resolved");
+        Assert.Contains(events, e => e.Kind == "settle_start");
+        for (var i = 1; i < events.Count; i++)
+        {
+            Assert.True(events[i].Version > events[i - 1].Version);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "shop_start");
+
+        foreach (var fighter in match.Fighters)
+        {
+            if (!fighter.ShopDone)
+            {
+                match.Act(fighter.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "round_start" && e.Round == 2);
+        Assert.Equal(match.StateVersion, match.ViewFor(match.Fighters[0].UserId).StateVersion);
+    }
+
+    [Fact]
+    public void SetDisconnectedEmitsPresenceEvents()
+    {
+        var match = OpenClassic();
+        var a = match.Fighters[0].UserId;
+        match.DrainEvents();
+
+        match.SetDisconnected(a, true);
+        Assert.True(match.Fighters[0].Disconnected);
+        Assert.True(match.ViewFor(a).Players[0].Disconnected);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "player_offline" && e.UserId == a);
+
+        match.SetDisconnected(a, false);
+        Assert.False(match.Fighters[0].Disconnected);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "player_online" && e.UserId == a);
+    }
+
+    [Fact]
+    public void DisconnectedSeatAutoLocksAndIsAutoPilotedNextRound()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        var a = match.Fighters[0].UserId;
+
+        // 掉线：当轮座位立即自动锁定（野怪轮对面已锁，直接比牌结算）。
+        match.SetDisconnected(a, true);
+        var duel = match.Duels.First(d => d.Involves(a));
+        Assert.True(duel.IsLocked(duel.ViewerSeat(a)));
+        Assert.True(duel.Resolved);
+
+        foreach (var fighter in match.Fighters)
+        {
+            if (!PvpBattleTable.SameUser(fighter.UserId, a))
+            {
+                match.Showdown(fighter.UserId);
+            }
+        }
+
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+        Assert.True(match.Fighters[0].ShopDone);
+
+        foreach (var fighter in match.Fighters)
+        {
+            if (!fighter.ShopDone)
+            {
+                match.Act(fighter.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+
+        // 次轮断线座位 IsHuman=false：发牌即自动锁定代打。
+        var next = match.Duels.First(d => d.Involves(a));
+        Assert.True(next.IsLocked(next.ViewerSeat(a)));
+
+        // 重连：清标志并发 player_online。
+        match.DrainEvents();
+        match.SetDisconnected(a, false);
+        Assert.False(match.Fighters[0].Disconnected);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "player_online" && e.UserId == a);
+    }
+
+    [Fact]
+    public void FinishGrantsRankRewardsAndMarksGrantedOnce()
+    {
+        var match = Open(PvpTestTables.OneMonsterRound());
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        Assert.False(match.TryMarkRewardsGranted());
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
+        Assert.True(match.FinishedUtcMs > 0);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "match_finished");
+
+        var rewards = new[] { 200, 120, 60, 30 };
+        foreach (var fighter in match.Fighters)
+        {
+            Assert.InRange(fighter.Rank, 1, 4);
+            Assert.Equal(rewards[fighter.Rank - 1], fighter.RewardGold);
+            Assert.Equal(fighter.RewardGold, match.ViewFor(fighter.UserId).Players[fighter.SeatIndex].RewardGold);
+        }
+
+        Assert.True(match.TryMarkRewardsGranted());
+        Assert.False(match.TryMarkRewardsGranted());
+    }
+
     private static PvpMatch OpenClassic() => Open(PvpTestTables.Classic());
 
-    private static PvpMatch Open(GameTables tables)
-        => Open(tables, new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") });
+    private static PvpMatch Open(GameTables tables, int[]? shopPool = null)
+        => Open(tables, new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") }, shopPool: shopPool);
 
-    private static PvpMatch Open(GameTables tables, PlayerPublic[] players, int hp = 0)
+    private static PvpMatch Open(GameTables tables, PlayerPublic[] players, int hp = 0, int[]? shopPool = null)
     {
         var seats = new SeatSetup[players.Length];
         for (var i = 0; i < players.Length; i++)
         {
             seats[i] = CombatBonuses.BuildSeat(i, players[i].UserId, players[i].NickName, 1, Array.Empty<CombatTalentCount>(), tables);
             seats[i].IsHuman = !players[i].IsBot;
+            seats[i].ShopPoolIds = shopPool ?? Array.Empty<int>();
             if (hp > 0)
             {
                 seats[i].Hp = hp;
@@ -392,6 +750,16 @@ public class PvpMatchTests
         }
 
         return PvpMatch.Open(Guid.NewGuid(), 42, players, tables, seats, 1);
+    }
+
+    /// <summary>settle/shop 阶段由 deadline 驱动：用远期时间戳推进到下一个 fight 或 finished。</summary>
+    private static void AdvanceThrough(PvpMatch match)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        for (var i = 0; i < 4 && match.Phase != PvpMatch.PhaseFight && match.Phase != PvpMatch.PhaseFinished; i++)
+        {
+            match.ApplyTimeouts(now + 600_000);
+        }
     }
 
     private static PlayerPublic Pub(string nick)

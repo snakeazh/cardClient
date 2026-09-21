@@ -290,6 +290,71 @@ public class PvpMatchmakerTests
         Assert.Throws<InvalidOperationException>(() => PvpBots.Create(empty, 0));
     }
 
+    [Fact]
+    public void SweepExpiredKicksStaleEntriesAndKeepsFresh()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        var stale = Public("旧");
+        var fresh = Public("新");
+        matchmaker.Enqueue(stale);
+        now += 30_000;
+        matchmaker.Enqueue(fresh);
+
+        var expired = matchmaker.SweepExpired(now + 30_001, 60_000, out var remaining);
+
+        Assert.Single(expired);
+        Assert.Equal(Guid.Parse(stale.UserId), expired[0]);
+        Assert.Single(remaining);
+        Assert.Equal(fresh.UserId, remaining[0].UserId);
+    }
+
+    [Fact]
+    public void SweepExpiredKeepsAllWhenNoneStale()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.Enqueue(Public("乙"));
+
+        var expired = matchmaker.SweepExpired(now + 59_999, 60_000, out var remaining);
+        Assert.Empty(expired);
+        Assert.Equal(2, remaining.Count);
+
+        var kicked = matchmaker.SweepExpired(now + 60_000, 60_000, out var after);
+        Assert.Equal(2, kicked.Count);
+        Assert.Empty(after);
+    }
+
+    [Fact]
+    public void QueueAcceptsNewEnqueuesAfterSweep()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.SweepExpired(now + 61_000, 60_000, out _);
+
+        var again = matchmaker.Enqueue(Public("乙"));
+        Assert.False(again.RoomOpened);
+        Assert.Single(again.Players);
+        Assert.Equal("乙", again.Players[0].NickName);
+    }
+
+    [Fact]
+    public void RequeueRefreshesEnqueueTimestamp()
+    {
+        var now = 1_000_000L;
+        var matchmaker = new InMemoryPvpMatchmaker(() => now);
+        var one = Public("甲");
+        matchmaker.Enqueue(one);
+        now += 50_000;
+        matchmaker.Enqueue(one);
+
+        var expired = matchmaker.SweepExpired(now + 30_000, 60_000, out var remaining);
+        Assert.Empty(expired);
+        Assert.Single(remaining);
+    }
+
     private static PlayerPublic Public(string nick, string avatar = "")
     {
         return new PlayerPublic
@@ -298,5 +363,18 @@ public class PvpMatchmakerTests
             NickName = nick,
             AvatarUrl = avatar
         };
+    }
+}
+
+public class NullPvpBusTests
+{
+    [Fact]
+    public async Task PublishIsNoOpAndCommandReportsNoBus()
+    {
+        var bus = new NullPvpBus();
+        Assert.NotEqual(Guid.Empty, bus.InstanceId);
+        await bus.PublishToUserAsync(Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.MatchUpdate }, CancellationToken.None);
+        var published = await bus.PublishCommandAsync(Guid.NewGuid(), Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.Battle }, CancellationToken.None);
+        Assert.False(published);
     }
 }

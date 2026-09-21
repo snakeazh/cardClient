@@ -30,6 +30,14 @@ namespace CardShare.Contracts
         public int PeekLeft { get; set; }
 
         public bool IsBot { get; set; }
+
+        public bool Disconnected { get; set; }
+
+        /// <summary>对局结束后的名次奖励金币；未结束为 0。</summary>
+        public int RewardGold { get; set; }
+
+        /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
+        public int[] RelicIds { get; set; } = System.Array.Empty<int>();
     }
 
     public sealed class PvpDuelSummaryDto
@@ -41,6 +49,38 @@ namespace CardShare.Contracts
         public string MonsterName { get; set; } = string.Empty;
 
         public bool Resolved { get; set; }
+    }
+
+    public sealed class PvpMatchEventDto
+    {
+        public long Version { get; set; }
+
+        /// <summary>round_start / settle_start / shop_start / duel_resolved / player_eliminated /
+        /// player_offline / player_online / match_finished。</summary>
+        public string Kind { get; set; } = string.Empty;
+
+        public int Round { get; set; }
+
+        public string UserId { get; set; } = string.Empty;
+
+        public int Value { get; set; }
+    }
+
+    public sealed class PvpShopStateDto
+    {
+        public int[] OfferIds { get; set; } = System.Array.Empty<int>();
+
+        public int[] OfferPrices { get; set; } = System.Array.Empty<int>();
+
+        public int RefreshCost { get; set; }
+
+        public int FreeRefreshLeft { get; set; }
+
+        public int[] OwnedRelicIds { get; set; } = System.Array.Empty<int>();
+
+        public int[] OwnedSellPrices { get; set; } = System.Array.Empty<int>();
+
+        public bool Done { get; set; }
     }
 
     public sealed class PvpMatchStateDto
@@ -73,5 +113,14 @@ namespace CardShare.Contracts
 
         /// <summary>快照生成时的服务器当前时刻（UTC 毫秒）。客户端用它校准时钟偏移，不要拿本地时钟直接比 deadline。</summary>
         public long ServerNowUtcMs { get; set; }
+
+        /// <summary>状态版本号：每次状态变更单调递增。客户端用它过滤乱序/重复快照。</summary>
+        public long StateVersion { get; set; }
+
+        /// <summary>自上一快照以来的增量事件；广播另行通过 match_event 下发时这里为空。</summary>
+        public PvpMatchEventDto[] Events { get; set; } = System.Array.Empty<PvpMatchEventDto>();
+
+        /// <summary>商店阶段本人视角的商店状态；非商店阶段或非本人为 null。</summary>
+        public PvpShopStateDto? Shop { get; set; }
     }
 }

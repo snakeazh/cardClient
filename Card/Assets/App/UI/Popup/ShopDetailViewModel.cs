@@ -45,6 +45,7 @@ namespace App.UI.Popup
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
+            ShowVideoBuy = new ObservableProperty<bool>(false);
             ShowBuyUse = new ObservableProperty<bool>(false);
             ShowUse = new ObservableProperty<bool>(false);
             CanAffordBuy = new ObservableProperty<bool>(true);
@@ -86,6 +87,9 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowBuy { get; }
 
         public ObservableProperty<bool> ShowSell { get; }
+
+        /// <summary>看广告免费买：仅 PvE；PVP 无广告入口。</summary>
+        public ObservableProperty<bool> ShowVideoBuy { get; }
 
         /// <summary>货架消耗品：购买并立刻使用。</summary>
         public ObservableProperty<bool> ShowBuyUse { get; }
@@ -314,6 +318,7 @@ namespace App.UI.Popup
             IconSprite.Value = GetRelicIcon(relic);
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;
+            ShowVideoBuy.Value = Buying && !Session.IsPvp;
             ShowBuyUse.Value = Buying && Session.CanUseRelicNow(RelicId, requireOwned: false);
             ShowUse.Value = !Buying && Session.CanUseRelicNow(RelicId, requireOwned: true);
             TipText.Value = DefaultTip;

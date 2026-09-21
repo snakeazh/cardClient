@@ -92,6 +92,7 @@ public static class InfrastructureServiceCollectionExtensions
                 }
             });
             services.AddSingleton<IPlayerLock, RedisPlayerLock>();
+            services.AddSingleton<IPvpBus, RedisPvpBus>();
             services.AddSingleton<RedisPvpMatchmaker>();
             services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
                 sp.GetRequiredService<RedisPvpMatchmaker>(),
@@ -104,6 +105,7 @@ public static class InfrastructureServiceCollectionExtensions
         else
         {
             services.AddSingleton<IPlayerLock, MemoryPlayerLock>();
+            services.AddSingleton<IPvpBus, NullPvpBus>();
             services.AddSingleton<InMemoryPvpMatchmaker>();
             services.AddSingleton<IPvpMatchmaker>(sp => WrapMatchmaker(
                 sp.GetRequiredService<InMemoryPvpMatchmaker>(),

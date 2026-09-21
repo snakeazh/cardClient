@@ -9,6 +9,8 @@ public sealed class PvpMatchHost
 {
     public const int DefaultModeId = PvpSchedule.DefaultModeId;
 
+    private const long FinishedRoomTtlMs = 5 * 60 * 1000;
+
     private readonly IGameTables _tables;
     private readonly object _gate = new object();
     private readonly Dictionary<Guid, PvpMatch> _byUser = new Dictionary<Guid, PvpMatch>();
@@ -52,9 +54,22 @@ public sealed class PvpMatchHost
         }
     }
 
-    public void Showdown(Guid userId)
+    /// <summary>标记玩家断线/重连。match 为 null = 无对局；返回 true = 有状态变化需广播。</summary>
+    public bool SetConnected(Guid userId, bool connected, out PvpMatch? match)
     {
-        Act(userId, "showdown", 0, Array.Empty<int>());
+        lock (_gate)
+        {
+            match = null;
+            if (!_byUser.TryGetValue(userId, out var found))
+            {
+                return false;
+            }
+
+            var version = found.StateVersion;
+            found.SetDisconnected(userId.ToString("N"), !connected);
+            match = found;
+            return found.StateVersion != version;
+        }
     }
 
     public void Act(Guid userId, string action, int index, int[] indexes)
@@ -109,6 +124,44 @@ public sealed class PvpMatchHost
             }
 
             return changed;
+        }
+    }
+
+    /// <summary>回收结束超过 5 分钟的房间。</summary>
+    public void PurgeFinishedRooms(DateTimeOffset now)
+    {
+        var nowMs = now.ToUnixTimeMilliseconds();
+        lock (_gate)
+        {
+            var stale = new List<PvpMatch>();
+            foreach (var pair in _byRoom)
+            {
+                var match = pair.Value;
+                if (match.Phase == PvpMatch.PhaseFinished
+                    && match.FinishedUtcMs > 0
+                    && nowMs - match.FinishedUtcMs > FinishedRoomTtlMs)
+                {
+                    stale.Add(match);
+                }
+            }
+
+            foreach (var match in stale)
+            {
+                _byRoom.Remove(match.RoomId);
+                var users = new List<Guid>();
+                foreach (var pair in _byUser)
+                {
+                    if (ReferenceEquals(pair.Value, match))
+                    {
+                        users.Add(pair.Key);
+                    }
+                }
+
+                foreach (var userId in users)
+                {
+                    _byUser.Remove(userId);
+                }
+            }
         }
     }
 

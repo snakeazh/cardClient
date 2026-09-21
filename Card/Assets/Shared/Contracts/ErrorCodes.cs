@@ -19,5 +19,6 @@ namespace CardShare.Contracts
         public const string TalentPoolEmpty = "talent_pool_empty";
         public const string AdLimitReached = "ad_limit_reached";
         public const string Conflict = "conflict";
+        public const string NotInBattle = "not_in_battle";
     }
 }

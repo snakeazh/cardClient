@@ -79,6 +79,52 @@ namespace App.Net
         public override Task ExecuteAsync(PvpMatchSession session) => session.StartQueueAsync();
     }
 
+    /// <summary>商店购买：battle 的 index 传 relicId。</summary>
+    public sealed class PvpWsShopBuyCommand : PvpWsCommand
+    {
+        private readonly int _relicId;
+
+        public PvpWsShopBuyCommand(int relicId)
+        {
+            _relicId = relicId;
+        }
+
+        public override string Name => "buy";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.ShopBuyAsync(_relicId);
+    }
+
+    /// <summary>商店出售：battle 的 index 传 relicId。</summary>
+    public sealed class PvpWsShopSellCommand : PvpWsCommand
+    {
+        private readonly int _relicId;
+
+        public PvpWsShopSellCommand(int relicId)
+        {
+            _relicId = relicId;
+        }
+
+        public override string Name => "sell";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.ShopSellAsync(_relicId);
+    }
+
+    public sealed class PvpWsShopRefreshCommand : PvpWsCommand
+    {
+        public override string Name => "refresh";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.ShopRefreshAsync();
+    }
+
+    public sealed class PvpWsShopDoneCommand : PvpWsCommand
+    {
+        public override string Name => "shop_done";
+
+        public override bool Coalescible => true;
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.ShopDoneAsync();
+    }
+
     /// <summary>
     /// 命令调用器：FIFO 串行执行，同一时刻最多一个在途操作。
     /// Enqueue 返回的任务随命令完成/失败，调用方自行决定 await 或 fire-and-forget。
@@ -113,6 +159,14 @@ namespace App.Net
         public Task EnqueueShowdown() => Enqueue(new PvpWsShowdownCommand());
 
         public Task EnqueueStartQueue() => Enqueue(new PvpWsStartQueueCommand());
+
+        public Task EnqueueShopBuy(int relicId) => Enqueue(new PvpWsShopBuyCommand(relicId));
+
+        public Task EnqueueShopSell(int relicId) => Enqueue(new PvpWsShopSellCommand(relicId));
+
+        public Task EnqueueShopRefresh() => Enqueue(new PvpWsShopRefreshCommand());
+
+        public Task EnqueueShopDone() => Enqueue(new PvpWsShopDoneCommand());
 
         public Task Enqueue(PvpWsCommand command)
         {

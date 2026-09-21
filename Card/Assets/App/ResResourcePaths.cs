@@ -79,6 +79,8 @@ namespace App.Resources
         public const string RelicAtlas = "Altas/Relic";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ItemBg.spriteatlasv2（源图 Assets/Sprites/ItemBg）。</summary>
         public const string ItemBgAtlas = "Altas/ItemBg";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/playitem.spriteatlasv2（源图 Assets/Sprites/playeritem，品质卡背 {品质}CardFrameBack{1,2,3}）。</summary>
+        public const string PlayItemAtlas = "Altas/playitem";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
         public const string TalentAtlas = "Altas/Talent";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>

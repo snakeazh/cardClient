@@ -43,6 +43,7 @@ namespace App.UI
             Resources = resources;
             StaminaText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
+            OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -57,6 +58,9 @@ namespace App.UI
         public ObservableProperty<string> StaminaText { get; }
 
         public IRelayCommand StartCommand { get; }
+
+        /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
+        public IRelayCommand OpenTTRewardCommand { get; }
 
         protected override async Task OnOpen(object args)
         {
@@ -144,6 +148,21 @@ namespace App.UI
                 AppLog.Exception(LogChannel.UI, ex);
                 await _navigation.EnsureShown();
                 _toast?.ShowWarning("选关界面打开失败，请重试");
+            }
+        }
+
+        private async void OpenTTReward()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TTRewardPopViewModel));
+                var vm = (TTRewardPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("奖励界面打开失败，请重试");
             }
         }
     }

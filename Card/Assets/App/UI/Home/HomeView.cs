@@ -22,6 +22,7 @@ namespace App.UI
             _playerItem = GetComponentInChildren<PlayerItem>(true);
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
+            Binding.BindCommand(UI.GetGameObject("TTRewardItem").GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
             BindHero();
         }
 

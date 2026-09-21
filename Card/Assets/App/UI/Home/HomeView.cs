@@ -23,6 +23,7 @@ namespace App.UI
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             Binding.BindCommand(UI.GetGameObject("TTRewardItem").GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
+            Binding.BindActive(UI.GetGameObject("TTRewardItem"), ViewModel.TTRewardEntryVisible);
             BindHero();
         }
 

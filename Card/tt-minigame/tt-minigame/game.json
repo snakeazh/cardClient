@@ -1,0 +1,30 @@
+{
+  "deviceOrientation":"portrait",
+  "menuButtonStyle":"dark",
+  "enableWebGL2":true,
+  "enableIOSHighPerformanceMode": true,
+  "enableIOSHighPerformanceModePlus": false,
+  "enableAndroidPipelineMode": false,
+  "subpackages": [
+    {
+      "name" : "StreamingAssets",
+      "root" : "StreamingAssets/"
+    },
+    {
+      "name" : "wasmcode",
+      "root" : "wasmcode/"
+    },
+    {
+      "name" : "data-package",
+      "root" : "data-package/"
+    }
+  ],
+  "plugins": {
+    "UnityPlugin": {
+      "version": "4.42.2",
+      "provider": "tt674511f8f84ea91612"
+    }
+  },
+  "graphicsDeviceType": []
+  
+}

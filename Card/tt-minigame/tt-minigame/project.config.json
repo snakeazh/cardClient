@@ -1,0 +1,19 @@
+{
+    "appid": "tt5ae42c59c49f0e8907",
+    "projectname": "炸牌兄弟",
+    "packOptions": {
+        "ignore": [
+            {
+                "type": "folder",
+                "value": "native"
+            },
+            {
+                "type": "folder",
+                "value": "__MACOSX"
+            }
+        ]
+    },
+    "setting": {
+        "urlCheck": false
+    }
+}

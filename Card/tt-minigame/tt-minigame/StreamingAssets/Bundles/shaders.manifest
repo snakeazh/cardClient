@@ -1,0 +1,26 @@
+ManifestFileVersion: 0
+CRC: 2651643757
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 85c71e882138b7998fa3a004bfca95e7
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 0df1dec30b5d061d422d3e6493d27647
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 85c71e882138b7998fa3a004bfca95e7
+HashAppended: 0
+ClassTypes:
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Shaders/CardShaderFront.shader
+- Assets/Res/Shaders/WindSwayUI.shader
+- Assets/Res/Shaders/CardShaderBack.shader
+- Assets/Res/Shaders/UIFlowLight.shader
+- Assets/Res/Shaders/UISplit.shader
+- Assets/Res/Shaders/WindSwaySprite.shader
+- Assets/Res/Shaders/UIDissolve.shader
+Dependencies: []

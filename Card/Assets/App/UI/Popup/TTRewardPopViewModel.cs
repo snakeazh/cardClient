@@ -26,12 +26,16 @@ namespace App.UI.Popup
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
             _toast = toast;
             RewardText = new ObservableProperty<string>(_reward.GoldPerClaim.ToString());
+            ReceiveText = new ObservableProperty<string>(GetReceiveText());
             ReceiveCommand = new RelayCommand(Receive, () => _reward.ClaimsLeftToday > 0);
             CloseCommand = new RelayCommand(Close);
         }
 
         /// <summary>奖励数量文案（BG/RewardArea/Num）。</summary>
         public ObservableProperty<string> RewardText { get; }
+
+        /// <summary>领取按钮文案（BG/Receive/Text）：完成态「立即领奖」，未完成态「进入侧边栏」。</summary>
+        public ObservableProperty<string> ReceiveText { get; }
 
         public IRelayCommand ReceiveCommand { get; }
 
@@ -42,6 +46,7 @@ namespace App.UI.Popup
             _reward.Changed -= OnRewardChanged;
             _reward.Changed += OnRewardChanged;
             RewardText.Value = _reward.GoldPerClaim.ToString();
+            ReceiveText.Value = GetReceiveText();
             return Task.CompletedTask;
         }
 
@@ -53,14 +58,22 @@ namespace App.UI.Popup
 
         private void OnRewardChanged()
         {
+            ReceiveText.Value = GetReceiveText();
             ReceiveCommand.RaiseCanExecuteChanged();
+        }
+
+        private string GetReceiveText()
+        {
+            return _reward.IsFromSidebar ? "立即领奖" : "进入侧边栏";
         }
 
         private void Receive()
         {
             if (!_reward.IsFromSidebar)
             {
-                _toast?.ShowWarning("请从抖音主界面左上角的侧边栏进入游戏后领取");
+                // 未完成态：关闭弹窗并跳转抖音首页侧边栏，从侧边栏回到游戏后再领取。
+                _reward.NavigateToSidebar();
+                Close();
                 return;
             }
 

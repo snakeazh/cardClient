@@ -5,6 +5,7 @@ using App.Config;
 using App.Energy;
 using App.Resources;
 using App.Talent;
+using App.TTReward;
 using App.Unlock;
 using App.UI.Popup;
 using Framework.Assets;
@@ -23,6 +24,7 @@ namespace App.UI
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
+        private readonly ITTRewardService _ttReward;
         private readonly ToastService _toast;
 
         public HomeViewModel(
@@ -32,6 +34,7 @@ namespace App.UI
             IResourceService resources,
             IAudioService audio,
             IUnlockConditionService unlock,
+            ITTRewardService ttReward,
             ToastService toast)
         {
             _ui = ui;
@@ -39,9 +42,11 @@ namespace App.UI
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
+            _ttReward = ttReward;
             _toast = toast;
             Resources = resources;
             StaminaText = new ObservableProperty<string>();
+            TTRewardEntryVisible = new ObservableProperty<bool>(ttReward != null && ttReward.IsSidebarEntrySupported);
             StartCommand = new RelayCommand(OpenLevelUI);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
@@ -57,6 +62,9 @@ namespace App.UI
         /// <summary>开始按钮上的每局体力消耗标注，如 "x1"。当前体力在顶部资源栏显示。</summary>
         public ObservableProperty<string> StaminaText { get; }
 
+        /// <summary>侧边栏奖励入口可见性：tt.checkScene 不支持的宿主隐藏入口。</summary>
+        public ObservableProperty<bool> TTRewardEntryVisible { get; }
+
         public IRelayCommand StartCommand { get; }
 
         /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
@@ -64,7 +72,29 @@ namespace App.UI
 
         protected override async Task OnOpen(object args)
         {
+            if (_ttReward != null)
+            {
+                _ttReward.Changed -= OnTTRewardChanged;
+                _ttReward.Changed += OnTTRewardChanged;
+                OnTTRewardChanged();
+            }
+
             await RefreshOnReturnAsync();
+        }
+
+        protected override Task OnClose()
+        {
+            if (_ttReward != null)
+            {
+                _ttReward.Changed -= OnTTRewardChanged;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private void OnTTRewardChanged()
+        {
+            TTRewardEntryVisible.Value = _ttReward.IsSidebarEntrySupported;
         }
 
         /// <summary>

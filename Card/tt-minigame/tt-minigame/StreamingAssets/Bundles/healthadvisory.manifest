@@ -1,0 +1,22 @@
+ManifestFileVersion: 0
+CRC: 3840196512
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: d1f52ef35069fd39e30e42dc118a4f0d
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 2d8df09e698f722ada1caa03d3413830
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: d1f52ef35069fd39e30e42dc118a4f0d
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/HealthAdvisory/AgeSuitableHint.png
+Dependencies: []

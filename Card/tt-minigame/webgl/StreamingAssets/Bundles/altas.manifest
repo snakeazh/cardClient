@@ -1,0 +1,37 @@
+ManifestFileVersion: 0
+CRC: 2534184842
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: edc6146b9841e9a8f3d26f1f22a675de
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 033fafe2c9f6c610c3a734393882fd4c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: edc6146b9841e9a8f3d26f1f22a675de
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 687078895
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Altas/ShopNum.spriteatlasv2
+- Assets/Res/Altas/Relic.spriteatlasv2
+- Assets/Res/Altas/Common.spriteatlasv2
+- Assets/Res/Altas/Card.spriteatlasv2
+- Assets/Res/Altas/Talent.spriteatlasv2
+- Assets/Res/Altas/ItemBg.spriteatlasv2
+- Assets/Res/Altas/Battle.spriteatlasv2
+- Assets/Res/Altas/CardType.spriteatlasv2
+- Assets/Res/Altas/ItemBgStyle.spriteatlasv2
+- Assets/Res/Altas/BG.spriteatlasv2
+- Assets/Res/Altas/cardTypeValue.spriteatlasv2
+- Assets/Res/Altas/enemytujian.spriteatlasv2
+- Assets/Res/Altas/LevelUI.spriteatlasv2
+Dependencies:
+- D:/UnityProject/cardclient/Card/Bundles/_staging/textures

@@ -1,0 +1,78 @@
+ManifestFileVersion: 0
+CRC: 303409947
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: a8df8f05112155ef20549300a6d8f86c
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: a3700a23a5ba6d7aab55147b4b19eda4
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: a8df8f05112155ef20549300a6d8f86c
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Animations/Player/ani_atk_lv01_back.anim
+- Assets/Res/Animations/Player/ani_atk_lv02_move.anim
+- Assets/Res/Animations/Player/ani_atk_lv01_end.anim
+- Assets/Res/Animations/Camera/Camera.controller
+- Assets/Res/Animations/Chouka/ItemRootLoop.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_hit.anim
+- Assets/Res/Animations/Chouka/ItemRootLocked.anim
+- Assets/Res/Animations/Number/NumberNormal.anim
+- Assets/Res/Animations/Card/aini_card_appear02.anim
+- Assets/Res/Animations/Shop/ani_shop_choose_loop.anim
+- Assets/Res/Animations/Chouka/ItemRoot.anim
+- Assets/Res/Animations/Card/aini_card_change.anim
+- Assets/Res/Animations/Player/aini_atk_select.anim
+- Assets/Res/Animations/Shop/ani_shop_choose_start.anim
+- Assets/Res/Animations/Player/ani_atk_lv01_hit.anim
+- Assets/Res/Animations/Number/NumberShack.prefab
+- Assets/Res/Animations/Camera/CameraDefault.anim
+- Assets/Res/Animations/Card/aini_card_deal.anim
+- Assets/Res/Animations/Shop/ShopRoot.controller
+- Assets/Res/Animations/Player/ani_atk_lv02_end.anim
+- Assets/Res/Animations/Camera/CameraShakeMiddle.anim
+- Assets/Res/Animations/Shop/ani_shop_onchoose.anim
+- Assets/Res/Animations/Card/aini_card_exit.anim
+- Assets/Res/Animations/Card/aini_card_turn.anim
+- Assets/Res/Animations/Number/NumberShack.controller
+- Assets/Res/Animations/Card/TweenTarget.controller
+- Assets/Res/Animations/Player/ani_atk_lv01_move.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_move.anim
+- Assets/Res/Animations/Camera/CameraShakeLow.anim
+- Assets/Res/Animations/Card/aini_card_back.anim
+- Assets/Res/Animations/Number/NumberShackHigh.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_end.anim
+- Assets/Res/Animations/Player/ani_atk_lv02_back.anim
+- Assets/Res/Animations/Shop/ani_shop_choose_end.anim
+- Assets/Res/Animations/Hptext/ani_hptextdi.anim
+- Assets/Res/Animations/Player/ani_atk_lv01_start.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_miss.anim
+- Assets/Res/Animations/Player/PlayerRoot.controller
+- Assets/Res/Animations/Camera/CameraShakeHigh.anim
+- Assets/Res/Animations/Shop/ani_shop_default.anim
+- Assets/Res/Animations/Chouka/ItemRootDefault.anim
+- Assets/Res/Animations/Card/aini_card_front.anim
+- Assets/Res/Animations/Card/aini_card_settle.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_start.anim
+- Assets/Res/Animations/Card/aini_card_appear01.anim
+- Assets/Res/Animations/Player/ani_atk_lv02_hit.anim
+- Assets/Res/Animations/Player/ani_atk_lv03_back.anim
+- Assets/Res/Animations/Player/ani_default.anim
+- Assets/Res/Animations/Chouka/ItemRoot.controller
+- Assets/Res/Animations/Player/ani_atk_lv02_start.anim
+- Assets/Res/Animations/Number/NumberShackLow.anim
+Dependencies: []

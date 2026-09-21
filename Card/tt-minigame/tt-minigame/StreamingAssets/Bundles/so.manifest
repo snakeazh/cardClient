@@ -1,0 +1,40 @@
+ManifestFileVersion: 0
+CRC: 2774813646
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: e4d67997995f37b041c2cf6bf2e8a236
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: c26fb9f3bf56f69fff8571fc44eda2a7
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: e4d67997995f37b041c2cf6bf2e8a236
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: b7a41c9e2f6d4a53b8c0d1e2f3a4b5c6, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 198
+  Script: {instanceID: 0}
+- Class: 199
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers:
+- AssemblyName: Assembly-CSharp
+  ClassName: App.UI.AttackTuningConfig/LevelTuning
+Assets:
+- Assets/Res/SO/AttackTuning.asset
+Dependencies: []

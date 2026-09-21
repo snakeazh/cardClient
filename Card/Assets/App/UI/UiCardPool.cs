@@ -104,8 +104,9 @@ namespace App.UI
             return card;
         }
 
-        /// <summary>回收 ItemCard：先停用（停粒子/动画）再复位选中态、品质特效、等级角标与图标染色，
-        /// 清点击订阅（旧视图已销毁，残留订阅会调到已销毁对象）。</summary>
+        /// <summary>回收 ItemCard：先停用（停粒子/动画）再复位选中态、缩放、品质特效、等级角标与图标染色，
+        /// 清点击订阅（旧视图已销毁，残留订阅会调到已销毁对象）。缩放回池即复位 1，
+        /// 非默认缩放的视图（图鉴 0.9）须在租用后自行重设。</summary>
         public static void ReleaseItemCard(ItemCard card)
         {
             if (card == null)
@@ -116,6 +117,7 @@ namespace App.UI
             card.gameObject.SetActive(false);
             card.ClearClicked();
             card.SetSelected(false);
+            card.transform.localScale = Vector3.one;
             card.ShowQualityFx(QualityType.Ordinary);
             card.SetLevel(null);
             card.SetIconColor(Color.white);

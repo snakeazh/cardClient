@@ -11,6 +11,7 @@ using App.Guide;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.TTReward;
 using App.Unlock;
 using App.Wallet;
 using App.UI;
@@ -127,6 +128,7 @@ namespace App.Bootstrap
             RegisterScore(_services);
             RegisterTalent(_services);
             RegisterAdShop(_services);
+            RegisterTTReward(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
@@ -257,6 +259,16 @@ namespace App.Bootstrap
             shop.Load();
             services.Register(shop);
             services.Register<IAdShopService>(shop);
+        }
+
+        private static void RegisterTTReward(AppServicesHost services)
+        {
+            var reward = new TTRewardService(
+                services.Resolve<ISaveService>(),
+                services.Resolve<IWalletService>());
+            reward.Load();
+            services.Register(reward);
+            services.Register<ITTRewardService>(reward);
         }
 
         private static void RegisterUnlock(AppServicesHost services)

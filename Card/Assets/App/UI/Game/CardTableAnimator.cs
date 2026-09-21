@@ -25,6 +25,10 @@ namespace App.UI
         private const float DealFlipPause = 0.12f;
         private const float ShuffleStagger = 0.015f;
         private const float ShuffleAppear02 = 0.8f;
+        // 洗牌堆只铺视觉需要的张数：每次出 2 张、共 20 次（40 张），
+        // 比整副 52 张少 12 个同播 Animator；发牌最多 5+5=10 张，不够时 TakeDealCard 有 SpawnLooseDealCard 兜底。
+        private const int PileCardCount = 40;
+        private const int PileCardsPerSpawn = 2;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
@@ -941,9 +945,10 @@ namespace App.UI
             }
 
             var delay = 0f;
-            for (var i = 0; i < Deck.Size; i++)
+            var spawnCount = (PileCardCount + PileCardsPerSpawn - 1) / PileCardsPerSpawn;
+            for (var s = 0; s < spawnCount; s++)
             {
-                var last = i == Deck.Size - 1;
+                var first = s * PileCardsPerSpawn;
                 seq.InsertCallback(delay, () =>
                 {
                     if (token != _dealToken)
@@ -951,15 +956,24 @@ namespace App.UI
                         return;
                     }
 
-                    var item = SpawnPileCard(prefab);
-                    if (item == null)
+                    for (var k = 0; k < PileCardsPerSpawn; k++)
                     {
-                        return;
-                    }
+                        var index = first + k;
+                        if (index >= PileCardCount)
+                        {
+                            break;
+                        }
 
-                    item.SetSpritesVisible(false);
-                    _dealPile.Attach(item);
-                    item.PlayShuffleAppear(last);
+                        var item = SpawnPileCard(prefab);
+                        if (item == null)
+                        {
+                            return;
+                        }
+
+                        item.SetSpritesVisible(false);
+                        _dealPile.Attach(item);
+                        item.PlayShuffleAppear(index == PileCardCount - 1);
+                    }
                 });
                 delay += ShuffleStagger;
             }
@@ -1253,15 +1267,13 @@ namespace App.UI
                 return null;
             }
 
-            var go = UnityEngine.Object.Instantiate(prefab);
-            go.name = "DealCard" + (_dealPile.Count + 1);
-
-            var item = go.GetComponent<CardItem>();
+            var item = CardItemPool.Rent(prefab);
             if (item == null)
             {
-                item = go.AddComponent<CardItem>();
+                return null;
             }
 
+            item.gameObject.name = "DealCard" + (_dealPile.Count + 1);
             item.Initialize(
                 default,
                 CardFaceState.Back,
@@ -1355,12 +1367,10 @@ namespace App.UI
 
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
-            var go = UnityEngine.Object.Instantiate(prefab);
-
-            var item = go.GetComponent<CardItem>();
+            var item = CardItemPool.Rent(prefab);
             if (item == null)
             {
-                item = go.AddComponent<CardItem>();
+                return null;
             }
 
             item.Initialize(card, CardFaceState.Back, start, startRot, Vector3.one);
@@ -1992,7 +2002,7 @@ namespace App.UI
             {
                 if (view.Items[i] != null)
                 {
-                    UnityEngine.Object.Destroy(view.Items[i].gameObject);
+                    CardItemPool.Return(view.Items[i]);
                     view.Items[i] = null;
                 }
 

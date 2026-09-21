@@ -845,7 +845,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "疯狂猴子",
-    "Icon": "",
+    "Icon": "CrazyMonkey",
     "Price": 150,
     "SellingPrice": 75,
     "MechanismId": [
@@ -861,7 +861,7 @@
     "Type": 2,
     "RefreshProbability": 0.4,
     "Name": "贪婪",
-    "Icon": "",
+    "Icon": "Greed",
     "Price": 110,
     "SellingPrice": 55,
     "MechanismId": [
@@ -1326,7 +1326,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "倍率叠加",
-    "Icon": "",
+    "Icon": "MultiplierStacking",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1341,7 +1341,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "力量叠加",
-    "Icon": "",
+    "Icon": "PowerStacking",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1356,7 +1356,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "召唤",
-    "Icon": "",
+    "Icon": "Summon",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1371,7 +1371,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "国王领域",
-    "Icon": "",
+    "Icon": "KingdomDomain",
     "Price": 250,
     "SellingPrice": 125,
     "MechanismId": [
@@ -1386,7 +1386,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "皇后领域",
-    "Icon": "",
+    "Icon": "QueenDomain",
     "Price": 250,
     "SellingPrice": 125,
     "MechanismId": [
@@ -1401,7 +1401,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "复制",
-    "Icon": "",
+    "Icon": "Copy",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1416,7 +1416,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "借花献佛",
-    "Icon": "",
+    "Icon": "BorrowFlowerPresentBuddha",
     "Price": 260,
     "SellingPrice": 130,
     "MechanismId": [
@@ -1431,7 +1431,7 @@
     "Type": 3,
     "RefreshProbability": 0.2,
     "Name": "妙手",
-    "Icon": "",
+    "Icon": "MagicHand",
     "Price": 240,
     "SellingPrice": 120,
     "MechanismId": [
@@ -1932,7 +1932,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "高档甜品",
-    "Icon": "",
+    "Icon": "HighGradeDessert",
     "Price": 280,
     "SellingPrice": 140,
     "MechanismId": [
@@ -1947,7 +1947,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "第六感",
-    "Icon": "",
+    "Icon": "SixthSense",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [
@@ -1962,7 +1962,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "炸弹恶魔",
-    "Icon": "",
+    "Icon": "BombDemon",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [
@@ -1977,7 +1977,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "消费主义",
-    "Icon": "",
+    "Icon": "Consumerism",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [
@@ -1992,7 +1992,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "高档饮品",
-    "Icon": "",
+    "Icon": "HighGradeDrink",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [
@@ -2007,7 +2007,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "幸运之子",
-    "Icon": "",
+    "Icon": "LuckyChild",
     "Price": 350,
     "SellingPrice": 175,
     "MechanismId": [
@@ -2022,7 +2022,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "万能A",
-    "Icon": "",
+    "Icon": "UniversalA",
     "Price": 400,
     "SellingPrice": 200,
     "MechanismId": [

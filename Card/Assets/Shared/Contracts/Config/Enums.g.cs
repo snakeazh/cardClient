@@ -253,6 +253,56 @@ namespace CardShare.Contracts.Config
         /// </summary>
         DisableHeadUesd = 49,
 
+        /// <summary>
+        /// BOSS开牌前偷看玩家手牌,弃掉自己最差的牌重抽
+        /// </summary>
+        PeekSwap = 50,
+
+        /// <summary>
+        /// 玩家被点燃,每回合开始受伤,赢下比牌可压制一回合
+        /// </summary>
+        VengefulFlame = 51,
+
+        /// <summary>
+        /// BOSS每回合叠加冰甲吸收伤害,大伤害一击击碎
+        /// </summary>
+        FrostArmor = 52,
+
+        /// <summary>
+        /// BOSS每损失10%生命,造成的伤害提高,有上限
+        /// </summary>
+        BloodDebt = 53,
+
+        /// <summary>
+        /// BOSS开场沉睡,苏醒后攻击强化且首击加倍
+        /// </summary>
+        StoneDormancy = 54,
+
+        /// <summary>
+        /// BOSS赢比牌加攻,输比牌变脆
+        /// </summary>
+        WinLust = 55,
+
+        /// <summary>
+        /// 每回合收割玩家生命上限
+        /// </summary>
+        SoulHarvest = 56,
+
+        /// <summary>
+        /// BOSS周期蓄力,赢牌则重击,输牌则被打断眩晕
+        /// </summary>
+        ChargeSmash = 57,
+
+        /// <summary>
+        /// BOSS比牌顺位复制玩家上回合牌型,惩罚重复套路
+        /// </summary>
+        MirrorHand = 58,
+
+        /// <summary>
+        /// BOSS存活时,其他敌人受到伤害降低且造成伤害提高
+        /// </summary>
+        CanopyAura = 59,
+
     }
 
     /// <summary>
@@ -1222,6 +1272,81 @@ namespace CardShare.Contracts.Config
         /// 卡牌提供攻击力
         /// </summary>
         CardProvideAttack = 153,
+
+        /// <summary>
+        /// 回合结束后,有概率摧毁此圣物(参数:概率)
+        /// </summary>
+        SelfDestroyPerRound = 154,
+
+        /// <summary>
+        /// 比牌胜利后自身倍率+X,失败后-X(参数:胜利加成|失败扣除)
+        /// </summary>
+        SelfMultWinLose = 155,
+
+        /// <summary>
+        /// 每使用1次消耗类圣物,永久倍率+X
+        /// </summary>
+        UseConsumableGetMult = 156,
+
+        /// <summary>
+        /// 每使用1次消耗类圣物,永久攻击+X
+        /// </summary>
+        UseConsumableGetAttack = 157,
+
+        /// <summary>
+        /// 亮出同花顺时,随机生成1个消耗品圣物(需圣物栏有空位)
+        /// </summary>
+        SummonConsumable = 158,
+
+        /// <summary>
+        /// 留在手牌中的指定点数牌每张提供倍率(参数:点数A=14/K=13/Q=12/J=11|倍率)
+        /// </summary>
+        UnshownRankMult = 159,
+
+        /// <summary>
+        /// 每回合随机复制1个其他已拥有圣物的能力
+        /// </summary>
+        CopyRandomRelic = 160,
+
+        /// <summary>
+        /// 本关每存在1条关卡机制,造成的伤害提高(参数:百分比)
+        /// </summary>
+        DamagePerLevelEntry = 161,
+
+        /// <summary>
+        /// 使用透视时,随机抽走该敌人1张手牌,与自己点数最小的1张交换
+        /// </summary>
+        PeekSteal = 162,
+
+        /// <summary>
+        /// 提供攻击力,每次比牌后衰减(参数:初始攻击|每次衰减)
+        /// </summary>
+        SelfDecayAttack = 163,
+
+        /// <summary>
+        /// 提供倍率,每次比牌后衰减(参数:初始倍率|每次衰减)
+        /// </summary>
+        SelfDecayMult = 164,
+
+        /// <summary>
+        /// 指定牌型每亮出1次,结算倍率+X(参数:牌型Level,豹子=6|倍率)
+        /// </summary>
+        FixedTypeCountMult = 165,
+
+        /// <summary>
+        /// 商店每刷新1次,自身倍率+X
+        /// </summary>
+        ShopRefreshGetMult = 166,
+
+        /// <summary>
+        /// 使你所有圣物中概率类数值翻倍
+        /// </summary>
+        LuckyDouble = 167,
+
+        /// <summary>
+        /// 你的A可当作任意花色与任意点数使用
+        /// </summary>
+        WildAce = 168,
 
         MaxHp = 1111,
 

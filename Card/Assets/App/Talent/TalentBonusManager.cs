@@ -57,10 +57,43 @@ namespace App.Talent
             return Evaluate(hero, attackBonus: 0, critBonus: 0f, dodgeBonus: 0f, hpBonus: 0);
         }
 
-        /// <summary>英雄面板最终值 = 配置 + 英雄词条 + 当前已拥有天赋。</summary>
+        /// <summary>英雄面板最终值 = 配置 + 英雄词条 + 当前已拥有天赋。加成一次遍历算齐，避免每项各调一次 GetOwned。</summary>
         public HeroPanelStats Evaluate(HeroConfig hero)
         {
-            return Evaluate(hero, AttackBonus, CritRateBonus, DodgeRateBonus, HpBonus);
+            var attackBonus = 0f;
+            var critBonus = 0f;
+            var dodgeBonus = 0f;
+            var hpBonus = 0f;
+            var owned = _talent?.GetOwned();
+            if (owned != null)
+            {
+                for (var i = 0; i < owned.Count; i++)
+                {
+                    var snapshot = owned[i];
+                    if (snapshot == null || !snapshot.IsOwned || snapshot.Entry == null)
+                    {
+                        continue;
+                    }
+
+                    switch (snapshot.Entry.Type)
+                    {
+                        case MechanismType.HeroAttack:
+                            attackBonus += snapshot.EffectiveValue;
+                            break;
+                        case MechanismType.HeroCritical:
+                            critBonus += snapshot.EffectiveValue;
+                            break;
+                        case MechanismType.MissDamagePer:
+                            dodgeBonus += snapshot.EffectiveValue;
+                            break;
+                        case MechanismType.HeroHpMax:
+                            hpBonus += snapshot.EffectiveValue;
+                            break;
+                    }
+                }
+            }
+
+            return Evaluate(hero, Round(attackBonus), critBonus, dodgeBonus, Round(hpBonus));
         }
 
         public static string FormatRate(float rate)

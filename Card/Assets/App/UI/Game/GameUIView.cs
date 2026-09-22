@@ -10,6 +10,8 @@ using App.Guide;
 using App.Resources;
 using App.Talent;
 using DG.Tweening;
+using Framework.Assets;
+using Framework.Log;
 using Framework.UI.Binding;
 using Framework.UI.Core;
 using Framework.UI.Navigation;
@@ -54,6 +56,9 @@ namespace App.UI
         private bool _openingPlaying;
         private int _openingForSerial = -1;
         private bool _waitHudForOpening;
+        private Coroutine _hudOpeningUnlockCo;
+        private Coroutine _openingRetryCo;
+        private Coroutine _openingFallbackCo;
         private Vector2? _playerOpeningLayoutHome;
         private readonly List<OpeningCutscene.Talk> _openingTalks = new List<OpeningCutscene.Talk>(3);
         private bool _lethalTauntThisAttack;
@@ -126,6 +131,7 @@ namespace App.UI
 
         protected override void OnBind()
         {
+            BattleTrace.Log("GameUI.OnBind begin");
             BindPlayerInfo();
             BindRoundBuff();
             SpawnEnemyInfos();
@@ -143,35 +149,144 @@ namespace App.UI
             RefreshEquips();
             RefreshRoundBuffs();
             GuideSignals.Raised += OnGuideSignal;
+            var session = ViewModel?.Session;
+            BattleTrace.Log(
+                $"GameUI.OnBind refreshed board={(_board != null)} hud={(_gameHud != null)} " +
+                $"deal={session?.DealSerial} stageRound={session?.StageRoundIndex} " +
+                $"hold={ViewModel != null && ViewModel.ShouldHoldDealVisual()} flies={_hudFlies.Count}");
             _waitHudForOpening = true;
-            PlayHudEntrance(() =>
-            {
-                _waitHudForOpening = false;
-                TryStartOpening();
-            });
+            PlayHudEntrance(UnlockHudForOpening);
+            ScheduleHudOpeningUnlock();
+            BattleTrace.Log("GameUI.OnBind end (entrance + unlock scheduled)");
         }
 
         protected override async Task OnViewOpen()
         {
-            SetInBattleFit(true);
+            BattleTrace.Log("GameUI.OnViewOpen begin");
+            ViewModel?.ResetOpeningGate();
+            // 不在此处 SetInBattleFit：选关还盖着时改 Camera 会把局外界面撑宽。等 OnPresented。
             PrepareHudEntrance();
-            var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.GameHud);
-            _gameHud = Instantiate(prefab);
-            _gameHud.name = "GameHud";
+            BattleTrace.Log($"GameUI.PrepareHudEntrance flies={_hudFlies.Count}");
 
-            _board = _gameHud.GetComponent<GameBoardController>();
-            if (_board == null)
+            try
             {
-                _board = _gameHud.AddComponent<GameBoardController>();
+                BattleTrace.Log($"GameUI LoadAsync GameHud path={ResResourcePaths.GameHud}");
+                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.GameHud);
+                BattleTrace.Log($"GameUI GameHud prefab={(prefab != null ? prefab.name : "null")}");
+                _gameHud = Instantiate(prefab);
+                _gameHud.name = "GameHud";
+
+                // WebGL/微信禁止在主线程 GetResult 等 AB；进桌前先 await 预热，避免牌桌/结算特效同步加载死锁。
+                BattleTrace.Log("GameUI preload CardIcon + settle FX…");
+                await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon);
+                await _settleFx.PreloadAsync(ViewModel.Resources);
+                await PreloadBattleFxAsync();
+                BattleTrace.Log("GameUI preload done");
+
+                _board = _gameHud.GetComponent<GameBoardController>();
+                if (_board == null)
+                {
+                    _board = _gameHud.AddComponent<GameBoardController>();
+                }
+
+                _board.Attach(ViewModel);
+                BattleTrace.Log("GameUI GameHud instantiated + board.Attach done");
+            }
+            catch (Exception ex)
+            {
+                BattleTrace.Log("GameUI GameHud FAIL: " + ex.Message);
+                AppLog.Exception(LogChannel.UI, ex);
+                AppLog.Error(
+                    LogChannel.UI,
+                    "GameHud 加载失败。请确认 CDN 已上传 StreamingAssets/Bundles 下的 game、textures、materials、shaders，且用 WebGL 目标重建 AB。");
             }
 
-            _board.Attach(ViewModel);
-            await PortraitLoader.EnsureBattleStatesAsync(ViewModel.Session.Player, ViewModel.Session.Enemies);
+            try
+            {
+                BattleTrace.Log("GameUI EnsureBattleStatesAsync…");
+                await PortraitLoader.EnsureBattleStatesAsync(ViewModel.Session.Player, ViewModel.Session.Enemies);
+                BattleTrace.Log("GameUI EnsureBattleStatesAsync done");
+            }
+            catch (Exception ex)
+            {
+                BattleTrace.Log("GameUI portraits FAIL: " + ex.Message);
+                AppLog.Exception(LogChannel.UI, ex);
+                AppLog.Error(LogChannel.UI, "局内立绘（damage/dead）加载失败，请检查 textures bundle。");
+            }
+
             RefreshPlayerItems();
             RefreshEquips();
-            await EnsureEquipTip();
-            await EnsureWinTip();
-            ViewModel.Session.Changed += OnSessionChanged;
+
+            try
+            {
+                BattleTrace.Log("GameUI EnsureEquipTip/WinTip…");
+                await EnsureEquipTip();
+                await EnsureWinTip();
+                BattleTrace.Log("GameUI tips done");
+            }
+            catch (Exception ex)
+            {
+                BattleTrace.Log("GameUI tips FAIL: " + ex.Message);
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+
+            if (ViewModel?.Session != null)
+            {
+                ViewModel.Session.Changed += OnSessionChanged;
+            }
+
+            BattleTrace.Log("GameUI.OnViewOpen end");
+        }
+
+        /// <summary>
+        /// 局内演出资源预热：牌桌/受击音效、Boss 背景、致死溶解 shader。
+        /// 音效进 IResourceService 缓存后，CardTableAnimator/AttackCutscene 的 fire-and-forget 预热即变缓存命中。
+        /// </summary>
+        private async Task PreloadBattleFxAsync()
+        {
+            var resources = ViewModel?.Resources;
+            if (resources == null)
+            {
+                return;
+            }
+
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxDeal5Cards);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxRevealCards3);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxRubCards02);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
+
+            var run = ViewModel.Session?.Run;
+            if (run != null && run.HasBoss)
+            {
+                try
+                {
+                    await resources.LoadAsync<Sprite>(ResResourcePaths.GameHudBossBg);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn(LogChannel.UI, "Boss hud bg preload failed: " + ex.Message);
+                }
+            }
+
+            UiDissolve.WarmupShader();
+        }
+
+        private static async Task PreloadAudioAsync(IResourceService resources, string key)
+        {
+            try
+            {
+                await resources.LoadAsync<AudioClip>(key);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, $"Battle SFX preload failed '{key}': {ex.Message}");
+            }
+        }
+
+        public override void OnPresented()
+        {
+            SetInBattleFit(true);
+            BattleTrace.Log("GameUI.OnPresented → SetInBattleFit(true)");
         }
 
 #if UNITY_EDITOR
@@ -275,6 +390,9 @@ namespace App.UI
             _openingPlaying = false;
             _openingForSerial = -1;
             _waitHudForOpening = false;
+            StopHudOpeningUnlock();
+            StopOpeningRetry();
+            StopOpeningFallback();
             _playerOpeningLayoutHome = null;
             _lethalTauntThisAttack = false;
             _playerItem?.HideDialogImmediate();
@@ -333,6 +451,7 @@ namespace App.UI
                 Destroy(_winTip);
                 _winTip = null;
                 _winTipTemplate = null;
+                ViewModel?.Resources?.Release(ResResourcePaths.WinTip);
             }
 
             _winTipRows.Clear();
@@ -344,6 +463,7 @@ namespace App.UI
                 _equipTipText = null;
                 _equipTipUse = null;
                 _equipTipUseBtn = null;
+                ViewModel?.Resources?.Release(ResResourcePaths.ItemTip);
             }
 
             if (_equipTipCatcher != null)
@@ -356,6 +476,20 @@ namespace App.UI
             {
                 Destroy(_gameHud);
                 _gameHud = null;
+            }
+
+            // 退局卸载本界面预热的资源（与 OnViewOpen/PreloadBattleFxAsync 的 LoadAsync 一一对应；
+            // 未进缓存的 key Release 为空操作）
+            var resources = ViewModel?.Resources;
+            if (resources != null)
+            {
+                resources.Release(ResResourcePaths.GameHud);
+                resources.Release(ResResourcePaths.CardIcon);
+                resources.Release(ResResourcePaths.SfxDeal5Cards);
+                resources.Release(ResResourcePaths.SfxRevealCards3);
+                resources.Release(ResResourcePaths.SfxRubCards02);
+                resources.Release(ResResourcePaths.SfxHurtBig02);
+                resources.Release(ResResourcePaths.GameHudBossBg);
             }
 
             return Task.CompletedTask;
@@ -485,6 +619,7 @@ namespace App.UI
                 return;
             }
 
+            // 资源已在 OnViewOpen 里 await PreloadAsync；这里只绑节点，禁止再 GetResult。
             _settleFx.Bind(ViewModel.Resources, transform);
         }
 
@@ -576,6 +711,13 @@ namespace App.UI
             _heldAttackValue = baseAttack;
             HideBeilvInfo();
 
+            // 结算跳动从牌型基础倍率起算，避免 Refresh 已写入总倍率时动画倒跳。
+            if (attacker != null && attacker.IsPlayer && ViewModel != null)
+            {
+                ViewModel.CardTypeNum.Value = GameTableViewModel.FormatMultiplier(
+                    GameSession.HandTypeMagnification(score.Type));
+            }
+
             if (_board != null)
             {
                 _board.CollectSelectedCards(attacker, _settleCards);
@@ -608,6 +750,12 @@ namespace App.UI
                         return;
                     }
 
+                    if (attacker != null && attacker.IsPlayer)
+                    {
+                        ViewModel.CardTypeNum.Value = GameTableViewModel.FormatMultiplier(
+                            session.ResolveAttackMagnification(attacker, score));
+                    }
+
                     _heldAttackValue = Math.Max(1, session.AttackDamage);
                     PlayAttackCutscene(session, session.ExtraAttackPending ? ExtraAttackTimeScale : 1f);
                 });
@@ -623,7 +771,20 @@ namespace App.UI
             }
 
             RelicMechanics.CollectRelicBonuses(session.Run, score, _relicBonuses, session.LastRelicContext);
-            if (_relicBonuses.Count == 0 && extra <= 0f)
+            var talentMag = session.ResolveTalentMultiplierExtra();
+            var flint = BossMechanics.FlintMultiplier(session.Run);
+            var relicPartsSum = 0f;
+            for (var i = 0; i < _relicBonuses.Count; i++)
+            {
+                relicPartsSum += _relicBonuses[i].MultiplierAdd;
+            }
+
+            // SumMultiplierExtra 含卖掉后仍生效的永久倍率（牌型/练习卷/老牌等），装备列表收不到。
+            var orphanExtra = extra - relicPartsSum;
+            if (_relicBonuses.Count == 0 &&
+                extra <= 0f &&
+                Math.Abs(talentMag) < 0.001f &&
+                Math.Abs(flint - 1f) < 0.001f)
             {
                 return;
             }
@@ -643,7 +804,7 @@ namespace App.UI
                         RelicId = part.RelicId,
                         IsAttack = false,
                         BeilvText = GameTableViewModel.FormatMultiplier(part.MultiplierAdd),
-                        CardTypeText = GameTableViewModel.FormatMultiplier(mag),
+                        CardTypeText = GameTableViewModel.FormatMultiplier(mag * flint),
                         AttackValue = attackValue
                     });
                 }
@@ -661,6 +822,47 @@ namespace App.UI
                         AttackValue = attackValue
                     });
                 }
+            }
+
+            if (Math.Abs(orphanExtra) >= 0.001f)
+            {
+                mag += orphanExtra;
+                _bonusBeats.Add(new SettlePointCutscene.BonusBeat
+                {
+                    EquipAnimator = null,
+                    RelicId = 0,
+                    IsAttack = false,
+                    BeilvText = GameTableViewModel.FormatMultiplier(orphanExtra),
+                    CardTypeText = GameTableViewModel.FormatMultiplier(mag * flint),
+                    AttackValue = attackValue
+                });
+            }
+
+            if (Math.Abs(talentMag) >= 0.001f)
+            {
+                mag += talentMag;
+                _bonusBeats.Add(new SettlePointCutscene.BonusBeat
+                {
+                    EquipAnimator = null,
+                    RelicId = 0,
+                    IsAttack = false,
+                    BeilvText = GameTableViewModel.FormatMultiplier(talentMag),
+                    CardTypeText = GameTableViewModel.FormatMultiplier(mag * flint),
+                    AttackValue = attackValue
+                });
+            }
+
+            if (_bonusBeats.Count == 0 && Math.Abs(flint - 1f) >= 0.001f)
+            {
+                _bonusBeats.Add(new SettlePointCutscene.BonusBeat
+                {
+                    EquipAnimator = null,
+                    RelicId = 0,
+                    IsAttack = false,
+                    BeilvText = null,
+                    CardTypeText = GameTableViewModel.FormatMultiplier(mag * flint),
+                    AttackValue = attackValue
+                });
             }
         }
 
@@ -2094,6 +2296,7 @@ namespace App.UI
             }
 
             var seq = DOTween.Sequence().SetUpdate(true).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            var joined = 0;
             for (var i = 0; i < _hudFlies.Count; i++)
             {
                 var fly = _hudFlies[i];
@@ -2106,6 +2309,13 @@ namespace App.UI
                     .SetEase(Ease.OutCubic)
                     .SetUpdate(true)
                     .SetLink(fly.Rt.gameObject, LinkBehaviour.KillOnDestroy));
+                joined++;
+            }
+
+            if (joined == 0)
+            {
+                onComplete?.Invoke();
+                return;
             }
 
             if (onComplete != null)
@@ -2114,6 +2324,69 @@ namespace App.UI
             }
 
             _hudEntrance = seq;
+        }
+
+        /// <summary>
+        /// WebGL/微信下 DOTween OnComplete 可能不触发；用 realtime 兜底解锁开场。
+        /// </summary>
+        private void ScheduleHudOpeningUnlock()
+        {
+            StopHudOpeningUnlock();
+            if (!_waitHudForOpening)
+            {
+                return;
+            }
+
+            _hudOpeningUnlockCo = StartCoroutine(CoUnlockHudForOpening());
+        }
+
+        private void StopHudOpeningUnlock()
+        {
+            if (_hudOpeningUnlockCo == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_hudOpeningUnlockCo);
+            _hudOpeningUnlockCo = null;
+        }
+
+        private IEnumerator CoUnlockHudForOpening()
+        {
+            yield return new WaitForSecondsRealtime(HudFlyDuration + 0.15f);
+            _hudOpeningUnlockCo = null;
+            BattleTrace.Log("CoUnlockHudForOpening realtime fired");
+            UnlockHudForOpening();
+        }
+
+        private void UnlockHudForOpening()
+        {
+            if (!_waitHudForOpening)
+            {
+                BattleTrace.Log("UnlockHudForOpening skipped (already unlocked)");
+                return;
+            }
+
+            BattleTrace.Log("UnlockHudForOpening");
+            _waitHudForOpening = false;
+            StopHudOpeningUnlock();
+            SnapHudFliesHome();
+            TryStartOpening();
+        }
+
+        private void SnapHudFliesHome()
+        {
+            for (var i = 0; i < _hudFlies.Count; i++)
+            {
+                var fly = _hudFlies[i];
+                if (fly.Rt == null)
+                {
+                    continue;
+                }
+
+                fly.Rt.DOKill();
+                fly.Rt.anchoredPosition = fly.Home;
+            }
         }
 
         private void BindOpeningVs()
@@ -2125,34 +2398,148 @@ namespace App.UI
 
         private void TryStartOpening()
         {
-            if (_waitHudForOpening || ViewModel == null || _board == null || !ViewModel.ShouldHoldDealVisual())
+            if (_waitHudForOpening)
             {
+                BattleTrace.Log("TryStartOpening blocked: waitHud");
                 return;
             }
 
-            var serial = ViewModel.Session.DealSerial;
+            if (ViewModel == null)
+            {
+                BattleTrace.Log("TryStartOpening blocked: ViewModel null");
+                return;
+            }
+
+            if (_board == null)
+            {
+                BattleTrace.Log("TryStartOpening blocked: board null");
+                return;
+            }
+
+            var session = ViewModel.Session;
+            var hold = ViewModel.ShouldHoldDealVisual();
+            if (!hold)
+            {
+                BattleTrace.Log(
+                    $"TryStartOpening skip hold=false deal={session?.DealSerial} " +
+                    $"stageRound={session?.StageRoundIndex}");
+                return;
+            }
+
+            var serial = session.DealSerial;
             if (_openingPlaying && _openingForSerial == serial)
             {
+                BattleTrace.Log($"TryStartOpening already playing serial={serial}");
                 return;
             }
 
             if (!TryCollectOpeningTalks(_openingTalks))
             {
+                BattleTrace.Log($"TryStartOpening talks not ready serial={serial}, schedule retry");
+                ScheduleOpeningRetry();
                 return;
             }
 
+            BattleTrace.Log($"TryStartOpening PLAY talks={_openingTalks.Count} serial={serial}");
+            StopOpeningRetry();
             EnsurePlayerAtOpeningPose();
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
+            // 开场期间按技能会 Notify → RefreshPlayerItems。home 必须留着，否则会把已抬高的坐标再加一次偏移，对话跟着跳。
             var playerLayoutHome = _playerOpeningLayoutHome;
-            _playerOpeningLayoutHome = null;
             _openingFx.Play(
                 _openingTalks,
                 _playerItem,
                 gameObject,
                 OnOpeningComplete,
                 playerLayoutHome);
+            ScheduleOpeningFallback(serial);
+        }
+
+        private void ScheduleOpeningRetry()
+        {
+            if (_openingRetryCo != null)
+            {
+                return;
+            }
+
+            _openingRetryCo = StartCoroutine(CoRetryOpening());
+        }
+
+        private void StopOpeningRetry()
+        {
+            if (_openingRetryCo == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_openingRetryCo);
+            _openingRetryCo = null;
+        }
+
+        private IEnumerator CoRetryOpening()
+        {
+            const int maxAttempts = 12;
+            for (var i = 0; i < maxAttempts; i++)
+            {
+                yield return new WaitForSecondsRealtime(0.1f);
+                if (_waitHudForOpening || ViewModel == null || !ViewModel.ShouldHoldDealVisual())
+                {
+                    _openingRetryCo = null;
+                    yield break;
+                }
+
+                if (TryCollectOpeningTalks(_openingTalks))
+                {
+                    _openingRetryCo = null;
+                    TryStartOpening();
+                    yield break;
+                }
+            }
+
+            _openingRetryCo = null;
+            BattleTrace.Log("开场敌人未就绪，跳过对白直接发牌");
+            OnOpeningComplete();
+        }
+
+        /// <summary>开场 Sequence 若在微信下不跑完，超时后强制 CompleteOpening。</summary>
+        private void ScheduleOpeningFallback(int serial)
+        {
+            StopOpeningFallback();
+            BattleTrace.Log($"ScheduleOpeningFallback serial={serial}");
+            _openingFallbackCo = StartCoroutine(CoOpeningFallback(serial));
+        }
+
+        private void StopOpeningFallback()
+        {
+            if (_openingFallbackCo == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_openingFallbackCo);
+            _openingFallbackCo = null;
+        }
+
+        private IEnumerator CoOpeningFallback(int serial)
+        {
+            // 对峙+VS+对白大致上限；比真实时长略长即可。
+            yield return new WaitForSecondsRealtime(8f);
+            _openingFallbackCo = null;
+            if (!_openingPlaying || _openingForSerial != serial || ViewModel == null)
+            {
+                yield break;
+            }
+
+            if (!ViewModel.ShouldHoldDealVisual())
+            {
+                yield break;
+            }
+
+            BattleTrace.Log("开场动画超时，强制结束并发牌");
+            _openingFx.Kill();
+            OnOpeningComplete();
         }
 
         /// <summary>
@@ -2239,6 +2626,9 @@ namespace App.UI
             var item = EnemyItemAtSlot(slot);
             if (!EnsureEnemyItemReady(item))
             {
+                BattleTrace.Log(
+                    $"TryAddOpeningTalk fail slot={slot} monster={seat?.MonsterId} " +
+                    $"item={(item != null)} activeSelf={(item != null && item.gameObject.activeSelf)}");
                 return false;
             }
 
@@ -2266,16 +2656,33 @@ namespace App.UI
 
             CancelDeathDissolve(item);
             item.ResetDissolve();
-            item.gameObject.SetActive(true);
-            return item.gameObject.activeInHierarchy;
+            ActivateHierarchy(item.transform);
+            return item.gameObject.activeSelf;
+        }
+
+        private static void ActivateHierarchy(Transform node)
+        {
+            while (node != null)
+            {
+                if (!node.gameObject.activeSelf)
+                {
+                    node.gameObject.SetActive(true);
+                }
+
+                node = node.parent;
+            }
         }
 
         private void OnOpeningComplete()
         {
+            BattleTrace.Log("OnOpeningComplete → CompleteOpening + SyncCards");
+            StopOpeningRetry();
+            StopOpeningFallback();
             _openingPlaying = false;
             if (ViewModel != null)
             {
                 ViewModel.CompleteOpening();
+                _playerOpeningLayoutHome = null;
                 RefreshPlayerItems();
             }
 

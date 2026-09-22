@@ -18,7 +18,8 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换三份 ScrollRect。
+    /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换页签；
+    /// 收藏页 CollectSCView 已删除（切到收藏页为空页），遗物/怪物页各一份 ScrollRect。
     /// 收藏/遗物两页用 Item(ItemCard)，怪物页用 PlayerItem（卡面带攻击/血量块）。
     /// </summary>
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
@@ -50,6 +51,8 @@ namespace App.UI.Popup
         // 已构建（或构建中）的页签：打开只建当前页，其余页首次切换时再建
         private readonly HashSet<IllustratedBookTab> _builtTabs = new HashSet<IllustratedBookTab>();
         private readonly List<Component> _activeSlots = new List<Component>();
+        // 本视图创建的全部卡槽（含行池里隐藏中的）：关闭时回收到 UiCardPool 供下次打开复用
+        private readonly List<Component> _ownedSlots = new List<Component>();
         private CardRowRecycler<IllustratedBookEntry> _collectRecycler;
         private CardRowRecycler<IllustratedBookEntry> _relicRecycler;
         private CardRowRecycler<IllustratedBookEntry> _monsterRecycler;
@@ -82,7 +85,7 @@ namespace App.UI.Popup
             }
 
             Binding.BindText(UI.Get<TMP_Text>("CurItemNum"), ViewModel.CurItemNum);
-            Binding.BindActive(UI.GetGameObject("CollectSCView"), ViewModel.ShowCollect);
+            // CollectSCView 节点已从预制体删除（收藏页签保留但无滚动区）
             Binding.BindActive(UI.GetGameObject("RelicSCView"), ViewModel.ShowRelic);
             Binding.BindActive(UI.GetGameObject("MonsterSCView"), ViewModel.ShowMonster);
             // 怪物页隐藏界面顶部标题横幅（分区横幅自带标题，UIReference 键由编辑器注册）
@@ -109,7 +112,27 @@ namespace App.UI.Popup
                 _tip.SetActive(false);
             }
 
+            // 视图销毁前把卡槽脱离 Content 回收进池，下次打开直接复用，不再整批 Instantiate
+            ReleaseOwnedSlots();
             return Task.CompletedTask;
+        }
+
+        private void ReleaseOwnedSlots()
+        {
+            for (var i = 0; i < _ownedSlots.Count; i++)
+            {
+                var slot = _ownedSlots[i];
+                if (slot is ItemCard itemCard)
+                {
+                    UiCardPool.ReleaseItemCard(itemCard);
+                }
+                else if (slot is PlayerItem playerItem)
+                {
+                    UiCardPool.ReleasePlayerItem(playerItem);
+                }
+            }
+
+            _ownedSlots.Clear();
         }
 
         private void BindTab(Toggle toggle, Framework.UI.Core.ObservableProperty<bool> source, IllustratedBookTab tab)
@@ -128,11 +151,15 @@ namespace App.UI.Popup
             }, emitCurrent: false));
         }
 
-        /// <summary>收藏页构建：单区无横幅，Content 自身的 GridLayoutGroup 即布局模板。</summary>
+        /// <summary>收藏页构建：CollectSCView 已从预制体删除，无滚动区可填充（切到此页为空页）。</summary>
         private void BuildCollectPage()
         {
-            var scroll = UI.Get<ScrollRect>("CollectSCView");
-            var content = scroll != null ? scroll.content : null;
+            if (!UI.TryGet<ScrollRect>("CollectSCView", out var scroll) || scroll == null)
+            {
+                return;
+            }
+
+            var content = scroll.content;
             if (content == null || _itemPrefab == null)
             {
                 return;
@@ -154,12 +181,18 @@ namespace App.UI.Popup
             _collectRecycler.SetSections(new[] { section });
         }
 
-        /// <summary>克隆 ItemCard 槽位（一次性装饰：0.9 缩放、关阴影动画、订阅点击），数据绑定走 BindCardSlot。</summary>
+        /// <summary>向 UiCardPool 租用 ItemCard 槽位（装饰幂等：0.9 缩放、关阴影动画、清旧订阅再订阅点击），
+        /// 数据绑定走 BindCardSlot；视图关闭时槽位回收进池复用。</summary>
         private Component CreateCardSlot(Transform parent)
         {
-            var go = Instantiate(_itemPrefab, parent, false);
+            var card = UiCardPool.RentItemCard(_itemPrefab, parent);
+            if (card == null)
+            {
+                return null;
+            }
+
+            var go = card.gameObject;
             go.name = "CardSlot";
-            go.SetActive(true);
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
@@ -167,15 +200,12 @@ namespace App.UI.Popup
                 Destroy(bind);
             }
 
-            var card = go.GetComponent<ItemCard>();
-            if (card == null)
-            {
-                return null;
-            }
-
             card.SetShadowVisible(false);
             card.SetAnimationEnabled(false);
+            // 池化复用：先清掉上一任视图的订阅再挂自己的
+            card.ClearClicked();
             card.Clicked += OnCardClicked;
+            _ownedSlots.Add(card);
             return card;
         }
 
@@ -349,13 +379,18 @@ namespace App.UI.Popup
             _monsterRecycler.SetSections(sections);
         }
 
-        /// <summary>克隆 PlayerItem 槽位（一次性装饰：0.9 缩放、藏 cardMask、补点击），
-        /// 数据绑定走 BindMonsterSlot。</summary>
+        /// <summary>向 UiCardPool 租用 PlayerItem 槽位（装饰幂等：0.9 缩放、藏 cardMask 与敌人攻/血块、
+        /// 重挂点击），数据绑定走 BindMonsterSlot；视图关闭时槽位回收进池复用。</summary>
         private Component CreateMonsterSlot(Transform parent)
         {
-            var go = Instantiate(_monsterPrefab, parent, false);
+            var card = UiCardPool.RentPlayerItem(_monsterPrefab, parent);
+            if (card == null)
+            {
+                return null;
+            }
+
+            var go = card.gameObject;
             go.name = "MonsterSlot";
-            go.SetActive(true);
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
@@ -363,12 +398,9 @@ namespace App.UI.Popup
                 Destroy(bind);
             }
 
-            var card = go.GetComponent<PlayerItem>();
-            if (card == null)
-            {
-                return null;
-            }
-
+            // 图鉴条目不显示敌人攻/血块（BindMonsterSlot 不再调 SetAttack/SetHp，
+            // 但两节点 prefab 默认激活，须在此关掉）
+            HideEnemyStatBlocks(go.transform);
             var cardMask = FindDeep(card.transform, "cardMask");
             if (cardMask != null)
             {
@@ -376,25 +408,43 @@ namespace App.UI.Popup
             }
 
             HookMonsterClick(card);
+            _ownedSlots.Add(card);
             return card;
         }
 
         /// <summary>怪物槽数据绑定（行复用时反复调用）：敌人形态底图（enemycard 走
-        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径）、
-        /// 攻/血块显示最低等级真实数值（>0 才显块），刷新选中态。</summary>
+        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径），
+        /// 敌人攻/血块不显示（CreateMonsterSlot 已隐藏节点，这里不能再调 SetAttack/SetHp
+        /// ——那会在数值 >0 时把节点重新点亮），刷新选中态。</summary>
         private void BindMonsterSlot(Component slot, IllustratedBookEntry entry)
         {
             var card = (PlayerItem)slot;
             card.ApplyEnemyTheme(entry.Id);
             card.SetName(entry.Unlocked ? entry.Name : "？？？");
             card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
-            card.SetAttack(entry.Attack);
-            card.SetHp(entry.Hp);
             _entries[card] = entry;
             card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
         }
 
-        /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。</summary>
+        /// <summary>隐藏敌人形态攻/血块容器（enemycardattack/enemycardheart，位于 enemycard 下，
+        /// 须整树深查找）。PlayerItem.SetAttack/SetHp 会按显隐控制这两个节点，图鉴全程不用它们。</summary>
+        private static void HideEnemyStatBlocks(Transform root)
+        {
+            var attack = FindDeep(root, "enemycardattack");
+            if (attack != null)
+            {
+                attack.gameObject.SetActive(false);
+            }
+
+            var heart = FindDeep(root, "enemycardheart");
+            if (heart != null)
+            {
+                heart.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>PlayerItem 预制体无 Button，运行时补透明射线 Image + Button（同 GameUIView.BindSeatClick）。
+        /// 槽位池化复用：Button 可能带着上一任视图的闭包订阅，重挂前先清空。</summary>
         private void HookMonsterClick(PlayerItem card)
         {
             var target = card.gameObject;
@@ -413,6 +463,7 @@ namespace App.UI.Popup
 
             button.targetGraphic = image;
             button.transition = Selectable.Transition.None;
+            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => OnMonsterClicked(card));
         }
 

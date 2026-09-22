@@ -1,0 +1,49 @@
+ManifestFileVersion: 0
+CRC: 638321411
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: altas
+      Dependencies:
+        Dependency_0: textures
+    Info_1:
+      Name: animations
+      Dependencies: {}
+    Info_2:
+      Name: audio
+      Dependencies: {}
+    Info_3:
+      Name: config
+      Dependencies: {}
+    Info_4:
+      Name: effect
+      Dependencies: {}
+    Info_5:
+      Name: game
+      Dependencies:
+        Dependency_0: animations
+        Dependency_1: materials
+        Dependency_2: textures
+    Info_6:
+      Name: healthadvisory
+      Dependencies: {}
+    Info_7:
+      Name: materials
+      Dependencies:
+        Dependency_0: shaders
+    Info_8:
+      Name: shaders
+      Dependencies: {}
+    Info_9:
+      Name: so
+      Dependencies: {}
+    Info_10:
+      Name: textures
+      Dependencies: {}
+    Info_11:
+      Name: ui
+      Dependencies:
+        Dependency_0: animations
+        Dependency_1: healthadvisory
+        Dependency_2: materials
+        Dependency_3: textures

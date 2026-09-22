@@ -9,7 +9,7 @@ namespace App.AdShop
 {
     /// <summary>
     /// 局外广告商店。看广告免费领体力/金币，各项每日限次；跨日在读取时懒检查
-    /// （与 EnergyService 同一凌晨时刻），脏标记落盘。
+    /// （与 EnergyService 同一凌晨时刻），变更即落盘。
     /// </summary>
     public sealed class AdShopService : IAdShopService
     {
@@ -75,6 +75,7 @@ namespace App.AdShop
             _energy.Add(AdShopBalance.StaminaPerPurchase);
             _staminaCount++;
             _dirty = true;
+            Save();
             Changed?.Invoke();
             return true;
         }
@@ -91,6 +92,7 @@ namespace App.AdShop
             _wallet.Add(AdShopBalance.GoldPerPurchase);
             _goldCount++;
             _dirty = true;
+            Save();
             Changed?.Invoke();
             return true;
         }
@@ -158,6 +160,7 @@ namespace App.AdShop
             _staminaCount = 0;
             _goldCount = 0;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 

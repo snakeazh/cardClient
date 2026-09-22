@@ -418,8 +418,15 @@ namespace App.UI
                 return;
             }
 
+            _session.StartNewRun();
+            _tableVm.ResetOpeningGate();
+            BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
+            // 等局内 OnViewOpen/预加载完成后再关选关，避免露底闪一下。
             await _ui.Close(this);
             await _ui.Open(_tableVm);
+            BattleTrace.Log("StartGame GameUI ready, closing LevelUI");
+            await _ui.Close(this);
+            BattleTrace.Log("StartGame LevelUI closed");
         }
 
         private async Task PresentEnergyInsufficientPopupAsync()

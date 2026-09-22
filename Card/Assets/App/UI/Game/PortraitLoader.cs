@@ -27,6 +27,9 @@ namespace App.UI
 
         private static IResourceService _resources;
 
+        /// <summary>本局补载的 _damage/_dead key，退局时由 ReleaseBattleStates 释放。</summary>
+        private static readonly HashSet<string> BattleStateKeys = new HashSet<string>(StringComparer.Ordinal);
+
         /// <summary>配置表加载完成后预热全部英雄和怪物的 _attack。</summary>
         public static async Task PreloadAsync(IResourceService resources)
         {
@@ -87,6 +90,23 @@ namespace App.UI
             }
 
             return true;
+        }
+
+        /// <summary>退局时释放本局补载的 _damage/_dead 立绘（_attack 常驻）。重复调用安全。</summary>
+        public static void ReleaseBattleStates()
+        {
+            if (BattleStateKeys.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var key in BattleStateKeys)
+            {
+                Sprites.Remove(key);
+                _resources?.Release(key);
+            }
+
+            BattleStateKeys.Clear();
         }
 
         public static Sprite Get(SeatState seat)
@@ -177,7 +197,9 @@ namespace App.UI
         {
             for (var i = 0; i < HurtSuffixes.Length; i++)
             {
-                await LoadOne(resources, PortraitPath(enemy, icon, HurtSuffixes[i]));
+                var key = PortraitPath(enemy, icon, HurtSuffixes[i]);
+                await LoadOne(resources, key);
+                BattleStateKeys.Add(key);
             }
         }
 

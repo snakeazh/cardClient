@@ -632,7 +632,7 @@ namespace App.Game
                 return new HandScore(HandType.HighCard, 0, TypeMultiplier(HandType.HighCard), new[] { 0 }, Array.Empty<Card>(), "无有效牌");
             }
 
-            filtered.Sort((a, b) => RankKey(b.Rank).CompareTo(RankKey(a.Rank)));
+            filtered.Sort(RankComparison);
 
             if (filtered.Count == 1)
             {
@@ -926,6 +926,12 @@ namespace App.Game
                 $"散牌 {filtered[0].DisplayName}");
         }
 
+        // Evaluate 高频(SelectBestOpen 每组合一次):过滤结果静态复用——结果只在 Evaluate
+        // 内部消费,经 ToArray() 拷贝后才进 HandScore,缓冲跨调用复用安全。
+        private static readonly List<Card> FilterBuffer = new List<Card>(8);
+        private static readonly Comparison<Card> RankComparison =
+            (a, b) => RankKey(b.Rank).CompareTo(RankKey(a.Rank));
+
         private static List<Card> Filter(
             IReadOnlyList<Card> cards,
             Suit? bannedSuit,
@@ -933,7 +939,8 @@ namespace App.Game
             Suit? bannedSuit2 = null,
             Suit? bannedSuit3 = null)
         {
-            var list = new List<Card>(3);
+            var list = FilterBuffer;
+            list.Clear();
             if (cards == null)
             {
                 return list;

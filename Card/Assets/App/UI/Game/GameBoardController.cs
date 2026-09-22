@@ -72,6 +72,13 @@ namespace App.UI
 
             CancelRubPreviewIfNeeded();
             UnregisterGuideTargets();
+            // 卸载本局加载的 Boss 背景（与 LoadHudBossBackground 的 LoadAsync 计数对齐）
+            if (_hudBossBg != null && _vm?.Resources != null)
+            {
+                _vm.Resources.Release(ResResourcePaths.GameHudBossBg);
+                _hudBossBg = null;
+            }
+
             _vm = null;
             enabled = false;
         }
@@ -206,11 +213,13 @@ namespace App.UI
 
             if (_vm.ShouldHoldDealVisual())
             {
+                BattleTrace.Log("Board.OnSessionChanged hold deal visual (no PlayDeal)");
                 _cards.SyncHoldingDeal(_vm.Session);
                 RefreshGuideTargets();
                 return;
             }
 
+            BattleTrace.Log("Board.OnSessionChanged Sync cards");
             _cards.Sync(_vm.Session);
             RefreshGuideTargets();
         }
@@ -222,6 +231,7 @@ namespace App.UI
                 return;
             }
 
+            BattleTrace.Log("Board.SyncCards");
             _cards.Sync(_vm.Session);
             RefreshGuideTargets();
         }

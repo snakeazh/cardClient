@@ -12,6 +12,7 @@ using App.Guide;
 using App.Level;
 using App.Score;
 using App.Talent;
+using App.TTReward;
 using App.Unlock;
 using App.Wallet;
 using App.Net;
@@ -38,27 +39,93 @@ namespace App.Bootstrap
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
 
+        // 发布包关闭全部日志输出（编辑器保留）。Debug/AppLog 最终都走 unityLogger。
+        // 调黑屏问题临时打开：定位完恢复为 false 再发布。
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        private static void DisableReleaseLogging()
+        {
+#if !UNITY_EDITOR && !ENABLE_APP_LOG
+            Debug.unityLogger.logEnabled = false;
+#endif
+        }
+
         private async void Start()
         {
+            // 微信小游戏端锁 60：设 120 会在高刷屏上满负载发热降频，帧率反而更低更不稳
+#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            Application.targetFrameRate = 60;
+#else
             Application.targetFrameRate = 120;
+#endif
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();
             await _resources.InitializeAsync();
             _services.Register(_resources.Resources);
+            AppLog.Info(LogChannel.UI, "[Boot] resources initialized"); // 临时排查黑屏，定位后删除
 
-            await RegisterAtlas(_services, _resources.Resources);
-            await CardShadowPool.PreloadAsync(_resources.Resources);
-            await AttackTuningConfig.PreloadAsync(_resources.Resources);
-
+            // 忠告页只需最小初始化：存档（钱包/体力依赖它）、UIRoot 与 UI 框架。
+            // 重型初始化（图集/配置表/头像/业务服务/列表项预热）在忠告展示期间并发执行。
             _services.Register(SaveFramework.Create());
-            RegisterAudio(_services);
+            RegisterWallet(_services);
+            RegisterEnergy(_services);
             _services.Register(new GameSession());
             _services.Container.AddSingleton<PvpWsClient>();
             _services.Container.AddSingleton<PvpMatchSession>();
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();
             _services.Container.AddSingleton<MainResourceViewModel>();
+
+            await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
+            _ui = UIFramework.Create(_services.Container);
+            AppLog.Info(LogChannel.UI, "[Boot] ui framework ready"); // 临时排查黑屏，定位后删除
+
+            // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
+            _services.Container.AddSingleton<ToastService>();
+
+            var launchInit = new LaunchInitialization();
+            _services.Register(launchInit);
+
+            if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
+            {
+                AppLog.Info(LogChannel.UI, "[Boot] show health advisory"); // 临时排查黑屏，定位后删除
+                // 先开忠告页（独占资源加载），再并发跑重型初始化；
+                // 忠告页倒计时与初始化两者都完成后由忠告页自行进首页。
+                await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
+                _ = RunHeavyInitAsync(launchInit);
+            }
+            else
+            {
+                AppLog.Info(LogChannel.UI, "[Boot] skip advisory, heavy init"); // 临时排查黑屏，定位后删除
+                await RunHeavyInitAsync(launchInit);
+                AppLog.Info(LogChannel.UI, "[Boot] heavy init done, open home"); // 临时排查黑屏，定位后删除
+                await OpenHomeWithNavigation();
+                AppLog.Info(LogChannel.UI, "[Boot] home opened"); // 临时排查黑屏，定位后删除
+            }
+        }
+
+        private async Task RunHeavyInitAsync(LaunchInitialization launchInit)
+        {
+            try
+            {
+                await InitializeHeavyAsync();
+                launchInit.Complete();
+            }
+            catch (Exception ex)
+            {
+                launchInit.Fail(ex);
+                throw;
+            }
+        }
+
+        private async Task InitializeHeavyAsync()
+        {
+            await RegisterAtlas(_services, _resources.Resources);
+            await CardShadowPool.PreloadAsync(_resources.Resources);
+            await AttackTuningConfig.PreloadAsync(_resources.Resources);
+
+            RegisterAudio(_services);
+            await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
 
             await ConfigTables.LoadAsync(_resources.Resources);
             UnityGameConfigLoader.LoadFromAppConfig();
@@ -67,28 +134,40 @@ namespace App.Bootstrap
             RegisterLevel(_services);
             RegisterScore(_services);
             RegisterTalent(_services);
-            RegisterWallet(_services);
-            RegisterEnergy(_services);
             RegisterAdShop(_services);
+            RegisterTTReward(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
-            _ui = UIFramework.Create(_services.Container);
-
-            // Toast 提示服务：依赖 IUINavigator，须在 UIFramework.Create 之后注册；懒实例化
-            _services.Container.AddSingleton<ToastService>();
             RegisterGuide(_services);
 
+            await PrewarmLevelItemsAsync();
+        }
+
+        /// <summary>趁忠告展示期把选关列表项与图鉴/天赋卡槽实例化进对象池，
+        /// 首次打开这些界面不再逐个 Instantiate。卡槽数量按视口可见量估，不足由 Rent 兜底补建。</summary>
+        private async Task PrewarmLevelItemsAsync()
+        {
+            var heroCount = HeroConfig.All != null ? HeroConfig.All.Count : 0;
+            var levelCount = 0;
+            var levels = _services.Resolve<ILevelService>();
+            var diffs = levels.GetDifficulties();
+            if (diffs != null)
             await ConnectAndPrepareAsync();
 
             if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
-                await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
+                for (var i = 0; i < diffs.Count; i++)
+                {
+                    if (levels.Get(diffs[i], 1) != null)
+                    {
+                        levelCount++;
+                    }
+                }
             }
-            else
-            {
-                await OpenHomeWithNavigation();
-            }
+
+            await LevelItemPool.PrewarmAsync(_resources.Resources, heroCount, levelCount);
+            await UiCardPool.PrewarmAsync(_resources.Resources, itemCardCount: 16, playerItemCount: 8);
         }
 
         private async Task OpenHomeWithNavigation()
@@ -108,6 +187,7 @@ namespace App.Bootstrap
             services.Register<IAtlasService>(atlas);
             CardSpriteLibrary.Bind(atlas);
             ItemBgSpriteLibrary.Bind(atlas);
+            PlayItemSpriteLibrary.Bind(atlas);
         }
 
         private static void RegisterAudio(AppServicesHost services)
@@ -190,6 +270,16 @@ namespace App.Bootstrap
             shop.Load();
             services.Register(shop);
             services.Register<IAdShopService>(shop);
+        }
+
+        private static void RegisterTTReward(AppServicesHost services)
+        {
+            var reward = new TTRewardService(
+                services.Resolve<ISaveService>(),
+                services.Resolve<IWalletService>());
+            reward.Load();
+            services.Register(reward);
+            services.Register<ITTRewardService>(reward);
         }
 
         private static void RegisterUnlock(AppServicesHost services)

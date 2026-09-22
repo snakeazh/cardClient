@@ -1,7 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Audio;
+using App.Bootstrap;
 using App.Game;
+using App.Resources;
 using DG.Tweening;
+using Framework.Assets;
+using Framework.Log;
 using UnityEngine;
 
 namespace App.UI
@@ -40,9 +46,12 @@ namespace App.UI
         private int _impactLevel = 1;
         private AttackTuningConfig.LevelTuning _impactBeat;
         private Vector3 _impactAttackerPos;
+        private AudioClip _impactSfx;
+        private bool _disposed;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
+            _disposed = false;
             _hud = hud;
             BindPlayer(player);
 
@@ -58,6 +67,8 @@ namespace App.UI
             {
                 BindEnemy(i, enemies[i]);
             }
+
+            _ = PreloadImpactSfxAsync();
         }
 
         public Vector3 HitPosition(int visualSlot)
@@ -338,6 +349,49 @@ namespace App.UI
             RestoreHitTarget();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
+            _disposed = true;
+            if (_impactSfx != null && AppServices.IsReady)
+            {
+                AppServices.Resolve<IResourceService>().Release(ResResourcePaths.SfxHurtBig02);
+            }
+
+            _impactSfx = null;
+        }
+
+        private async Task PreloadImpactSfxAsync()
+        {
+            if (_impactSfx != null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            try
+            {
+                var resources = AppServices.Resolve<IResourceService>();
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxHurtBig02);
+                if (_disposed)
+                {
+                    // await 期间已退局：立即释放，避免计数泄漏
+                    resources.Release(ResResourcePaths.SfxHurtBig02);
+                    return;
+                }
+
+                _impactSfx = clip;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Impact SFX load failed: " + ex.Message);
+            }
+        }
+
+        private void PlayImpactSfx()
+        {
+            if (_impactSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_impactSfx);
         }
 
         private void BindPlayer(PlayerItem player)
@@ -478,6 +532,7 @@ namespace App.UI
             _impactLevel = level;
             _impactBeat = beat;
             _impactAttackerPos = attackerWorldPos;
+            PlayImpactSfx();
             var missed = onHit != null && onHit();
             PlayClip(attacker, Clip(level, "end"));
             if (missed)

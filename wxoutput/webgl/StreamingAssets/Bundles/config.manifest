@@ -1,0 +1,39 @@
+ManifestFileVersion: 0
+CRC: 3621761038
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 38af520819ff94b7dee3fa59dce49299
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 5ad585dd02dfb5016c0dad519eab8f49
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 38af520819ff94b7dee3fa59dce49299
+HashAppended: 0
+ClassTypes:
+- Class: 49
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Config/ItemConfig.json
+- Assets/Res/Config/LevelConfig.json
+- Assets/Res/Config/DialogueGroupConfig.json
+- Assets/Res/Config/RelicConfig.json
+- Assets/Res/Config/GuideGroupConfig.json
+- Assets/Res/Config/BossEntryConfig.json
+- Assets/Res/Config/GuideStepConfig.json
+- Assets/Res/Config/TalentEntryConfig.json
+- Assets/Res/Config/MechanismConfig.json
+- Assets/Res/Config/HeroEntryConfig.json
+- Assets/Res/Config/MonsterLogicConfig.json
+- Assets/Res/Config/RelicEntryConfig.json
+- Assets/Res/Config/GameConst.json
+- Assets/Res/Config/UnlockConditionConfig.json
+- Assets/Res/Config/MonsterConfig.json
+- Assets/Res/Config/HeroConfig.json
+- Assets/Res/Config/TalentConfig.json
+- Assets/Res/Config/MonsterGroupConfig.json
+- Assets/Res/Config/CollectionConfig.json
+- Assets/Res/Config/HandScoreConfig.json
+Dependencies: []

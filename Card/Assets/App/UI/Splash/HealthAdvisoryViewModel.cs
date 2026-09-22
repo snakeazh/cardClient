@@ -1,8 +1,12 @@
+using System;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.UI;
+using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
+using UnityEngine;
 
 namespace App.UI.Splash
 {
@@ -11,16 +15,19 @@ namespace App.UI.Splash
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
+        private readonly LaunchInitialization _launchInit;
         private bool _enteredHome;
 
         public HealthAdvisoryViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
-            MainResourceViewModel mainResource)
+            MainResourceViewModel mainResource,
+            LaunchInitialization launchInit)
         {
             _ui = ui;
             _navigation = navigation;
             _mainResource = mainResource;
+            _launchInit = launchInit;
             Title = new ObservableProperty<string>(HealthAdvisoryText.Title);
             Body = new ObservableProperty<string>(HealthAdvisoryText.Body);
             Footer = new ObservableProperty<string>(HealthAdvisoryText.WeChatFooter);
@@ -41,15 +48,50 @@ namespace App.UI.Splash
             Footer.Value = HealthAdvisoryText.WeChatFooter;
 
             // OnOpen 在 UINavigator 入栈前 await 完毕；计时须延后到 Open 流程完成之后。
+            // WebGL/微信小游戏上 Task.Delay 依赖的计时器续跑不稳定，改用 realtime + Yield。
             _ = RunFlowAsync();
             return Task.CompletedTask;
         }
 
         private async Task RunFlowAsync()
         {
-            await Task.Yield();
-            await Task.Delay(HealthAdvisoryText.DisplayDurationMs);
-            await EnterHomeAsync();
+            try
+            {
+                await Task.Yield();
+                // 展示倒计时与重型初始化并发：两者都完成才进首页，初始化快则不等、慢则兜底。
+                var delay = DelayRealtimeAsync(HealthAdvisoryText.DisplayDurationMs);
+                var init = _launchInit != null && _launchInit.Completion != null
+                    ? _launchInit.Completion
+                    : Task.CompletedTask;
+                await Task.WhenAll(delay, init);
+                await EnterHomeAsync();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                try
+                {
+                    await EnterHomeAsync();
+                }
+                catch (Exception retryEx)
+                {
+                    AppLog.Exception(LogChannel.UI, retryEx);
+                }
+            }
+        }
+
+        private static async Task DelayRealtimeAsync(int milliseconds)
+        {
+            if (milliseconds <= 0)
+            {
+                return;
+            }
+
+            var end = Time.realtimeSinceStartup + milliseconds / 1000f;
+            while (Time.realtimeSinceStartup < end)
+            {
+                await Task.Yield();
+            }
         }
 
         private async Task EnterHomeAsync()

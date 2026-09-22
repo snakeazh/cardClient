@@ -141,7 +141,17 @@ namespace Framework.Assets
 
         private async Task InitializeInternalAsync()
         {
-            BundleVersion = await FetchTextAsync(_bundleRoot + "/version.txt");
+            // version.txt 自身也按 URL 缓存，加时间戳保证每次启动拿到最新版本号
+            var versionUrl = _bundleRoot + "/version.txt?t=" + DateTime.UtcNow.Ticks;
+            BundleVersion = await FetchTextAsync(versionUrl);
+            if (string.IsNullOrEmpty(BundleVersion))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to fetch bundle version from '{versionUrl}'. " +
+                    "Check DATA_CDN / StreamingAssets deployment and WeChat downloadFile domains.");
+            }
+
+            AppLog.Info(LogChannel.Assets, $"WebGL bundles version={BundleVersion} root={_bundleRoot}");
             await LoadManifestBundleAsync();
             _initialized = true;
         }
@@ -246,6 +256,14 @@ namespace Framework.Assets
                 }
 
                 var url = _bundleRoot + "/" + bundleName;
+                if (!string.IsNullOrEmpty(BundleVersion))
+                {
+                    // 微信 SDK 算 __GAME_FILE_CACHE 缓存文件路径时会剥掉 ? 后的查询参数，
+                    // ?v= 破不了真机缓存；版本号必须放进 URL 路径才会真正重新下载。
+                    // 对应目录由 Res/Build AssetBundles 生成（WebGL 目标才会拷贝版本子目录）。
+                    url = _bundleRoot + "/" + BundleVersion + "/" + bundleName;
+                }
+
                 using (var request = UnityWebRequestAssetBundle.GetAssetBundle(url))
                 {
                     var operation = request.SendWebRequest();

@@ -79,12 +79,16 @@ namespace App.Game
             SetFace(CardFaceState.Back);
             ApplyFrontTransparentVisible(false);
             HideDragEffects();
+            var front = ResolveRenderer();
+            if (front != null)
+            {
+                front.color = Color.white;
+            }
+
             var back = ResolveBackRenderer();
             if (back != null)
             {
-                var c = back.color;
-                c.a = 1f;
-                back.color = c;
+                back.color = Color.white;
             }
         }
 
@@ -415,6 +419,48 @@ namespace App.Game
             _flipTween?.Kill();
             _backFadeTween?.Kill();
             _successFxHide?.Kill();
+        }
+
+        /// <summary>对象池回收：停掉全部 tween 与洗牌/飞牌动画、隐藏特效；
+        /// 显示状态（牌面/朝向/透明度）由下次租用的 Initialize 全量重置。</summary>
+        public void ResetForPool()
+        {
+            _moveTween?.Kill();
+            _moveTween = null;
+            _rotateTween?.Kill();
+            _rotateTween = null;
+            _flipTween?.Kill();
+            _flipTween = null;
+            _backFadeTween?.Kill();
+            _backFadeTween = null;
+            _successFxHide?.Kill();
+            _successFxHide = null;
+            _successFxTween?.Kill();
+            _successFxTween = null;
+            StopTweenAnimation();
+            HideDragEffects();
+            _backSeeThrough = false;
+            _backAlphaTarget = 1f;
+            var front = ResolveRenderer();
+            if (front != null)
+            {
+                front.color = Color.white;
+            }
+
+            var back = ResolveBackRenderer();
+            if (back != null)
+            {
+                back.color = Color.white;
+            }
+
+            // aini_card_appear01 播完会把 Back 压暗到 0.5 并钳制保持，deal 剪辑不写颜色；
+            // Rebind 把全部动画属性写回预制体默认值，避免池化复用带出上一局的残留姿势/颜色。
+            var animator = ResolveTweenAnimator();
+            if (animator != null)
+            {
+                animator.Rebind();
+                animator.enabled = false;
+            }
         }
 
         private static void SetEffectActive(GameObject go, bool visible)

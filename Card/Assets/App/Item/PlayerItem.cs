@@ -12,8 +12,9 @@ namespace App.Game
 {
     /// <summary>
     /// 局内角色/敌人信息卡。人物用 card，敌人用 enemycard，头像与数值在 <see cref="Bind"/> 时赋值。
-    /// 玩家 attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame；
-    /// 怪物 enemycard 底图取 MonsterConfig.BaseMap，attack/heart 取 HealthBar。
+    /// 玩家 attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame，
+    /// card 下 bg/direct/di 三层卡背取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
+    /// 怪物 enemycard 底图取 MonsterConfig.BaseMap，attack/heart 取 HealthBar，贴图也在 Altas/playitem。
     /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
@@ -26,6 +27,9 @@ namespace App.Game
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
         [SerializeField] private Image cardBg;
+        [SerializeField] private Image cardQualityBg;
+        [SerializeField] private Image cardQualityDirect;
+        [SerializeField] private Image cardQualityDi;
         [SerializeField] private GameObject cardMask;
         [SerializeField] private TMP_Text cardAttackValue;
         [SerializeField] private Animator attackValueAnimator;
@@ -60,6 +64,10 @@ namespace App.Game
         private bool _dialogRefsReady;
         private Tween _dialogTween;
         private GameObject _activeDialog;
+        // card / enemycard 节点引用：显隐切换按节点做，不依赖节点上是否挂 Image
+        // （预制体 card 节点只有 RectTransform+CanvasRenderer，按 Image 查找会漏）
+        private GameObject _cardRoot;
+        private GameObject _enemyCardRoot;
 
         private TMP_Text ActiveName => _enemyVisual && enemyCardName != null ? enemyCardName : cardName;
         private Image ActiveIcon => _enemyVisual && enemyCardIcon != null ? enemyCardIcon : cardIcon;
@@ -231,6 +239,7 @@ namespace App.Game
             }
 
             var full = text ?? string.Empty;
+            root.SetActive(true);
             if (label != null)
             {
                 label.text = full;
@@ -238,9 +247,10 @@ namespace App.Game
                 label.ForceMeshUpdate();
             }
 
-            root.SetActive(true);
-            _activeDialog = root;
             var rt = root.transform as RectTransform;
+            // 气泡带 ContentSizeFitter。点其他按钮会触发布局重算，高度一变中心轴就会把气泡顶走。先按全文排好再关掉。
+            FreezeDialogLayout(rt);
+            _activeDialog = root;
             var group = EnsureCanvasGroup(root);
             group.alpha = 0f;
             if (rt != null)
@@ -349,6 +359,7 @@ namespace App.Game
             EnsureRefs();
             SetEnemyVisual(false);
             ApplyStatFrame(quality);
+            ApplyQualityCardBack(quality);
             SetCardMaskVisible(false);
         }
 
@@ -362,21 +373,21 @@ namespace App.Game
 
         private void SetEnemyVisual(bool enemy)
         {
-            if (enemy && enemyCardBg == null)
+            if (enemy && _enemyCardRoot == null)
             {
                 enemy = false;
             }
 
             _enemyVisual = enemy;
             _visualReady = true;
-            if (cardBg != null)
+            if (_cardRoot != null && _cardRoot.activeSelf == enemy)
             {
-                cardBg.gameObject.SetActive(!enemy);
+                _cardRoot.SetActive(!enemy);
             }
 
-            if (enemyCardBg != null)
+            if (_enemyCardRoot != null && _enemyCardRoot.activeSelf != enemy)
             {
-                enemyCardBg.gameObject.SetActive(enemy);
+                _enemyCardRoot.SetActive(enemy);
             }
         }
 
@@ -410,7 +421,40 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 怪物 enemycard 底图用 BaseMap，enemycardattack/heart 用 HealthBar。缺配置或缺图保留当前 sprite。
+        /// card/bg、card/bg/direct、card/bg/direct/di 三层卡背按品质取 Altas/playitem 的
+        /// {品质}CardFrameBack{1,2,3}（稀有为 BlueCardFrame{1,2,3}）。目标品质缺图时回退
+        /// 普通品质，图集整体不可用时保留当前图。
+        /// </summary>
+        private void ApplyQualityCardBack(QualityType quality)
+        {
+            ApplyQualityLayer(cardQualityBg, quality, 1);
+            ApplyQualityLayer(cardQualityDirect, quality, 2);
+            ApplyQualityLayer(cardQualityDi, quality, 3);
+        }
+
+        private static void ApplyQualityLayer(Image target, QualityType quality, int layer)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            var sprite = PlayItemSpriteLibrary.GetCardFrameBack(quality, layer);
+            if (sprite == null && quality != QualityType.Ordinary)
+            {
+                sprite = PlayItemSpriteLibrary.GetCardFrameBack(QualityType.Ordinary, layer);
+            }
+
+            if (sprite != null)
+            {
+                target.sprite = sprite;
+            }
+        }
+
+        /// <summary>
+        /// 怪物 enemycard 底图用 BaseMap，enemycardattack/heart 用 HealthBar。贴图在
+        /// Altas/playitem（源图 Assets/Sprites/playeritem 的 {颜色}MonsterBaseFrame 系列）。
+        /// 缺配置或缺图保留当前 sprite。
         /// </summary>
         private void ApplyMonsterFrames(int monsterId)
         {
@@ -420,13 +464,13 @@ namespace App.Game
                 return;
             }
 
-            var baseMap = ItemBgSpriteLibrary.Get(row.BaseMap);
+            var baseMap = PlayItemSpriteLibrary.Get(row.BaseMap);
             if (baseMap != null && enemyCardBg != null)
             {
                 enemyCardBg.sprite = baseMap;
             }
 
-            var healthBar = ItemBgSpriteLibrary.Get(row.HealthBar);
+            var healthBar = PlayItemSpriteLibrary.Get(row.HealthBar);
             if (healthBar == null)
             {
                 return;
@@ -474,7 +518,11 @@ namespace App.Game
             var label = ActiveName;
             if (label != null)
             {
-                label.text = name ?? string.Empty;
+                var value = name ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
         }
 
@@ -567,15 +615,22 @@ namespace App.Game
             var label = ActiveAttackValue;
             if (label != null)
             {
-                label.text = text ?? string.Empty;
+                var value = text ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
 
             var root = ActiveAttackRoot;
             if (root != null)
             {
-                root.SetActive(visible);
+                if (root.activeSelf != visible)
+                {
+                    root.SetActive(visible);
+                }
             }
-            else if (label != null)
+            else if (label != null && label.gameObject.activeSelf != visible)
             {
                 label.gameObject.SetActive(visible);
             }
@@ -586,15 +641,22 @@ namespace App.Game
             var label = ActiveHeart;
             if (label != null)
             {
-                label.text = text ?? string.Empty;
+                var value = text ?? string.Empty;
+                if (label.text != value)
+                {
+                    label.text = value;
+                }
             }
 
             var bg = ActiveHeartBg;
             if (bg != null)
             {
-                bg.gameObject.SetActive(visible);
+                if (bg.gameObject.activeSelf != visible)
+                {
+                    bg.gameObject.SetActive(visible);
+                }
             }
-            else if (label != null)
+            else if (label != null && label.gameObject.activeSelf != visible)
             {
                 label.gameObject.SetActive(visible);
             }
@@ -603,7 +665,7 @@ namespace App.Game
         private void SetCardMaskVisible(bool visible)
         {
             EnsureRefs();
-            if (cardMask != null)
+            if (cardMask != null && cardMask.activeSelf != visible)
             {
                 cardMask.SetActive(visible);
             }
@@ -636,9 +698,42 @@ namespace App.Game
                 cardBg = FindImage("card");
             }
 
-            if (cardMask == null && cardBg != null)
+            if (_cardRoot == null)
             {
-                var node = FindDeep(cardBg.transform, "cardMask");
+                var node = FindDeep(transform, "card");
+                if (node != null)
+                {
+                    _cardRoot = node.gameObject;
+                }
+            }
+
+            if (_enemyCardRoot == null)
+            {
+                var node = FindDeep(transform, "enemycard");
+                if (node != null)
+                {
+                    _enemyCardRoot = node.gameObject;
+                }
+            }
+
+            if (cardQualityBg == null)
+            {
+                cardQualityBg = FindImage("bg");
+            }
+
+            if (cardQualityDirect == null)
+            {
+                cardQualityDirect = FindImage("direct");
+            }
+
+            if (cardQualityDi == null)
+            {
+                cardQualityDi = FindImage("di");
+            }
+
+            if (cardMask == null && _cardRoot != null)
+            {
+                var node = FindDeep(_cardRoot.transform, "cardMask");
                 if (node != null)
                 {
                     cardMask = node.gameObject;
@@ -822,6 +917,26 @@ namespace App.Game
             }
 
             _activeDialog = null;
+        }
+
+        private static void FreezeDialogLayout(RectTransform rt)
+        {
+            if (rt == null)
+            {
+                return;
+            }
+
+            var fitter = rt.GetComponent<ContentSizeFitter>();
+            if (fitter != null)
+            {
+                fitter.enabled = true;
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+            if (fitter != null)
+            {
+                fitter.enabled = false;
+            }
         }
 
         private static void ResetDialogText(TMP_Text label)

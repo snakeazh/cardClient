@@ -24,11 +24,10 @@ namespace App.UI
     {
         private readonly IUIManager _ui;
         private readonly NavigationViewModel _navigation;
-        private readonly ILevelService _levels;
-        private readonly ILevelProgressService _progress;
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
+        private readonly ToastService _toast;
         private readonly GameSession _session;
         private readonly GameTableViewModel _table;
         private readonly PvpMatchSession _pvp;
@@ -37,30 +36,28 @@ namespace App.UI
         public HomeViewModel(
             IUIManager ui,
             NavigationViewModel navigation,
-            ILevelService levels,
-            ILevelProgressService progress,
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
             IUnlockConditionService unlock,
+            ToastService toast,
             GameSession session,
             GameTableViewModel table,
             PvpMatchSession pvp)
         {
             _ui = ui;
             _navigation = navigation;
-            _levels = levels;
-            _progress = progress;
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
+            _toast = toast;
             _session = session;
             _table = table;
             _pvp = pvp;
             Resources = resources;
-            LastStageInfo = new ObservableProperty<string>();
             StaminaText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI);
+            OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
@@ -72,18 +69,26 @@ namespace App.UI
         public HeroPanelStats PanelStats =>
             _talentBonus != null ? _talentBonus.Evaluate(Hero) : TalentBonusManager.EvaluateBase(Hero);
 
-        public ObservableProperty<string> LastStageInfo { get; }
-
         /// <summary>开始按钮上的每局体力消耗标注，如 "x1"。当前体力在顶部资源栏显示。</summary>
         public ObservableProperty<string> StaminaText { get; }
 
         public IRelayCommand StartCommand { get; }
 
+        /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
+        public IRelayCommand OpenTTRewardCommand { get; }
         public IRelayCommand PvpCommand { get; }
 
         protected override async Task OnOpen(object args)
         {
-            RefreshLastStage();
+            await RefreshOnReturnAsync();
+        }
+
+        /// <summary>
+        /// 从对局返回时复用压在 Page 栈底、未销毁的 Home：重跑打开时的刷新
+        /// （体力/BGM/待解锁弹窗）。View 绑定在 Hide 期间保持存活，属性刷新直接生效。
+        /// </summary>
+        public async Task RefreshOnReturnAsync()
+        {
             RefreshStamina();
             await StartHomeBgmAsync();
             await PresentPendingUnlocksAsync();
@@ -130,7 +135,7 @@ namespace App.UI
 
             try
             {
-                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.Bgm);
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmLobby);
                 _audio.PlayBgm(clip);
             }
             catch (Exception ex)
@@ -144,24 +149,37 @@ namespace App.UI
             StaminaText.Value = $"x{EnergyBalance.CostPerRun}";
         }
 
-        private void RefreshLastStage()
-        {
-            if (_progress.LastLevelId > 0 && _levels.TryGetById(_progress.LastLevelId, out var snapshot) &&
-                snapshot != null)
-            {
-                LastStageInfo.Value = $"难度{snapshot.Difficulty} 第{snapshot.Level}关";
-                return;
-            }
-
-            LastStageInfo.Value = "尚未闯关";
-        }
-
         private async void OpenLevelUI()
         {
-            _navigation.HideBar();
-            var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
-            var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
-            await _ui.Open(vm);
+            try
+            {
+                _navigation.HideBar();
+                var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
+                var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                // async void 吞异常会让按钮"点了没反应"：记录并恢复导航栏，提示重试。
+                AppLog.Exception(LogChannel.UI, ex);
+                await _navigation.EnsureShown();
+                _toast?.ShowWarning("选关界面打开失败，请重试");
+            }
+        }
+
+        private async void OpenTTReward()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TTRewardPopViewModel));
+                var vm = (TTRewardPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("奖励界面打开失败，请重试");
+            }
         }
 
         private async void StartPvp()

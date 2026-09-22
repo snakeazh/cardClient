@@ -1,11 +1,15 @@
 using System;
+using System.Threading.Tasks;
+using App.Resources;
+using Framework.Assets;
+using Framework.Log;
 using Framework.Save;
 using UnityEngine;
 
 namespace App.Audio
 {
     /// <summary>
-    /// 在宿主物体上挂 BGM / SFX 两个 AudioSource，脏标记落盘开关。
+    /// 在宿主物体上挂 BGM / SFX 两个 AudioSource，开关变更即落盘。
     /// </summary>
     public sealed class AudioService : IAudioService
     {
@@ -15,6 +19,7 @@ namespace App.Audio
         private readonly ISaveService _save;
         private readonly AudioSource _bgm;
         private readonly AudioSource _sfx;
+        private AudioClip _uiClick;
         private bool _bgmEnabled = true;
         private bool _sfxEnabled = true;
         private bool _bgmWasPaused;
@@ -47,6 +52,7 @@ namespace App.Audio
 
             _bgmEnabled = enabled;
             _dirty = true;
+            Save();
             ApplyBgmState();
             Changed?.Invoke();
         }
@@ -60,6 +66,7 @@ namespace App.Audio
 
             _sfxEnabled = enabled;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 
@@ -106,6 +113,28 @@ namespace App.Audio
             }
 
             _sfx.PlayOneShot(clip, Mathf.Clamp01(volumeScale));
+        }
+
+        public void PlayUiClick()
+        {
+            PlaySfx(_uiClick);
+        }
+
+        public async Task PreloadUiClickAsync(IResourceService resources)
+        {
+            if (_uiClick != null || resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _uiClick = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxUiClick);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "UI click SFX load failed: " + ex.Message);
+            }
         }
 
         public void Load()

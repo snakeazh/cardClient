@@ -1,19 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 namespace Framework.Assets.Editor
 {
     /// <summary>
-    /// 1) Build AssetBundles from Assets/Res to ../Bundles/{version}/ (semver auto-increment from 1.0.0)
+    /// 1) Build AssetBundles from Assets/Res into a staging dir, then archive to ../Bundles/{version}/
     /// 2) Copy bundle files into Assets/StreamingAssets/Bundles for runtime.
+    /// 版本号按内容递增：bundle 哈希与上次构建一致时保持原版本（端上缓存继续有效），
+    /// 内容变化才 bump patch（微信按 URL 缓存、Android 按 version.txt 判过期，都靠版本号失效）。
     /// </summary>
     public static class ResAssetBundleBuilder
     {
         public const string ResRoot = ResPaths.AssetRoot;
         public const string StreamingBundlesRelative = "StreamingAssets/Bundles";
+
+        private const string StagingFolderName = "_staging";
+        private const string ContentHashFileName = "buildhash.txt";
 
         /// <summary>
         /// 相对 Assets/Res 的路径前缀，这些目录不参与 AssetBundle 打包。
@@ -37,15 +43,17 @@ namespace Framework.Assets.Editor
         [MenuItem("Res/Build AssetBundles")]
         public static void Build()
         {
-            BuildInternal(bumpVersion: true);
+            BuildInternal();
         }
 
         /// <summary>
-        /// Rebuild bundles without bumping semver (used after prefab regeneration).
+        /// 重建 AssetBundles。版本号同样按内容决定：内容没变保持原版本，变了才递增。
+        /// 微信按 URL 缓存 bundle、Android 按 version.txt 判断本地解压产物是否过期，
+        /// 内容变了版本号不变会让端上继续用旧 bundle（"新代码配旧预制体"）。
         /// </summary>
         public static void RebuildCurrentVersion()
         {
-            BuildInternal(bumpVersion: false);
+            BuildInternal();
         }
 
         [MenuItem("Res/Clear Bundle Dir")]
@@ -120,7 +128,7 @@ namespace Framework.Assets.Editor
             return true;
         }
 
-        private static void BuildInternal(bool bumpVersion)
+        private static void BuildInternal()
         {
             if (!AssetDatabase.IsValidFolder(ResRoot))
             {
@@ -138,14 +146,16 @@ namespace Framework.Assets.Editor
                 return;
             }
 
-            var version = bumpVersion
-                ? BundleVersionManager.BumpAndSaveNextBuildVersion()
-                : BundleVersionManager.GetOrInitializeVersion();
-            var versionOutput = BundleVersionManager.GetVersionOutputPath(version);
-            Directory.CreateDirectory(versionOutput);
+            var staging = Path.Combine(BundleVersionManager.GetBundlesRoot(), StagingFolderName);
+            if (Directory.Exists(staging))
+            {
+                Directory.Delete(staging, recursive: true);
+            }
+
+            Directory.CreateDirectory(staging);
 
             var manifest = BuildPipeline.BuildAssetBundles(
-                versionOutput,
+                staging,
                 builds,
                 BuildAssetBundleOptions.None,
                 EditorUserBuildSettings.activeBuildTarget);
@@ -156,6 +166,39 @@ namespace Framework.Assets.Editor
                 return;
             }
 
+            // 内容没变 → 保持版本号（端上缓存继续有效，不用重新下载）；
+            // 内容变了 → 递增版本号（微信 URL 缓存 / Android 本地解压都按版本失效）。
+            var contentHash = ComputeContentHash(manifest);
+            var savedVersion = BundleVersionManager.ReadSavedVersion();
+            string version;
+            if (contentHash == ReadSavedContentHash() &&
+                BundleVersionManager.IsValidSemVer(savedVersion))
+            {
+                version = savedVersion;
+                Debug.Log($"[Res] Bundle 内容未变化，版本保持 {version}。");
+            }
+            else
+            {
+                version = BundleVersionManager.BumpAndSaveNextBuildVersion();
+                WriteSavedContentHash(contentHash);
+            }
+
+            // 归档 staging → Bundles/{version}；manifest bundle 文件名跟随输出目录名，改回版本名。
+            var versionOutput = BundleVersionManager.GetVersionOutputPath(version);
+            if (Directory.Exists(versionOutput))
+            {
+                Directory.Delete(versionOutput, recursive: true);
+            }
+
+            Directory.CreateDirectory(versionOutput);
+            foreach (var file in Directory.GetFiles(staging))
+            {
+                File.Copy(file, Path.Combine(versionOutput, Path.GetFileName(file)), overwrite: true);
+            }
+
+            RenameIfExists(versionOutput, StagingFolderName, version);
+            RenameIfExists(versionOutput, StagingFolderName + ".manifest", version + ".manifest");
+
             CopyToStreamingAssets(versionOutput, version);
             WriteStreamingVersion(version);
             WriteStreamingCatalog();
@@ -165,6 +208,45 @@ namespace Framework.Assets.Editor
             Debug.Log(
                 $"AssetBundles v{version} built to {versionOutput} and copied to {GetStreamingBundlesAssetPath()} " +
                 $"({EditorUserBuildSettings.activeBuildTarget}), {builds.Length} bundles");
+        }
+
+        private static void RenameIfExists(string directory, string oldName, string newName)
+        {
+            var oldPath = Path.Combine(directory, oldName);
+            if (File.Exists(oldPath))
+            {
+                File.Move(oldPath, Path.Combine(directory, newName));
+            }
+        }
+
+        /// <summary>全部 asset bundle 的哈希拼合（不含 manifest bundle 自身——它的文件名随版本目录变，参与会每次都变）。</summary>
+        private static string ComputeContentHash(AssetBundleManifest manifest)
+        {
+            var names = manifest.GetAllAssetBundles();
+            Array.Sort(names, StringComparer.Ordinal);
+            var sb = new StringBuilder();
+            foreach (var name in names)
+            {
+                sb.Append(name).Append(':').Append(manifest.GetAssetBundleHash(name)).Append('\n');
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetContentHashFilePath()
+        {
+            return Path.Combine(BundleVersionManager.GetBundlesRoot(), ContentHashFileName);
+        }
+
+        private static string ReadSavedContentHash()
+        {
+            var path = GetContentHashFilePath();
+            return File.Exists(path) ? File.ReadAllText(path) : null;
+        }
+
+        private static void WriteSavedContentHash(string contentHash)
+        {
+            File.WriteAllText(GetContentHashFilePath(), contentHash);
         }
 
         private static void WriteStreamingVersion(string version)
@@ -179,23 +261,72 @@ namespace Framework.Assets.Editor
             var dest = GetStreamingBundlesFullPath();
             Directory.CreateDirectory(dest);
 
-            foreach (var file in Directory.GetFiles(versionOutput))
+            // 清掉历史版本子目录：StreamingAssets 会被打进包体，旧版本留着只是膨胀。
+            foreach (var dir in Directory.GetDirectories(dest))
             {
-                var name = Path.GetFileName(file);
-                if (string.IsNullOrEmpty(name))
+                if (BundleVersionManager.IsValidSemVer(Path.GetFileName(dir)))
                 {
-                    continue;
+                    Directory.Delete(dir, recursive: true);
                 }
-
-                File.Copy(file, Path.Combine(dest, name), overwrite: true);
             }
 
-            // The manifest bundle is named after the version folder (e.g. "1.0.4");
-            // also copy it under the fixed name the runtime looks for.
-            var manifestBundle = Path.Combine(versionOutput, version);
-            if (File.Exists(manifestBundle))
+            // 清掉根目录所有平铺文件（含 .meta）：version.txt / catalog.txt 随后重写，
+            // bundle 按目标平台重新拷贝，残留的旧文件只会膨胀包体。
+            foreach (var file in Directory.GetFiles(dest))
             {
-                File.Copy(manifestBundle, Path.Combine(dest, "Bundles"), overwrite: true);
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+            }
+
+            var manifestBundle = Path.Combine(versionOutput, version);
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
+            {
+                // WebGL/微信/抖音端按 URL 路径里的版本号破缓存（query 参数会被 SDK 剥掉，无效）：
+                // 运行时只用 {root}/Bundles/{version}/{name} 下载，平铺拷贝它根本读不到，
+                // 写两份等于同一份资源占两倍包体，所以 WebGL 目标只生成版本子目录。
+                var versionDir = Path.Combine(dest, version);
+                Directory.CreateDirectory(versionDir);
+                foreach (var file in Directory.GetFiles(versionOutput))
+                {
+                    var name = Path.GetFileName(file);
+                    if (string.IsNullOrEmpty(name) ||
+                        name.EndsWith(".manifest", StringComparison.OrdinalIgnoreCase) ||
+                        name == version)
+                    {
+                        continue;
+                    }
+
+                    File.Copy(file, Path.Combine(versionDir, name), overwrite: true);
+                }
+
+                // The manifest bundle is named after the version folder (e.g. "1.0.4");
+                // also copy it under the fixed name the runtime looks for.
+                if (File.Exists(manifestBundle))
+                {
+                    File.Copy(manifestBundle, Path.Combine(versionDir, "Bundles"), overwrite: true);
+                }
+            }
+            else
+            {
+                // Android/iOS/PC 从包内平铺目录 LoadFromFile；多拷一份版本子目录只会白占包体。
+                foreach (var file in Directory.GetFiles(versionOutput))
+                {
+                    var name = Path.GetFileName(file);
+                    // 版本号命名的 manifest bundle 不再平铺拷贝：运行时只读固定名 "Bundles"。
+                    if (string.IsNullOrEmpty(name) ||
+                        name == version ||
+                        name == version + ".manifest")
+                    {
+                        continue;
+                    }
+
+                    File.Copy(file, Path.Combine(dest, name), overwrite: true);
+                }
+
+                if (File.Exists(manifestBundle))
+                {
+                    File.Copy(manifestBundle, Path.Combine(dest, "Bundles"), overwrite: true);
+                }
             }
         }
 

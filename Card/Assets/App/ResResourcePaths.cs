@@ -13,6 +13,8 @@ namespace App.Resources
         public const string GameResource = "UI/Bottom/GameResource";
         public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
+        /// <summary>选关难度卡预制体 Assets/Res/UI/Icon/IevelItem.prefab（文件名首字母是大写 I）。</summary>
+        public const string LevelItem = "UI/Icon/IevelItem";
         public const string ConfirmDialog = "UI/ConfirmDialog";
         public const string GameUI = "UI/GameUI";
         public const string BattleFailPopup = "UI/Popup/BattleFailPopup";
@@ -30,15 +32,16 @@ namespace App.Resources
         public const string GamePopupInfo = "UI/Popup/GamePopupInfo";
         public const string EnergyPopup = "UI/Popup/EnergyPopup";
         public const string StaminaPurchasePop = "UI/Popup/StaminaPurchasePop";
+        public const string TTRewardPop = "UI/Popup/TTRewardPop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
         public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";
-        /// <summary>对局桌面背景 Assets/Res/Textures/BG/BigBackgroundBaseFrame.png。</summary>
-        public const string GameHudBg = "Textures/BG/BigBackgroundBaseFrame";
-        /// <summary>Boss 关桌面背景 Assets/Res/Textures/BG/RedBigBackgroundBaseFrame.png。</summary>
-        public const string GameHudBossBg = "Textures/BG/RedBigBackgroundBaseFrame";
+        /// <summary>对局桌面背景 Assets/Res/Textures/Background/BigBackgroundBaseFrame.png。</summary>
+        public const string GameHudBg = "Textures/Background/BigBackgroundBaseFrame";
+        /// <summary>Boss 关桌面背景 Assets/Res/Textures/Background/RedBigBackgroundBaseFrame.png。</summary>
+        public const string GameHudBossBg = "Textures/Background/RedBigBackgroundBaseFrame";
         public const string CardIcon = "Game/CardIcon";
         public const string CardShadow = "UI/Icon/CardShadow";
         public const string PlayerItem = "UI/Icon/PlayerItem";
@@ -48,8 +51,22 @@ namespace App.Resources
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";
-        /// <summary>主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
+        /// <summary>旧主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
         public const string Bgm = "Audio/BGM/BGM";
+        /// <summary>大厅 BGM Assets/Res/Audio/BGM/BGM_Lobby_Loop.wav。</summary>
+        public const string BgmLobby = "Audio/BGM/BGM_Lobby_Loop";
+        /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.wav。</summary>
+        public const string BgmBattle = "Audio/BGM/BGM_Battle_Loop";
+        /// <summary>回合发牌音效 Assets/Res/Audio/Effect/deal_5cards_01.wav。</summary>
+        public const string SfxDeal5Cards = "Audio/Effect/deal_5cards_01";
+        /// <summary>比牌亮牌放大音效 Assets/Res/Audio/Effect/reveal_cards_3.wav。</summary>
+        public const string SfxRevealCards3 = "Audio/Effect/reveal_cards_3";
+        /// <summary>攻击/受击卡牌碰撞音效 Assets/Res/Audio/Effect/hurt_big_02.wav。</summary>
+        public const string SfxHurtBig02 = "Audio/Effect/hurt_big_02";
+        /// <summary>搓牌技能音效 Assets/Res/Audio/Effect/rub_cards_02.wav。</summary>
+        public const string SfxRubCards02 = "Audio/Effect/rub_cards_02";
+        /// <summary>通用按钮点击音效 Assets/Res/Audio/Effect/ui_click_03.wav。</summary>
+        public const string SfxUiClick = "Audio/Effect/ui_click_03";
         /// <summary>攻击演出参数 Assets/Res/SO/AttackTuning.asset（<see cref="App.UI.AttackTuningConfig"/>）。</summary>
         public const string AttackTuning = "SO/AttackTuning";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Card.spriteatlasv2.</summary>
@@ -62,6 +79,8 @@ namespace App.Resources
         public const string RelicAtlas = "Altas/Relic";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ItemBg.spriteatlasv2（源图 Assets/Sprites/ItemBg）。</summary>
         public const string ItemBgAtlas = "Altas/ItemBg";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/playitem.spriteatlasv2（源图 Assets/Sprites/playeritem，品质卡背 {品质}CardFrameBack{1,2,3}）。</summary>
+        public const string PlayItemAtlas = "Altas/playitem";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
         public const string TalentAtlas = "Altas/Talent";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>
@@ -108,11 +127,17 @@ namespace App.Resources
         }
 
         /// <summary>
+        /// <see cref="App.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
+        /// normal 态（_attack）已挪到 Textures/enemytujian 并打进图集（图鉴整页展示用）；
+        /// _damage / _dead 仍在 Textures/enemy 按张加载（局内懒加载、退局释放）。
         /// <see cref="CardShare.Contracts.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
         /// </summary>
         public static string EnemyPortrait(string icon, string suffix)
         {
-            return ComposeIcon("Textures/enemy", icon, suffix);
+            var folder = string.Equals(suffix, PortraitAttack, System.StringComparison.Ordinal)
+                ? "Textures/enemytujian"
+                : "Textures/enemy";
+            return ComposeIcon(folder, icon, suffix);
         }
 
         /// <summary>
@@ -123,7 +148,7 @@ namespace App.Resources
             return ComposeIcon("Textures/Relic", icon, null);
         }
 
-        public static string EnemyAttack(int index) => $"Textures/enemy/enemy{index}_attack";
+        public static string EnemyAttack(int index) => $"Textures/enemytujian/enemy{index}_attack";
 
         /// <summary>
         /// <see cref="CardShare.Contracts.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。

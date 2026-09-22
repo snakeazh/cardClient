@@ -9,8 +9,8 @@ using UnityEngine;
 namespace App.Bag
 {
     /// <summary>
-    /// In-memory bag with dirty-flag persistence via ISaveService.
-    /// Mutations stay in memory; call Save() (or rely on pause/quit auto-flush) to flush disk.
+    /// In-memory bag with persistence via ISaveService.
+    /// Mutations save immediately (pause/quit auto-flush is unreliable on WeChat mini-game).
     /// </summary>
     public sealed class BagService : IBagService
     {
@@ -53,6 +53,7 @@ namespace App.Bag
             _counts.TryGetValue(itemId, out var current);
             _counts[itemId] = current + amount;
             _dirty = true;
+            Save();
         }
 
         public bool TryRemove(int itemId, int amount)
@@ -78,6 +79,7 @@ namespace App.Bag
             }
 
             _dirty = true;
+            Save();
             return true;
         }
 
@@ -105,6 +107,7 @@ namespace App.Bag
 
             _counts.Clear();
             _dirty = true;
+            Save();
         }
 
         public void ReplaceFromServer(IReadOnlyList<BagEntry> entries)

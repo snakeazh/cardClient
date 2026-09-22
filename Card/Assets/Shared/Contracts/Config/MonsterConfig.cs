@@ -62,9 +62,9 @@ namespace CardShare.Contracts.Config
         public string HealthBar;
 
         /// <summary>
-        /// 怪物机制
+        /// 怪物机制(BossEntryConfig.Id,多个用|分隔)
         /// </summary>
-        public int MonsterEntry;
+        public int[] MonsterEntry;
 
     }
 }

@@ -4,7 +4,7 @@ using Framework.Save;
 namespace App.Wallet
 {
     /// <summary>
-    /// 局外货币，脏标记落盘。
+    /// 局外货币，变更时立即落盘（微信小游戏上 pause/quit 不可靠，不能依赖统一 flush）。
     /// </summary>
     public sealed class WalletService : IWalletService
     {
@@ -32,6 +32,7 @@ namespace App.Wallet
 
             _gold += amount;
             _dirty = true;
+            Save();
             Changed?.Invoke();
         }
 
@@ -63,6 +64,7 @@ namespace App.Wallet
 
             _gold -= amount;
             _dirty = true;
+            Save();
             Changed?.Invoke();
             return true;
         }

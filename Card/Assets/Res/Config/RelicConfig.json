@@ -147,7 +147,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+7攻击力"
+    "Desc": "亮出的炸弹牌型在结算时提供+7攻击力"
   },
   {
     "Id": 111,
@@ -447,7 +447,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的豹子牌型在结算时提供+7倍率"
+    "Desc": "亮出的炸弹牌型在结算时提供+7倍率"
   },
   {
     "Id": 210,
@@ -658,7 +658,7 @@
     ],
     "UnlockConditionId": 10301,
     "UseType": 0,
-    "Desc": "亮牌时,若敌人的牌型大于顺子,则会被强行视作顺子"
+    "Desc": "比牌时,若对方的牌型大于顺子,则会被强行视作顺子(购买后15次比牌内生效)"
   },
   {
     "Id": 224,
@@ -839,6 +839,37 @@
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时的第三张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 236,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "疯狂猴子",
+    "Icon": "CrazyMonkey",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20036,
+      20037
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "结算时提供+8倍率,但回合结束后有18%的概率摧毁此圣物"
+  },
+  {
+    "Id": 237,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "贪婪",
+    "Icon": "Greed",
+    "Price": 110,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20038
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每次获胜该圣物+1倍率,每次失败该圣物-1倍率"
   },
   {
     "Id": 301,
@@ -1078,7 +1109,7 @@
     ],
     "UnlockConditionId": 10201,
     "UseType": 0,
-    "Desc": "亮牌时,若敌人的牌型大于同花,则会被强行视作同花"
+    "Desc": "比牌时,若敌人的牌型大于同花,则会被强行视作同花(购买后10次比牌内生效)"
   },
   {
     "Id": 317,
@@ -1204,7 +1235,7 @@
     "Id": 325,
     "Type": 3,
     "RefreshProbability": 0.2,
-    "Name": "豹子精髓",
+    "Name": "炸弹精髓",
     "Icon": "LeopardEssence",
     "Price": 160,
     "SellingPrice": 80,
@@ -1213,7 +1244,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 2,
-    "Desc": "使用后,本局内你亮出豹子时,就会获得300金币"
+    "Desc": "使用后,本局内你亮出炸弹时,就会获得300金币"
   },
   {
     "Id": 326,
@@ -1291,6 +1322,126 @@
     "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
   },
   {
+    "Id": 331,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "倍率叠加",
+    "Icon": "MultiplierStacking",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30033
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每使用过1次消耗类的圣物,此圣物就会在结算时永久提供+0.5倍率"
+  },
+  {
+    "Id": 332,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "力量叠加",
+    "Icon": "PowerStacking",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30034
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每使用过1次消耗类的圣物,此圣物就会永久提供+1攻击力"
+  },
+  {
+    "Id": 333,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "召唤",
+    "Icon": "Summon",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30035
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "如果你亮出的牌型为同花顺,则会随机生成一个消耗性圣物,前提是圣物栏有空位"
+  },
+  {
+    "Id": 334,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "国王领域",
+    "Icon": "KingdomDomain",
+    "Price": 250,
+    "SellingPrice": 125,
+    "MechanismId": [
+      30036
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时留在手牌中的每一张K,都会提供+9倍率"
+  },
+  {
+    "Id": 335,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "皇后领域",
+    "Icon": "QueenDomain",
+    "Price": 250,
+    "SellingPrice": 125,
+    "MechanismId": [
+      30037
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌时留在手牌中的每一张Q,都会提供+9倍率"
+  },
+  {
+    "Id": 336,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "复制",
+    "Icon": "Copy",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30038
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每回合随机复制1个你栏位中其他圣物的能力"
+  },
+  {
+    "Id": 337,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "借花献佛",
+    "Icon": "BorrowFlowerPresentBuddha",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30039
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "本关每存在1条关卡机制,你造成的伤害+40%"
+  },
+  {
+    "Id": 338,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "妙手",
+    "Icon": "MagicHand",
+    "Price": 240,
+    "SellingPrice": 120,
+    "MechanismId": [
+      30040
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "使用透视时,随机抽走该敌人1张手牌,与你手中点数最小的1张交换"
+  },
+  {
     "Id": 401,
     "Type": 4,
     "RefreshProbability": 0.1,
@@ -1303,7 +1454,7 @@
     ],
     "UnlockConditionId": 11001,
     "UseType": 0,
-    "Desc": "高牌235等同于豹子牌型,并且可以战胜所有牌型"
+    "Desc": "高牌235等同于炸弹牌型,并且可以战胜所有牌型"
   },
   {
     "Id": 402,
@@ -1533,7 +1684,7 @@
     ],
     "UnlockConditionId": 10101,
     "UseType": 0,
-    "Desc": "亮牌时,若敌人的牌型大于对子,则会被强行视作对子"
+    "Desc": "比牌时,若敌人的牌型大于对子,则会被强行视作对子(购买后6次比牌内生效)"
   },
   {
     "Id": 417,
@@ -1775,5 +1926,110 @@
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "顺子牌型可以相隔1点组成[例如:2,4,5]"
+  },
+  {
+    "Id": 433,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "高档甜品",
+    "Icon": "HighGradeDessert",
+    "Price": 280,
+    "SellingPrice": 140,
+    "MechanismId": [
+      40032
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "提供+100攻击力,但每次比牌后此效果会-5攻击力"
+  },
+  {
+    "Id": 434,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "第六感",
+    "Icon": "SixthSense",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40033
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "比牌即使牌型小于对方,也会有10%的概率获胜"
+  },
+  {
+    "Id": 435,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "炸弹恶魔",
+    "Icon": "BombDemon",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40034
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "每亮出过1次炸弹,该圣物就会在结算时提供+10倍率"
+  },
+  {
+    "Id": 436,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "消费主义",
+    "Icon": "Consumerism",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40035
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "在商店中每刷新1次,该圣物就会提供+1倍率"
+  },
+  {
+    "Id": 437,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "高档饮品",
+    "Icon": "HighGradeDrink",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40036
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "提供+20倍率,但每次比牌后此效果会-1倍率"
+  },
+  {
+    "Id": 438,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "幸运之子",
+    "Icon": "LuckyChild",
+    "Price": 350,
+    "SellingPrice": 175,
+    "MechanismId": [
+      40037
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "将你持有的圣物中所有关于概率的数字翻倍"
+  },
+  {
+    "Id": 439,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "万能A",
+    "Icon": "UniversalA",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40038
+    ],
+    "UnlockConditionId": 0,
+    "UseType": 0,
+    "Desc": "你的A可以当作任意花色与任意点数使用"
   }
 ]

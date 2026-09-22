@@ -5,7 +5,6 @@ using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
-using App.Level;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -64,13 +63,13 @@ namespace App.UI.Popup
 
         public IResourceService Resources { get; }
 
-        /// <summary>怪物总数（关卡配置的出场怪物数）。</summary>
+        /// <summary>剩余技能数量（搓牌/透视/替换三项剩余和，换金口径同基础奖励的技能成分）。</summary>
         public ObservableProperty<string> CurScoreNum { get; }
 
         /// <summary>总伤害（本关 Stage 积分）。</summary>
         public ObservableProperty<string> TotalScoreNum { get; }
 
-        /// <summary>基础奖励（本关掉落金币）。</summary>
+        /// <summary>基础奖励（仅配表 GetGold×(1+天赋)；击杀/技能/伤害换金都在提现总数里、不进此数字）。</summary>
         public ObservableProperty<string> CoinNum { get; }
 
         public ObservableProperty<string> WithdrawNum { get; }
@@ -167,9 +166,10 @@ namespace App.UI.Popup
         {
             var stageScore = Session.Score.Stage;
             var stageGold = Session.ShopGoldGranted;
-            CurScoreNum.Value = ResolveMonsterCount().ToString();
+            CurScoreNum.Value = Session.UnusedSkillChargesLeft.ToString();
             TotalScoreNum.Value = stageScore.ToString();
-            CoinNum.Value = stageGold.ToString();
+            // 基础奖励仅显示配表值（GetGold×天赋加成）；技能/击杀/伤害换金不进此数字，只在提现总数体现。
+            CoinNum.Value = Session.BaseGoldGranted.ToString();
             WithdrawNum.Value = stageGold.ToString();
             GoldText.Value = Session.Run.Gold.ToString();
             FormulaText.Value = FormatDamageGoldFormula();
@@ -218,12 +218,6 @@ namespace App.UI.Popup
         {
             var value = GameConst.IsLoaded ? Math.Max(0, GameConst.Instance.EverySkillProvideGold) : 0;
             return $"每剩余1技能={value}";
-        }
-
-        private static int ResolveMonsterCount()
-        {
-            var level = AppServices.IsReady ? AppServices.Resolve<ILevelService>() : null;
-            return level?.Current?.Monsters.Count ?? 0;
         }
 
         private bool CanDouble()

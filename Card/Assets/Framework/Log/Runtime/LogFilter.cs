@@ -1,10 +1,12 @@
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace Framework.Log
 {
     /// <summary>
-    /// Runtime gate for <see cref="AppLog"/>. Editor stores in EditorPrefs; player builds use PlayerPrefs.
+    /// Runtime gate for <see cref="AppLog"/>. Editor stores in EditorPrefs; WeChat
+    /// mini-game builds use wx storage; other player builds use PlayerPrefs.
     /// Defaults: all channels on, min level Info.
     /// </summary>
     public static class LogFilter
@@ -67,10 +69,20 @@ namespace Framework.Log
             return 1 << (int)channel;
         }
 
+#if !UNITY_EDITOR && (WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME)
+        [DllImport("__Internal")]
+        private static extern int WXStorageGetIntSync(string key, int defaultValue);
+
+        [DllImport("__Internal")]
+        private static extern void WXStorageSetIntSync(string key, int value);
+#endif
+
         private static int GetInt(string key, int fallback)
         {
 #if UNITY_EDITOR
             return UnityEditor.EditorPrefs.GetInt(key, fallback);
+#elif WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            return WXStorageGetIntSync(key, fallback);
 #else
             return PlayerPrefs.GetInt(key, fallback);
 #endif
@@ -80,6 +92,8 @@ namespace Framework.Log
         {
 #if UNITY_EDITOR
             UnityEditor.EditorPrefs.SetInt(key, value);
+#elif WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            WXStorageSetIntSync(key, value);
 #else
             PlayerPrefs.SetInt(key, value);
             PlayerPrefs.Save();

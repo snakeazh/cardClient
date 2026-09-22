@@ -1,0 +1,26 @@
+ManifestFileVersion: 0
+CRC: 3602478900
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: b99f680aaacb54b15132c8c9a5c6646c
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9a2ca7bdbd1871f7131daf57de908e0c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: b99f680aaacb54b15132c8c9a5c6646c
+HashAppended: 0
+ClassTypes:
+- Class: 83
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Res/Audio/Effect/reveal_cards_3.wav
+- Assets/Res/Audio/BGM/BGM_Lobby_Loop.wav
+- Assets/Res/Audio/Effect/deal_5cards_01.wav
+- Assets/Res/Audio/Effect/hurt_big_02.wav
+- Assets/Res/Audio/BGM/BGM_Battle_Loop.wav
+- Assets/Res/Audio/Effect/rub_cards_02.wav
+- Assets/Res/Audio/Effect/ui_click_03.wav
+Dependencies: []

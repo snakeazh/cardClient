@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Audio;
+using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
@@ -23,6 +26,10 @@ namespace App.UI
         private const float DealFlipPause = 0.12f;
         private const float ShuffleStagger = 0.015f;
         private const float ShuffleAppear02 = 0.8f;
+        // 洗牌堆只铺视觉需要的张数：每次出 2 张、共 20 次（40 张），
+        // 比整副 52 张少 12 个同播 Animator；发牌最多 5+5=10 张，不够时 TakeDealCard 有 SpawnLooseDealCard 兜底。
+        private const int PileCardCount = 40;
+        private const int PileCardsPerSpawn = 2;
         private const float FlipDuration = 0.35f;
         private const float RevealFlipDuration = 0.28f;
         private const float RevealCardGap = 0.12f;
@@ -34,6 +41,10 @@ namespace App.UI
 
         private IResourceService _resources;
         private GameObject _prefab;
+        private bool _prefabOwned;
+        private AudioClip _dealSfx;
+        private AudioClip _revealSfx;
+        private AudioClip _rubSfx;
         private readonly CardShadowPool _shadows = new CardShadowPool();
 
         private Transform _hud;
@@ -131,6 +142,115 @@ namespace App.UI
             BindEnemySlots(hud);
             HideLegacyIcons(mine);
             HideLegacyIcons(_other != null ? _other.Node : null);
+            _ = PreloadDealSfxAsync();
+            _ = PreloadRevealSfxAsync();
+            _ = PreloadRubSfxAsync();
+        }
+
+        private async Task PreloadDealSfxAsync()
+        {
+            var resources = _resources;
+            if (_dealSfx != null || resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxDeal5Cards);
+                if (_resources == null)
+                {
+                    // await 期间已退局：立即释放，避免计数泄漏
+                    resources.Release(ResResourcePaths.SfxDeal5Cards);
+                    return;
+                }
+
+                _dealSfx = clip;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Deal SFX load failed: " + ex.Message);
+            }
+        }
+
+        private async Task PreloadRevealSfxAsync()
+        {
+            var resources = _resources;
+            if (_revealSfx != null || resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRevealCards3);
+                if (_resources == null)
+                {
+                    resources.Release(ResResourcePaths.SfxRevealCards3);
+                    return;
+                }
+
+                _revealSfx = clip;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Reveal SFX load failed: " + ex.Message);
+            }
+        }
+
+        private async Task PreloadRubSfxAsync()
+        {
+            var resources = _resources;
+            if (_rubSfx != null || resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxRubCards02);
+                if (_resources == null)
+                {
+                    resources.Release(ResResourcePaths.SfxRubCards02);
+                    return;
+                }
+
+                _rubSfx = clip;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Rub SFX load failed: " + ex.Message);
+            }
+        }
+
+        private void PlayDealSfx()
+        {
+            if (_dealSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_dealSfx);
+        }
+
+        private void PlayRevealSfx()
+        {
+            if (_revealSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_revealSfx);
+        }
+
+        private void PlayRubSfx()
+        {
+            if (_rubSfx == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            AppServices.Resolve<IAudioService>().PlaySfx(_rubSfx);
         }
 
         public void Sync(GameSession session)
@@ -319,6 +439,7 @@ namespace App.UI
             SetPlayerChangeSelectFx(false);
             item.PlayChangeReplaceFx();
             TintPlayerCard(index, Color.white);
+            PlayRubSfx();
 
             var replaced = false;
 
@@ -673,13 +794,33 @@ namespace App.UI
             _shadows.Dispose();
             if (_resources != null)
             {
-                if (_prefab != null)
+                // 只释放本实例通过 LoadAsync 持有的计数（缓存命中的不归这里放）
+                if (_prefab != null && _prefabOwned)
                 {
                     _resources.Release(ResResourcePaths.CardIcon);
+                }
+
+                if (_dealSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxDeal5Cards);
+                }
+
+                if (_revealSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxRevealCards3);
+                }
+
+                if (_rubSfx != null)
+                {
+                    _resources.Release(ResResourcePaths.SfxRubCards02);
                 }
             }
 
             _prefab = null;
+            _prefabOwned = false;
+            _dealSfx = null;
+            _revealSfx = null;
+            _rubSfx = null;
             _resources = null;
         }
 
@@ -704,6 +845,7 @@ namespace App.UI
             var seq = DOTween.Sequence();
             var delay = AppendShuffle(seq, token);
             var order = 0;
+            var dealSfxPlayed = false;
             var maxRound = Math.Max(GameBalance.EnemyCardsDealt, session.PlayerDealCount);
             for (var round = 0; round < maxRound; round++)
             {
@@ -723,11 +865,18 @@ namespace App.UI
 
                     var cardIndex = round;
                     var capturedOrder = order;
+                    var playSfx = !dealSfxPlayed;
+                    dealSfxPlayed = true;
                     seq.InsertCallback(delay, () =>
                     {
                         if (token != _dealToken)
                         {
                             return;
+                        }
+
+                        if (playSfx)
+                        {
+                            PlayDealSfx();
                         }
 
                         SpawnAndFly(view, seat, cardIndex, capturedOrder, token);
@@ -797,9 +946,10 @@ namespace App.UI
             }
 
             var delay = 0f;
-            for (var i = 0; i < Deck.Size; i++)
+            var spawnCount = (PileCardCount + PileCardsPerSpawn - 1) / PileCardsPerSpawn;
+            for (var s = 0; s < spawnCount; s++)
             {
-                var last = i == Deck.Size - 1;
+                var first = s * PileCardsPerSpawn;
                 seq.InsertCallback(delay, () =>
                 {
                     if (token != _dealToken)
@@ -807,15 +957,24 @@ namespace App.UI
                         return;
                     }
 
-                    var item = SpawnPileCard(prefab);
-                    if (item == null)
+                    for (var k = 0; k < PileCardsPerSpawn; k++)
                     {
-                        return;
-                    }
+                        var index = first + k;
+                        if (index >= PileCardCount)
+                        {
+                            break;
+                        }
 
-                    item.SetSpritesVisible(false);
-                    _dealPile.Attach(item);
-                    item.PlayShuffleAppear(last);
+                        var item = SpawnPileCard(prefab);
+                        if (item == null)
+                        {
+                            return;
+                        }
+
+                        item.SetSpritesVisible(false);
+                        _dealPile.Attach(item);
+                        item.PlayShuffleAppear(index == PileCardCount - 1);
+                    }
                 });
                 delay += ShuffleStagger;
             }
@@ -895,6 +1054,7 @@ namespace App.UI
             var winnerView = ViewOf(session, SeatById(session, session.RevealWinnerId));
             var winnerSeat = SeatById(session, session.RevealWinnerId);
             var settleCount = CardCount(winnerView, winnerSeat, session);
+            var revealSfxPlayed = false;
             for (var i = 0; i < settleCount; i++)
             {
                 if (winnerSeat != null && !winnerSeat.IsCardSelected(i))
@@ -903,11 +1063,18 @@ namespace App.UI
                 }
 
                 var cardIndex = i;
+                var playSfx = !revealSfxPlayed;
+                revealSfxPlayed = true;
                 seq.InsertCallback(delay, () =>
                 {
                     if (token != _revealToken)
                     {
                         return;
+                    }
+
+                    if (playSfx)
+                    {
+                        PlayRevealSfx();
                     }
 
                     PlaySettleCard(winnerView, cardIndex);
@@ -1107,15 +1274,13 @@ namespace App.UI
                 return null;
             }
 
-            var go = UnityEngine.Object.Instantiate(prefab);
-            go.name = "DealCard" + (_dealPile.Count + 1);
-
-            var item = go.GetComponent<CardItem>();
+            var item = CardItemPool.Rent(prefab);
             if (item == null)
             {
-                item = go.AddComponent<CardItem>();
+                return null;
             }
 
+            item.gameObject.name = "DealCard" + (_dealPile.Count + 1);
             item.Initialize(
                 default,
                 CardFaceState.Back,
@@ -1209,12 +1374,10 @@ namespace App.UI
 
             var start = _dealPoint != null ? _dealPoint.position : _hud.position;
             var startRot = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
-            var go = UnityEngine.Object.Instantiate(prefab);
-
-            var item = go.GetComponent<CardItem>();
+            var item = CardItemPool.Rent(prefab);
             if (item == null)
             {
-                item = go.AddComponent<CardItem>();
+                return null;
             }
 
             item.Initialize(card, CardFaceState.Back, start, startRot, Vector3.one);
@@ -1846,7 +2009,7 @@ namespace App.UI
             {
                 if (view.Items[i] != null)
                 {
-                    UnityEngine.Object.Destroy(view.Items[i].gameObject);
+                    CardItemPool.Return(view.Items[i]);
                     view.Items[i] = null;
                 }
 
@@ -1905,17 +2068,44 @@ namespace App.UI
                 return null;
             }
 
-            try
+            // WebGL/微信单线程：禁止 GetResult 等 UnityWebRequest，否则模拟器直接未响应。
+            if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
             {
-                _prefab = _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon).GetAwaiter().GetResult();
-            }
-            catch (System.Exception ex)
-            {
-                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
-                return null;
+                _prefab = cached;
+                _prefabOwned = false;
+                return _prefab;
             }
 
-            return _prefab;
+            AppLog.Warn(
+                LogChannel.UI,
+                "CardIcon not cached. Preload with await LoadAsync before dealing. key=" + ResResourcePaths.CardIcon);
+            return null;
+        }
+
+        /// <summary>发牌前 await。替代已删除的同步 GetResult 加载。</summary>
+        public async Task EnsurePrefabAsync()
+        {
+            if (_prefab != null || _resources == null)
+            {
+                return;
+            }
+
+            if (_resources.TryGetCached(ResResourcePaths.CardIcon, out GameObject cached) && cached != null)
+            {
+                _prefab = cached;
+                _prefabOwned = false;
+                return;
+            }
+
+            try
+            {
+                _prefab = await _resources.LoadAsync<GameObject>(ResResourcePaths.CardIcon);
+                _prefabOwned = _prefab != null;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.UI, "CardIcon prefab not found at Res/" + ResResourcePaths.CardIcon + ": " + ex.Message);
+            }
         }
 
         private static Transform FindChild(Transform root, string name)

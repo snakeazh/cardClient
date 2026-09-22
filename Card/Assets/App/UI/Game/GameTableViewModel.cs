@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Audio;
 using App.Bootstrap;
 using App.Game;
 using App.Guide;
@@ -29,6 +30,7 @@ namespace App.UI
         private readonly NavigationViewModel _navigation;
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
+        private readonly IAudioService _audio;
         private readonly PvpMatchSession _pvp;
         private readonly BattleDirector _pvpDirector;
         private readonly PvpBattleDriver _pvpDriver;
@@ -44,6 +46,22 @@ namespace App.UI
         private bool _pvpLeaving;
         private long _pvpDeadlineLocalMs;
 
+        // Refresh 挂在 Session.Changed 上(每个动作/演出帧都进):字符串只在源值变化时重建
+        private int _lastStage = -1;
+        private bool _lastHasBoss = true;
+        private int _lastGold = -1;
+        private int _lastCourage = -1;
+        private int _lastRoundIndex = -1;
+        private int _lastRubCur = -1;
+        private int _lastRubMax = -1;
+        private int _lastXrayCur = -1;
+        private int _lastXrayMax = -1;
+        private int _lastReplaceCur = -1;
+        private int _lastReplaceMax = -1;
+        private readonly System.Text.StringBuilder _logBuilder = new System.Text.StringBuilder(256);
+        private int _lastLogCount = -1;
+        private string _lastLogTail;
+
         public GameTableViewModel(
             GameSession session,
             IResourceService resources,
@@ -53,6 +71,7 @@ namespace App.UI
             IAtlasService atlas,
             IGuideService guide,
             ISaveService save,
+            IAudioService audio,)
             PvpMatchSession pvp)
         {
             Session = session;
@@ -63,6 +82,7 @@ namespace App.UI
             _navigation = navigation;
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             _save = save ?? throw new ArgumentNullException(nameof(save));
+            _audio = audio;
             _pvp = pvp;
             _pvpDirector = new BattleDirector(session);
             _pvpDriver = new PvpBattleDriver(session, _pvpDirector);
@@ -281,6 +301,12 @@ namespace App.UI
             {
                 _openingCompletedSerial = Session.DealSerial;
             }
+        }
+
+        /// <summary>进局前调用。单例 VM 会残留上一局的开场完成标记。</summary>
+        public void ResetOpeningGate()
+        {
+            _openingCompletedSerial = -1;
         }
 
         public void NotifyDealReady()
@@ -634,6 +660,16 @@ namespace App.UI
             }
 
             var run = Session.Run;
+            if (run.Stage != _lastStage || run.HasBoss != _lastHasBoss)
+            {
+                _lastStage = run.Stage;
+                _lastHasBoss = run.HasBoss;
+                Title.Value = run.HasBoss
+                    ? $"第{run.Stage}关 BOSS"
+                    : $"第{run.Stage}关";
+                StageInfoText.Value = $"第{run.Stage}关";
+            }
+
             var entries = BossMechanics.ResolveAll(run);
             Title.Value = run.HasBoss
                 ? $"第{run.Stage}关 BOSS"
@@ -651,12 +687,30 @@ namespace App.UI
             RoundBuffName.Value = FormatEntryNames(entries);
             RoundBuffDesc.Value = FormatEntryDescs(entries);
             Hint.Value = Session.Hint ?? string.Empty;
-            GoldText.Value = run.Gold.ToString();
+            if (run.Gold != _lastGold)
+            {
+                _lastGold = run.Gold;
+                GoldText.Value = _lastGold.ToString();
+            }
             if (_gameResource != null)
             {
                 _gameResource.ShowBackBtn.Value = !_shopPopupOpen && !_resultPopupOpen;
             }
             PotText.Value = string.Empty;
+            if (Session.Player.Courage != _lastCourage)
+            {
+                _lastCourage = Session.Player.Courage;
+                PlayerChips.Value = $"勇气 {_lastCourage}";
+            }
+
+            PlayerBet.Value = BetLabel(Session.Player);
+            PlayerState.Value = SeatLine(Session.Player);
+            if (Session.StageRoundIndex != _lastRoundIndex)
+            {
+                _lastRoundIndex = Session.StageRoundIndex;
+                RoundInfo.Value = $"第{_lastRoundIndex}轮";
+            }
+
             PlayerChips.Value = Session.IsPvp
                 ? $"HP {Session.Player.Hp}/{Session.Player.MaxHp}"
                 : $"勇气 {Session.Player.Courage}";
@@ -667,6 +721,36 @@ namespace App.UI
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
+            var rubMax = SkillChargeMax(
+                GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
+                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum));
+            if (Session.Run.PeekGoodCharges != _lastRubCur || rubMax != _lastRubMax)
+            {
+                _lastRubCur = Session.Run.PeekGoodCharges;
+                _lastRubMax = rubMax;
+                PeekGoodLabel.Value = FormatCharges("搓牌", _lastRubCur, _lastRubMax);
+            }
+
+            PeekGoodArmed.Value = Session.SelectingRubTarget;
+            var xrayMax = SkillChargeMax(
+                GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
+                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
+                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum));
+            if (Session.Run.ChaKanGoodCharges != _lastXrayCur || xrayMax != _lastXrayMax)
+            {
+                _lastXrayCur = Session.Run.ChaKanGoodCharges;
+                _lastXrayMax = xrayMax;
+                ChaKanGoodLabel.Value = FormatCharges("透视", _lastXrayCur, _lastXrayMax);
+            }
+
+            var replaceMax = GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges;
+            if (Session.Run.TiHuanGoodCharges != _lastReplaceCur || replaceMax != _lastReplaceMax)
+            {
+                _lastReplaceCur = Session.Run.TiHuanGoodCharges;
+                _lastReplaceMax = replaceMax;
+                TiHuanGoodLabel.Value = FormatCharges("替换", _lastReplaceCur, _lastReplaceMax);
+            }
             PeekGoodLabel.Value = FormatCharges(
                 "搓牌",
                 Session.Run.PeekGoodCharges,
@@ -720,19 +804,27 @@ namespace App.UI
             RefreshEnemies();
             RefreshCardInfo();
 
-            var start = run.Log.Count > 8 ? run.Log.Count - 8 : 0;
-            var log = string.Empty;
-            for (var i = start; i < run.Log.Count; i++)
+            // 日志 O(n²) 拼接 → StringBuilder 复用,且仅在条数或末行变化时重建
+            var logCount = run.Log.Count;
+            var logTail = logCount > 0 ? run.Log[logCount - 1] : null;
+            if (logCount != _lastLogCount || !ReferenceEquals(logTail, _lastLogTail))
             {
-                if (i > start)
+                _lastLogCount = logCount;
+                _lastLogTail = logTail;
+                var start = logCount > 8 ? logCount - 8 : 0;
+                _logBuilder.Clear();
+                for (var i = start; i < logCount; i++)
                 {
-                    log += "\n";
+                    if (i > start)
+                    {
+                        _logBuilder.Append('\n');
+                    }
+
+                    _logBuilder.Append(run.Log[i]);
                 }
 
-                log += run.Log[i];
+                LogText.Value = _logBuilder.ToString();
             }
-
-            LogText.Value = log;
 
             BlindBetCommand.RaiseCanExecuteChanged();
             RaiseCommand.RaiseCanExecuteChanged();
@@ -761,11 +853,35 @@ namespace App.UI
 
         protected override async Task OnOpen(object args)
         {
+            BattleTrace.Log(
+                $"GameTableVM.OnOpen begin deal={Session?.DealSerial} stageRound={Session?.StageRoundIndex} hold={ShouldHoldDealVisual()}");
             _shownInfoKey = null;
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
+            BattleTrace.Log("GameTableVM StartBattleBgmAsync…");
+            await StartBattleBgmAsync();
+            BattleTrace.Log("GameTableVM ShowGameResource…");
             await ShowGameResource();
+            _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+            BattleTrace.Log("GameTableVM.OnOpen end");
+        }
+
+        private async Task StartBattleBgmAsync()
+        {
+            if (_audio == null || Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmBattle);
+                _audio.PlayBgm(clip);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Battle BGM load failed: " + ex.Message);
             if (!Session.IsPvp)
             {
                 _guide.TryStart(CardShare.Contracts.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
@@ -792,6 +908,7 @@ namespace App.UI
         {
             RestorePlaybackSpeed();
             _guide.Abort();
+            ReleaseBattleResources();
             UnbindPvp();
             await CloseGameResource();
         }
@@ -801,7 +918,15 @@ namespace App.UI
             RestorePlaybackSpeed();
             UnbindPvp();
             Session.Changed -= Refresh;
+            ReleaseBattleResources();
             _ = CloseGameResource();
+        }
+
+        /// <summary>退局卸载：战斗 BGM 与 _damage/_dead 立绘（与加载点一一对应；未进缓存时 Release 为空操作，重复调用安全）。</summary>
+        private void ReleaseBattleResources()
+        {
+            Resources?.Release(ResResourcePaths.BgmBattle);
+            PortraitLoader.ReleaseBattleStates();
         }
 
         private void TogglePlaybackSpeed()
@@ -1095,10 +1220,21 @@ namespace App.UI
 
         private async Task LeaveToHome()
         {
+            // 关闭 GameUI 后 navigator 自动重新显示压在栈底的 Home（开局时未销毁），
+            // 直接复用并刷新；栈里没有 Home 的异常路径兜底新建打开。
             await _ui.Close(this);
-            var home = (HomeViewModel)_ui.Registry.CreateViewModel(
-                _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
-            await _ui.Open(home);
+            var home = _ui.FindOpen<HomeViewModel>();
+            if (home != null)
+            {
+                await home.RefreshOnReturnAsync();
+            }
+            else
+            {
+                home = (HomeViewModel)_ui.Registry.CreateViewModel(
+                    _ui.Registry.GetByViewModelType(typeof(HomeViewModel)));
+                await _ui.Open(home);
+            }
+
             await _navigation.EnsureShown();
             TryStartFirstTalentGuide();
         }
@@ -1242,7 +1378,11 @@ namespace App.UI
             }
 
             var score = Session.EvaluateSeat(Session.Player);
-            ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, CardTypeNum);
+            ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, null);
+            // 亮牌结算显示与伤害一致的总倍率；选牌预览仍只显示牌型基础倍率。
+            CardTypeNum.Value = IsHandSettling
+                ? FormatMultiplier(Session.ResolveAttackMagnification(Session.Player, score))
+                : FormatMultiplier(GameSession.HandTypeMagnification(score.Type));
             ShowCardInfo.Value = true;
         }
 

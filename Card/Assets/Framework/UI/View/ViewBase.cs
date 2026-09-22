@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using DG.Tweening;
 using Framework.UI.Binding;
@@ -15,6 +16,11 @@ namespace Framework.UI.View
         Task Close();
         Task PlayPopupEnter();
         Task PlayPopupExit();
+
+        /// <summary>
+        /// 上一页遮罩已撤掉、本页真正露出来后调用。用于延后改 Camera/Fit，避免撑变形盖着的局外 UI。
+        /// </summary>
+        void OnPresented();
     }
 
     public abstract class ViewBase<TVm> : MonoBehaviour, IView where TVm : ViewModelBase
@@ -70,9 +76,33 @@ namespace Framework.UI.View
 
             gameObject.SetActive(true);
             PreparePopupEnter();
-            await OnViewOpen();
+
+            // OnViewOpen 失败时仍要 OnBind，否则会停在预制体占位文案（如 9999/-9999）。
+            Exception viewOpenError = null;
+            var viewName = GetType().Name;
+            Debug.LogWarning($"[BattleTrace] ViewBase.Open begin {viewName}");
+            try
+            {
+                await OnViewOpen();
+                Debug.LogWarning($"[BattleTrace] ViewBase.OnViewOpen done {viewName}");
+            }
+            catch (Exception ex)
+            {
+                viewOpenError = ex;
+                Debug.LogWarning($"[BattleTrace] ViewBase.OnViewOpen EX {viewName}: {ex.Message}");
+                Debug.LogException(ex);
+            }
+
+            Debug.LogWarning($"[BattleTrace] ViewBase.OnBind begin {viewName}");
             OnBind();
+            Debug.LogWarning($"[BattleTrace] ViewBase.OnBind done {viewName}, ViewModel.Open…");
             await ViewModel.Open(args);
+            Debug.LogWarning($"[BattleTrace] ViewBase.Open complete {viewName}");
+
+            if (viewOpenError != null)
+            {
+                throw viewOpenError;
+            }
         }
 
         public async Task Hide()
@@ -115,6 +145,11 @@ namespace Framework.UI.View
         protected virtual Task OnViewHide() => Task.CompletedTask;
 
         protected virtual Task OnViewClose() => Task.CompletedTask;
+
+        /// <inheritdoc cref="IView.OnPresented"/>
+        public virtual void OnPresented()
+        {
+        }
 
         Task IView.PlayPopupEnter()
         {

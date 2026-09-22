@@ -39,7 +39,7 @@ namespace App.UI
         private Ease ease = Ease.OutQuad;
 
         [SerializeField]
-        [Tooltip("点下时播放，留空则无声")]
+        [Tooltip("点下时播放；留空则播通用 ui_click_03")]
         private AudioClip clip;
 
         private Selectable _selectable;
@@ -164,12 +164,20 @@ namespace App.UI
 
         private void PlayClip()
         {
-            if (clip == null || !AppServices.IsReady)
+            if (!AppServices.IsReady)
             {
                 return;
             }
 
-            AppServices.Resolve<IAudioService>().PlaySfx(clip);
+            var audio = AppServices.Resolve<IAudioService>();
+            if (clip != null)
+            {
+                audio.PlaySfx(clip);
+            }
+            else
+            {
+                audio.PlayUiClick();
+            }
         }
 
         private void CacheRestPose()

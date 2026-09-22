@@ -410,7 +410,8 @@ namespace CardShare.Battle
 
         private static IReadOnlyList<HandScoreConfig> Scores()
         {
-            return Tables.HandScores;
+            // 客户端 UI 在 BattleEngine 之外也会评估（亮牌预览），此时 Tables 未注入，回退硬编码。
+            return Tables?.HandScores ?? (IReadOnlyList<HandScoreConfig>)Array.Empty<HandScoreConfig>();
         }
 
         public static string TypeName(HandType type)

@@ -24,7 +24,7 @@ namespace CardShare.Contracts.Config
         /// <summary>
         /// 值
         /// </summary>
-        public float Value;
+        public float[] Value;
 
         /// <summary>
         /// 描述

@@ -673,7 +673,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "每回合结束后,提高1%闪避率,至多叠加20层"
+    "Desc": "每回合结束后,提高2%闪避率,至多叠加20层"
   },
   {
     "Id": 225,
@@ -1049,7 +1049,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "亮出的每张9在结算时提供30金币"
+    "Desc": "亮出的每张9在结算时提供12金币"
   },
   {
     "Id": 313,
@@ -1462,14 +1462,14 @@
     "RefreshProbability": 0.1,
     "Name": "奢华沙发",
     "Icon": "LuxurySofa",
-    "Price": 680,
-    "SellingPrice": 340,
+    "Price": 550,
+    "SellingPrice": 275,
     "MechanismId": [
       40002
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
-    "Desc": "获得500点生命上限"
+    "Desc": "获得240点生命上限"
   },
   {
     "Id": 403,
@@ -1850,7 +1850,7 @@
     ],
     "UnlockConditionId": 0,
     "UseType": 2,
-    "Desc": "使用后,获得120点生命上限,并立即恢复120点血量"
+    "Desc": "使用后,获得160点生命上限,并立即恢复160点血量"
   },
   {
     "Id": 428,

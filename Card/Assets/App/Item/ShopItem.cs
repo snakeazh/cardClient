@@ -128,7 +128,7 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 品质通过内嵌 ItemCard 换品质卡面图（Altas/ItemBg），与图鉴/天赋一致；
+        /// 品质通过内嵌 ItemCard 换品质卡背（Altas/playitem），与图鉴/天赋一致；
         /// 未内嵌 ItemCard 的货架卡不做品质处理。
         /// </summary>
         public void ApplyQuality(QualityType type)

@@ -1,14 +1,13 @@
-using App.Config;
-using CardShare.Contracts.Config;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using UnityEngine;
 
 namespace App.Atlas
 {
     /// <summary>
-    /// 品质边框资源命名：Ordinary/Rare/Epic/Legend + CardFrame（方形卡）/ RectangleFrame（长条框）/
-    /// CardFrameBack（卡背背景），黑色底框遮罩 BlackBaseFrameMask。贴图来自预加载图集 Altas/ItemBg。
+    /// 原 Altas/ItemBg 资源已并入 Altas/playitem（源图 Assets/Sprites/playeritem）。
+    /// 提供方形卡面/卡背、长条框、底框遮罩与按名取图；命名与 playitem 内 sprite 一致。
     /// </summary>
     public static class ItemBgSpriteLibrary
     {
@@ -21,22 +20,28 @@ namespace App.Atlas
             _atlas = atlas;
         }
 
-        /// <summary>方形卡片品质边框。</summary>
+        /// <summary>
+        /// 方形卡片外框。playitem 无独立 CardFrame，仅保留 API；缺图返回 null（不改预制体当前图）。
+        /// </summary>
         public static Sprite GetCardFrame(QualityType type)
         {
-            return GetSprite(QualityPrefix(type) + "CardFrame");
+            // 历史名 OrdinaryCardFrame 等已删除；避免向图集查不存在的名字刷 Warn。
+            return null;
         }
 
-        /// <summary>方形卡片品质卡背背景（Item 预制体 CardBG 节点）。</summary>
+        /// <summary>CardBG 单层卡背：取 playitem 三层卡背的第 1 层（bg）。</summary>
         public static Sprite GetCardFrameBack(QualityType type)
         {
-            return GetSprite(QualityPrefix(type) + "CardFrameBack");
+            return PlayItemSpriteLibrary.GetCardFrameBack(type, 1);
         }
 
-        /// <summary>长条矩形品质边框。</summary>
+        /// <summary>
+        /// 长条矩形品质边框（PlayerItem attack/heart 等）。
+        /// Ordinary→Yellow / Rare→Blue / Epic→Purple / Legend→Red。
+        /// </summary>
         public static Sprite GetRectangleFrame(QualityType type)
         {
-            return GetSprite(QualityPrefix(type) + "RectangleFrame");
+            return GetSprite(RectangleSpriteName(type));
         }
 
         /// <summary>黑色底框遮罩。</summary>
@@ -56,18 +61,18 @@ namespace App.Atlas
             return GetSprite(spriteName);
         }
 
-        private static string QualityPrefix(QualityType type)
+        private static string RectangleSpriteName(QualityType type)
         {
             switch (type)
             {
                 case QualityType.Rare:
-                    return "Rare";
+                    return "BlueRectangleFrame";
                 case QualityType.Epic:
-                    return "Epic";
+                    return "PurpleRectangleFrame";
                 case QualityType.Legend:
-                    return "Legend";
+                    return "RedRectangleFrame";
                 default:
-                    return "Ordinary";
+                    return "YellowRectangleFrame";
             }
         }
 
@@ -79,7 +84,12 @@ namespace App.Atlas
                 return null;
             }
 
-            return _atlas.GetSprite(ResResourcePaths.ItemBgAtlas, spriteName);
+            if (_atlas.TryGetSprite(ResResourcePaths.PlayItemAtlas, spriteName, out var sprite) && sprite != null)
+            {
+                return sprite;
+            }
+
+            return null;
         }
     }
 }

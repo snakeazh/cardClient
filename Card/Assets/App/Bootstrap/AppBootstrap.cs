@@ -190,6 +190,7 @@ namespace App.Bootstrap
             CardSpriteLibrary.Bind(atlas);
             ItemBgSpriteLibrary.Bind(atlas);
             PlayItemSpriteLibrary.Bind(atlas);
+            PortraitLoader.Bind(atlas);
         }
 
         private static void RegisterAudio(AppServicesHost services)

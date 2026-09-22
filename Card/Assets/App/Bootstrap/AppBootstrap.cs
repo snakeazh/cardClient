@@ -142,6 +142,10 @@ namespace App.Bootstrap
 
             RegisterGuide(_services);
 
+            // 业务服务注册完后登录（ApplyProfile 依赖 IAdShopService 等）；
+            // 失败弹重试窗，成功才让重型初始化完成、进入后续界面。
+            await ConnectAndPrepareAsync();
+
             await PrewarmLevelItemsAsync();
         }
 
@@ -154,9 +158,6 @@ namespace App.Bootstrap
             var levels = _services.Resolve<ILevelService>();
             var diffs = levels.GetDifficulties();
             if (diffs != null)
-            await ConnectAndPrepareAsync();
-
-            if (HealthAdvisoryPolicy.ShouldShowOnLaunch())
             {
                 for (var i = 0; i < diffs.Count; i++)
                 {

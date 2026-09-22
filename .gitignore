@@ -3,3 +3,7 @@ Tools/**/bin/
 Tools/**/obj/
 Config/~$*
 TempConfig/
+Card/Assets/WebGLTemplates
+Card/Assets/WX-WASM-SDK-V2
+Card/Assets/WebGLTemplates.meta
+Card/Assets/WX-WASM-SDK-V2.meta

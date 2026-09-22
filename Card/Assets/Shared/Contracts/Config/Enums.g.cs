@@ -1348,6 +1348,56 @@ namespace CardShare.Contracts.Config
         /// </summary>
         WildAce = 168,
 
+        /// <summary>
+        /// 每击杀1名敌人分裂伤害提高
+        /// </summary>
+        VersatilePersonUp = 169,
+
+        /// <summary>
+        /// 无法暴击
+        /// </summary>
+        UnableCritical = 170,
+
+        /// <summary>
+        /// 每降低血量都会使伤害提高,最多叠加x层
+        /// </summary>
+        GainDamageUpWhenHpDecreases = 171,
+
+        /// <summary>
+        /// 无法通过圣物回复
+        /// </summary>
+        UnableReplyHp = 172,
+
+        /// <summary>
+        /// 攻击力达到x时,攻击变为群体伤害
+        /// </summary>
+        AoeDamageWhenAttack = 173,
+
+        /// <summary>
+        /// 通过圣物获得的生命回复效果提高
+        /// </summary>
+        RelicReplyHp = 174,
+
+        /// <summary>
+        /// 每回合开始时会受到场上当前敌人数量倍数的伤害
+        /// </summary>
+        MonsterNumDamage = 175,
+
+        /// <summary>
+        /// 圣光燃烧
+        /// </summary>
+        HolyLightBurning = 176,
+
+        /// <summary>
+        /// 无法闪避
+        /// </summary>
+        UnableMissing = 177,
+
+        /// <summary>
+        /// 无法通过圣物效果获得金币
+        /// </summary>
+        UnableReplyGetGold = 178,
+
         MaxHp = 1111,
 
         EveryRoundHpUp = 1112,

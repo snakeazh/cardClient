@@ -1,0 +1,15 @@
+[Unit]
+Description=Card.Server
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/card-server/app
+ExecStart=/usr/bin/dotnet /opt/card-server/app/Card.Server.dll
+Restart=always
+RestartSec=3
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# 日志走 journald：journalctl -u card-server -f
+
+[Install]
+WantedBy=multi-user.target

@@ -41,6 +41,9 @@ public interface IPvpMatchmaker
 
     void Leave(Guid userId);
 
+    /// <summary>该玩家是否还在等待队列里。</summary>
+    bool IsWaiting(Guid userId);
+
     /// <summary>踢出排队超过 timeoutMs 的玩家，返回被踢名单；remaining 为踢出后的当前队列。</summary>
     IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining);
 }
@@ -126,6 +129,14 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
 
     public void Leave(Guid userId) => Cancel(userId);
 
+    public bool IsWaiting(Guid userId)
+    {
+        lock (_gate)
+        {
+            return FindLocked(userId) >= 0;
+        }
+    }
+
     public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
     {
         lock (_gate)
@@ -156,6 +167,18 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
 
     private bool RemoveLocked(Guid userId)
     {
+        var index = FindLocked(userId);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        _waiting.RemoveAt(index);
+        return true;
+    }
+
+    private int FindLocked(Guid userId)
+    {
         var key = userId.ToString("N");
         var alt = userId.ToString();
         for (var i = 0; i < _waiting.Count; i++)
@@ -163,12 +186,11 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
             if (string.Equals(_waiting[i].Player.UserId, key, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(_waiting[i].Player.UserId, alt, StringComparison.OrdinalIgnoreCase))
             {
-                _waiting.RemoveAt(i);
-                return true;
+                return i;
             }
         }
 
-        return false;
+        return -1;
     }
 
     private IReadOnlyList<PlayerPublic> SnapshotLocked()

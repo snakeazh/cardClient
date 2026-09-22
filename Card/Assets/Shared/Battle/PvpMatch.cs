@@ -250,6 +250,7 @@ namespace CardShare.Battle
                     return false;
                 }
 
+                Touch();
                 SettleResolvedDuels();
                 TryAdvanceRound();
                 return true;
@@ -391,6 +392,8 @@ namespace CardShare.Battle
                     default:
                         throw new InvalidOperationException("Unknown battle action.");
                 }
+
+                Touch();
             }
         }
 
@@ -720,6 +723,8 @@ namespace CardShare.Battle
                 default:
                     throw new InvalidOperationException("Unknown shop action.");
             }
+
+            Touch();
         }
 
         private void BuyRelic(PvpFighter fighter, int relicId)
@@ -921,6 +926,13 @@ namespace CardShare.Battle
                 UserId = userId,
                 Value = value
             });
+        }
+
+        /// <summary>只推进状态版本（不产生事件）：pick/rub/replace/peek/单方锁定/商店操作等
+        /// 不触发阶段事件的变更也必须让版本号前进，否则客户端版本过滤会把这些快照当重复丢弃。</summary>
+        private void Touch()
+        {
+            StateVersion++;
         }
 
         private PvpShopStateDto? ShopViewFor(string userId)

@@ -169,9 +169,9 @@ namespace App.Talent
             for (var i = 0; i < hero.HeroEntryId.Length; i++)
             {
                 var entry = HeroEntryConfig.Get(hero.HeroEntryId[i]);
-                if (entry != null && entry.Type == type)
+                if (entry != null && entry.Type == type && entry.Value != null && entry.Value.Length > 0)
                 {
-                    sum += entry.Value;
+                    sum += entry.Value[0];
                 }
             }
 

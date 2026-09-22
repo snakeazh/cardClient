@@ -26,7 +26,7 @@ namespace App.Game
             {
                 if (entry.Type == type)
                 {
-                    sum += entry.Value;
+                    sum += ValueAt(entry);
                 }
             });
             return sum;
@@ -71,6 +71,17 @@ namespace App.Game
             return firstShowThisStage
                 ? SumValue(hero, MechanismType.FirstShowCardEveryLevel)
                 : 0f;
+        }
+
+        /// <summary>词条 <c>Value</c> 已是数组；缺项或越界返回 0。</summary>
+        public static float ValueAt(HeroEntryConfig entry, int index = 0)
+        {
+            if (entry?.Value == null || index < 0 || index >= entry.Value.Length)
+            {
+                return 0f;
+            }
+
+            return entry.Value[index];
         }
 
         public static bool HasMechanism(RunState run, MechanismType type)

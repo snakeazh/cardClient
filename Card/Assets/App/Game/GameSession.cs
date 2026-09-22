@@ -504,6 +504,7 @@ namespace App.Game
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
             ReplaceIdList(Run.ShopOfferIds, dto.ShopOfferIds);
+            SyncRemovedRelicTrackers();
             if (notify)
             {
                 Notify();
@@ -1143,10 +1144,80 @@ namespace App.Game
             Run.ChaKanGoodCharges--;
             Run.UsedSkillThisRun = true;
             ReportUnlock(ContidionType.Perspective);
+            TryPeekSteal(seat);
             SelectingXRayTarget = false;
             Hint = $"透视 {seat.Name}：{seat.PeekedType}（剩余 {Run.ChaKanGoodCharges}）";
             Log($"透视 {seat.Name} {seat.PeekedType}");
             Notify();
+        }
+
+        /// <summary>妙手：透视后随机抽走敌人 1 张手牌，与己方点数最小的 1 张交换。</summary>
+        private void TryPeekSteal(SeatState enemy)
+        {
+            if (!RelicMechanics.HasMechanism(Run, MechanismType.PeekSteal) || enemy == null || Player == null)
+            {
+                return;
+            }
+
+            var enemyCount = CardsDealtFor(enemy);
+            var enemyIndices = new List<int>();
+            for (var i = 0; i < enemyCount; i++)
+            {
+                if (enemy.Hand[i].IsValid)
+                {
+                    enemyIndices.Add(i);
+                }
+            }
+
+            if (enemyIndices.Count == 0)
+            {
+                return;
+            }
+
+            var playerCount = CardsDealtFor(Player);
+            var minRank = int.MaxValue;
+            var playerIndex = -1;
+            for (var i = 0; i < playerCount; i++)
+            {
+                var card = Player.Hand[i];
+                if (!card.IsValid)
+                {
+                    continue;
+                }
+
+                var key = (int)card.Rank;
+                if (key < minRank)
+                {
+                    minRank = key;
+                    playerIndex = i;
+                }
+            }
+
+            if (playerIndex < 0)
+            {
+                return;
+            }
+
+            var stealIndex = enemyIndices[_rng.Next(enemyIndices.Count)];
+            var stolen = enemy.Hand[stealIndex];
+            var given = Player.Hand[playerIndex];
+            enemy.Hand[stealIndex] = given;
+            Player.Hand[playerIndex] = stolen;
+            enemy.PeekedType = EvaluateSeat(enemy).Label;
+            Log($"妙手：与 {enemy.Name} 交换 {given.DisplayName} ↔ {stolen.DisplayName}");
+        }
+
+        /// <summary>召唤：亮出同花顺时随机生成消耗品。</summary>
+        private void TrySummonConsumableOnShow(HandScore score)
+        {
+            if (!RelicMechanics.TrySummonConsumable(Run, score.Type, _rng, RelicCarryMax, out var summoned) ||
+                summoned == null)
+            {
+                return;
+            }
+
+            ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(summoned.Id, MechanismType.HeroHpMax)));
+            Log($"召唤：获得消耗品 {summoned.Name}");
         }
 
         public bool IsSpyRevealed(int seatId, int cardIndex)
@@ -1841,7 +1912,7 @@ namespace App.Game
                              !defender.IsPlayer &&
                              !defender.IsBoss &&
                              TalentMechanics.IsBelowHpRatio(defender, TalentBalance.ExecuteHpRatio);
-                peaceChance = RelicMechanics.SumValue(Run, MechanismType.AllPeacePer);
+                peaceChance = RelicMechanics.SumProbability(Run, MechanismType.AllPeacePer);
             }
 
             var resolved = CardShare.Battle.CombatDamage.Resolve(
@@ -1985,6 +2056,11 @@ namespace App.Game
                 outgoing: true);
             percent += Run.UseDamageMulAdd;
             percent += Run.LevelWinDamageUp;
+            if (Run.LevelEntryIds.Count > 0)
+            {
+                percent += RelicMechanics.SumValue(Run, MechanismType.DamagePerLevelEntry) * Run.LevelEntryIds.Count;
+            }
+
             return percent;
         }
 
@@ -2402,6 +2478,7 @@ namespace App.Game
                 {
                     var resp = await GameApi.Client.RefreshShopAsync(_serverRunId);
                     ApplyPveRun(resp.Run);
+                    RelicMechanics.OnShopRefreshed(Run);
                     ReportUnlock(ContidionType.RefreshStore);
                     Hint = Run.FreeShopRefreshLeft > 0
                         ? $"商店已刷新，剩余 {Run.FreeShopRefreshLeft} 次免费刷新"
@@ -2431,6 +2508,7 @@ namespace App.Game
             {
                 Run.FreeShopRefreshLeft--;
                 RollShopOffers();
+                RelicMechanics.OnShopRefreshed(Run);
                 ReportUnlock(ContidionType.RefreshStore);
                 Log($"免费刷新商店（会员卡，下次 {ShopRefreshCost} 金币）");
                 Hint = Run.FreeShopRefreshLeft > 0
@@ -2443,6 +2521,7 @@ namespace App.Game
             SpendGold(cost);
             Run.ShopRefreshCount++;
             RollShopOffers();
+            RelicMechanics.OnShopRefreshed(Run);
             ReportUnlock(ContidionType.RefreshStore);
             Log($"刷新商店，花费 {cost} 金币（下次 {ShopRefreshCost}）");
             Hint = $"商店已刷新，下次刷新 {ShopRefreshCost} 金币";
@@ -2815,6 +2894,16 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>圣物列表变化后清理不持有遗物的追踪器；高档甜品剩余攻击从英雄面板扣除。</summary>
+        private void SyncRemovedRelicTrackers()
+        {
+            var attackLoss = RelicMechanics.CleanupRelicTrackers(Run);
+            if (attackLoss > 0 && Player != null)
+            {
+                Player.Attack = Math.Max(0, Player.Attack - attackLoss);
+            }
+        }
+
         public void SellShopRelic(int relicId)
         {
             if (Phase != GamePhase.Shop)
@@ -2836,6 +2925,7 @@ namespace App.Game
             }
 
             Run.RelicConfigIds.Remove(relicId);
+            SyncRemovedRelicTrackers();
             var sell = RelicMechanics.SellPrice(Run, relicId);
             AddGold(sell);
             ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
@@ -2896,6 +2986,7 @@ namespace App.Game
         {
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
+            RelicMechanics.OnConsumableUsed(Run);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
         }
 
@@ -3520,7 +3611,8 @@ namespace App.Game
 
             return new HandEvalRules(
                 RelicMechanics.HasMechanism(Run, MechanismType.SpecialFlush),
-                RelicMechanics.HasMechanism(Run, MechanismType.SpecialStraight));
+                RelicMechanics.HasMechanism(Run, MechanismType.SpecialStraight),
+                RelicMechanics.HasMechanism(Run, MechanismType.WildAce));
         }
 
         private bool OpenerWinsCompare(
@@ -3568,12 +3660,13 @@ namespace App.Game
                 return playerWins;
             }
 
-            if (!RelicMechanics.Roll(Run, MechanismType.ReverseResult, _rng))
+            // 逆转沙漏与第六感各自独立掷骰，命中任一即反转。
+            if (!RelicMechanics.RollEach(Run, MechanismType.ReverseResult, _rng, out var reverseRelic))
             {
                 return false;
             }
 
-            Log("逆转沙漏：比牌结果反转，伤害按自身牌型计算");
+            Log($"{(string.IsNullOrEmpty(reverseRelic) ? "逆转沙漏" : reverseRelic)}：比牌结果反转，伤害按自身牌型计算");
             return true;
         }
 
@@ -3605,6 +3698,7 @@ namespace App.Game
             _playerCardsShownThisRound = true;
             ApplyIronRiceBowl();
             Run.AddHandTypeShowCount(score.Type);
+            TrySummonConsumableOnShow(score);
             if (score.Type == HandType.ThreeOfAKind && Run.FirstLeopardGoldPending > 0)
             {
                 var gold = Run.FirstLeopardGoldPending;
@@ -3678,7 +3772,7 @@ namespace App.Game
                     return;
                 }
 
-                if (_rng.NextDouble() < RelicMechanics.ValueAt(entry))
+                if (_rng.NextDouble() < RelicMechanics.ProbabilityValue(Run, entry))
                 {
                     Run.AddHandTypeMagBonus(score.Type, 1f);
                     Log($"天使：{HandEvaluator.TypeName(score.Type)} 倍率永久 +1");
@@ -3695,7 +3789,7 @@ namespace App.Game
             }
 
             var allFace = RelicMechanics.HasMechanism(Run, MechanismType.AllCardIsHeadCard);
-            var headChance = RelicMechanics.SumValue(Run, MechanismType.ProOfHeadCardFunds);
+            var headChance = RelicMechanics.SumProbability(Run, MechanismType.ProOfHeadCardFunds);
             var headGold = RelicMechanics.SumValue(Run, MechanismType.ProOfHeadCardFunds, 1);
             if (headGold == 0f)
             {
@@ -5945,6 +6039,10 @@ namespace App.Game
                 return;
             }
 
+            RelicMechanics.OnCompareResult(Run, playerWon);
+
+            // 贪婪：胜负倍率在伤害结算前写入，当手即生效（与「每次获胜 +1」文案一致）。
+
             if (playerWon)
             {
                 _roundCompareWins++;
@@ -6023,7 +6121,7 @@ namespace App.Game
                     return;
                 }
 
-                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                if (_rng.NextDouble() >= RelicMechanics.ProbabilityValue(Run, entry))
                 {
                     return;
                 }
@@ -6107,6 +6205,13 @@ namespace App.Game
                 Log($"小钱包 +{gold} 金币（总金币 {Run.Gold}）");
             }
 
+            RelicMechanics.RefreshCopiedRelic(Run, _rng);
+            if (Run.RoundCopiedRelicId > 0)
+            {
+                var copied = RelicConfig.Get(Run.RoundCopiedRelicId);
+                Log($"复制：本回合复制 {(copied != null ? copied.Name : Run.RoundCopiedRelicId.ToString())}");
+            }
+
             var nobleHp = RelicMechanics.SumValue(Run, MechanismType.NobleBadge);
             var nobleGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.NobleBadge, 1));
             if (nobleGold != 0 && Player.MaxHp > 0 && Player.Hp > Player.MaxHp * nobleHp)
@@ -6131,7 +6236,7 @@ namespace App.Game
                     return;
                 }
 
-                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                if (_rng.NextDouble() >= RelicMechanics.ProbabilityValue(Run, entry))
                 {
                     return;
                 }
@@ -6186,7 +6291,7 @@ namespace App.Game
                     return;
                 }
 
-                if (_rng.NextDouble() >= RelicMechanics.ValueAt(entry))
+                if (_rng.NextDouble() >= RelicMechanics.ProbabilityValue(Run, entry))
                 {
                     return;
                 }
@@ -6246,6 +6351,57 @@ namespace App.Game
 
             TryAddCappedStack(MechanismType.EveryRoundEndingGetCritical, ref Run.CritStacks, "暴击拳套");
             TryAddCappedStack(MechanismType.EveryRoundEndingGetEvade, ref Run.EvadeStacks, "运动鞋");
+
+            ApplySelfDestroyRelics();
+        }
+
+        /// <summary>疯狂猴子：回合结束后按概率摧毁自身。先收集再移除，避免遍历中改列表。</summary>
+        private void ApplySelfDestroyRelics()
+        {
+            if (Run?.RelicConfigIds == null || _rng == null)
+            {
+                return;
+            }
+
+            List<int> destroyed = null;
+            RelicMechanics.ForEachEntry(Run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.SelfDestroyPerRound || relic == null)
+                {
+                    return;
+                }
+
+                if (_rng.NextDouble() >= RelicMechanics.ProbabilityValue(Run, entry))
+                {
+                    return;
+                }
+
+                if (destroyed == null)
+                {
+                    destroyed = new List<int>();
+                }
+
+                if (!destroyed.Contains(relic.Id))
+                {
+                    destroyed.Add(relic.Id);
+                }
+            });
+
+            if (destroyed == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < destroyed.Count; i++)
+            {
+                var relicId = destroyed[i];
+                var relic = RelicConfig.Get(relicId);
+                Run.RelicConfigIds.Remove(relicId);
+                ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+                Log($"{(relic != null ? relic.Name : relicId.ToString())} 被摧毁");
+            }
+
+            SyncRemovedRelicTrackers();
         }
 
         private void TryAddCappedStack(MechanismType type, ref int stacks, string name)
@@ -6324,6 +6480,16 @@ namespace App.Game
             IncomingAttack = false;
             AttackLevel = 1;
             ClearThisHandConsumables();
+            if (_playerCardsShownThisRound)
+            {
+                var decayLoss = RelicMechanics.TickSelfDecay(Run);
+                if (decayLoss > 0 && Player != null)
+                {
+                    Player.Attack = Math.Max(0, Player.Attack - decayLoss);
+                    Log($"高档甜品：攻击 -{decayLoss}（当前 {Player.Attack}）");
+                }
+            }
+
             if (Player.Hp <= 0)
             {
                 Phase = GamePhase.StageFail;
@@ -6898,7 +7064,7 @@ namespace App.Game
             }
 
             ApplySeatHp(Player, hp, maxHp);
-            var attack = panel.Attack + Run.PermanentAttackBonus;
+            var attack = panel.Attack + Run.PermanentAttackBonus + RelicMechanics.SelfDecayAttackTotal(Run);
             Player.Attack = Math.Max(0, attack);
             Player.Icon = hero != null ? hero.Icon : null;
         }

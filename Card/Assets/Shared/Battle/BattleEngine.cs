@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CardShare.Contracts;
+using CardShare.Contracts.Config;
 
 #nullable enable
 
@@ -248,7 +249,8 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                scores[i] = HandEvaluator.Evaluate(open);
+                var rules = SeatHandRules(i);
+                scores[i] = HandEvaluator.Evaluate(open, rules: rules);
                 if (best == null || scores[i].CompareTo(best.Value) > 0)
                 {
                     best = scores[i];
@@ -540,6 +542,54 @@ namespace CardShare.Battle
             };
         }
 
+        private HandEvalRules SeatHandRules(int seatId)
+        {
+            if (seatId < 0 || seatId >= _seats.Count)
+            {
+                return default;
+            }
+
+            var relics = _seats[seatId].RelicIds;
+            if (relics == null || relics.Count == 0 || _tables == null)
+            {
+                return default;
+            }
+
+            var colorFlush = false;
+            var gappedStraight = false;
+            var wildAce = false;
+            for (var i = 0; i < relics.Count; i++)
+            {
+                if (!_tables.TryGetRelic(relics[i], out var relic) || relic.MechanismId == null)
+                {
+                    continue;
+                }
+
+                for (var j = 0; j < relic.MechanismId.Length; j++)
+                {
+                    if (!_tables.TryGetRelicEntry(relic.MechanismId[j], out var entry))
+                    {
+                        continue;
+                    }
+
+                    if (entry.Type == MechanismType.SpecialFlush)
+                    {
+                        colorFlush = true;
+                    }
+                    else if (entry.Type == MechanismType.SpecialStraight)
+                    {
+                        gappedStraight = true;
+                    }
+                    else if (entry.Type == MechanismType.WildAce)
+                    {
+                        wildAce = true;
+                    }
+                }
+            }
+
+            return new HandEvalRules(colorFlush, gappedStraight, wildAce);
+        }
+
         private static bool HasOpenHand(IReadOnlyList<Card> hand)
         {
             if (hand.Count < BattleLimits.OpenHandSize)
@@ -597,7 +647,14 @@ namespace CardShare.Battle
                 MaxHp = seat.MaxHp,
                 HeroId = seat.HeroId,
                 Talents = CombatBonuses.CloneTalents(seat.Talents),
-                RelicIds = CombatBonuses.CloneRelicIds(seat.RelicIds)
+                RelicIds = CombatBonuses.CloneRelicIds(seat.RelicIds),
+                ShopPoolIds = seat.ShopPoolIds,
+                HandTypeShowCounts = seat.HandTypeShowCounts,
+                RelicSelfDecayMag = seat.RelicSelfDecayMag,
+                RelicShopRefreshCounts = seat.RelicShopRefreshCounts,
+                RelicWinLoseMag = seat.RelicWinLoseMag,
+                ConsumableUsesThisRun = seat.ConsumableUsesThisRun,
+                CopiedRelicId = seat.CopiedRelicId
             };
         }
     }

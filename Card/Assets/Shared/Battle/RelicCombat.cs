@@ -40,6 +40,24 @@ namespace CardShare.Battle
         public int GoldSpentThisRun { get; init; }
 
         public IReadOnlyList<int> RankAttackBonus { get; init; } = Array.Empty<int>();
+
+        /// <summary>各牌型本局亮出次数，下标为 (int)HandType。炸弹恶魔用；老千仍读 <see cref="HandTypeShowCount"/>。</summary>
+        public IReadOnlyList<int> HandTypeShowCounts { get; init; } = Array.Empty<int>();
+
+        /// <summary>高档饮品：遗物 Id → 剩余自衰减倍率。缺键按 0（PVP 无追踪即为 0）。</summary>
+        public IReadOnlyDictionary<int, float>? RelicSelfDecayMag { get; init; }
+
+        /// <summary>消费主义：遗物 Id → 持有期间商店刷新次数。缺键按 0。</summary>
+        public IReadOnlyDictionary<int, int>? RelicShopRefreshCounts { get; init; }
+
+        /// <summary>贪婪：遗物 Id → 比牌胜负累计倍率。缺键按 0（PVP 无追踪即为 0）。</summary>
+        public IReadOnlyDictionary<int, float>? RelicWinLoseMag { get; init; }
+
+        /// <summary>本局消耗品使用次数。倍率叠加 / 力量叠加用。</summary>
+        public int ConsumableUsesThisRun { get; init; }
+
+        /// <summary>复制：本回合复制的其它圣物 Id；0 表示未复制。</summary>
+        public int CopiedRelicId { get; init; }
     }
 
     public readonly struct RelicCombatPart
@@ -97,8 +115,8 @@ namespace CardShare.Battle
                 for (var i = 0; i < entries.Count; i++)
                 {
                     var entry = entries[i];
-                    magAdd += MultiplierFromEntry(tables, snapshot, disabled, entry, score);
-                    attackAdd += AttackFromEntry(tables, snapshot, disabled, entry, score);
+                    magAdd += MultiplierFromEntry(tables, snapshot, disabled, relic, entry, score);
+                    attackAdd += AttackFromEntry(tables, snapshot, disabled, relic, entry, score);
                 }
 
                 mag += magAdd;
@@ -133,6 +151,7 @@ namespace CardShare.Battle
             IGameTables tables,
             RelicCombatSnapshot snapshot,
             HashSet<int> disabled,
+            RelicConfig relic,
             RelicEntryConfig entry,
             HandScore score)
         {
@@ -191,6 +210,20 @@ namespace CardShare.Battle
                     return DefeatMagBonus(tables, snapshot, disabled);
                 case MechanismType.NoKillMonsterGetMagnification:
                     return snapshot.PracticeMagForever;
+                case MechanismType.FixedTypeCountMult:
+                    return FixedTypeShows(snapshot, (int)Math.Round(ValueAt(entry))) * ValueAt(entry, 1);
+                case MechanismType.ShopRefreshGetMult:
+                    return DictValue(snapshot.RelicShopRefreshCounts, relic.Id) * value;
+                case MechanismType.SelfDecayMult:
+                    return DictValue(snapshot.RelicSelfDecayMag, relic.Id);
+                case MechanismType.SelfMultWinLose:
+                    return DictValue(snapshot.RelicWinLoseMag, relic.Id);
+                case MechanismType.UseConsumableGetMult:
+                    return snapshot.ConsumableUsesThisRun * value;
+                case MechanismType.UnshownRankMult:
+                    return CountUnshownRank(snapshot, (Rank)(int)Math.Round(ValueAt(entry))) * ValueAt(entry, 1);
+                case MechanismType.CopyRandomRelic:
+                    return CopiedRelicBonus(tables, snapshot, disabled, score, mag: true);
                 default:
                     return 0f;
             }
@@ -200,6 +233,7 @@ namespace CardShare.Battle
             IGameTables tables,
             RelicCombatSnapshot snapshot,
             HashSet<int> disabled,
+            RelicConfig relic,
             RelicEntryConfig entry,
             HandScore score)
         {
@@ -248,6 +282,10 @@ namespace CardShare.Battle
                     return SumCardProvideAttack(snapshot, entry);
                 case MechanismType.EveryRubbingNum:
                     return snapshot.PeekLeft * value;
+                case MechanismType.UseConsumableGetAttack:
+                    return snapshot.ConsumableUsesThisRun * value;
+                case MechanismType.CopyRandomRelic:
+                    return CopiedRelicBonus(tables, snapshot, disabled, score, mag: false);
                 default:
                     return 0f;
             }
@@ -305,11 +343,13 @@ namespace CardShare.Battle
                 dual = HandEvaluator.TryColorFlushDisplaySuit(cards, out displaySuit);
             }
 
+            // 万能A：亮出的 A 当作任意花色，四门花色计数都 +1。
+            var wildAce = HasMechanism(tables, snapshot, disabled, MechanismType.WildAce);
             var count = 0;
             for (var i = 0; i < cards.Length; i++)
             {
                 var real = cards[i].Suit;
-                if (real == suit)
+                if (real == suit || (wildAce && cards[i].Rank == Rank.Ace))
                 {
                     count++;
                 }
@@ -413,6 +453,59 @@ namespace CardShare.Battle
             }
 
             return count;
+        }
+
+        /// <summary>国王/皇后领域：未亮出的指定点数牌张数。点数按 <see cref="Rank"/> 枚举值（K=13/Q=12）。</summary>
+        private static int CountUnshownRank(RelicCombatSnapshot snapshot, Rank rank)
+        {
+            var cards = snapshot.Unshown;
+            var count = 0;
+            for (var i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (card.IsValid && card.Rank == rank)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>复制：结算被复制圣物的倍率或攻击（跳过 CopyRandomRelic 防递归）。</summary>
+        private static float CopiedRelicBonus(
+            IGameTables tables,
+            RelicCombatSnapshot snapshot,
+            HashSet<int> disabled,
+            HandScore score,
+            bool mag)
+        {
+            var sourceId = snapshot.CopiedRelicId;
+            if (sourceId <= 0 || disabled.Contains(sourceId) || !tables.TryGetRelic(sourceId, out var source))
+            {
+                return 0f;
+            }
+
+            var sum = 0f;
+            var ids = source.MechanismId;
+            if (ids == null)
+            {
+                return 0f;
+            }
+
+            for (var i = 0; i < ids.Length; i++)
+            {
+                if (!tables.TryGetRelicEntry(ids[i], out var entry) || entry.Type == MechanismType.CopyRandomRelic)
+                {
+                    continue;
+                }
+
+                sum += mag
+                    ? MultiplierFromEntry(tables, snapshot, disabled, source, entry, score)
+                    : AttackFromEntry(tables, snapshot, disabled, source, entry, score);
+            }
+
+            return sum;
         }
 
         private static int MaxUnshownChip(RelicCombatSnapshot snapshot)
@@ -549,6 +642,29 @@ namespace CardShare.Battle
             }
 
             return entry.Value[index];
+        }
+
+        /// <summary>炸弹恶魔：Value[0] 是 HandScoreConfig 牌型 Id（如豹子 6），按下标换算本局亮出次数。</summary>
+        private static int FixedTypeShows(RelicCombatSnapshot snapshot, int configHandType)
+        {
+            var counts = snapshot.HandTypeShowCounts;
+            if (counts == null || counts.Count == 0)
+            {
+                return 0;
+            }
+
+            var key = (int)HandEvaluator.FromConfigHandType(configHandType);
+            return key >= 0 && key < counts.Count ? counts[key] : 0;
+        }
+
+        private static float DictValue(IReadOnlyDictionary<int, float>? dict, int relicId)
+        {
+            return dict != null && dict.TryGetValue(relicId, out var value) ? value : 0f;
+        }
+
+        private static int DictValue(IReadOnlyDictionary<int, int>? dict, int relicId)
+        {
+            return dict != null && dict.TryGetValue(relicId, out var value) ? value : 0;
         }
     }
 }

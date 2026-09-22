@@ -458,6 +458,18 @@ namespace App.Game
         public float StrawHealPending;
         /// <summary>练习卷累计倍率。卖掉仍加。</summary>
         public float PracticeMagForever;
+        /// <summary>高档甜品：遗物 Id → 剩余自衰减攻击。卖掉移除，重买重置为配置值。</summary>
+        public readonly Dictionary<int, int> SelfDecayAttackLeft = new Dictionary<int, int>();
+        /// <summary>高档饮品：遗物 Id → 剩余自衰减倍率。卖掉移除，重买重置为配置值。</summary>
+        public readonly Dictionary<int, float> SelfDecayMagLeft = new Dictionary<int, float>();
+        /// <summary>消费主义：遗物 Id → 持有期间商店刷新次数（含免费刷新）。卖掉移除，重买重新计数。</summary>
+        public readonly Dictionary<int, int> ShopRefreshRelicCounts = new Dictionary<int, int>();
+        /// <summary>贪婪：遗物 Id → 比牌胜负累计倍率（胜 +/负 -，下限 0）。跨关保留，卖掉移除，重买重置。</summary>
+        public readonly Dictionary<int, float> WinLoseRelicMag = new Dictionary<int, float>();
+        /// <summary>本局已使用消耗类圣物次数（倍率叠加 / 力量叠加）。跨关保留。</summary>
+        public int ConsumableUsesThisRun;
+        /// <summary>复制：本回合随机选中的其它圣物 Id；0 表示未复制。</summary>
+        public int RoundCopiedRelicId;
         public readonly List<string> Log = new List<string>();
 
         public void ClearRunProgress()
@@ -491,6 +503,12 @@ namespace App.Game
             Array.Clear(HandTypeMagForever, 0, HandTypeMagForever.Length);
             Array.Clear(HandTypeShowCounts, 0, HandTypeShowCounts.Length);
             RelicSellBonus.Clear();
+            SelfDecayAttackLeft.Clear();
+            SelfDecayMagLeft.Clear();
+            ShopRefreshRelicCounts.Clear();
+            WinLoseRelicMag.Clear();
+            ConsumableUsesThisRun = 0;
+            RoundCopiedRelicId = 0;
         }
 
         public bool LostToMonster(int monsterId)

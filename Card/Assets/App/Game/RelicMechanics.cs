@@ -222,7 +222,7 @@ namespace App.Game
 
         public static bool Roll(RunState run, MechanismType type, Random rng)
         {
-            var chance = SumValue(run, type);
+            var chance = SumProbability(run, type);
             if (chance <= 0f || rng == null)
             {
                 return false;
@@ -431,6 +431,401 @@ namespace App.Game
             return sum;
         }
 
+        /// <summary>幸运之子：这些机制的 Value 是触发概率，会被翻倍；暴击/闪避等属性值与层数上限不在此列。</summary>
+        private static bool IsProbabilityType(MechanismType type)
+        {
+            switch (type)
+            {
+                case MechanismType.ReverseResult:
+                case MechanismType.AllPeacePer:
+                case MechanismType.SteppingStone:
+                case MechanismType.ProOfUpCardType:
+                case MechanismType.ProOfHeadCardFunds:
+                case MechanismType.EveryRoundEndingGetGoldPer:
+                case MechanismType.DownGrade:
+                case MechanismType.SpecialSevenCardPro:
+                case MechanismType.SelfDestroyPerRound:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>读词条概率值；持有幸运之子时概率翻倍。</summary>
+        public static float ProbabilityValue(RunState run, RelicEntryConfig entry, int index = 0)
+        {
+            var value = ValueAt(entry, index);
+            if (value > 0f && IsProbabilityType(entry.Type) && HasMechanism(run, MechanismType.LuckyDouble))
+            {
+                value *= 2f;
+            }
+
+            return value;
+        }
+
+        /// <summary>按概率语义求和：幸运之子只翻概率型机制。</summary>
+        public static float SumProbability(RunState run, MechanismType type, int index = 0)
+        {
+            var sum = 0f;
+            ForEachEntry(run, (_, entry) =>
+            {
+                if (entry.Type == type)
+                {
+                    sum += ProbabilityValue(run, entry, index);
+                }
+            });
+            return sum;
+        }
+
+        /// <summary>逐条机制独立掷骰（逆转沙漏与第六感分开判定），命中返回 true 并给出触发圣物名。</summary>
+        public static bool RollEach(RunState run, MechanismType type, Random rng, out string relicName)
+        {
+            relicName = null;
+            if (run == null || rng == null)
+            {
+                return false;
+            }
+
+            var hit = false;
+            string hitName = null;
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (hit || entry.Type != type)
+                {
+                    return;
+                }
+
+                var chance = ProbabilityValue(run, entry);
+                if (chance > 0f && rng.NextDouble() < chance)
+                {
+                    hit = true;
+                    hitName = relic?.Name;
+                }
+            });
+            relicName = hitName;
+            return hit;
+        }
+
+        /// <summary>高档甜品：当前剩余自衰减攻击合计（加在英雄攻击面板上）。缺键懒初始化满值。</summary>
+        public static int SelfDecayAttackTotal(RunState run)
+        {
+            var total = 0;
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type == MechanismType.SelfDecayAttack)
+                {
+                    total += SelfDecayAttackLeftFor(run, relic, entry);
+                }
+            });
+            return total;
+        }
+
+        /// <summary>高档饮品：某遗物剩余自衰减倍率。缺键懒初始化满值。</summary>
+        public static float SelfDecayMagLeftFor(RunState run, int relicId)
+        {
+            var relic = RelicConfig.Get(relicId);
+            var left = 0f;
+            ForEachRelicEntry(relic, entry =>
+            {
+                if (entry.Type == MechanismType.SelfDecayMult)
+                {
+                    left += SelfDecayMagLeftFor(run, relic, entry);
+                }
+            });
+            return left;
+        }
+
+        /// <summary>每次亮牌结算后调用：自衰减攻击/倍率各降一档（下限 0），返回要从英雄攻击扣掉的总量。</summary>
+        public static int TickSelfDecay(RunState run)
+        {
+            var attackLoss = 0;
+            if (run == null)
+            {
+                return 0;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type == MechanismType.SelfDecayAttack)
+                {
+                    var left = SelfDecayAttackLeftFor(run, relic, entry);
+                    var decay = Math.Max(0, (int)Math.Round(ValueAt(entry, 1)));
+                    var loss = Math.Min(left, decay);
+                    if (loss > 0)
+                    {
+                        run.SelfDecayAttackLeft[relic.Id] = left - loss;
+                        attackLoss += loss;
+                    }
+                }
+                else if (entry.Type == MechanismType.SelfDecayMult)
+                {
+                    var left = SelfDecayMagLeftFor(run, relic, entry);
+                    var decay = Math.Max(0f, ValueAt(entry, 1));
+                    var loss = Math.Min(left, decay);
+                    if (loss > 0f)
+                    {
+                        run.SelfDecayMagLeft[relic.Id] = left - loss;
+                    }
+                }
+            });
+            return attackLoss;
+        }
+
+        /// <summary>贪婪：每次比牌胜利自身倍率 +Value[0]，失败 -Value[1]，下限 0。跨关保留，卖掉重买重置。</summary>
+        public static void OnCompareResult(RunState run, bool won)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.SelfMultWinLose || relic == null)
+                {
+                    return;
+                }
+
+                run.WinLoseRelicMag.TryGetValue(relic.Id, out var current);
+                var delta = won ? ValueAt(entry) : -ValueAt(entry, 1);
+                run.WinLoseRelicMag[relic.Id] = Math.Max(0f, current + delta);
+            });
+        }
+
+        /// <summary>商店每刷新一次（含免费刷新）调用：持有中的消费主义计数 +1。</summary>
+        public static void OnShopRefreshed(RunState run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.ShopRefreshGetMult)
+                {
+                    return;
+                }
+
+                run.ShopRefreshRelicCounts.TryGetValue(relic.Id, out var count);
+                run.ShopRefreshRelicCounts[relic.Id] = count + 1;
+            });
+        }
+
+        /// <summary>倍率叠加 / 力量叠加：每次使用消耗类圣物后 +1。</summary>
+        public static void OnConsumableUsed(RunState run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            run.ConsumableUsesThisRun++;
+        }
+
+        /// <summary>复制：每回合随机选一个其它已持有圣物；无候选则清零。</summary>
+        public static void RefreshCopiedRelic(RunState run, Random rng)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            run.RoundCopiedRelicId = 0;
+            if (rng == null || !HasMechanism(run, MechanismType.CopyRandomRelic))
+            {
+                return;
+            }
+
+            var candidates = new List<int>();
+            for (var i = 0; i < run.RelicConfigIds.Count; i++)
+            {
+                var id = run.RelicConfigIds[i];
+                if (id <= 0 || IsDisabled(run, id))
+                {
+                    continue;
+                }
+
+                var relic = RelicConfig.Get(id);
+                if (relic == null || IsConsumable(relic))
+                {
+                    continue;
+                }
+
+                var isCopy = false;
+                ForEachRelicEntry(relic, entry =>
+                {
+                    if (entry.Type == MechanismType.CopyRandomRelic)
+                    {
+                        isCopy = true;
+                    }
+                });
+                if (isCopy)
+                {
+                    continue;
+                }
+
+                candidates.Add(id);
+            }
+
+            if (candidates.Count == 0)
+            {
+                return;
+            }
+
+            run.RoundCopiedRelicId = candidates[rng.Next(candidates.Count)];
+        }
+
+        /// <summary>召唤：亮出同花顺且栏位有空时，随机塞入 1 个消耗品圣物。成功返回 true。</summary>
+        public static bool TrySummonConsumable(RunState run, HandType shownType, Random rng, int carryMax, out RelicConfig summoned)
+        {
+            summoned = null;
+            if (run == null || rng == null || shownType != HandType.StraightFlush)
+            {
+                return false;
+            }
+
+            if (!HasMechanism(run, MechanismType.SummonConsumable))
+            {
+                return false;
+            }
+
+            if (run.RelicConfigIds.Count >= carryMax)
+            {
+                return false;
+            }
+
+            var pool = new List<RelicConfig>();
+            foreach (var kv in RelicConfig.All)
+            {
+                var relic = kv.Value;
+                if (relic == null || !IsConsumable(relic) || run.RelicConfigIds.Contains(relic.Id))
+                {
+                    continue;
+                }
+
+                pool.Add(relic);
+            }
+
+            if (pool.Count == 0)
+            {
+                return false;
+            }
+
+            summoned = pool[rng.Next(pool.Count)];
+            run.RelicConfigIds.Add(summoned.Id);
+            return true;
+        }
+
+        /// <summary>
+        /// 清理已不持有的遗物追踪器（衰减/刷新计数），重买时从头来过。返回需从英雄攻击扣掉的剩余自衰减攻击。
+        /// </summary>
+        public static int CleanupRelicTrackers(RunState run)
+        {
+            var attackLoss = 0;
+            if (run == null)
+            {
+                return 0;
+            }
+
+            attackLoss = PruneUnownedAttack(run);
+            PruneUnowned(run.SelfDecayMagLeft, run);
+            PruneUnowned(run.ShopRefreshRelicCounts, run);
+            PruneUnowned(run.WinLoseRelicMag, run);
+            return attackLoss;
+        }
+
+        private static int PruneUnownedAttack(RunState run)
+        {
+            var dict = run.SelfDecayAttackLeft;
+            if (dict.Count == 0)
+            {
+                return 0;
+            }
+
+            var loss = 0;
+            List<int> stale = null;
+            foreach (var kv in dict)
+            {
+                if (!run.RelicConfigIds.Contains(kv.Key))
+                {
+                    loss += kv.Value;
+                    (stale ??= new List<int>()).Add(kv.Key);
+                }
+            }
+
+            if (stale != null)
+            {
+                for (var i = 0; i < stale.Count; i++)
+                {
+                    dict.Remove(stale[i]);
+                }
+            }
+
+            return loss;
+        }
+
+        private static void PruneUnowned<T>(Dictionary<int, T> dict, RunState run)
+        {
+            if (dict.Count == 0)
+            {
+                return;
+            }
+
+            List<int> stale = null;
+            foreach (var key in dict.Keys)
+            {
+                if (!run.RelicConfigIds.Contains(key))
+                {
+                    (stale ??= new List<int>()).Add(key);
+                }
+            }
+
+            if (stale == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < stale.Count; i++)
+            {
+                dict.Remove(stale[i]);
+            }
+        }
+
+        private static int SelfDecayAttackLeftFor(RunState run, RelicConfig relic, RelicEntryConfig entry)
+        {
+            if (run == null || relic == null)
+            {
+                return 0;
+            }
+
+            if (run.SelfDecayAttackLeft.TryGetValue(relic.Id, out var left))
+            {
+                return left;
+            }
+
+            left = Math.Max(0, (int)Math.Round(ValueAt(entry)));
+            run.SelfDecayAttackLeft[relic.Id] = left;
+            return left;
+        }
+
+        private static float SelfDecayMagLeftFor(RunState run, RelicConfig relic, RelicEntryConfig entry)
+        {
+            if (run == null || relic == null)
+            {
+                return 0f;
+            }
+
+            if (run.SelfDecayMagLeft.TryGetValue(relic.Id, out var left))
+            {
+                return left;
+            }
+
+            left = Math.Max(0f, ValueAt(entry));
+            run.SelfDecayMagLeft[relic.Id] = left;
+            return left;
+        }
+
         public static bool HasMechanism(RunState run, MechanismType type)
         {
             var found = false;
@@ -483,7 +878,7 @@ namespace App.Game
         {
             var treatAllAsFace = HasMechanism(run, MechanismType.AllCardIsHeadCard);
             var luckyHits = 0;
-            var chance = SumValue(run, MechanismType.SpecialSevenCardPro);
+            var chance = SumProbability(run, MechanismType.SpecialSevenCardPro);
             if (chance > 0f && score.UsedCards != null && rng != null)
             {
                 for (var i = 0; i < score.UsedCards.Length; i++)
@@ -662,8 +1057,38 @@ namespace App.Game
                 PracticeMagForever = run != null ? run.PracticeMagForever : 0f,
                 DefeatMagStacks = run != null ? run.DefeatMagStacks : 0,
                 GoldSpentThisRun = run != null ? run.GoldSpentThisRun : 0,
-                RankAttackBonus = rankBonus
+                RankAttackBonus = rankBonus,
+                HandTypeShowCounts = run != null
+                    ? (int[])run.HandTypeShowCounts.Clone()
+                    : Array.Empty<int>(),
+                RelicSelfDecayMag = BuildSelfDecayMag(run),
+                RelicShopRefreshCounts = run != null ? run.ShopRefreshRelicCounts : null,
+                RelicWinLoseMag = run != null ? run.WinLoseRelicMag : null,
+                ConsumableUsesThisRun = run != null ? run.ConsumableUsesThisRun : 0,
+                CopiedRelicId = run != null ? run.RoundCopiedRelicId : 0
             };
+        }
+
+        /// <summary>高档饮品：各持有遗物的剩余自衰减倍率（懒初始化满值），供共享结算读取。</summary>
+        private static Dictionary<int, float> BuildSelfDecayMag(RunState run)
+        {
+            if (run == null)
+            {
+                return null;
+            }
+
+            Dictionary<int, float> map = null;
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.SelfDecayMult)
+                {
+                    return;
+                }
+
+                map ??= new Dictionary<int, float>();
+                map[relic.Id] = SelfDecayMagLeftFor(run, relic, entry);
+            });
+            return map;
         }
 
         /// <summary>亮出用牌恰好是 2+3+5，不依赖遗物改牌型。</summary>

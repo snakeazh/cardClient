@@ -224,7 +224,14 @@ namespace CardShare.Battle
                 PeekLeft = situation.PeekLeft,
                 XRayLeft = situation.XRayLeft,
                 ReplaceLeft = situation.ReplaceLeft,
-                LuckySevenHits = situation.LuckySevenHits
+                LuckySevenHits = situation.LuckySevenHits,
+                // PVP 调用方填 SeatSetup 追踪字段；未填时遗物叠层为 0（不静默伪造）。
+                HandTypeShowCounts = seat.HandTypeShowCounts ?? Array.Empty<int>(),
+                RelicSelfDecayMag = seat.RelicSelfDecayMag,
+                RelicShopRefreshCounts = seat.RelicShopRefreshCounts,
+                RelicWinLoseMag = seat.RelicWinLoseMag,
+                ConsumableUsesThisRun = seat.ConsumableUsesThisRun,
+                CopiedRelicId = seat.CopiedRelicId
             };
         }
 
@@ -261,9 +268,10 @@ namespace CardShare.Battle
             var sum = 0f;
             for (var i = 0; i < ids.Length; i++)
             {
-                if (tables.TryGetHeroEntry(ids[i], out var entry) && entry.Type == type)
+                if (tables.TryGetHeroEntry(ids[i], out var entry) && entry.Type == type &&
+                    entry.Value != null && entry.Value.Length > 0)
                 {
-                    sum += entry.Value;
+                    sum += entry.Value[0];
                 }
             }
 

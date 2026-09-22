@@ -381,10 +381,11 @@ namespace CardShare.Battle
     /// <summary>遗物改写的比牌规则。花色计数类遗物仍看真实花色。</summary>
     public readonly struct HandEvalRules
     {
-        public HandEvalRules(bool colorFlush, bool gappedStraight)
+        public HandEvalRules(bool colorFlush, bool gappedStraight, bool wildAce = false)
         {
             ColorFlush = colorFlush;
             GappedStraight = gappedStraight;
+            WildAce = wildAce;
         }
 
         /// <summary>老花眼：红桃=方片、黑桃=梅花，仅金花/同花顺判定。</summary>
@@ -392,6 +393,9 @@ namespace CardShare.Battle
 
         /// <summary>错峰出行：排序后相邻点差为 1 或 2 即成顺子。</summary>
         public bool GappedStraight { get; }
+
+        /// <summary>万能A：A 可当作任意花色与任意点数参与组牌。</summary>
+        public bool WildAce { get; }
     }
 
     /// <summary>
@@ -639,13 +643,149 @@ namespace CardShare.Battle
             Suit? bannedSuit2 = null,
             Suit? bannedSuit3 = null)
         {
+            var natural = EvaluateCore(cards, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
+            if (!rules.WildAce)
+            {
+                return natural;
+            }
+
+            return ImproveWithWildAce(cards, natural, bannedSuit, banFaces, rules, bannedSuit2, bannedSuit3);
+        }
+
+        /// <summary>
+        /// 万能A：枚举每个 A 的替代点数（花色取能凑金花的那门），取比自然评估更强的结果。
+        /// 返回的 UsedCards/点数仍是真实手牌。
+        /// </summary>
+        private static HandScore ImproveWithWildAce(
+            IReadOnlyList<Card> cards,
+            HandScore natural,
+            Suit? bannedSuit,
+            bool banFaces,
+            HandEvalRules rules,
+            Suit? bannedSuit2,
+            Suit? bannedSuit3)
+        {
+            var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2, bannedSuit3);
+            if (filtered.Count < 2)
+            {
+                return natural;
+            }
+
+            var aceCount = 0;
+            var aceSuit = default(Suit);
+            var nonAceSuit = default(Suit);
+            var nonAceSuitsMixed = false;
+            var nonAceColorMixed = false;
+            for (var i = 0; i < filtered.Count; i++)
+            {
+                var card = filtered[i];
+                if (card.Rank == Rank.Ace)
+                {
+                    aceCount++;
+                    aceSuit = card.Suit;
+                    continue;
+                }
+
+                if (nonAceSuit == default(Suit))
+                {
+                    nonAceSuit = card.Suit;
+                }
+                else if (nonAceSuit != card.Suit)
+                {
+                    nonAceSuitsMixed = true;
+                    if (FlushColor(nonAceSuit) != FlushColor(card.Suit))
+                    {
+                        nonAceColorMixed = true;
+                    }
+                }
+            }
+
+            if (aceCount == 0 || aceCount == filtered.Count)
+            {
+                return natural;
+            }
+
+            var flushable = rules.ColorFlush ? !nonAceColorMixed : !nonAceSuitsMixed;
+            var targetSuit = flushable ? nonAceSuit : aceSuit;
+            var subRules = new HandEvalRules(rules.ColorFlush, rules.GappedStraight);
+
+            var substituted = new List<Card>(filtered);
+            var aceIndex = new List<int>(aceCount);
+            for (var i = 0; i < substituted.Count; i++)
+            {
+                if (substituted[i].Rank == Rank.Ace)
+                {
+                    aceIndex.Add(i);
+                }
+            }
+
+            var realCards = substituted.ToArray();
+            Array.Sort(realCards, RankComparison);
+            var realChips = 0;
+            for (var i = 0; i < realCards.Length; i++)
+            {
+                realChips += realCards[i].ChipValue;
+            }
+
+            var best = natural;
+            var slots = aceIndex.Count;
+            var ranks = new int[slots];
+            var total = 1;
+            for (var i = 0; i < slots; i++)
+            {
+                total *= 13;
+            }
+
+            for (var combo = 0; combo < total; combo++)
+            {
+                var code = combo;
+                for (var i = 0; i < slots; i++)
+                {
+                    ranks[i] = code % 13 + 1;
+                    code /= 13;
+                    substituted[aceIndex[i]] = new Card(targetSuit, (Rank)ranks[i]);
+                }
+
+                var score = EvaluateCore(substituted, null, false, subRules);
+                if (score.CompareTo(best) > 0)
+                {
+                    best = score;
+                }
+            }
+
+            if (best.CompareTo(natural) <= 0)
+            {
+                return natural;
+            }
+
+            return new HandScore(
+                best.Type,
+                realChips,
+                best.Multiplier,
+                best.Keys,
+                realCards,
+                best.Label,
+                best.BeatsAll);
+        }
+
+        private static readonly Comparison<Card> RankComparison =
+            (a, b) => RankKey(b.Rank).CompareTo(RankKey(a.Rank));
+
+        private static HandScore EvaluateCore(
+            IReadOnlyList<Card> cards,
+            Suit? bannedSuit = null,
+            bool banFaces = false,
+            HandEvalRules rules = default,
+            Suit? bannedSuit2 = null,
+            Suit? bannedSuit3 = null)
+        {
             var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2, bannedSuit3);
             if (filtered.Count == 0)
             {
                 return new HandScore(HandType.HighCard, 0, TypeMultiplier(HandType.HighCard), new[] { 0 }, Array.Empty<Card>(), "无有效牌");
             }
 
-            filtered.Sort((a, b) => RankKey(b.Rank).CompareTo(RankKey(a.Rank)));
+            filtered.Sort(RankComparison);
 
             if (filtered.Count == 1)
             {

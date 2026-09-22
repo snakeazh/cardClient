@@ -76,6 +76,24 @@ namespace CardShare.Contracts
 
         /// <summary>商店可购圣物池（已解锁集合）；仅 PvP 开局时由服务端填入。</summary>
         public int[] ShopPoolIds { get; set; } = Array.Empty<int>();
+
+        /// <summary>各牌型本局亮出次数（炸弹恶魔）。PVP 未追踪时为空。</summary>
+        public IReadOnlyList<int> HandTypeShowCounts { get; set; } = Array.Empty<int>();
+
+        /// <summary>高档饮品剩余自衰减倍率。PVP 未追踪时为 null。</summary>
+        public IReadOnlyDictionary<int, float>? RelicSelfDecayMag { get; set; }
+
+        /// <summary>消费主义商店刷新计数。PVP 未追踪时为 null。</summary>
+        public IReadOnlyDictionary<int, int>? RelicShopRefreshCounts { get; set; }
+
+        /// <summary>贪婪胜负累计倍率。PVP 未追踪时为 null。</summary>
+        public IReadOnlyDictionary<int, float>? RelicWinLoseMag { get; set; }
+
+        /// <summary>本局消耗品使用次数。PVP 未追踪时为 0。</summary>
+        public int ConsumableUsesThisRun { get; set; }
+
+        /// <summary>复制本回合选中的圣物 Id。PVP 未追踪时为 0。</summary>
+        public int CopiedRelicId { get; set; }
     }
 
     public enum BattleModeKind

@@ -127,7 +127,7 @@ namespace App.Game
                 var name = !string.IsNullOrEmpty(part.Name) ? part.Name : part.RelicId.ToString();
                 var piece = add == (int)add ? $"{name}+{(int)add}" : $"{name}+{add}";
                 text = text == null ? piece : text + ", " + piece;
-            });
+            }
 
             // 与 SumMultiplierExtra 一致：对应圣物已不在栏时，永久累计仍计入遗物加成。
             if (!HasMechanism(run, MechanismType.RubbingCardRelic) &&

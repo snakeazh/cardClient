@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using App.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Assets;
 using Framework.Log;
 using UnityEngine;

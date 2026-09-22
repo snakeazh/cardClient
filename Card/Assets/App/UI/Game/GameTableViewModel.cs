@@ -71,7 +71,7 @@ namespace App.UI
             IAtlasService atlas,
             IGuideService guide,
             ISaveService save,
-            IAudioService audio,)
+            IAudioService audio,
             PvpMatchSession pvp)
         {
             Session = session;
@@ -723,8 +723,8 @@ namespace App.UI
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
             var rubMax = SkillChargeMax(
                 GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
-                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
-                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum));
+                RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
+                HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum));
             if (Session.Run.PeekGoodCharges != _lastRubCur || rubMax != _lastRubMax)
             {
                 _lastRubCur = Session.Run.PeekGoodCharges;
@@ -735,8 +735,8 @@ namespace App.UI
             PeekGoodArmed.Value = Session.SelectingRubTarget;
             var xrayMax = SkillChargeMax(
                 GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
-                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum));
+                RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum) +
+                HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum));
             if (Session.Run.ChaKanGoodCharges != _lastXrayCur || xrayMax != _lastXrayMax)
             {
                 _lastXrayCur = Session.Run.ChaKanGoodCharges;
@@ -863,25 +863,6 @@ namespace App.UI
             await StartBattleBgmAsync();
             BattleTrace.Log("GameTableVM ShowGameResource…");
             await ShowGameResource();
-            _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
-            BattleTrace.Log("GameTableVM.OnOpen end");
-        }
-
-        private async Task StartBattleBgmAsync()
-        {
-            if (_audio == null || Resources == null)
-            {
-                return;
-            }
-
-            try
-            {
-                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmBattle);
-                _audio.PlayBgm(clip);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Warn(LogChannel.Assets, "Battle BGM load failed: " + ex.Message);
             if (!Session.IsPvp)
             {
                 _guide.TryStart(CardShare.Contracts.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
@@ -901,6 +882,26 @@ namespace App.UI
                 {
                     OnPvpUpdated();
                 }
+            }
+
+            BattleTrace.Log("GameTableVM.OnOpen end");
+        }
+
+        private async Task StartBattleBgmAsync()
+        {
+            if (_audio == null || Resources == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmBattle);
+                _audio.PlayBgm(clip);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Battle BGM load failed: " + ex.Message);
             }
         }
 

@@ -1,6 +1,6 @@
 using System;
-using App.Config;
 using CardShare.Contracts.Config;
+using App.Talent;
 
 namespace App.Game
 {
@@ -32,6 +32,47 @@ namespace App.Game
             return sum;
         }
 
+        /// <summary>
+        /// 条件伤害百分比：死灵法师对精英/领主；决斗大师/孩子王按存活敌人数；亡命徒低血。
+        /// 与天赋同 Type 在 <c>ComputeAttackDamage</c> 相加；精英判定仅英雄侧生效。
+        /// </summary>
+        public static float SumDamagePercent(
+            HeroConfig hero,
+            SeatState defender,
+            SeatState player,
+            int aliveEnemies)
+        {
+            var percent = 0f;
+            if (defender != null &&
+                (defender.MonsterType == MonsterType.Elite || defender.MonsterType == MonsterType.Boss))
+            {
+                percent += SumValue(hero, MechanismType.AttackBossDamage);
+            }
+
+            if (aliveEnemies > 1)
+            {
+                percent += SumValue(hero, MechanismType.ManyMonsterDamage);
+            }
+            else if (aliveEnemies == 1)
+            {
+                percent += SumValue(hero, MechanismType.OneMonsterDamage);
+            }
+
+            if (TalentMechanics.IsBelowHpRatio(player, TalentBalance.LowHpRatio))
+            {
+                percent += SumValue(hero, MechanismType.HpUnderDamage);
+            }
+
+            return percent;
+        }
+
+        public static float SumMultiplierExtra(HeroConfig hero, bool firstShowThisStage)
+        {
+            return firstShowThisStage
+                ? SumValue(hero, MechanismType.FirstShowCardEveryLevel)
+                : 0f;
+        }
+
         public static bool HasMechanism(RunState run, MechanismType type)
         {
             return HasMechanism(Resolve(run), type);
@@ -58,6 +99,18 @@ namespace App.Game
         public static bool Roll(HeroConfig hero, MechanismType type, Random rng)
         {
             var chance = SumValue(hero, type);
+            if (chance <= 0f || rng == null)
+            {
+                return false;
+            }
+
+            return rng.NextDouble() < chance;
+        }
+
+        /// <summary>天赋 + 英雄同 Type 概率求和后掷一次。</summary>
+        public static bool RollCombined(float talentChance, float heroChance, Random rng)
+        {
+            var chance = talentChance + heroChance;
             if (chance <= 0f || rng == null)
             {
                 return false;

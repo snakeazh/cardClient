@@ -40,7 +40,7 @@ MonoBehaviour:
   urlCacheList:
   - https://cardwar-1328828696.cos.ap-shanghai.myqcloud.com/CardClient/DYGame/
   dontCacheFileNames:
-  - txt
+  - version.txt
   enableEmscriptenGlx: 1
   isDevBuild: 0
   stripEngineCode: 0

@@ -17,6 +17,11 @@ namespace CardShare.Contracts.Config
         public int TalentId;
 
         /// <summary>
+        /// 天赋等级
+        /// </summary>
+        public int TalentLevel;
+
+        /// <summary>
         /// 名字
         /// </summary>
         public string Name;
@@ -35,11 +40,6 @@ namespace CardShare.Contracts.Config
         /// icon
         /// </summary>
         public string Icon;
-
-        /// <summary>
-        /// 天赋等级
-        /// </summary>
-        public int TalentLevel;
 
         /// <summary>
         /// 天赋机制

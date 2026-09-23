@@ -52,7 +52,7 @@ namespace App.UI.Popup
                 // 未拥有观感同天赋列表：Mask 激活 + card_Name ？？？ + card_icon 黑色剪影
                 Binding.Add(ViewModel.CardOwned.Subscribe(ApplyCardOwned));
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
-                // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
+                // 品质卡背（Altas/playitem），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
                 // 切条目品质变化时同步换常驻品质特效
                 Binding.Add(ViewModel.Quality.Subscribe(OnQualityFxChanged));

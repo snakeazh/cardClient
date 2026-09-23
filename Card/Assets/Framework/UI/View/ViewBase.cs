@@ -80,11 +80,9 @@ namespace Framework.UI.View
             // OnViewOpen 失败时仍要 OnBind，否则会停在预制体占位文案（如 9999/-9999）。
             Exception viewOpenError = null;
             var viewName = GetType().Name;
-            Debug.LogWarning($"[BattleTrace] ViewBase.Open begin {viewName}");
             try
             {
                 await OnViewOpen();
-                Debug.LogWarning($"[BattleTrace] ViewBase.OnViewOpen done {viewName}");
             }
             catch (Exception ex)
             {
@@ -93,12 +91,9 @@ namespace Framework.UI.View
                 Debug.LogException(ex);
             }
 
-            Debug.LogWarning($"[BattleTrace] ViewBase.OnBind begin {viewName}");
             OnBind();
-            Debug.LogWarning($"[BattleTrace] ViewBase.OnBind done {viewName}, ViewModel.Open…");
             await ViewModel.Open(args);
-            Debug.LogWarning($"[BattleTrace] ViewBase.Open complete {viewName}");
-
+            
             if (viewOpenError != null)
             {
                 throw viewOpenError;

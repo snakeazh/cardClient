@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Atlas;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
@@ -12,7 +13,8 @@ using UnityEngine;
 namespace App.UI
 {
     /// <summary>
-    /// 角色 / 怪物头像加载器。启动只预热 _attack；局内对上场玩家和怪物再补 _damage / _dead。
+    /// 角色 / 怪物头像。英雄仍按张预热与局内补载；怪物立绘走 <see cref="ResResourcePaths.EnemyAtlas"/>，
+    /// 启动图集预载后即可取 _attack / _damage / _dead，不再按张 Load。
     /// </summary>
     public static class PortraitLoader
     {
@@ -26,11 +28,17 @@ namespace App.UI
             new Dictionary<string, Sprite>(StringComparer.Ordinal);
 
         private static IResourceService _resources;
+        private static IAtlasService _atlas;
 
-        /// <summary>本局补载的 _damage/_dead key，退局时由 ReleaseBattleStates 释放。</summary>
+        /// <summary>本局补载的英雄 _damage/_dead key，退局时由 ReleaseBattleStates 释放。</summary>
         private static readonly HashSet<string> BattleStateKeys = new HashSet<string>(StringComparer.Ordinal);
 
-        /// <summary>配置表加载完成后预热全部英雄和怪物的 _attack。</summary>
+        public static void Bind(IAtlasService atlas)
+        {
+            _atlas = atlas;
+        }
+
+        /// <summary>配置表加载完成后预热全部英雄 _attack；怪物由 enemy 图集在 AtlasService.PreloadAsync 时已就绪。</summary>
         public static async Task PreloadAsync(IResourceService resources)
         {
             _resources = resources;
@@ -40,20 +48,14 @@ namespace App.UI
             }
 
             var roleIcons = UniqueIcons(HeroConfig.All, row => row.Icon);
-            var enemyIcons = UniqueIcons(MonsterConfig.All, row => row.Icon);
             for (var i = 0; i < roleIcons.Count; i++)
             {
                 await LoadOne(resources, PortraitPath(false, roleIcons[i], ResResourcePaths.PortraitAttack));
             }
-
-            for (var i = 0; i < enemyIcons.Count; i++)
-            {
-                await LoadOne(resources, PortraitPath(true, enemyIcons[i], ResResourcePaths.PortraitAttack));
-            }
         }
 
         /// <summary>
-        /// 局内补齐上场玩家和怪物的 _damage / _dead。已加载过的会跳过。
+        /// 局内补齐上场玩家的 _damage / _dead。怪物已在 enemy 图集，无需补载。
         /// 返回是否新加载了资源，调用方据此决定要不要再刷一次头像。
         /// </summary>
         public static async Task<bool> EnsureBattleStatesAsync(SeatState player, SeatState[] enemies)
@@ -63,21 +65,9 @@ namespace App.UI
                 return false;
             }
 
-            var pending = new List<(bool enemy, string icon)>(4);
+            var pending = new List<(bool enemy, string icon)>(1);
             TryQueueHurt(pending, false, player != null ? player.Icon : null);
-            if (enemies != null)
-            {
-                for (var i = 0; i < enemies.Length; i++)
-                {
-                    var enemy = enemies[i];
-                    if (enemy == null || !enemy.ActiveInStage)
-                    {
-                        continue;
-                    }
-
-                    TryQueueHurt(pending, true, enemy.Icon);
-                }
-            }
+            // enemies：Altas/enemy 已含 _damage/_dead，不排队按张加载。
 
             if (pending.Count == 0)
             {
@@ -92,7 +82,7 @@ namespace App.UI
             return true;
         }
 
-        /// <summary>退局时释放本局补载的 _damage/_dead 立绘（_attack 常驻）。重复调用安全。</summary>
+        /// <summary>退局时释放本局补载的英雄 _damage/_dead 立绘（_attack 常驻；怪物图集不释放）。重复调用安全。</summary>
         public static void ReleaseBattleStates()
         {
             if (BattleStateKeys.Count == 0)
@@ -123,22 +113,22 @@ namespace App.UI
 
         public static Sprite GetRole(string icon, int hp, int maxHp)
         {
-            return Pick(false, icon, ResResourcePaths.PortraitSuffix(hp, maxHp));
+            return PickRole(icon, ResResourcePaths.PortraitSuffix(hp, maxHp));
         }
 
         public static Sprite GetRole(string icon, string suffix = null)
         {
-            return Pick(false, icon, string.IsNullOrEmpty(suffix) ? ResResourcePaths.PortraitAttack : suffix);
+            return PickRole(icon, string.IsNullOrEmpty(suffix) ? ResResourcePaths.PortraitAttack : suffix);
         }
 
         public static Sprite GetEnemy(string icon, int hp, int maxHp)
         {
-            return Pick(true, icon, ResResourcePaths.PortraitSuffix(hp, maxHp));
+            return PickEnemy(icon, ResResourcePaths.PortraitSuffix(hp, maxHp));
         }
 
         public static Sprite GetEnemy(string icon, string suffix = null)
         {
-            return Pick(true, icon, string.IsNullOrEmpty(suffix) ? ResResourcePaths.PortraitAttack : suffix);
+            return PickEnemy(icon, string.IsNullOrEmpty(suffix) ? ResResourcePaths.PortraitAttack : suffix);
         }
 
         private static void TryQueueHurt(List<(bool enemy, string icon)> pending, bool enemy, string icon)
@@ -168,19 +158,59 @@ namespace App.UI
 
         private static bool HasHurtStates(bool enemy, string icon)
         {
-            return Sprites.ContainsKey(PortraitPath(enemy, icon, ResResourcePaths.PortraitDamage)) &&
-                   Sprites.ContainsKey(PortraitPath(enemy, icon, ResResourcePaths.PortraitDead));
+            if (enemy)
+            {
+                return HasEnemySprite(icon, ResResourcePaths.PortraitDamage) &&
+                       HasEnemySprite(icon, ResResourcePaths.PortraitDead);
+            }
+
+            return Sprites.ContainsKey(PortraitPath(false, icon, ResResourcePaths.PortraitDamage)) &&
+                   Sprites.ContainsKey(PortraitPath(false, icon, ResResourcePaths.PortraitDead));
         }
 
-        private static Sprite Pick(bool enemy, string icon, string suffix)
+        private static Sprite PickRole(string icon, string suffix)
         {
-            var sprite = GetCached(PortraitPath(enemy, icon, suffix));
+            var sprite = GetCached(PortraitPath(false, icon, suffix));
             if (sprite != null || string.Equals(suffix, ResResourcePaths.PortraitAttack, StringComparison.Ordinal))
             {
                 return sprite;
             }
 
-            return GetCached(PortraitPath(enemy, icon, ResResourcePaths.PortraitAttack));
+            return GetCached(PortraitPath(false, icon, ResResourcePaths.PortraitAttack));
+        }
+
+        private static Sprite PickEnemy(string icon, string suffix)
+        {
+            var sprite = GetEnemyAtlasSprite(icon, suffix);
+            if (sprite != null || string.Equals(suffix, ResResourcePaths.PortraitAttack, StringComparison.Ordinal))
+            {
+                return sprite;
+            }
+
+            return GetEnemyAtlasSprite(icon, ResResourcePaths.PortraitAttack);
+        }
+
+        private static bool HasEnemySprite(string icon, string suffix)
+        {
+            return GetEnemyAtlasSprite(icon, suffix) != null;
+        }
+
+        private static Sprite GetEnemyAtlasSprite(string icon, string suffix)
+        {
+            var spriteName = ResResourcePaths.EnemySpriteName(icon, suffix);
+            if (string.IsNullOrEmpty(spriteName))
+            {
+                return null;
+            }
+
+            if (_atlas != null &&
+                _atlas.TryGetSprite(ResResourcePaths.EnemyAtlas, spriteName, out var sprite) &&
+                sprite != null)
+            {
+                return sprite;
+            }
+
+            return GetCached(PortraitPath(true, icon, suffix));
         }
 
         private static Sprite GetCached(string key)
@@ -195,9 +225,14 @@ namespace App.UI
 
         private static async Task LoadHurtSet(IResourceService resources, bool enemy, string icon)
         {
+            if (enemy)
+            {
+                return;
+            }
+
             for (var i = 0; i < HurtSuffixes.Length; i++)
             {
-                var key = PortraitPath(enemy, icon, HurtSuffixes[i]);
+                var key = PortraitPath(false, icon, HurtSuffixes[i]);
                 await LoadOne(resources, key);
                 BattleStateKeys.Add(key);
             }

@@ -12,9 +12,9 @@ namespace App.Game
 {
     /// <summary>
     /// 局内角色/敌人信息卡。人物用 card，敌人用 enemycard，头像与数值在 <see cref="Bind"/> 时赋值。
-    /// 玩家 attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame，
+    /// 玩家 attack/heart 底图取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame，
     /// card 下 bg/direct/di 三层卡背取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
-    /// 怪物 enemycard 底图取 MonsterConfig.BaseMap，attack/heart 取 HealthBar，贴图也在 Altas/playitem。
+    /// 怪物头像取 Altas/enemy（{Icon}_attack/_damage/_dead）；enemycard 底图 BaseMap、attack/heart 取 HealthBar，贴图在 Altas/playitem。
     /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
@@ -392,8 +392,8 @@ namespace App.Game
         }
 
         /// <summary>
-        /// attack/heart 数值底图按品质取 Altas/ItemBg 的 {品质}RectangleFrame（预制体默认即
-        /// OrdinaryRectangleFrame 的直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
+        /// attack/heart 数值底图按品质取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame
+        /// （预制体默认直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
         /// 普通品质，图集整体不可用时保留当前图。
         /// </summary>
         private void ApplyStatFrame(QualityType quality)

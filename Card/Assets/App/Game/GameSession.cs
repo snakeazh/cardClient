@@ -8351,15 +8351,14 @@ namespace App.Game
         }
 
         /// <summary>
-        /// PVP 商店镜像：shop 阶段把快照的货架/已购/刷新信息镜像进 Run，让 PvE 商店 UI（BattleShopPop/ShopDetail）原样复用；
-        /// 离开 shop 立即清空——战斗期 Run.RelicConfigIds 保持为空（与改造前一致，圣物效果全部由服务端结算进座位面板）。
+        /// PVP 商店镜像：shop 阶段把快照的货架/刷新信息镜像进 Run，让 PvE 商店 UI（BattleShopPop/ShopDetail）原样复用；
+        /// 离开 shop 清空货架与价格（已购列表由 BindPvpFighters 全阶段镜像，不在此清空）。
         /// </summary>
         private void ApplyPvpShop(PvpMatchStateDto match)
         {
             if (!string.Equals(match.Phase, "shop", StringComparison.OrdinalIgnoreCase))
             {
                 Run.ShopOfferIds.Clear();
-                Run.RelicConfigIds.Clear();
                 _pvpOfferPrices.Clear();
                 _pvpSellPrices.Clear();
                 _pvpShopDone = false;
@@ -8564,6 +8563,8 @@ namespace App.Game
             Run.PeekGoodCharges = self.RubLeft;
             Run.ChaKanGoodCharges = self.PeekLeft;
             Run.TiHuanGoodCharges = self.ReplaceLeft;
+            // 已购圣物全阶段镜像：战斗期圣物栏/技能次数标签才能显示（效果由服务端结算，本地只展示）。
+            MirrorPvpIds(Run.RelicConfigIds, self.RelicIds);
         }
 
         private static void SplitPvpSeats(

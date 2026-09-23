@@ -74,6 +74,9 @@ namespace CardShare.Battle
 
         public BattleSnapshot Snapshot => _snapshot;
 
+        /// <summary>引擎内部座位输入（构造时克隆自入参）；结算前需要回写的字段（如剩余技能次数）通过它改才生效。</summary>
+        public SeatSetup MutableSeat(int seatId) => _seats[seatId];
+
         public BattleSnapshot Apply(BattleCommand cmd)
         {
             var prev = HandEvaluator.Tables;
@@ -298,6 +301,10 @@ namespace CardShare.Battle
                             FirstShow = firstShow,
                             RubbedThisHand = _rubbed[i],
                             RubsUsedThisHand = _rubsUsed[i],
+                            // 字段是历史命名：PeekLeft=搓牌剩余、XRayLeft=透视剩余（与 PvE RelicCombatContext 的 PeekGoodCharges/ChaKanGoodCharges 一致）。
+                            PeekLeft = seat.RubLeft,
+                            XRayLeft = seat.PeekLeft,
+                            ReplaceLeft = seat.ReplaceLeft,
                             AliveOpponents = Math.Max(0, alive - 1),
                             AttackerHp = seat.Hp,
                             AttackerMaxHp = seat.MaxHp,
@@ -654,7 +661,10 @@ namespace CardShare.Battle
                 RelicShopRefreshCounts = seat.RelicShopRefreshCounts,
                 RelicWinLoseMag = seat.RelicWinLoseMag,
                 ConsumableUsesThisRun = seat.ConsumableUsesThisRun,
-                CopiedRelicId = seat.CopiedRelicId
+                CopiedRelicId = seat.CopiedRelicId,
+                RubLeft = seat.RubLeft,
+                PeekLeft = seat.PeekLeft,
+                ReplaceLeft = seat.ReplaceLeft
             };
         }
     }

@@ -33,7 +33,7 @@ Unity 的 `App.Game.Card` / `RunState` 不进本库，由客户端 `SharedBattle
    禁止 `UnityEngine`、ASP.NET、EF、Redis。
 
 6. **PVE / PVP 各自算，客户端不上报伤害数字**  
-   共享的是函数。PVE 只在客户端调；PVP 只在服务端调。
+   共享的是函数。PVE 只在客户端调；PVP 只在服务端调。PVP 局内叠层（贪婪/炸弹/消费主义/饮品/甜品/复制等）由 `PvpRelicRuntime` 挂在 `PvpFighter` 上，经 `SeatSetup` 进 `RelicCombat`；消耗品使用与关卡词缀仍不在 PVP。
 
 7. **新圣物加成先配表，再考虑加代码**  
    已有通道（倍率/加攻）× 已有计数（花色/牌型/点数）只改 `RelicEntryConfig`。新算法才在这里加分发，并加黄金用例。

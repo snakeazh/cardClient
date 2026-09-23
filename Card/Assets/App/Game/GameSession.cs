@@ -3434,7 +3434,7 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。</summary>
+        /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。PVP 走服务端 debug_grant。</summary>
         public bool DebugGrantRelic(int relicId)
         {
             var relic = RelicConfig.Get(relicId);
@@ -3454,6 +3454,22 @@ namespace App.Game
                 return false;
             }
 
+            if (IsPvp)
+            {
+                if (_pvpSession == null)
+                {
+                    Hint = "[编辑器] PVP 会话未就绪，无法添加圣物";
+                    Log(Hint);
+                    Notify();
+                    return false;
+                }
+
+                _ = DebugGrantPvpRelicAsync(relicId, relic.Name);
+                Hint = $"[编辑器] 正在添加 {relic.Name}…";
+                Notify();
+                return true;
+            }
+
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
             ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
@@ -3461,6 +3477,40 @@ namespace App.Game
             Hint = $"[编辑器] 已添加 {relic.Name}";
             Notify();
             return true;
+        }
+
+        private async Task DebugGrantPvpRelicAsync(int relicId, string relicName)
+        {
+            var pvp = _pvpSession;
+            if (pvp == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var ok = await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueDebugGrantRelic(relicId));
+                if (!ok)
+                {
+                    Hint = $"[编辑器] 添加 {relicName} 超时";
+                    Log(Hint);
+                    Notify();
+                    return;
+                }
+
+                // match_update 已经 BindPvpFighters 镜像 RelicIds；再写一遍 Hint。
+                Log($"[编辑器] PVP 获得圣物 {relicName}（{relicId}）");
+                Hint = OwnsRelicConfig(relicId)
+                    ? $"[编辑器] 已添加 {relicName}"
+                    : $"[编辑器] 已请求添加 {relicName}";
+                Notify();
+            }
+            catch (GameApiException ex)
+            {
+                Hint = $"[编辑器] 添加失败：{GameApi.Describe(ex)}";
+                Log(Hint);
+                Notify();
+            }
         }
 
         /// <summary>编辑器外挂：把指定 <see cref="BossEntryConfig"/> 加进本关词缀，立刻参与闪避等结算。同 Id / 同 Type 不重复。</summary>
@@ -8546,9 +8596,69 @@ namespace App.Game
                 ? $"{enemy.Name} 的{winLabel}压过你的{loseLabel}，受到 {scaled} 伤害"
                 : $"{HandDrama(winType)}！你的{winLabel}压过 {enemy.Name} 的{loseLabel}，造成 {scaled} 伤害";
             Hint = LastResult;
+            if (!incoming)
+            {
+                // 展示用：用当前手牌 + 镜像圣物拼 RelicCombatContext，驱动 beilvInfo 分项（伤害仍用服务端 scaled）。
+                PreparePvpRelicDisplayContext();
+            }
+
             AttackPlaySerial++;
             Notify();
             return true;
+        }
+
+        /// <summary>PVP 出伤结算链：补齐 LastRelicContext，并打与 PVE 同结构的公式日志（数字以 AttackDamage 为准）。</summary>
+        private void PreparePvpRelicDisplayContext()
+        {
+            if (Player == null)
+            {
+                LastRelicContext = RelicCombatContext.Empty;
+                return;
+            }
+
+            var score = EvaluateSeat(Player);
+            var ctx = RelicMechanics.BuildCombatContext(
+                Run,
+                score,
+                CollectUnshownCards(Player),
+                CollectShownCards(Player),
+                _rubsUsedThisHand,
+                _rubbedThisHand,
+                _rng);
+            LastRelicContext = ctx;
+            var mag = HandTypeMagnification(score.Type);
+            var relicExtra = RelicMechanics.SumMultiplierExtra(Run, score, ctx);
+            var relicAttack = (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx));
+            var talent = TalentSvc();
+            var talentMag = TalentMechanics.SumMultiplierExtra(talent, false);
+            var talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
+            var flint = BossMechanics.FlintMultiplier(Run);
+            var totalMag = (mag + relicExtra + talentMag) * flint;
+            var atk = Math.Max(0, Player.Attack);
+            var effective = atk + relicAttack + talentAttack;
+            var formula = Math.Max(1, (int)Math.Floor(effective * totalMag));
+            LogAttackDamage(
+                Player,
+                Enemies[0],
+                score,
+                relicExtra,
+                relicAttack,
+                relicAttack + talentAttack,
+                mag,
+                flint,
+                totalMag,
+                formula,
+                AttackDamage,
+                0,
+                ctx,
+                firstShow: false,
+                talentMag,
+                talentAttack,
+                0f,
+                crit: false,
+                critMul: 1f,
+                chaseAdd: 0,
+                execute: false);
         }
 
         /// <summary>服务器没带伤害时的本地兜底（驱动器调用）：用共享出伤公式保证撞击一定能播。</summary>

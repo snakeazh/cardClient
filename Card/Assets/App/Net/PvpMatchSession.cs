@@ -134,6 +134,9 @@ namespace App.Net
 
         public Task ShopDoneAsync() => _ws.BattleAsync("shop_done");
 
+        /// <summary>编辑器测试：PVP 向服务端添加圣物（index = relicId）。</summary>
+        public Task DebugGrantRelicAsync(int relicId) => _ws.BattleAsync("debug_grant", relicId);
+
         /// <summary>等下一个 match_update（商店操作后等快照回刷新），超时返回 false。</summary>
         public async Task<bool> WaitNextUpdateAsync(int timeoutMs)
         {

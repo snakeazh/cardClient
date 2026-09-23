@@ -205,16 +205,12 @@ namespace App.UI.Game.Director
             var winScore = _session.EvaluateSeat(playerWon ? _session.Player : _session.Enemies[0]);
             var loseScore = _session.EvaluateSeat(playerWon ? _session.Enemies[0] : _session.Player);
             var damage = ResolveDamage(match, mine, foe, playerWon, winScore);
-            var mineDamage = mine != null && mine.Damage != null ? Math.Max(1, mine.Damage.Value) : 0;
             var foeDamage = foe != null && foe.Damage != null ? Math.Max(1, foe.Damage.Value) : 0;
 
             _director.Enqueue(new RevealCommand(playerWon));
-            if (mineDamage > 0)
-            {
-                _director.Enqueue(new SetAttackCommand(true, mineDamage));
-            }
-
-            if (foeDamage > 0)
+            // 出伤方不要在结算链前把攻击数字改成最终伤害，否则圣物分项演出会从终值起跳。
+            // 挨打时对手攻击跳到服务端伤害即可。
+            if (!playerWon && foeDamage > 0)
             {
                 _director.Enqueue(new SetAttackCommand(false, foeDamage));
             }

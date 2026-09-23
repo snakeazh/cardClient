@@ -208,6 +208,7 @@ namespace App.Game.Editor
         private void OnGUI()
         {
             EditorGUILayout.LabelField("Play 对局中输入圣物 Id，立即加入本局（不扣金币、不占上限）");
+            EditorGUILayout.HelpBox("PVE：本地立刻生效。PVP：发往服务端 debug_grant，等 match_update 后栏位更新。", MessageType.None);
             EditorGUILayout.Space(4f);
             _relicId = EditorGUILayout.IntField("圣物 Id", _relicId);
 

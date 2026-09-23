@@ -125,6 +125,21 @@ namespace App.Net
         public override Task ExecuteAsync(PvpMatchSession session) => session.ShopDoneAsync();
     }
 
+    /// <summary>编辑器测试加圣物：battle action=debug_grant，index=relicId。</summary>
+    public sealed class PvpWsDebugGrantRelicCommand : PvpWsCommand
+    {
+        private readonly int _relicId;
+
+        public PvpWsDebugGrantRelicCommand(int relicId)
+        {
+            _relicId = relicId;
+        }
+
+        public override string Name => "debug_grant";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.DebugGrantRelicAsync(_relicId);
+    }
+
     /// <summary>
     /// 命令调用器：FIFO 串行执行，同一时刻最多一个在途操作。
     /// Enqueue 返回的任务随命令完成/失败，调用方自行决定 await 或 fire-and-forget。
@@ -167,6 +182,8 @@ namespace App.Net
         public Task EnqueueShopRefresh() => Enqueue(new PvpWsShopRefreshCommand());
 
         public Task EnqueueShopDone() => Enqueue(new PvpWsShopDoneCommand());
+
+        public Task EnqueueDebugGrantRelic(int relicId) => Enqueue(new PvpWsDebugGrantRelicCommand(relicId));
 
         public Task Enqueue(PvpWsCommand command)
         {

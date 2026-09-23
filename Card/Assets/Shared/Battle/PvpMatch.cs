@@ -50,6 +50,27 @@ namespace CardShare.Battle
         public int FreeShopRefreshLeft { get; set; }
 
         public bool ShopDone { get; set; }
+
+        /// <summary>各牌型本局亮出次数（炸弹恶魔）。下标对齐 Shared HandType。</summary>
+        public int[] HandTypeShowCounts { get; } = new int[PvpRelicRuntime.HandTypeCountSlots];
+
+        /// <summary>高档饮品剩余自衰减倍率。</summary>
+        public Dictionary<int, float> RelicSelfDecayMag { get; } = new Dictionary<int, float>();
+
+        /// <summary>高档甜品剩余自衰减攻击。</summary>
+        public Dictionary<int, int> SelfDecayAttackLeft { get; } = new Dictionary<int, int>();
+
+        /// <summary>消费主义商店刷新计数。</summary>
+        public Dictionary<int, int> RelicShopRefreshCounts { get; } = new Dictionary<int, int>();
+
+        /// <summary>贪婪胜负累计倍率。</summary>
+        public Dictionary<int, float> RelicWinLoseMag { get; } = new Dictionary<int, float>();
+
+        /// <summary>本局消耗品使用次数。PVP 无消耗入口，恒为 0；预留给召唤后若再开消耗。</summary>
+        public int ConsumableUsesThisRun { get; set; }
+
+        /// <summary>复制本回合选中的圣物 Id。</summary>
+        public int CopiedRelicId { get; set; }
     }
 
     public sealed class PvpMatch
@@ -333,6 +354,15 @@ namespace CardShare.Battle
         {
             lock (_gate)
             {
+                // 编辑器测试：任意阶段可塞圣物（不扣金、不占货架上限校验外的重复件限制仍保留）。
+                if (string.Equals(action, "debug_grant", StringComparison.OrdinalIgnoreCase))
+                {
+                    var grantee = FighterOf(userId);
+                    DebugGrantRelic(grantee, index);
+                    Touch();
+                    return;
+                }
+
                 if (Phase == PhaseShop)
                 {
                     ActShop(userId, action, index);
@@ -383,6 +413,11 @@ namespace CardShare.Battle
 
                         duel.Peek(seat);
                         fighter.PeekLeft--;
+                        if (PvpRelicRuntime.HasMechanism(_tables, fighter, MechanismType.PeekSteal))
+                        {
+                            duel.TryPeekSteal(seat, _shopRandom);
+                        }
+
                         break;
                     case "showdown":
                     case "open":
@@ -486,6 +521,14 @@ namespace CardShare.Battle
 
             _kind = PvpSchedule.EffectiveKind(_mode, _row, alive.Count);
             ResetSkills();
+            for (var f = 0; f < _fighters.Length; f++)
+            {
+                if (_fighters[f].Alive)
+                {
+                    PvpRelicRuntime.RefreshCopiedRelic(_tables, _fighters[f], _shopRandom);
+                }
+            }
+
             IReadOnlyList<PvpPairSlot> slots;
             if (_kind == PvpFightKind.Monster)
             {
@@ -528,6 +571,7 @@ namespace CardShare.Battle
                     setup.RubLeft = fighter.RubLeft;
                     setup.PeekLeft = fighter.PeekLeft;
                     setup.ReplaceLeft = fighter.ReplaceLeft;
+                    PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
                 };
                 _duels.Add(duel);
             }
@@ -560,6 +604,7 @@ namespace CardShare.Battle
             var snap = duel.Engine.Snapshot;
             if (snap.Winners == null || snap.Winners.Count != 1)
             {
+                ApplyShowdownTrackers(duel, snap, winner: null);
                 duel.MarkHpApplied(-1, 0);
                 BumpDuelResolved(duel, 0);
                 return;
@@ -568,10 +613,14 @@ namespace CardShare.Battle
             var win = snap.Winners[0];
             if (win != 0 && win != 1)
             {
+                ApplyShowdownTrackers(duel, snap, winner: null);
                 duel.MarkHpApplied(-1, 0);
                 BumpDuelResolved(duel, 0);
                 return;
             }
+
+            // 第六感：败方持有时有概率反转胜负（伤害仍按新胜方座位的 Damages）。
+            win = MaybeReverseWinner(duel, snap, win);
 
             var raw = snap.Damages[win];
             var damage = (int)Math.Floor(raw * (1f + _mode.DamageRoundScale * Round));
@@ -585,8 +634,64 @@ namespace CardShare.Battle
             duel.MarkHpApplied(win, damage);
             ApplyDuelGold(duel, win, damage);
             ApplyMonsterWinHeal(duel, win);
+            ApplyShowdownTrackers(duel, snap, win);
             RankDead(deathHp);
             BumpDuelResolved(duel, damage);
+        }
+
+        private int MaybeReverseWinner(PvpDuelTable duel, BattleSnapshot snap, int win)
+        {
+            var loser = 1 - win;
+            var loserFighter = FighterOfDuelSeat(duel, loser);
+            if (loserFighter == null)
+            {
+                return win;
+            }
+
+            if (!PvpRelicRuntime.RollReverse(_tables, loserFighter, _shopRandom))
+            {
+                return win;
+            }
+
+            // 反转后用原败方伤害；若该座位伤害为 0 则至少按对方伤害对调语义仍成立。
+            return loser;
+        }
+
+        private void ApplyShowdownTrackers(PvpDuelTable duel, BattleSnapshot snap, int? winner)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null)
+                {
+                    continue;
+                }
+
+                var type = seat < snap.Scores.Length ? snap.Scores[seat].Type : HandType.HighCard;
+                bool? won = null;
+                if (winner.HasValue)
+                {
+                    won = seat == winner.Value;
+                }
+
+                PvpRelicRuntime.AfterShowdown(_tables, fighter, type, won, _shopRandom);
+                PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom);
+            }
+        }
+
+        private PvpFighter? FighterOfDuelSeat(PvpDuelTable duel, int duelSeat)
+        {
+            if (duelSeat == 0)
+            {
+                return FighterAt(duel.LeftUserId);
+            }
+
+            if (duel.VsMonster)
+            {
+                return null;
+            }
+
+            return FighterAt(duel.RightUserId);
         }
 
         /// <summary>野怪轮玩家胜：回复 10% 最大生命（至少 1，不超过上限）。败北/平局不回。</summary>
@@ -761,6 +866,28 @@ namespace CardShare.Battle
             Touch();
         }
 
+        /// <summary>编辑器测试加圣物：写入 OwnedRelicIds，下一手比牌 / BeforeCompare 生效。</summary>
+        private void DebugGrantRelic(PvpFighter fighter, int relicId)
+        {
+            if (relicId <= 0 || !_tables.TryGetRelic(relicId, out _))
+            {
+                throw new InvalidOperationException("Unknown relic.");
+            }
+
+            if (fighter.OwnedRelicIds.Contains(relicId))
+            {
+                throw new InvalidOperationException("Relic already owned.");
+            }
+
+            fighter.OwnedRelicIds.Add(relicId);
+            // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。
+            var combat = fighter.Combat;
+            fighter.RubLeft += CombatBonuses.SumSkillCountBonus(
+                _tables, new[] { relicId }, combat.HeroId, Array.Empty<CombatTalentCount>(), MechanismType.RubbingCardsNum);
+            fighter.PeekLeft += CombatBonuses.SumSkillCountBonus(
+                _tables, new[] { relicId }, combat.HeroId, Array.Empty<CombatTalentCount>(), MechanismType.PerspectiveNum);
+        }
+
         private void BuyRelic(PvpFighter fighter, int relicId)
         {
             if (!fighter.ShopOfferIds.Contains(relicId) || !_tables.TryGetRelic(relicId, out var relic))
@@ -788,6 +915,7 @@ namespace CardShare.Battle
             fighter.Gold -= price;
             fighter.OwnedRelicIds.Add(relicId);
             fighter.ShopOfferIds.Remove(relicId);
+            // 懒初始化甜品/饮品满值：下次 ToPlayerSeat / Tick 时写入。
         }
 
         private void SellRelic(PvpFighter fighter, int relicId)
@@ -799,6 +927,7 @@ namespace CardShare.Battle
 
             fighter.OwnedRelicIds.Remove(relicId);
             fighter.Gold += PvpShopRules.SellPrice(relic);
+            PvpRelicRuntime.CleanupTrackers(fighter);
         }
 
         private void RefreshShop(PvpFighter fighter)
@@ -819,6 +948,7 @@ namespace CardShare.Battle
                 fighter.ShopRefreshCount++;
             }
 
+            PvpRelicRuntime.OnShopRefreshed(_tables, fighter);
             PvpShopRules.RerollOffers(fighter, _tables, _shopRandom);
         }
 
@@ -1104,10 +1234,10 @@ namespace CardShare.Battle
             }
         }
 
-        private static SeatSetup ToPlayerSeat(PvpFighter fighter, int seatId)
+        private SeatSetup ToPlayerSeat(PvpFighter fighter, int seatId)
         {
             var combat = fighter.Combat;
-            return new SeatSetup
+            var setup = new SeatSetup
             {
                 SeatId = seatId,
                 UserId = fighter.UserId,
@@ -1119,8 +1249,13 @@ namespace CardShare.Battle
                 MaxHp = fighter.MaxHp,
                 HeroId = combat.HeroId,
                 Talents = CombatBonuses.CloneTalents(combat.Talents),
-                RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds)
+                RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds),
+                RubLeft = fighter.RubLeft,
+                PeekLeft = fighter.PeekLeft,
+                ReplaceLeft = fighter.ReplaceLeft
             };
+            PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
+            return setup;
         }
 
         private SeatSetup ToMonsterSeat(int groupId)

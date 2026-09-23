@@ -238,6 +238,26 @@ namespace CardShare.Battle
             PublishDealt(hands, "replace");
         }
 
+        /// <summary>妙手：交换两座各一张底牌（不改选牌）。须在已 Dealt 时调用。</summary>
+        public void SwapHoleCards(int seatA, int indexA, int seatB, int indexB)
+        {
+            RequireDealt(seatA);
+            RequireDealt(seatB);
+            var hands = CloneHands();
+            var handA = hands[seatA];
+            var handB = hands[seatB];
+            if (indexA < 0 || indexA >= handA.Length || !handA[indexA].IsValid ||
+                indexB < 0 || indexB >= handB.Length || !handB[indexB].IsValid)
+            {
+                throw new InvalidOperationException("Invalid swap index.");
+            }
+
+            var tmp = handA[indexA];
+            handA[indexA] = handB[indexB];
+            handB[indexB] = tmp;
+            PublishDealt(hands, "peek_steal");
+        }
+
         private void ScoreHands()
         {
             var hands = _snapshot.Hands;

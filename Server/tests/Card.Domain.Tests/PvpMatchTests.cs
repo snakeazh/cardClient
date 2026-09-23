@@ -157,6 +157,20 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void DebugGrantAddsRelicAndTouchesVersion()
+    {
+        var match = OpenClassic();
+        var a = match.Fighters[0].UserId;
+        match.DrainEvents();
+        var version = match.StateVersion;
+        match.Act(a, "debug_grant", 1, Array.Empty<int>());
+        Assert.Contains(1, match.Fighters[0].OwnedRelicIds);
+        Assert.True(match.StateVersion > version);
+        Assert.Contains(1, match.ViewFor(a).Players[0].RelicIds);
+        Assert.Throws<InvalidOperationException>(() => match.Act(a, "debug_grant", 1, Array.Empty<int>()));
+    }
+
+    [Fact]
     public void RubReplacePeekTouchStateVersionWithoutEvents()
     {
         var match = OpenClassic();

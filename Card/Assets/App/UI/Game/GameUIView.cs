@@ -306,7 +306,7 @@ namespace App.UI
         private void OnGUI()
         {
             GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加圣物（仅编辑器）");
+            GUILayout.Label("测试加圣物（仅编辑器；PVP 走服务端）");
             GUILayout.BeginHorizontal();
             var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
             if (next != _debugRelicIdText)
@@ -662,8 +662,9 @@ namespace App.UI
             }
 
             _playedAttack = session.AttackPlaySerial;
-            // PVP 只要撞击，不走圣物点数结算链，避免中间卡住。
-            if (session.IsPvp)
+            // PVP 自己出伤：走与 PVE 相同的圣物攻/倍率分项结算链，最终数字用服务端 AttackDamage。
+            // PVP 挨打：对手无本地圣物栏，仍直接跳最终伤害再撞击。
+            if (session.IsPvp && session.IncomingAttack)
             {
                 _attackFx.Bind(transform, _playerItem, _enemyItems);
                 var slot = session.AttackVisualSlot;
@@ -675,9 +676,7 @@ namespace App.UI
                 }
 
                 _holdAttackDisplay = true;
-                _heldAttackItem = session.IncomingAttack
-                    ? AttackItemAtSlot(slot)
-                    : _playerItem;
+                _heldAttackItem = AttackItemAtSlot(slot);
                 _heldAttackValue = Math.Max(1, session.AttackDamage);
                 if (_heldAttackItem != null)
                 {

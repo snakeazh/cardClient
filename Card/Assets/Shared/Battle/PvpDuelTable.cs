@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CardShare.Contracts;
 
 #nullable enable
@@ -131,6 +132,62 @@ namespace CardShare.Battle
                 }
 
                 _peeked[viewerSeat] = true;
+            }
+        }
+
+        /// <summary>妙手：透视后随机抽走对手 1 张，与己方点数最小的 1 张交换。</summary>
+        public bool TryPeekSteal(int viewerSeat, Random rng)
+        {
+            lock (_gate)
+            {
+                if (rng == null || viewerSeat < 0 || viewerSeat > 1 || !_peeked[viewerSeat])
+                {
+                    return false;
+                }
+
+                var foe = 1 - viewerSeat;
+                var snap = Engine.Snapshot;
+                var mine = snap.Hands[viewerSeat];
+                var theirs = snap.Hands[foe];
+                var foeIndices = new List<int>();
+                for (var i = 0; i < theirs.Count; i++)
+                {
+                    if (theirs[i].IsValid)
+                    {
+                        foeIndices.Add(i);
+                    }
+                }
+
+                if (foeIndices.Count == 0)
+                {
+                    return false;
+                }
+
+                var minRank = int.MaxValue;
+                var myIndex = -1;
+                for (var i = 0; i < mine.Count; i++)
+                {
+                    if (!mine[i].IsValid)
+                    {
+                        continue;
+                    }
+
+                    var key = (int)mine[i].Rank;
+                    if (key < minRank)
+                    {
+                        minRank = key;
+                        myIndex = i;
+                    }
+                }
+
+                if (myIndex < 0)
+                {
+                    return false;
+                }
+
+                var stealIndex = foeIndices[rng.Next(foeIndices.Count)];
+                Engine.SwapHoleCards(viewerSeat, myIndex, foe, stealIndex);
+                return true;
             }
         }
 

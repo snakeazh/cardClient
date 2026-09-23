@@ -153,6 +153,58 @@ namespace App.Net
             return false;
         }
 
+        /// <summary>
+        /// 发 battle 并等对应 match_update：先挂 waiter 再 send，避免回包早于等待注册被漏掉。
+        /// 用于搓牌/透视/替换等必须等权威快照再刷牌的操作。
+        /// </summary>
+        public async Task<bool> BattleAndWaitAsync(Func<Task> send, int timeoutMs = 3000)
+        {
+            if (send == null)
+            {
+                throw new ArgumentNullException(nameof(send));
+            }
+
+            var before = _lastVersion;
+            var waiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _updateWaiter = waiter;
+            try
+            {
+                await send();
+            }
+            catch
+            {
+                if (ReferenceEquals(_updateWaiter, waiter))
+                {
+                    _updateWaiter = null;
+                }
+
+                throw;
+            }
+
+            if (_lastVersion > before)
+            {
+                if (ReferenceEquals(_updateWaiter, waiter))
+                {
+                    _updateWaiter = null;
+                }
+
+                return true;
+            }
+
+            var done = await Task.WhenAny(waiter.Task, Task.Delay(timeoutMs));
+            if (done == waiter.Task)
+            {
+                return true;
+            }
+
+            if (ReferenceEquals(_updateWaiter, waiter))
+            {
+                _updateWaiter = null;
+            }
+
+            return _lastVersion > before;
+        }
+
         /// <summary>取消匹配：发 cancel 并等服务端回 ack。</summary>
         public async Task CancelAsync()
         {

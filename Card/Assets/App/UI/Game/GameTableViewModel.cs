@@ -112,13 +112,15 @@ namespace App.UI
                 },
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
-            PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
+            PeekGoodCommand = new RelayCommand(
+                () => Session.UsePeekGood(),
+                () => Session.PlayerMayTogglePeekGood);
             ChaKanGoodCommand = new RelayCommand(
                 () =>
                 {
                     if (Session.IsPvp)
                     {
-                        SendPvp(_pvp.Invoker.EnqueuePeek());
+                        SendPvpSkill(() => _pvp.Invoker.EnqueuePeek());
                         return;
                     }
 
@@ -134,7 +136,7 @@ namespace App.UI
                     if (Session.IsPvp)
                     {
                         Session.ClearPvpSelection();
-                        SendPvp(_pvp.Invoker.EnqueueReplace());
+                        SendPvpSkill(() => _pvp.Invoker.EnqueueReplace());
                         return;
                     }
 
@@ -359,11 +361,66 @@ namespace App.UI
             return Session.TryRubPlayerCard(index);
         }
 
+        /// <summary>搓牌：PVE 本地换牌；PVP 发 rub 并等 match_update 写入 Session 后再揭面。</summary>
+        public async Task<bool> TryRubPlayerCardAsync(int index)
+        {
+            if (!Session.IsPvp)
+            {
+                return Session.TryRubPlayerCard(index);
+            }
+
+            if (!Session.CanRubPlayerCard(index) || _pvp == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var ok = await _pvp.BattleAndWaitAsync(() => _pvp.Invoker.EnqueueRub(index));
+                if (!ok)
+                {
+                    Toast.Error("搓牌超时，请重试");
+                    return false;
+                }
+
+                // 快照已扣次：按剩余次数退出/保持点选，避免次数用尽后按钮因 CanExecute=false 取消不了。
+                Session.RefreshRubSelectAfterRub();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+        }
+
         private async void SendPvp(Task task)
         {
             try
             {
                 await task;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        /// <summary>PVP 技能：先挂 waiter 再发 battle，等 match_update 落桌后再继续（透视/替换）。</summary>
+        private async void SendPvpSkill(Func<Task> send)
+        {
+            if (_pvp == null || send == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var ok = await _pvp.BattleAndWaitAsync(send);
+                if (!ok)
+                {
+                    Toast.Error("操作超时，请重试");
+                }
             }
             catch (GameApiException ex)
             {

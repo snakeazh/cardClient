@@ -160,4 +160,202 @@ public class RelicCombatTests
                 new RelicEntryConfig { Id = 103, Name = "红心", Type = MechanismType.RedHeart, Value = new[] { 1f } }
             });
     }
+
+    [Fact]
+    public void FixedTypeCountMultScalesWithRunWideShowCounts()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+        var counts = new int[7];
+        counts[(int)CardShare.Battle.HandType.ThreeOfAKind] = 2;
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 435 }, HandTypeShowCounts = counts },
+            score);
+        Assert.Equal(20f, result.MagExtra);
+
+        var empty = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 435 } },
+            score);
+        Assert.Equal(0f, empty.MagExtra);
+    }
+
+    [Fact]
+    public void ShopRefreshGetMultReadsPerRelicCount()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot
+            {
+                RelicIds = new[] { 436 },
+                RelicShopRefreshCounts = new Dictionary<int, int> { [436] = 3 }
+            },
+            score);
+        Assert.Equal(3f, result.MagExtra);
+
+        var missing = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 436 } },
+            score);
+        Assert.Equal(0f, missing.MagExtra);
+    }
+
+    [Fact]
+    public void SelfDecayMultReadsRemainingMag()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot
+            {
+                RelicIds = new[] { 437 },
+                RelicSelfDecayMag = new Dictionary<int, float> { [437] = 17f }
+            },
+            score);
+        Assert.Equal(17f, result.MagExtra);
+    }
+
+    [Fact]
+    public void WildAceCountsAceAsEverySuit()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        // 两张红心 + 一张黑桃 A。
+        var score = HandEvaluator.Evaluate(new[]
+        {
+            new PlayingCard(Suit.Spade, Rank.Ace),
+            new PlayingCard(Suit.Heart, Rank.Four),
+            new PlayingCard(Suit.Heart, Rank.Six)
+        });
+
+        var noWild = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 13 } },
+            score);
+        Assert.Equal(2f, noWild.MagExtra);
+
+        var wild = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 13, 439 } },
+            score);
+        Assert.Equal(3f, wild.MagExtra);
+    }
+
+    private static GameTables NewMechanicTables()
+    {
+        var fallback = GameTables.Fallback();
+        return new GameTables(
+            fallback.GameConst,
+            fallback.HandScores,
+            fallback.Levels,
+            fallback.Heroes,
+            new[]
+            {
+                new RelicConfig { Id = 13, Name = "红心", MechanismId = new[] { 103 } },
+                new RelicConfig { Id = 334, Name = "国王领域", MechanismId = new[] { 30036 } },
+                new RelicConfig { Id = 331, Name = "倍率叠加", MechanismId = new[] { 30033 } },
+                new RelicConfig { Id = 237, Name = "贪婪", MechanismId = new[] { 20038 } },
+                new RelicConfig { Id = 435, Name = "炸弹恶魔", MechanismId = new[] { 40034 } },
+                new RelicConfig { Id = 436, Name = "消费主义", MechanismId = new[] { 40035 } },
+                new RelicConfig { Id = 437, Name = "高档饮品", MechanismId = new[] { 40036 } },
+                new RelicConfig { Id = 439, Name = "万能A", MechanismId = new[] { 40038 } }
+            },
+            fallback.UnlockConditions,
+            fallback.TalentRows,
+            fallback.Monsters,
+            fallback.Items,
+            "relic-new-mechanics",
+            fallback.HeroEntries,
+            fallback.TalentEntries,
+            new[]
+            {
+                new RelicEntryConfig { Id = 103, Name = "红心", Type = MechanismType.RedHeart, Value = new[] { 1f } },
+                new RelicEntryConfig { Id = 30036, Name = "国王领域", Type = MechanismType.UnshownRankMult, Value = new[] { 13f, 9f } },
+                new RelicEntryConfig { Id = 30033, Name = "倍率叠加", Type = MechanismType.UseConsumableGetMult, Value = new[] { 0.5f } },
+                new RelicEntryConfig { Id = 20038, Name = "贪婪", Type = MechanismType.SelfMultWinLose, Value = new[] { 1f, 1f } },
+                new RelicEntryConfig { Id = 40034, Name = "炸弹恶魔", Type = MechanismType.FixedTypeCountMult, Value = new[] { 6f, 10f } },
+                new RelicEntryConfig { Id = 40035, Name = "消费主义", Type = MechanismType.ShopRefreshGetMult, Value = new[] { 1f } },
+                new RelicEntryConfig { Id = 40036, Name = "高档饮品", Type = MechanismType.SelfDecayMult, Value = new[] { 20f, 1f } },
+                new RelicEntryConfig { Id = 40038, Name = "万能A", Type = MechanismType.WildAce, Value = new[] { 1f } }
+            });
+    }
+
+    [Fact]
+    public void UnshownRankMultCountsKingsInUnshown()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+        var unshown = new[]
+        {
+            new PlayingCard(Suit.Spade, Rank.King),
+            new PlayingCard(Suit.Heart, Rank.Two)
+        };
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 334 }, Unshown = unshown },
+            score);
+        Assert.Equal(9f, result.MagExtra);
+    }
+
+    [Fact]
+    public void UseConsumableGetMultScalesWithUses()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 331 }, ConsumableUsesThisRun = 4 },
+            score);
+        Assert.Equal(2f, result.MagExtra);
+    }
+
+    [Fact]
+    public void SelfMultWinLoseReadsPerRelicMag()
+    {
+        var tables = NewMechanicTables();
+        HandEvaluator.Tables = tables;
+        var score = FlushHearts();
+
+        var result = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot
+            {
+                RelicIds = new[] { 237 },
+                RelicWinLoseMag = new Dictionary<int, float> { [237] = 3f }
+            },
+            score);
+        Assert.Equal(3f, result.MagExtra);
+    }
+
+    [Fact]
+    public void WildAceImprovesHandType()
+    {
+        HandEvaluator.Tables = GameTables.Fallback();
+        // 黑桃 A + 红心 4/6：自然散牌；WildAce 可变同花或更好。
+        var cards = new[]
+        {
+            new PlayingCard(Suit.Spade, Rank.Ace),
+            new PlayingCard(Suit.Heart, Rank.Four),
+            new PlayingCard(Suit.Heart, Rank.Six)
+        };
+        var natural = HandEvaluator.Evaluate(cards);
+        var wild = HandEvaluator.Evaluate(cards, rules: new HandEvalRules(false, false, wildAce: true));
+        Assert.True(wild.CompareTo(natural) > 0);
+        Assert.True(wild.Type == CardShare.Battle.HandType.Flush ||
+                    wild.Type == CardShare.Battle.HandType.StraightFlush);
+    }
 }

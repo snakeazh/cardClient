@@ -157,6 +157,32 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void RubReplacePeekTouchStateVersionWithoutEvents()
+    {
+        var match = OpenClassic();
+        var a = match.Fighters[0].UserId;
+        match.DrainEvents();
+        var version = match.StateVersion;
+
+        match.Act(a, "rub", 0, Array.Empty<int>());
+        Assert.True(match.StateVersion > version);
+        Assert.Empty(match.DrainEvents());
+        Assert.Equal(match.StateVersion, match.ViewFor(a).StateVersion);
+        version = match.StateVersion;
+
+        match.Act(a, "peek", 0, Array.Empty<int>());
+        Assert.True(match.StateVersion > version);
+        Assert.Empty(match.DrainEvents());
+        Assert.NotNull(match.ViewFor(a).Duel!.Seats[1 - match.ViewFor(a).Duel!.ViewerSeat].Cards);
+        version = match.StateVersion;
+
+        match.Act(a, "replace", 0, Array.Empty<int>());
+        Assert.True(match.StateVersion > version);
+        Assert.Empty(match.DrainEvents());
+        Assert.Equal(0, match.Fighters[0].ReplaceLeft);
+    }
+
+    [Fact]
     public void RubReplaceConsumeAndResetNextRound()
     {
         var match = OpenClassic();

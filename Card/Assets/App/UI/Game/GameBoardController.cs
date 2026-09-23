@@ -172,7 +172,7 @@ namespace App.UI
             _rubCompleting = true;
             _cards.PlayRubReplace(
                 index,
-                () => _vm != null && _vm.TryRubPlayerCard(index),
+                () => _vm != null ? _vm.TryRubPlayerCardAsync(index) : Task.FromResult(false),
                 () =>
                 {
                     _rubCompleting = false;

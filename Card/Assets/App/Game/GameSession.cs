@@ -704,18 +704,13 @@ namespace App.Game
             {
                 SelectingRubTarget = false;
                 Hint = message;
+                Notify();
             }
             else
             {
-                SelectingRubTarget = Run.PeekGoodCharges > 0 &&
-                                     !BossMechanics.SkillsDisabled(Run) &&
-                                     BossMechanics.CanAffordRub(Run);
-                Hint = SelectingRubTarget
-                    ? $"{message}。可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）"
-                    : message;
+                RefreshRubSelectAfterRub(message);
             }
 
-            Notify();
             return true;
         }
 
@@ -1023,19 +1018,53 @@ namespace App.Game
             ResolveAiStreet();
         }
 
+        /// <summary>可点搓牌按钮：有次数可进入，或已在点选中可取消（次数用尽时仍须能退出）。</summary>
+        public bool PlayerMayTogglePeekGood => SelectingRubTarget || PlayerMayUsePeekGood;
+
         /// <summary>点击搓牌按钮：进入或取消点选手牌替换。</summary>
         public void UsePeekGood()
         {
+            // 次数用尽后 PlayerMayUsePeekGood 为 false，但仍须能取消点选态。
+            if (SelectingRubTarget)
+            {
+                SelectingRubTarget = false;
+                Hint = "已取消搓牌";
+                Notify();
+                return;
+            }
+
             if (!PlayerMayUsePeekGood)
             {
                 return;
             }
 
             SelectingXRayTarget = false;
-            SelectingRubTarget = !SelectingRubTarget;
-            Hint = SelectingRubTarget
-                ? $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌替换"
-                : "已取消搓牌";
+            SelectingRubTarget = true;
+            Hint = $"搓牌（剩余 {Run.PeekGoodCharges}）。点选一张手牌替换";
+            Notify();
+        }
+
+        /// <summary>搓牌成功后按剩余次数刷新点选态（PVE/PVP 共用；次数已由 ApplyRubReplace 或 PVP 快照扣过）。</summary>
+        public void RefreshRubSelectAfterRub(string message = null)
+        {
+            SelectingRubTarget = Run.PeekGoodCharges > 0 &&
+                                 !BossMechanics.SkillsDisabled(Run) &&
+                                 BossMechanics.CanAffordRub(Run);
+            if (!string.IsNullOrEmpty(message))
+            {
+                Hint = SelectingRubTarget
+                    ? $"{message}。可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）"
+                    : message;
+            }
+            else if (!SelectingRubTarget && Run.PeekGoodCharges <= 0)
+            {
+                Hint = "搓牌次数已用完";
+            }
+            else if (SelectingRubTarget)
+            {
+                Hint = $"可继续点选手牌替换（剩余 {Run.PeekGoodCharges}）";
+            }
+
             Notify();
         }
 

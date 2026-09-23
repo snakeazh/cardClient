@@ -406,13 +406,28 @@ namespace App.UI
 
         public void BeginInstantRub(int index)
         {
-            PlayRubReplace(index, null, null);
+            PlayRubReplace(index, (Func<Task<bool>>)null, null);
         }
 
         /// <summary>
         /// 选中一张牌搓牌：立刻翻到背面并播 ChangeCard01，约 1.5 秒后翻回正面揭示新牌。
         /// </summary>
         public void PlayRubReplace(int index, Func<bool> applyReplace, Action onComplete)
+        {
+            Func<Task<bool>> asyncApply = null;
+            if (applyReplace != null)
+            {
+                asyncApply = () => Task.FromResult(applyReplace());
+            }
+
+            PlayRubReplace(index, asyncApply, onComplete);
+        }
+
+        /// <summary>
+        /// 搓牌（可异步换牌）：翻背面后立刻 <paramref name="applyReplaceAsync"/>（PVP 应等 match_update），
+        /// 成功则在背面 SetCard，再揭正面；失败翻回旧牌。
+        /// </summary>
+        public void PlayRubReplace(int index, Func<Task<bool>> applyReplaceAsync, Action onComplete)
         {
             if (_player == null || index < 0 || index >= CardsPerHand)
             {
@@ -441,8 +456,18 @@ namespace App.UI
             TintPlayerCard(index, Color.white);
             PlayRubSfx();
 
-            var replaced = false;
+            var revealAt = Time.realtimeSinceStartup + RubReplaceRevealDelay;
+            _ = RunRubReplaceAsync(index, item, token, applyReplaceAsync, revealAt, onComplete);
+        }
 
+        private async Task RunRubReplaceAsync(
+            int index,
+            CardItem item,
+            int token,
+            Func<Task<bool>> applyReplaceAsync,
+            float revealAt,
+            Action onComplete)
+        {
             void Done()
             {
                 if (token != _rubPlayToken)
@@ -458,14 +483,13 @@ namespace App.UI
                 onComplete?.Invoke();
             }
 
-            void FlipFront()
+            void FlipFrontAndDone()
             {
                 if (token != _rubPlayToken)
                 {
                     return;
                 }
 
-                ApplyReplaceIfNeeded();
                 item.StopTweenAnimation();
                 var flip = item.FlipTo(CardFaceState.Front, FlipDuration);
                 if (flip == null)
@@ -480,35 +504,80 @@ namespace App.UI
                     .OnComplete(Done);
             }
 
-            void ApplyReplaceIfNeeded()
-            {
-                if (token != _rubPlayToken || replaced)
-                {
-                    return;
-                }
-
-                if (item.FaceState != CardFaceState.Back)
-                {
-                    item.SetFace(CardFaceState.Back);
-                }
-
-                applyReplace?.Invoke();
-                replaced = true;
-            }
-
+            var flippedBack = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var flipBack = item.FlipTo(CardFaceState.Back, FlipDuration);
             if (flipBack != null)
             {
-                flipBack.OnComplete(ApplyReplaceIfNeeded);
+                flipBack.OnComplete(() => flippedBack.TrySetResult(true));
             }
             else
             {
-                ApplyReplaceIfNeeded();
+                item.SetFace(CardFaceState.Back);
+                flippedBack.TrySetResult(true);
             }
 
-            _rubSeq = DOTween.Sequence()
-                .AppendInterval(RubReplaceRevealDelay)
-                .OnComplete(FlipFront);
+            await flippedBack.Task;
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            if (item.FaceState != CardFaceState.Back)
+            {
+                item.SetFace(CardFaceState.Back);
+            }
+
+            var ok = true;
+            if (applyReplaceAsync != null)
+            {
+                try
+                {
+                    ok = await applyReplaceAsync();
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn(LogChannel.UI, "rub replace apply failed: " + ex.Message);
+                    ok = false;
+                }
+            }
+
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            if (!ok)
+            {
+                FlipFrontAndDone();
+                return;
+            }
+
+            // 权威手牌已写入 Session：背面锁住时换贴图，揭开才是新牌。
+            if (_session != null && _session.Player != null)
+            {
+                var card = ShownCard(_session.Player, index, true, _session);
+                if (!item.Card.Equals(card))
+                {
+                    item.SetCard(card);
+                }
+            }
+
+            var wait = revealAt - Time.realtimeSinceStartup;
+            if (wait > 0.01f)
+            {
+                var hold = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _rubSeq = DOTween.Sequence()
+                    .AppendInterval(wait)
+                    .OnComplete(() => hold.TrySetResult(true));
+                await hold.Task;
+            }
+
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            FlipFrontAndDone();
         }
 
         /// <summary>长按搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>

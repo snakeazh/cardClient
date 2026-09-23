@@ -8,7 +8,7 @@ namespace App.UI.Game.Director
     /// PVP 服务器驱动：把 match_update 快照 diff 成演出命令，交给 <see cref="BattleDirector"/> 顺序播放；
     /// match_event（round_start / duel_resolved / settle_start）为主触发，快照 diff 保留兜底。
     /// 状态同步（座位/手牌/HP/Hint）即时写入 GameSession；比牌期间的 HP 延后到攻击播完再应用，避免提前剧透。
-    /// 队列忙时新快照整体暂存，排空后重放——时序由队列保证，不再散落各处打补丁。
+    /// 队列忙时演出类快照暂存；非摊牌快照（含技能改牌）仍立刻 ApplyPvpState，避免搓牌/替换等死等旧牌。
     /// </summary>
     public sealed class PvpBattleDriver
     {
@@ -58,6 +58,16 @@ namespace App.UI.Game.Director
             {
                 _pending = match;
                 _pendingUserId = userId;
+                // 发牌/比牌演出期间技能快照不能卡在 pending：手牌与次数立刻写入，
+                // 否则搓牌/替换等 WaitNextUpdate 返回时 Session 仍是旧牌。
+                if (!IsShowdown(match))
+                {
+                    _session.ApplyPvpState(match, userId);
+                    _lastMatch = match;
+                    _lastUserId = userId;
+                    _lastRound = match.Round;
+                }
+
                 return;
             }
 

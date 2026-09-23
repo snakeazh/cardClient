@@ -334,7 +334,7 @@ public class BattleEngineTests
                 {
                     Id = 1,
                     Type = CardShare.Contracts.Config.MechanismType.Damage,
-                    Value = 0.2f
+                    Value = new[] { 0.2f }
                 }
             },
             new[]

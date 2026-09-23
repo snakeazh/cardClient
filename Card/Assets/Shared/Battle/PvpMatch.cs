@@ -514,7 +514,22 @@ namespace CardShare.Battle
                 }
 
                 var duelSeed = unchecked(Seed * 397 ^ Round * 911 ^ i * 17);
-                _duels.Add(PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer));
+                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer);
+                var leftFighter = _fighters[slot.LeftSeat];
+                var rightFighter = vsPlayer ? _fighters[slot.RightSeat!.Value] : null;
+                duel.BeforeCompare = (seat, setup) =>
+                {
+                    var fighter = seat == 0 ? leftFighter : rightFighter;
+                    if (fighter == null)
+                    {
+                        return;
+                    }
+
+                    setup.RubLeft = fighter.RubLeft;
+                    setup.PeekLeft = fighter.PeekLeft;
+                    setup.ReplaceLeft = fighter.ReplaceLeft;
+                };
+                _duels.Add(duel);
             }
 
             Phase = PhaseFight;
@@ -569,8 +584,27 @@ namespace CardShare.Battle
             ApplyToSeat(duel, 1 - win, damage, deathHp);
             duel.MarkHpApplied(win, damage);
             ApplyDuelGold(duel, win, damage);
+            ApplyMonsterWinHeal(duel, win);
             RankDead(deathHp);
             BumpDuelResolved(duel, damage);
+        }
+
+        /// <summary>野怪轮玩家胜：回复 10% 最大生命（至少 1，不超过上限）。败北/平局不回。</summary>
+        private void ApplyMonsterWinHeal(PvpDuelTable duel, int win)
+        {
+            if (!duel.VsMonster || win != 0)
+            {
+                return;
+            }
+
+            var winner = FighterAt(duel.LeftUserId);
+            if (winner == null || !winner.Alive)
+            {
+                return;
+            }
+
+            var heal = Math.Max(1, (int)Math.Floor(winner.MaxHp * 0.1));
+            winner.Hp = Math.Min(winner.MaxHp, winner.Hp + heal);
         }
 
         /// <summary>胜 = 本轮 GoldBase + damage/12 + 20×未用技能数；负 = 胜者金币半额；平局不结算。野怪轮玩家胜同样发金。</summary>
@@ -1060,9 +1094,13 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                fighter.RubLeft = rub;
+                // 词条枚举无换牌次数类型，替换只吃基础值；搓牌/透视叠加持有圣物 + 英雄 + 天赋加成。
+                var combat = fighter.Combat;
+                fighter.RubLeft = Math.Max(0, rub + CombatBonuses.SumSkillCountBonus(
+                    _tables, fighter.OwnedRelicIds, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
+                fighter.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
+                    _tables, fighter.OwnedRelicIds, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
                 fighter.ReplaceLeft = replace;
-                fighter.PeekLeft = peek;
             }
         }
 

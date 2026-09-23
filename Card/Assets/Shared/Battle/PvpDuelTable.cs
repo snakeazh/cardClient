@@ -23,6 +23,9 @@ namespace CardShare.Battle
 
         public BattleEngine Engine { get; }
 
+        /// <summary>比牌前回调（座位下标 + 引擎内座位输入）：技能在选牌阶段消耗，剩余次数必须在结算一刻回写，不能开桌时填死。</summary>
+        public Action<int, SeatSetup>? BeforeCompare { get; set; }
+
         public bool VsMonster { get; }
 
         public string MonsterName { get; }
@@ -190,6 +193,14 @@ namespace CardShare.Battle
             if (Resolved)
             {
                 return;
+            }
+
+            // 结算一刻回写座位剩余技能次数（选牌阶段的消耗发生在开桌之后；引擎构造时已克隆座位，必须写引擎内副本）。
+            var beforeCompare = BeforeCompare;
+            if (beforeCompare != null)
+            {
+                beforeCompare(0, Engine.MutableSeat(0));
+                beforeCompare(1, Engine.MutableSeat(1));
             }
 
             // 亮牌前给没显式选牌的座位补选：机器人/野怪取 5 张里牌型最高的 3 张，

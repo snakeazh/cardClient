@@ -755,17 +755,184 @@ public class PvpMatchTests
         Assert.False(match.TryMarkRewardsGranted());
     }
 
-    private static PvpMatch OpenClassic() => Open(PvpTestTables.Classic());
+    [Fact]
+    public void RelicSkillCountBonusesApplyNextRound()
+    {
+        var match = Open(PvpTestTables.WithSkillEntries(), shopPool: new[] { 10, 12 });
+        Assert.Equal(3, match.Fighters[0].RubLeft);
 
-    private static PvpMatch Open(GameTables tables, int[]? shopPool = null)
-        => Open(tables, new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") }, shopPool: shopPool);
+        var a = BuyAndAdvance(match, 10, 12);
+        Assert.Equal(3 + 2, a.RubLeft);
+        Assert.Equal(1 + 2, a.PeekLeft);
+        Assert.Equal(1, a.ReplaceLeft);
+        var view = match.ViewFor(a.UserId);
+        Assert.Equal(5, view.Players[0].RubLeft);
+        Assert.Equal(3, view.Players[0].PeekLeft);
+    }
 
-    private static PvpMatch Open(GameTables tables, PlayerPublic[] players, int hp = 0, int[]? shopPool = null)
+    [Fact]
+    public void HeroSkillCountBonusesApplyFromFirstRound()
+    {
+        var rubHero = Open(PvpTestTables.WithSkillEntries(), heroId: 2);
+        Assert.Equal(3 + 1, rubHero.Fighters[0].RubLeft);
+        Assert.Equal(1, rubHero.Fighters[0].PeekLeft);
+
+        var peekHero = Open(PvpTestTables.WithSkillEntries(), heroId: 3);
+        Assert.Equal(1 + 1, peekHero.Fighters[0].PeekLeft);
+        Assert.Equal(3, peekHero.Fighters[0].RubLeft);
+    }
+
+    [Fact]
+    public void TalentSkillCountBonusAppliesFromFirstRound()
+    {
+        var talents = new[] { new CombatTalentCount { TalentId = 500, Count = 1 } };
+        var match = Open(PvpTestTables.WithSkillEntries(), talents: talents);
+        Assert.Equal(3 + 1, match.Fighters[0].RubLeft);
+    }
+
+    [Fact]
+    public void NoSkillRelicAppliesOnlyAfterAllSkillsSpent()
+    {
+        // 技能有剩余：NoSkill 不触发。
+        var tables = PvpTestTables.WithSkillEntries();
+        var match = Open(tables, shopPool: new[] { 11, 13 });
+        var a = BuyAndAdvance(match, 11, 13);
+        Assert.Equal(0, a.RubLeft);
+        var duel = match.Duels.First(d => d.Involves(a.UserId));
+        var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
+        match.Showdown(a.UserId);
+        match.Showdown(bId);
+        var snap = duel.Engine.Snapshot;
+        var seat = duel.ViewerSeat(a.UserId);
+        var expected = Math.Max(1, (int)Math.Round(10 * snap.Scores[seat].Multiplier));
+        Assert.Equal(expected, snap.Damages[seat]);
+
+        // 用光透视+换牌（搓牌被"钝手"归零）：NoSkill +3 倍率。
+        var match2 = Open(tables, shopPool: new[] { 11, 13 });
+        var a2 = BuyAndAdvance(match2, 11, 13);
+        match2.Act(a2.UserId, "peek", 0, Array.Empty<int>());
+        match2.Act(a2.UserId, "replace", 0, Array.Empty<int>());
+        Assert.Equal(0, a2.RubLeft);
+        Assert.Equal(0, a2.PeekLeft);
+        Assert.Equal(0, a2.ReplaceLeft);
+        var duel2 = match2.Duels.First(d => d.Involves(a2.UserId));
+        var b2Id = PvpBattleTable.SameUser(duel2.LeftUserId, a2.UserId) ? duel2.RightUserId : duel2.LeftUserId;
+        match2.Showdown(a2.UserId);
+        match2.Showdown(b2Id);
+        var snap2 = duel2.Engine.Snapshot;
+        var seat2 = duel2.ViewerSeat(a2.UserId);
+        var expected2 = Math.Max(1, (int)Math.Round(10 * (snap2.Scores[seat2].Multiplier + 3f)));
+        Assert.Equal(expected2, snap2.Damages[seat2]);
+    }
+
+    [Fact]
+    public void EveryRubbingNumAddsAttackPerRubLeft()
+    {
+        var match = Open(PvpTestTables.WithSkillEntries(), shopPool: new[] { 14 });
+        var a = BuyAndAdvance(match, 14);
+        Assert.Equal(3, a.RubLeft);
+        var duel = match.Duels.First(d => d.Involves(a.UserId));
+        var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
+        match.Showdown(a.UserId);
+        match.Showdown(bId);
+        var snap = duel.Engine.Snapshot;
+        var seat = duel.ViewerSeat(a.UserId);
+        // 每剩余 1 搓牌 +2 攻击：攻击 10 + 3×2。
+        var expected = Math.Max(1, (int)Math.Round((10 + 3 * 2) * snap.Scores[seat].Multiplier));
+        Assert.Equal(expected, snap.Damages[seat]);
+    }
+
+    [Fact]
+    public void MonsterRoundWinHealsTenPercentMaxHp()
+    {
+        var wins = 0;
+        foreach (var seed in new[] { 42, 7, 1001 })
+        {
+            var match = OpenClassic(seed);
+            foreach (var fighter in match.Fighters)
+            {
+                fighter.Hp = 50;
+            }
+
+            foreach (var fighter in match.Fighters)
+            {
+                match.Showdown(fighter.UserId);
+            }
+
+            foreach (var fighter in match.Fighters)
+            {
+                var duel = match.Duels.First(d => d.Involves(fighter.UserId));
+                var snap = duel.Engine.Snapshot;
+                if (snap.Winners == null || snap.Winners.Count != 1)
+                {
+                    Assert.Equal(50, fighter.Hp);
+                    continue;
+                }
+
+                if (snap.Winners[0] == 0)
+                {
+                    wins++;
+                    Assert.Equal(50 + 10, fighter.Hp);
+                }
+                else
+                {
+                    var damage = (int)Math.Floor(snap.Damages[1] * (1f + 0.1f * 1));
+                    Assert.Equal(Math.Max(0, 50 - damage), fighter.Hp);
+                }
+            }
+        }
+
+        Assert.True(wins > 0);
+
+        // 满血不溢出。
+        var full = OpenClassic();
+        foreach (var fighter in full.Fighters)
+        {
+            full.Showdown(fighter.UserId);
+        }
+
+        foreach (var fighter in full.Fighters)
+        {
+            var duel = full.Duels.First(d => d.Involves(fighter.UserId));
+            var snap = duel.Engine.Snapshot;
+            if (snap.Winners != null && snap.Winners.Count == 1 && snap.Winners[0] == 0)
+            {
+                Assert.Equal(fighter.MaxHp, fighter.Hp);
+            }
+        }
+    }
+
+    private static PvpMatch OpenClassic(int seed = 42) => Open(PvpTestTables.Classic(), seed: seed);
+
+    private static PvpMatch Open(
+        GameTables tables,
+        int[]? shopPool = null,
+        int heroId = 1,
+        IReadOnlyList<CombatTalentCount>? talents = null,
+        int hp = 0,
+        int seed = 42)
+        => Open(
+            tables,
+            new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") },
+            hp: hp,
+            shopPool: shopPool,
+            heroId: heroId,
+            talents: talents,
+            seed: seed);
+
+    private static PvpMatch Open(
+        GameTables tables,
+        PlayerPublic[] players,
+        int hp = 0,
+        int[]? shopPool = null,
+        int heroId = 1,
+        IReadOnlyList<CombatTalentCount>? talents = null,
+        int seed = 42)
     {
         var seats = new SeatSetup[players.Length];
         for (var i = 0; i < players.Length; i++)
         {
-            seats[i] = CombatBonuses.BuildSeat(i, players[i].UserId, players[i].NickName, 1, Array.Empty<CombatTalentCount>(), tables);
+            seats[i] = CombatBonuses.BuildSeat(i, players[i].UserId, players[i].NickName, heroId, talents ?? Array.Empty<CombatTalentCount>(), tables);
             seats[i].IsHuman = !players[i].IsBot;
             seats[i].ShopPoolIds = shopPool ?? Array.Empty<int>();
             if (hp > 0)
@@ -775,7 +942,38 @@ public class PvpMatchTests
             }
         }
 
-        return PvpMatch.Open(Guid.NewGuid(), 42, players, tables, seats, 1);
+        return PvpMatch.Open(Guid.NewGuid(), seed, players, tables, seats, 1);
+    }
+
+    /// <summary>第 1 轮全亮 → settle 到点进商店 → fighter[0] 买圣物 → 全员 shop_done 进第 2 轮。</summary>
+    private static PvpFighter BuyAndAdvance(PvpMatch match, params int[] relicIds)
+    {
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+
+        var a = match.Fighters[0];
+        foreach (var relicId in relicIds)
+        {
+            match.Act(a.UserId, "buy", relicId, Array.Empty<int>());
+        }
+
+        foreach (var fighter in match.Fighters)
+        {
+            if (!fighter.ShopDone)
+            {
+                match.Act(fighter.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+        return a;
     }
 
     /// <summary>settle/shop 阶段由 deadline 驱动：用远期时间戳推进到下一个 fight 或 finished。</summary>
@@ -797,25 +995,75 @@ public class PvpMatchTests
 
 internal static class PvpTestTables
 {
-    public static GameTables Classic()
+    public static GameTables Classic() => Build(ClassicRounds());
+
+    /// <summary>带技能次数/NoSkill/EveryRubbingNum 词条的表：圣物 10-14、英雄 2/3、天赋 500。</summary>
+    public static GameTables WithSkillEntries()
     {
+        var fallback = GameTables.Fallback();
+        var relics = fallback.Relics.Concat(new[]
+        {
+            new RelicConfig { Id = 10, Name = "搓牌护手", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 1001 } },
+            new RelicConfig { Id = 11, Name = "无技之刃", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 1002 } },
+            new RelicConfig { Id = 12, Name = "透视眼镜", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 1003 } },
+            new RelicConfig { Id = 13, Name = "钝手", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 1004 } },
+            new RelicConfig { Id = 14, Name = "余搓之刃", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 1005 } }
+        }).ToArray();
+        var relicEntries = new[]
+        {
+            new RelicEntryConfig { Id = 1001, Type = MechanismType.RubbingCardsNum, Value = new[] { 2f } },
+            new RelicEntryConfig { Id = 1002, Type = MechanismType.NoSkill, Value = new[] { 3f } },
+            new RelicEntryConfig { Id = 1003, Type = MechanismType.PerspectiveNum, Value = new[] { 2f } },
+            new RelicEntryConfig { Id = 1004, Type = MechanismType.RubbingCardsNum, Value = new[] { -3f } },
+            new RelicEntryConfig { Id = 1005, Type = MechanismType.EveryRubbingNum, Value = new[] { 2f } }
+        };
+        var heroes = new[]
+        {
+            new HeroConfig { Id = 1, HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = Array.Empty<int>() },
+            new HeroConfig { Id = 2, Name = "赌神", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2001 } },
+            new HeroConfig { Id = 3, Name = "阴阳师", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2002 } }
+        };
+        var heroEntries = new[]
+        {
+            new HeroEntryConfig { Id = 2001, Type = MechanismType.RubbingCardsNum, Value = new[] { 1f } },
+            new HeroEntryConfig { Id = 2002, Type = MechanismType.PerspectiveNum, Value = new[] { 1f } }
+        };
+        var talentRows = fallback.TalentRows.Concat(new[]
+        {
+            new TalentConfig { Id = 10, TalentId = 500, TalentLevel = 1, TalentEntry = 3001 }
+        }).ToArray();
+        var talentEntries = new[]
+        {
+            new TalentEntryConfig { Id = 3001, Type = MechanismType.RubbingCardsNum, Value = 1f }
+        };
         return Build(
-            new PvpRoundConfig[]
-            {
-                Round(101, 1, PvpFightKind.Monster, 10011, 10),
-                Round(102, 2, PvpFightKind.Pvp, 0, 15),
-                Round(103, 3, PvpFightKind.Pvp, 0, 15),
-                Round(104, 4, PvpFightKind.Pvp, 0, 15),
-                Round(105, 5, PvpFightKind.Monster, 10041, 20),
-                Round(106, 6, PvpFightKind.Pvp, 0, 15),
-                Round(107, 7, PvpFightKind.Pvp, 0, 15),
-                Round(108, 8, PvpFightKind.Pvp, 0, 15),
-                Round(109, 9, PvpFightKind.Monster, 10071, 25),
-                Round(110, 10, PvpFightKind.Pvp, 0, 15),
-                Round(111, 11, PvpFightKind.Pvp, 0, 15),
-                Round(112, 12, PvpFightKind.Pvp, 0, 15),
-                Round(113, 13, PvpFightKind.Monster, 10101, 30)
-            });
+            ClassicRounds(),
+            heroes: heroes,
+            relics: relics,
+            relicEntries: relicEntries,
+            heroEntries: heroEntries,
+            talentRows: talentRows,
+            talentEntries: talentEntries);
+    }
+
+    private static PvpRoundConfig[] ClassicRounds()
+    {
+        return new PvpRoundConfig[]
+        {
+            Round(101, 1, PvpFightKind.Monster, 10011, 10),
+            Round(102, 2, PvpFightKind.Pvp, 0, 15),
+            Round(103, 3, PvpFightKind.Pvp, 0, 15),
+            Round(104, 4, PvpFightKind.Pvp, 0, 15),
+            Round(105, 5, PvpFightKind.Monster, 10041, 20),
+            Round(106, 6, PvpFightKind.Pvp, 0, 15),
+            Round(107, 7, PvpFightKind.Pvp, 0, 15),
+            Round(108, 8, PvpFightKind.Pvp, 0, 15),
+            Round(109, 9, PvpFightKind.Monster, 10071, 25),
+            Round(110, 10, PvpFightKind.Pvp, 0, 15),
+            Round(111, 11, PvpFightKind.Pvp, 0, 15),
+            Round(112, 12, PvpFightKind.Pvp, 0, 15),
+            Round(113, 13, PvpFightKind.Monster, 10101, 30)
+        };
     }
 
     public static GameTables OneMonsterRound()
@@ -835,14 +1083,21 @@ internal static class PvpTestTables
             GoldBase = gold
         };
 
-    private static GameTables Build(IReadOnlyList<PvpRoundConfig> rounds)
+    private static GameTables Build(
+        IReadOnlyList<PvpRoundConfig> rounds,
+        IReadOnlyList<HeroConfig>? heroes = null,
+        IReadOnlyList<RelicConfig>? relics = null,
+        IReadOnlyList<RelicEntryConfig>? relicEntries = null,
+        IReadOnlyList<HeroEntryConfig>? heroEntries = null,
+        IReadOnlyList<TalentConfig>? talentRows = null,
+        IReadOnlyList<TalentEntryConfig>? talentEntries = null)
     {
         var fallback = GameTables.Fallback();
         return new GameTables(
             fallback.GameConst,
             fallback.HandScores,
             fallback.Levels,
-            new[]
+            heroes ?? new[]
             {
                 new HeroConfig
                 {
@@ -854,9 +1109,9 @@ internal static class PvpTestTables
                     HeroEntryId = Array.Empty<int>()
                 }
             },
-            fallback.Relics,
+            relics ?? fallback.Relics,
             fallback.UnlockConditions,
-            fallback.TalentRows,
+            talentRows ?? fallback.TalentRows,
             new[]
             {
                 new MonsterConfig
@@ -871,9 +1126,9 @@ internal static class PvpTestTables
             },
             fallback.Items,
             "pvp-test",
-            fallback.HeroEntries,
-            fallback.TalentEntries,
-            fallback.RelicEntries,
+            heroEntries ?? fallback.HeroEntries,
+            talentEntries ?? fallback.TalentEntries,
+            relicEntries ?? fallback.RelicEntries,
             new[] { new MonsterGroupConfig { Id = 10011, MonsterId = 1001, MonsterLevel = 1 } },
             new[]
             {

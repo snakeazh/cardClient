@@ -190,6 +190,24 @@ namespace CardShare.Battle
             };
         }
 
+        /// <summary>每回合技能次数加成（搓牌 RubbingCardsNum / 透视 PerspectiveNum）：圣物 + 英雄 + 天赋词条求和，口径同 PvE ResetSkillCharges。</summary>
+        public static int SumSkillCountBonus(
+            IGameTables tables,
+            IReadOnlyList<int> relicIds,
+            int heroId,
+            IReadOnlyList<CombatTalentCount> talents,
+            MechanismType type)
+        {
+            var sum = SumRelicEntry(tables, relicIds, type);
+            if (TryResolveHero(tables, heroId, out var hero))
+            {
+                sum += SumHeroEntry(tables, hero, type);
+            }
+
+            sum += SumTalent(tables, talents, type);
+            return (int)Math.Round(sum);
+        }
+
         public static IReadOnlyList<CombatTalentCount> CloneTalents(IReadOnlyList<CombatTalentCount> talents)
         {
             var copy = new CombatTalentCount[talents.Count];
@@ -272,6 +290,31 @@ namespace CardShare.Battle
                     entry.Value != null && entry.Value.Length > 0)
                 {
                     sum += entry.Value[0];
+                }
+            }
+
+            return sum;
+        }
+
+        private static float SumRelicEntry(IGameTables tables, IReadOnlyList<int> relicIds, MechanismType type)
+        {
+            var sum = 0f;
+            for (var i = 0; i < relicIds.Count; i++)
+            {
+                if (!tables.TryGetRelic(relicIds[i], out var relic) || relic.MechanismId == null)
+                {
+                    continue;
+                }
+
+                for (var j = 0; j < relic.MechanismId.Length; j++)
+                {
+                    if (tables.TryGetRelicEntry(relic.MechanismId[j], out var entry)
+                        && entry.Type == type
+                        && entry.Value != null
+                        && entry.Value.Length > 0)
+                    {
+                        sum += entry.Value[0];
+                    }
                 }
             }
 

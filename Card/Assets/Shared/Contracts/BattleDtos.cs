@@ -94,6 +94,15 @@ namespace CardShare.Contracts
 
         /// <summary>复制本回合选中的圣物 Id。PVP 未追踪时为 0。</summary>
         public int CopiedRelicId { get; set; }
+
+        /// <summary>当前剩余搓牌次数。仅在比牌结算时读取（NoSkill/EveryRubbingNum 等词条）；PVP 由对局在 Compare 前回写。</summary>
+        public int RubLeft { get; set; }
+
+        /// <summary>当前剩余透视次数。同上。</summary>
+        public int PeekLeft { get; set; }
+
+        /// <summary>当前剩余换牌次数。同上。</summary>
+        public int ReplaceLeft { get; set; }
     }
 
     public enum BattleModeKind

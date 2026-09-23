@@ -85,19 +85,19 @@ namespace App.UI.Game.Director
                 return;
             }
 
-            if (evt.Kind == "round_start")
+            if (evt.Kind == PvpEventKinds.RoundStart)
             {
                 RequestDeal(evt.Round);
                 return;
             }
 
-            if (evt.Kind == "settle_start")
+            if (evt.Kind == PvpEventKinds.SettleStart)
             {
                 TryEnqueueCompare();
                 return;
             }
 
-            if (evt.Kind == "duel_resolved" && App.Net.PvpMatchSession.SameUser(evt.UserId, userId))
+            if (evt.Kind == PvpEventKinds.DuelResolved && App.Net.PvpMatchSession.SameUser(evt.UserId, userId))
             {
                 TryEnqueueCompare();
             }
@@ -264,7 +264,7 @@ namespace App.UI.Game.Director
         private static bool IsShowdown(PvpMatchStateDto match)
         {
             return match.Duel != null &&
-                   string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
+                   string.Equals(match.Duel.Phase, BattlePhaseNames.Showdown, StringComparison.OrdinalIgnoreCase);
         }
 
         private static void SplitSeats(

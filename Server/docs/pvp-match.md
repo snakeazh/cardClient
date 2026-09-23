@@ -1,95 +1,101 @@
 # PVP 对局（多轮 1v1）
 
-产品规则见仓库根目录 [`【冒险卡】pvp玩法设计.md`](../../【冒险卡】pvp玩法设计.md)。  
-排队短协议仍见 [`pvp.md`](pvp.md)。本文是第一版编排：配表驱动轮次、1v1 子桌、扣血淘汰、5 选 3 与搓/替/透。尚未做 30 秒商店、发奖。
+产品规则见仓库根目录 [`【冒险卡】pvp玩法设计.md`](../../【冒险卡】pvp玩法设计.md)。
+排队短协议见 [`pvp.md`](pvp.md)。本文是当前实现：配表驱动轮次、四阶段时间轴、1v1 子桌、扣血淘汰、商店经济、断线代管与多实例路由。
 
 ## 配表
 
 | 表 | 作用 |
 |---|---|
-| `PvpModeConfig` | 一行一个模式：人数、初始金、商店秒数、剩 2 人跳过野怪、排名奖励、轮次伤害系数 |
-| `PvpRoundConfig` | 一个模式多行：`Round` + `FightKind`（Monster / Pvp）+ `MonsterGroup` + `GoldBase` |
+| `PvpModeConfig` | 一行一个模式：人数、初始金、商店秒数（`ShopSeconds`）、选牌秒数（`OpenPhaseSeconds`）、剩 2 人跳过野怪、排名奖励（`RankReward`）、轮次伤害系数 |
+| `PvpRoundConfig` | 一个模式多行：`Round` + `FightKind`（Monster / Pvp）+ `MonsterGroup` + 本轮基础金币 `GoldBase` |
 | `PvpBotConfig` | 开发补房机器人基础数据：`Id`（100000 段）、昵称、头像、英雄；运行时 `UserId` 仍是 Guid |
 
 野怪组走已有 `MonsterGroupConfig` → `MonsterConfig`。当前数据：模式 1「经典」共 13 轮（1/5/9/13 野怪，其余 PvP）。
 
 加新模式只加表，不要在 C# 写 `if (round == 5)`。
 
-技能次数读 `GameConst`：搓 `DefaultSkillShuffleNum`（默认 3）、替 `DefaultSkillReplaceNum`（默认 1）、透 `DefaultSkillPerspectiveNum`（默认 1）。**每轮开打时重置**，不是整局共用。
+技能次数基础值读 `GameConst`：搓 `DefaultSkillShuffleNum`（默认 3）、替 `DefaultSkillReplaceNum`（默认 1）、透 `DefaultSkillPerspectiveNum`（默认 1）。**每轮开打时重置**，并叠加圣物/英雄/天赋词条加成（`RubbingCardsNum`=71 搓牌、`PerspectiveNum`=128 透视；赌神/阴阳师英雄同名词条；换牌次数无对应词条，只吃基础值）。
 
-## 开发机器人
+## 回合时间轴（四阶段）
 
-Development 默认 `Pvp:FillWithBots=true`：真人排队超过 `GameConst.PvpBotFillDelaySeconds` 秒（当前 10，配 0 = 立即补满）还没满 4 人，就从 `PvpBotConfig` 取启用行补满开房。到期检测由 `PvpTimeoutSweeper`（500ms 一跳）驱动。机器人没有 WebSocket，服务端会：
-
-- 座位按非人类处理，自动选炸金花最大 3 张；英雄读表里 `HeroId`（0 则用 `DefaultHeroId`）
-- 没有真人的子桌立刻摊牌（机器人打野怪、机器人打机器人）
-- 有真人的桌子等双方都 `showdown`（锁定 3 张）后才比牌；对野怪/机器人时对方已锁定，你一锁就比
-
-正式服不要开这个开关，否则一人进队就会开一局。`appsettings.json` 默认关。
-
-## 流程
+每轮由服务端 deadline 驱动，`PvpTimeoutSweeper`（500ms 一跳）推进，每次切换广播 `match_update` + 对应 `match_event`：
 
 ```
-queue 满 4 人 → room_ready（带 modeId）
-  → 服务端读 PvpModeConfig / PvpRoundConfig，用 LastHeroId 开局
-  → 第 1 轮野怪：四人各打一张 1v1 子桌，发 5 张洞牌（默认亮 0/1/2）
-  → 本轮可 battle：pick / rub / replace / peek；showdown 只锁定自己当前 3 张
-  → 一桌双方都锁定后先广播比牌结果，再进下一轮（客户端：翻选中牌 → 胜方攻击败方 → 再刷血量/进轮）
-  → 该桌比完立刻按胜者伤害 × (1 + DamageRoundScale × 轮次) 扣败者 HP；HP ≤ 0 立刻淘汰并写 Rank
-  → 本轮所有子桌都比完才进入表里下一轮；技能次数重置；PvP 轮按 A-B/C-D → A-C/B-D → A-D/B-C 配对
-  → 剩 2 人且模式勾了 SkipMonsterWhenTwoLeft：野怪轮改打决赛
-  → 只剩 1 人或轮次打完：phase=finished，写 Rank
+fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
+  → 全部子桌结算完 → settle（纯演出窗 6s，拒绝一切 battle 操作）
+  → settle 到点 → shop（deadline = ShopSeconds；配 0 跳过）
+  → shop 到点 / 全员 shop_done → Round++ → 下一轮 fight
+最后一轮：fight → settle → finished（settle 播完才发 finished，客户端结算弹窗不用猜演出）
 ```
 
-## 消息
+演出时长常量在共享代码 `PvpTiming`（`Card/Assets/Shared/Battle/PvpTiming.cs`）：`DealAnimMs=2000`、`SettleAnimMs=6000`，双端同源。
 
-在 [`pvp.md`](pvp.md) 的帧上增加：
+## 经济
+
+- 胜：`GoldBase + 伤害/12 + 20 × 未用技能数`（每次技能金币读 `GameConst.EverySkillProvideGold`）
+- 负：胜者所得的一半；平局不结算；野怪轮玩家胜同样发金并**回复 10% 最大生命**（`max(1, floor(MaxHp×0.1))`，不超上限）
+- 淘汰：HP ≤ 0 立即写 `Alive=false` 和名次；同轮多人死亡按 `|淘汰后血量|` 升序（更接近 0 名次靠前）
+- 名次奖励：终局按 `RankReward`（1~4 名 200/120/60/30）填 `fighter.RewardGold`，由 `PvpRewardService` 一次性落库到局外钱包金币（`TryMarkRewardsGranted` CAS 保证整局只发一次；单人失败记 Error 日志不阻塞他人）
+
+## 商店阶段
+
+- 全员 30 秒（`ShopSeconds`），每人独立货架 4 件：`PvpShopRules`（Shared），池 = 本人已解锁圣物（`profile.ShopRelicIds`）− 已持有 − 在架，按 `RelicConfig.RefreshProbability` 加权随机
+- 开局不带圣物（已解锁 ≠ 已携带），买到的圣物**下一轮**起进战斗座位生效
+- 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`shop_done`；全员 done 立即进下一轮
+- 刷新费用与 PvE 同公式（`GameConst.ShopRefreshFirst` 起递增）；机器人与断线座位进店即自动 done
+
+## 断线 = 代管，可重连接管
+
+- WS 断开**不再退赛**：座位标 `Disconnected`，当前桌未锁定则自动锁定结算；后续轮该座位发牌即自动锁定（机器人同款自动选牌）代打；房间内广播 `player_offline`
+- 重连：重连 WS → `auth` → 发 `sync` → 服务端回 `match_update` 全量快照（按 userId 找局）并广播 `player_online`；`error(not_in_battle)` 表示对局已不在
+- 死者留局观战（`duel=null`），名次奖励照发；`leave` 仍可用（对局索引清人）
+
+## 协议增量（在 [`pvp.md`](pvp.md) 基础上）
+
+双端协议常量集中在 `Card/Assets/Shared/Contracts/PvpProtocol.cs`（`PvpActions` / `PvpEventKinds` / `PvpPhases`）和 `BattleDtos.cs`（`BattlePhaseNames`）——**改协议只改这两处**，双端编译期对齐。
 
 | 方向 | t | 含义 |
 |------|---|------|
-| S | match_update | 开房、每次摊牌/技能后广播。含 round / fightKind / 四人 HP / 技能剩余 / 自己的 duel |
-| S | battle_update | 仍下发，payload 是**自己那桌**的 2 座位 `BattleStateDto` |
-| S | room_ready | 增加 `modeId` |
-| C | battle | `pick` / `rub` / `replace` / `peek` / `showdown` |
-
-`battle` payload：
-
-```json
-{ "action": "pick", "indexes": [0, 2, 4] }
-{ "action": "rub", "index": 1 }
-{ "action": "replace" }
-{ "action": "peek" }
-{ "action": "showdown" }
-```
-
-- `pick`：从 5 张里选 3 个不重复下标。不选则默认 `[0,1,2]`。野怪座位服务端自动取炸金花最大 3 张。
-- `rub`：换掉 `index` 那张（扣 1 次搓）。
-- `replace`：5 张全部重抽（扣 1 次替）。
-- `peek`：只让自己看见本桌对手的 5 张（扣 1 次透）。不能看别人的桌。
-- `showdown` / `open`：锁定自己当前选出的 3 张。双方都锁定后才比牌、立刻扣血。已锁定不能再 pick/rub/replace/peek。
+| S | match_update | 一切状态变化广播**全量快照**（逐人视角）。含 `stateVersion`（每次变更单调递增，客户端丢弃 ≤ 上次版本的快照）、`events`（本批增量事件）、`shop`（shop 阶段且本人存活时带货架） |
+| S | match_event | 紧跟 match_update 逐条下发：`round_start` / `settle_start` / `shop_start` / `duel_resolved`（每个真人参与者一条，value=扣血）/ `player_eliminated`（value=名次）/ `player_offline` / `player_online` / `match_finished` |
+| C | sync | 重连后拉全量快照；未在对局返回 `error(not_in_battle)` |
+| C | battle | action：`pick` / `rub` / `replace` / `peek` / `showdown`（`open` 同义）；shop 阶段：`buy` / `sell` / `refresh` / `shop_done` |
+| S | ~~battle_update~~ | **已停发**（信息全在 match_update.duel 里） |
 
 `match_update` 要点：
 
 ```json
 {
-  "roomId": "...",
-  "seed": 1,
-  "modeId": 1,
-  "modeName": "经典",
-  "round": 1,
-  "phase": "fight",
-  "fightKind": "monster",
-  "players": [ { "userId": "...", "hp": 320, "maxHp": 320, "gold": 150, "alive": true, "rank": 0, "rubLeft": 3, "replaceLeft": 1, "peekLeft": 1 } ],
+  "roomId": "...", "seed": 1, "modeId": 1, "modeName": "经典",
+  "round": 2, "phase": "fight", "fightKind": "monster",
+  "stateVersion": 17,
+  "phaseDeadlineUtcMs": 1700000000000, "serverNowUtcMs": 1699999990000,
+  "players": [ { "userId": "...", "hp": 320, "maxHp": 320, "gold": 150, "alive": true,
+                 "rank": 0, "rubLeft": 3, "replaceLeft": 1, "peekLeft": 1,
+                 "disconnected": false, "rewardGold": 0, "relicIds": [101] } ],
   "duels": [ { "leftUserId": "...", "rightUserId": "", "monsterName": "屎莱姆", "resolved": false } ],
-  "duel": { "phase": "dealt", "seats": [ { "cards": [/* 5 张 */], "selected": [0, 1, 2] }, { "cards": null } ] }
+  "duel": { "phase": "dealt", "seats": [ { "cards": [/* 5 张 */], "selected": [0,1,2] }, { "cards": null } ] },
+  "shop": null,
+  "events": [ { "version": 17, "kind": "round_start", "round": 2, "userId": "", "value": 2 } ]
 }
 ```
 
-`phase` 为 `finished` 时看 `players[].rank`（1 最好）。本版不发局外金币。
+- 倒计时一律用 `phaseDeadlineUtcMs - serverNowUtcMs` 折算（客户端不要拿本地时钟直接比 deadline）
+- `phase=finished` 时看 `players[].rank`（1 最好）和 `rewardGold`
+- 摊牌前 `duel.seats[对方].cards = null`；`peek` 后仅自己视角可见对方 5 张
+
+## 多实例（Redis pub/sub）
+
+- 队列：`pvp:queue` 是 Redis **ZSET**（score=入队毫秒），入队/取消/超时扫描三条 Lua 脚本原子执行（从 List 迁移，部署时先 `DEL pvp:queue`）
+- 路由：对局由开房实例（房主）独占托管；`PvpMessageRouter` 发送时本地有 socket 直发、否则发 `pvp:msg` 频道；非房主收到 battle/sync 经 `pvp:cmd` 频道转发房主处理。无 Redis 时 `NullPvpBus` 全 no-op，单实例行为不变
+- 已知限制：房主单点，房主实例宕机 = 该房间对局丢失（客户端 sync 8s 超时退出），不做房间迁移
 
 ## 代码
 
-- 编排：[`PvpMatch`](../../src/Card.Battle/PvpMatch.cs)、[`PvpSchedule`](../../src/Card.Battle/PvpSchedule.cs)、[`PvpPairing`](../../src/Card.Battle/PvpPairing.cs)
-- 1v1 桌：[`PvpDuelTable`](../../src/Card.Battle/PvpDuelTable.cs)
-- 发 5 / 选 3 / 搓 / 替：[`BattleEngine`](../../src/Card.Battle/BattleEngine.cs) 的 `DealHole` / `Pick` / `Rub` / `Replace`（PVE 仍走 `Deal` 发 3 张 + `DrawExtra`）
-- 房间宿主：[`PvpMatchHost`](../../src/Card.Server/Pvp/PvpMatchHost.cs)
+- 编排（状态机/经济/商店/代管/事件）：`Card/Assets/Shared/Battle/PvpMatch.cs`（链接进 `src/Card.Battle`）
+- 轮次/配对/商店规则：`PvpSchedule.cs`、`PvpPairing.cs`、`PvpShopRules.cs`（同目录）
+- 1v1 桌：`PvpDuelTable.cs`（`Compare` 前回写两座当前技能剩余，供"技能全空加倍率"类圣物判定）
+- 房间宿主/连接/路由：`Server/src/Card.Server/Pvp/`（`PvpMatchHost`、`PvpWebSocketHost`、`PvpMessageRouter`、`PvpBusSubscriber`、`PvpTimeoutSweeper`、`PvpRewardService`、`PvpCombatSeats`）
+- Redis 队列/总线：`Server/src/Card.Infrastructure/Redis/RedisServices.cs`、`RedisPvpBus.cs`
+- 测试：`Server/tests/Card.Domain.Tests/PvpMatchTests.cs`、`PvpQueueTests.cs`

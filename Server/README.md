@@ -2,7 +2,7 @@
 
 炸牌兄弟服务端：局外 HTTP 短链管账号主档，PVP 走 WebSocket 长链。
 
-不使用 Docker。Postgres / Redis 以系统服务跑在本机或小机器上，进程直连。
+生产部署不用 Docker（见 `deploy/README.md`：ECS 上 PG/Redis/Nginx/应用同机）。本地开发可用 `docker-compose.yml` 一键起 Postgres + Redis（`docker compose up -d`，账号 card/card/card 与默认连接串一致），或继续用系统服务。
 
 ## 结构
 
@@ -105,7 +105,7 @@ POST /v1/auth/login
 
 ## 小机器 / 本机 Postgres + Redis
 
-不使用 Docker。PostgreSQL、Redis 以系统服务跑在本机，进程直连。
+本机开发推荐 `docker compose up -d`（`docker-compose.yml` 起 Postgres 5432 + Redis 6379，账号与默认连接串一致）；也可以不装 Docker，让 PostgreSQL、Redis 以系统服务跑在本机，进程直连。
 
 **职责：**
 
@@ -194,10 +194,12 @@ Development 默认 `Pvp:FillWithBots=true`：真人排队超过 `GameConst.PvpBo
 
 消息：`{ "t", "seq", "payload" }`。
 
-客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave` / `battle`（`pick` / `rub` / `replace` / `peek` / `showdown`）  
-服务端：`hello` / `authed` / `queued` / `queue_update` / `room_ready` / `match_update` / `battle_update` / `pong` / `error`
+客户端：`auth`（payload.accessToken）→ `queue` / `cancel` / `ping` / `leave` / `sync`（重连恢复）/ `battle`（`pick` / `rub` / `replace` / `peek` / `showdown`，商店阶段加 `buy` / `sell` / `refresh` / `shop_done`）  
+服务端：`hello` / `authed` / `queued` / `queue_update` / `queue_timeout` / `room_ready` / `match_update` / `match_event` / `pong` / `error`（`battle_update` 已停发）
 
-未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）。满 4 人：`room_ready` 带 `roomId`、`seed`、`modeId`、四人 `players`，随即 `match_update`。第一轮按配表开 1v1 子桌（经典模式为野怪热身）。摊牌只结算自己那桌；出伤仍走 `CombatDamage` / `CombatBonuses`，再乘模式表的轮次系数后扣败者 HP。无局内商店叠层、BOSS、燧石；对玩家不斩杀。
+协议取值常量集中在共享代码 `Card/Assets/Shared/Contracts/PvpProtocol.cs`（动作/事件/阶段）与 `BattleDtos.cs`（子桌阶段名），双端同源。
+
+未满 4 人：`queued` / `queue_update` 带 `players`（userId、nickName、avatarUrl）与 `timeoutMs`（60s 排队超时，到期本人收 `queue_timeout`）。满 4 人：`room_ready` 带 `roomId`、`seed`、`modeId`、四人 `players`，随即 `match_update`。每轮时间轴：fight（选牌）→ settle（比牌演出窗）→ shop（30s 商店）→ 下一轮；扣血淘汰、金币经济、名次奖励、断线代管与多实例路由见 docs/pvp-match.md。
 
 ## 登录与未结算对局
 

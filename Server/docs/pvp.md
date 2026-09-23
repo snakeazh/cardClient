@@ -1,22 +1,23 @@
 # PVP 房间
 
-排队、头像、短协议。多轮 1v1 编排见 [`pvp-match.md`](pvp-match.md)。
+排队、头像、短协议。多轮 1v1 编排（轮次/商店/奖励/代管/多实例）见 [`pvp-match.md`](pvp-match.md)。
 
 ## 规则
 
 - 一局 **4 名玩家**，不多不少。
 - **人齐才开房**：匹配队列凑满 4 人后才创建房间、下发 `room_ready`、允许开局。
 - 1～3 人时只排队，不生成 `roomId`，不发种子，不开始比牌。队内广播当前名单（含微信/抖音头像 URL 与昵称）。
-- 排队中可 `cancel` / `leave` / 断线出队，空位由后续进队的人补。
+- 排队有服务端超时（`PvpRules.QueueTimeoutMs`，当前 60s）：到期踢出并给本人发 `queue_timeout`，其余排队者收 `queue_update`。`queued` / `queue_update` 都带 `timeoutMs`，客户端以它为准。
+- 排队中可 `cancel` / `leave` / 断线出队。**开房后断线不是退赛**：座位由服务端代管（自动选牌锁定），重连发 `sync` 恢复，详见 pvp-match.md。
 - 开房后立刻用房间 `seed` 走共享 `BattleEngine(PvpMode)` 发牌；比牌指令与单机主线同一套 `Apply`。
-- 出伤与 PVE 玩家同一公式：开房读各人主档 `LastHeroId`、天赋袋和**已解锁圣物 ID**（`ShopRelicIds`）。摊牌时 `CombatBonuses` 填英雄攻击/生命、天赋加攻与倍率、圣物本手倍率/加攻、英雄伤害%、暴击、追击。PVP 没有闯关商店叠层、BOSS、燧石；未亮出牌类圣物本回合为 0；斩杀不对玩家生效。
+- 出伤与 PVE 玩家同一公式：开房读各人主档 `LastHeroId` 与天赋袋；圣物**开局不带**，由局内商店购买后下一轮生效（摊牌时 `CombatBonuses` 结算圣物本手倍率/加攻，英雄伤害%、暴击、追击照旧）。PVP 没有 BOSS、燧石；斩杀不对玩家生效。
 - 头像是登录时客户端上报的社交头像 URL，不是局内英雄 `People1`。WebSocket **不传图片**，只传 URL。
-- 牌面不上内部 `Card` struct，只下发 `suit`/`rank` 整数。摊牌前只能看到自己的 3 张。
+- 牌面不上内部 `Card` struct，只下发 `suit`/`rank` 整数。摊牌前只能看到自己的牌。
 
 ```
-queue → 队列人数 < 4 → 自己收到 queued，其他人收到 queue_update（players 1～3）
-queue → 队列人数 = 4 → 创建房间 → 四人各收 room_ready → 服务端 Deal → 各收 battle_update
-客户端 battle { action: "showdown" } → 服务端摊牌 → 四人各收 battle_update（含对手牌与胜者）
+queue → 队列人数 < 4 → 自己收到 queued（带 timeoutMs），其他人收到 queue_update
+queue → 队列人数 = 4 → 创建房间 → 四人各收 room_ready → 各收 match_update（第 1 轮已开局）
+对局内一切状态变化 → match_update 全量快照 + match_event 增量事件（见 pvp-match.md）
 ```
 
 ## 登录上报资料
@@ -44,12 +45,15 @@ POST /v1/auth/login
 | C | auth | `{ "accessToken" }` |
 | S | authed | `{ "userId" }` |
 | C | queue | 入队 |
-| S | queued | 自己入队且未满 4：`{ "players": [1～3] }` |
-| S | queue_update | 有人加入/退出，发给队内其他人：`{ "players": [1～3] }` |
+| S | queued | 自己入队且未满 4：`{ "players": [1～3], "timeoutMs": 60000 }` |
+| S | queue_update | 有人加入/退出/超时，发给队内其他人：同 queued |
+| S | queue_timeout | 排队超时（60s）被踢出 |
 | S | room_ready | 四人到齐才发，见下 |
-| S | battle_update | 开房发牌后立刻下发；摊牌后再发一次。按观众座位隐藏对手牌 |
-| C | battle | `{ "action": "showdown" }`，任意在座玩家可摊牌；`open` 同义 |
-| C | cancel / leave | 出队；已开房则离开对局 |
+| S | match_update | 对局全量快照（含 stateVersion/events/shop），见 pvp-match.md |
+| S | match_event | 阶段/结算增量事件，见 pvp-match.md |
+| C | battle | `{ "action", "index"?, "indexes"? }`，动作清单见 pvp-match.md |
+| C | sync | 断线重连后拉全量快照；不在对局返回 `error(not_in_battle)` |
+| C | cancel / leave | 出队；对局中 leave 离开对局（断线不算 leave） |
 | C / S | ping / pong | 心跳 |
 | S | error | `{ "code", "message" }` |
 
@@ -65,6 +69,7 @@ POST /v1/auth/login
 {
   "roomId": "...",
   "seed": 123,
+  "modeId": 1,
   "players": [
     { "userId": "...", "nickName": "张三", "avatarUrl": "https://..." },
     { "userId": "...", "nickName": "李四", "avatarUrl": "https://..." },
@@ -76,25 +81,7 @@ POST /v1/auth/login
 
 四人收到同一 `roomId` / `seed` 和完整 `players`。客户端按 `players[]` 画 4 个槽，空位占位。不要用 `opponentUserId`。
 
-`battle_update` payload（发牌后、对自己视角）：
-
-```json
-{
-  "roomId": "...",
-  "seed": 123,
-  "mode": "pvp",
-  "phase": "dealt",
-  "viewerSeat": 0,
-  "winners": [],
-  "seats": [
-    { "seatId": 0, "userId": "...", "nickName": "张三", "isHuman": true, "alive": true,
-      "cards": [ { "suit": 1, "rank": 1 }, { "suit": 4, "rank": 13 }, { "suit": 2, "rank": 7 } ] },
-    { "seatId": 1, "userId": "...", "nickName": "李四", "isHuman": true, "alive": true, "cards": null }
-  ]
-}
-```
-
-`suit`：1 红桃 2 方片 3 梅花 4 黑桃。`rank`：1=A … 13=K。摊牌后 `phase` 为 `showdown`，四人 `cards` 都有值，并带 `handType` / `level` / `label` / `damage` 与 `winners`（座位下标）。`damage` 是该座位按玩家出伤公式算出的伤害。
+`suit`：1 红桃 2 方片 3 梅花 4 黑桃。`rank`：1=A … 13=K。对局座位/牌面结构见 pvp-match.md 的 `match_update`（`duel` 字段，摊牌后 `duel.phase` 为 `showdown`，带 `handType` / `level` / `label` / `damage` 与 `winners`）。
 
 ## 客户端画头像
 

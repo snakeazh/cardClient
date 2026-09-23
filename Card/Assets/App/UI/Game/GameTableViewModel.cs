@@ -505,13 +505,13 @@ namespace App.UI
 
             var userId = GameApi.Client != null ? GameApi.Client.UserId : string.Empty;
             _pvpDriver.OnEvent(evt, userId);
-            if (evt.Kind == "shop_start")
+            if (evt.Kind == PvpEventKinds.ShopStart)
             {
                 TryPresentShopPopup();
                 return;
             }
 
-            if (evt.Kind == "player_offline" || evt.Kind == "player_online")
+            if (evt.Kind == PvpEventKinds.PlayerOffline || evt.Kind == PvpEventKinds.PlayerOnline)
             {
                 NotifyPvpPresence(evt, userId);
             }
@@ -531,7 +531,7 @@ namespace App.UI
                 return;
             }
 
-            Toast.Show(evt.Kind == "player_offline" ? $"{nick} 掉线了，由托管代打" : $"{nick} 回来了");
+            Toast.Show(evt.Kind == PvpEventKinds.PlayerOffline ? $"{nick} 掉线了，由托管代打" : $"{nick} 回来了");
         }
 
         private string FindPvpNick(string userId)

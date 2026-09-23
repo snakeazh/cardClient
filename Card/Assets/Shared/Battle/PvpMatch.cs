@@ -75,10 +75,10 @@ namespace CardShare.Battle
 
     public sealed class PvpMatch
     {
-        public const string PhaseFight = "fight";
-        public const string PhaseSettle = "settle";
-        public const string PhaseShop = "shop";
-        public const string PhaseFinished = "finished";
+        public const string PhaseFight = PvpPhases.Fight;
+        public const string PhaseSettle = PvpPhases.Settle;
+        public const string PhaseShop = PvpPhases.Shop;
+        public const string PhaseFinished = PvpPhases.Finished;
 
         private readonly IGameTables _tables;
         private readonly PvpModeConfig _mode;
@@ -311,7 +311,7 @@ namespace CardShare.Battle
                 }
 
                 fighter.Disconnected = disconnected;
-                Bump(disconnected ? "player_offline" : "player_online", userId, 0);
+                Bump(disconnected ? PvpEventKinds.PlayerOffline : PvpEventKinds.PlayerOnline, userId, 0);
                 if (!disconnected || Phase != PhaseFight)
                 {
                     return;
@@ -355,7 +355,7 @@ namespace CardShare.Battle
             lock (_gate)
             {
                 // 编辑器测试：任意阶段可塞圣物（不扣金、不占货架上限校验外的重复件限制仍保留）。
-                if (string.Equals(action, "debug_grant", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(action, PvpActions.DebugGrant, StringComparison.OrdinalIgnoreCase))
                 {
                     var grantee = FighterOf(userId);
                     DebugGrantRelic(grantee, index);
@@ -384,10 +384,10 @@ namespace CardShare.Battle
                 var seat = duel.ViewerSeat(userId);
                 switch (action)
                 {
-                    case "pick":
+                    case PvpActions.Pick:
                         duel.Pick(seat, indexes ?? Array.Empty<int>());
                         break;
-                    case "rub":
+                    case PvpActions.Rub:
                         if (fighter.RubLeft <= 0)
                         {
                             throw new InvalidOperationException("No rub left.");
@@ -396,7 +396,7 @@ namespace CardShare.Battle
                         duel.Rub(seat, index);
                         fighter.RubLeft--;
                         break;
-                    case "replace":
+                    case PvpActions.Replace:
                         if (fighter.ReplaceLeft <= 0)
                         {
                             throw new InvalidOperationException("No replace left.");
@@ -405,7 +405,7 @@ namespace CardShare.Battle
                         duel.Replace(seat);
                         fighter.ReplaceLeft--;
                         break;
-                    case "peek":
+                    case PvpActions.Peek:
                         if (fighter.PeekLeft <= 0)
                         {
                             throw new InvalidOperationException("No peek left.");
@@ -419,8 +419,8 @@ namespace CardShare.Battle
                         }
 
                         break;
-                    case "showdown":
-                    case "open":
+                    case PvpActions.Showdown:
+                    case PvpActions.Open:
                         duel.LockSeat(seat);
                         SettleResolvedDuels();
                         break;
@@ -580,7 +580,7 @@ namespace CardShare.Battle
             PhaseDeadlineUtcMs = _mode.OpenPhaseSeconds > 0
                 ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.DealAnimMs + _mode.OpenPhaseSeconds * 1000L
                 : 0;
-            Bump("round_start", string.Empty, Round);
+            Bump(PvpEventKinds.RoundStart, string.Empty, Round);
             SettleResolvedDuels();
             TryAdvanceRound();
         }
@@ -733,10 +733,10 @@ namespace CardShare.Battle
 
         private void BumpDuelResolved(PvpDuelTable duel, int damage)
         {
-            Bump("duel_resolved", duel.LeftUserId, damage);
+            Bump(PvpEventKinds.DuelResolved, duel.LeftUserId, damage);
             if (!duel.VsMonster)
             {
-                Bump("duel_resolved", duel.RightUserId, damage);
+                Bump(PvpEventKinds.DuelResolved, duel.RightUserId, damage);
             }
         }
 
@@ -760,7 +760,7 @@ namespace CardShare.Battle
         {
             Phase = PhaseSettle;
             PhaseDeadlineUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.SettleAnimMs;
-            Bump("settle_start", string.Empty, 0);
+            Bump(PvpEventKinds.SettleStart, string.Empty, 0);
         }
 
         private void AdvanceFromSettle()
@@ -806,7 +806,7 @@ namespace CardShare.Battle
                 PvpShopRules.FillOffers(fighter, _tables, _shopRandom);
             }
 
-            Bump("shop_start", string.Empty, 0);
+            Bump(PvpEventKinds.ShopStart, string.Empty, 0);
             if (AllShopDone())
             {
                 AdvanceFromShop();
@@ -842,16 +842,16 @@ namespace CardShare.Battle
 
             switch (action)
             {
-                case "buy":
+                case PvpActions.Buy:
                     BuyRelic(fighter, index);
                     break;
-                case "sell":
+                case PvpActions.Sell:
                     SellRelic(fighter, index);
                     break;
-                case "refresh":
+                case PvpActions.Refresh:
                     RefreshShop(fighter);
                     break;
-                case "shop_done":
+                case PvpActions.ShopDone:
                     fighter.ShopDone = true;
                     if (AllShopDone())
                     {
@@ -1020,7 +1020,7 @@ namespace CardShare.Battle
                     _fighters[order[i]].Hp = 0;
                 }
 
-                Bump("player_eliminated", _fighters[order[i]].UserId, _fighters[order[i]].Rank);
+                Bump(PvpEventKinds.PlayerEliminated, _fighters[order[i]].UserId, _fighters[order[i]].Rank);
             }
         }
 
@@ -1038,7 +1038,7 @@ namespace CardShare.Battle
 
             FillRankRewards();
             FinishedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            Bump("match_finished", string.Empty, 0);
+            Bump(PvpEventKinds.MatchFinished, string.Empty, 0);
         }
 
         private void FinishByHp()
@@ -1066,7 +1066,7 @@ namespace CardShare.Battle
 
             FillRankRewards();
             FinishedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            Bump("match_finished", string.Empty, 0);
+            Bump(PvpEventKinds.MatchFinished, string.Empty, 0);
         }
 
         private void FillRankRewards()

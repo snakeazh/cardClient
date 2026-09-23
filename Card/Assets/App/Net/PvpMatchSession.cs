@@ -116,26 +116,26 @@ namespace App.Net
             State = state;
         }
 
-        public Task PickAsync(int[] indexes) => _ws.BattleAsync("pick", 0, indexes);
+        public Task PickAsync(int[] indexes) => _ws.BattleAsync(PvpActions.Pick, 0, indexes);
 
-        public Task RubAsync(int index) => _ws.BattleAsync("rub", index);
+        public Task RubAsync(int index) => _ws.BattleAsync(PvpActions.Rub, index);
 
-        public Task ReplaceAsync() => _ws.BattleAsync("replace");
+        public Task ReplaceAsync() => _ws.BattleAsync(PvpActions.Replace, 0);
 
-        public Task PeekAsync() => _ws.BattleAsync("peek");
+        public Task PeekAsync() => _ws.BattleAsync(PvpActions.Peek, 0);
 
-        public Task ShowdownAsync() => _ws.BattleAsync("showdown");
+        public Task ShowdownAsync() => _ws.BattleAsync(PvpActions.Showdown, 0);
 
-        public Task ShopBuyAsync(int relicId) => _ws.BattleAsync("buy", relicId);
+        public Task ShopBuyAsync(int relicId) => _ws.BattleAsync(PvpActions.Buy, relicId);
 
-        public Task ShopSellAsync(int relicId) => _ws.BattleAsync("sell", relicId);
+        public Task ShopSellAsync(int relicId) => _ws.BattleAsync(PvpActions.Sell, relicId);
 
-        public Task ShopRefreshAsync() => _ws.BattleAsync("refresh");
+        public Task ShopRefreshAsync() => _ws.BattleAsync(PvpActions.Refresh, 0);
 
-        public Task ShopDoneAsync() => _ws.BattleAsync("shop_done");
+        public Task ShopDoneAsync() => _ws.BattleAsync(PvpActions.ShopDone, 0);
 
         /// <summary>编辑器测试：PVP 向服务端添加圣物（index = relicId）。</summary>
-        public Task DebugGrantRelicAsync(int relicId) => _ws.BattleAsync("debug_grant", relicId);
+        public Task DebugGrantRelicAsync(int relicId) => _ws.BattleAsync(PvpActions.DebugGrant, relicId);
 
         /// <summary>等下一个 match_update（商店操作后等快照回刷新），超时返回 false。</summary>
         public async Task<bool> WaitNextUpdateAsync(int timeoutMs)
@@ -398,7 +398,7 @@ namespace App.Net
                     }
                 }
 
-                if (string.Equals(state.Phase, "finished", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(state.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase))
                 {
                     IsActive = false;
                     Finished?.Invoke();

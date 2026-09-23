@@ -8421,7 +8421,7 @@ namespace App.Game
             }
 
             var showdown = !deferHp && match.Duel != null &&
-                           string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
+                           string.Equals(match.Duel.Phase, BattlePhaseNames.Showdown, StringComparison.OrdinalIgnoreCase);
             SplitPvpSeats(match, userId, out var mine, out var foe, out _);
             BindPvpFighters(match, userId, applyHp: !deferHp);
             ApplyPvpShop(match);
@@ -8435,7 +8435,7 @@ namespace App.Game
         /// </summary>
         private void ApplyPvpShop(PvpMatchStateDto match)
         {
-            if (!string.Equals(match.Phase, "shop", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(match.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase))
             {
                 Run.ShopOfferIds.Clear();
                 _pvpOfferPrices.Clear();
@@ -8744,8 +8744,8 @@ namespace App.Game
             bool showdown,
             bool deferHp)
         {
-            var shopPhase = string.Equals(match.Phase, "shop", StringComparison.OrdinalIgnoreCase);
-            var settlePhase = string.Equals(match.Phase, "settle", StringComparison.OrdinalIgnoreCase);
+            var shopPhase = string.Equals(match.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase);
+            var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
             CopyPvpHand(Player, mine, true);
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
@@ -8779,7 +8779,7 @@ namespace App.Game
                 // 注意用 duelShowdown 而不是 foe.Selected != null：透视（peek）预摊牌也带
                 // 对方显式选牌，但透视要看全部 5 张，不能应用选中态。
                 var duelShowdown = match.Duel != null &&
-                                   string.Equals(match.Duel.Phase, "showdown", StringComparison.OrdinalIgnoreCase);
+                                   string.Equals(match.Duel.Phase, BattlePhaseNames.Showdown, StringComparison.OrdinalIgnoreCase);
                 CopyPvpHand(enemy, foe, duelShowdown);
             }
             else
@@ -8798,7 +8798,7 @@ namespace App.Game
             Phase = shopPhase ? GamePhase.Shop : (showdown ? GamePhase.Showdown : GamePhase.WaitingOpen);
             Player.Looked = true;
             var self = FindPvpSelf(match, userId);
-            if (string.Equals(match.Phase, "finished", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(match.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase))
             {
                 Hint = FormatPvpRank(self);
             }

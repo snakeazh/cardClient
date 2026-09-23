@@ -118,6 +118,14 @@ namespace CardShare.Contracts
         Showdown = 2
     }
 
+    /// <summary>BattlePhase 的网络传输名（BattleStateDto.Phase 的取值）。双端协议常量，只增不改。</summary>
+    public static class BattlePhaseNames
+    {
+        public const string Idle = "idle";
+        public const string Dealt = "dealt";
+        public const string Showdown = "showdown";
+    }
+
     public sealed class CardDto
     {
         public int Suit { get; set; }

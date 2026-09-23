@@ -180,9 +180,9 @@ namespace CardShare.Battle
         {
             switch (phase)
             {
-                case BattlePhase.Dealt: return "dealt";
-                case BattlePhase.Showdown: return "showdown";
-                default: return "idle";
+                case BattlePhase.Dealt: return BattlePhaseNames.Dealt;
+                case BattlePhase.Showdown: return BattlePhaseNames.Showdown;
+                default: return BattlePhaseNames.Idle;
             }
         }
 

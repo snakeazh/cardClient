@@ -14,19 +14,22 @@ public sealed class PvpTimeoutSweeper : BackgroundService
     private readonly PvpRewardService _rewards;
     private readonly IPvpMatchmaker _matchmaker;
     private readonly IServiceScopeFactory _scopes;
+    private readonly ILogger<PvpTimeoutSweeper> _logger;
 
     public PvpTimeoutSweeper(
         PvpMatchHost matches,
         PvpMessageRouter router,
         PvpRewardService rewards,
         IPvpMatchmaker matchmaker,
-        IServiceScopeFactory scopes)
+        IServiceScopeFactory scopes,
+        ILogger<PvpTimeoutSweeper> logger)
     {
         _matches = matches;
         _router = router;
         _rewards = rewards;
         _matchmaker = matchmaker;
         _scopes = scopes;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -53,8 +56,9 @@ public sealed class PvpTimeoutSweeper : BackgroundService
                     PvpRules.QueueTimeoutMs,
                     out remaining);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "pvp sweep tick failed");
                 continue;
             }
 

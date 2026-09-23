@@ -14,6 +14,7 @@ public sealed class PvpBusSubscriber : BackgroundService
     private readonly PvpRewardService _rewards;
     private readonly PvpMessageRouter _router;
     private readonly IPvpBus _bus;
+    private readonly ILogger<PvpBusSubscriber> _logger;
 
     public PvpBusSubscriber(
         IServiceProvider services,
@@ -21,7 +22,8 @@ public sealed class PvpBusSubscriber : BackgroundService
         PvpMatchHost matches,
         PvpRewardService rewards,
         PvpMessageRouter router,
-        IPvpBus bus)
+        IPvpBus bus,
+        ILogger<PvpBusSubscriber> logger)
     {
         _services = services;
         _hub = hub;
@@ -29,6 +31,7 @@ public sealed class PvpBusSubscriber : BackgroundService
         _rewards = rewards;
         _router = router;
         _bus = bus;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,8 +70,9 @@ public sealed class PvpBusSubscriber : BackgroundService
             // 目标 socket 在本实例才发（hub 内部判空，不在则丢）。
             await _hub.SendAsync(message.UserId, message.Envelope, CancellationToken.None);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "pvp bus user-message delivery failed");
         }
     }
 
@@ -94,8 +98,9 @@ public sealed class PvpBusSubscriber : BackgroundService
                     _router, _matches, message.UserId, message.Envelope, CancellationToken.None);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "pvp bus command handling failed");
         }
     }
 }

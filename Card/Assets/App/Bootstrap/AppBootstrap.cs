@@ -35,6 +35,10 @@ namespace App.Bootstrap
     /// </summary>
     public sealed class AppBootstrap : MonoBehaviour
     {
+        [Header("网络")]
+        [Tooltip("关闭后不连服务器：启动跳过登录，闯关走本地局（PVP/商店云端等不可用）")]
+        [SerializeField] private bool enableServerConnection = true;
+
         private AppServicesHost _services;
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
@@ -51,12 +55,8 @@ namespace App.Bootstrap
 
         private async void Start()
         {
-            // 微信小游戏端锁 60：设 120 会在高刷屏上满负载发热降频，帧率反而更低更不稳
-#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
-            Application.targetFrameRate = 60;
-#else
-            Application.targetFrameRate = 120;
-#endif
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();
@@ -314,9 +314,17 @@ namespace App.Bootstrap
 
         private async Task ConnectAndPrepareAsync()
         {
+            GameApiSettings.Enabled = enableServerConnection;
+
             var client = new GameApiClient(_services.Resolve<ISaveService>());
             _services.Register(client);
             GameApi.Bind(client);
+
+            if (!GameApiSettings.Enabled)
+            {
+                AppLog.Info(LogChannel.Net, "server connection disabled, skip login");
+                return;
+            }
 
             var dialogs = _services.Resolve<IDialogService>();
             await PveSessionGate.ConnectWithRetryAsync(

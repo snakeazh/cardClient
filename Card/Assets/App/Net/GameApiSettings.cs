@@ -9,6 +9,12 @@ namespace App.Net
         // public const string DefaultBaseUrl = "http://127.0.0.1:5254";
         public static string BaseUrl { get; set; } = DefaultBaseUrl;
 
+        /// <summary>
+        /// 是否连接服务器。关闭后启动不登录、闯关不建服务端 run，走本地局。
+        /// 由 AppBootstrap 序列化字段在启动时写入。
+        /// </summary>
+        public static bool Enabled { get; set; } = true;
+
         public static string WebSocketUrl
         {
             get

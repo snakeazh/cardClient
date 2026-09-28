@@ -22,6 +22,26 @@ namespace App.Game.Editor
         private const string OneHitMenuPath = "Debug/外挂/一击必杀";
         private const string ExtraAttackMenuPath = "Debug/外挂/强制连击";
         private const string ForceMissMenuPath = "Debug/外挂/强制MISS";
+        private const string ServerMenuPath = "Debug/网络/连接服务器";
+
+        [MenuItem(ServerMenuPath, false, 1)]
+        public static void ToggleServerConnection()
+        {
+            GameApiSettings.Enabled = !GameApiSettings.Enabled;
+            Menu.SetChecked(ServerMenuPath, GameApiSettings.Enabled);
+            Debug.Log($"[网络] 连接服务器 {(GameApiSettings.Enabled ? "开启" : "关闭")}（下次启动以 AppBootstrap 上的勾选为准）");
+            if (!GameApiSettings.Enabled)
+            {
+                Debug.LogWarning("[网络] 已关闭：当前会话不再主动连服；闯关将走本地局。重启 Play 后仍以场景里 AppBootstrap.enableServerConnection 为准。");
+            }
+        }
+
+        [MenuItem(ServerMenuPath, true)]
+        public static bool ToggleServerConnectionValidate()
+        {
+            Menu.SetChecked(ServerMenuPath, GameApiSettings.Enabled);
+            return true;
+        }
 
         [MenuItem("Debug/外挂/添加指定圣物", false, 16)]
         public static void OpenGrantRelic()

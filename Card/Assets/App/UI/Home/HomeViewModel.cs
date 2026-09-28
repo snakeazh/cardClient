@@ -32,6 +32,7 @@ namespace App.UI
         private readonly GameTableViewModel _table;
         private readonly PvpMatchSession _pvp;
         private bool _pvpStarting;
+        private bool _openingLevel;
 
         public HomeViewModel(
             IUIManager ui,
@@ -56,7 +57,7 @@ namespace App.UI
             _pvp = pvp;
             Resources = resources;
             StaminaText = new ObservableProperty<string>();
-            StartCommand = new RelayCommand(OpenLevelUI);
+            StartCommand = new RelayCommand(OpenLevelUI, () => !_openingLevel);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
@@ -151,6 +152,13 @@ namespace App.UI
 
         private async void OpenLevelUI()
         {
+            if (_openingLevel)
+            {
+                return;
+            }
+
+            _openingLevel = true;
+            StartCommand.RaiseCanExecuteChanged();
             try
             {
                 _navigation.HideBar();
@@ -164,6 +172,11 @@ namespace App.UI
                 AppLog.Exception(LogChannel.UI, ex);
                 await _navigation.EnsureShown();
                 _toast?.ShowWarning("选关界面打开失败，请重试");
+            }
+            finally
+            {
+                _openingLevel = false;
+                StartCommand.RaiseCanExecuteChanged();
             }
         }
 
@@ -193,6 +206,12 @@ namespace App.UI
             PvpCommand.RaiseCanExecuteChanged();
             try
             {
+                if (!GameApiSettings.Enabled)
+                {
+                    Toast.Error("服务器连接已关闭");
+                    return;
+                }
+
                 if (!GameApi.IsReady)
                 {
                     await PveSessionGate.ConnectWithRetryAsync(

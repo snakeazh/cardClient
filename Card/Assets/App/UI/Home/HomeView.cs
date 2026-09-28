@@ -22,9 +22,20 @@ namespace App.UI
             _playerItem = GetComponentInChildren<PlayerItem>(true);
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
-            Binding.BindCommand(UI.GetGameObject("TTRewardItem").GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
+            BindTTRewardItem();
             Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);
             BindHero();
+        }
+
+        /// <summary>抖音侧边栏奖励入口；微信小游戏无此能力，直接隐藏。</summary>
+        private void BindTTRewardItem()
+        {
+            var item = UI.GetGameObject("TTRewardItem");
+#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            item.SetActive(false);
+#else
+            Binding.BindCommand(item.GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
+#endif
         }
 
         protected override Task OnViewOpen()

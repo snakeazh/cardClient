@@ -376,53 +376,56 @@ namespace App.UI
                 return;
             }
 
-            if (!GameApi.IsReady)
-            {
-                await PveSessionGate.ConnectWithRetryAsync(
-                    _ui.Dialogs,
-                    UnityEngine.SystemInfo.deviceUniqueIdentifier,
-                    "Editor");
-                if (!GameApi.IsReady)
-                {
-                    Toast.Error("未连接服务器");
-                    return;
-                }
-            }
-
             _progress.SetLastHero(SelectedHeroId.Value);
             _progress.SetLastLevel(SelectedLevelId.Value);
             _progress.SetLastDifficulty(SelectedDifficulty.Value);
-            try
+
+            if (GameApiSettings.Enabled)
             {
-                var started = await GameApi.Client.StartPveAsync(SelectedLevelId.Value, SelectedHeroId.Value);
-                GameApi.ApplyProfile(started.Profile);
-                _session.StartNewRun();
-                _session.BindServerRun(started.Run);
-            }
-            catch (GameApiException ex)
-            {
-                if (ex.Code == ErrorCodes.InsufficientEnergy)
+                if (!GameApi.IsReady)
                 {
-                    await PresentEnergyInsufficientPopupAsync();
-                    return;
+                    await PveSessionGate.ConnectWithRetryAsync(
+                        _ui.Dialogs,
+                        UnityEngine.SystemInfo.deviceUniqueIdentifier,
+                        "Editor");
+                    if (!GameApi.IsReady)
+                    {
+                        Toast.Error("未连接服务器");
+                        return;
+                    }
                 }
 
-                if (ex.Code == PveSessionGate.ActiveRunExists || ex.Code == "active_run_exists")
+                try
                 {
-                    await PveSessionGate.ForfeitActiveRunIfAnyAsync(_ui.Dialogs);
-                    Toast.Show("上次未完成的闯关已按失败结算");
+                    var started = await GameApi.Client.StartPveAsync(SelectedLevelId.Value, SelectedHeroId.Value);
+                    GameApi.ApplyProfile(started.Profile);
+                    _session.StartNewRun();
+                    _session.BindServerRun(started.Run);
+                }
+                catch (GameApiException ex)
+                {
+                    if (ex.Code == ErrorCodes.InsufficientEnergy)
+                    {
+                        await PresentEnergyInsufficientPopupAsync();
+                        return;
+                    }
+
+                    if (ex.Code == PveSessionGate.ActiveRunExists || ex.Code == "active_run_exists")
+                    {
+                        await PveSessionGate.ForfeitActiveRunIfAnyAsync(_ui.Dialogs);
+                        Toast.Show("上次未完成的闯关已按失败结算");
+                        return;
+                    }
+
+                    Toast.Error(GameApi.Describe(ex));
                     return;
                 }
-
-                Toast.Error(GameApi.Describe(ex));
-                return;
             }
 
             _session.StartNewRun();
             _tableVm.ResetOpeningGate();
             BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
-            // 等局内 OnViewOpen/预加载完成后再关选关，避免露底闪一下。
-            await _ui.Close(this);
+            // 先 Open GameUI（选关先当遮罩盖住加载），等 OnViewOpen/预加载完成后再拆掉选关，避免露底闪一下。
             await _ui.Open(_tableVm);
             BattleTrace.Log("StartGame GameUI ready, closing LevelUI");
             await _ui.Close(this);

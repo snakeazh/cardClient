@@ -14,6 +14,12 @@ namespace App.Net
 
         public static async Task ConnectWithRetryAsync(IDialogService dialogs, string deviceCode, string nickName)
         {
+            if (!GameApiSettings.Enabled)
+            {
+                AppLog.Info(LogChannel.Net, "server connection disabled, skip ConnectWithRetry");
+                return;
+            }
+
             while (true)
             {
                 try

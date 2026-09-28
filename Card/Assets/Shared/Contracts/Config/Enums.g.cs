@@ -423,6 +423,23 @@ namespace CardShare.Contracts.Config
     }
 
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 EffectsType 枚举。
+    /// </summary>
+    public enum EffectsType
+    {
+        /// <summary>
+        /// 受击特效
+        /// </summary>
+        Hit = 1,
+
+        /// <summary>
+        /// 攻击特效
+        /// </summary>
+        Attack = 2,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 GuideStepType 枚举。
     /// </summary>
     public enum GuideStepType

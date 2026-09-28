@@ -13,6 +13,7 @@ namespace App.Resources
         public const string GuideStepConfig = "Config/GuideStepConfig";
         public const string HandScoreConfig = "Config/HandScoreConfig";
         public const string HeroConfig = "Config/HeroConfig";
+        public const string HeroEffectsConfig = "Config/HeroEffectsConfig";
         public const string HeroEntryConfig = "Config/HeroEntryConfig";
         public const string ItemConfig = "Config/ItemConfig";
         public const string LevelConfig = "Config/LevelConfig";

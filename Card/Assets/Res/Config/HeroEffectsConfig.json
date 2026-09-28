@@ -1,0 +1,14 @@
+[
+  {
+    "Id": 101,
+    "Type": 2,
+    "Effects": "HeroAttackArrow01",
+    "Time": 1.5
+  },
+  {
+    "Id": 201,
+    "Type": 1,
+    "Effects": "HeroAttackFenlie01",
+    "Time": 0
+  }
+]

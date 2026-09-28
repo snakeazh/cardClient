@@ -47,6 +47,11 @@ namespace CardShare.Contracts.Config
         public int[] HeroEntryId;
 
         /// <summary>
+        /// 英雄特效Id
+        /// </summary>
+        public int[] HeroEffects;
+
+        /// <summary>
         /// 解锁难度条件
         /// </summary>
         public int UnlockCondition;

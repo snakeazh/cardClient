@@ -10,7 +10,8 @@ public sealed class PlayerRow
 {
     public Guid UserId { get; set; }
 
-    public int SaveVersion { get; set; }
+    // players 表的历史列 SaveVersion 已废弃保留（并发由 IPlayerLock 保证，见 PlayerProfile 注释）；
+    // 老库列仍在，由 BackendStartup 的 ALTER ... SET DEFAULT 兼容不再带该列的 INSERT。
 
     public string ProfileJson { get; set; } = "{}";
 
@@ -126,14 +127,12 @@ public sealed class PostgresPlayerRepository : IPlayerRepository
             _db.Players.Add(new PlayerRow
             {
                 UserId = profile.UserId,
-                SaveVersion = profile.SaveVersion,
                 ProfileJson = json,
                 UpdatedAt = DateTimeOffset.UtcNow
             });
         }
         else
         {
-            row.SaveVersion = profile.SaveVersion;
             row.ProfileJson = json;
             row.UpdatedAt = DateTimeOffset.UtcNow;
         }

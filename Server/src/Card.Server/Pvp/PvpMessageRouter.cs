@@ -15,10 +15,12 @@ public sealed class PvpMessageRouter
         _bus = bus;
     }
 
-    public IPvpBus Bus => _bus;
-
     public Task SendToUser(Guid userId, WsEnvelope envelope, CancellationToken cancellationToken)
         => _hub.Contains(userId)
             ? _hub.SendAsync(userId, envelope, cancellationToken)
             : _bus.PublishToUserAsync(userId, envelope, cancellationToken);
+
+    /// <summary>转发 battle/sync 命令给房主实例。返回 false = 无总线（单实例），调用方按本地未命中处理。</summary>
+    public Task<bool> PublishCommandAsync(Guid roomId, Guid userId, WsEnvelope envelope, CancellationToken cancellationToken)
+        => _bus.PublishCommandAsync(roomId, userId, envelope, cancellationToken);
 }

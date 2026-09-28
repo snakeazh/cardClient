@@ -208,6 +208,253 @@ namespace CardShare.Battle
             setup.Attack = Math.Max(0, fighter.Combat.Attack + SelfDecayAttackTotal(tables, fighter));
         }
 
+        // ——— 治疗与血量上限：PVP 服务端权威结算，口径对齐 PVE GameSession（ApplyRelicMaxHpDelta / HealPlayer） ———
+
+        /// <summary>获得圣物（商店购买/调试发放）时的面板结算：血量上限类（HeroHpMax）上限+X 且当前血同步+X。</summary>
+        public static void ApplyAcquireStats(IGameTables tables, PvpFighter fighter, int relicId)
+        {
+            ApplyMaxHpDelta(fighter, SumRelicInt(tables, relicId, MechanismType.HeroHpMax));
+        }
+
+        /// <summary>出售圣物：血量上限反向回收（上限-X、当前血夹到新上限，血不低于 1）。</summary>
+        public static void ApplySellStats(IGameTables tables, PvpFighter fighter, int relicId)
+        {
+            ApplyMaxHpDelta(fighter, -SumRelicInt(tables, relicId, MechanismType.HeroHpMax));
+        }
+
+        /// <summary>回合开始：绷带/小精灵回血（HeroHpReplyEveryRoundEnding）、永恒之心上限成长（EveryRoundGetHpMax）、
+        /// 保温杯低血回复（ThermosCup，语义"回合结束后"，在此按结算窗口等效判定）。</summary>
+        public static void ApplyRoundStart(IGameTables tables, PvpFighter fighter)
+        {
+            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
+            ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.EveryRoundGetHpMax));
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.ThermosCup)
+                {
+                    return;
+                }
+
+                var threshold = ValueAt(entry);
+                if (threshold > 0f && fighter.MaxHp > 0 && fighter.Hp < fighter.MaxHp * threshold)
+                {
+                    Heal(fighter, (int)Math.Round(ValueAt(entry, 1)));
+                }
+            });
+        }
+
+        /// <summary>使用消耗型圣物：结算 PVP 支持的即时效果。返回 false 表示该圣物含 PVP 未支持的
+        /// 消耗类型（如 PVE 专属的改牌型/商店折扣），调用方应拒绝使用，防止花钱白用。</summary>
+        public static bool TryApplyConsumable(IGameTables tables, PvpFighter fighter, RelicConfig relic)
+        {
+            if (relic?.MechanismId == null || relic.MechanismId.Length == 0)
+            {
+                return false;
+            }
+
+            var anyApplied = false;
+            var allSupported = true;
+            ForEachRelicEntry(tables, relic, entry =>
+            {
+                switch (entry.Type)
+                {
+                    case MechanismType.HealHpPercent:
+                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
+                        anyApplied = true;
+                        break;
+                    case MechanismType.MaxHpUpAndHeal:
+                        // 配表 Value=[X, X]：上限+X 且当前血同步+X（等效"立即恢复 X"，同 PVE 只取 value[0] 的口径）。
+                        ApplyMaxHpDelta(fighter, (int)Math.Round(ValueAt(entry)));
+                        anyApplied = true;
+                        break;
+                    case MechanismType.UseRoundNullify:
+                        fighter.NullifyDamageNextHit = true;
+                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
+                        anyApplied = true;
+                        break;
+                    default:
+                        allSupported = false;
+                        break;
+                }
+            });
+            return anyApplied && allSupported;
+        }
+
+        /// <summary>圣物全部机制条目都被 PVP 结算消费才允许上架/使用；白名单外的圣物不上 PVP 商店货架。
+        /// 空机制（测试占位/纯收藏品）放行——没有效果也就没有"不支持的效果"。
+        /// 新增 PVP 机制（RelicCombat case / 本文件处理）时必须同步维护此集合，漏加只会少上架、不会卖废品。</summary>
+        public static bool IsPvpSupported(IGameTables tables, RelicConfig relic)
+        {
+            // 配置缺失时保守不上架（两个调用方实际都已判空，此处仅兜底防 NRE）。
+            if (relic == null)
+            {
+                return false;
+            }
+
+            if (relic.MechanismId == null || relic.MechanismId.Length == 0)
+            {
+                // 空机制消耗品用了没有任何效果，同样不允许上架。
+                return relic.UseType != 1 && relic.UseType != 2;
+            }
+
+            var supported = true;
+            ForEachRelicEntry(tables, relic, entry =>
+            {
+                if (!SupportedMechanisms.Contains(entry.Type))
+                {
+                    supported = false;
+                }
+            });
+            return supported;
+        }
+
+        /// <summary>PVP 结算支持的机制全集 = RelicCombat 的出伤/倍率/攻击 case + 本文件的回合/概率/治疗 + 技能次数注入。</summary>
+        private static readonly HashSet<MechanismType> SupportedMechanisms = new HashSet<MechanismType>
+        {
+            // RelicCombat：倍率
+            MechanismType.CardMagnification,
+            MechanismType.SquarePlate,
+            MechanismType.Spades,
+            MechanismType.RedHeart,
+            MechanismType.PlumBlossom,
+            MechanismType.Couplet,
+            MechanismType.Flush,
+            MechanismType.Straight,
+            MechanismType.StraightFlush,
+            MechanismType.Leopard,
+            MechanismType.EvenNumberCard,
+            MechanismType.OddNumberCard,
+            MechanismType.HeadCard,
+            MechanismType.SpecialACard,
+            MechanismType.Camera,
+            MechanismType.Cupid,
+            MechanismType.EveryUseRubbingNum,
+            MechanismType.NoSkill,
+            MechanismType.EveryRelic,
+            MechanismType.NoUseRubbingEveryRubbingNum,
+            MechanismType.AccumulatedNumOfCardType,
+            MechanismType.RubbingCardRelic,
+            MechanismType.ProOfUpCardType,
+            MechanismType.SpecialSevenCard,
+            MechanismType.DefeatGetMagnification,
+            MechanismType.NoKillMonsterGetMagnification,
+            MechanismType.FixedTypeCountMult,
+            MechanismType.ShopRefreshGetMult,
+            MechanismType.SelfDecayMult,
+            MechanismType.SelfMultWinLose,
+            MechanismType.UseConsumableGetMult,
+            MechanismType.UnshownRankMult,
+            MechanismType.CopyRandomRelic,
+            // RelicCombat：攻击
+            MechanismType.SquarePlateAttack,
+            MechanismType.SpadesAttack,
+            MechanismType.RedHeartAttack,
+            MechanismType.PlumBlossomAttack,
+            MechanismType.CoupletAttack,
+            MechanismType.StraightAttack,
+            MechanismType.FlushAttack,
+            MechanismType.StraightFlushAttack,
+            MechanismType.LeopardAttack,
+            MechanismType.SpecialEightCard,
+            MechanismType.DoubleCardAttack,
+            MechanismType.HeadCardAttack,
+            MechanismType.ACardAttack,
+            MechanismType.TheSwordOfVictory,
+            MechanismType.ConsumeFundsGetAttack,
+            MechanismType.SpecialSevenCardAttack,
+            MechanismType.CardProvideAttack,
+            MechanismType.EveryRubbingNum,
+            MechanismType.UseConsumableGetAttack,
+            MechanismType.SelfDecayAttack,
+            // 技能次数（CombatBonuses / BeforeCompare 注入）
+            MechanismType.RubbingCardsNum,
+            MechanismType.PerspectiveNum,
+            // 本文件：回合/概率
+            MechanismType.ReverseResult,
+            MechanismType.SelfDestroyPerRound,
+            MechanismType.PeekSteal,
+            MechanismType.SummonConsumable,
+            // 本文件：治疗/血量上限（回合与购买结算）
+            MechanismType.HeroHpMax,
+            MechanismType.HeroHpReplyEveryRoundEnding,
+            MechanismType.EveryRoundGetHpMax,
+            MechanismType.ThermosCup,
+            MechanismType.WinHeal,
+            MechanismType.DefeatGetHpMax,
+            MechanismType.HealHpPercent,
+            MechanismType.MaxHpUpAndHeal,
+            MechanismType.UseRoundNullify,
+        };
+
+        /// <summary>比牌获胜：月光酒回血（WinHeal）+ 激励徽章上限成长（DefeatGetHpMax）。</summary>
+        public static void ApplyWinRewards(IGameTables tables, PvpFighter fighter)
+        {
+            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
+            ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.DefeatGetHpMax));
+        }
+
+        private static void ApplyMaxHpDelta(PvpFighter fighter, int delta)
+        {
+            if (delta == 0)
+            {
+                return;
+            }
+
+            var maxHp = Math.Max(1, fighter.MaxHp + delta);
+            var hp = delta > 0 ? fighter.Hp + delta : Math.Min(fighter.Hp, maxHp);
+            if (hp < 1)
+            {
+                hp = 1;
+            }
+
+            fighter.MaxHp = maxHp;
+            fighter.Hp = hp;
+        }
+
+        private static int Heal(PvpFighter fighter, int amount)
+        {
+            if (amount <= 0 || fighter.Hp >= fighter.MaxHp)
+            {
+                return 0;
+            }
+
+            var healed = Math.Min(amount, fighter.MaxHp - fighter.Hp);
+            fighter.Hp += healed;
+            return healed;
+        }
+
+        /// <summary>按机制汇总已持有圣物的 value[0]（取整）。</summary>
+        private static int SumOwnedInt(IGameTables tables, PvpFighter fighter, MechanismType type)
+        {
+            var total = 0f;
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type == type)
+                {
+                    total += ValueAt(entry);
+                }
+            });
+            return (int)Math.Round(total);
+        }
+
+        /// <summary>按机制汇总单个圣物的 value[0]（取整，不要求已持有）。</summary>
+        private static int SumRelicInt(IGameTables tables, int relicId, MechanismType type)
+        {
+            var total = 0f;
+            if (tables.TryGetRelic(relicId, out var relic))
+            {
+                ForEachRelicEntry(tables, relic, entry =>
+                {
+                    if (entry.Type == type)
+                    {
+                        total += ValueAt(entry);
+                    }
+                });
+            }
+
+            return (int)Math.Round(total);
+        }
+
         private static void OnCompareResult(IGameTables tables, PvpFighter fighter, bool won)
         {
             ForEachEntry(tables, fighter, (relic, entry) =>

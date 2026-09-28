@@ -85,7 +85,7 @@ namespace App.UI.Popup
             CurItemNum = new ObservableProperty<string>("0/0");
             TipTitle = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>();
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
             BuildEntries();
             // 收藏页签已从界面移除，默认展示遗物页
             ApplyTab(IllustratedBookTab.Relic, force: true);
@@ -485,7 +485,7 @@ namespace App.UI.Popup
             return condition.Desc + "（" + progress + "）";
         }
 
-        private void Close()
+        private void ClosePop()
         {
             HideTip();
             _navigation.ShowHome();

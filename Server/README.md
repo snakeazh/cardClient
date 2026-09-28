@@ -19,7 +19,7 @@
 
 共享库规则（ET 式源码共享，源文件在 Unity 侧）：[`../Card/Assets/Shared/Battle/README.md`](../Card/Assets/Shared/Battle/README.md)、[`../Card/Assets/Shared/Contracts/README.md`](../Card/Assets/Shared/Contracts/README.md)。
 
-Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 只经过 `IPveRunService`，Auth 不依赖整份 PVE 服务。
+Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 走 `PveRunService.ResolveRunsOnLoginAsync`，Auth 只依赖这一个入口方法。
 
 组合根在 `Card.Server/Composition`：`AddCardInfrastructure` 只接线存适配器，`AddCardApplication` 注册用例服务。HTTP 按 `health` / `auth` / `player` / `pve` / `debug` 分文件映射，路径不变。
 

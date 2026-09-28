@@ -25,7 +25,7 @@ namespace App.UI.Popup
             AdInfo = new ObservableProperty<string>();
             ShowAdBtn = new ObservableProperty<bool>();
             AdCommand = new RelayCommand(WatchAd);
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         public ObservableProperty<string> Info { get; }
@@ -75,7 +75,7 @@ namespace App.UI.Popup
             }
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _dialogs.CloseWithResult(false);
         }

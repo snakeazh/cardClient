@@ -38,8 +38,6 @@ namespace App.Game
         private int _streetsWithoutRaise;
         private int _bettingRound = 1;
         private bool _streetHadRaise;
-        private bool _playerActedThisStreet;
-        private bool _aiStreetActive;
         private int _aiPass;
         private int _aiCursor;
         private bool _aiPendingOpen;
@@ -1012,7 +1010,6 @@ namespace App.Game
                 paid += rest;
             }
 
-            _playerActedThisStreet = true;
             Player.Status = $"全下 {paid}";
             Log($"{Player.Status}，奖池 {Pot}");
             ResolveAiStreet();
@@ -2862,10 +2859,47 @@ namespace App.Game
             return true;
         }
 
-        /// <summary>当前阶段能否使用该消耗品。货架预览传 <paramref name="requireOwned"/> = false。PVP 一律不可用（无使用入口）。</summary>
+        /// <summary>当前阶段能否使用该消耗品。货架预览传 <paramref name="requireOwned"/> = false。
+        /// PVP 走 <see cref="CanUsePvpRelicNow"/>（fight 阶段发 battle(use)，效果由服务端结算）。</summary>
         public bool CanUseRelicNow(int relicId, bool requireOwned = true)
         {
-            return !IsPvp && relicId > 0 && !TryGetRelicUseFailHint(relicId, requireOwned, out _);
+            if (IsPvp)
+            {
+                return CanUsePvpRelicNow(relicId);
+            }
+
+            return relicId > 0 && !TryGetRelicUseFailHint(relicId, requireOwned, out _);
+        }
+
+        /// <summary>PVP 消耗品可用：fight 阶段 + 已持有（快照镜像进 RelicConfigIds）+ UseType 1/2 +
+        /// 机制在 PVP 支持集内。权威校验在服务端 Act(use)，这里只做按钮态预判。</summary>
+        private bool CanUsePvpRelicNow(int relicId)
+        {
+            if (relicId <= 0)
+            {
+                return false;
+            }
+
+            var pvp = _pvpSession;
+            if (pvp == null || pvp.State == null
+                || !string.Equals(pvp.State.Phase, PvpPhases.Fight, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null || (relic.UseType != 1 && relic.UseType != 2))
+            {
+                return false;
+            }
+
+            if (!Run.RelicConfigIds.Contains(relicId))
+            {
+                return false;
+            }
+
+            var tables = UnityGameConfigLoader.Current;
+            return tables == null || CardShare.Battle.PvpRelicRuntime.IsPvpSupported(tables, relic);
         }
 
         private void AcquireShopRelic(int relicId, bool watchAd)
@@ -2965,6 +2999,12 @@ namespace App.Game
 
         public void UseRelic(int relicId)
         {
+            if (IsPvp)
+            {
+                UsePvpRelic(relicId);
+                return;
+            }
+
             if (TryGetRelicUseFailHint(relicId, requireOwned: true, out var failHint))
             {
                 Hint = failHint;
@@ -2974,6 +3014,25 @@ namespace App.Game
 
             var relic = RelicConfig.Get(relicId);
             ApplyConsumableUseCore(relicId);
+            Log($"使用遗物 {relic.Name}");
+            Hint = $"已使用 {relic.Name}";
+            Notify();
+        }
+
+        /// <summary>PVP 使用消耗型圣物：经命令队列发 battle(use)，治疗/上限/免伤由服务端权威结算，
+        /// 权威快照回来后 Updated 链路刷新血量与圣物栏（本地不预扣）。</summary>
+        private void UsePvpRelic(int relicId)
+        {
+            if (!CanUsePvpRelicNow(relicId))
+            {
+                Hint = "当前无法使用该装备";
+                Notify();
+                return;
+            }
+
+            var relic = RelicConfig.Get(relicId);
+            var pvp = _pvpSession;
+            _ = pvp.Invoker.EnqueueUseRelic(relicId);
             Log($"使用遗物 {relic.Name}");
             Hint = $"已使用 {relic.Name}";
             Notify();
@@ -4161,7 +4220,6 @@ namespace App.Game
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
-            _playerActedThisStreet = false;
             _pendingRubIndex = -1;
             LastResult = string.Empty;
             Run.RubsLeft = 0;
@@ -4516,7 +4574,6 @@ namespace App.Game
                 ApplyRaisedCall(units);
             }
 
-            _playerActedThisStreet = true;
             History.NotePlayerBet(raise, Player.Looked, paid, stackBefore, facingRaise);
             if (Player.Courage == 0 && paid > 0)
             {
@@ -4544,7 +4601,6 @@ namespace App.Game
         /// </summary>
         private void ResolveAiStreet()
         {
-            _aiStreetActive = true;
             _aiPass = 0;
             _aiCursor = 0;
             _aiPendingOpen = false;
@@ -4654,7 +4710,6 @@ namespace App.Game
 
         private void StopAiStreet()
         {
-            _aiStreetActive = false;
             AiActing = false;
             ActingAiId = -1;
             _aiPendingOpen = false;
@@ -5043,7 +5098,6 @@ namespace App.Game
             }
 
             _streetHadRaise = false;
-            _playerActedThisStreet = false;
             var lastUnits = Math.Max(CurrentRoundUnits(), _roundBaseBet);
             foreach (var seat in AllSeats())
             {

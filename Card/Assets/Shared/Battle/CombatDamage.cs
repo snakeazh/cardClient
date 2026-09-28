@@ -92,7 +92,7 @@ namespace CardShare.Battle
 
         public const float DefaultCritMultiplier = 2f;
 
-        public static CombatDamageResult Resolve(CombatDamageInput input, Random rng = null)
+        public static CombatDamageResult Resolve(CombatDamageInput input, Random? rng = null)
         {
             var flint = input.FlintMultiplier > 0f ? input.FlintMultiplier : 1f;
             var extra = input.RelicMagExtra + input.TalentMagExtra;
@@ -199,7 +199,7 @@ namespace CardShare.Battle
             };
         }
 
-        private static bool Hit(bool? forced, float chance, Random rng)
+        private static bool Hit(bool? forced, float chance, Random? rng)
         {
             if (forced.HasValue)
             {

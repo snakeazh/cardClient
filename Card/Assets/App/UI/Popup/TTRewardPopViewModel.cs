@@ -27,7 +27,7 @@ namespace App.UI.Popup
             _toast = toast;
             RewardText = new ObservableProperty<string>(_reward.GoldPerClaim.ToString());
             ReceiveCommand = new RelayCommand(Receive, () => _reward.ClaimsLeftToday > 0);
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         /// <summary>奖励数量文案（BG/RewardArea/Num）。</summary>
@@ -67,11 +67,11 @@ namespace App.UI.Popup
             if (_reward.TryClaim())
             {
                 _toast?.ShowSuccess($"金币 +{_reward.GoldPerClaim}");
-                Close();
+                ClosePop();
             }
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _ui.Close(this);
         }

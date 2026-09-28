@@ -2538,7 +2538,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+2"
+    "Desc": "A牌提供的攻击力+3"
   },
   {
     "TalentId": 303,
@@ -2549,7 +2549,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+4"
+    "Desc": "A牌提供的攻击力+6"
   },
   {
     "TalentId": 303,
@@ -2560,7 +2560,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+6"
+    "Desc": "A牌提供的攻击力+9"
   },
   {
     "TalentId": 303,
@@ -2571,7 +2571,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+8"
+    "Desc": "A牌提供的攻击力+12"
   },
   {
     "TalentId": 303,
@@ -2582,7 +2582,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+10"
+    "Desc": "A牌提供的攻击力+15"
   },
   {
     "TalentId": 303,
@@ -2593,7 +2593,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+12"
+    "Desc": "A牌提供的攻击力+18"
   },
   {
     "TalentId": 303,
@@ -2604,7 +2604,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+14"
+    "Desc": "A牌提供的攻击力+21"
   },
   {
     "TalentId": 303,
@@ -2615,7 +2615,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+16"
+    "Desc": "A牌提供的攻击力+24"
   },
   {
     "TalentId": 303,
@@ -2626,7 +2626,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+18"
+    "Desc": "A牌提供的攻击力+27"
   },
   {
     "TalentId": 303,
@@ -2637,7 +2637,7 @@
     "ChestProbability": 0.2,
     "Icon": "APointMastery",
     "TalentEntry": 303,
-    "Desc": "A牌提供的攻击力+20"
+    "Desc": "A牌提供的攻击力+30"
   },
   {
     "TalentId": 304,
@@ -2648,7 +2648,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+0.5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+2%"
   },
   {
     "TalentId": 304,
@@ -2659,7 +2659,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+1%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+4%"
   },
   {
     "TalentId": 304,
@@ -2670,7 +2670,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+1.5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+6%"
   },
   {
     "TalentId": 304,
@@ -2681,7 +2681,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+2%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+8%"
   },
   {
     "TalentId": 304,
@@ -2692,7 +2692,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+2.5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+10%"
   },
   {
     "TalentId": 304,
@@ -2703,7 +2703,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+3%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+12%"
   },
   {
     "TalentId": 304,
@@ -2714,7 +2714,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+3.5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+14%"
   },
   {
     "TalentId": 304,
@@ -2725,7 +2725,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+4%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+16%"
   },
   {
     "TalentId": 304,
@@ -2736,7 +2736,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+4.5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+18%"
   },
   {
     "TalentId": 304,
@@ -2747,7 +2747,7 @@
     "ChestProbability": 0.2,
     "Icon": "IsolatedHelpless",
     "TalentEntry": 304,
-    "Desc": "只剩下1名敌人时,对其造成的伤害+5%"
+    "Desc": "只剩下1名敌人时,对其造成的伤害+20%"
   },
   {
     "TalentId": 305,
@@ -2758,7 +2758,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+0.5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+1%"
   },
   {
     "TalentId": 305,
@@ -2769,7 +2769,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+1%"
+    "Desc": "当血量低于20%以下时,造成的伤害+2%"
   },
   {
     "TalentId": 305,
@@ -2780,7 +2780,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+1.5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+3%"
   },
   {
     "TalentId": 305,
@@ -2791,7 +2791,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+2%"
+    "Desc": "当血量低于20%以下时,造成的伤害+4%"
   },
   {
     "TalentId": 305,
@@ -2802,7 +2802,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+2.5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+5%"
   },
   {
     "TalentId": 305,
@@ -2813,7 +2813,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+3%"
+    "Desc": "当血量低于20%以下时,造成的伤害+6%"
   },
   {
     "TalentId": 305,
@@ -2824,7 +2824,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+3.5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+7%"
   },
   {
     "TalentId": 305,
@@ -2835,7 +2835,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+4%"
+    "Desc": "当血量低于20%以下时,造成的伤害+8%"
   },
   {
     "TalentId": 305,
@@ -2846,7 +2846,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+4.5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+9%"
   },
   {
     "TalentId": 305,
@@ -2857,7 +2857,7 @@
     "ChestProbability": 0.2,
     "Icon": "BottomBounce",
     "TalentEntry": 305,
-    "Desc": "当血量低于20%以下时,造成的伤害+5%"
+    "Desc": "当血量低于20%以下时,造成的伤害+10%"
   },
   {
     "TalentId": 306,
@@ -3088,7 +3088,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有1%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有10%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3099,7 +3099,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有2%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有20%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3110,7 +3110,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有3%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有30%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3121,7 +3121,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有4%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有40%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3132,7 +3132,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有5%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有50%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3143,7 +3143,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有6%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有60%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3154,7 +3154,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有7%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有70%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3165,7 +3165,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有8%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有80%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3176,7 +3176,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有9%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,有90%概率额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 308,
@@ -3187,7 +3187,7 @@
     "ChestProbability": 0.2,
     "Icon": "Pursuit",
     "TalentEntry": 308,
-    "Desc": "攻击敌人时,有10%概率额外造成1次原伤害10%的攻击"
+    "Desc": "攻击敌人时,必定额外造成1次原伤害10%的攻击"
   },
   {
     "TalentId": 309,
@@ -3320,93 +3320,5 @@
     "Icon": "SacredRelicCapacity",
     "TalentEntry": 310,
     "Desc": "允许携带的圣物容量+2"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 3,
-    "Id": 31003,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+3"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 4,
-    "Id": 31004,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+4"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 5,
-    "Id": 31005,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+5"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 6,
-    "Id": 31006,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+6"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 7,
-    "Id": 31007,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+7"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 8,
-    "Id": 31008,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+8"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 9,
-    "Id": 31009,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+9"
-  },
-  {
-    "TalentId": 310,
-    "TalentLevel": 10,
-    "Id": 31010,
-    "Name": "圣物容量",
-    "Type": 3,
-    "ChestProbability": 0.2,
-    "Icon": "SacredRelicCapacity",
-    "TalentEntry": 310,
-    "Desc": "允许携带的圣物容量+10"
   }
 ]

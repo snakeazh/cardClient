@@ -22,6 +22,11 @@ namespace CardShare.Contracts.Config
         public int IsProjectile;
 
         /// <summary>
+        /// 人物位置点
+        /// </summary>
+        public int rolepoint;
+
+        /// <summary>
         /// 资源名字
         /// </summary>
         public string Effects;

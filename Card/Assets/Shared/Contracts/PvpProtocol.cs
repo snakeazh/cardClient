@@ -16,6 +16,9 @@ namespace CardShare.Contracts
         public const string Refresh = "refresh";
         public const string ShopDone = "shop_done";
 
+        /// <summary>使用消耗型圣物（index = relicId），仅 fight 阶段（服务端 Act 校验）。</summary>
+        public const string Use = "use";
+
         /// <summary>编辑器测试：向本人座位添加圣物（index = relicId）。生产环境不应使用。</summary>
         public const string DebugGrant = "debug_grant";
     }

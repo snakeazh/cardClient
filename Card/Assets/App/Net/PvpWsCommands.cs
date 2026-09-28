@@ -79,6 +79,21 @@ namespace App.Net
         public override Task ExecuteAsync(PvpMatchSession session) => session.StartQueueAsync();
     }
 
+    /// <summary>使用消耗型圣物（battle 的 index 传 relicId，仅 fight 阶段）。</summary>
+    public sealed class PvpWsUseRelicCommand : PvpWsCommand
+    {
+        private readonly int _relicId;
+
+        public PvpWsUseRelicCommand(int relicId)
+        {
+            _relicId = relicId;
+        }
+
+        public override string Name => "use";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.UseRelicAsync(_relicId);
+    }
+
     /// <summary>商店购买：battle 的 index 传 relicId。</summary>
     public sealed class PvpWsShopBuyCommand : PvpWsCommand
     {
@@ -174,6 +189,8 @@ namespace App.Net
         public Task EnqueueShowdown() => Enqueue(new PvpWsShowdownCommand());
 
         public Task EnqueueStartQueue() => Enqueue(new PvpWsStartQueueCommand());
+
+        public Task EnqueueUseRelic(int relicId) => Enqueue(new PvpWsUseRelicCommand(relicId));
 
         public Task EnqueueShopBuy(int relicId) => Enqueue(new PvpWsShopBuyCommand(relicId));
 

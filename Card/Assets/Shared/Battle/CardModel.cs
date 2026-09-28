@@ -405,12 +405,12 @@ namespace CardShare.Battle
     {
         public static IGameTables Tables
         {
-            get => _tables;
+            get => _tables!;
             set => _tables = value;
         }
 
         [ThreadStatic]
-        private static IGameTables _tables;
+        private static IGameTables? _tables;
 
         private static IReadOnlyList<HandScoreConfig> Scores()
         {
@@ -534,7 +534,7 @@ namespace CardShare.Battle
 
         public static bool TryGetConfig(HandType type, out HandScoreConfig row)
         {
-            row = null;
+            row = null!;
             var configType = ToConfigHandType(type);
             foreach (var candidate in Scores())
             {

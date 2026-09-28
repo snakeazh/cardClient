@@ -38,8 +38,6 @@ namespace App.Game
         private int _streetsWithoutRaise;
         private int _bettingRound = 1;
         private bool _streetHadRaise;
-        private bool _playerActedThisStreet;
-        private bool _aiStreetActive;
         private int _aiPass;
         private int _aiCursor;
         private bool _aiPendingOpen;
@@ -1012,7 +1010,6 @@ namespace App.Game
                 paid += rest;
             }
 
-            _playerActedThisStreet = true;
             Player.Status = $"全下 {paid}";
             Log($"{Player.Status}，奖池 {Pot}");
             ResolveAiStreet();
@@ -4223,7 +4220,6 @@ namespace App.Game
             _streetsWithoutRaise = 0;
             _bettingRound = 1;
             _streetHadRaise = false;
-            _playerActedThisStreet = false;
             _pendingRubIndex = -1;
             LastResult = string.Empty;
             Run.RubsLeft = 0;
@@ -4578,7 +4574,6 @@ namespace App.Game
                 ApplyRaisedCall(units);
             }
 
-            _playerActedThisStreet = true;
             History.NotePlayerBet(raise, Player.Looked, paid, stackBefore, facingRaise);
             if (Player.Courage == 0 && paid > 0)
             {
@@ -4606,7 +4601,6 @@ namespace App.Game
         /// </summary>
         private void ResolveAiStreet()
         {
-            _aiStreetActive = true;
             _aiPass = 0;
             _aiCursor = 0;
             _aiPendingOpen = false;
@@ -4716,7 +4710,6 @@ namespace App.Game
 
         private void StopAiStreet()
         {
-            _aiStreetActive = false;
             AiActing = false;
             ActingAiId = -1;
             _aiPendingOpen = false;
@@ -5105,7 +5098,6 @@ namespace App.Game
             }
 
             _streetHadRaise = false;
-            _playerActedThisStreet = false;
             var lastUnits = Math.Max(CurrentRoundUnits(), _roundBaseBet);
             foreach (var seat in AllSeats())
             {

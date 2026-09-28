@@ -35,7 +35,7 @@ namespace App.UI.Popup
             CoinBtnText = new ObservableProperty<string>(BtnText(shop.GoldPurchasesLeftToday));
             BuyStaminaCommand = new RelayCommand(BuyStamina, () => shop.StaminaPurchasesLeftToday > 0);
             BuyCoinCommand = new RelayCommand(BuyCoin, () => shop.GoldPurchasesLeftToday > 0);
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         public ObservableProperty<string> StaminaAmountText { get; }
@@ -130,7 +130,7 @@ namespace App.UI.Popup
             }
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _ui.Close(this);
         }

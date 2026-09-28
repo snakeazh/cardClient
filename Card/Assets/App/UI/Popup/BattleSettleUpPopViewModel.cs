@@ -116,7 +116,7 @@ namespace App.UI.Popup
                 bar?.ReleaseHeldGold();
             }
 
-            Close();
+            ClosePop();
         }
 
         public bool TryBeginDouble(GameResourceViewModel bar, out int extra)
@@ -147,7 +147,7 @@ namespace App.UI.Popup
                 bar?.ReleaseHeldGold(extra);
             }
 
-            Close();
+            ClosePop();
         }
 
         protected override Task OnClose()
@@ -235,7 +235,7 @@ namespace App.UI.Popup
             // View 拦截 DoubleBtn 点击并播飞币；命令仅用于 CanExecute。
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _dialogs.CloseWithResult(true);
         }

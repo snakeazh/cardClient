@@ -285,7 +285,13 @@ namespace CardShare.Battle
         /// 新增 PVP 机制（RelicCombat case / 本文件处理）时必须同步维护此集合，漏加只会少上架、不会卖废品。</summary>
         public static bool IsPvpSupported(IGameTables tables, RelicConfig relic)
         {
-            if (relic?.MechanismId == null || relic.MechanismId.Length == 0)
+            // 配置缺失时保守不上架（两个调用方实际都已判空，此处仅兜底防 NRE）。
+            if (relic == null)
+            {
+                return false;
+            }
+
+            if (relic.MechanismId == null || relic.MechanismId.Length == 0)
             {
                 // 空机制消耗品用了没有任何效果，同样不允许上架。
                 return relic.UseType != 1 && relic.UseType != 2;

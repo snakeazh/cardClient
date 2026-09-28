@@ -100,6 +100,11 @@ namespace App.UI.Popup
             Binding.BindActive(acquire, ViewModel.ShowAcquireMethod);
             Binding.BindText(acquire.GetComponent<TMP_Text>(), ViewModel.AcquireMethodText);
 
+            // 特殊描述文本（图鉴遗物页开，文案=RelicConfig.SpecialDesc）
+            var specialDes = UI.GetGameObject("ItemDes");
+            Binding.BindActive(specialDes, ViewModel.ShowSpecialDesc);
+            Binding.BindText(specialDes.GetComponent<TMP_Text>(), ViewModel.SpecialDescText);
+
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);
             BindMaskClose();
         }

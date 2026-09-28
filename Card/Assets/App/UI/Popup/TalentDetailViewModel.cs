@@ -29,6 +29,9 @@ namespace App.UI.Popup
             /// <summary>获得方式文案（遗物页=UnlockConditionConfig.Desc）；空表示该条目不显示。</summary>
             public string AcquireMethod;
 
+            /// <summary>特殊描述文案（图鉴遗物页=RelicConfig.SpecialDesc）；空表示该条目不显示。</summary>
+            public string SpecialDesc;
+
             /// <summary>怪物页条目的 MonsterId（&gt;0 表示用 PlayerItem 敌人形态卡显示底图），其余为 0。</summary>
             public int MonsterId;
 
@@ -61,6 +64,8 @@ namespace App.UI.Popup
             ShowCongratulations = new ObservableProperty<bool>(false);
             ShowAcquireMethod = new ObservableProperty<bool>(false);
             AcquireMethodText = new ObservableProperty<string>(string.Empty);
+            ShowSpecialDesc = new ObservableProperty<bool>(false);
+            SpecialDescText = new ObservableProperty<string>(string.Empty);
             ShowMonsterCard = new ObservableProperty<bool>(false);
             CurrentMonsterId = new ObservableProperty<int>(0);
             CardOwned = new ObservableProperty<bool>(false);
@@ -103,6 +108,12 @@ namespace App.UI.Popup
 
         /// <summary>获得方式文案。</summary>
         public ObservableProperty<string> AcquireMethodText { get; }
+
+        /// <summary>是否显示特殊描述文本（图鉴遗物页开，文案=RelicConfig.SpecialDesc）。</summary>
+        public ObservableProperty<bool> ShowSpecialDesc { get; }
+
+        /// <summary>特殊描述文案。</summary>
+        public ObservableProperty<string> SpecialDescText { get; }
 
         /// <summary>是否用 PlayerItem 敌人形态卡替代 ItemCard 显示（图鉴怪物页条目开）。</summary>
         public ObservableProperty<bool> ShowMonsterCard { get; }
@@ -189,6 +200,8 @@ namespace App.UI.Popup
             ShowCongratulations.Value = false;
             ShowAcquireMethod.Value = entry != null && !string.IsNullOrEmpty(entry.AcquireMethod);
             AcquireMethodText.Value = entry != null ? entry.AcquireMethod ?? string.Empty : string.Empty;
+            ShowSpecialDesc.Value = entry != null && !string.IsNullOrEmpty(entry.SpecialDesc);
+            SpecialDescText.Value = entry != null ? entry.SpecialDesc ?? string.Empty : string.Empty;
             ShowMonsterCard.Value = entry != null && entry.MonsterId > 0;
             CurrentMonsterId.Value = entry != null ? entry.MonsterId : 0;
         }
@@ -253,6 +266,8 @@ namespace App.UI.Popup
             ShowCongratulations.Value = _rewardMode;
             ShowAcquireMethod.Value = false;
             AcquireMethodText.Value = string.Empty;
+            ShowSpecialDesc.Value = false;
+            SpecialDescText.Value = string.Empty;
             ShowMonsterCard.Value = false;
             CurrentMonsterId.Value = 0;
             UpgradeCommand.RaiseCanExecuteChanged();

@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7096227508709802474}
-  - component: {fileID: 8034958627407233268}
-  m_Layer: 0
+  - component: {fileID: -3877590059381483533}
+  m_Layer: 5
   m_Name: HeroAttackFenlie01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 5271915499632856169}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8034958627407233268
+--- !u!114 &-3877590059381483533
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -57,7 +57,7 @@ GameObject:
   - component: {fileID: 8776479725891618779}
   - component: {fileID: 994155239217618276}
   - component: {fileID: 2770190027918370029}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_fl_dg01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4964,7 +4964,7 @@ GameObject:
   - component: {fileID: 4324279310589863550}
   - component: {fileID: 1757942468782657885}
   - component: {fileID: 2890323859920931095}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_fl_dg02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9859,7 +9859,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5271915499632856169}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_gj_fenlie_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

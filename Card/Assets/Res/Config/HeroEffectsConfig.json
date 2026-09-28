@@ -3,6 +3,7 @@
     "Id": 101,
     "Type": 2,
     "IsProjectile": 0,
+    "rolepoint": 0,
     "Effects": "HeroAttackArrow01",
     "Time": 1.5
   },
@@ -10,6 +11,7 @@
     "Id": 201,
     "Type": 1,
     "IsProjectile": 0,
+    "rolepoint": 0,
     "Effects": "HeroAttackFenlie01",
     "Time": 0
   }

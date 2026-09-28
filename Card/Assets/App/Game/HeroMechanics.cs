@@ -5,7 +5,8 @@ using App.Talent;
 namespace App.Game
 {
     /// <summary>
-    /// 按当前英雄 <see cref="HeroConfig.HeroEntryId"/> 结算局内技能。收藏禁用不禁用英雄词条。
+    /// 按当前英雄 <see cref="HeroConfig.HeroEntryId"/> 结算局内技能；
+    /// <see cref="HeroConfig.HeroEffects"/> 只解析出刀演出用。收藏禁用不禁用英雄词条。
     /// </summary>
     public static class HeroMechanics
     {
@@ -192,6 +193,43 @@ namespace App.Game
                     action(entry);
                 }
             }
+        }
+
+        /// <summary>
+        /// 从 <see cref="HeroConfig.HeroEffects"/> 解析释放（Attack）与命中（Hit）各一条。
+        /// 缺任一类型、资源名为空或不存在时返回 false（出刀回退近战）。
+        /// </summary>
+        public static bool TryResolveEffects(
+            HeroConfig hero,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            attack = null;
+            hit = null;
+            if (hero?.HeroEffects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < hero.HeroEffects.Length; i++)
+            {
+                var fx = HeroEffectsConfig.Get(hero.HeroEffects[i]);
+                if (fx == null || string.IsNullOrEmpty(fx.Effects))
+                {
+                    continue;
+                }
+
+                if (fx.Type == EffectsType.Attack && attack == null)
+                {
+                    attack = fx;
+                }
+                else if (fx.Type == EffectsType.Hit && hit == null)
+                {
+                    hit = fx;
+                }
+            }
+
+            return attack != null && hit != null;
         }
     }
 }

@@ -18,12 +18,19 @@
 
 | 表 | 路径 | 用途 |
 |----|------|------|
-| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、`HeroEntryId[]` |
+| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、`HeroEntryId[]`、`HeroEffects[]` |
 | HeroEntryConfig | `Res/Config/HeroEntryConfig.json` | 词条：`Type` + `Value` |
+| HeroEffectsConfig | `Res/Config/HeroEffectsConfig.json` | 出刀演出：`Type` + `IsProjectile` + `rolepoint` + `Effects` + `Time` |
 
-访问：`HeroConfig.Get(id)` / `HeroEntryConfig.Get(id)`。Excel 源在仓库 `Config/`。
+访问：`HeroConfig.Get(id)` / `HeroEntryConfig.Get(id)` / `HeroEffectsConfig.Get(id)`。Excel 源在仓库 `Config/`。
 
 `HeroMechanics.SumValue` / `Roll` / `SumDamagePercent` / `SumMultiplierExtra` / `BuyPrice` / `ShopWeight` 只扫当前英雄词条。与天赋、遗物同类 Type 在 `GameSession` 挂钩点相加。
+
+`HeroEffects` **只驱动玩家出刀演出**（替换冲刺近战），不改数值结算：
+- `IsProjectile != 0`：特效从攻击者飞向目标，`Time` 为飞行时长（到点结算）
+- `IsProjectile == 0` 且 `rolepoint == 1`：直接生成在人物点
+- `IsProjectile == 0` 且 `rolepoint == 0`：直接生成在目标
+- 释放行的 `Time` 为等待/飞行时长；`TryResolveEffects` 解析不出 Attack+Hit 或预制体未就绪时回退近战；敌人来打仍走近战。
 
 ---
 

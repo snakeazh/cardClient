@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3011645871062112703}
   - component: {fileID: 39504698254334414}
   - component: {fileID: 2830921686195003697}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_ci01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5014,7 +5014,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4358967143140477696}
   - component: {fileID: 1969556325586259457}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_yx_gj_jian_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5072,8 +5072,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7004330408874215899}
-  - component: {fileID: -7641759932267417864}
-  m_Layer: 0
+  - component: {fileID: 8772825193425997921}
+  m_Layer: 5
   m_Name: HeroAttackArrow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5096,7 +5096,7 @@ Transform:
   - {fileID: 4358967143140477696}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-7641759932267417864
+--- !u!114 &8772825193425997921
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5120,7 +5120,7 @@ GameObject:
   - component: {fileID: 9176904665603662464}
   - component: {fileID: 5472511627758765912}
   - component: {fileID: 1829042842880805640}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_jian
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10029,7 +10029,7 @@ GameObject:
   - component: {fileID: 5514964339076720017}
   - component: {fileID: 739522060630772499}
   - component: {fileID: 6579101493878390502}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_ci02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15032,7 +15032,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6889612969861875904}
   - component: {fileID: 5492542359492722146}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_trail01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15187,7 +15187,7 @@ GameObject:
   - component: {fileID: 991879291553103758}
   - component: {fileID: 2134642019669181446}
   - component: {fileID: 8842353495102743472}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_jian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20095,7 +20095,7 @@ GameObject:
   - component: {fileID: 996973230893013159}
   - component: {fileID: 329252541015222423}
   - component: {fileID: 3333261679263063065}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_jian02_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -25001,7 +25001,7 @@ GameObject:
   - component: {fileID: 7254132602696839661}
   - component: {fileID: 164187118184583234}
   - component: {fileID: 5971400269489124103}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29907,7 +29907,7 @@ GameObject:
   - component: {fileID: 646774788060452523}
   - component: {fileID: 3215646295760095796}
   - component: {fileID: 637934406886099592}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34813,7 +34813,7 @@ GameObject:
   - component: {fileID: 8583699697222413561}
   - component: {fileID: 2003732099314669442}
   - component: {fileID: 7515076437420549600}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_baodian01_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39759,7 +39759,7 @@ GameObject:
   - component: {fileID: 9039932426412007044}
   - component: {fileID: 8465572168300554596}
   - component: {fileID: 577217615498127718}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_baodian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44705,7 +44705,7 @@ GameObject:
   - component: {fileID: 3159677880942935540}
   - component: {fileID: 3164479173683547449}
   - component: {fileID: 3948533850618672429}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_baodian01_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49709,7 +49709,7 @@ GameObject:
   - component: {fileID: 7184456165748633170}
   - component: {fileID: 2149032553819025544}
   - component: {fileID: 8958166696318472579}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_jian02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -54617,7 +54617,7 @@ GameObject:
   - component: {fileID: 524479713727365729}
   - component: {fileID: 1189804218310366697}
   - component: {fileID: 5026063380342629776}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_jian_jian01_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}

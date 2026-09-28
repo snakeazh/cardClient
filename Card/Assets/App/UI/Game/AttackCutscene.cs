@@ -5,6 +5,7 @@ using App.Audio;
 using App.Bootstrap;
 using App.Game;
 using App.Resources;
+using CardShare.Contracts.Config;
 using DG.Tweening;
 using Framework.Assets;
 using Framework.Log;
@@ -14,14 +15,19 @@ namespace App.UI
 {
     /// <summary>
     /// 攻击演出：PlayerRoot 播 clip，位移由 DOTween 驱动；mask / hptextdi 由 GameUI 绑定。
+    /// 有 HeroEffects 时玩家出刀可走释放→等待→命中，替换冲刺近战。
     /// </summary>
     public sealed class AttackCutscene
     {
         private const string DefaultClip = "ani_default";
         private const string MissClip = "ani_atk_lv03_miss";
         private const int DeathFxSortingOrder = 240;
+        private const float HeroSkillHitHold = 0.25f;
+        /// <summary>角色特效所在世界平面 Z（与主相机对位用）。</summary>
+        private const float FxPlaneZ = 0f;
 
         private Transform _hud;
+        private Canvas _hudCanvas;
         private RectTransform _playerRoot;
         private Transform _playerHome;
         private Animator _playerAnim;
@@ -48,11 +54,16 @@ namespace App.UI
         private Vector3 _impactAttackerPos;
         private AudioClip _impactSfx;
         private bool _disposed;
+        private readonly Dictionary<string, GameObject> _heroFxPrefabs = new Dictionary<string, GameObject>(4);
+        private readonly List<string> _heroFxOwnedKeys = new List<string>(4);
+        private readonly List<GameObject> _skillFxSpawned = new List<GameObject>(4);
+        private IResourceService _heroFxResources;
 
         public void Bind(Transform hud, PlayerItem player, PlayerItem[] enemies)
         {
             _disposed = false;
             _hud = hud;
+            _hudCanvas = hud != null ? hud.GetComponentInParent<Canvas>() : null;
             BindPlayer(player);
 
             var count = enemies != null ? Math.Min(enemies.Length, _enemyRoots.Length) : 0;
@@ -309,6 +320,179 @@ namespace App.UI
         }
 
         /// <summary>
+        /// 玩家出刀：释放特效（投射物飞向目标 / 非投射物直接落在目标）→ 到点结算 + 命中特效。
+        /// 预制体未预载时返回 false，由调用方回退近战。
+        /// </summary>
+        public bool PlayHeroSkill(
+            int visualSlot,
+            int level,
+            HeroEffectsConfig attackFx,
+            HeroEffectsConfig hitFx,
+            Func<bool> onHit,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone,
+            float timeScale = 1f)
+        {
+            Kill();
+            level = Mathf.Clamp(level, 1, 3);
+            if (_playerRoot == null || visualSlot < 0 || visualSlot >= _enemyRoots.Length ||
+                _enemyRoots[visualSlot] == null ||
+                attackFx == null || hitFx == null ||
+                !TryGetHeroFxPrefab(attackFx.Effects, out var attackPrefab) ||
+                !TryGetHeroFxPrefab(hitFx.Effects, out var hitPrefab))
+            {
+                Debug.LogWarning(
+                    $"[AttackCutscene] PlayHeroSkill skipped: slot={visualSlot} attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                return false;
+            }
+
+            var token = ++_playToken;
+            BeginPlay(timeScale);
+            var tuning = AttackTuningConfig.Instance;
+            var beat = tuning.Level(level);
+            var targetAnim = _enemyAnims[visualSlot];
+            // 击退用 UI 世界坐标；特效坐标在 SpawnSkillFx 内按预制体 Layer 再转换。
+            var homeUi = _playerRoot.position;
+            var hitUi = _enemyRoots[visualSlot].position;
+            var wait = Mathf.Max(0f, attackFx.Time);
+
+            // 特效攻击不播近战抬起/冲刺卡牌动画，卡保持 default。
+            PlayClip(_playerAnim, DefaultClip);
+
+            _seq = DOTween.Sequence();
+            _seq.timeScale = _playTimeScale;
+
+            // 释放特效：投射物从攻击者飞向目标（Time=飞行时长）；
+            // 非投射物：rolepoint=1 生成在人物点，否则生成在目标，再等 Time。
+            if (IsProjectile(attackFx))
+            {
+                var castGo = SpawnSkillFx(attackPrefab, homeUi, life: 0f);
+                if (castGo != null)
+                {
+                    var hitFxPos = ResolveFxWorldPos(attackPrefab, hitUi);
+                    FaceToward(castGo.transform, castGo.transform.position, hitFxPos);
+                    var fly = Mathf.Max(0.01f, wait);
+                    _seq.Append(castGo.transform.DOMove(hitFxPos, fly).SetEase(Ease.InQuad));
+                }
+                else
+                {
+                    _seq.AppendInterval(wait);
+                }
+            }
+            else
+            {
+                var castUi = IsRolePoint(attackFx) ? homeUi : hitUi;
+                SpawnSkillFx(attackPrefab, castUi, life: 0f);
+                _seq.AppendInterval(wait);
+            }
+
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                var missed = PlayHeroSkillImpact(
+                    targetAnim,
+                    level,
+                    onHit,
+                    beat,
+                    _enemyCardRects[visualSlot],
+                    homeUi,
+                    hitUi);
+                if (!missed)
+                {
+                    SpawnHitFx(hitPrefab, hitFx, homeUi, hitUi);
+                }
+            });
+            // 给受击动画留足时长（与 HoldVictimClipUntilDone 对齐），避免立刻被切回 idle。
+            var hitHold = Mathf.Max(
+                HeroSkillHitHold,
+                beat.HitHoldDuration,
+                ClipLength(targetAnim, Clip(level, "hit")));
+            _seq.AppendInterval(hitHold);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayVictimIdle(targetAnim);
+                for (var i = 0; i < _enemyAnims.Length; i++)
+                {
+                    if (i != visualSlot)
+                    {
+                        PlayVictimIdle(_enemyAnims[i]);
+                    }
+                }
+
+                PlayClip(_playerAnim, DefaultClip);
+                onCollisionDone?.Invoke();
+            });
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                RestoreHitTarget();
+                onReturned?.Invoke();
+            });
+            _seq.AppendInterval(tuning.HpTextHoldDuration);
+            _seq.OnComplete(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                SetAllAnimSpeed(1f);
+                onDone?.Invoke();
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// 进桌预载当前英雄 Attack/Hit 预制体（本局人物固定）。
+        /// 出刀只读缓存，不再临时 Load；WebGL 禁止同步加载。
+        /// </summary>
+        public async Task PreloadHeroEffectsAsync(IResourceService resources, HeroConfig hero)
+        {
+            if (resources == null || !HeroMechanics.TryResolveEffects(hero, out var attack, out var hit))
+            {
+                return;
+            }
+
+            _disposed = false;
+            _heroFxResources = resources;
+            await PreloadHeroFxPrefabAsync(resources, attack.Effects);
+            if (_disposed)
+            {
+                return;
+            }
+
+            await PreloadHeroFxPrefabAsync(resources, hit.Effects);
+            if (CanPlayHeroSkill(attack, hit))
+            {
+                AppLog.Info(
+                    LogChannel.Assets,
+                    $"[AttackCutscene] 英雄特效已预载 attack={attack.Effects} hit={hit.Effects}");
+            }
+        }
+
+        public bool CanPlayHeroSkill(HeroEffectsConfig attackFx, HeroEffectsConfig hitFx)
+        {
+            return attackFx != null &&
+                   hitFx != null &&
+                   TryGetHeroFxPrefab(attackFx.Effects, out _) &&
+                   TryGetHeroFxPrefab(hitFx.Effects, out _);
+        }
+
+        /// <summary>
         /// 在被打者当前位置补一个致死特效。敌人致死由 GameUI 在碰撞完成（命中定格结束）时调用。
         /// 不进攻击序列的时间轴，自己按配置时长计时销毁。
         /// </summary>
@@ -349,6 +533,7 @@ namespace App.UI
             RestoreHitTarget();
             PlayClip(_playerAnim, DefaultClip);
             DestroyFlight();
+            ReleaseHeroFxPrefabs();
             _disposed = true;
             if (_impactSfx != null && AppServices.IsReady)
             {
@@ -519,7 +704,8 @@ namespace App.UI
         /// 命中瞬间：先结算扣血（由此得知是否闪避），再播受击或 miss。
         /// 闪避不击退；受击方自己等 miss 播完再回 default，攻击方仍按 HitHold 后撤。
         /// </summary>
-        private void PlayImpact(
+        /// <returns>是否闪避（MISS）。</returns>
+        private bool PlayImpact(
             Animator attacker,
             Animator victim,
             int level,
@@ -539,24 +725,59 @@ namespace App.UI
             {
                 PlayClip(victim, MissClip);
                 HoldMissUntilDone(victim);
-                return;
+                return true;
             }
 
             PlayClip(victim, Clip(level, "hit"));
             InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
+            return false;
+        }
+
+        /// <summary>特效攻击命中：不播攻击方抬起/收招；敌人播受击/miss，并持有至片段结束。</summary>
+        private bool PlayHeroSkillImpact(
+            Animator victim,
+            int level,
+            Func<bool> onHit,
+            AttackTuningConfig.LevelTuning beat,
+            RectTransform hitRect,
+            Vector3 attackerWorldPos,
+            Vector3 targetWorldPos)
+        {
+            _impactLevel = level;
+            _impactBeat = beat;
+            _impactAttackerPos = attackerWorldPos;
+            PlayImpactSfx();
+            var missed = onHit != null && onHit();
+            if (missed)
+            {
+                PlayClip(victim, MissClip);
+                HoldVictimClipUntilDone(victim, MissClip);
+                return true;
+            }
+
+            var hitClip = Clip(level, "hit");
+            PlayClip(victim, hitClip);
+            HoldVictimClipUntilDone(victim, hitClip);
+            InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
+            return false;
         }
 
         private void HoldMissUntilDone(Animator victim)
         {
-            if (victim == null)
+            HoldVictimClipUntilDone(victim, MissClip);
+        }
+
+        /// <summary>受击/miss 播完前不要被 PlayVictimIdle 打断。</summary>
+        private void HoldVictimClipUntilDone(Animator victim, string clipName)
+        {
+            if (victim == null || string.IsNullOrEmpty(clipName))
             {
                 return;
             }
 
-            var length = ClipLength(victim, MissClip);
+            var length = ClipLength(victim, clipName);
             if (length <= 0f)
             {
-                PlayClip(victim, DefaultClip);
                 return;
             }
 
@@ -631,6 +852,294 @@ namespace App.UI
             UnityEngine.Object.Destroy(go);
         }
 
+        private void SpawnHitFx(
+            GameObject prefab,
+            HeroEffectsConfig hitFx,
+            Vector3 attackerUi,
+            Vector3 targetUi)
+        {
+            if (prefab == null || hitFx == null)
+            {
+                return;
+            }
+
+            if (IsProjectile(hitFx))
+            {
+                var go = SpawnSkillFx(prefab, attackerUi, life: 0f);
+                if (go == null)
+                {
+                    return;
+                }
+
+                var targetFx = ResolveFxWorldPos(prefab, targetUi);
+                FaceToward(go.transform, go.transform.position, targetFx);
+                var fly = Mathf.Max(0.01f, hitFx.Time);
+                var tween = go.transform.DOMove(targetFx, fly).SetEase(Ease.InQuad);
+                tween.timeScale = _playTimeScale;
+                return;
+            }
+
+            // 非投射物：rolepoint=1 落在人物点，否则落在目标。
+            var spawnUi = IsRolePoint(hitFx) ? attackerUi : targetUi;
+            SpawnSkillFx(prefab, spawnUi, hitFx.Time);
+        }
+
+        private static bool IsProjectile(HeroEffectsConfig fx)
+        {
+            return fx != null && fx.IsProjectile != 0;
+        }
+
+        private static bool IsRolePoint(HeroEffectsConfig fx)
+        {
+            return fx != null && fx.rolepoint != 0;
+        }
+
+        private static void FaceToward(Transform t, Vector3 from, Vector3 to)
+        {
+            if (t == null)
+            {
+                return;
+            }
+
+            var dir = to - from;
+            if (dir.sqrMagnitude < 0.0001f)
+            {
+                return;
+            }
+
+            var angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            t.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        /// <param name="uiWorldPos">人物卡 RectTransform 世界坐标；内部按预制体 Layer 决定是否转到主相机平面。</param>
+        private GameObject SpawnSkillFx(GameObject prefab, Vector3 uiWorldPos, float life)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            var fxWorldPos = ResolveFxWorldPos(prefab, uiWorldPos);
+            // 挂世界根，保留预制体 Layer（UI / Default），不再强行改 Default。
+            var go = UnityEngine.Object.Instantiate(prefab);
+            go.name = prefab.name;
+            go.transform.SetParent(null, false);
+            go.transform.position = fxWorldPos;
+            go.transform.rotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            go.SetActive(true);
+            if (IsUiLayer(prefab))
+            {
+                UiFx.ApplySorting(go, 230);
+            }
+
+            RestartSkillAnimators(go);
+            UiFx.RestartParticles(go);
+            UiFx.ClearTrails(go);
+            _skillFxSpawned.Add(go);
+            AppLog.Info(
+                LogChannel.UI,
+                $"[AttackCutscene] SpawnSkillFx name={go.name} layer={go.layer} pos={fxWorldPos} life={life}");
+
+            if (life <= 0f)
+            {
+                return go;
+            }
+
+            var token = _playToken;
+            var lifeTween = DOVirtual.DelayedCall(life, () =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                ClearSkillFx(go);
+            }, false);
+            lifeTween.timeScale = _playTimeScale;
+            lifeTween.SetLink(go);
+            return go;
+        }
+
+        /// <summary>
+        /// UI Layer 特效与卡面同空间（直接用 UI 世界坐标，UI 相机可见）；
+        /// Default 等其它 Layer 转到主相机 FX 平面（此前 Default 位置正确的那套）。
+        /// </summary>
+        private Vector3 ResolveFxWorldPos(GameObject prefab, Vector3 uiWorld)
+        {
+            if (IsUiLayer(prefab))
+            {
+                return uiWorld;
+            }
+
+            return UiToFxWorld(uiWorld);
+        }
+
+        private static bool IsUiLayer(GameObject go)
+        {
+            if (go == null)
+            {
+                return false;
+            }
+
+            var ui = LayerMask.NameToLayer("UI");
+            return ui >= 0 && go.layer == ui;
+        }
+
+        /// <summary>
+        /// UI 卡世界坐标 → 屏幕 → 主相机前方 FX 平面世界坐标（给 Default Layer 用）。
+        /// </summary>
+        private Vector3 UiToFxWorld(Vector3 uiWorld)
+        {
+            var canvas = _hudCanvas != null ? _hudCanvas.rootCanvas : _hudCanvas;
+            Camera uiCam = null;
+            if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            {
+                uiCam = canvas.worldCamera;
+            }
+
+            var screen = RectTransformUtility.WorldToScreenPoint(uiCam, uiWorld);
+            var worldCam = Camera.main;
+            if (worldCam == null)
+            {
+                return uiWorld;
+            }
+
+            var depth = Mathf.Abs(worldCam.transform.position.z - FxPlaneZ);
+            if (depth < 0.01f)
+            {
+                depth = 10f;
+            }
+
+            return worldCam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+        }
+
+        private static void RestartSkillAnimators(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var animators = go.GetComponentsInChildren<Animator>(true);
+            for (var i = 0; i < animators.Length; i++)
+            {
+                var anim = animators[i];
+                if (anim == null || !anim.isActiveAndEnabled)
+                {
+                    continue;
+                }
+
+                anim.Rebind();
+                anim.Update(0f);
+                anim.Play(0, 0, 0f);
+            }
+        }
+
+        private void ClearSkillFx()
+        {
+            for (var i = _skillFxSpawned.Count - 1; i >= 0; i--)
+            {
+                ClearSkillFx(_skillFxSpawned[i]);
+            }
+
+            _skillFxSpawned.Clear();
+        }
+
+        private void ClearSkillFx(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            _skillFxSpawned.Remove(go);
+            go.transform.DOKill();
+            UnityEngine.Object.Destroy(go);
+        }
+
+        private async Task PreloadHeroFxPrefabAsync(IResourceService resources, string effectsName)
+        {
+            var key = ResResourcePaths.HeroEffect(effectsName);
+            if (resources == null || string.IsNullOrEmpty(key) || _heroFxPrefabs.ContainsKey(key))
+            {
+                return;
+            }
+
+            if (resources.TryGetCached<GameObject>(key, out var cached) && cached != null)
+            {
+                _heroFxPrefabs[key] = cached;
+                return;
+            }
+
+            try
+            {
+                var prefab = await resources.LoadAsync<GameObject>(key);
+                if (_disposed)
+                {
+                    resources.Release(key);
+                    return;
+                }
+
+                if (prefab == null)
+                {
+                    return;
+                }
+
+                _heroFxPrefabs[key] = prefab;
+                if (!_heroFxOwnedKeys.Contains(key))
+                {
+                    _heroFxOwnedKeys.Add(key);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, $"Hero effect preload failed '{key}': {ex.Message}");
+            }
+        }
+
+        private bool TryGetHeroFxPrefab(string effectsName, out GameObject prefab)
+        {
+            prefab = null;
+            var key = ResResourcePaths.HeroEffect(effectsName);
+            if (string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+
+            if (_heroFxPrefabs.TryGetValue(key, out prefab) && prefab != null)
+            {
+                return true;
+            }
+
+            if (_heroFxResources != null &&
+                _heroFxResources.TryGetCached<GameObject>(key, out prefab) &&
+                prefab != null)
+            {
+                _heroFxPrefabs[key] = prefab;
+                return true;
+            }
+
+            prefab = null;
+            return false;
+        }
+
+        private void ReleaseHeroFxPrefabs()
+        {
+            ClearSkillFx();
+            if (_heroFxResources != null)
+            {
+                for (var i = 0; i < _heroFxOwnedKeys.Count; i++)
+                {
+                    _heroFxResources.Release(_heroFxOwnedKeys[i]);
+                }
+            }
+
+            _heroFxOwnedKeys.Clear();
+            _heroFxPrefabs.Clear();
+            _heroFxResources = null;
+        }
+
         private RectTransform EnsureFlight()
         {
             if (_flight != null)
@@ -677,6 +1186,7 @@ namespace App.UI
             RestoreIncoming();
             RestoreHitTarget();
             ClearDeathEffect();
+            ClearSkillFx();
             SetAllAnimSpeed(1f);
             _playTimeScale = 1f;
         }
@@ -896,6 +1406,7 @@ namespace App.UI
                 animator.Update(0f);
             }
 
+            // 强制从 0 重播，避免仍停在 default 时 Play 同层无反应。
             animator.Play(clipName, 0, 0f);
             animator.Update(0f);
         }

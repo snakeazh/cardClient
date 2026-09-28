@@ -256,6 +256,20 @@ namespace App.UI
             await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
 
             var run = ViewModel.Session?.Run;
+            // 本局英雄固定：进桌预载释放/命中特效，出刀只走缓存，不再临时 Load。
+            if (run != null)
+            {
+                var hero = HeroMechanics.Resolve(run);
+                await _attackFx.PreloadHeroEffectsAsync(resources, hero);
+                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                    !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
+                {
+                    AppLog.Warn(
+                        LogChannel.UI,
+                        $"[GameUI] 英雄特效预载未就绪 attack={attackFx.Effects} hit={hitFx.Effects}，出刀将回退近战");
+                }
+            }
+
             if (run != null && run.HasBoss)
             {
                 try
@@ -479,7 +493,7 @@ namespace App.UI
             }
 
             // 退局卸载本界面预热的资源（与 OnViewOpen/PreloadBattleFxAsync 的 LoadAsync 一一对应；
-            // 未进缓存的 key Release 为空操作）
+            // 未进缓存的 key Release 为空操作）。英雄特效由 _attackFx.Dispose → ReleaseHeroFxPrefabs 释放。
             var resources = ViewModel?.Resources;
             if (resources != null)
             {
@@ -1017,6 +1031,30 @@ namespace App.UI
             }
             else
             {
+                var hero = HeroMechanics.Resolve(session.Run);
+                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                    _attackFx.CanPlayHeroSkill(attackFx, hitFx) &&
+                    _attackFx.PlayHeroSkill(
+                        session.AttackVisualSlot,
+                        session.AttackLevel,
+                        attackFx,
+                        hitFx,
+                        onHit,
+                        onCollisionDone,
+                        onReturned,
+                        onDone,
+                        timeScale))
+                {
+                    return;
+                }
+
+                if (attackFx != null)
+                {
+                    AppLog.Warn(
+                        LogChannel.UI,
+                        $"[GameUI] HeroEffects 回退近战 attack={attackFx.Effects} hit={hitFx?.Effects}（进桌预载未命中）");
+                }
+
                 _attackFx.Play(
                     session.AttackVisualSlot,
                     session.AttackLevel,

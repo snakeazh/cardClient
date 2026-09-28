@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PlayerSession>();
         services.AddScoped<PlayerMetaService>();
         services.AddScoped<PveRunService>();
-        services.AddScoped<IPveRunService>(sp => sp.GetRequiredService<PveRunService>());
+        // 手工工厂存在的唯一理由是传 GuestAuth:Enabled 布尔；Domain 不依赖 IOptions 包，为一个布尔引入不值。
         services.AddScoped(sp => new AuthService(
             sp.GetServices<ICodeSessionClient>(),
             sp.GetRequiredService<IAuthBindingRepository>(),
@@ -23,11 +23,12 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<IGameConfig>(),
             sp.GetRequiredService<IClock>(),
             configuration.GetValue("GuestAuth:Enabled", false),
-            sp.GetRequiredService<IPveRunService>()));
+            sp.GetRequiredService<PveRunService>()));
         services.AddSingleton<PvpConnectionHub>();
         services.AddSingleton<PvpMatchHost>();
         services.AddSingleton<PvpRewardService>();
         services.AddSingleton<PvpMessageRouter>();
+        services.AddSingleton<PvpCommandDispatcher>();
         services.AddHostedService<PvpTimeoutSweeper>();
         services.AddHostedService<PvpBusSubscriber>();
         return services;

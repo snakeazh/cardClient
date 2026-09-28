@@ -10,26 +10,20 @@ public sealed class PvpBusSubscriber : BackgroundService
 {
     private readonly IServiceProvider _services;
     private readonly PvpConnectionHub _hub;
-    private readonly PvpMatchHost _matches;
-    private readonly PvpRewardService _rewards;
-    private readonly PvpMessageRouter _router;
+    private readonly PvpCommandDispatcher _dispatcher;
     private readonly IPvpBus _bus;
     private readonly ILogger<PvpBusSubscriber> _logger;
 
     public PvpBusSubscriber(
         IServiceProvider services,
         PvpConnectionHub hub,
-        PvpMatchHost matches,
-        PvpRewardService rewards,
-        PvpMessageRouter router,
+        PvpCommandDispatcher dispatcher,
         IPvpBus bus,
         ILogger<PvpBusSubscriber> logger)
     {
         _services = services;
         _hub = hub;
-        _matches = matches;
-        _rewards = rewards;
-        _router = router;
+        _dispatcher = dispatcher;
         _bus = bus;
         _logger = logger;
     }
@@ -89,13 +83,11 @@ public sealed class PvpBusSubscriber : BackgroundService
             var t = (message.Envelope.T ?? string.Empty).Trim().ToLowerInvariant();
             if (t == WsMessageTypes.Battle)
             {
-                await PvpWebSocketHost.ProcessBattleCommandAsync(
-                    _router, _matches, _rewards, message.UserId, message.Envelope, CancellationToken.None);
+                await _dispatcher.ProcessBattleAsync(message.UserId, message.Envelope, CancellationToken.None);
             }
             else if (t == WsMessageTypes.Sync)
             {
-                await PvpWebSocketHost.ProcessSyncCommandAsync(
-                    _router, _matches, message.UserId, message.Envelope, CancellationToken.None);
+                await _dispatcher.ProcessSyncAsync(message.UserId, message.Envelope, CancellationToken.None);
             }
         }
         catch (Exception ex)

@@ -2,23 +2,23 @@ using System.Net;
 using System.Text.Json;
 using CardShare.Contracts;
 using CardShare.Domain;
+using Microsoft.AspNetCore.Http.Json;
+using Microsoft.Extensions.Options;
 
 namespace CardShare.Server.Middleware;
 
 public sealed class DomainExceptionMiddleware
 {
-    private static readonly JsonSerializerOptions Json = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     private readonly RequestDelegate _next;
     private readonly ILogger<DomainExceptionMiddleware> _log;
+    private readonly JsonSerializerOptions _json;
 
-    public DomainExceptionMiddleware(RequestDelegate next, ILogger<DomainExceptionMiddleware> log)
+    public DomainExceptionMiddleware(RequestDelegate next, ILogger<DomainExceptionMiddleware> log, IOptions<JsonOptions> json)
     {
         _next = next;
         _log = log;
+        // 用 ASP.NET 已配置的序列化选项（Program.cs ConfigureHttpJsonOptions），不再手建。
+        _json = json.Value.SerializerOptions;
     }
 
     public async Task Invoke(HttpContext context)
@@ -47,7 +47,7 @@ public sealed class DomainExceptionMiddleware
             {
                 Code = ex.Code,
                 Message = ex.Message
-            }, Json));
+            }, _json));
         }
     }
 

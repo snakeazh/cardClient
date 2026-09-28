@@ -10,7 +10,6 @@ public static class ProfileMapper
         return new PlayerProfileDto
         {
             UserId = profile.UserId.ToString("N"),
-            SaveVersion = profile.SaveVersion,
             NickName = profile.NickName,
             AvatarUrl = profile.AvatarUrl,
             Gold = profile.Gold,

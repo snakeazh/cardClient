@@ -5,7 +5,7 @@ using CardShare.Domain.Players;
 
 namespace CardShare.Domain.Pve;
 
-public sealed class PveRunService : IPveRunService
+public sealed class PveRunService
 {
     private readonly PlayerSession _session;
     private readonly IPveRunRepository _runs;

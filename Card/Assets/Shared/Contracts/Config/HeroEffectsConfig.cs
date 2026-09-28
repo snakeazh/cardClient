@@ -17,6 +17,11 @@ namespace CardShare.Contracts.Config
         public EffectsType Type;
 
         /// <summary>
+        /// 是否投射物
+        /// </summary>
+        public int IsProjectile;
+
+        /// <summary>
         /// 资源名字
         /// </summary>
         public string Effects;

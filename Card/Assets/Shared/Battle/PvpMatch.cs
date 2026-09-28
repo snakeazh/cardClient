@@ -7,72 +7,6 @@ using CardShare.Contracts.Config;
 
 namespace CardShare.Battle
 {
-    public sealed class PvpFighter
-    {
-        public int SeatIndex { get; init; }
-
-        public string UserId { get; init; } = string.Empty;
-
-        public string NickName { get; init; } = string.Empty;
-
-        public SeatSetup Combat { get; init; } = new SeatSetup();
-
-        public int Hp { get; set; }
-
-        public int MaxHp { get; set; }
-
-        public int Gold { get; set; }
-
-        public bool Alive { get; set; } = true;
-
-        public int Rank { get; set; }
-
-        public int RubLeft { get; set; }
-
-        public int ReplaceLeft { get; set; }
-
-        public int PeekLeft { get; set; }
-
-        public bool IsBot { get; init; }
-
-        public bool Disconnected { get; set; }
-
-        public int RewardGold { get; set; }
-
-        public List<int> OwnedRelicIds { get; } = new List<int>();
-
-        public int[] ShopPoolIds { get; set; } = Array.Empty<int>();
-
-        public List<int> ShopOfferIds { get; } = new List<int>();
-
-        public int ShopRefreshCount { get; set; }
-
-        public int FreeShopRefreshLeft { get; set; }
-
-        public bool ShopDone { get; set; }
-
-        /// <summary>各牌型本局亮出次数（炸弹恶魔）。下标对齐 Shared HandType。</summary>
-        public int[] HandTypeShowCounts { get; } = new int[PvpRelicRuntime.HandTypeCountSlots];
-
-        /// <summary>高档饮品剩余自衰减倍率。</summary>
-        public Dictionary<int, float> RelicSelfDecayMag { get; } = new Dictionary<int, float>();
-
-        /// <summary>高档甜品剩余自衰减攻击。</summary>
-        public Dictionary<int, int> SelfDecayAttackLeft { get; } = new Dictionary<int, int>();
-
-        /// <summary>消费主义商店刷新计数。</summary>
-        public Dictionary<int, int> RelicShopRefreshCounts { get; } = new Dictionary<int, int>();
-
-        /// <summary>贪婪胜负累计倍率。</summary>
-        public Dictionary<int, float> RelicWinLoseMag { get; } = new Dictionary<int, float>();
-
-        /// <summary>本局消耗品使用次数。PVP 无消耗入口，恒为 0；预留给召唤后若再开消耗。</summary>
-        public int ConsumableUsesThisRun { get; set; }
-
-        /// <summary>复制本回合选中的圣物 Id。</summary>
-        public int CopiedRelicId { get; set; }
-    }
-
     public sealed class PvpMatch
     {
         public const string PhaseFight = PvpPhases.Fight;
@@ -144,6 +78,9 @@ namespace CardShare.Battle
 
         public IReadOnlyList<PvpDuelTable> Duels => _duels;
 
+        /// <summary>未派发的增量事件；投影只读，清空走 DrainEvents。</summary>
+        internal IReadOnlyList<PvpMatchEventDto> PendingEvents => _pendingEvents;
+
         public static PvpMatch Open(
             Guid roomId,
             int seed,
@@ -208,7 +145,7 @@ namespace CardShare.Battle
 
         public void Showdown(string userId)
         {
-            Act(userId, "showdown", 0, Array.Empty<int>());
+            Act(userId, PvpActions.Showdown, 0, Array.Empty<int>());
             AdvanceIfReady();
         }
 
@@ -436,70 +373,7 @@ namespace CardShare.Battle
         {
             lock (_gate)
             {
-                PvpDuelTable? own = null;
-                var summaries = new PvpDuelSummaryDto[_duels.Count];
-                for (var i = 0; i < _duels.Count; i++)
-                {
-                    var duel = _duels[i];
-                    summaries[i] = new PvpDuelSummaryDto
-                    {
-                        LeftUserId = duel.LeftUserId,
-                        RightUserId = duel.RightUserId,
-                        MonsterName = duel.MonsterName,
-                        Resolved = duel.Resolved
-                    };
-                    if (duel.Involves(userId))
-                    {
-                        own = duel;
-                    }
-                }
-
-                var roster = new PvpFighterDto[_fighters.Length];
-                for (var i = 0; i < _fighters.Length; i++)
-                {
-                    var f = _fighters[i];
-                    roster[i] = new PvpFighterDto
-                    {
-                        UserId = f.UserId,
-                        NickName = f.NickName,
-                        Hp = Math.Max(0, f.Hp),
-                        MaxHp = f.MaxHp,
-                        HeroId = f.Combat.HeroId,
-                        Attack = f.Combat.Attack,
-                        Gold = f.Gold,
-                        Alive = f.Alive,
-                        Rank = f.Rank,
-                        RubLeft = f.RubLeft,
-                        ReplaceLeft = f.ReplaceLeft,
-                        PeekLeft = f.PeekLeft,
-                        IsBot = f.IsBot,
-                        Disconnected = f.Disconnected,
-                        RewardGold = f.RewardGold,
-                        RelicIds = f.OwnedRelicIds.ToArray()
-                    };
-                }
-
-                return new PvpMatchStateDto
-                {
-                    RoomId = RoomId.ToString("N"),
-                    Seed = Seed,
-                    ModeId = ModeId,
-                    ModeName = ModeName,
-                    Round = Round,
-                    Phase = Phase,
-                    FightKind = _kind == PvpFightKind.Monster ? "monster" : "pvp",
-                    Players = roster,
-                    Duels = summaries,
-                    Duel = own == null ? null : own.ViewFor(userId, RoomId.ToString("N")),
-                    DuelDamage = own == null || !own.HpApplied ? 0 : own.AppliedDamage,
-                    PhaseDeadlineUtcMs = PhaseDeadlineUtcMs,
-                    ServerNowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                    StateVersion = StateVersion,
-                    Events = _pendingEvents.Count == 0
-                        ? Array.Empty<PvpMatchEventDto>()
-                        : _pendingEvents.ToArray(),
-                    Shop = ShopViewFor(userId)
-                };
+                return PvpMatchViewProjector.Project(this, _tables, userId);
             }
         }
 
@@ -622,12 +496,7 @@ namespace CardShare.Battle
             // 第六感：败方持有时有概率反转胜负（伤害仍按新胜方座位的 Damages）。
             win = MaybeReverseWinner(duel, snap, win);
 
-            var raw = snap.Damages[win];
-            var damage = (int)Math.Floor(raw * (1f + _mode.DamageRoundScale * Round));
-            if (damage < 0)
-            {
-                damage = 0;
-            }
+            var damage = PvpSettlementRules.ScaleDamage(snap.Damages[win], _mode.DamageRoundScale, Round);
 
             var deathHp = new Dictionary<int, int>();
             ApplyToSeat(duel, 1 - win, damage, deathHp);
@@ -708,26 +577,27 @@ namespace CardShare.Battle
                 return;
             }
 
-            var heal = Math.Max(1, (int)Math.Floor(winner.MaxHp * 0.1));
-            winner.Hp = Math.Min(winner.MaxHp, winner.Hp + heal);
+            winner.Hp = Math.Min(winner.MaxHp, winner.Hp + PvpSettlementRules.MonsterWinHeal(winner.MaxHp));
         }
 
         /// <summary>胜 = 本轮 GoldBase + damage/12 + 20×未用技能数；负 = 胜者金币半额；平局不结算。野怪轮玩家胜同样发金。</summary>
         private void ApplyDuelGold(PvpDuelTable duel, int win, int damage)
         {
             var winner = win == 0 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
-            var skillGold = _tables.GameConst.EverySkillProvideGold > 0 ? _tables.GameConst.EverySkillProvideGold : 20;
-            var winGold = Math.Max(0, _row.GoldBase) + damage / 12;
+            var winGold = PvpSettlementRules.WinnerGold(
+                _row.GoldBase,
+                damage,
+                PvpSettlementRules.SkillGoldUnit(_tables.GameConst),
+                winner == null ? 0 : winner.RubLeft + winner.ReplaceLeft + winner.PeekLeft);
             if (winner != null)
             {
-                winGold += skillGold * (winner.RubLeft + winner.ReplaceLeft + winner.PeekLeft);
                 winner.Gold += winGold;
             }
 
             var loser = win == 1 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
             if (loser != null)
             {
-                loser.Gold += winGold / 2;
+                loser.Gold += PvpSettlementRules.LoserGold(winGold);
             }
         }
 
@@ -995,13 +865,6 @@ namespace CardShare.Battle
                 return;
             }
 
-            var order = new List<int>(deathHp.Keys);
-            order.Sort((a, b) =>
-            {
-                var cmp = Math.Abs(deathHp[a]).CompareTo(Math.Abs(deathHp[b]));
-                return cmp != 0 ? cmp : a.CompareTo(b);
-            });
-
             var aliveAfter = 0;
             for (var i = 0; i < _fighters.Length; i++)
             {
@@ -1011,16 +874,16 @@ namespace CardShare.Battle
                 }
             }
 
-            var rank = aliveAfter + 1;
-            for (var i = 0; i < order.Count; i++)
+            foreach (var pair in PvpSettlementRules.RankDeadOrder(deathHp, aliveAfter))
             {
-                _fighters[order[i]].Rank = rank++;
-                if (_fighters[order[i]].Hp < 0)
+                var fighter = _fighters[pair.Key];
+                fighter.Rank = pair.Value;
+                if (fighter.Hp < 0)
                 {
-                    _fighters[order[i]].Hp = 0;
+                    fighter.Hp = 0;
                 }
 
-                Bump(PvpEventKinds.PlayerEliminated, _fighters[order[i]].UserId, _fighters[order[i]].Rank);
+                Bump(PvpEventKinds.PlayerEliminated, fighter.UserId, fighter.Rank);
             }
         }
 
@@ -1071,11 +934,9 @@ namespace CardShare.Battle
 
         private void FillRankRewards()
         {
-            var rewards = _mode.RankReward ?? Array.Empty<int>();
             for (var i = 0; i < _fighters.Length; i++)
             {
-                var rank = _fighters[i].Rank;
-                _fighters[i].RewardGold = rank >= 1 && rank <= rewards.Length ? rewards[rank - 1] : 0;
+                _fighters[i].RewardGold = PvpSettlementRules.RewardForRank(_fighters[i].Rank, _mode.RankReward);
             }
         }
 
@@ -1097,47 +958,6 @@ namespace CardShare.Battle
         private void Touch()
         {
             StateVersion++;
-        }
-
-        private PvpShopStateDto? ShopViewFor(string userId)
-        {
-            if (Phase != PhaseShop)
-            {
-                return null;
-            }
-
-            var fighter = FighterAt(userId);
-            if (fighter == null || !fighter.Alive)
-            {
-                return null;
-            }
-
-            var offerPrices = new int[fighter.ShopOfferIds.Count];
-            for (var i = 0; i < offerPrices.Length; i++)
-            {
-                offerPrices[i] = _tables.TryGetRelic(fighter.ShopOfferIds[i], out var relic)
-                    ? PvpShopRules.BuyPrice(relic)
-                    : 0;
-            }
-
-            var ownedSellPrices = new int[fighter.OwnedRelicIds.Count];
-            for (var i = 0; i < ownedSellPrices.Length; i++)
-            {
-                ownedSellPrices[i] = _tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic)
-                    ? PvpShopRules.SellPrice(relic)
-                    : 0;
-            }
-
-            return new PvpShopStateDto
-            {
-                OfferIds = fighter.ShopOfferIds.ToArray(),
-                OfferPrices = offerPrices,
-                RefreshCost = PvpShopRules.RefreshCost(fighter, _tables.GameConst),
-                FreeRefreshLeft = fighter.FreeShopRefreshLeft,
-                OwnedRelicIds = fighter.OwnedRelicIds.ToArray(),
-                OwnedSellPrices = ownedSellPrices,
-                Done = fighter.ShopDone
-            };
         }
 
         private bool AllResolved()

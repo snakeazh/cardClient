@@ -12,23 +12,23 @@ public sealed class PvpTimeoutSweeper : BackgroundService
     private readonly PvpMatchHost _matches;
     private readonly PvpMessageRouter _router;
     private readonly PvpRewardService _rewards;
+    private readonly PvpCommandDispatcher _dispatcher;
     private readonly IPvpMatchmaker _matchmaker;
-    private readonly IServiceScopeFactory _scopes;
     private readonly ILogger<PvpTimeoutSweeper> _logger;
 
     public PvpTimeoutSweeper(
         PvpMatchHost matches,
         PvpMessageRouter router,
         PvpRewardService rewards,
+        PvpCommandDispatcher dispatcher,
         IPvpMatchmaker matchmaker,
-        IServiceScopeFactory scopes,
         ILogger<PvpTimeoutSweeper> logger)
     {
         _matches = matches;
         _router = router;
         _rewards = rewards;
+        _dispatcher = dispatcher;
         _matchmaker = matchmaker;
-        _scopes = scopes;
         _logger = logger;
     }
 
@@ -64,13 +64,13 @@ public sealed class PvpTimeoutSweeper : BackgroundService
 
             if (fillEvt is { RoomOpened: true, Room: not null })
             {
-                await PvpWebSocketHost.BroadcastAsync(_router, _matches, _scopes, fillEvt, Guid.Empty, 0, stoppingToken);
+                await _dispatcher.BroadcastRoomEventAsync(fillEvt, Guid.Empty, 0, stoppingToken);
             }
 
             foreach (var match in changed)
             {
                 await _rewards.GrantIfFinishedAsync(match, stoppingToken);
-                await PvpWebSocketHost.BroadcastMatchAsync(_router, match, 0, stoppingToken);
+                await _dispatcher.BroadcastMatchAsync(match, 0, stoppingToken);
             }
 
             if (expired.Count == 0)

@@ -4,11 +4,10 @@ using CardShare.Domain.Config;
 
 namespace CardShare.Domain.Players;
 
+/// <summary>并发策略：由 IPlayerLock 按玩家串行化 + 整档覆盖保存，无行级乐观并发（存档字段增删直接改本类，jsonb 整存整取）。</summary>
 public sealed class PlayerProfile
 {
     public Guid UserId { get; set; }
-
-    public int SaveVersion { get; set; } = 1;
 
     public string NickName { get; set; } = string.Empty;
 

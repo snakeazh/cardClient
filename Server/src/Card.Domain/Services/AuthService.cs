@@ -14,7 +14,7 @@ public sealed class AuthService
     private readonly IGameConfig _config;
     private readonly IClock _clock;
     private readonly bool _guestEnabled;
-    private readonly IPveRunService _runs;
+    private readonly PveRunService _runs;
 
     public AuthService(
         IEnumerable<ICodeSessionClient> clients,
@@ -24,7 +24,7 @@ public sealed class AuthService
         IGameConfig config,
         IClock clock,
         bool guestEnabled,
-        IPveRunService runs)
+        PveRunService runs)
     {
         _clients = clients;
         _bindings = bindings;

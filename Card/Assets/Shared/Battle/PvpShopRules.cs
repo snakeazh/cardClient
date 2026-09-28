@@ -72,6 +72,12 @@ namespace CardShare.Battle
                     continue;
                 }
 
+                // PVP 未实现其机制的圣物（如 PVE 专属消耗效果）不上架，防止卖出无效品。
+                if (!PvpRelicRuntime.IsPvpSupported(tables, relic))
+                {
+                    continue;
+                }
+
                 pool.Add(relic);
             }
 

@@ -48,6 +48,14 @@ namespace App.Resources
         public const string CardPointEffect01 = "Effect/UI/Card/CardPointEffect01";
         public const string CardPointEffect02 = "Effect/UI/Card/CardPointEffect02";
         public const string CardPointEffect03 = "Effect/UI/Card/CardPointEffect03";
+        /// <summary>英雄局内攻击特效目录 Assets/Res/Effect/Character/。完整 key = HeroEffect(name)。</summary>
+        public const string HeroEffectRoot = "Effect/Character/";
+
+        /// <summary>英雄攻击特效：Assets/Res/Effect/Character/{effectsName}.prefab。</summary>
+        public static string HeroEffect(string effectsName)
+        {
+            return string.IsNullOrEmpty(effectsName) ? null : HeroEffectRoot + effectsName;
+        }
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";

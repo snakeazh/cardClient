@@ -30,6 +30,7 @@ namespace App.Config
             var guideStepConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideStepConfig);
             var handScoreConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HandScoreConfig);
             var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
+            var heroEffectsConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEffectsConfig);
             var heroEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEntryConfig);
             var itemConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.ItemConfig);
             var levelConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.LevelConfig);
@@ -53,6 +54,7 @@ namespace App.Config
             GuideStepConfig.Load(ConfigJson.FromArrayJson<GuideStepConfig>(guideStepConfigAsset.text));
             HandScoreConfig.Load(ConfigJson.FromArrayJson<HandScoreConfig>(handScoreConfigAsset.text));
             HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));
+            HeroEffectsConfig.Load(ConfigJson.FromArrayJson<HeroEffectsConfig>(heroEffectsConfigAsset.text));
             HeroEntryConfig.Load(ConfigJson.FromArrayJson<HeroEntryConfig>(heroEntryConfigAsset.text));
             ItemConfig.Load(ConfigJson.FromArrayJson<ItemConfig>(itemConfigAsset.text));
             LevelConfig.Load(ConfigJson.FromArrayJson<LevelConfig>(levelConfigAsset.text));

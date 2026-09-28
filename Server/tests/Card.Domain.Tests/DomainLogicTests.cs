@@ -54,17 +54,18 @@ public class EnergyResetTests
 public class TalentDrawTests
 {
     [Fact]
-    public void FirstDrawIsFreeThenPriceSteps()
+    public void DrawCostStartsAtBaseThenPriceSteps()
     {
         var config = TestConfig.Create();
         var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
-        Assert.Equal(0, profile.GetDrawCost(config));
+        Assert.Equal(50, profile.GetDrawCost(config));
 
+        profile.GrantWalletGold(50);
         var first = profile.DrawTalent(101, config);
-        Assert.Equal(0, first.GoldSpent);
+        Assert.Equal(50, first.GoldSpent);
         Assert.Equal(1, first.Count);
         Assert.Equal(1, profile.Talent.DrawCount);
-        Assert.Equal(50, profile.GetDrawCost(config));
+        Assert.Equal(100, profile.GetDrawCost(config));
     }
 
     [Fact]
@@ -72,7 +73,6 @@ public class TalentDrawTests
     {
         var config = TestConfig.Create();
         var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
-        profile.DrawTalent(101, config);
         var ex = Assert.Throws<DomainException>(() => profile.DrawTalent(101, config));
         Assert.Equal(ErrorCodes.InsufficientGold, ex.Code);
     }

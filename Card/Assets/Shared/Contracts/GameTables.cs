@@ -189,7 +189,7 @@ namespace CardShare.Contracts
                 AdShopGoldDailyLimit = 10,
                 DefaultHeroId = 1,
                 ExchangePointsForGoldCoins = 10,
-                TalentChestNeedGold = 0,
+                TalentChestNeedGold = 50,
                 TalentNeedChestGold = 50
             };
             GameConst.Load(gameConst);

@@ -65,10 +65,13 @@ namespace CardShare.Battle
         /// <summary>贪婪胜负累计倍率。</summary>
         public Dictionary<int, float> RelicWinLoseMag { get; } = new Dictionary<int, float>();
 
-        /// <summary>本局消耗品使用次数。PVP 无消耗入口，恒为 0；预留给召唤后若再开消耗。</summary>
+        /// <summary>本局消耗品使用次数（UseConsumableGetMult / GetAttack 的计数源）。</summary>
         public int ConsumableUsesThisRun { get; set; }
 
         /// <summary>复制本回合选中的圣物 Id。</summary>
         public int CopiedRelicId { get; set; }
+
+        /// <summary>凤凰羽毛（UseRoundNullify）已激活：本桌比牌结算时受到的伤害变为 0，结算后清除。</summary>
+        public bool NullifyDamageNextHit { get; set; }
     }
 }

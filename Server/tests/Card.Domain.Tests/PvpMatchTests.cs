@@ -1011,6 +1011,37 @@ internal static class PvpTestTables
 {
     public static GameTables Classic() => Build(ClassicRounds());
 
+    /// <summary>带治疗/血量/消耗词条的表：绷带113、急救粉119、小精灵210、月光酒229、凤凰羽毛425、
+    /// PVE 专属消耗 999（UseDamageFixed，验证不上架/拒用）。</summary>
+    public static GameTables WithHealRelics()
+    {
+        var fallback = GameTables.Fallback();
+        var relics = fallback.Relics.Concat(new[]
+        {
+            new RelicConfig { Id = 113, Name = "绷带", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9001 } },
+            new RelicConfig { Id = 119, Name = "急救粉", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9002 }, UseType = 1 },
+            new RelicConfig { Id = 210, Name = "小精灵", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9003, 9004 } },
+            new RelicConfig { Id = 220, Name = "激励徽章", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9009 } },
+            new RelicConfig { Id = 222, Name = "永恒之心", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9008 } },
+            new RelicConfig { Id = 229, Name = "月光酒", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9005 } },
+            new RelicConfig { Id = 425, Name = "凤凰羽毛", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9006 }, UseType = 1 },
+            new RelicConfig { Id = 999, Name = "PVE专属", UnlockConditionId = 0, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = new[] { 9007 }, UseType = 1 }
+        }).ToArray();
+        var relicEntries = new[]
+        {
+            new RelicEntryConfig { Id = 9001, Type = MechanismType.HeroHpReplyEveryRoundEnding, Value = new[] { 2f } },
+            new RelicEntryConfig { Id = 9002, Type = MechanismType.HealHpPercent, Value = new[] { 0.2f } },
+            new RelicEntryConfig { Id = 9003, Type = MechanismType.HeroHpMax, Value = new[] { 30f } },
+            new RelicEntryConfig { Id = 9004, Type = MechanismType.HeroHpReplyEveryRoundEnding, Value = new[] { 2f } },
+            new RelicEntryConfig { Id = 9005, Type = MechanismType.WinHeal, Value = new[] { 3f } },
+            new RelicEntryConfig { Id = 9006, Type = MechanismType.UseRoundNullify, Value = new[] { 1f, 0.3f } },
+            new RelicEntryConfig { Id = 9007, Type = MechanismType.UseDamageFixed, Value = new[] { 50f } },
+            new RelicEntryConfig { Id = 9008, Type = MechanismType.EveryRoundGetHpMax, Value = new[] { 1f } },
+            new RelicEntryConfig { Id = 9009, Type = MechanismType.DefeatGetHpMax, Value = new[] { 3f } }
+        };
+        return Build(ClassicRounds(), relics: relics, relicEntries: relicEntries);
+    }
+
     /// <summary>带技能次数/NoSkill/EveryRubbingNum 词条的表：圣物 10-14、英雄 2/3、天赋 500。</summary>
     public static GameTables WithSkillEntries()
     {

@@ -206,6 +206,8 @@ namespace App.UI.Popup
                         index = i;
                     }
 
+                    // 遗物页特殊描述（RelicConfig.SpecialDesc，同 Desc 口径未解锁也显示），其余页不显示
+                    var relicRow = sibling.Tab == IllustratedBookTab.Relic ? RelicConfig.Get(sibling.Id) : null;
                     displays.Add(new TalentDetailViewModel.DisplayEntry
                     {
                         Name = sibling.Unlocked ? sibling.Name : null,
@@ -214,6 +216,7 @@ namespace App.UI.Popup
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
                         Icon = iconResolver != null ? iconResolver(sibling) : null,
                         AcquireMethod = ResolveAcquireMethod(sibling),
+                        SpecialDesc = relicRow != null ? relicRow.SpecialDesc : null,
                         MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0,
                         Quality = sibling.Quality
                     });

@@ -137,6 +137,10 @@ namespace App.Net
         /// <summary>编辑器测试：PVP 向服务端添加圣物（index = relicId）。</summary>
         public Task DebugGrantRelicAsync(int relicId) => _ws.BattleAsync(PvpActions.DebugGrant, relicId);
 
+        /// <summary>使用消耗型圣物（治疗等）：发 battle(use) 并等权威快照回刷（血量/持有列表）。</summary>
+        public Task<bool> UseRelicAsync(int relicId)
+            => BattleAndWaitAsync(() => _ws.BattleAsync(PvpActions.Use, relicId));
+
         /// <summary>等下一个 match_update（商店操作后等快照回刷新），超时返回 false。</summary>
         public async Task<bool> WaitNextUpdateAsync(int timeoutMs)
         {

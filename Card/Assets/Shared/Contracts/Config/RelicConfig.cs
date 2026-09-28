@@ -61,6 +61,11 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public string Desc;
 
+        /// <summary>
+        /// 特殊描述
+        /// </summary>
+        public string SpecialDesc;
+
     }
 }
 

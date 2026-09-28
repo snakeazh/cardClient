@@ -38,6 +38,9 @@ namespace CardShare.Contracts
 
         /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
         public int[] RelicIds { get; set; } = System.Array.Empty<int>();
+
+        /// <summary>凤凰羽毛等已激活：本次比牌受到的伤害将变为 0，结算后清除。</summary>
+        public bool NullifyDamage { get; set; }
     }
 
     public sealed class PvpDuelSummaryDto

@@ -53,7 +53,8 @@ namespace CardShare.Battle
                     IsBot = f.IsBot,
                     Disconnected = f.Disconnected,
                     RewardGold = f.RewardGold,
-                    RelicIds = f.OwnedRelicIds.ToArray()
+                    RelicIds = f.OwnedRelicIds.ToArray(),
+                    NullifyDamage = f.NullifyDamageNextHit
                 };
             }
 

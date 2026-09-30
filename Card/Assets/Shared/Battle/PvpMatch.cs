@@ -118,7 +118,8 @@ namespace CardShare.Battle
                     Combat = combat,
                     Hp = hp,
                     MaxHp = hp,
-                    Gold = mode.InitialGold,
+                    // 初始金币 = 模式基础 + 英雄 InitialFunds（对齐 PVE StartNewRun；PVP 无天赋侧）。
+                    Gold = mode.InitialGold + PvpHeroRuntime.InitialGold(tables, combat.HeroId),
                     Alive = true,
                     IsBot = pub.IsBot,
                     ShopPoolIds = combat.ShopPoolIds ?? Array.Empty<int>()
@@ -269,6 +270,64 @@ namespace CardShare.Battle
 
                 SettleResolvedDuels();
                 TryAdvanceRound();
+            }
+        }
+
+        /// <summary>主动放弃本局：判负淘汰拿当前最差名次，座位按断线同款兜底不再被等待。返回 true = 有状态变化需广播。</summary>
+        public bool Abandon(string userId)
+        {
+            lock (_gate)
+            {
+                if (Phase == PhaseFinished)
+                {
+                    return false;
+                }
+
+                var index = SeatOf(userId);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                var fighter = _fighters[index];
+                if (!fighter.Alive || fighter.Rank > 0)
+                {
+                    return false;
+                }
+
+                fighter.Hp = 0;
+                fighter.Alive = false;
+                fighter.Disconnected = true;
+                if (Phase == PhaseShop)
+                {
+                    fighter.ShopDone = true;
+                }
+
+                Bump(PvpEventKinds.PlayerOffline, userId, 0);
+                RankDead(new Dictionary<int, int> { [index] = 0 });
+
+                if (Phase == PhaseFight)
+                {
+                    // 掉线座位当轮自动锁定（超时同款兜底），保证对局不被卡住。
+                    var duel = FindDuel(userId);
+                    if (duel != null && !duel.Resolved)
+                    {
+                        var seat = duel.ViewerSeat(userId);
+                        if (!duel.IsLocked(seat))
+                        {
+                            duel.LockSeat(seat);
+                        }
+                    }
+
+                    SettleResolvedDuels();
+                    TryAdvanceRound();
+                }
+                else if (Phase == PhaseShop && AllShopDone())
+                {
+                    AdvanceFromShop();
+                }
+
+                return true;
             }
         }
 
@@ -517,6 +576,39 @@ namespace CardShare.Battle
             ConsumeNullify(duel);
 
             var deathHp = new Dictionary<int, int>();
+            if (damage > 0 && victim != null)
+            {
+                var victimHeroId = victim.Combat.HeroId;
+                // 英雄闪避（MissDamagePer）：掷中本次伤害为 0，并按 MissGetDamage 反击攻击方。
+                if (PvpHeroRuntime.RollDodge(_tables, victimHeroId, _shopRandom))
+                {
+                    var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
+                    if (counter > 0)
+                    {
+                        ApplyToSeat(duel, win, counter, deathHp);
+                    }
+
+                    damage = 0;
+                }
+                else
+                {
+                    // 英雄承伤减免（HeroTakeDamagePer）：对齐 PVE IncomingDamageAfterMitigation 的乘区与保底。
+                    damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, victimHeroId, damage);
+                }
+            }
+
+            // 英雄吸血（BloodSucking）：胜方按实际造成伤害回血，夹到血量上限（PVE 只有圣物侧，英雄侧此处补上）。
+            var winnerFighter = FighterOfDuelSeat(duel, win);
+            if (damage > 0 && winnerFighter != null && winnerFighter.Alive)
+            {
+                var dealt = victim != null ? Math.Min(victim.Hp, damage) : damage;
+                var heal = PvpHeroRuntime.BloodSuckingHeal(_tables, winnerFighter.Combat.HeroId, dealt);
+                if (heal > 0)
+                {
+                    winnerFighter.Hp = Math.Min(winnerFighter.MaxHp, winnerFighter.Hp + heal);
+                }
+            }
+
             ApplyToSeat(duel, 1 - win, damage, deathHp);
             duel.MarkHpApplied(win, damage);
             ApplyDuelGold(duel, win, damage);
@@ -617,12 +709,13 @@ namespace CardShare.Battle
             winner.Hp = Math.Min(winner.MaxHp, winner.Hp + PvpSettlementRules.MonsterWinHeal(winner.MaxHp));
         }
 
-        /// <summary>胜 = 本轮 GoldBase + damage/12 + 20×未用技能数；负 = 胜者金币半额；平局不结算。野怪轮玩家胜同样发金。</summary>
+        /// <summary>胜 = 本轮 GoldBase（英雄 GetGoldAfterLevel 只放大这一基础项，对齐 PVE GrantStageGold） + damage/12 + 20×未用技能数；
+        /// 负 = 胜者金币半额；平局不结算。野怪轮玩家胜同样发金。damage 为减免/闪避后的实际落地伤害。</summary>
         private void ApplyDuelGold(PvpDuelTable duel, int win, int damage)
         {
             var winner = win == 0 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
             var winGold = PvpSettlementRules.WinnerGold(
-                _row.GoldBase,
+                winner == null ? _row.GoldBase : PvpHeroRuntime.SettlementGold(_tables, winner.Combat.HeroId, _row.GoldBase),
                 damage,
                 PvpSettlementRules.SkillGoldUnit(_tables.GameConst),
                 winner == null ? 0 : winner.RubLeft + winner.ReplaceLeft + winner.PeekLeft);
@@ -839,7 +932,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic bag is full.");
             }
 
-            var price = PvpShopRules.BuyPrice(relic);
+            var price = PvpShopRules.BuyPrice(_tables, fighter.Combat.HeroId, relic);
             if (fighter.Gold < price)
             {
                 throw new InvalidOperationException("Not enough gold.");

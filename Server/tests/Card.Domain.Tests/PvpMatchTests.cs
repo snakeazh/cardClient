@@ -770,6 +770,120 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void AbandonEliminatesAndRanksLastWithoutBlockingOthers()
+    {
+        var match = OpenClassic();
+        var a = match.Fighters[0];
+        match.DrainEvents();
+
+        Assert.True(match.Abandon(a.UserId));
+        Assert.False(a.Alive);
+        Assert.Equal(0, a.Hp);
+        Assert.True(a.Disconnected);
+        Assert.Equal(4, a.Rank);
+        Assert.Equal(3, match.Fighters.Count(f => f.Alive));
+
+        // 放弃者座位当轮自动锁定（野怪轮对面已锁，直接结算），后续不再被等待。
+        var duel = match.Duels.First(d => d.Involves(a.UserId));
+        Assert.True(duel.Resolved);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+
+        var events = match.DrainEvents();
+        Assert.Contains(events, e => e.Kind == "player_offline" && e.UserId == a.UserId);
+        Assert.Contains(events, e => e.Kind == "player_eliminated" && e.UserId == a.UserId && e.Value == 4);
+
+        // 已淘汰/不存在的玩家再放弃：返回 false 无副作用。
+        Assert.False(match.Abandon(a.UserId));
+        Assert.False(match.Abandon(Guid.NewGuid().ToString("N")));
+        Assert.Empty(match.DrainEvents());
+    }
+
+    [Fact]
+    public void AbandonInShopMarksShopDoneAndCanAdvance()
+    {
+        var match = Open(PvpTestTables.Classic(), shopPool: new[] { 1, 2 });
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+
+        for (var i = 1; i < 4; i++)
+        {
+            match.Act(match.Fighters[i].UserId, "shop_done", 0, Array.Empty<int>());
+        }
+
+        var a = match.Fighters[0];
+        Assert.True(match.Abandon(a.UserId));
+        Assert.True(a.ShopDone);
+        Assert.False(a.Alive);
+        // 其余玩家已 shop_done，放弃者补齐后直接进入下一轮。
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+    }
+
+    [Fact]
+    public void AbandonDownToLastSurvivorFinishesMatch()
+    {
+        var match = Open(PvpTestTables.OnePvpRound(), new[] { Pub("甲"), Pub("乙") });
+        var a = match.Fighters[0];
+        var b = match.Fighters[1];
+
+        Assert.True(match.Abandon(a.UserId));
+        Assert.Equal(2, a.Rank);
+        // 对手尚未锁定，对局不卡也不提前结束。
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+
+        match.Showdown(b.UserId);
+        Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1));
+        Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
+        Assert.Equal(1, b.Rank);
+        Assert.True(b.RewardGold > 0);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "match_finished");
+
+        // 已结束再放弃：无副作用。
+        Assert.False(match.Abandon(b.UserId));
+    }
+
+    [Fact]
+    public void ApplyPvpHpBoostScalesHpByGameConstPercent()
+    {
+        var tables = PvpTestTables.Classic();
+        tables.GameConst.PvpHeroHpBoostPercent = 1300;
+        var seat = CombatBonuses.BuildSeat(0, "u", "n", 1, Array.Empty<CombatTalentCount>(), tables);
+        seat.Hp = 100;
+        seat.MaxHp = 100;
+        var attack = seat.Attack;
+
+        CombatBonuses.ApplyPvpHpBoost(seat, tables);
+
+        // 提高 1300%：100 × (1 + 1300%) = 1400，攻击力不变。
+        Assert.Equal(1400, seat.Hp);
+        Assert.Equal(1400, seat.MaxHp);
+        Assert.Equal(attack, seat.Attack);
+    }
+
+    [Fact]
+    public void ApplyPvpHpBoostZeroOrNegativePercentKeepsHp()
+    {
+        var tables = PvpTestTables.Classic();
+        var seat = CombatBonuses.BuildSeat(0, "u", "n", 1, Array.Empty<CombatTalentCount>(), tables);
+        seat.Hp = 100;
+        seat.MaxHp = 100;
+
+        CombatBonuses.ApplyPvpHpBoost(seat, tables);
+
+        Assert.Equal(100, seat.Hp);
+        Assert.Equal(100, seat.MaxHp);
+    }
+
+    [Fact]
     public void RelicSkillCountBonusesApplyNextRound()
     {
         var match = Open(PvpTestTables.WithSkillEntries(), shopPool: new[] { 10, 12 });
@@ -1086,6 +1200,51 @@ internal static class PvpTestTables
             heroes: heroes,
             relics: relics,
             relicEntries: relicEntries,
+            heroEntries: heroEntries,
+            talentRows: talentRows,
+            talentEntries: talentEntries);
+    }
+
+    /// <summary>带英雄词条的表：2 吸血鬼（承伤-25%）、3 商人（初始金 80 / 买价-20% / 过关金+20%）、
+    /// 4 武僧（100% 闪避 + 反击 attack×1+2）、5 狂战士（吸血 50%）、6 射手（追击 35%）；天赋 500 追击 25%。
+    /// pvpOnly 时只配一个 PVP 轮，方便直接构造玩家对玩家结算。</summary>
+    public static GameTables WithHeroEntries(bool pvpOnly = false)
+    {
+        var heroes = new[]
+        {
+            new HeroConfig { Id = 1, HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = Array.Empty<int>() },
+            new HeroConfig { Id = 2, Name = "吸血鬼", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2101 } },
+            new HeroConfig { Id = 3, Name = "商人", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2102, 2103, 2104 } },
+            new HeroConfig { Id = 4, Name = "武僧", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2105, 2106 } },
+            new HeroConfig { Id = 5, Name = "狂战士", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2107 } },
+            new HeroConfig { Id = 6, Name = "射手", HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = new[] { 2108 } }
+        };
+        var heroEntries = new[]
+        {
+            new HeroEntryConfig { Id = 2101, Type = MechanismType.HeroTakeDamagePer, Value = new[] { -0.25f } },
+            new HeroEntryConfig { Id = 2102, Type = MechanismType.InitialFunds, Value = new[] { 80f } },
+            new HeroEntryConfig { Id = 2103, Type = MechanismType.RelicPricePer, Value = new[] { -0.2f } },
+            new HeroEntryConfig { Id = 2104, Type = MechanismType.GetGoldAfterLevel, Value = new[] { 0.2f } },
+            new HeroEntryConfig { Id = 2105, Type = MechanismType.MissDamagePer, Value = new[] { 1f } },
+            new HeroEntryConfig { Id = 2106, Type = MechanismType.MissGetDamage, Value = new[] { 1f, 2f } },
+            new HeroEntryConfig { Id = 2107, Type = MechanismType.BloodSucking, Value = new[] { 0.5f } },
+            new HeroEntryConfig { Id = 2108, Type = MechanismType.ExtraAttackOneTime, Value = new[] { 0.35f } }
+        };
+        var fallback = GameTables.Fallback();
+        var talentRows = fallback.TalentRows.Concat(new[]
+        {
+            new TalentConfig { Id = 10, TalentId = 500, TalentLevel = 1, TalentEntry = 3001 }
+        }).ToArray();
+        var talentEntries = new[]
+        {
+            new TalentEntryConfig { Id = 3001, Type = MechanismType.ProOfExtraAttack, Value = 0.25f }
+        };
+        var rounds = pvpOnly
+            ? new[] { Round(1, 1, PvpFightKind.Pvp, 0, 15) }
+            : ClassicRounds();
+        return Build(
+            rounds,
+            heroes: heroes,
             heroEntries: heroEntries,
             talentRows: talentRows,
             talentEntries: talentEntries);

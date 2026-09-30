@@ -988,6 +988,41 @@ namespace App.UI
                 session.NotifyUi();
                 return session.LastAttackMissed;
             };
+            // 特效攻击：命中瞬间同时结算 + 受击动画/特效 + 出字；无震屏。
+            Func<bool> onHeroSkillHit = () =>
+            {
+                AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] onHeroSkillHit 结算扣血");
+                session.ApplyPendingAttackHits();
+                TryDissolveIfLethal(session);
+                session.NotifyUi();
+                return session.LastAttackMissed;
+            };
+            Action onHeroSkillDamageText = () =>
+            {
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] onHeroSkillDamageText 出字 miss={session.LastAttackMissed} dmg={session.TakenDamage}");
+                ShowAttackHpTexts(session);
+                if (_hpTextRt != null && _hpTextRt.parent != null)
+                {
+                    _hpTextRt.parent.SetAsLastSibling();
+                    _hpTextRt.SetAsLastSibling();
+                }
+
+                if (!session.IncomingAttack)
+                {
+                    var mainSlot = session.AttackVisualSlot;
+                    for (var slot = 0; slot < _enemyItems.Length; slot++)
+                    {
+                        if (slot == mainSlot || !session.LastAttackHitApplied(slot))
+                        {
+                            continue;
+                        }
+
+                        _attackFx.ReactSlot(slot, session.LastAttackHitMissed(slot));
+                    }
+                }
+            };
             Action onCollisionDone = PlayPendingEnemyDeathEffects;
             Action onReturned = () =>
             {
@@ -1039,21 +1074,20 @@ namespace App.UI
                         session.AttackLevel,
                         attackFx,
                         hitFx,
-                        onHit,
+                        onHeroSkillHit,
+                        onHeroSkillDamageText,
                         onCollisionDone,
                         onReturned,
                         onDone,
                         timeScale))
                 {
+                    AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] 走特效出刀路径");
                     return;
                 }
 
-                if (attackFx != null)
-                {
-                    AppLog.Warn(
-                        LogChannel.UI,
-                        $"[GameUI] HeroEffects 回退近战 attack={attackFx.Effects} hit={hitFx?.Effects}（进桌预载未命中）");
-                }
+                AppLog.Warn(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] 回退近战 resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
 
                 _attackFx.Play(
                     session.AttackVisualSlot,
@@ -1500,6 +1534,12 @@ namespace App.UI
             if (_hpTextRt == null || hit == Vector3.zero)
             {
                 return;
+            }
+
+            // mask 开打时会 SetAsLastSibling；伤害字要把整支 hptextdi 抬到 mask 之上才看得见。
+            if (_hpTextRt.parent != null)
+            {
+                _hpTextRt.parent.SetAsLastSibling();
             }
 
             _hpTextRt.SetAsLastSibling();

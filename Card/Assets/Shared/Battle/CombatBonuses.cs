@@ -115,6 +115,21 @@ namespace CardShare.Battle
             };
         }
 
+        /// <summary>PVP 座位血量加成：按 GameConst.PvpHeroHpBoostPercent 等比放大 Hp/MaxHp（攻击力不变）。
+        /// &lt;=0 不调整。仅 PVP 建房时由服务端调用，PVE 不走这里。</summary>
+        public static void ApplyPvpHpBoost(SeatSetup seat, IGameTables tables)
+        {
+            var percent = tables.GameConst.PvpHeroHpBoostPercent;
+            if (percent <= 0 || seat.Hp <= 0)
+            {
+                return;
+            }
+
+            var boosted = (int)Math.Round(seat.Hp * (1d + percent / 100d));
+            seat.Hp = boosted;
+            seat.MaxHp = boosted;
+        }
+
         public static CombatPanelStats EvaluatePanel(
             IGameTables tables,
             int heroId,
@@ -180,7 +195,9 @@ namespace CardShare.Battle
                     + SumHeroEntry(tables, hero, MechanismType.Damage),
                 CritRate = panel.CritRate,
                 CritMultiplier = panel.CritMultiplier,
-                ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack),
+                // 追击概率 = 天赋 ProOfExtraAttack + 英雄 ExtraAttackOneTime，求和后由 CombatDamage 掷一次（PVE RollCombined 语义）。
+                ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack)
+                    + (hero != null ? PvpHeroRuntime.ExtraAttackChance(tables, hero) : 0f),
                 ExtraAttackDamageRatio = ExtraAttackDamageRatio,
                 CanExecute = !situation.DefenderIsPlayer &&
                              !situation.DefenderIsBoss &&

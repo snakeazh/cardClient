@@ -91,7 +91,7 @@ namespace CardShare.Battle
             for (var i = 0; i < offerPrices.Length; i++)
             {
                 offerPrices[i] = tables.TryGetRelic(fighter.ShopOfferIds[i], out var relic)
-                    ? PvpShopRules.BuyPrice(relic)
+                    ? PvpShopRules.BuyPrice(tables, fighter.Combat.HeroId, relic)
                     : 0;
             }
 

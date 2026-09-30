@@ -39,6 +39,12 @@ namespace App.Bootstrap
         [Tooltip("关闭后不连服务器：启动跳过登录，闯关走本地局（PVP/商店云端等不可用）")]
         [SerializeField] private bool enableServerConnection = true;
 
+        [Header("帧率")]
+        [Tooltip("允许 iOS 高帧率(GameConst.GameFps>60 时对 iOS 生效，系统按屏幕刷新率钳制，ProMotion 可达 120)。" +
+                 "仅在导出面板同时勾选「iOS 高性能+」与「iOS Metal」后才可打开；" +
+                 "微信 WebGL 转换路径平台封顶 60，未开 Metal 时打开本开关会导致主循环 setTimeout 空转耗电。")]
+        [SerializeField] private bool allowIosHighFrameRate = false;
+
         private AppServicesHost _services;
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
@@ -128,6 +134,7 @@ namespace App.Bootstrap
             await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
 
             await ConfigTables.LoadAsync(_resources.Resources);
+            ApplyFrameRate();
             UnityGameConfigLoader.LoadFromAppConfig();
             CardShare.Battle.HandEvaluator.Tables = UnityGameConfigLoader.Current;
             await PortraitLoader.PreloadAsync(_resources.Resources);
@@ -177,6 +184,24 @@ namespace App.Bootstrap
             await _ui.UI.Open(_services.Resolve<HomeViewModel>());
             await _services.Resolve<NavigationViewModel>().EnsureShown();
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
+        }
+
+        /// <summary>按 GameConst.GameFps 应用目标帧率（&lt;=0 表示不限帧）。须在配置表加载后调用。</summary>
+        private void ApplyFrameRate()
+        {
+            QualitySettings.vSyncCount = 0;
+            var fps = GameConst.Instance.GameFps;
+            Application.targetFrameRate = -1;
+            AppLog.Info(LogChannel.Config, $"[Boot] targetFrameRate={Application.targetFrameRate}");
+        }
+
+        private static bool IsWeChatIos()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return string.Equals(WeChatWASM.WX.GetDeviceInfo().platform, "ios", StringComparison.OrdinalIgnoreCase);
+#else
+            return false;
+#endif
         }
 
         private static async Task RegisterAtlas(

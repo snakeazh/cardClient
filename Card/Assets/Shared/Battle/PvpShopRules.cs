@@ -32,7 +32,7 @@ namespace CardShare.Battle
             var pool = BuildPool(fighter, tables);
             while (offers.Count < OfferCount && pool.Count > 0)
             {
-                var pick = PickWeighted(pool, rng);
+                var pick = PickWeighted(pool, tables, fighter.Combat.HeroId, rng);
                 if (pick == null)
                 {
                     break;
@@ -49,7 +49,9 @@ namespace CardShare.Battle
             FillOffers(fighter, tables, rng);
         }
 
-        public static int BuyPrice(RelicConfig relic) => Math.Max(0, relic.Price);
+        /// <summary>购买价：英雄 RelicPricePer 折扣（对齐 PVE HeroMechanics.BuyPrice），货架投影同源。</summary>
+        public static int BuyPrice(IGameTables tables, int heroId, RelicConfig relic)
+            => PvpHeroRuntime.BuyPrice(tables, heroId, relic);
 
         public static int SellPrice(RelicConfig relic) => Math.Max(0, relic.SellingPrice);
 
@@ -84,17 +86,18 @@ namespace CardShare.Battle
             return pool;
         }
 
-        private static RelicConfig? PickWeighted(List<RelicConfig> pool, Random rng)
+        private static RelicConfig? PickWeighted(List<RelicConfig> pool, IGameTables tables, int heroId, Random rng)
         {
             if (pool.Count == 0)
             {
                 return null;
             }
 
+            // 权重经英雄词条（EpicLegendRelicProUp 等）修正，口径同 PVE HeroMechanics.ShopWeight。
             var total = 0f;
             for (var i = 0; i < pool.Count; i++)
             {
-                total += Math.Max(0f, pool[i].RefreshProbability);
+                total += PvpHeroRuntime.ShopWeight(tables, heroId, pool[i]);
             }
 
             if (total <= 0f)
@@ -106,7 +109,7 @@ namespace CardShare.Battle
             var acc = 0f;
             for (var i = 0; i < pool.Count; i++)
             {
-                acc += Math.Max(0f, pool[i].RefreshProbability);
+                acc += PvpHeroRuntime.ShopWeight(tables, heroId, pool[i]);
                 if (roll <= acc)
                 {
                     return pool[i];

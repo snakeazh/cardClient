@@ -865,7 +865,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
-  _popupAnim: {fileID: 0}
+  _popupAnim: {fileID: 3854314251039412974}
 --- !u!1 &6739610974430229057
 GameObject:
   m_ObjectHideFlags: 0

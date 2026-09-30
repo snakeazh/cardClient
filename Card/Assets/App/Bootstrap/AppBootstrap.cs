@@ -62,7 +62,8 @@ namespace App.Bootstrap
         private async void Start()
         {
             QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = -1;
+            // 锁 60：高刷屏放开(-1)会满负载发热降频，帧率反而更低更不稳。
+            Application.targetFrameRate = 60;
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();

@@ -85,5 +85,8 @@ namespace CardShare.Battle
 
         /// <summary>凤凰羽毛（UseRoundNullify）已激活：本桌比牌结算时受到的伤害变为 0，结算后清除。</summary>
         public bool NullifyDamageNextHit { get; set; }
+
+        /// <summary>圣光燃烧已发动次数。本局保留，后续出手按这个次数加伤。</summary>
+        public int HolyLightCasts { get; set; }
     }
 }

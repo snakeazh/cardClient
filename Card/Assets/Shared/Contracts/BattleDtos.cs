@@ -103,6 +103,12 @@ namespace CardShare.Contracts
 
         /// <summary>当前剩余换牌次数。同上。</summary>
         public int ReplaceLeft { get; set; }
+
+        /// <summary>野怪类型。玩家座位保持默认，精英/领主加减伤只看这个字段。</summary>
+        public CardShare.Contracts.Config.MonsterType MonsterType { get; set; }
+
+        /// <summary>圣光燃烧已发动次数。开桌前写入，本手出手加成按这个次数算。</summary>
+        public int HolyLightCasts { get; set; }
     }
 
     public enum BattleModeKind

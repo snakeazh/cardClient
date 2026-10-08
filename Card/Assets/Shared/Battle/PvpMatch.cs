@@ -483,25 +483,66 @@ namespace CardShare.Battle
             }
 
             var monsterGroup = _row.MonsterGroup;
+            var openingDeaths = new Dictionary<int, int>();
+            ApplyOpeningChips(slots, openingDeaths);
             for (var i = 0; i < slots.Count; i++)
             {
                 var slot = slots[i];
-                var left = ToPlayerSeat(_fighters[slot.LeftSeat], 0);
+                var leftFighter = _fighters[slot.LeftSeat];
+                if (!leftFighter.Alive)
+                {
+                    continue;
+                }
+
+                var rightFighter = slot.IsMonster ? null : _fighters[slot.RightSeat!.Value];
+                if (rightFighter != null && !rightFighter.Alive)
+                {
+                    continue;
+                }
+
                 SeatSetup right;
                 var vsPlayer = !slot.IsMonster;
                 if (vsPlayer)
                 {
-                    right = ToPlayerSeat(_fighters[slot.RightSeat!.Value], 1);
+                    ApplyOpeningHolyLight(leftFighter, rightFighter!, openingDeaths);
+                    if (rightFighter!.Alive && leftFighter.Alive)
+                    {
+                        ApplyOpeningHolyLight(rightFighter, leftFighter, openingDeaths);
+                    }
+
+                    if (!leftFighter.Alive || !rightFighter.Alive)
+                    {
+                        var survivor = leftFighter.Alive ? leftFighter : rightFighter.Alive ? rightFighter : null;
+                        if (survivor != null)
+                        {
+                            PayRoundGold(survivor, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: true, won: true);
+                        }
+
+                        continue;
+                    }
+
+                    right = ToPlayerSeat(rightFighter, 1);
                 }
                 else
                 {
                     right = ToMonsterSeat(monsterGroup);
+                    ApplyOpeningHolyLightToMonster(leftFighter, right);
+                    if (!leftFighter.Alive)
+                    {
+                        continue;
+                    }
+
+                    if (right.Hp <= 0)
+                    {
+                        GrantHeroKill(leftFighter);
+                        PayRoundGold(leftFighter, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: false, won: true);
+                        continue;
+                    }
                 }
 
+                var left = ToPlayerSeat(leftFighter, 0);
                 var duelSeed = unchecked(Seed * 397 ^ Round * 911 ^ i * 17);
                 var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer);
-                var leftFighter = _fighters[slot.LeftSeat];
-                var rightFighter = vsPlayer ? _fighters[slot.RightSeat!.Value] : null;
                 duel.BeforeCompare = (seat, setup) =>
                 {
                     var fighter = seat == 0 ? leftFighter : rightFighter;
@@ -513,10 +554,13 @@ namespace CardShare.Battle
                     setup.RubLeft = fighter.RubLeft;
                     setup.PeekLeft = fighter.PeekLeft;
                     setup.ReplaceLeft = fighter.ReplaceLeft;
+                    setup.HolyLightCasts = fighter.HolyLightCasts;
                     PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
                 };
                 _duels.Add(duel);
             }
+
+            RankDead(openingDeaths);
 
             Phase = PhaseFight;
             PhaseDeadlineUtcMs = _mode.OpenPhaseSeconds > 0
@@ -567,6 +611,15 @@ namespace CardShare.Battle
             win = MaybeReverseWinner(duel, snap, win);
 
             var damage = PvpSettlementRules.ScaleDamage(snap.Damages[win], _mode.DamageRoundScale, Round);
+            var winnerFighter = FighterOfDuelSeat(duel, win);
+            if (winnerFighter != null)
+            {
+                damage = PvpHeroRuntime.ScaleAoeDamage(
+                    _tables,
+                    winnerFighter.Combat.HeroId,
+                    Math.Max(0, winnerFighter.Combat.Attack),
+                    damage);
+            }
 
             // 凤凰羽毛：败方激活则本次比牌伤害归零；标记随本桌结算消费（未挡到也算用掉）。
             var victim = FighterOfDuelSeat(duel, 1 - win);
@@ -588,7 +641,13 @@ namespace CardShare.Battle
                     var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
                     if (counter > 0)
                     {
+                        var attacker = FighterOfDuelSeat(duel, win);
+                        var attackerAlive = attacker != null && attacker.Alive;
                         ApplyToSeat(duel, win, counter, deathHp);
+                        if (attackerAlive && attacker != null && !attacker.Alive)
+                        {
+                            GrantHeroKill(victim);
+                        }
                     }
 
                     damage = 0;
@@ -600,19 +659,54 @@ namespace CardShare.Battle
                 }
             }
 
-            // 英雄吸血（BloodSucking）：胜方按实际造成伤害回血，夹到血量上限（PVE 只有圣物侧，英雄侧此处补上）。
-            var winnerFighter = FighterOfDuelSeat(duel, win);
-            if (damage > 0 && winnerFighter != null && winnerFighter.Alive)
+            var winnerForKill = winnerFighter;
+            if (damage > 0 && winnerForKill != null && winnerForKill.Alive)
             {
                 var dealt = victim != null ? Math.Min(victim.Hp, damage) : damage;
-                var heal = PvpHeroRuntime.BloodSuckingHeal(_tables, winnerFighter.Combat.HeroId, dealt);
+                var heal = PvpHeroRuntime.BloodSuckingHeal(_tables, winnerForKill.Combat.HeroId, dealt);
                 if (heal > 0)
                 {
-                    winnerFighter.Hp = Math.Min(winnerFighter.MaxHp, winnerFighter.Hp + heal);
+                    winnerForKill.Hp = Math.Min(winnerForKill.MaxHp, winnerForKill.Hp + heal);
                 }
             }
 
+            var victimAlive = victim != null && victim.Alive;
             ApplyToSeat(duel, 1 - win, damage, deathHp);
+            if (victimAlive && victim != null && !victim.Alive && winnerForKill != null)
+            {
+                GrantHeroKill(winnerForKill);
+            }
+
+            if (duel.VsMonster && win == 0 && winnerForKill != null)
+            {
+                var monsterHp = duel.Engine.MutableSeat(1).Hp;
+                var monsterDied = monsterHp > 0 && damage >= monsterHp;
+                if (monsterDied)
+                {
+                    GrantHeroKill(winnerForKill);
+                }
+                else if (IsPairWin(snap, win))
+                {
+                    var burn = NextHolyLightDamage(winnerForKill);
+                    if (burn > 0 && monsterHp - damage > 0 && burn >= monsterHp - damage)
+                    {
+                        GrantHeroKill(winnerForKill);
+                    }
+                }
+            }
+            else if (winnerForKill != null && IsPairWin(snap, win) && victim != null && victim.Alive)
+            {
+                var burn = NextHolyLightDamage(winnerForKill);
+                if (burn > 0)
+                {
+                    ApplyToSeat(duel, 1 - win, burn, deathHp);
+                    if (!victim.Alive)
+                    {
+                        GrantHeroKill(winnerForKill);
+                    }
+                }
+            }
+
             duel.MarkHpApplied(win, damage);
             ApplyDuelGold(duel, win);
             ApplyMonsterWinHeal(duel, win);
@@ -1082,10 +1176,136 @@ namespace CardShare.Battle
             fighter.Hp -= damage;
             if (fighter.Hp <= 0)
             {
-                deathHp[index] = fighter.Hp;
-                fighter.Alive = false;
-                ReleaseRelics(fighter);
+                KillFighter(fighter, deathHp);
             }
+        }
+
+        private void KillFighter(PvpFighter fighter, Dictionary<int, int> deathHp)
+        {
+            if (!fighter.Alive)
+            {
+                return;
+            }
+
+            deathHp[fighter.SeatIndex] = fighter.Hp;
+            fighter.Alive = false;
+            ReleaseRelics(fighter);
+        }
+
+        private void ApplyOpeningChips(IReadOnlyList<PvpPairSlot> slots, Dictionary<int, int> deathHp)
+        {
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                var left = _fighters[slot.LeftSeat];
+                if (left.Alive)
+                {
+                    ApplyHeroChip(left, deathHp);
+                }
+
+                if (slot.IsMonster)
+                {
+                    continue;
+                }
+
+                var right = _fighters[slot.RightSeat!.Value];
+                if (right.Alive)
+                {
+                    ApplyHeroChip(right, deathHp);
+                }
+            }
+        }
+
+        private void ApplyHeroChip(PvpFighter fighter, Dictionary<int, int> deathHp)
+        {
+            var raw = PvpHeroRuntime.MonsterNumChip(_tables, fighter.Combat.HeroId, 1);
+            if (raw <= 0 || !fighter.Alive)
+            {
+                return;
+            }
+
+            var damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, fighter.Combat.HeroId, raw);
+            if (damage <= 0)
+            {
+                return;
+            }
+
+            fighter.Hp -= damage;
+            if (fighter.Hp <= 0)
+            {
+                KillFighter(fighter, deathHp);
+            }
+        }
+
+        private void ApplyOpeningHolyLight(PvpFighter caster, PvpFighter target, Dictionary<int, int> deathHp)
+        {
+            var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
+            for (var i = 0; i < times && caster.Alive && target.Alive; i++)
+            {
+                var damage = NextHolyLightDamage(caster);
+                if (damage <= 0)
+                {
+                    continue;
+                }
+
+                target.Hp -= damage;
+                if (target.Hp <= 0)
+                {
+                    KillFighter(target, deathHp);
+                    GrantHeroKill(caster);
+                }
+            }
+        }
+
+        private void ApplyOpeningHolyLightToMonster(PvpFighter caster, SeatSetup monster)
+        {
+            var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
+            for (var i = 0; i < times && caster.Alive && monster.Hp > 0; i++)
+            {
+                var damage = NextHolyLightDamage(caster);
+                if (damage <= 0)
+                {
+                    continue;
+                }
+
+                monster.Hp = Math.Max(0, monster.Hp - damage);
+            }
+        }
+
+        private int NextHolyLightDamage(PvpFighter caster)
+        {
+            if (!PvpHeroRuntime.TryHolyLight(_tables, caster.Combat.HeroId, out var ratio, out var perCast))
+            {
+                return 0;
+            }
+
+            var damage = PvpHeroRuntime.HolyLightDamage(
+                Math.Max(0, caster.Combat.Attack),
+                ratio,
+                caster.HolyLightCasts,
+                perCast);
+            caster.HolyLightCasts++;
+            return damage;
+        }
+
+        private void GrantHeroKill(PvpFighter killer)
+        {
+            var gold = PvpHeroRuntime.KillGold(_tables, killer.Combat.HeroId);
+            if (gold != 0)
+            {
+                killer.Gold += gold;
+            }
+
+            var attack = PvpHeroRuntime.KillAttack(_tables, killer.Combat.HeroId);
+            if (attack != 0)
+            {
+                killer.Combat.Attack = Math.Max(0, killer.Combat.Attack + attack);
+            }
+        }
+
+        private static bool IsPairWin(BattleSnapshot snap, int win)
+        {
+            return win >= 0 && win < snap.Scores.Length && snap.Scores[win].Type == HandType.Pair;
         }
 
         private void RankDead(Dictionary<int, int> deathHp)
@@ -1303,7 +1523,8 @@ namespace CardShare.Battle
                 RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds),
                 RubLeft = fighter.RubLeft,
                 PeekLeft = fighter.PeekLeft,
-                ReplaceLeft = fighter.ReplaceLeft
+                ReplaceLeft = fighter.ReplaceLeft,
+                HolyLightCasts = fighter.HolyLightCasts
             };
             PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
             return setup;
@@ -1323,7 +1544,8 @@ namespace CardShare.Battle
                     Alive = true,
                     Attack = Math.Max(1, monster.MonsterDamage),
                     Hp = Math.Max(1, monster.MonsterHp),
-                    MaxHp = Math.Max(1, monster.MonsterHp)
+                    MaxHp = Math.Max(1, monster.MonsterHp),
+                    MonsterType = monster.Type
                 };
             }
 

@@ -1461,7 +1461,7 @@ internal static class PvpTestTables
     }
 
     /// <summary>带英雄词条的表：2 吸血鬼（承伤-25%）、3 商人（初始金 80 / 买价-20% / 过关金+20%）、
-    /// 4 武僧（100% 闪避 + 反击 attack×1+2）、5 狂战士（吸血 50%）、6 射手（追击 35%）；天赋 500 追击 25%。
+    /// 4 武僧（100% 闪避 + 反击 攻击×200%）、5 狂战士（吸血 50%）、6 射手（追击 35%）；天赋 500 追击 25%。
     /// pvpOnly 时只配一个 PVP 轮，方便直接构造玩家对玩家结算。</summary>
     public static GameTables WithHeroEntries(bool pvpOnly = false)
     {

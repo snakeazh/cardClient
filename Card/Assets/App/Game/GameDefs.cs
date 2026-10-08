@@ -436,6 +436,12 @@ namespace App.Game
         public int PendingLevelHpMaxBonus;
         /// <summary>会员卡：本店剩余免费刷新次数。</summary>
         public int FreeShopRefreshLeft;
+        /// <summary>暗灵分裂成长：本局累计的额外分裂比例。击杀后下一刀生效。</summary>
+        public float VersatilePersonBonus;
+        /// <summary>暗灵分裂成长：距下一档还差的击杀进度。</summary>
+        public float VersatilePersonKillProgress;
+        /// <summary>圣光燃烧已发动次数。本局保留，乘每层加成后加进后续伤害。</summary>
+        public int HolyLightCasts;
         /// <summary>垫脚石 / 勇气徽章永久攻击。卖掉不清，进关加在英雄攻击上。</summary>
         public int PermanentAttackBonus;
         /// <summary>永恒之心 / 激励徽章永久血上限。卖掉不清，进关加在英雄血上。</summary>
@@ -479,6 +485,9 @@ namespace App.Game
             GoldSpentThisRun = 0;
             RubRelicMagForever = 0f;
             FreeShopRefreshLeft = 0;
+            VersatilePersonBonus = 0f;
+            VersatilePersonKillProgress = 0f;
+            HolyLightCasts = 0;
             PermanentAttackBonus = 0;
             PermanentMaxHpBonus = 0;
             CritStacks = 0;

@@ -34,8 +34,8 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 条件伤害百分比：死灵法师对精英/领主；决斗大师/孩子王按存活敌人数；亡命徒低血。
-        /// 与天赋同 Type 在 <c>ComputeAttackDamage</c> 相加；精英判定仅英雄侧生效。
+        /// 英雄侧条件伤害：<see cref="MechanismType.AttackBossDamage"/> 对精英和领主都生效。
+        /// 与天赋同 Type 在 <c>ComputeAttackDamage</c> 相加；天赋仍只吃领主。
         /// </summary>
         public static float SumDamagePercent(
             HeroConfig hero,
@@ -65,6 +65,177 @@ namespace App.Game
             }
 
             return percent;
+        }
+
+        /// <summary>
+        /// 掉血加伤：floor(已损失生命 / Value[0]) 层，每层 Value[1]，层数上限 Value[2]。
+        /// </summary>
+        public static float LostHpDamagePercent(HeroConfig hero, int hp, int maxHp)
+        {
+            var lost = Math.Max(0, maxHp - hp);
+            var percent = 0f;
+            ForEachEntry(hero, entry =>
+            {
+                if (entry.Type != MechanismType.GainDamageUpWhenHpDecreases)
+                {
+                    return;
+                }
+
+                var step = ValueAt(entry);
+                if (step <= 0f)
+                {
+                    return;
+                }
+
+                var stacks = (int)Math.Floor(lost / step);
+                var cap = (int)Math.Round(ValueAt(entry, 2));
+                if (cap > 0)
+                {
+                    stacks = Math.Min(stacks, cap);
+                }
+
+                percent += stacks * ValueAt(entry, 1);
+            });
+            return percent;
+        }
+
+        /// <summary>
+        /// 分裂成长：每累计 Value[0] 次击杀（缺省 1）增加一档。
+        /// 精英/领主用 Value[2]，其余用 Value[1]。进度由调用方按本局保存。
+        /// </summary>
+        public static float VersatilePersonKillGain(HeroConfig hero, bool eliteOrBoss, ref float progress)
+        {
+            var gain = 0f;
+            var next = progress;
+            ForEachEntry(hero, entry =>
+            {
+                if (entry.Type != MechanismType.VersatilePersonUp)
+                {
+                    return;
+                }
+
+                var unit = ValueAt(entry);
+                if (unit <= 0f)
+                {
+                    unit = 1f;
+                }
+
+                next += 1f;
+                if (next + 0.0001f < unit)
+                {
+                    return;
+                }
+
+                next -= unit;
+                gain += eliteOrBoss ? ValueAt(entry, 2) : ValueAt(entry, 1);
+            });
+            progress = next;
+            return gain;
+        }
+
+        /// <summary>攻击力达到词条阈值时，本次出手改为 100% 群体伤害。</summary>
+        public static bool AttackBecomesFullAoe(HeroConfig hero, int attack)
+        {
+            var becomes = false;
+            ForEachEntry(hero, entry =>
+            {
+                if (entry.Type == MechanismType.AoeDamageWhenAttack && attack >= ValueAt(entry))
+                {
+                    becomes = true;
+                }
+            });
+            return becomes;
+        }
+
+        /// <summary>回合开始受到的伤害 = 存活敌人数 × Value[0]。没有该词条或没有敌人时为 0。</summary>
+        public static int MonsterNumDamage(HeroConfig hero, int aliveEnemies)
+        {
+            if (aliveEnemies <= 0)
+            {
+                return 0;
+            }
+
+            var per = SumValue(hero, MechanismType.MonsterNumDamage);
+            if (per == 0f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(aliveEnemies * per));
+        }
+
+        /// <summary>圣光燃烧在每手开始发动的次数（Value[0]）。</summary>
+        public static int HolyLightRoundCasts(HeroConfig hero)
+        {
+            var times = 0;
+            ForEachEntry(hero, entry =>
+            {
+                if (entry.Type != MechanismType.HolyLightBurning)
+                {
+                    return;
+                }
+
+                times += Math.Max(0, (int)Math.Round(ValueAt(entry)));
+            });
+            return times;
+        }
+
+        /// <summary>圣光燃烧：伤害比例 Value[1]，每次发动后后续伤害加成 Value[2]。</summary>
+        public static bool TryHolyLight(HeroConfig hero, out float ratio, out float perCast)
+        {
+            var ratioValue = 0f;
+            var perCastValue = 0f;
+            var found = false;
+            ForEachEntry(hero, entry =>
+            {
+                if (found || entry.Type != MechanismType.HolyLightBurning)
+                {
+                    return;
+                }
+
+                found = true;
+                ratioValue = ValueAt(entry, 1);
+                perCastValue = ValueAt(entry, 2);
+            });
+            ratio = ratioValue;
+            perCast = perCastValue;
+            return found;
+        }
+
+        /// <summary>当前这一发用发动前的层数：攻击 × 比例 × (1 + 已发动次数 × 每层加成)。</summary>
+        public static int HolyLightDamage(int attack, float ratio, int casts, float perCast)
+        {
+            if (attack <= 0 || ratio == 0f)
+            {
+                return 0;
+            }
+
+            var mul = 1f + Math.Max(0, casts) * perCast;
+            return Math.Max(0, (int)Math.Round(attack * ratio * mul));
+        }
+
+        /// <summary>已发动次数带来的后续出手加成。</summary>
+        public static float HolyLightOutgoingPercent(HeroConfig hero, int casts)
+        {
+            if (casts <= 0 || !TryHolyLight(hero, out _, out var perCast))
+            {
+                return 0f;
+            }
+
+            return casts * perCast;
+        }
+
+        /// <summary>与遗物 <c>AttackPowerDamage</c> 相同：次数 Value[0]，倍率缺省 1、取 Value[1]。</summary>
+        public static int AttackPowerDamage(HeroEntryConfig entry, int attack)
+        {
+            var hits = Math.Max(0, (int)Math.Round(ValueAt(entry)));
+            var factor = entry?.Value != null && entry.Value.Length > 1 ? ValueAt(entry, 1) : 1f;
+            if (hits <= 0 || attack <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(attack * factor * hits));
         }
 
         public static float SumMultiplierExtra(HeroConfig hero, bool firstShowThisStage)

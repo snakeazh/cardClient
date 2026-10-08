@@ -89,11 +89,11 @@ public class PvpHeroRuntimeTests
         Assert.Single(snap.Winners);
         Assert.True(snap.Damages[snap.Winners[0]] > 0);
 
-        // 100% 闪避：败方不掉血；反击 = round(防守方攻击 10 × 1 + 2) = 12 打给胜方。
+        // 100% 闪避：败方不掉血；反击 = round(防守方攻击 10 × 2 × 1) = 20 打给胜方。
         var loser = PvpBattleTable.SameUser(LoserId(duel, snap.Winners[0]), a.UserId) ? a : b;
         var winner = ReferenceEquals(loser, a) ? b : a;
         Assert.Equal(1000, loser.Hp);
-        Assert.Equal(1000 - 12, winner.Hp);
+        Assert.Equal(1000 - 20, winner.Hp);
         Assert.Equal(0, match.ViewFor(a.UserId).DuelDamage);
     }
 

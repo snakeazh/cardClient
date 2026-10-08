@@ -130,6 +130,8 @@ namespace App.Game
         private readonly Dictionary<int, int> _pvpOfferPrices = new Dictionary<int, int>();
         private readonly Dictionary<int, int> _pvpSellPrices = new Dictionary<int, int>();
         private int _pvpShopRefreshCost;
+        private int _pvpRelicSlots = 4;
+        private int _pvpNextSlotCost;
         private bool _pvpShopDone;
         private bool _pvpShopDoneSent;
 
@@ -419,6 +421,7 @@ namespace App.Game
             Run.ConsecutiveLosses = 0;
             Run.Tilted = false;
             Run.RelicConfigIds.Clear();
+            Run.RelicPowers.Clear();
             Run.ShopOfferIds.Clear();
             Run.ShopRefreshCount = 0;
             _serverRunId = null;
@@ -501,6 +504,7 @@ namespace App.Game
             Run.ShopRefreshCount = dto.ShopRefreshCount;
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
+            Run.RelicPowers.Clear();
             ReplaceIdList(Run.ShopOfferIds, dto.ShopOfferIds);
             SyncRemovedRelicTrackers();
             if (notify)
@@ -2411,11 +2415,15 @@ namespace App.Game
             : (Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost);
 
         /// <summary>
-        /// 可携带圣物上限：<see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。PVP 用 GameConst.DefaultRelicNumMax（与服务端一致）。
+        /// 可携带圣物上限：PVE 为 <see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
+        /// PVP 为已解锁槽位（开局 4，最多 10），以服务端快照为准。
         /// </summary>
         public int RelicCarryMax => IsPvp
-            ? (GameConst.IsLoaded && GameConst.Instance.DefaultRelicNumMax > 0 ? GameConst.Instance.DefaultRelicNumMax : 3)
+            ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : 4)
             : GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
+
+        /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>
+        public int PvpNextRelicSlotCost => IsPvp ? _pvpNextSlotCost : 0;
 
         public int EffectiveSellPrice(int relicId)
         {
@@ -2461,6 +2469,91 @@ namespace App.Game
         }
 
         public bool OwnsRelicConfig(int relicId) => Run.RelicConfigIds.Contains(relicId);
+
+        /// <summary>已携带圣物的显示等级。未记录时为 1。</summary>
+        public int RelicLevelAt(int index)
+        {
+            var powers = Run.RelicPowers;
+            if (powers == null || index < 0 || index >= powers.Count || powers[index] <= 0)
+            {
+                return 1;
+            }
+
+            return powers[index];
+        }
+
+        /// <summary>该圣物当前占了几格。三合一之后是 1 格 LV3，不再按 3 份计。</summary>
+        public int RelicOwnedCount(int relicId)
+        {
+            if (relicId <= 0 || Run.RelicConfigIds == null)
+            {
+                return 0;
+            }
+
+            var total = 0;
+            var ids = Run.RelicConfigIds;
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] == relicId)
+                {
+                    total++;
+                }
+            }
+
+            return total;
+        }
+
+        private int RelicCopyCount(int relicId)
+        {
+            var count = 0;
+            var ids = Run.RelicConfigIds;
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] == relicId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>PVP 商店花金币解锁下一圣物槽。价格以快照 NextSlotCost 为准。</summary>
+        public async Task<bool> TryUnlockPvpRelicSlotAsync()
+        {
+            var pvp = _pvpSession;
+            if (pvp == null || Phase != GamePhase.Shop || _pvpShopDone || _pvpNextSlotCost <= 0)
+            {
+                return false;
+            }
+
+            if (Run.Gold < _pvpNextSlotCost)
+            {
+                Hint = "金币不足";
+                Notify();
+                return false;
+            }
+
+            var slotsBefore = _pvpRelicSlots;
+            try
+            {
+                await pvp.Invoker.EnqueueUnlockRelicSlot();
+                await pvp.WaitNextUpdateAsync(3000);
+                if (_pvpRelicSlots <= slotsBefore)
+                {
+                    return false;
+                }
+
+                Hint = $"已解锁第 {_pvpRelicSlots} 个圣物槽";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+        }
 
         public bool CanRefreshShop =>
             IsPvp
@@ -2604,11 +2697,13 @@ namespace App.Game
                 return false;
             }
 
+            var goldBefore = Run.Gold;
+            var countBefore = Run.RelicConfigIds.Count;
             try
             {
                 await pvp.Invoker.EnqueueShopBuy(relicId);
                 await pvp.WaitNextUpdateAsync(3000);
-                if (!OwnsRelicConfig(relicId))
+                if (Run.Gold >= goldBefore && Run.RelicConfigIds.Count == countBefore)
                 {
                     return false;
                 }
@@ -2634,11 +2729,12 @@ namespace App.Game
                 return false;
             }
 
+            var copiesBefore = RelicCopyCount(relicId);
             try
             {
                 await pvp.Invoker.EnqueueShopSell(relicId);
                 await pvp.WaitNextUpdateAsync(3000);
-                if (OwnsRelicConfig(relicId))
+                if (RelicCopyCount(relicId) >= copiesBefore)
                 {
                     return false;
                 }
@@ -8507,13 +8603,34 @@ namespace App.Game
             }
 
             MirrorPvpIds(Run.ShopOfferIds, shop.OfferIds);
-            MirrorPvpIds(Run.RelicConfigIds, shop.OwnedRelicIds);
+            MirrorPvpRelics(shop.OwnedRelicIds, shop.OwnedRelicPower);
             MirrorPvpPrices(_pvpOfferPrices, shop.OfferIds, shop.OfferPrices);
             MirrorPvpPrices(_pvpSellPrices, shop.OwnedRelicIds, shop.OwnedSellPrices);
             Run.FreeShopRefreshLeft = shop.FreeRefreshLeft;
             _pvpShopRefreshCost = shop.RefreshCost;
+            _pvpNextSlotCost = shop.NextSlotCost;
+            if (shop.RelicSlots > 0)
+            {
+                _pvpRelicSlots = shop.RelicSlots;
+            }
             _pvpShopDone = shop.Done;
             _pvpShopDoneSent = _pvpShopDoneSent || shop.Done;
+        }
+
+        private void MirrorPvpRelics(int[] ids, int[] powers)
+        {
+            MirrorPvpIds(Run.RelicConfigIds, ids);
+            Run.RelicPowers.Clear();
+            if (ids == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < ids.Length; i++)
+            {
+                var power = powers != null && i < powers.Length && powers[i] > 0 ? powers[i] : 1;
+                Run.RelicPowers.Add(power);
+            }
         }
 
         private static void MirrorPvpIds(List<int> target, int[] source)
@@ -8541,7 +8658,10 @@ namespace App.Game
             var n = Math.Min(ids.Length, prices.Length);
             for (var i = 0; i < n; i++)
             {
-                target[ids[i]] = prices[i];
+                if (!target.TryGetValue(ids[i], out var existing) || prices[i] < existing)
+                {
+                    target[ids[i]] = prices[i];
+                }
             }
         }
 
@@ -8753,11 +8873,15 @@ namespace App.Game
             }
 
             Run.Gold = self.Gold;
+            if (self.RelicSlots > 0)
+            {
+                _pvpRelicSlots = self.RelicSlots;
+            }
             Run.PeekGoodCharges = self.RubLeft;
             Run.ChaKanGoodCharges = self.PeekLeft;
             Run.TiHuanGoodCharges = self.ReplaceLeft;
             // 已购圣物全阶段镜像：战斗期圣物栏/技能次数标签才能显示（效果由服务端结算，本地只展示）。
-            MirrorPvpIds(Run.RelicConfigIds, self.RelicIds);
+            MirrorPvpRelics(self.RelicIds, self.RelicPower);
         }
 
         private static void SplitPvpSeats(

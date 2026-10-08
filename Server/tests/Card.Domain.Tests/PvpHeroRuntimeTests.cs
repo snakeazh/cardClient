@@ -172,19 +172,19 @@ public class PvpHeroRuntimeTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        var damage = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
-        // 基础金 15 × (1 + 0.2) = 18，再 + damage/12 + 20×未用技能(3+1+1)。
-        var winGold = 18 + damage / 12 + 20 * (3 + 1 + 1);
+        // 基础金 15 × (1 + 0.2) = 18，只放大基础项。开局 230 的利息是 20。连胜 1 不加奖。
+        const int winGold = 18 + 20 * (3 + 1 + 1) + 20;
+        const int loseGold = (18 + 20 * (3 + 1 + 1)) / 2 + 20;
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
             Assert.Equal(goldA + winGold, a.Gold);
-            Assert.Equal(goldB + winGold / 2, b.Gold);
+            Assert.Equal(goldB + loseGold, b.Gold);
         }
         else
         {
             Assert.Equal(goldB + winGold, b.Gold);
-            Assert.Equal(goldA + winGold / 2, a.Gold);
+            Assert.Equal(goldA + loseGold, a.Gold);
         }
     }
 

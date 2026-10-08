@@ -54,6 +54,8 @@ namespace CardShare.Battle
                     Disconnected = f.Disconnected,
                     RewardGold = f.RewardGold,
                     RelicIds = f.OwnedRelicIds.ToArray(),
+                    RelicPower = f.OwnedRelicPower.ToArray(),
+                    RelicSlots = f.RelicSlots,
                     NullifyDamage = f.NullifyDamageNextHit
                 };
             }
@@ -96,10 +98,13 @@ namespace CardShare.Battle
             }
 
             var ownedSellPrices = new int[fighter.OwnedRelicIds.Count];
+            var ownedPower = new int[fighter.OwnedRelicIds.Count];
             for (var i = 0; i < ownedSellPrices.Length; i++)
             {
+                var power = PvpRelicBag.PowerAt(fighter, i);
+                ownedPower[i] = power;
                 ownedSellPrices[i] = tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic)
-                    ? PvpShopRules.SellPrice(relic)
+                    ? PvpShopRules.SellPrice(relic) * power
                     : 0;
             }
 
@@ -110,7 +115,10 @@ namespace CardShare.Battle
                 RefreshCost = PvpShopRules.RefreshCost(fighter, tables.GameConst),
                 FreeRefreshLeft = fighter.FreeShopRefreshLeft,
                 OwnedRelicIds = fighter.OwnedRelicIds.ToArray(),
+                OwnedRelicPower = ownedPower,
                 OwnedSellPrices = ownedSellPrices,
+                RelicSlots = fighter.RelicSlots,
+                NextSlotCost = PvpRelicBag.NextSlotCost(fighter.RelicSlots),
                 Done = fighter.ShopDone
             };
         }

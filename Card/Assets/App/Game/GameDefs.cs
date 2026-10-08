@@ -390,6 +390,8 @@ namespace App.Game
         public ConsumableId? DisabledConsumable;
         /// <summary>当前持有的 RelicConfig Id。消耗或卖掉后会移除，商店可再次刷出。</summary>
         public readonly List<int> RelicConfigIds = new List<int>();
+        /// <summary>与 <see cref="RelicConfigIds"/> 对齐的合成等级。空或越界按 1。PVP 三合一为 3。</summary>
+        public readonly List<int> RelicPowers = new List<int>();
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();
         /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter。</summary>

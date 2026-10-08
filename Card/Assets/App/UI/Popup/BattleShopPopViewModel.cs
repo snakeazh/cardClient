@@ -38,8 +38,11 @@ namespace App.UI.Popup
             ShowRefreshNum = new ObservableProperty<bool>(session.Run.FreeShopRefreshLeft > 0);
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             CarryNum = new ObservableProperty<string>(FormatCarryNum());
+            AddNewNum = new ObservableProperty<string>(FormatAddNewNum());
+            ShowAddNew = new ObservableProperty<bool>(CanShowAddNew());
             ShopRevision = new ObservableProperty<int>();
             RefreshCommand = new RelayCommand(() => Session.RefreshShopOffers(), () => Session.CanRefreshShop);
+            AddNewCommand = new RelayCommand(UnlockSlot, CanUnlockSlot);
             NextStageCommand = new RelayCommand(Leave);
         }
 
@@ -57,9 +60,16 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> CarryNum { get; }
 
+        /// <summary>解锁下一圣物槽的金币。非 PVP 或已满为空。</summary>
+        public ObservableProperty<string> AddNewNum { get; }
+
+        public ObservableProperty<bool> ShowAddNew { get; }
+
         public ObservableProperty<int> ShopRevision { get; }
 
         public IRelayCommand RefreshCommand { get; }
+
+        public IRelayCommand AddNewCommand { get; }
 
         public IRelayCommand NextStageCommand { get; }
 
@@ -147,8 +157,39 @@ namespace App.UI.Popup
             ShowRefreshNum.Value = freeLeft > 0;
             GoldText.Value = Session.Run.Gold.ToString();
             CarryNum.Value = FormatCarryNum();
+            AddNewNum.Value = FormatAddNewNum();
+            ShowAddNew.Value = CanShowAddNew();
             RefreshCommand.RaiseCanExecuteChanged();
+            AddNewCommand.RaiseCanExecuteChanged();
             ShopRevision.Value++;
+        }
+
+        private string FormatAddNewNum()
+        {
+            var cost = Session.PvpNextRelicSlotCost;
+            return cost > 0 ? cost.ToString() : string.Empty;
+        }
+
+        private bool CanShowAddNew()
+        {
+            return Session.IsPvp && Session.PvpNextRelicSlotCost > 0;
+        }
+
+        private bool CanUnlockSlot()
+        {
+            return CanShowAddNew() && Session.Run.Gold >= Session.PvpNextRelicSlotCost;
+        }
+
+        private async void UnlockSlot()
+        {
+            try
+            {
+                await Session.TryUnlockPvpRelicSlotAsync();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
 
         private string FormatCarryNum()

@@ -19,7 +19,7 @@ namespace CardShare.Battle
     /// - InitialFunds：开局金币，<see cref="InitialGold"/>（PVP 无天赋侧，基础 + 英雄）。
     /// - RelicPricePer：商店购买折扣，<see cref="BuyPrice"/>（PvpShopRules.BuyPrice / 货架投影同源）。
     /// - EpicLegendRelicProUp：史诗/传说上架权重，<see cref="ShopWeight"/>（PVE PickWeightedRelic 同源口径）。
-    /// - GetGoldAfterLevel：回合胜方基础金币加成，<see cref="SettlementGold"/>（PVE GrantStageGold 只乘配表基础金）。
+    /// - GetGoldAfterLevel：双方轮次基础金币加成，<see cref="SettlementGold"/>（只乘配表基础金，技能/连胜/利息不乘）。
     /// - HeroTakeDamagePer：承伤百分比减免，<see cref="MitigateIncomingDamage"/>。
     /// - MissDamagePer：闪避，<see cref="RollDodge"/>；MissGetDamage：闪避反击，<see cref="DodgeCounterDamage"/>。
     /// - BloodSucking：胜方按实际伤害回血，<see cref="BloodSuckingHeal"/>（PVE 只实现圣物侧，英雄侧由 PVP 补上）。
@@ -213,7 +213,7 @@ namespace CardShare.Battle
         }
 
         /// <summary>回合结算基础金币 = round(baseGold × (1 + GetGoldAfterLevel))，下限 0。
-        /// 对齐 PVE GrantStageGold：只乘配表基础金，击杀/技能/伤害换算部分不放大（PVP 由 WinnerGold 另行相加）。</summary>
+        /// 只乘配表基础金；未用技能、连胜/连败、利息由 PvpSettlementRules.RoundGold 另行相加。</summary>
         public static int SettlementGold(IGameTables tables, int heroId, int baseGold)
         {
             var per = SumValue(tables, heroId, MechanismType.GetGoldAfterLevel);

@@ -183,7 +183,7 @@ namespace App.UI.Popup
 
             _awaitingSellFx = true;
             _pendingSellGold = gold;
-            if (await Session.TrySellShopRelicAsync(RelicId) && !Session.OwnsRelicConfig(RelicId))
+            if (await Session.TrySellShopRelicAsync(RelicId))
             {
                 return true;
             }
@@ -228,9 +228,7 @@ namespace App.UI.Popup
             }
 
             _awaitingBuyFx = true;
-            var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            var ok = await Session.TryBuyShopRelicAsync(RelicId, watchAd);
-            if (ok && Session.OwnsRelicConfig(RelicId) && !ownedBefore)
+            if (await Session.TryBuyShopRelicAsync(RelicId, watchAd))
             {
                 return true;
             }

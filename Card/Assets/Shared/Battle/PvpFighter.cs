@@ -22,6 +22,12 @@ namespace CardShare.Battle
 
         public int Gold { get; set; }
 
+        /// <summary>PvP 连胜。野怪轮不改、不发连胜奖励。</summary>
+        public int WinStreak { get; set; }
+
+        /// <summary>PvP 连败。野怪轮不改、不发连败奖励。</summary>
+        public int LoseStreak { get; set; }
+
         public bool Alive { get; set; } = true;
 
         public int Rank { get; set; }
@@ -39,6 +45,12 @@ namespace CardShare.Battle
         public int RewardGold { get; set; }
 
         public List<int> OwnedRelicIds { get; } = new List<int>();
+
+        /// <summary>与 <see cref="OwnedRelicIds"/> 对齐。1 = 未合成，3 = 三合一。</summary>
+        public List<int> OwnedRelicPower { get; } = new List<int>();
+
+        /// <summary>已解锁的圣物槽。开局 4，最多 10。</summary>
+        public int RelicSlots { get; set; } = PvpRelicBag.FreeSlots;
 
         public int[] ShopPoolIds { get; set; } = Array.Empty<int>();
 

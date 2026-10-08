@@ -186,6 +186,11 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int PvpBotFillDelaySeconds;
 
+        /// <summary>
+        /// PVP英雄血量提升百分比(1300=提高1300%即14倍,0=不提升)
+        /// </summary>
+        public int PvpHeroHpBoostPercent;
+
     }
 }
 

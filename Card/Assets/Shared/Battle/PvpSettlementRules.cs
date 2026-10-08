@@ -16,16 +16,62 @@ namespace CardShare.Battle
             return damage < 0 ? 0 : damage;
         }
 
+        /// <summary>利息按所持金币每 100 给 10，所持达到 500 后不再增加。</summary>
+        public const int InterestGoldStep = 100;
+
+        public const int InterestPerStep = 10;
+
+        public const int InterestGoldCap = 500;
+
         /// <summary>未用技能换算金币单价（GameConst.EverySkillProvideGold，缺省 20）。</summary>
         public static int SkillGoldUnit(GameConst gameConst)
             => gameConst.EverySkillProvideGold > 0 ? gameConst.EverySkillProvideGold : 20;
 
-        /// <summary>胜者金币 = 本轮 GoldBase + damage/12 + 单价 × 未用技能数。</summary>
-        public static int WinnerGold(int goldBase, int damage, int skillGoldUnit, int unusedSkills)
-            => Math.Max(0, goldBase) + damage / 12 + skillGoldUnit * Math.Max(0, unusedSkills);
+        /// <summary>
+        /// 单人本轮金币。胜者 = 基础 + 单价×未用技能 + 连胜奖励 + 利息；
+        /// 败者 =（基础 + 单价×未用技能）/ 2 + 连败奖励 + 利息。
+        /// 连胜/连败与利息都不参与半额。平局不结算（调用方别调）。heldGold 用发奖前持有量。
+        /// </summary>
+        public static int RoundGold(int goldBase, int skillGoldUnit, int unusedSkills, int streak, int heldGold, bool winner)
+        {
+            var core = Math.Max(0, goldBase) + Math.Max(0, skillGoldUnit) * Math.Max(0, unusedSkills);
+            if (!winner)
+            {
+                core /= 2;
+            }
 
-        /// <summary>负者金币 = 胜者金币半额；平局不结算（调用方别调）。</summary>
-        public static int LoserGold(int winnerGold) => winnerGold / 2;
+            return core + StreakGold(streak) + InterestGold(heldGold);
+        }
+
+        /// <summary>连胜或连败奖励。1 轮为 0；2/3/4/5 为 20/40/60/80；6 轮及以上封顶 100。野怪轮传 0。</summary>
+        public static int StreakGold(int streak)
+        {
+            if (streak >= 6)
+            {
+                return 100;
+            }
+
+            switch (streak)
+            {
+                case 2: return 20;
+                case 3: return 40;
+                case 4: return 60;
+                case 5: return 80;
+                default: return 0;
+            }
+        }
+
+        /// <summary>利息 = floor(min(所持, 500) / 100) × 10。所持不足 100 或为负时为 0。</summary>
+        public static int InterestGold(int heldGold)
+        {
+            if (heldGold <= 0)
+            {
+                return 0;
+            }
+
+            var capped = heldGold > InterestGoldCap ? InterestGoldCap : heldGold;
+            return capped / InterestGoldStep * InterestPerStep;
+        }
 
         /// <summary>野怪轮胜方回血：10% 最大生命，至少 1，上限由调用方 clamp。</summary>
         public static int MonsterWinHeal(int maxHp)

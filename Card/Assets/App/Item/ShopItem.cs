@@ -23,6 +23,8 @@ namespace App.Game
         [SerializeField] private Image iconTitleBg;
         [SerializeField] private Image cardCircle;
         [SerializeField] private TMP_Text goldNum;
+        [SerializeField] private TMP_Text lv;
+        [SerializeField] private TMP_Text hasNum;
         [SerializeField] private Image gold;
         [SerializeField] private Button button;
         [SerializeField] private Animator animator;
@@ -42,11 +44,13 @@ namespace App.Game
         private Color _priceColor = Color.black;
         private bool _priceColorCached;
 
-        public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null, bool affordable = true)
+        public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null, bool affordable = true, int level = 1, int count = 0)
         {
             Data = def;
             SetName(def != null ? def.Name : string.Empty);
             SetIcon(icon);
+            SetLevel(level);
+            SetHasNum(count);
             SetGoldNum(def != null ? def.Price : 0, affordable);
             if (goldSprite != null)
             {
@@ -54,7 +58,7 @@ namespace App.Game
             }
         }
 
-        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1, int buyPrice = -1, bool affordable = true)
+        public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1, int buyPrice = -1, bool affordable = true, int level = 1, int count = 0)
         {
             Bind(relic == null
                 ? null
@@ -67,7 +71,7 @@ namespace App.Game
                         ? (buyPrice >= 0 ? buyPrice : relic.Price)
                         : (sellPrice >= 0 ? sellPrice : Math.Max(0, relic.SellingPrice)),
                     RelicConfigId = relic.Id
-                }, icon, goldSprite, affordable);
+                }, icon, goldSprite, affordable, level, count);
             ApplyQuality(relic != null ? relic.Type : QualityType.Ordinary);
         }
 
@@ -93,6 +97,35 @@ namespace App.Game
 
             cardIcon.sprite = icon != null ? icon : _defaultIcon;
             cardIcon.enabled = cardIcon.sprite != null;
+        }
+
+        public void SetLevel(int level)
+        {
+            EnsureLevelText();
+            if (lv == null)
+            {
+                return;
+            }
+
+            var shown = level > 0 ? level : 1;
+            lv.text = "LV" + shown;
+        }
+
+        /// <summary>持有数量。0 隐藏；大于 0 显示 xN。</summary>
+        public void SetHasNum(int count)
+        {
+            EnsureHasNumText();
+            if (hasNum == null)
+            {
+                return;
+            }
+
+            var show = count > 0;
+            hasNum.gameObject.SetActive(show);
+            if (show)
+            {
+                hasNum.text = "数量x" + count;
+            }
         }
 
         public void SetGoldNum(int price, bool affordable = true)
@@ -297,6 +330,26 @@ namespace App.Game
             HandleClick();
         }
 
+        private void EnsureHasNumText()
+        {
+            if (hasNum != null)
+            {
+                return;
+            }
+
+            hasNum = FindNamed<TMP_Text>("hasNum");
+        }
+
+        private void EnsureLevelText()
+        {
+            if (lv != null)
+            {
+                return;
+            }
+
+            lv = FindNamed<TMP_Text>("lv");
+        }
+
         private void EnsurePriceText()
         {
             if (goldNum != null)
@@ -385,6 +438,16 @@ namespace App.Game
             if (goldNum == null)
             {
                 goldNum = FindNamed<TMP_Text>("priceValue") ?? FindNamed<TMP_Text>("goldNum");
+            }
+
+            if (lv == null)
+            {
+                lv = FindNamed<TMP_Text>("lv");
+            }
+
+            if (hasNum == null)
+            {
+                hasNum = FindNamed<TMP_Text>("hasNum");
             }
 
             if (gold == null)

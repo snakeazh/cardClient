@@ -39,6 +39,12 @@ namespace CardShare.Contracts
         /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
         public int[] RelicIds { get; set; } = System.Array.Empty<int>();
 
+        /// <summary>与 RelicIds 对齐。1 = 普通携带，3 = 三合一。</summary>
+        public int[] RelicPower { get; set; } = System.Array.Empty<int>();
+
+        /// <summary>当前已解锁槽位数。</summary>
+        public int RelicSlots { get; set; }
+
         /// <summary>凤凰羽毛等已激活：本次比牌受到的伤害将变为 0，结算后清除。</summary>
         public bool NullifyDamage { get; set; }
     }
@@ -81,7 +87,15 @@ namespace CardShare.Contracts
 
         public int[] OwnedRelicIds { get; set; } = System.Array.Empty<int>();
 
+        /// <summary>与 OwnedRelicIds 对齐。1 = 普通，3 = 三合一。</summary>
+        public int[] OwnedRelicPower { get; set; } = System.Array.Empty<int>();
+
         public int[] OwnedSellPrices { get; set; } = System.Array.Empty<int>();
+
+        public int RelicSlots { get; set; }
+
+        /// <summary>再解锁一槽的金币。已满为 0。</summary>
+        public int NextSlotCost { get; set; }
 
         public bool Done { get; set; }
     }

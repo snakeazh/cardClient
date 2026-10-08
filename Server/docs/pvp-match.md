@@ -33,16 +33,22 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 
 ## 经济
 
-- 胜：`GoldBase + 伤害/12 + 20 × 未用技能数`（每次技能金币读 `GameConst.EverySkillProvideGold`）
-- 负：胜者所得的一半；平局不结算；野怪轮玩家胜同样发金并**回复 10% 最大生命**（`max(1, floor(MaxHp×0.1))`，不超上限）
+- 胜：`基础奖励 + 未用技能数 × EverySkillProvideGold + 连胜奖励 + 利息`（基础奖励 = 本轮 `GoldBase`，英雄 `GetGoldAfterLevel` 只放大这一项）
+- 负：`(本人基础奖励 + 本人未用技能数 × EverySkillProvideGold) / 2 + 连败奖励 + 利息`；平局不结算
+- 连胜/连败（野怪轮不改计数、不加这笔）：2/3/4/5/6+ 轮额外 +20/+40/+60/+80/+100
+- 利息：发奖前所持金币每 100 给 10，所持达到 500 后封顶（最多 +50）
+- 野怪轮玩家胜同样发基础/技能/利息，并**回复 10% 最大生命**（`max(1, floor(MaxHp×0.1))`，不超上限）
 - 淘汰：HP ≤ 0 立即写 `Alive=false` 和名次；同轮多人死亡按 `|淘汰后血量|` 升序（更接近 0 名次靠前）
 - 名次奖励：终局按 `RankReward`（1~4 名 200/120/60/30）填 `fighter.RewardGold`，由 `PvpRewardService` 一次性落库到局外钱包金币（`TryMarkRewardsGranted` CAS 保证整局只发一次；单人失败记 Error 日志不阻塞他人）
 
 ## 商店阶段
 
-- 全员 30 秒（`ShopSeconds`），每人独立货架 4 件：`PvpShopRules`（Shared），池 = 本人已解锁圣物（`profile.ShopRelicIds`）− 已持有 − 在架，按 `RelicConfig.RefreshProbability` 加权随机
+- 全员 30 秒（`ShopSeconds`），每人货架 4 件。库存是四人共用的一份：上架预扣 1 份，买走后其他人刷不到；卖掉、淘汰、自毁按携带倍数加回，不超过基础份数
+- 基础份数：普通 6 / 稀有 5 / 史诗 4 / 传说 3。消耗品（UseType 1/2）不占库存
+- 能刷到哪些种类仍按本人 PVE 已解锁圣物（`profile.ShopRelicIds`）。解锁多的人种类更多。这是隐藏规则，协议不下发解锁列表
+- 开局 4 个槽，`unlock_slot` 花金币开到最多 10 个（第 5~10 槽 40/60/80/100/120/150）。同时持有 3 件相同未合成圣物会合成 1 件、效果按 3 倍结算、只占 1 槽
 - 开局不带圣物（已解锁 ≠ 已携带），买到的圣物**下一轮**起进战斗座位生效
-- 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`shop_done`；全员 done 立即进下一轮
+- 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`unlock_slot`、`shop_done`；全员 done 立即进下一轮
 - 刷新费用与 PvE 同公式（`GameConst.ShopRefreshFirst` 起递增）；机器人与断线座位进店即自动 done
 
 ## 断线 = 代管，可重连接管
@@ -60,7 +66,7 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 | S | match_update | 一切状态变化广播**全量快照**（逐人视角）。含 `stateVersion`（每次变更单调递增，客户端丢弃 ≤ 上次版本的快照）、`events`（本批增量事件）、`shop`（shop 阶段且本人存活时带货架） |
 | S | match_event | 紧跟 match_update 逐条下发：`round_start` / `settle_start` / `shop_start` / `duel_resolved`（每个真人参与者一条，value=扣血）/ `player_eliminated`（value=名次）/ `player_offline` / `player_online` / `match_finished` |
 | C | sync | 重连后拉全量快照；未在对局返回 `error(not_in_battle)` |
-| C | battle | action：`pick` / `rub` / `replace` / `peek` / `showdown`（`open` 同义）；shop 阶段：`buy` / `sell` / `refresh` / `shop_done` |
+| C | battle | action：`pick` / `rub` / `replace` / `peek` / `showdown`（`open` 同义）；shop 阶段：`buy` / `sell` / `refresh` / `unlock_slot` / `shop_done` |
 | S | ~~battle_update~~ | **已停发**（信息全在 match_update.duel 里） |
 
 `match_update` 要点：

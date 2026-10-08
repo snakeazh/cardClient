@@ -14,6 +14,10 @@ namespace CardShare.Contracts
         public const string Buy = "buy";
         public const string Sell = "sell";
         public const string Refresh = "refresh";
+
+        /// <summary>商店阶段花金币解锁下一个圣物槽（第 5~10 槽）。</summary>
+        public const string UnlockSlot = "unlock_slot";
+
         public const string ShopDone = "shop_done";
 
         /// <summary>使用消耗型圣物（index = relicId），仅 fight 阶段（服务端 Act 校验）。</summary>

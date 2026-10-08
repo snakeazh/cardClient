@@ -262,14 +262,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &1154948121
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1154948114}
-  m_Enabled: 1
 --- !u!4 &1154948117
 Transform:
   m_ObjectHideFlags: 0
@@ -334,6 +326,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 1154948118}
+--- !u!81 &1154948121
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154948114}
+  m_Enabled: 1
 --- !u!1 &2121896634
 GameObject:
   m_ObjectHideFlags: 0
@@ -378,6 +378,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71606c5a5e1c969458f5badb42ba6b33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableServerConnection: 1
+  serverEndpoint: 2
+  customServerHost: 192.168.1.109
+  customServerPort: 5254
+  allowIosHighFrameRate: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

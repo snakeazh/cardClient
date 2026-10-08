@@ -39,6 +39,15 @@ namespace App.Bootstrap
         [Tooltip("关闭后不连服务器：启动跳过登录，闯关走本地局（PVP/商店云端等不可用）")]
         [SerializeField] private bool enableServerConnection = true;
 
+        [Tooltip("HTTP API 与 PVP WebSocket 共用同一主机（ws/wss 由 BaseUrl 推导）")]
+        [SerializeField] private GameApiServerEndpoint serverEndpoint = GameApiServerEndpoint.RemoteDefault;
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效：IP 或域名，不含 http:// 与端口")]
+        [SerializeField] private string customServerHost = "127.0.0.1";
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效")]
+        [SerializeField] private int customServerPort = GameApiSettings.DefaultPort;
+
         [Header("帧率")]
         [Tooltip("允许 iOS 高帧率(GameConst.GameFps>60 时对 iOS 生效，系统按屏幕刷新率钳制，ProMotion 可达 120)。" +
                  "仅在导出面板同时勾选「iOS 高性能+」与「iOS Metal」后才可打开；" +
@@ -341,6 +350,14 @@ namespace App.Bootstrap
         private async Task ConnectAndPrepareAsync()
         {
             GameApiSettings.Enabled = enableServerConnection;
+            GameApiSettings.BaseUrl = GameApiSettings.ResolveBaseUrl(
+                serverEndpoint,
+                customServerHost,
+                customServerPort);
+            AppLog.Info(
+                LogChannel.Net,
+                $"server endpoint={serverEndpoint}, BaseUrl={GameApiSettings.BaseUrl}, " +
+                $"WebSocket={GameApiSettings.WebSocketUrl}, enabled={GameApiSettings.Enabled}");
 
             var client = new GameApiClient(_services.Resolve<ISaveService>());
             _services.Register(client);

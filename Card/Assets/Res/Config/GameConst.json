@@ -40,5 +40,6 @@
   "DefaultSkillPerspectiveNum": 1,
   "TalentNeedChestGold": 50,
   "EverySkillProvideGold": 20,
-  "PvpBotFillDelaySeconds": 10
+  "PvpBotFillDelaySeconds": 10,
+  "PvpHeroHpBoostPercent": 1300
 }

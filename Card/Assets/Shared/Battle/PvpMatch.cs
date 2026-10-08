@@ -22,6 +22,7 @@ namespace CardShare.Battle
         private readonly List<PvpMatchEventDto> _pendingEvents = new List<PvpMatchEventDto>();
         private readonly object _gate = new object();
         private readonly Random _shopRandom;
+        private readonly PvpRelicStock _relicStock;
         private int _pvpCycle;
         private bool _rewardsGranted;
         private PvpRoundConfig _row = null!;
@@ -44,6 +45,7 @@ namespace CardShare.Battle
             _rounds = rounds;
             _fighters = fighters;
             _shopRandom = new Random(unchecked(seed ^ 0x5A0F9));
+            _relicStock = PvpRelicStock.Create(tables);
             ModeId = mode.Id;
             Round = 1;
             Phase = PhaseFight;
@@ -298,6 +300,7 @@ namespace CardShare.Battle
                 fighter.Hp = 0;
                 fighter.Alive = false;
                 fighter.Disconnected = true;
+                ReleaseRelics(fighter);
                 if (Phase == PhaseShop)
                 {
                     fighter.ShopDone = true;
@@ -611,7 +614,7 @@ namespace CardShare.Battle
 
             ApplyToSeat(duel, 1 - win, damage, deathHp);
             duel.MarkHpApplied(win, damage);
-            ApplyDuelGold(duel, win, damage);
+            ApplyDuelGold(duel, win);
             ApplyMonsterWinHeal(duel, win);
             ApplyShowdownTrackers(duel, snap, win);
             RankDead(deathHp);
@@ -660,7 +663,7 @@ namespace CardShare.Battle
                     PvpRelicRuntime.ApplyWinRewards(_tables, fighter);
                 }
 
-                PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom);
+                PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom, _relicStock.Return);
             }
         }
 
@@ -709,26 +712,49 @@ namespace CardShare.Battle
             winner.Hp = Math.Min(winner.MaxHp, winner.Hp + PvpSettlementRules.MonsterWinHeal(winner.MaxHp));
         }
 
-        /// <summary>胜 = 本轮 GoldBase（英雄 GetGoldAfterLevel 只放大这一基础项，对齐 PVE GrantStageGold） + damage/12 + 20×未用技能数；
-        /// 负 = 胜者金币半额；平局不结算。野怪轮玩家胜同样发金。damage 为减免/闪避后的实际落地伤害。</summary>
-        private void ApplyDuelGold(PvpDuelTable duel, int win, int damage)
+        /// <summary>
+        /// 胜 = 本轮基础（英雄 GetGoldAfterLevel 只放大这一项）+ 未用技能×单价 + 连胜 + 利息。
+        /// 负 =（本人基础 + 本人未用技能×单价）/ 2 + 连败 + 利息。平局不结算。
+        /// 野怪轮照发基础/技能/利息，但不改连胜连败、不加连胜连败奖励。
+        /// </summary>
+        private void ApplyDuelGold(PvpDuelTable duel, int win)
         {
+            var unit = PvpSettlementRules.SkillGoldUnit(_tables.GameConst);
+            var countStreak = !duel.VsMonster;
+
             var winner = win == 0 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
-            var winGold = PvpSettlementRules.WinnerGold(
-                winner == null ? _row.GoldBase : PvpHeroRuntime.SettlementGold(_tables, winner.Combat.HeroId, _row.GoldBase),
-                damage,
-                PvpSettlementRules.SkillGoldUnit(_tables.GameConst),
-                winner == null ? 0 : winner.RubLeft + winner.ReplaceLeft + winner.PeekLeft);
             if (winner != null)
             {
-                winner.Gold += winGold;
+                PayRoundGold(winner, unit, countStreak, won: true);
             }
 
             var loser = win == 1 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
             if (loser != null)
             {
-                loser.Gold += PvpSettlementRules.LoserGold(winGold);
+                PayRoundGold(loser, unit, countStreak, won: false);
             }
+        }
+
+        private void PayRoundGold(PvpFighter fighter, int skillGoldUnit, bool countStreak, bool won)
+        {
+            if (countStreak)
+            {
+                if (won)
+                {
+                    fighter.WinStreak++;
+                    fighter.LoseStreak = 0;
+                }
+                else
+                {
+                    fighter.LoseStreak++;
+                    fighter.WinStreak = 0;
+                }
+            }
+
+            var streak = countStreak ? (won ? fighter.WinStreak : fighter.LoseStreak) : 0;
+            var unused = fighter.RubLeft + fighter.ReplaceLeft + fighter.PeekLeft;
+            var baseGold = PvpHeroRuntime.SettlementGold(_tables, fighter.Combat.HeroId, _row.GoldBase);
+            fighter.Gold += PvpSettlementRules.RoundGold(baseGold, skillGoldUnit, unused, streak, fighter.Gold, won);
         }
 
         private void BumpDuelResolved(PvpDuelTable duel, int damage)
@@ -802,8 +828,11 @@ namespace CardShare.Battle
                 fighter.ShopDone = fighter.IsBot || fighter.Disconnected;
                 fighter.ShopRefreshCount = 0;
                 fighter.FreeShopRefreshLeft = 0;
-                fighter.ShopOfferIds.Clear();
-                PvpShopRules.FillOffers(fighter, _tables, _shopRandom);
+                _relicStock.ReturnShelf(fighter);
+                if (!fighter.ShopDone)
+                {
+                    PvpShopRules.FillOffers(fighter, _tables, _shopRandom, _relicStock);
+                }
             }
 
             Bump(PvpEventKinds.ShopStart, string.Empty, 0);
@@ -815,6 +844,11 @@ namespace CardShare.Battle
 
         private void AdvanceFromShop()
         {
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                _relicStock.ReturnShelf(_fighters[i]);
+            }
+
             Round++;
             StartRound();
         }
@@ -851,6 +885,9 @@ namespace CardShare.Battle
                 case PvpActions.Refresh:
                     RefreshShop(fighter);
                     break;
+                case PvpActions.UnlockSlot:
+                    UnlockRelicSlot(fighter);
+                    break;
                 case PvpActions.ShopDone:
                     fighter.ShopDone = true;
                     if (AllShopDone())
@@ -885,7 +922,12 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic has no pvp effect.");
             }
 
-            fighter.OwnedRelicIds.Remove(relicId);
+            var spent = PvpRelicBag.RemoveOne(fighter, relicId);
+            for (var i = 1; i < spent; i++)
+            {
+                PvpRelicRuntime.TryApplyConsumable(_tables, fighter, relic);
+            }
+
             fighter.ConsumableUsesThisRun++;
             PvpRelicRuntime.CleanupTrackers(fighter);
         }
@@ -903,7 +945,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic already owned.");
             }
 
-            fighter.OwnedRelicIds.Add(relicId);
+            PvpRelicBag.Add(fighter, relicId);
             // 血量上限类与购买同口径（编辑器测试能直接看到血条变化）。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。
@@ -921,13 +963,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic is not on sale.");
             }
 
-            if (fighter.OwnedRelicIds.Contains(relicId))
-            {
-                throw new InvalidOperationException("Relic already owned.");
-            }
-
-            var max = _tables.GameConst.DefaultRelicNumMax > 0 ? _tables.GameConst.DefaultRelicNumMax : 3;
-            if (fighter.OwnedRelicIds.Count >= max)
+            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
             {
                 throw new InvalidOperationException("Relic bag is full.");
             }
@@ -939,8 +975,8 @@ namespace CardShare.Battle
             }
 
             fighter.Gold -= price;
-            fighter.OwnedRelicIds.Add(relicId);
             fighter.ShopOfferIds.Remove(relicId);
+            PvpRelicBag.Add(fighter, relicId);
             // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 懒初始化甜品/饮品满值：下次 ToPlayerSeat / Tick 时写入。
@@ -953,8 +989,18 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic not owned.");
             }
 
-            fighter.OwnedRelicIds.Remove(relicId);
-            fighter.Gold += PvpShopRules.SellPrice(relic);
+            var copies = PvpRelicBag.RemoveOne(fighter, relicId);
+            if (copies <= 0)
+            {
+                throw new InvalidOperationException("Relic not owned.");
+            }
+
+            fighter.Gold += PvpShopRules.SellPrice(relic) * copies;
+            _relicStock.Return(relicId, copies);
+            for (var i = 1; i < copies; i++)
+            {
+                PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
+            }
             // 血量上限类反向回收（当前血夹到新上限，不低于 1）。
             PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
             PvpRelicRuntime.CleanupTrackers(fighter);
@@ -979,7 +1025,30 @@ namespace CardShare.Battle
             }
 
             PvpRelicRuntime.OnShopRefreshed(_tables, fighter);
-            PvpShopRules.RerollOffers(fighter, _tables, _shopRandom);
+            PvpShopRules.RerollOffers(fighter, _tables, _shopRandom, _relicStock);
+        }
+
+        private void UnlockRelicSlot(PvpFighter fighter)
+        {
+            if (fighter.RelicSlots >= PvpRelicBag.MaxSlots)
+            {
+                throw new InvalidOperationException("Relic slots are maxed.");
+            }
+
+            var cost = PvpRelicBag.NextSlotCost(fighter.RelicSlots);
+            if (fighter.Gold < cost)
+            {
+                throw new InvalidOperationException("Not enough gold.");
+            }
+
+            fighter.Gold -= cost;
+            fighter.RelicSlots++;
+        }
+
+        private void ReleaseRelics(PvpFighter fighter)
+        {
+            _relicStock.ReturnShelf(fighter);
+            _relicStock.ReturnCarried(fighter);
         }
 
         private void ApplyToSeat(PvpDuelTable duel, int duelSeat, int damage, Dictionary<int, int> deathHp)
@@ -1015,6 +1084,7 @@ namespace CardShare.Battle
             {
                 deathHp[index] = fighter.Hp;
                 fighter.Alive = false;
+                ReleaseRelics(fighter);
             }
         }
 
@@ -1206,10 +1276,11 @@ namespace CardShare.Battle
 
                 // 词条枚举无换牌次数类型，替换只吃基础值；搓牌/透视叠加持有圣物 + 英雄 + 天赋加成。
                 var combat = fighter.Combat;
+                var carried = PvpRelicBag.Expand(fighter);
                 fighter.RubLeft = Math.Max(0, rub + CombatBonuses.SumSkillCountBonus(
-                    _tables, fighter.OwnedRelicIds, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
+                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
                 fighter.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
-                    _tables, fighter.OwnedRelicIds, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
+                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
                 fighter.ReplaceLeft = replace;
             }
         }

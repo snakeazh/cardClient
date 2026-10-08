@@ -127,7 +127,7 @@ namespace CardShare.Battle
         }
 
         /// <summary>疯狂猴子：回合/子桌结算后按概率毁掉自身。</summary>
-        public static void ApplySelfDestroy(IGameTables tables, PvpFighter fighter, Random rng)
+        public static void ApplySelfDestroy(IGameTables tables, PvpFighter fighter, Random rng, Action<int, int>? returned = null)
         {
             if (rng == null)
             {
@@ -162,7 +162,11 @@ namespace CardShare.Battle
 
             for (var i = 0; i < destroyed.Count; i++)
             {
-                fighter.OwnedRelicIds.Remove(destroyed[i]);
+                var copies = PvpRelicBag.RemoveOne(fighter, destroyed[i]);
+                if (copies > 0)
+                {
+                    returned?.Invoke(destroyed[i], copies);
+                }
             }
 
             CleanupTrackers(fighter);
@@ -198,7 +202,7 @@ namespace CardShare.Battle
         /// <summary>写入比牌用 SeatSetup 追踪字段（含甜品加攻与当前持有圣物列表）。</summary>
         public static void ApplyTrackersToSeat(IGameTables tables, PvpFighter fighter, SeatSetup setup)
         {
-            setup.RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds);
+            setup.RelicIds = PvpRelicBag.Expand(fighter);
             setup.HandTypeShowCounts = (int[])fighter.HandTypeShowCounts.Clone();
             setup.RelicSelfDecayMag = CloneFloatDict(fighter.RelicSelfDecayMag);
             setup.RelicShopRefreshCounts = CloneIntDict(fighter.RelicShopRefreshCounts);
@@ -513,8 +517,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            var max = tables.GameConst.DefaultRelicNumMax > 0 ? tables.GameConst.DefaultRelicNumMax : 3;
-            if (fighter.OwnedRelicIds.Count >= max)
+            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
             {
                 return;
             }
@@ -523,7 +526,7 @@ namespace CardShare.Battle
             for (var i = 0; i < tables.Relics.Count; i++)
             {
                 var relic = tables.Relics[i];
-                if (relic == null || !IsConsumable(relic) || fighter.OwnedRelicIds.Contains(relic.Id))
+                if (relic == null || !IsConsumable(relic))
                 {
                     continue;
                 }
@@ -536,7 +539,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            fighter.OwnedRelicIds.Add(pool[rng.Next(pool.Count)]);
+            PvpRelicBag.Add(fighter, pool[rng.Next(pool.Count)]);
         }
 
         private static void AddHandTypeShowCount(PvpFighter fighter, HandType type)
@@ -628,7 +631,11 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                ForEachRelicEntry(tables, relic, entry => action(relic, entry));
+                var power = PvpRelicBag.PowerAt(fighter, i);
+                for (var n = 0; n < power; n++)
+                {
+                    ForEachRelicEntry(tables, relic, entry => action(relic, entry));
+                }
             }
         }
 

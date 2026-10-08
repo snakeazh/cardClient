@@ -68,6 +68,8 @@ namespace App.Game.Editor
                     FindNamed<TMP_Text>(root.transform, "priceValue") ?? FindNamed<TMP_Text>(root.transform, "goldNum"),
                     force);
                 changed |= Assign(so, "gold", FindNamed<Image>(root.transform, "gold"), force);
+                changed |= Assign(so, "lv", FindNamed<TMP_Text>(root.transform, "lv"), force);
+                changed |= Assign(so, "hasNum", FindNamed<TMP_Text>(root.transform, "hasNum"), force);
                 changed |= Assign(so, "button", item.GetComponent<Button>(), force);
                 if (!changed)
                 {

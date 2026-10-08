@@ -7,7 +7,7 @@ using CardShare.Contracts.Config;
 
 namespace CardShare.Battle
 {
-    /// <summary>PvP 商店规则：与 PvE 同公式，操作对象为 PvpFighter，池 = 商店池 − 已持有 − 在架。</summary>
+    /// <summary>PvP 商店：公共库存预扣，货架只从本人已解锁（PVE 进度）且仍有份数的圣物里抽。</summary>
     public static class PvpShopRules
     {
         public const int OfferCount = 4;
@@ -21,32 +21,31 @@ namespace CardShare.Battle
             return first + ups * after;
         }
 
-        public static void FillOffers(PvpFighter fighter, IGameTables tables, Random rng)
+        public static void FillOffers(PvpFighter fighter, IGameTables tables, Random rng, PvpRelicStock stock)
         {
             var offers = fighter.ShopOfferIds;
-            while (offers.Count > OfferCount)
+            while (offers.Count < OfferCount)
             {
-                offers.RemoveAt(offers.Count - 1);
-            }
+                var pool = BuildPool(fighter, tables, stock);
+                if (pool.Count == 0)
+                {
+                    break;
+                }
 
-            var pool = BuildPool(fighter, tables);
-            while (offers.Count < OfferCount && pool.Count > 0)
-            {
                 var pick = PickWeighted(pool, tables, fighter.Combat.HeroId, rng);
-                if (pick == null)
+                if (pick == null || !stock.TryReserve(pick.Id))
                 {
                     break;
                 }
 
                 offers.Add(pick.Id);
-                pool.Remove(pick);
             }
         }
 
-        public static void RerollOffers(PvpFighter fighter, IGameTables tables, Random rng)
+        public static void RerollOffers(PvpFighter fighter, IGameTables tables, Random rng, PvpRelicStock stock)
         {
-            fighter.ShopOfferIds.Clear();
-            FillOffers(fighter, tables, rng);
+            stock.ReturnShelf(fighter);
+            FillOffers(fighter, tables, rng, stock);
         }
 
         /// <summary>购买价：英雄 RelicPricePer 折扣（对齐 PVE HeroMechanics.BuyPrice），货架投影同源。</summary>
@@ -55,11 +54,9 @@ namespace CardShare.Battle
 
         public static int SellPrice(RelicConfig relic) => Math.Max(0, relic.SellingPrice);
 
-        private static List<RelicConfig> BuildPool(PvpFighter fighter, IGameTables tables)
+        private static List<RelicConfig> BuildPool(PvpFighter fighter, IGameTables tables, PvpRelicStock stock)
         {
             var unlocked = new HashSet<int>(fighter.ShopPoolIds);
-            var owned = new HashSet<int>(fighter.OwnedRelicIds);
-            var onShelf = new HashSet<int>(fighter.ShopOfferIds);
             var pool = new List<RelicConfig>();
             for (var i = 0; i < tables.Relics.Count; i++)
             {
@@ -69,7 +66,7 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                if (!unlocked.Contains(relic.Id) || owned.Contains(relic.Id) || onShelf.Contains(relic.Id))
+                if (!unlocked.Contains(relic.Id) || stock.Available(relic.Id) <= 0)
                 {
                     continue;
                 }

@@ -30,6 +30,12 @@ namespace CardShare.Battle
 
         public bool DefenderIsBoss { get; set; }
 
+        /// <summary>防守方怪物类型。玩家为默认值，英雄 AttackBossDamage 对精英和领主都生效。</summary>
+        public MonsterType DefenderMonsterType { get; set; }
+
+        /// <summary>进攻方圣光燃烧已发动次数。</summary>
+        public int HolyLightCasts { get; set; }
+
         public int DefenderHp { get; set; }
 
         public int DefenderMaxHp { get; set; }
@@ -150,6 +156,11 @@ namespace CardShare.Battle
                 {
                     critMul = hero.CriticalDamage;
                 }
+
+                if (PvpHeroRuntime.HasMechanism(tables, hero.Id, MechanismType.UnableCritical))
+                {
+                    crit = 0f;
+                }
             }
 
             crit += SumTalent(tables, talents, MechanismType.HeroCritical);
@@ -192,7 +203,12 @@ namespace CardShare.Battle
                 TalentAttackExtra = (int)Math.Round(SumAttackExtra(tables, talents, score, situation)),
                 FlintMultiplier = 1f,
                 OutgoingDamagePercent = SumDamagePercent(tables, talents, situation, attackerHp, attackerMaxHp)
-                    + SumHeroEntry(tables, hero, MechanismType.Damage),
+                    + SumHeroEntry(tables, hero, MechanismType.Damage)
+                    + (hero != null
+                        ? PvpHeroRuntime.LostHpDamagePercent(tables, hero.Id, attackerHp, attackerMaxHp)
+                          + PvpHeroRuntime.HolyLightOutgoingPercent(tables, hero.Id, situation.HolyLightCasts)
+                          + PvpHeroRuntime.AttackBossDamagePercent(tables, hero.Id, situation.DefenderMonsterType)
+                        : 0f),
                 CritRate = panel.CritRate,
                 CritMultiplier = panel.CritMultiplier,
                 // 追击概率 = 天赋 ProOfExtraAttack + 英雄 ExtraAttackOneTime，求和后由 CombatDamage 掷一次（PVE RollCombined 语义）。

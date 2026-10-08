@@ -230,7 +230,7 @@ namespace CardShare.Battle
         /// 保温杯低血回复（ThermosCup，语义"回合结束后"，在此按结算窗口等效判定）。</summary>
         public static void ApplyRoundStart(IGameTables tables, PvpFighter fighter)
         {
-            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
+            HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.EveryRoundGetHpMax));
             ForEachEntry(tables, fighter, (_, entry) =>
             {
@@ -242,7 +242,7 @@ namespace CardShare.Battle
                 var threshold = ValueAt(entry);
                 if (threshold > 0f && fighter.MaxHp > 0 && fighter.Hp < fighter.MaxHp * threshold)
                 {
-                    Heal(fighter, (int)Math.Round(ValueAt(entry, 1)));
+                    HealFromRelic(tables, fighter, (int)Math.Round(ValueAt(entry, 1)));
                 }
             });
         }
@@ -263,7 +263,7 @@ namespace CardShare.Battle
                 switch (entry.Type)
                 {
                     case MechanismType.HealHpPercent:
-                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
+                        HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
                         anyApplied = true;
                         break;
                     case MechanismType.MaxHpUpAndHeal:
@@ -273,7 +273,7 @@ namespace CardShare.Battle
                         break;
                     case MechanismType.UseRoundNullify:
                         fighter.NullifyDamageNextHit = true;
-                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
+                        HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
                         anyApplied = true;
                         break;
                     default:
@@ -393,7 +393,7 @@ namespace CardShare.Battle
         /// <summary>比牌获胜：月光酒回血（WinHeal）+ 激励徽章上限成长（DefeatGetHpMax）。</summary>
         public static void ApplyWinRewards(IGameTables tables, PvpFighter fighter)
         {
-            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
+            HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.DefeatGetHpMax));
         }
 
@@ -413,6 +413,11 @@ namespace CardShare.Battle
 
             fighter.MaxHp = maxHp;
             fighter.Hp = hp;
+        }
+
+        private static int HealFromRelic(IGameTables tables, PvpFighter fighter, int amount)
+        {
+            return Heal(fighter, PvpHeroRuntime.ScaleRelicHeal(tables, fighter.Combat.HeroId, amount));
         }
 
         private static int Heal(PvpFighter fighter, int amount)

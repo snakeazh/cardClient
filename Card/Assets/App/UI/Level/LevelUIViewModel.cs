@@ -41,6 +41,7 @@ namespace App.UI
         private readonly TalentBonusManager _talentBonus;
         private readonly List<HeroConfig> _heroes = new List<HeroConfig>();
         private readonly List<LevelSnapshot> _stages = new List<LevelSnapshot>();
+        private bool _unlockingHero;
 
         public LevelUIViewModel(
             IUIManager ui,
@@ -319,27 +320,68 @@ namespace App.UI
             SelectedLevelId.Value = first != null ? first.Id : 0;
         }
 
-        private void UnlockSelectedHero()
+        private async void UnlockSelectedHero()
         {
-            TryUnlockSelectedHero();
+            if (_unlockingHero)
+            {
+                return;
+            }
+
+            var hero = HeroConfig.Get(SelectedHeroId.Value);
+            if (hero == null || IsHeroUnlocked(hero))
+            {
+                return;
+            }
+
+            if (GameApiSettings.Enabled)
+            {
+                if (!GameApi.IsReady)
+                {
+                    await PveSessionGate.ConnectWithRetryAsync(
+                        _ui.Dialogs,
+                        UnityEngine.SystemInfo.deviceUniqueIdentifier,
+                        "Editor");
+                    if (!GameApi.IsReady)
+                    {
+                        Toast.Error("未连接服务器");
+                        return;
+                    }
+                }
+
+                _unlockingHero = true;
+                UnlockHeroCommand.RaiseCanExecuteChanged();
+                try
+                {
+                    var profile = await GameApi.Client.UnlockHeroAsync(hero.Id);
+                    GameApi.ApplyProfile(profile);
+                }
+                catch (GameApiException ex)
+                {
+                    Toast.Error(GameApi.Describe(ex));
+                    return;
+                }
+                finally
+                {
+                    _unlockingHero = false;
+                }
+            }
+            else if (!_progress.TryUnlockHero(hero.Id))
+            {
+                return;
+            }
+
             RefreshHeroPanel();
         }
 
         private bool CanUnlockSelectedHero()
         {
-            var hero = HeroConfig.Get(SelectedHeroId.Value);
-            return hero != null && !IsHeroUnlocked(hero);
-        }
-
-        private bool TryUnlockSelectedHero()
-        {
-            var hero = HeroConfig.Get(SelectedHeroId.Value);
-            if (hero == null || IsHeroUnlocked(hero))
+            if (_unlockingHero)
             {
                 return false;
             }
 
-            return _progress.TryUnlockHero(hero.Id);
+            var hero = HeroConfig.Get(SelectedHeroId.Value);
+            return hero != null && !IsHeroUnlocked(hero);
         }
 
         private bool MeetsDifficultyUnlock(HeroConfig hero)

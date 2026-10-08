@@ -299,7 +299,6 @@ namespace CardShare.Battle
                 }
             }
 
-            var isPvp = _mode.Kind == BattleModeKind.Pvp;
             for (var i = 0; i < scores.Length; i++)
             {
                 var open = OpenCards(i);
@@ -309,8 +308,9 @@ namespace CardShare.Battle
                 }
 
                 var seat = _seats[i];
+                var defender = DefenderOf(i);
                 CombatDamageInput input;
-                if (seat.IsHuman)
+                if (seat.HeroId > 0)
                 {
                     input = CombatBonuses.BuildPlayerInput(
                         _tables,
@@ -328,9 +328,12 @@ namespace CardShare.Battle
                             AliveOpponents = Math.Max(0, alive - 1),
                             AttackerHp = seat.Hp,
                             AttackerMaxHp = seat.MaxHp,
-                            DefenderIsPlayer = isPvp,
-                            DefenderIsBoss = false,
-                            DefenderHp = 0,
+                            DefenderIsPlayer = defender != null && defender.HeroId > 0,
+                            DefenderIsBoss = defender != null && defender.MonsterType == MonsterType.Boss,
+                            DefenderMonsterType = defender != null ? defender.MonsterType : MonsterType.Normal,
+                            DefenderHp = defender != null ? defender.Hp : 0,
+                            DefenderMaxHp = defender != null ? defender.MaxHp : 0,
+                            HolyLightCasts = seat.HolyLightCasts,
                             Shown = open,
                             Unshown = UnshownCards(i)
                         });
@@ -537,6 +540,19 @@ namespace CardShare.Battle
             }
 
             return arr;
+        }
+
+        private SeatSetup? DefenderOf(int attacker)
+        {
+            for (var i = 0; i < _seats.Count; i++)
+            {
+                if (i != attacker && IsSeatActive(i))
+                {
+                    return _seats[i];
+                }
+            }
+
+            return null;
         }
 
         private bool IsSeatActive(int index)

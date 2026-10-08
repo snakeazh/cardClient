@@ -202,6 +202,9 @@ namespace App.Net
         public Task<PlayerProfileDto> CompleteGuideAsync(int groupId)
             => SendAsync<PlayerProfileDto>("POST", "/v1/guide/complete", new GuideCompleteRequest { GroupId = groupId });
 
+        public Task<PlayerProfileDto> UnlockHeroAsync(int heroId)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/hero/unlock", new HeroUnlockRequest { HeroId = heroId });
+
         public Task<PveRunResponse> EnterShopAsync(string runId, int freeShopRefreshLeft)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/enter", new PveShopEnterRequest
             {

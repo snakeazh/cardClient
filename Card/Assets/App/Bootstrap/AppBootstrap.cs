@@ -196,12 +196,16 @@ namespace App.Bootstrap
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
         }
 
-        /// <summary>按 GameConst.GameFps 应用目标帧率（&lt;=0 表示不限帧）。须在配置表加载后调用。</summary>
+        /// <summary>锁 60 帧：微信 WebGL 转换路径平台封顶 60，再高只会 setTimeout 空转耗电。
+        /// WebGL 上 targetFrameRate 不驱动主循环，需调 wx.setPreferredFramesPerSecond 才真正生效。
+        /// 须在配置表加载后调用。</summary>
         private void ApplyFrameRate()
         {
             QualitySettings.vSyncCount = 0;
-            var fps = GameConst.Instance.GameFps;
-            Application.targetFrameRate = -1;
+            Application.targetFrameRate = 60;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WeChatWASM.WX.SetPreferredFramesPerSecond(60);
+#endif
             AppLog.Info(LogChannel.Config, $"[Boot] targetFrameRate={Application.targetFrameRate}");
         }
 

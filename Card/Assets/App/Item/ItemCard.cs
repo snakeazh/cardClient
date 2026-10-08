@@ -96,6 +96,10 @@ namespace App.Item
         private bool _bgCached;
         private bool _circleCached;
         private bool _selected;
+        // SetSelected 已应用态（-1=未应用过）：行复用重绑时选中态基本不变，幂等跳过换色与缩放
+        private int _selectedApplied = -1;
+        // 引用只解析一次（树结构固定），见 EnsureRefs
+        private bool _refsResolved;
         private bool _hasSelectAnim;
         private bool _selectAnimOn;
         private QualityType _quality = QualityType.Ordinary;
@@ -247,11 +251,20 @@ namespace App.Item
             }
         }
 
-        /// <summary>选中态通过 IconBG/card_Circle 换色 + 轻微放大 ItemRoot 表达（原始色在 Awake 缓存）。</summary>
-        public void SetSelected(bool selected)
+        /// <summary>选中态通过 IconBG/card_Circle 换色 + 轻微放大 ItemRoot 表达（原始色在 Awake 缓存）。
+        /// 幂等：值未变化时跳过（localScale 直写不做相同值检查，每次写都标脏触发 SyncTransform）。</summary>
+        public void SetSelected(bool selected, bool force = false)
         {
             EnsureRefs();
             _selected = selected;
+            var applied = selected ? 1 : 0;
+            // 幂等跳过；force 供池租用复位（上任视图可能绕过本方法动过缩放/颜色）
+            if (!force && _selectedApplied == applied)
+            {
+                return;
+            }
+
+            _selectedApplied = applied;
             ApplyThemeColors();
 
             if (itemRoot != null)
@@ -633,6 +646,14 @@ namespace App.Item
 
         private void EnsureRefs()
         {
+            // 一次性解析：树结构固定（池化复用不改层级），找不到的引用也只找这一次，
+            // 避免行复用重绑时对缺失引用反复 FindDeep 全树（重绑 GC 小分配的大头）
+            if (_refsResolved)
+            {
+                return;
+            }
+
+            _refsResolved = true;
             if (iconBg == null)
             {
                 iconBg = FindImage("IconBG");

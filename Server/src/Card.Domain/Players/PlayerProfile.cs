@@ -285,6 +285,23 @@ public sealed class PlayerProfile
         return Level.GetHighestCleared(snapshot.Difficulty) >= snapshot.Level - 1;
     }
 
+    /// <summary>选英雄界面点解锁：把该英雄写入存档。未知英雄拒绝；已解锁则保持原样。</summary>
+    public void UnlockHero(int heroId, IGameConfig config)
+    {
+        if (heroId <= 0)
+        {
+            throw DomainException.Invalid("heroId is required.");
+        }
+
+        var hero = config.Tables.Heroes.FirstOrDefault(h => h.Id == heroId);
+        if (hero == null)
+        {
+            throw DomainException.Invalid($"Unknown hero {heroId}.");
+        }
+
+        Level.TryUnlockHero(heroId);
+    }
+
     public bool IsHeroUnlocked(int heroId, IGameConfig config)
     {
         if (Level.UnlockedHeroIds.Contains(heroId))

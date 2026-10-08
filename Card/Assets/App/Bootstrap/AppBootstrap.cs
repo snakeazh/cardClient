@@ -73,6 +73,11 @@ namespace App.Bootstrap
             QualitySettings.vSyncCount = 0;
             // 锁 60：高刷屏放开(-1)会满负载发热降频，帧率反而更低更不稳。
             Application.targetFrameRate = 60;
+            // 帧率 HUD 恢复（Debug/性能 菜单写存的开关；Development 构建真机常开，便于性能排查）
+            if (PlayerPrefs.GetInt(App.UI.FpsHud.PrefKey, 0) != 0 || Debug.isDebugBuild)
+            {
+                App.UI.FpsHud.Show();
+            }
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();

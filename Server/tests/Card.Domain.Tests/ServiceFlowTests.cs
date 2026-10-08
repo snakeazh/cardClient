@@ -116,6 +116,27 @@ public class PveFlowTests
     }
 
     [Fact]
+    public async Task UnlockHeroPersistsAndAllowsThatHeroToStart()
+    {
+        var (pve, meta, userId) = await CreateApp();
+        var locked = await Assert.ThrowsAsync<DomainException>(() =>
+            pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None));
+        Assert.Equal(ErrorCodes.HeroLocked, locked.Code);
+
+        var first = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
+        var second = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
+        Assert.Contains(2, first.Level.UnlockedHeroIds);
+        Assert.Contains(2, second.Level.UnlockedHeroIds);
+
+        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(started.RunId));
+
+        var unknown = await Assert.ThrowsAsync<DomainException>(() =>
+            meta.UnlockHeroAsync(userId, 999, CancellationToken.None));
+        Assert.Equal(ErrorCodes.InvalidRequest, unknown.Code);
+    }
+
+    [Fact]
     public async Task UnknownBagItemIsRejected()
     {
         var (_, meta, userId) = await CreateApp();

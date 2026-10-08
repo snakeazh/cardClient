@@ -51,6 +51,11 @@ namespace CardShare.Contracts
         public int GroupId { get; set; }
     }
 
+    public sealed class HeroUnlockRequest
+    {
+        public int HeroId { get; set; }
+    }
+
     public sealed class DebugGrantGoldRequest
     {
         public int Amount { get; set; }

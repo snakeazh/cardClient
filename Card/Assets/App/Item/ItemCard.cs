@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using App.Atlas;
 using App.Config;
 using CardShare.Contracts.Config;
@@ -98,6 +99,13 @@ namespace App.Item
         private bool _hasSelectAnim;
         private bool _selectAnimOn;
         private QualityType _quality = QualityType.Ordinary;
+
+        // 品质特效节点缓存：FindDeep 整树深查找每卡只做一次；换层/挂组件为一次性准备；
+        // 品质未变时 ShowQualityFx 整体跳过（行复用绑回同品质是常态）。
+        private Dictionary<string, Transform> _rewardFxNodes;
+        private HashSet<string> _rewardFxPrepared;
+        private QualityType _fxQuality = QualityType.Ordinary;
+        private bool _fxQualityApplied;
 
         public QualityType Quality => _quality;
 
@@ -401,9 +409,18 @@ namespace App.Item
             ApplyQualityFx(quality);
         }
 
-        /// <summary>清掉全部品质特效后点亮目标品质（普通品质只清不亮）。</summary>
+        /// <summary>清掉全部品质特效后点亮目标品质（普通品质只清不亮）。品质未变时整体跳过。</summary>
         private void ApplyQualityFx(QualityType quality)
         {
+            EnsureRewardFxRefs();
+            if (_fxQualityApplied && _fxQuality == quality)
+            {
+                return;
+            }
+
+            _fxQualityApplied = true;
+            _fxQuality = quality;
+
             for (var i = 0; i < RewardFxNames.Length; i++)
             {
                 SetRewardFxActive(RewardFxNames[i], false);
@@ -416,39 +433,79 @@ namespace App.Item
             }
         }
 
-        /// <summary>
-        /// 激活并重播指定特效。品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
-        /// 故整树按名深查找，不能只在 itemRoot 下找。
-        /// </summary>
-        private void PrepareRewardFx(string fxName)
+        /// <summary>特效节点按名懒缓存：首次点亮时整树深查找一次，之后复用（行复用不再 FindDeep）。</summary>
+        private void EnsureRewardFxRefs()
         {
-            var fx = FindDeep(transform, fxName);
-            if (fx == null)
+            if (_rewardFxNodes != null)
             {
                 return;
             }
 
-            fx.gameObject.SetActive(true);
-            UiFx.ApplyUiLayer(fx.gameObject);
-            if (fx.GetComponent<EffectSortingInherit>() == null)
+            _rewardFxNodes = new Dictionary<string, Transform>(RewardFxNames.Length + 1);
+            CacheRewardFx("ChoukaEffect01");
+            for (var i = 0; i < RewardFxNames.Length; i++)
             {
-                var inherit = fx.gameObject.AddComponent<EffectSortingInherit>();
-                inherit.OrderOffset = 10;
+                CacheRewardFx(RewardFxNames[i]);
+            }
+        }
+
+        private void CacheRewardFx(string fxName)
+        {
+            var fx = FindDeep(transform, fxName);
+            if (fx != null)
+            {
+                _rewardFxNodes[fxName] = fx;
+            }
+        }
+
+        /// <summary>
+        /// 激活并重播指定特效。品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
+        /// 首次准备时整树换 UI 层并挂排序/裁剪组件，之后只重启粒子。
+        /// </summary>
+        private void PrepareRewardFx(string fxName)
+        {
+            EnsureRewardFxRefs();
+            if (!_rewardFxNodes.TryGetValue(fxName, out var fx) || fx == null)
+            {
+                return;
             }
 
-            // 列表视口裁剪：父链上有 RectMask2D 时粒子按视口矩形裁剪（UIParticleClipper 自行判断）
-            if (fx.GetComponent<UIParticleClipper>() == null)
+            var go = fx.gameObject;
+            go.SetActive(true);
+            if (_rewardFxPrepared == null)
             {
-                fx.gameObject.AddComponent<UIParticleClipper>();
+                _rewardFxPrepared = new HashSet<string>();
             }
 
-            UiFx.RestartParticles(fx.gameObject);
+            if (_rewardFxPrepared.Add(fxName))
+            {
+                UiFx.ApplyUiLayer(go);
+                if (fx.GetComponent<EffectSortingInherit>() == null)
+                {
+                    var inherit = go.AddComponent<EffectSortingInherit>();
+                    inherit.OrderOffset = 10;
+                }
+
+                // 列表视口裁剪：父链上有 RectMask2D 时粒子按视口矩形裁剪（UIParticleClipper 自行判断）
+                if (fx.GetComponent<UIParticleClipper>() == null)
+                {
+                    go.AddComponent<UIParticleClipper>();
+                }
+            }
+
+            UiFx.RestartParticles(go);
         }
 
         private void SetRewardFxActive(string fxName, bool active)
         {
-            var fx = FindDeep(transform, fxName);
-            if (fx != null)
+            if (_rewardFxNodes == null
+                || !_rewardFxNodes.TryGetValue(fxName, out var fx)
+                || fx == null)
+            {
+                return;
+            }
+
+            if (fx.gameObject.activeSelf != active)
             {
                 fx.gameObject.SetActive(active);
             }

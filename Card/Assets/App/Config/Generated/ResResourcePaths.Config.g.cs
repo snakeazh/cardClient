@@ -5,6 +5,7 @@ namespace App.Resources
 {
     public static partial class ResResourcePaths
     {
+        public const string BindingConfig = "Config/BindingConfig";
         public const string BossEntryConfig = "Config/BossEntryConfig";
         public const string CollectionConfig = "Config/CollectionConfig";
         public const string DialogueGroupConfig = "Config/DialogueGroupConfig";

@@ -4,6 +4,18 @@
 namespace CardShare.Contracts.Config
 {
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 BindingType 枚举。
+    /// </summary>
+    public enum BindingType
+    {
+        /// <summary>
+        /// 雷霆嘎巴
+        /// </summary>
+        Leiting = 1,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 BossEntryType 枚举。
     /// </summary>
     public enum BossEntryType

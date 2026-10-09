@@ -47,6 +47,11 @@ namespace CardShare.Contracts.Config
         public int[] MechanismId;
 
         /// <summary>
+        /// 羁绊ID
+        /// </summary>
+        public int[] BindingID;
+
+        /// <summary>
         /// 解锁条件ID
         /// </summary>
         public int UnlockConditionId;

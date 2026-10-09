@@ -16,7 +16,6 @@ namespace CardShare.Battle
 
         private readonly IGameTables _tables;
         private readonly PvpModeConfig _mode;
-        private readonly IReadOnlyList<PvpRoundConfig> _rounds;
         private readonly PvpFighter[] _fighters;
         private readonly List<PvpDuelTable> _duels = new List<PvpDuelTable>();
         private readonly List<PvpMatchEventDto> _pendingEvents = new List<PvpMatchEventDto>();
@@ -25,7 +24,7 @@ namespace CardShare.Battle
         private readonly PvpRelicStock _relicStock;
         private int _pvpCycle;
         private bool _rewardsGranted;
-        private PvpRoundConfig _row = null!;
+        private int _goldBase;
         private PvpFightKind _kind;
 
         private PvpMatch(
@@ -34,7 +33,6 @@ namespace CardShare.Battle
             IReadOnlyList<PlayerPublic> players,
             IGameTables tables,
             PvpModeConfig mode,
-            IReadOnlyList<PvpRoundConfig> rounds,
             PvpFighter[] fighters)
         {
             RoomId = roomId;
@@ -42,7 +40,6 @@ namespace CardShare.Battle
             Players = players;
             _tables = tables;
             _mode = mode;
-            _rounds = rounds;
             _fighters = fighters;
             _shopRandom = new Random(unchecked(seed ^ 0x5A0F9));
             _relicStock = PvpRelicStock.Create(tables);
@@ -91,7 +88,7 @@ namespace CardShare.Battle
             IReadOnlyList<SeatSetup> combatSeats,
             int modeId = PvpSchedule.DefaultModeId)
         {
-            if (!PvpSchedule.TryLoad(tables, modeId, out var mode, out var rounds))
+            if (!PvpSchedule.TryLoad(tables, modeId, out var mode))
             {
                 throw new InvalidOperationException($"PvpModeConfig {modeId} not found.");
             }
@@ -129,7 +126,7 @@ namespace CardShare.Battle
                 };
             }
 
-            var match = new PvpMatch(roomId, seed, players, tables, mode, rounds, fighters);
+            var match = new PvpMatch(roomId, seed, players, tables, mode, fighters);
             match.StartRound();
             return match;
         }
@@ -446,12 +443,6 @@ namespace CardShare.Battle
         private void StartRound()
         {
             _duels.Clear();
-            if (!PvpSchedule.TryGetRound(_rounds, Round, out _row))
-            {
-                FinishByHp();
-                return;
-            }
-
             var alive = AliveSeats();
             if (alive.Count <= 1)
             {
@@ -459,7 +450,9 @@ namespace CardShare.Battle
                 return;
             }
 
-            _kind = PvpSchedule.EffectiveKind(_mode, _row, alive.Count);
+            // 轮次没有上限：1、5、9… 打野怪，其余打玩家，直到只剩一人。
+            _kind = PvpSchedule.Kind(_mode, Round, alive.Count);
+            _goldBase = PvpSchedule.GoldBase(Round);
             ResetSkills();
             for (var f = 0; f < _fighters.Length; f++)
             {
@@ -483,7 +476,7 @@ namespace CardShare.Battle
                 _pvpCycle++;
             }
 
-            var monsterGroup = _row.MonsterGroup;
+            var monsterGroup = PvpSchedule.MonsterGroup(_tables, Round);
             var openingDeaths = new Dictionary<int, int>();
             ApplyOpeningChips(slots, openingDeaths);
             for (var i = 0; i < slots.Count; i++)
@@ -848,7 +841,7 @@ namespace CardShare.Battle
 
             var streak = countStreak ? (won ? fighter.WinStreak : fighter.LoseStreak) : 0;
             var unused = fighter.RubLeft + fighter.ReplaceLeft + fighter.PeekLeft;
-            var baseGold = PvpHeroRuntime.SettlementGold(_tables, fighter.Combat.HeroId, _row.GoldBase);
+            var baseGold = PvpHeroRuntime.SettlementGold(_tables, fighter.Combat.HeroId, _goldBase);
             fighter.Gold += PvpSettlementRules.RoundGold(
                 baseGold, skillGoldUnit, unused, streak, fighter.Gold, won, _tables.GameConst);
         }
@@ -891,12 +884,6 @@ namespace CardShare.Battle
             if (alive.Count <= 1)
             {
                 FinishSurvivor();
-                return;
-            }
-
-            if (Round >= PvpSchedule.LastRound(_rounds))
-            {
-                FinishByHp();
                 return;
             }
 
@@ -1349,34 +1336,6 @@ namespace CardShare.Battle
                 {
                     _fighters[i].Rank = 1;
                 }
-            }
-
-            FillRankRewards();
-            FinishedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            Bump(PvpEventKinds.MatchFinished, string.Empty, 0);
-        }
-
-        private void FinishByHp()
-        {
-            Phase = PhaseFinished;
-            PhaseDeadlineUtcMs = 0;
-            var living = new List<PvpFighter>();
-            for (var i = 0; i < _fighters.Length; i++)
-            {
-                if (_fighters[i].Alive && _fighters[i].Rank == 0)
-                {
-                    living.Add(_fighters[i]);
-                }
-            }
-
-            living.Sort((a, b) =>
-            {
-                var cmp = b.Hp.CompareTo(a.Hp);
-                return cmp != 0 ? cmp : a.SeatIndex.CompareTo(b.SeatIndex);
-            });
-            for (var i = 0; i < living.Count; i++)
-            {
-                living[i].Rank = i + 1;
             }
 
             FillRankRewards();

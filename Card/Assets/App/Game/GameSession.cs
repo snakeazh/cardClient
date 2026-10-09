@@ -1412,7 +1412,8 @@ namespace App.Game
 
             _playingExtraAttack = true;
             LastAttackMissed = false;
-            TakenDamage = Math.Max(0, PendingAttackDamage);
+            var pending = Math.Max(0, PendingAttackDamage);
+            TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             Hint = $"追击 {target.Name}！";
             Notify();
             return true;
@@ -1444,7 +1445,8 @@ namespace App.Game
             _pendingAttackTarget = target;
             _pendingDamageSource = Player;
             AttackVisualSlot = FindVisualSlot(target);
-            AttackDamage = Math.Max(0, PendingAttackDamage);
+            var pending = Math.Max(0, PendingAttackDamage);
+            AttackDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             TakenDamage = AttackDamage;
             LastAttackMissed = false;
             ResetAttackWaves();
@@ -1859,7 +1861,13 @@ namespace App.Game
                 TryApplyPermanentCardBonuses(openScore);
                 PendingAttackDamage = damage;
                 AttackLevel = MapAttackLevel(openScore.Type);
-                LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {damage} 伤害";
+                var shown = damage;
+                if (opener != null && opener.IsPlayer)
+                {
+                    shown += BindingBonus(damage);
+                }
+
+                LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {shown} 伤害";
                 Log(LastResult);
                 Phase = GamePhase.WaitingAttack;
                 IncomingAttack = false;
@@ -2243,6 +2251,15 @@ namespace App.Game
             var resultLine = formulaDamage == damage
                 ? $"  {effective} x {totalMag} = {damage}"
                 : $"  {effective} x {totalMag} = {formulaDamage} → {damage}";
+            var bondBase = IsPvp ? formulaDamage : damage;
+            var bond = attacker.IsPlayer ? BindingBonus(bondBase) : 0;
+            if (bond > 0)
+            {
+                resultLine += IsPvp
+                    ? $" | 羁绊+{bond}"
+                    : $" | 羁绊+{bond} = {damage + bond}";
+            }
+
             if (attacker.IsPlayer && talentDamage != 0)
             {
                 var sign = talentDamage > 0 ? "+" : string.Empty;
@@ -2504,7 +2521,7 @@ namespace App.Game
             return powers[index];
         }
 
-        /// <summary>该圣物当前占了几格。三合一之后是 1 格 LV3，不再按 3 份计。</summary>
+        /// <summary>该圣物当前占了几格。每份占一格。</summary>
         public int RelicOwnedCount(int relicId)
         {
             if (relicId <= 0 || Run.RelicConfigIds == null)
@@ -6007,6 +6024,18 @@ namespace App.Game
             StartRound();
         }
 
+        /// <summary>PVE：玩家打出的每一击，在闪避和免疫之后按已达成羁绊附加伤害。PVP 由服务端结算。</summary>
+        private int BindingBonus(int damage)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || Run?.RelicConfigIds == null)
+            {
+                return 0;
+            }
+
+            return CardShare.Battle.PvpRelicBindings.BonusDamage(tables, Run.RelicConfigIds, damage);
+        }
+
         private int ApplyDamage(SeatState target, int damage, bool main, SeatState attacker = null)
         {
             if (target == null)
@@ -6110,6 +6139,11 @@ namespace App.Game
                     ApplyLifeSiphon(attacker, survived);
                     return survived;
                 }
+            }
+
+            if (attacker != null && attacker.IsPlayer && !IsPvp && damage > 0 && target != null && !target.IsPlayer)
+            {
+                damage += BindingBonus(damage);
             }
 
             if (damage <= 0)

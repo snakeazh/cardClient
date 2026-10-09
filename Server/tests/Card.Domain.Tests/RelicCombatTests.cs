@@ -51,6 +51,26 @@ public class RelicCombatTests
     }
 
     [Fact]
+    public void DuplicateRelicIdsCountOnceForMagAndAttack()
+    {
+        var tables = RelicTables();
+        HandEvaluator.Tables = tables;
+        var score = AcePair();
+        var once = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 11, 12 } },
+            score);
+        var twice = RelicCombat.Evaluate(
+            tables,
+            new RelicCombatSnapshot { RelicIds = new[] { 11, 11, 12, 12 } },
+            score);
+        Assert.Equal(once.AttackExtra, twice.AttackExtra);
+        Assert.Equal(once.MagExtra, twice.MagExtra);
+        Assert.Equal(5f, twice.AttackExtra);
+        Assert.Equal(2f, twice.MagExtra);
+    }
+
+    [Fact]
     public void DisabledRelicIsSkippedAndHeartSuitCounts()
     {
         var tables = RelicTables();

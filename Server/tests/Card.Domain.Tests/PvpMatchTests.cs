@@ -704,18 +704,47 @@ public class PvpMatchTests
     }
 
     [Fact]
-    public void ThreeCopiesFuseIntoOneTriple()
+    public void CopiesStaySeparateSlots()
     {
         var fighter = new PvpFighter();
         PvpRelicBag.Add(fighter, 7);
         PvpRelicBag.Add(fighter, 7);
-        Assert.Equal(2, fighter.OwnedRelicIds.Count);
         PvpRelicBag.Add(fighter, 7);
-        Assert.Single(fighter.OwnedRelicIds);
-        Assert.Equal(PvpRelicBag.FusedPower, fighter.OwnedRelicPower[0]);
+        Assert.Equal(3, fighter.OwnedRelicIds.Count);
+        Assert.All(fighter.OwnedRelicPower, p => Assert.Equal(1, p));
         Assert.Equal(3, PvpRelicBag.Expand(fighter).Count);
-        Assert.Equal(PvpRelicBag.FusedPower, PvpRelicBag.RemoveOne(fighter, 7));
-        Assert.Empty(fighter.OwnedRelicIds);
+        Assert.Equal(1, PvpRelicBag.RemoveOne(fighter, 7));
+        Assert.Equal(2, fighter.OwnedRelicIds.Count);
+    }
+
+    [Fact]
+    public void BindingDamageRequiresEveryMember()
+    {
+        var relics = new[]
+        {
+            PvpTestTables.BondRelic(101),
+            PvpTestTables.BondRelic(201),
+            PvpTestTables.BondRelic(301),
+            PvpTestTables.BondRelic(401)
+        };
+        var tables = PvpTestTables.WithRelics(
+            relics,
+            bindings: new[]
+            {
+                new BindingConfig { Id = 101, Type = BindingType.Leiting, Value = new[] { 1f, 0.4f } }
+            });
+        var fighter = new PvpFighter();
+        fighter.OwnedRelicIds.Add(101);
+        fighter.OwnedRelicIds.Add(201);
+        fighter.OwnedRelicIds.Add(301);
+        fighter.OwnedRelicIds.Add(101);
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+
+        fighter.OwnedRelicIds.Add(401);
+        Assert.Equal(40, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+
+        fighter.OwnedRelicIds.Remove(201);
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
     }
 
     [Fact]
@@ -799,8 +828,8 @@ public class PvpMatchTests
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
-        Assert.Single(buyer.OwnedRelicIds);
-        Assert.Equal(PvpRelicBag.FusedPower, buyer.OwnedRelicPower[0]);
+        Assert.Equal(3, buyer.OwnedRelicIds.Count);
+        Assert.All(buyer.OwnedRelicPower, p => Assert.Equal(1, p));
         Assert.Equal(gold - 30, buyer.Gold);
 
         var locked = match.Fighters[1];
@@ -809,8 +838,8 @@ public class PvpMatchTests
         Assert.True(locked.ShopOfferIds.Count <= lockedOffers);
 
         match.Act(buyer.UserId, "sell", 7, Array.Empty<int>());
-        Assert.Empty(buyer.OwnedRelicIds);
-        Assert.Equal(gold - 30 + 12, buyer.Gold);
+        Assert.Equal(2, buyer.OwnedRelicIds.Count);
+        Assert.Equal(gold - 30 + 4, buyer.Gold);
         match.Act(locked.UserId, "refresh", 0, Array.Empty<int>());
         Assert.Contains(7, locked.ShopOfferIds);
     }
@@ -1589,8 +1618,24 @@ internal static class PvpTestTables
     public static GameTables OnePvpRound()
         => Build(new[] { Round(1, 1, PvpFightKind.Pvp, 0, 15) });
 
-    public static GameTables WithRelics(RelicConfig[] relics, RelicEntryConfig[]? relicEntries = null)
-        => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries);
+    public static GameTables WithRelics(
+        RelicConfig[] relics,
+        RelicEntryConfig[]? relicEntries = null,
+        BindingConfig[]? bindings = null)
+        => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries, bindings: bindings);
+
+    internal static RelicConfig BondRelic(int id)
+        => new RelicConfig
+        {
+            Id = id,
+            Name = "羁绊" + id,
+            Type = QualityType.Ordinary,
+            Price = 10,
+            SellingPrice = 4,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>(),
+            BindingID = new[] { 101 }
+        };
 
     private static PvpRoundConfig Round(int id, int round, PvpFightKind kind, int group, int gold)
         => new PvpRoundConfig
@@ -1610,7 +1655,8 @@ internal static class PvpTestTables
         IReadOnlyList<RelicEntryConfig>? relicEntries = null,
         IReadOnlyList<HeroEntryConfig>? heroEntries = null,
         IReadOnlyList<TalentConfig>? talentRows = null,
-        IReadOnlyList<TalentEntryConfig>? talentEntries = null)
+        IReadOnlyList<TalentEntryConfig>? talentEntries = null,
+        IReadOnlyList<BindingConfig>? bindings = null)
     {
         var fallback = GameTables.Fallback();
         return new GameTables(
@@ -1665,6 +1711,7 @@ internal static class PvpTestTables
                     OpenPhaseSeconds = 20
                 }
             },
-            rounds);
+            rounds,
+            bindings: bindings);
     }
 }

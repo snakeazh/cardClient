@@ -625,6 +625,8 @@ namespace CardShare.Battle
 
             ConsumeNullify(duel);
 
+            var thunderBase = damage;
+            var dodged = false;
             var deathHp = new Dictionary<int, int>();
             if (damage > 0 && victim != null)
             {
@@ -632,7 +634,9 @@ namespace CardShare.Battle
                 // 英雄闪避（MissDamagePer）：掷中本次伤害为 0，并按 MissGetDamage 反击攻击方。
                 if (PvpHeroRuntime.RollDodge(_tables, victimHeroId, _shopRandom))
                 {
+                    dodged = true;
                     var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
+                    counter += PvpRelicBindings.BonusDamage(_tables, victim, counter);
                     if (counter > 0)
                     {
                         var attacker = FighterOfDuelSeat(duel, win);
@@ -651,6 +655,11 @@ namespace CardShare.Battle
                     // 英雄承伤减免（HeroTakeDamagePer）：对齐 PVE IncomingDamageAfterMitigation 的乘区与保底。
                     damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, victimHeroId, damage);
                 }
+            }
+
+            if (!nullified && !dodged && thunderBase > 0 && winnerFighter != null)
+            {
+                damage += PvpRelicBindings.BonusDamage(_tables, winnerFighter, thunderBase);
             }
 
             var winnerForKill = winnerFighter;
@@ -1028,7 +1037,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic already owned.");
             }
 
-            PvpRelicBag.Add(fighter, relicId, _tables.GameConst);
+            PvpRelicBag.Add(fighter, relicId);
             // 血量上限类与购买同口径（编辑器测试能直接看到血条变化）。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。
@@ -1059,7 +1068,7 @@ namespace CardShare.Battle
 
             fighter.Gold -= price;
             fighter.ShopOfferIds.Remove(relicId);
-            PvpRelicBag.Add(fighter, relicId, _tables.GameConst);
+            PvpRelicBag.Add(fighter, relicId);
             // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 懒初始化甜品/饮品满值：下次 ToPlayerSeat / Tick 时写入。

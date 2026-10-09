@@ -849,7 +849,8 @@ namespace CardShare.Battle
             var streak = countStreak ? (won ? fighter.WinStreak : fighter.LoseStreak) : 0;
             var unused = fighter.RubLeft + fighter.ReplaceLeft + fighter.PeekLeft;
             var baseGold = PvpHeroRuntime.SettlementGold(_tables, fighter.Combat.HeroId, _row.GoldBase);
-            fighter.Gold += PvpSettlementRules.RoundGold(baseGold, skillGoldUnit, unused, streak, fighter.Gold, won);
+            fighter.Gold += PvpSettlementRules.RoundGold(
+                baseGold, skillGoldUnit, unused, streak, fighter.Gold, won, _tables.GameConst);
         }
 
         private void BumpDuelResolved(PvpDuelTable duel, int damage)

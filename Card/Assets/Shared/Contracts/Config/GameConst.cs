@@ -226,6 +226,26 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int PVPLegendRelicNum;
 
+        /// <summary>
+        /// PVP圣物升级成长(3=翻三倍)
+        /// </summary>
+        public int PVPRelicEffectMultiple;
+
+        /// <summary>
+        /// PVP连胜/连败金币奖励(从5连胜/连败开始都是100)
+        /// </summary>
+        public int[] PVPWinningStreakGoldNum;
+
+        /// <summary>
+        /// PVP每拥有多少金币就额外提供多少利息
+        /// </summary>
+        public int[] PVPGoldInterestNum;
+
+        /// <summary>
+        /// PVP拥有多少金币是利息达到峰值
+        /// </summary>
+        public int PVPGoldInterestNumMax;
+
     }
 }
 

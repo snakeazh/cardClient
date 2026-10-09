@@ -55,5 +55,18 @@
   "PVPOrdinaryRelicNum": 6,
   "PVPRareRelicNum": 5,
   "PVPEpicRelicNum": 4,
-  "PVPLegendRelicNum": 3
+  "PVPLegendRelicNum": 3,
+  "PVPRelicEffectMultiple": 3,
+  "PVPWinningStreakGoldNum": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "PVPGoldInterestNum": [
+    100,
+    10
+  ],
+  "PVPGoldInterestNumMax": 500
 }

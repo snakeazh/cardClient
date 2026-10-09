@@ -48,12 +48,6 @@ namespace App.Bootstrap
         [Tooltip("仅当「服务器地址」为 Custom 时生效")]
         [SerializeField] private int customServerPort = GameApiSettings.DefaultPort;
 
-        [Header("帧率")]
-        [Tooltip("允许 iOS 高帧率(GameConst.GameFps>60 时对 iOS 生效，系统按屏幕刷新率钳制，ProMotion 可达 120)。" +
-                 "仅在导出面板同时勾选「iOS 高性能+」与「iOS Metal」后才可打开；" +
-                 "微信 WebGL 转换路径平台封顶 60，未开 Metal 时打开本开关会导致主循环 setTimeout 空转耗电。")]
-        [SerializeField] private bool allowIosHighFrameRate = false;
-
         private AppServicesHost _services;
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
@@ -71,7 +65,8 @@ namespace App.Bootstrap
         private async void Start()
         {
             QualitySettings.vSyncCount = 0;
-            // 锁 60：高刷屏放开(-1)会满负载发热降频，帧率反而更低更不稳。
+            // 启动期先锁 60，防高刷屏在配置表加载前满负载空烧；
+            // 配置加载后 ApplyFrameRate 按平台放开（仅微信安卓保持 60）
             Application.targetFrameRate = 60;
             // 帧率 HUD 恢复（Debug/性能 菜单写存的开关；Development 构建真机常开，便于性能排查）
             if (PlayerPrefs.GetInt(App.UI.FpsHud.PrefKey, 0) != 0 || Debug.isDebugBuild)
@@ -201,26 +196,30 @@ namespace App.Bootstrap
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
         }
 
-        /// <summary>锁 60 帧：微信 WebGL 转换路径平台封顶 60，再高只会 setTimeout 空转耗电。
-        /// WebGL 上 targetFrameRate 不驱动主循环，需调 wx.setPreferredFramesPerSecond 才真正生效。
-        /// 须在配置表加载后调用。</summary>
+        /// <summary>按平台应用目标帧率（须在配置表加载后调用）：
+        /// 微信小游戏（wx.getDeviceInfo().platform）安卓锁 60——WebGL 上非 15/30/60 的值会走
+        /// setTimeout 空转耗电，60 走 rAF 分片最稳，且需同步调 wx.setPreferredFramesPerSecond 生效；
+        /// 其余微信环境不限帧（iOS 由 rAF 平台级封顶 60，devtools 全速便于测试）；
+        /// 非微信（Editor/原生包）不限帧，跟随屏幕刷新率。</summary>
         private void ApplyFrameRate()
         {
             QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = 60;
 #if UNITY_WEBGL && !UNITY_EDITOR
-            WeChatWASM.WX.SetPreferredFramesPerSecond(60);
+            var device = WeChatWASM.WX.GetDeviceInfo();
+            var platform = device != null ? device.platform : null;
+            if (string.Equals(platform, "android", StringComparison.OrdinalIgnoreCase))
+            {
+                Application.targetFrameRate = 60;
+                WeChatWASM.WX.SetPreferredFramesPerSecond(60);
+            }
+            else
+            {
+                Application.targetFrameRate = -1;
+            }
+#else
+            Application.targetFrameRate = -1;
 #endif
             AppLog.Info(LogChannel.Config, $"[Boot] targetFrameRate={Application.targetFrameRate}");
-        }
-
-        private static bool IsWeChatIos()
-        {
-#if UNITY_WEBGL && !UNITY_EDITOR
-            return string.Equals(WeChatWASM.WX.GetDeviceInfo().platform, "ios", StringComparison.OrdinalIgnoreCase);
-#else
-            return false;
-#endif
         }
 
         private static async Task RegisterAtlas(

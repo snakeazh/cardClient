@@ -46,10 +46,10 @@ namespace CardShare.Battle
 
         public List<int> OwnedRelicIds { get; } = new List<int>();
 
-        /// <summary>与 <see cref="OwnedRelicIds"/> 对齐。1 = 未合成，3 = 三合一。</summary>
+        /// <summary>与 <see cref="OwnedRelicIds"/> 对齐。1 = 未合成，合成后等于 GameConst.PvpRelicSynthesisNum。</summary>
         public List<int> OwnedRelicPower { get; } = new List<int>();
 
-        /// <summary>已解锁的圣物槽。开局 4，最多 10。</summary>
+        /// <summary>已解锁的圣物槽。开局为 GameConst.PVPRelicInitialRelicNum，上限为初始槽加解锁价格档数。</summary>
         public int RelicSlots { get; set; } = PvpRelicBag.FreeSlots;
 
         public int[] ShopPoolIds { get; set; } = Array.Empty<int>();

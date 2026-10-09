@@ -544,7 +544,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            PvpRelicBag.Add(fighter, pool[rng.Next(pool.Count)]);
+            PvpRelicBag.Add(fighter, pool[rng.Next(pool.Count)], tables.GameConst);
         }
 
         private static void AddHandTypeShowCount(PvpFighter fighter, HandType type)

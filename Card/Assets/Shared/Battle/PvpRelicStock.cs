@@ -7,7 +7,9 @@ using CardShare.Contracts.Config;
 namespace CardShare.Battle
 {
     /// <summary>
-    /// 一局一份的圣物公共库存。非消耗品按品质给固定份数：普通 6 / 稀有 5 / 史诗 4 / 传说 3。
+    /// 一局一份的圣物公共库存。非消耗品份数读 GameConst
+    /// （PVPOrdinaryRelicNum / PVPRareRelicNum / PVPEpicRelicNum / PVPLegendRelicNum）。
+    /// 未配置时为普通 6 / 稀有 5 / 史诗 4 / 传说 3。
     /// 消耗品（UseType 1/2）不占库存。上架时预扣 1 份，卖掉、淘汰、自毁按携带倍数加回，且不超过基础份数。
     /// </summary>
     public sealed class PvpRelicStock
@@ -44,7 +46,7 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                var count = BaseCount(relic.Type);
+                var count = BaseCount(relic.Type, tables.GameConst);
                 stock._base[relic.Id] = count;
                 stock._stock[relic.Id] = count;
             }
@@ -52,20 +54,23 @@ namespace CardShare.Battle
             return stock;
         }
 
-        public static int BaseCount(QualityType quality)
+        public static int BaseCount(QualityType quality, GameConst gameConst = null!)
         {
             switch (quality)
             {
                 case QualityType.Rare:
-                    return RareStock;
+                    return CountOr(gameConst != null ? gameConst.PVPRareRelicNum : 0, RareStock);
                 case QualityType.Epic:
-                    return EpicStock;
+                    return CountOr(gameConst != null ? gameConst.PVPEpicRelicNum : 0, EpicStock);
                 case QualityType.Legend:
-                    return LegendStock;
+                    return CountOr(gameConst != null ? gameConst.PVPLegendRelicNum : 0, LegendStock);
                 default:
-                    return OrdinaryStock;
+                    return CountOr(gameConst != null ? gameConst.PVPOrdinaryRelicNum : 0, OrdinaryStock);
             }
         }
+
+        private static int CountOr(int configured, int fallback)
+            => configured > 0 ? configured : fallback;
 
         public int Available(int relicId)
         {

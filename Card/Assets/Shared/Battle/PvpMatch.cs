@@ -124,7 +124,8 @@ namespace CardShare.Battle
                     Gold = mode.InitialGold + PvpHeroRuntime.InitialGold(tables, combat.HeroId),
                     Alive = true,
                     IsBot = pub.IsBot,
-                    ShopPoolIds = combat.ShopPoolIds ?? Array.Empty<int>()
+                    ShopPoolIds = combat.ShopPoolIds ?? Array.Empty<int>(),
+                    RelicSlots = PvpRelicBag.InitialSlots(tables.GameConst)
                 };
             }
 
@@ -1039,7 +1040,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic already owned.");
             }
 
-            PvpRelicBag.Add(fighter, relicId);
+            PvpRelicBag.Add(fighter, relicId, _tables.GameConst);
             // 血量上限类与购买同口径（编辑器测试能直接看到血条变化）。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。
@@ -1070,7 +1071,7 @@ namespace CardShare.Battle
 
             fighter.Gold -= price;
             fighter.ShopOfferIds.Remove(relicId);
-            PvpRelicBag.Add(fighter, relicId);
+            PvpRelicBag.Add(fighter, relicId, _tables.GameConst);
             // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 懒初始化甜品/饮品满值：下次 ToPlayerSeat / Tick 时写入。
@@ -1124,12 +1125,12 @@ namespace CardShare.Battle
 
         private void UnlockRelicSlot(PvpFighter fighter)
         {
-            if (fighter.RelicSlots >= PvpRelicBag.MaxSlots)
+            if (fighter.RelicSlots >= PvpRelicBag.MaxSlotsFor(_tables.GameConst))
             {
                 throw new InvalidOperationException("Relic slots are maxed.");
             }
 
-            var cost = PvpRelicBag.NextSlotCost(fighter.RelicSlots);
+            var cost = PvpRelicBag.NextSlotCost(_tables.GameConst, fighter.RelicSlots);
             if (fighter.Gold < cost)
             {
                 throw new InvalidOperationException("Not enough gold.");

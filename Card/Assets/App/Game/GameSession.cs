@@ -2438,10 +2438,10 @@ namespace App.Game
 
         /// <summary>
         /// 可携带圣物上限：PVE 为 <see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
-        /// PVP 为已解锁槽位（开局 4，最多 10），以服务端快照为准。
+        /// PVP 为已解锁槽位，以服务端快照为准；快照未到时用 GameConst.PVPRelicInitialRelicNum。
         /// </summary>
         public int RelicCarryMax => IsPvp
-            ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : 4)
+            ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : CardShare.Battle.PvpRelicBag.InitialSlots(GameConst.IsLoaded ? GameConst.Instance : null))
             : GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
 
         /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>

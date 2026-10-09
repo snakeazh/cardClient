@@ -191,6 +191,41 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int PvpHeroHpBoostPercent;
 
+        /// <summary>
+        /// PVP圣物升级所需数量
+        /// </summary>
+        public int PvpRelicSynthesisNum;
+
+        /// <summary>
+        /// PVP圣物槽位解锁所需金币
+        /// </summary>
+        public int[] PVPRelicNumNeedGold;
+
+        /// <summary>
+        /// PVP玩家携带圣物数量上限
+        /// </summary>
+        public int PVPRelicNumMax;
+
+        /// <summary>
+        /// PVP普通圣物数量
+        /// </summary>
+        public int PVPOrdinaryRelicNum;
+
+        /// <summary>
+        /// PVP稀有圣物数量
+        /// </summary>
+        public int PVPRareRelicNum;
+
+        /// <summary>
+        /// PVP史诗圣物数量
+        /// </summary>
+        public int PVPEpicRelicNum;
+
+        /// <summary>
+        /// PVP传说圣物数量
+        /// </summary>
+        public int PVPLegendRelicNum;
+
     }
 }
 

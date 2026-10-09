@@ -116,24 +116,69 @@ public class PveFlowTests
     }
 
     [Fact]
-    public async Task UnlockHeroPersistsAndAllowsThatHeroToStart()
+    public async Task UnlockHeroRequiresServerDifficultyClear()
     {
         var (pve, meta, userId) = await CreateApp();
-        var locked = await Assert.ThrowsAsync<DomainException>(() =>
-            pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None));
-        Assert.Equal(ErrorCodes.HeroLocked, locked.Code);
+        var denied = await Assert.ThrowsAsync<DomainException>(() =>
+            meta.UnlockHeroAsync(userId, 2, CancellationToken.None));
+        Assert.Equal(ErrorCodes.HeroLocked, denied.Code);
 
-        var first = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
-        var second = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
-        Assert.Contains(2, first.Level.UnlockedHeroIds);
-        Assert.Contains(2, second.Level.UnlockedHeroIds);
+        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+        await pve.ReportProgressAsync(
+            userId,
+            new PveProgressRequest { RunId = started.RunId, ClearedStage = true, Score = 10 },
+            CancellationToken.None);
+        var partial = await pve.SettlePveAsync(
+            userId,
+            new PveSettleRequest { RunId = started.RunId, Cleared = true, TotalScore = 10 },
+            CancellationToken.None);
+        Assert.DoesNotContain(2, partial.Profile.Level.UnlockedHeroIds);
 
-        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None);
-        Assert.False(string.IsNullOrEmpty(started.RunId));
+        var stillDenied = await Assert.ThrowsAsync<DomainException>(() =>
+            meta.UnlockHeroAsync(userId, 2, CancellationToken.None));
+        Assert.Equal(ErrorCodes.HeroLocked, stillDenied.Code);
+
+        var second = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1002, HeroId = 1 }, CancellationToken.None);
+        await pve.ReportProgressAsync(
+            userId,
+            new PveProgressRequest { RunId = second.RunId, ClearedStage = true, Score = 10 },
+            CancellationToken.None);
+        var cleared = await pve.SettlePveAsync(
+            userId,
+            new PveSettleRequest { RunId = second.RunId, Cleared = true, TotalScore = 10 },
+            CancellationToken.None);
+        Assert.Contains(2, cleared.Profile.Level.UnlockedHeroIds);
+
+        var claimed = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
+        Assert.Contains(2, claimed.Level.UnlockedHeroIds);
+
+        var withHero = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(withHero.RunId));
 
         var unknown = await Assert.ThrowsAsync<DomainException>(() =>
             meta.UnlockHeroAsync(userId, 999, CancellationToken.None));
         Assert.Equal(ErrorCodes.InvalidRequest, unknown.Code);
+    }
+
+    [Fact]
+    public async Task GetProfileBackfillsNaturallyUnlockedHeroes()
+    {
+        var config = TestConfig.Create();
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var userId = Guid.NewGuid();
+        var created = CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow);
+        created.Level.SetHighestCleared(1, config.Tables.GetMaxLevel(1));
+        Assert.DoesNotContain(2, created.Level.UnlockedHeroIds);
+        await players.SaveAsync(created, CancellationToken.None);
+        var (_, meta) = TestApp.Create(players, config: config, clock: clock);
+
+        var profile = await meta.GetProfileAsync(userId, CancellationToken.None);
+        Assert.Contains(2, profile.Level.UnlockedHeroIds);
+
+        var stored = await players.GetAsync(userId, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Contains(2, stored.Level.UnlockedHeroIds);
     }
 
     [Fact]

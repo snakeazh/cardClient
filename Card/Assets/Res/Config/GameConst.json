@@ -47,10 +47,11 @@
     40,
     60,
     80,
+    100,
     120,
     150
   ],
-  "PVPRelicNumMax": 10,
+  "PVPRelicInitialRelicNum": 4,
   "PVPOrdinaryRelicNum": 6,
   "PVPRareRelicNum": 5,
   "PVPEpicRelicNum": 4,

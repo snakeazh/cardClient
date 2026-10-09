@@ -202,27 +202,27 @@ namespace CardShare.Contracts.Config
         public int[] PVPRelicNumNeedGold;
 
         /// <summary>
-        /// PVP玩家携带圣物数量上限
+        /// PVP玩家初始携带圣物数量
         /// </summary>
-        public int PVPRelicNumMax;
+        public int PVPRelicInitialRelicNum;
 
         /// <summary>
-        /// PVP普通圣物数量
+        /// PVP普通圣物重复数量
         /// </summary>
         public int PVPOrdinaryRelicNum;
 
         /// <summary>
-        /// PVP稀有圣物数量
+        /// PVP稀有圣物重复数量
         /// </summary>
         public int PVPRareRelicNum;
 
         /// <summary>
-        /// PVP史诗圣物数量
+        /// PVP史诗圣物重复数量
         /// </summary>
         public int PVPEpicRelicNum;
 
         /// <summary>
-        /// PVP传说圣物数量
+        /// PVP传说圣物重复数量
         /// </summary>
         public int PVPLegendRelicNum;
 

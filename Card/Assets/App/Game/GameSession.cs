@@ -260,14 +260,22 @@ namespace App.Game
 
         /// <summary>
         /// 站在 player1 中心的敌人：只剩 1 个活人就站中间；2 个时第一个开牌的站中间；
-        /// 3 个拼牌时当前对手站中间。攻击演出未结束时，当前目标即使刚死也占住位置。
+        /// 3 个拼牌时当前对手站中间。攻击演出未结束时，当前目标/来源即使刚死也占住位置
+        /// （含出刀与挨打，避免反弹/反击斩杀后 Sync 换中）。
         /// </summary>
         public SeatState CenterStandEnemy
         {
             get
             {
-                if (AttackPlaying && !IncomingAttack)
+                if (AttackPlaying)
                 {
+                    // 出刀锁主目标；挨打锁攻击来源。刚死也占中，直到 CompletePlayerAttack。
+                    var held = IncomingAttack ? _pendingDamageSource : _pendingAttackTarget;
+                    if (held != null && held.ActiveInStage && !held.IsPlayer)
+                    {
+                        return held;
+                    }
+
                     var attacking = EnemyAtVisualSlot(AttackVisualSlot);
                     if (attacking != null && attacking.ActiveInStage)
                     {
@@ -292,6 +300,12 @@ namespace App.Game
                         return current != null && current.Alive ? current : FirstAliveEnemy();
                     }
 
+                    // 下一局前保持上一手最后占中的对手，避免先跳到 FirstAlive 再开牌换回来。
+                    if (_pendingOpenTarget != null && _pendingOpenTarget.Alive)
+                    {
+                        return _pendingOpenTarget;
+                    }
+
                     return FirstAliveEnemy();
                 }
 
@@ -302,6 +316,12 @@ namespace App.Game
                 {
                     var current = DisplayedEnemy;
                     return current != null && current.Alive ? current : null;
+                }
+
+                // 三人局下注间隙同样保持上一手占中，与下一轮队首对齐。
+                if (_pendingOpenTarget != null && _pendingOpenTarget.Alive)
+                {
+                    return _pendingOpenTarget;
                 }
 
                 return null;
@@ -1733,11 +1753,19 @@ namespace App.Game
             IncomingAttack = false;
             SelectingXRayTarget = false;
             SelectingRubTarget = false;
+            // 上一手最后占中且仍存活的对手排第一，避免下一轮开牌时突然换中。
+            var prefer = _pendingOpenTarget;
+            if (prefer != null && prefer.Alive)
+            {
+                _compareQueue.Add(prefer);
+            }
+
             for (var i = 0; i < Enemies.Length; i++)
             {
-                if (Enemies[i].Alive)
+                var enemy = Enemies[i];
+                if (enemy != null && enemy.Alive && !ReferenceEquals(enemy, prefer))
                 {
-                    _compareQueue.Add(Enemies[i]);
+                    _compareQueue.Add(enemy);
                 }
             }
 

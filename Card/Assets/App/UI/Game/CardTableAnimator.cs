@@ -487,7 +487,8 @@ namespace App.UI
             TintPlayerCard(index, Color.white);
             PlayRubSfx();
 
-            var revealAt = Time.realtimeSinceStartup + RubReplaceRevealDelay;
+            // 揭示等待用 scaled 时钟：倍速（Time.timeScale）下节奏同步加快；realtime 会拖满真实 1.5s。
+            var revealAt = Time.time + RubReplaceRevealDelay;
             _ = RunRubReplaceAsync(index, item, token, applyReplaceAsync, revealAt, onComplete);
         }
 
@@ -594,7 +595,7 @@ namespace App.UI
                 }
             }
 
-            var wait = revealAt - Time.realtimeSinceStartup;
+            var wait = revealAt - Time.time;
             if (wait > 0.01f)
             {
                 var hold = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

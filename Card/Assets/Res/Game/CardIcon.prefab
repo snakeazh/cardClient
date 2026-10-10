@@ -112,7 +112,7 @@ MonoBehaviour:
   frontTransparentRenderer: {fileID: 180746053289002404}
   idleFloatAmplitude: 0.03
   idleFloatPeriod: 4
-  idleFloatSwayDegrees: 0
+  idleFloatSwayDegrees: 2.6
   idleFloatSwayLag: 0.8
   idleFloatBlendDuration: 0.6
   idleFloatBoostAmpFactor: 1

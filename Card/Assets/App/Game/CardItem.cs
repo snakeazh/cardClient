@@ -51,18 +51,19 @@ namespace App.Game
 
         private Tween _successFxTween;
 
-        // --- 空闲呼吸抖动：上下正弦浮动 + 轻微 Z 轴摆动（幅度均可调，摆动调 0 即纯浮动）；
+        // --- 空闲漂浮两套风格：未选中=纯上下波浪（共享时钟+index 相位，无摆动）；
+        //     选中=旧 CardHover 呼吸抖动风格（独立时钟+随机相位+Z 轴摆动，各自旋转不与波浪对齐）。
         //     只写 TweenTarget 子节点，根节点世界坐标归 CardTableAnimator 管 ---
         [Header("Idle 呼吸抖动")]
         [Tooltip("上下浮动幅度（世界单位，牌高 1.57）")]
         [SerializeField] private float idleFloatAmplitude = 0.03f;
         [Tooltip("一个起伏周期的秒数")]
         [SerializeField] private float idleFloatPeriod = 3.0f;
-        [Tooltip("左右摆动角度（度，绕 Z 轴）")]
+        [Tooltip("选中时左右摆动角度（度，绕 Z 轴）；未选中纯上下浮动无摆动")]
         [SerializeField] private float idleFloatSwayDegrees = 1.2f;
         [Tooltip("摆动相对浮动的相位差（弧度）")]
         [SerializeField] private float idleFloatSwayLag = 0.8f;
-        [Tooltip("漂浮开启/从动画让位恢复时的幅度渐入时长（秒）")]
+        [Tooltip("漂浮开启/模式切换/从动画让位恢复时的幅度渐入时长（秒）")]
         [SerializeField] private float idleFloatBlendDuration = 0.6f;
         [Tooltip("选中后漂浮幅度倍率（呼吸略微增强）")]
         [SerializeField] private float idleFloatBoostAmpFactor = 1.6f;
@@ -81,10 +82,14 @@ namespace App.Game
         private float _idleFloatBlend;
         private float _idleFloatBoostBlend;
 
+        // 选中态（旧 CardHover 呼吸抖动风格）：独立时钟 + 随机相位，自己转自己的，不做波浪跟随。
+        private float _idleFloatSoloAngle;
+        private float _idleFloatSoloPhase;
+
         /// <summary>相邻手牌相位差（波浪密度），发牌时由 CardTableAnimator 读取。</summary>
         public float IdleFloatPhaseStep => idleFloatPhaseStep;
 
-        // 全局共享的波浪时钟（所有 CardItem 实例读同一角度，每帧只推进一次）。
+        // 全局共享的波浪时钟（未选中的牌读同一角度，每帧只推进一次）。
         private static float _sharedFloatAngle;
         private static int _sharedFloatAngleFrame = -1;
 
@@ -485,12 +490,23 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 选中加成开关：选中的牌漂浮幅度/摆动略微增大（<see cref="IdleFloatBoostAmpFactor"/> 等），
-        /// 增减均按 <see cref="IdleFloatBoostBlendDuration"/> 平滑过渡。
+        /// 选中开关：选中切换到旧 CardHover 呼吸抖动风格（独立时钟 + 随机相位 + Z 轴摆动），
+        /// 未选中回到共享波浪（纯上下浮动）。切换不做相位对齐，靠幅度渐入平滑过渡。
         /// </summary>
         public void SetIdleFloatBoosted(bool boosted)
         {
+            if (_idleFloatBoosted == boosted)
+            {
+                return;
+            }
+
             _idleFloatBoosted = boosted;
+            _idleFloatBlend = 0f;
+            if (boosted)
+            {
+                _idleFloatSoloAngle = 0f;
+                _idleFloatSoloPhase = Random.value * Mathf.PI * 2f;
+            }
         }
 
         private void LateUpdate()
@@ -529,22 +545,38 @@ namespace App.Game
                 _idleFloatBlend = 0f;
             }
 
-            // 共享波浪时钟：所有牌读同一角度（每帧只推进一次）。
-            // 某张牌暂停（搓牌/动画让位）后时钟仍在走，恢复时自动回到波浪当前位置，不会掉队。
-            if (_sharedFloatAngleFrame != Time.frameCount)
-            {
-                _sharedFloatAngleFrame = Time.frameCount;
-                _sharedFloatAngle += Time.deltaTime * (Mathf.PI * 2f / Mathf.Max(0.1f, idleFloatPeriod));
-            }
-
             _idleFloatBlend = Mathf.Min(1f, _idleFloatBlend + Time.deltaTime / Mathf.Max(0.01f, idleFloatBlendDuration));
             _idleFloatBoostBlend = Mathf.MoveTowards(
                 _idleFloatBoostBlend,
                 _idleFloatBoosted ? 1f : 0f,
                 Time.deltaTime / Mathf.Max(0.01f, idleFloatBoostBlendDuration));
-            var amp = idleFloatAmplitude * Mathf.Lerp(1f, idleFloatBoostAmpFactor, _idleFloatBoostBlend) * _idleFloatBlend;
-            var sway = idleFloatSwayDegrees * Mathf.Lerp(1f, idleFloatBoostSwayFactor, _idleFloatBoostBlend) * _idleFloatBlend;
-            var t = _sharedFloatAngle + _idleFloatPhase;
+
+            float t;
+            float amp;
+            float sway;
+            if (_idleFloatBoosted)
+            {
+                // 选中：旧 CardHover 呼吸抖动风格——独立时钟 + 随机相位 + Z 轴摆动，各自旋转不与波浪对齐。
+                _idleFloatSoloAngle += Time.deltaTime * (Mathf.PI * 2f / Mathf.Max(0.1f, idleFloatPeriod));
+                t = _idleFloatSoloAngle + _idleFloatSoloPhase;
+                amp = idleFloatAmplitude * Mathf.Lerp(1f, idleFloatBoostAmpFactor, _idleFloatBoostBlend) * _idleFloatBlend;
+                sway = idleFloatSwayDegrees * Mathf.Lerp(1f, idleFloatBoostSwayFactor, _idleFloatBoostBlend) * _idleFloatBlend;
+            }
+            else
+            {
+                // 未选中：共享波浪时钟 + index 相位，纯上下浮动（无摆动）。
+                // 某张牌暂停（搓牌/动画让位）后时钟仍在走，恢复时自动回到波浪当前位置，不会掉队。
+                if (_sharedFloatAngleFrame != Time.frameCount)
+                {
+                    _sharedFloatAngleFrame = Time.frameCount;
+                    _sharedFloatAngle += Time.deltaTime * (Mathf.PI * 2f / Mathf.Max(0.1f, idleFloatPeriod));
+                }
+
+                t = _sharedFloatAngle + _idleFloatPhase;
+                amp = idleFloatAmplitude * _idleFloatBlend;
+                sway = 0f;
+            }
+
             _tweenTarget.localPosition = new Vector3(0f, Mathf.Sin(t) * amp, 0f);
             _tweenTarget.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t + idleFloatSwayLag) * sway);
             _idleFloatPoseActive = true;

@@ -131,7 +131,7 @@
     "Desc": "亮出的顺子牌型在结算时提供+5攻击力"
   },
   {
-    "Id": 108,
+    "Id": 107,
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长弓",
@@ -150,7 +150,7 @@
     "Desc": "亮出的同花牌型在结算时提供+4攻击力"
   },
   {
-    "Id": 109,
+    "Id": 108,
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长矛",
@@ -169,7 +169,7 @@
     "Desc": "亮出的同花顺牌型在结算时提供+6攻击力"
   },
   {
-    "Id": 110,
+    "Id": 109,
     "Type": 1,
     "RefreshProbability": 0.8,
     "Name": "木制长斧",
@@ -198,7 +198,9 @@
     "MechanismId": [
       10011
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -215,7 +217,9 @@
     "MechanismId": [
       10012
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -232,7 +236,9 @@
     "MechanismId": [
       10013
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -249,7 +255,9 @@
     "MechanismId": [
       10014
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -353,7 +361,9 @@
     "MechanismId": [
       10020
     ],
-    "BindingID": [],
+    "BindingID": [
+      109
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -549,7 +559,9 @@
       20010,
       200101
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -603,7 +615,8 @@
       20013
     ],
     "BindingID": [
-      105
+      105,
+      107
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -616,7 +629,7 @@
     "RefreshProbability": 0.4,
     "Name": "黑白相机",
     "Icon": "BlackWhiteCamera",
-    "Price": 110,
+    "Price": 109,
     "SellingPrice": 55,
     "MechanismId": [
       20014
@@ -633,7 +646,7 @@
     "RefreshProbability": 0.4,
     "Name": "丘比特",
     "Icon": "Cupid",
-    "Price": 110,
+    "Price": 109,
     "SellingPrice": 55,
     "MechanismId": [
       20015
@@ -672,7 +685,9 @@
     "MechanismId": [
       20017
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -689,7 +704,9 @@
     "MechanismId": [
       20018
     ],
-    "BindingID": [],
+    "BindingID": [
+      109
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -723,7 +740,9 @@
     "MechanismId": [
       20020
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -740,7 +759,9 @@
     "MechanismId": [
       20021
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -791,7 +812,9 @@
     "MechanismId": [
       20024
     ],
-    "BindingID": [],
+    "BindingID": [
+      109
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -803,12 +826,14 @@
     "RefreshProbability": 0.4,
     "Name": "保温杯",
     "Icon": "ThermalMug",
-    "Price": 110,
+    "Price": 109,
     "SellingPrice": 55,
     "MechanismId": [
       20025
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -876,7 +901,9 @@
     "MechanismId": [
       20029
     ],
-    "BindingID": [],
+    "BindingID": [
+      108
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -888,7 +915,7 @@
     "RefreshProbability": 0.4,
     "Name": "商人票据",
     "Icon": "MerchantBill",
-    "Price": 110,
+    "Price": 109,
     "SellingPrice": 55,
     "MechanismId": [
       20030
@@ -944,7 +971,9 @@
     "MechanismId": [
       20033
     ],
-    "BindingID": [],
+    "BindingID": [
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -961,7 +990,9 @@
     "MechanismId": [
       20034
     ],
-    "BindingID": [],
+    "BindingID": [
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -978,7 +1009,9 @@
     "MechanismId": [
       20035
     ],
-    "BindingID": [],
+    "BindingID": [
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1008,7 +1041,7 @@
     "RefreshProbability": 0.4,
     "Name": "贪婪",
     "Icon": "Greed",
-    "Price": 110,
+    "Price": 109,
     "SellingPrice": 55,
     "MechanismId": [
       20038
@@ -1049,7 +1082,9 @@
     "MechanismId": [
       30002
     ],
-    "BindingID": [],
+    "BindingID": [
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1191,7 +1226,9 @@
     "MechanismId": [
       30011
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1225,7 +1262,10 @@
     "MechanismId": [
       30013
     ],
-    "BindingID": [],
+    "BindingID": [
+      107,
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1289,7 +1329,7 @@
     "Name": "幸运同花",
     "Icon": "LuckySameSuit",
     "Price": 220,
-    "SellingPrice": 110,
+    "SellingPrice": 109,
     "MechanismId": [
       30017
     ],
@@ -1311,7 +1351,7 @@
       30018
     ],
     "BindingID": [],
-    "UnlockConditionId": 10801,
+    "UnlockConditionId": 10701,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "当牌型小于敌人时,有50%概率反转对比结果,但伤害按自身牌型计算"
@@ -1344,7 +1384,9 @@
     "MechanismId": [
       30020
     ],
-    "BindingID": [],
+    "BindingID": [
+      109
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1361,7 +1403,9 @@
     "MechanismId": [
       30021
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1459,12 +1503,12 @@
     "Name": "时之沙",
     "Icon": "TimeSand",
     "Price": 220,
-    "SellingPrice": 110,
+    "SellingPrice": 109,
     "MechanismId": [
       30027
     ],
     "BindingID": [],
-    "UnlockConditionId": 10901,
+    "UnlockConditionId": 10801,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "使用后,本关内你比牌获胜时的伤害+20%"
@@ -1510,12 +1554,12 @@
     "Name": "三花聚顶",
     "Icon": "ThreeFlowersGatherAtTheTop",
     "Price": 220,
-    "SellingPrice": 110,
+    "SellingPrice": 109,
     "MechanismId": [
       30032
     ],
     "BindingID": [],
-    "UnlockConditionId": 11005,
+    "UnlockConditionId": 10905,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "亮出的每张牌都提供其点数对应的攻击力加成"
@@ -1601,7 +1645,9 @@
     "MechanismId": [
       30036
     ],
-    "BindingID": [],
+    "BindingID": [
+      105
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1618,7 +1664,9 @@
     "MechanismId": [
       30037
     ],
-    "BindingID": [],
+    "BindingID": [
+      105
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1689,7 +1737,7 @@
     "BindingID": [
       101
     ],
-    "UnlockConditionId": 11001,
+    "UnlockConditionId": 10901,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "高牌235等同于炸弹牌型,并且可以战胜所有牌型"
@@ -1740,7 +1788,7 @@
       40004
     ],
     "BindingID": [],
-    "UnlockConditionId": 11002,
+    "UnlockConditionId": 10902,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "每关[搓牌]使用次数+1"
@@ -1791,7 +1839,7 @@
       40007
     ],
     "BindingID": [],
-    "UnlockConditionId": 11003,
+    "UnlockConditionId": 10903,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+3倍率"
@@ -1807,7 +1855,9 @@
     "MechanismId": [
       40008
     ],
-    "BindingID": [],
+    "BindingID": [
+      105
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1860,7 +1910,7 @@
       40011
     ],
     "BindingID": [],
-    "UnlockConditionId": 11004,
+    "UnlockConditionId": 10904,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "亮牌时,有50%概率将该牌型提供的倍率永久+1"
@@ -1913,7 +1963,9 @@
       400141,
       400142
     ],
-    "BindingID": [],
+    "BindingID": [
+      104
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1983,7 +2035,7 @@
       40018
     ],
     "BindingID": [],
-    "UnlockConditionId": 11101,
+    "UnlockConditionId": 11091,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "受到致命伤害时血量降为1,且下次造成伤害时回复该伤害20%的血量,每关生效1次"
@@ -2070,7 +2122,9 @@
     "MechanismId": [
       40024
     ],
-    "BindingID": [],
+    "BindingID": [
+      107
+    ],
     "UnlockConditionId": 11401,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",

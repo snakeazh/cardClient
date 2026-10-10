@@ -51,6 +51,43 @@ namespace App.Game
 
         private Tween _successFxTween;
 
+        // --- 空闲呼吸抖动：上下正弦浮动 + 轻微 Z 轴摆动（幅度均可调，摆动调 0 即纯浮动）；
+        //     只写 TweenTarget 子节点，根节点世界坐标归 CardTableAnimator 管 ---
+        [Header("Idle 呼吸抖动")]
+        [Tooltip("上下浮动幅度（世界单位，牌高 1.57）")]
+        [SerializeField] private float idleFloatAmplitude = 0.03f;
+        [Tooltip("一个起伏周期的秒数")]
+        [SerializeField] private float idleFloatPeriod = 3.0f;
+        [Tooltip("左右摆动角度（度，绕 Z 轴）")]
+        [SerializeField] private float idleFloatSwayDegrees = 1.2f;
+        [Tooltip("摆动相对浮动的相位差（弧度）")]
+        [SerializeField] private float idleFloatSwayLag = 0.8f;
+        [Tooltip("漂浮开启/从动画让位恢复时的幅度渐入时长（秒）")]
+        [SerializeField] private float idleFloatBlendDuration = 0.6f;
+        [Tooltip("选中后漂浮幅度倍率（呼吸略微增强）")]
+        [SerializeField] private float idleFloatBoostAmpFactor = 1.6f;
+        [Tooltip("选中后摆动角度倍率")]
+        [SerializeField] private float idleFloatBoostSwayFactor = 1.5f;
+        [Tooltip("相邻手牌相位差（弧度）：波浪密度，发牌落位时生效")]
+        [SerializeField] private float idleFloatPhaseStep = 1.15f;
+        [Tooltip("选中增强的平滑过渡时长（秒）")]
+        [SerializeField] private float idleFloatBoostBlendDuration = 0.35f;
+
+        private bool _idleFloatOn;
+        private bool _idleFloatPoseActive;
+        private bool _idleFloatBlocked;
+        private bool _idleFloatBoosted;
+        private float _idleFloatPhase;
+        private float _idleFloatBlend;
+        private float _idleFloatBoostBlend;
+
+        /// <summary>相邻手牌相位差（波浪密度），发牌时由 CardTableAnimator 读取。</summary>
+        public float IdleFloatPhaseStep => idleFloatPhaseStep;
+
+        // 全局共享的波浪时钟（所有 CardItem 实例读同一角度，每帧只推进一次）。
+        private static float _sharedFloatAngle;
+        private static int _sharedFloatAngleFrame = -1;
+
         private const string ShuffleAppear01 = "aini_card_appear01";
         private const string ShuffleAppear02 = "aini_card_appear02";
         private const string DealClip = "aini_card_deal";
@@ -74,6 +111,10 @@ namespace App.Game
             t.localScale = scale;
 
             DisableShuffleAnimator();
+            _idleFloatOn = false;
+            _idleFloatBlocked = false;
+            _idleFloatBoosted = false;
+            ClearIdleFloatPose();
             _backSeeThrough = false;
             _backAlphaTarget = 1f;
             SetFace(CardFaceState.Back);
@@ -412,6 +453,126 @@ namespace App.Game
             return GetTweenClipLength(ChangeClip);
         }
 
+        /// <summary>
+        /// 空闲呼吸抖动开关。phase 为本张牌的波浪相位（落位时 index × <see cref="IdleFloatPhaseStep"/>，
+        /// 五张牌错开形成波浪），省略时沿用上次相位。所有牌共享同一波浪时钟：
+        /// 搓牌/动画让位暂停后恢复会自动回到波浪当前位置，不会掉队。
+        /// TweenTarget 动画片段（发牌/结算/换牌）播放期间自动让位，播完自动恢复。
+        /// 仅玩家手牌开启；敌人牌与发牌堆牌永不调用。
+        /// </summary>
+        public void SetIdleFloat(bool on, float phase = float.NaN)
+        {
+            if (!float.IsNaN(phase))
+            {
+                _idleFloatPhase = phase;
+            }
+
+            if (_idleFloatOn == on)
+            {
+                return;
+            }
+
+            _idleFloatOn = on;
+            if (!on)
+            {
+                ClearIdleFloatPose();
+            }
+            else
+            {
+                // 幅度渐入：sin(相位) 不为 0，直接开会从静止跳到漂浮位。
+                _idleFloatBlend = 0f;
+            }
+        }
+
+        /// <summary>
+        /// 选中加成开关：选中的牌漂浮幅度/摆动略微增大（<see cref="IdleFloatBoostAmpFactor"/> 等），
+        /// 增减均按 <see cref="IdleFloatBoostBlendDuration"/> 平滑过渡。
+        /// </summary>
+        public void SetIdleFloatBoosted(bool boosted)
+        {
+            _idleFloatBoosted = boosted;
+        }
+
+        private void LateUpdate()
+        {
+            if (!_idleFloatOn)
+            {
+                return;
+            }
+
+            var animator = ResolveTweenAnimator();
+            if (animator != null && animator.enabled && animator.runtimeAnimatorController != null)
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                if (state.loop || state.normalizedTime < 1f)
+                {
+                    // 片段正在驱动 TweenTarget 姿势，漂浮让位且不推进相位；
+                    // 片段末帧都是中性姿势，恢复时从静止重新渐入。
+                    _idleFloatBlocked = true;
+                    return;
+                }
+
+                // 片段已播完但 Animator 仍开着并钳制末帧（如 aini_card_settle 后无人关）：
+                // 关掉并归零姿势，漂浮接管。各片段末帧均为中性姿势，归零无跳变。
+                animator.enabled = false;
+                ResetTweenTargetPose();
+            }
+
+            if (_tweenTarget == null)
+            {
+                return;
+            }
+
+            if (_idleFloatBlocked)
+            {
+                _idleFloatBlocked = false;
+                _idleFloatBlend = 0f;
+            }
+
+            // 共享波浪时钟：所有牌读同一角度（每帧只推进一次）。
+            // 某张牌暂停（搓牌/动画让位）后时钟仍在走，恢复时自动回到波浪当前位置，不会掉队。
+            if (_sharedFloatAngleFrame != Time.frameCount)
+            {
+                _sharedFloatAngleFrame = Time.frameCount;
+                _sharedFloatAngle += Time.deltaTime * (Mathf.PI * 2f / Mathf.Max(0.1f, idleFloatPeriod));
+            }
+
+            _idleFloatBlend = Mathf.Min(1f, _idleFloatBlend + Time.deltaTime / Mathf.Max(0.01f, idleFloatBlendDuration));
+            _idleFloatBoostBlend = Mathf.MoveTowards(
+                _idleFloatBoostBlend,
+                _idleFloatBoosted ? 1f : 0f,
+                Time.deltaTime / Mathf.Max(0.01f, idleFloatBoostBlendDuration));
+            var amp = idleFloatAmplitude * Mathf.Lerp(1f, idleFloatBoostAmpFactor, _idleFloatBoostBlend) * _idleFloatBlend;
+            var sway = idleFloatSwayDegrees * Mathf.Lerp(1f, idleFloatBoostSwayFactor, _idleFloatBoostBlend) * _idleFloatBlend;
+            var t = _sharedFloatAngle + _idleFloatPhase;
+            _tweenTarget.localPosition = new Vector3(0f, Mathf.Sin(t) * amp, 0f);
+            _tweenTarget.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t + idleFloatSwayLag) * sway);
+            _idleFloatPoseActive = true;
+        }
+
+        /// <summary>漂浮关闭时把 TweenTarget 归位；动画片段正在驱动姿势时不抢写（归零会盖掉片段曲线）。</summary>
+        private void ClearIdleFloatPose()
+        {
+            if (!_idleFloatPoseActive)
+            {
+                return;
+            }
+
+            _idleFloatPoseActive = false;
+            var animator = _tweenAnimator;
+            var busy = animator != null && animator.enabled && animator.runtimeAnimatorController != null;
+            if (busy)
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                busy = state.loop || state.normalizedTime < 1f;
+            }
+
+            if (!busy)
+            {
+                ResetTweenTargetPose();
+            }
+        }
+
         private void OnDestroy()
         {
             _moveTween?.Kill();
@@ -439,6 +600,10 @@ namespace App.Game
             _successFxTween = null;
             StopTweenAnimation();
             HideDragEffects();
+            _idleFloatOn = false;
+            _idleFloatBlocked = false;
+            _idleFloatBoosted = false;
+            _idleFloatPoseActive = false;
             _backSeeThrough = false;
             _backAlphaTarget = 1f;
             var front = ResolveRenderer();

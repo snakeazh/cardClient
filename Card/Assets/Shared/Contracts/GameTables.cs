@@ -24,6 +24,7 @@ namespace CardShare.Contracts
         private readonly Dictionary<(int MonsterId, int MonsterLevel), MonsterConfig> _monsters;
         private readonly Dictionary<int, PvpModeConfig> _pvpModes;
         private readonly Dictionary<int, PvpBotConfig> _pvpBots;
+        private readonly Dictionary<int, BindingConfig> _bindings;
 
         public GameTables(
             GameConst gameConst,
@@ -42,7 +43,8 @@ namespace CardShare.Contracts
             IReadOnlyList<MonsterGroupConfig>? monsterGroups = null,
             IReadOnlyList<PvpModeConfig>? pvpModes = null,
             IReadOnlyList<PvpRoundConfig>? pvpRounds = null,
-            IReadOnlyList<PvpBotConfig>? pvpBots = null)
+            IReadOnlyList<PvpBotConfig>? pvpBots = null,
+            IReadOnlyList<BindingConfig>? bindings = null)
         {
             GameConst = gameConst;
             HandScores = handScores;
@@ -60,6 +62,7 @@ namespace CardShare.Contracts
             PvpModes = pvpModes ?? Array.Empty<PvpModeConfig>();
             PvpRounds = pvpRounds ?? Array.Empty<PvpRoundConfig>();
             PvpBots = pvpBots ?? Array.Empty<PvpBotConfig>();
+            Bindings = bindings ?? Array.Empty<BindingConfig>();
             ConfigHash = configHash;
             _levels = Levels.Where(l => l.Id > 0).ToDictionary(l => l.Id);
             _items = Items.Where(i => i.Id > 0).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First());
@@ -82,6 +85,7 @@ namespace CardShare.Contracts
 
             _pvpModes = PvpModes.Where(m => m.Id > 0).GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First());
             _pvpBots = PvpBots.Where(b => b.Id > 0).GroupBy(b => b.Id).ToDictionary(g => g.Key, g => g.First());
+            _bindings = Bindings.Where(b => b.Id > 0).GroupBy(b => b.Id).ToDictionary(g => g.Key, g => g.First());
             Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
             _maxLevelByDifficulty = Levels
                 .GroupBy(l => l.Difficulty)
@@ -138,6 +142,8 @@ namespace CardShare.Contracts
 
         public IReadOnlyList<PvpBotConfig> PvpBots { get; }
 
+        public IReadOnlyList<BindingConfig> Bindings { get; }
+
         public IReadOnlyList<int> Difficulties { get; }
 
         public bool TryGetLevel(int id, out LevelConfig level) => _levels.TryGetValue(id, out level!);
@@ -162,6 +168,8 @@ namespace CardShare.Contracts
         public bool TryGetPvpMode(int id, out PvpModeConfig mode) => _pvpModes.TryGetValue(id, out mode!);
 
         public bool TryGetPvpBot(int id, out PvpBotConfig bot) => _pvpBots.TryGetValue(id, out bot!);
+
+        public bool TryGetBinding(int id, out BindingConfig binding) => _bindings.TryGetValue(id, out binding!);
 
         public IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId)
             => PvpRounds.Where(r => r.ModeId == modeId).OrderBy(r => r.Round).ToArray();

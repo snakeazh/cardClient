@@ -42,7 +42,6 @@
   "EverySkillProvideGold": 20,
   "PvpBotFillDelaySeconds": 10,
   "PvpHeroHpBoostPercent": 1300,
-  "PvpRelicSynthesisNum": 3,
   "PVPRelicNumNeedGold": [
     40,
     60,
@@ -52,11 +51,10 @@
     150
   ],
   "PVPRelicInitialRelicNum": 4,
-  "PVPOrdinaryRelicNum": 6,
-  "PVPRareRelicNum": 5,
-  "PVPEpicRelicNum": 4,
+  "PVPOrdinaryRelicNum": 3,
+  "PVPRareRelicNum": 3,
+  "PVPEpicRelicNum": 3,
   "PVPLegendRelicNum": 3,
-  "PVPRelicEffectMultiple": 3,
   "PVPWinningStreakGoldNum": [
     20,
     40,

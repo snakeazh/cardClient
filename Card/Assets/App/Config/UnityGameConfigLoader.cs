@@ -31,7 +31,8 @@ namespace App.Config
                 Rows(MonsterGroupConfig.All),
                 Rows(PvpModeConfig.All),
                 Rows(PvpRoundConfig.All),
-                Rows(PvpBotConfig.All));
+                Rows(PvpBotConfig.All),
+                Rows(BindingConfig.All));
             Current = tables;
             return tables;
         }

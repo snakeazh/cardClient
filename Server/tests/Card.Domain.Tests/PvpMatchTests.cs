@@ -8,17 +8,23 @@ namespace CardShare.Domain.Tests;
 public class PvpScheduleTests
 {
     [Fact]
-    public void ClassicModeLoadsThirteenRoundsFromTables()
+    public void RoundPatternRepeatsWithoutARoundTable()
     {
         var tables = PvpTestTables.Classic();
-        Assert.True(PvpSchedule.TryLoad(tables, 1, out var mode, out var rounds));
+        Assert.True(PvpSchedule.TryLoad(tables, 1, out var mode));
         Assert.Equal("经典", mode.Name);
         Assert.Equal(150, mode.InitialGold);
-        Assert.Equal(13, rounds.Count);
-        Assert.Equal(PvpFightKind.Monster, rounds[0].FightKind);
-        Assert.Equal(PvpFightKind.Pvp, rounds[1].FightKind);
-        Assert.Equal(13, PvpSchedule.LastRound(rounds));
-        Assert.Equal(10011, rounds[0].MonsterGroup);
+        Assert.Equal(PvpFightKind.Monster, PvpSchedule.Kind(mode, 1, 4));
+        Assert.Equal(PvpFightKind.Pvp, PvpSchedule.Kind(mode, 2, 4));
+        Assert.Equal(PvpFightKind.Monster, PvpSchedule.Kind(mode, 5, 4));
+        Assert.Equal(PvpFightKind.Monster, PvpSchedule.Kind(mode, 17, 4));
+        Assert.Equal(10, PvpSchedule.GoldBase(1));
+        Assert.Equal(15, PvpSchedule.GoldBase(2));
+        Assert.Equal(20, PvpSchedule.GoldBase(5));
+        Assert.Equal(30, PvpSchedule.GoldBase(13));
+        Assert.Equal(35, PvpSchedule.GoldBase(17));
+        Assert.Equal(10011, PvpSchedule.MonsterGroup(tables, 1));
+        Assert.Equal(10011, PvpSchedule.MonsterGroup(tables, 5));
     }
 
     [Fact]
@@ -26,10 +32,8 @@ public class PvpScheduleTests
     {
         var tables = PvpTestTables.Classic();
         Assert.True(tables.TryGetPvpMode(1, out var mode));
-        Assert.True(PvpSchedule.TryGetRound(tables.GetPvpRounds(1), 5, out var row));
-        Assert.Equal(PvpFightKind.Monster, row.FightKind);
-        Assert.Equal(PvpFightKind.Pvp, PvpSchedule.EffectiveKind(mode, row, 2));
-        Assert.Equal(PvpFightKind.Monster, PvpSchedule.EffectiveKind(mode, row, 4));
+        Assert.Equal(PvpFightKind.Pvp, PvpSchedule.Kind(mode, 5, 2));
+        Assert.Equal(PvpFightKind.Monster, PvpSchedule.Kind(mode, 5, 4));
     }
 }
 
@@ -263,9 +267,10 @@ public class PvpMatchTests
         Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
         AdvanceThrough(match);
 
-        Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
-        Assert.Equal(4, match.Fighters.Count(f => f.Rank >= 1));
-        Assert.Contains(match.Fighters, f => f.Rank == 1);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+        Assert.Equal(2, match.Round);
+        Assert.Equal(4, match.Fighters.Count(f => f.Alive));
+        Assert.All(match.Fighters, f => Assert.Equal(0, f.Rank));
     }
 
     [Fact]
@@ -383,7 +388,8 @@ public class PvpMatchTests
     [Fact]
     public void DuelLoserAtZeroHpIsRankedWhileOtherTablesContinue()
     {
-        var match = Open(PvpTestTables.OnePvpRound(), new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") }, hp: 1);
+        var match = Open(PvpTestTables.OnePvpRound(), new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") });
+        AdvanceToPvpFight(match, hpOnPvpRound: 1);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
@@ -416,11 +422,11 @@ public class PvpMatchTests
         Assert.All(match.Duels, d => Assert.True(d.HpApplied));
         Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
 
-        // 最后一轮：settle 演出窗到点后才置 finished。
+        // 这一轮打完仍有多人存活：settle 到点进商店，不按血量结束。
         Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + 20_000 + 1 + PvpTiming.SettleAnimMs + 1));
-        Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
         var after = match.ViewFor(a);
-        Assert.Equal(0, after.PhaseDeadlineUtcMs);
+        Assert.True(after.PhaseDeadlineUtcMs > 0);
         Assert.True(after.ServerNowUtcMs > 0);
         var duel = match.Duels.First(d => d.Involves(a));
         var snap = duel.Engine.Snapshot;
@@ -430,13 +436,14 @@ public class PvpMatchTests
             Assert.Equal(expected, after.DuelDamage);
         }
 
-        Assert.False(match.ApplyTimeouts(now + 40_000));
+        Assert.False(match.ApplyTimeouts(after.PhaseDeadlineUtcMs - 1));
     }
 
     [Fact]
     public void WinnerEarnsGoldAndLoserGetsHalf()
     {
         var match = Open(PvpTestTables.OnePvpRound());
+        AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
@@ -450,15 +457,14 @@ public class PvpMatchTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        // 胜 = GoldBase(15) + 20×未用技能(5) + 连胜1(0) + 利息(150→10)。
-        // 负 = (15 + 100) / 2 + 连败1(0) + 利息(10)。
-        const int winGold = 15 + 20 * (3 + 1 + 1) + 10;
-        const int loseGold = (15 + 20 * (3 + 1 + 1)) / 2 + 10;
+        // 第 2 轮是 PvP：基础 15 + 20×未用技能(5) + 连胜 1(0) + 按发奖前金币算的利息。
+        var winBody = 15 + 20 * (3 + 1 + 1);
+        var loseBody = winBody / 2;
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
-            Assert.Equal(goldA + winGold, a.Gold);
-            Assert.Equal(goldB + loseGold, b.Gold);
+            Assert.Equal(goldA + winBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldB + loseBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
             Assert.Equal(1, a.WinStreak);
             Assert.Equal(0, a.LoseStreak);
             Assert.Equal(1, b.LoseStreak);
@@ -466,8 +472,8 @@ public class PvpMatchTests
         }
         else
         {
-            Assert.Equal(goldB + winGold, b.Gold);
-            Assert.Equal(goldA + loseGold, a.Gold);
+            Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
             Assert.Equal(1, b.WinStreak);
             Assert.Equal(1, a.LoseStreak);
         }
@@ -477,6 +483,7 @@ public class PvpMatchTests
     public void SecondPvpWinPaysStreakAndLossStreakSeparately()
     {
         var match = Open(PvpTestTables.OnePvpRound());
+        AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
@@ -491,24 +498,24 @@ public class PvpMatchTests
 
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        // 胜者连胜到 2：+20；败者连败到 1：+0。利息仍按发奖前 150。
-        const int winGold = 15 + 100 + 20 + 10;
-        const int loseGold = (15 + 100) / 2 + 10;
+        // 胜者连胜到 2：+20；败者连败到 1：+0。
+        var winBody = 15 + 100 + 20;
+        var loseBody = (15 + 100) / 2;
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
             Assert.Equal(2, a.WinStreak);
             Assert.Equal(0, a.LoseStreak);
             Assert.Equal(1, b.LoseStreak);
-            Assert.Equal(goldA + winGold, a.Gold);
-            Assert.Equal(goldB + loseGold, b.Gold);
+            Assert.Equal(goldA + winBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldB + loseBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
         }
         else
         {
             Assert.Equal(2, b.WinStreak);
             Assert.Equal(1, a.LoseStreak);
-            Assert.Equal(goldB + winGold, b.Gold);
-            Assert.Equal(goldA + loseGold, a.Gold);
+            Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
         }
     }
 
@@ -697,18 +704,47 @@ public class PvpMatchTests
     }
 
     [Fact]
-    public void ThreeCopiesFuseIntoOneTriple()
+    public void CopiesStaySeparateSlots()
     {
         var fighter = new PvpFighter();
         PvpRelicBag.Add(fighter, 7);
         PvpRelicBag.Add(fighter, 7);
-        Assert.Equal(2, fighter.OwnedRelicIds.Count);
         PvpRelicBag.Add(fighter, 7);
-        Assert.Single(fighter.OwnedRelicIds);
-        Assert.Equal(PvpRelicBag.FusedPower, fighter.OwnedRelicPower[0]);
+        Assert.Equal(3, fighter.OwnedRelicIds.Count);
+        Assert.All(fighter.OwnedRelicPower, p => Assert.Equal(1, p));
         Assert.Equal(3, PvpRelicBag.Expand(fighter).Count);
-        Assert.Equal(PvpRelicBag.FusedPower, PvpRelicBag.RemoveOne(fighter, 7));
-        Assert.Empty(fighter.OwnedRelicIds);
+        Assert.Equal(1, PvpRelicBag.RemoveOne(fighter, 7));
+        Assert.Equal(2, fighter.OwnedRelicIds.Count);
+    }
+
+    [Fact]
+    public void BindingDamageRequiresEveryMember()
+    {
+        var relics = new[]
+        {
+            PvpTestTables.BondRelic(101),
+            PvpTestTables.BondRelic(201),
+            PvpTestTables.BondRelic(301),
+            PvpTestTables.BondRelic(401)
+        };
+        var tables = PvpTestTables.WithRelics(
+            relics,
+            bindings: new[]
+            {
+                new BindingConfig { Id = 101, Type = BindingType.Leiting, Value = new[] { 1f, 0.4f } }
+            });
+        var fighter = new PvpFighter();
+        fighter.OwnedRelicIds.Add(101);
+        fighter.OwnedRelicIds.Add(201);
+        fighter.OwnedRelicIds.Add(301);
+        fighter.OwnedRelicIds.Add(101);
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+
+        fighter.OwnedRelicIds.Add(401);
+        Assert.Equal(40, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+
+        fighter.OwnedRelicIds.Remove(201);
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
     }
 
     [Fact]
@@ -792,8 +828,8 @@ public class PvpMatchTests
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
         match.Act(buyer.UserId, "buy", 7, Array.Empty<int>());
-        Assert.Single(buyer.OwnedRelicIds);
-        Assert.Equal(PvpRelicBag.FusedPower, buyer.OwnedRelicPower[0]);
+        Assert.Equal(3, buyer.OwnedRelicIds.Count);
+        Assert.All(buyer.OwnedRelicPower, p => Assert.Equal(1, p));
         Assert.Equal(gold - 30, buyer.Gold);
 
         var locked = match.Fighters[1];
@@ -802,8 +838,8 @@ public class PvpMatchTests
         Assert.True(locked.ShopOfferIds.Count <= lockedOffers);
 
         match.Act(buyer.UserId, "sell", 7, Array.Empty<int>());
-        Assert.Empty(buyer.OwnedRelicIds);
-        Assert.Equal(gold - 30 + 12, buyer.Gold);
+        Assert.Equal(2, buyer.OwnedRelicIds.Count);
+        Assert.Equal(gold - 30 + 4, buyer.Gold);
         match.Act(locked.UserId, "refresh", 0, Array.Empty<int>());
         Assert.Contains(7, locked.ShopOfferIds);
     }
@@ -999,15 +1035,25 @@ public class PvpMatchTests
     [Fact]
     public void FinishGrantsRankRewardsAndMarksGrantedOnce()
     {
-        var match = Open(PvpTestTables.OneMonsterRound());
-        foreach (var fighter in match.Fighters)
-        {
-            match.Showdown(fighter.UserId);
-        }
-
+        var match = Open(PvpTestTables.OnePvpRound(), hp: 1);
         Assert.False(match.TryMarkRewardsGranted());
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1);
+        for (var n = 0; n < 8 && match.Phase != PvpMatch.PhaseFinished; n++)
+        {
+            if (match.Phase == PvpMatch.PhaseFight)
+            {
+                foreach (var fighter in match.Fighters)
+                {
+                    if (fighter.Alive)
+                    {
+                        match.Showdown(fighter.UserId);
+                    }
+                }
+            }
+
+            match.ApplyTimeouts(now + 600_000);
+        }
+
         Assert.Equal(PvpMatch.PhaseFinished, match.Phase);
         Assert.True(match.FinishedUtcMs > 0);
         Assert.Contains(match.DrainEvents(), e => e.Kind == "match_finished");
@@ -1360,6 +1406,47 @@ public class PvpMatchTests
     }
 
     /// <summary>settle/shop 阶段由 deadline 驱动：用远期时间戳推进到下一个 fight 或 finished。</summary>
+    /// <summary>第 1 轮是野怪。打完进商店，再进入下一轮玩家对战。hpOnPvpRound 在商店里改血，下一轮按这个血量开打。</summary>
+    internal static void AdvanceToPvpFight(PvpMatch match, int hpOnPvpRound = 0)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 600_000;
+        for (var i = 0; i < 8 && match.Phase != PvpMatch.PhaseFinished; i++)
+        {
+            if (match.Phase == PvpMatch.PhaseFight && match.FightKind == PvpFightKind.Pvp)
+            {
+                return;
+            }
+
+            if (match.Phase == PvpMatch.PhaseShop && hpOnPvpRound > 0)
+            {
+                foreach (var fighter in match.Fighters)
+                {
+                    if (fighter.Alive)
+                    {
+                        fighter.Hp = hpOnPvpRound;
+                        fighter.MaxHp = hpOnPvpRound;
+                    }
+                }
+            }
+
+            if (match.Phase == PvpMatch.PhaseFight)
+            {
+                foreach (var fighter in match.Fighters)
+                {
+                    if (fighter.Alive)
+                    {
+                        match.Showdown(fighter.UserId);
+                    }
+                }
+            }
+
+            match.ApplyTimeouts(now);
+        }
+
+        Assert.Equal(PvpFightKind.Pvp, match.FightKind);
+        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
+    }
+
     private static void AdvanceThrough(PvpMatch match)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1531,8 +1618,24 @@ internal static class PvpTestTables
     public static GameTables OnePvpRound()
         => Build(new[] { Round(1, 1, PvpFightKind.Pvp, 0, 15) });
 
-    public static GameTables WithRelics(RelicConfig[] relics, RelicEntryConfig[]? relicEntries = null)
-        => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries);
+    public static GameTables WithRelics(
+        RelicConfig[] relics,
+        RelicEntryConfig[]? relicEntries = null,
+        BindingConfig[]? bindings = null)
+        => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries, bindings: bindings);
+
+    internal static RelicConfig BondRelic(int id)
+        => new RelicConfig
+        {
+            Id = id,
+            Name = "羁绊" + id,
+            Type = QualityType.Ordinary,
+            Price = 10,
+            SellingPrice = 4,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>(),
+            BindingID = new[] { 101 }
+        };
 
     private static PvpRoundConfig Round(int id, int round, PvpFightKind kind, int group, int gold)
         => new PvpRoundConfig
@@ -1552,7 +1655,8 @@ internal static class PvpTestTables
         IReadOnlyList<RelicEntryConfig>? relicEntries = null,
         IReadOnlyList<HeroEntryConfig>? heroEntries = null,
         IReadOnlyList<TalentConfig>? talentRows = null,
-        IReadOnlyList<TalentEntryConfig>? talentEntries = null)
+        IReadOnlyList<TalentEntryConfig>? talentEntries = null,
+        IReadOnlyList<BindingConfig>? bindings = null)
     {
         var fallback = GameTables.Fallback();
         return new GameTables(
@@ -1607,6 +1711,7 @@ internal static class PvpTestTables
                     OpenPhaseSeconds = 20
                 }
             },
-            rounds);
+            rounds,
+            bindings: bindings);
     }
 }

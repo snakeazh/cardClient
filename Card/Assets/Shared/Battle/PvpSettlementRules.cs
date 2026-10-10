@@ -16,12 +16,15 @@ namespace CardShare.Battle
             return damage < 0 ? 0 : damage;
         }
 
-        /// <summary>利息按所持金币每 100 给 10，所持达到 500 后不再增加。</summary>
+        /// <summary>未配置 PVPGoldInterestNum 时：每 100 金币给 10 利息。</summary>
         public const int InterestGoldStep = 100;
 
         public const int InterestPerStep = 10;
 
+        /// <summary>未配置 PVPGoldInterestNumMax 时，利息按所持 500 封顶。</summary>
         public const int InterestGoldCap = 500;
+
+        private static readonly int[] DefaultStreakGold = { 20, 40, 60, 80, 100 };
 
         /// <summary>未用技能换算金币单价（GameConst.EverySkillProvideGold，缺省 20）。</summary>
         public static int SkillGoldUnit(GameConst gameConst)
@@ -33,6 +36,12 @@ namespace CardShare.Battle
         /// 连胜/连败与利息都不参与半额。平局不结算（调用方别调）。heldGold 用发奖前持有量。
         /// </summary>
         public static int RoundGold(int goldBase, int skillGoldUnit, int unusedSkills, int streak, int heldGold, bool winner)
+            => RoundGold(goldBase, skillGoldUnit, unusedSkills, streak, heldGold, winner, null!);
+
+        /// <summary>
+        /// 单人本轮金币。连胜/连败读 PVPWinningStreakGoldNum，利息读 PVPGoldInterestNum 与 PVPGoldInterestNumMax。
+        /// </summary>
+        public static int RoundGold(int goldBase, int skillGoldUnit, int unusedSkills, int streak, int heldGold, bool winner, GameConst gameConst)
         {
             var core = Math.Max(0, goldBase) + Math.Max(0, skillGoldUnit) * Math.Max(0, unusedSkills);
             if (!winner)
@@ -40,37 +49,58 @@ namespace CardShare.Battle
                 core /= 2;
             }
 
-            return core + StreakGold(streak) + InterestGold(heldGold);
+            return core + StreakGold(streak, gameConst) + InterestGold(heldGold, gameConst);
         }
 
-        /// <summary>连胜或连败奖励。1 轮为 0；2/3/4/5 为 20/40/60/80；6 轮及以上封顶 100。野怪轮传 0。</summary>
+        /// <summary>连胜或连败奖励。1 轮为 0；从 2 轮起按下标读表，超出末档用最后一档。野怪轮传 0。未配置时 20/40/60/80/100。</summary>
         public static int StreakGold(int streak)
+            => StreakGold(streak, null!);
+
+        public static int StreakGold(int streak, GameConst gameConst)
         {
-            if (streak >= 6)
+            if (streak < 2)
             {
-                return 100;
+                return 0;
             }
 
-            switch (streak)
+            var table = gameConst != null && gameConst.PVPWinningStreakGoldNum != null && gameConst.PVPWinningStreakGoldNum.Length > 0
+                ? gameConst.PVPWinningStreakGoldNum
+                : DefaultStreakGold;
+            var index = streak - 2;
+            if (index >= table.Length)
             {
-                case 2: return 20;
-                case 3: return 40;
-                case 4: return 60;
-                case 5: return 80;
-                default: return 0;
+                index = table.Length - 1;
             }
+
+            var gold = table[index];
+            return gold > 0 ? gold : 0;
         }
 
-        /// <summary>利息 = floor(min(所持, 500) / 100) × 10。所持不足 100 或为负时为 0。</summary>
+        /// <summary>利息 = floor(min(所持, 峰值) / 每档金币) × 每档利息。未配置时每 100 给 10，所持 500 封顶。</summary>
         public static int InterestGold(int heldGold)
+            => InterestGold(heldGold, null!);
+
+        public static int InterestGold(int heldGold, GameConst gameConst)
         {
             if (heldGold <= 0)
             {
                 return 0;
             }
 
-            var capped = heldGold > InterestGoldCap ? InterestGoldCap : heldGold;
-            return capped / InterestGoldStep * InterestPerStep;
+            var step = InterestGoldStep;
+            var per = InterestPerStep;
+            var pair = gameConst != null ? gameConst.PVPGoldInterestNum : null;
+            if (pair != null && pair.Length >= 2 && pair[0] > 0 && pair[1] > 0)
+            {
+                step = pair[0];
+                per = pair[1];
+            }
+
+            var cap = gameConst != null && gameConst.PVPGoldInterestNumMax > 0
+                ? gameConst.PVPGoldInterestNumMax
+                : InterestGoldCap;
+            var capped = heldGold > cap ? cap : heldGold;
+            return capped / step * per;
         }
 
         /// <summary>野怪轮胜方回血：10% 最大生命，至少 1，上限由调用方 clamp。</summary>

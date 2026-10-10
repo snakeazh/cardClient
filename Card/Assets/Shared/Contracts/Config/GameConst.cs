@@ -192,11 +192,6 @@ namespace CardShare.Contracts.Config
         public int PvpHeroHpBoostPercent;
 
         /// <summary>
-        /// PVP圣物升级所需数量
-        /// </summary>
-        public int PvpRelicSynthesisNum;
-
-        /// <summary>
         /// PVP圣物槽位解锁所需金币
         /// </summary>
         public int[] PVPRelicNumNeedGold;
@@ -225,11 +220,6 @@ namespace CardShare.Contracts.Config
         /// PVP传说圣物重复数量
         /// </summary>
         public int PVPLegendRelicNum;
-
-        /// <summary>
-        /// PVP圣物升级成长(3=翻三倍)
-        /// </summary>
-        public int PVPRelicEffectMultiple;
 
         /// <summary>
         /// PVP连胜/连败金币奖励(从5连胜/连败开始都是100)

@@ -10,6 +10,9 @@
     "MechanismId": [
       10001
     ],
+    "BindingID": [
+      101
+    ],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "结算时提供+1倍率",
@@ -26,6 +29,7 @@
     "MechanismId": [
       10002
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张方片牌在结算时提供+1攻击力",
@@ -42,6 +46,7 @@
     "MechanismId": [
       10003
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+1攻击力",
@@ -58,6 +63,7 @@
     "MechanismId": [
       10004
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张红心牌在结算时提供+1攻击力",
@@ -74,6 +80,7 @@
     "MechanismId": [
       10005
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+1攻击力",
@@ -90,6 +97,7 @@
     "MechanismId": [
       10006
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的对子牌型在结算时提供+3攻击力",
@@ -106,6 +114,7 @@
     "MechanismId": [
       10007
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的顺子牌型在结算时提供+5攻击力",
@@ -122,6 +131,7 @@
     "MechanismId": [
       10008
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的同花牌型在结算时提供+4攻击力",
@@ -138,6 +148,7 @@
     "MechanismId": [
       10009
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+6攻击力",
@@ -154,6 +165,7 @@
     "MechanismId": [
       10010
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的炸弹牌型在结算时提供+7攻击力",
@@ -170,6 +182,7 @@
     "MechanismId": [
       10011
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每次受到的伤害降低5%",
@@ -186,6 +199,7 @@
     "MechanismId": [
       10012
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合开始时,获得2金币",
@@ -202,6 +216,7 @@
     "MechanismId": [
       10013
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合开始时,恢复2点生命",
@@ -218,6 +233,7 @@
     "MechanismId": [
       10014
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合结束后,有25%概率获得8金币",
@@ -234,6 +250,7 @@
     "MechanismId": [
       10015
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合结束后,提高1%暴击率,至多叠加20层",
@@ -250,6 +267,7 @@
     "MechanismId": [
       10016
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌获胜后,有20%概率永久+1攻击力",
@@ -266,6 +284,7 @@
     "MechanismId": [
       10017
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每当你受到伤害时,反弹1%的伤害给对方",
@@ -282,6 +301,7 @@
     "MechanismId": [
       10018
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,本次比牌你造成的伤害+25%",
@@ -298,6 +318,7 @@
     "MechanismId": [
       10019
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,立即恢复20%血量",
@@ -314,6 +335,7 @@
     "MechanismId": [
       10020
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每输1次比牌,你造成的伤害+10%,至多叠加5层",
@@ -330,6 +352,7 @@
     "MechanismId": [
       10021
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,对子牌型提供的倍率永久+1",
@@ -345,6 +368,9 @@
     "SellingPrice": 57,
     "MechanismId": [
       20001
+    ],
+    "BindingID": [
+      101
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -362,6 +388,7 @@
     "MechanismId": [
       20002
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张黑桃牌在结算时提供+1倍率",
@@ -378,6 +405,7 @@
     "MechanismId": [
       20003
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张红心牌在结算时提供+1倍率",
@@ -394,6 +422,7 @@
     "MechanismId": [
       20004
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张梅花牌在结算时提供+1倍率",
@@ -410,6 +439,7 @@
     "MechanismId": [
       20005
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的对子牌型在结算时提供+3倍率",
@@ -426,6 +456,7 @@
     "MechanismId": [
       20006
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的顺子牌型在结算时提供+5倍率",
@@ -442,6 +473,7 @@
     "MechanismId": [
       20007
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的同花牌型在结算时提供+4倍率",
@@ -458,6 +490,7 @@
     "MechanismId": [
       20008
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的同花顺牌型在结算时提供+6倍率",
@@ -474,6 +507,7 @@
     "MechanismId": [
       20009
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的炸弹牌型在结算时提供+7倍率",
@@ -491,6 +525,7 @@
       20010,
       200101
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "获得30点生命上限,每回合结束后恢复2点血量",
@@ -507,6 +542,7 @@
     "MechanismId": [
       20011
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "可以负债,最多-150金币",
@@ -523,6 +559,7 @@
     "MechanismId": [
       20012
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时提供+1倍率",
@@ -539,6 +576,7 @@
     "MechanismId": [
       20013
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时获得5金币",
@@ -555,6 +593,7 @@
     "MechanismId": [
       20014
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+2倍率",
@@ -571,6 +610,7 @@
     "MechanismId": [
       20015
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+2倍率",
@@ -587,6 +627,7 @@
     "MechanismId": [
       20016
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每花费60金币,英雄永久+1攻击力",
@@ -603,6 +644,7 @@
     "MechanismId": [
       20017
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每次受到伤害时,+10金币",
@@ -619,6 +661,7 @@
     "MechanismId": [
       20018
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "有20%概率将自身造成的伤害或受到的伤害降低为0",
@@ -635,6 +678,7 @@
     "MechanismId": [
       20019
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时,若战胜敌人,则永久+1攻击力",
@@ -651,6 +695,7 @@
     "MechanismId": [
       20020
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时,若战胜敌人,则永久+3生命上限",
@@ -667,6 +712,7 @@
     "MechanismId": [
       20021
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌后无论胜负,均可获得3金币",
@@ -683,6 +729,7 @@
     "MechanismId": [
       20022
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合开始时,永久+1生命上限",
@@ -699,6 +746,7 @@
     "MechanismId": [
       20023
     ],
+    "BindingID": [],
     "UnlockConditionId": 10301,
     "UseType": 0,
     "Desc": "比牌时,若对方的牌型大于顺子,则会被强行视作顺子(购买后15次比牌内生效)",
@@ -715,6 +763,7 @@
     "MechanismId": [
       20024
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合结束后,提高2%闪避率,至多叠加20层",
@@ -731,6 +780,7 @@
     "MechanismId": [
       20025
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "回合结束后,若你的血量低于50%,则恢复6点血量",
@@ -747,6 +797,7 @@
     "MechanismId": [
       20026
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "关卡结算时每拥有15金币会额外获得1金币",
@@ -763,6 +814,7 @@
     "MechanismId": [
       20027
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,本次比牌你造成的伤害+50%",
@@ -779,6 +831,7 @@
     "MechanismId": [
       20028
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,立即恢复40%血量",
@@ -795,6 +848,7 @@
     "MechanismId": [
       20029
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每次比牌获胜后,恢复3点血量",
@@ -811,6 +865,7 @@
     "MechanismId": [
       20030
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,下次进入商店时所有圣物价格-50%",
@@ -827,6 +882,7 @@
     "MechanismId": [
       20031
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,同花牌型提供的倍率永久+2",
@@ -843,6 +899,7 @@
     "MechanismId": [
       20032
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,顺子牌型提供的倍率永久+2",
@@ -859,6 +916,7 @@
     "MechanismId": [
       20033
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时的第一张牌提供其点数对应的攻击力加成",
@@ -875,6 +933,7 @@
     "MechanismId": [
       20034
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时的第二张牌提供其点数对应的攻击力加成",
@@ -891,6 +950,7 @@
     "MechanismId": [
       20035
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时的第三张牌提供其点数对应的攻击力加成",
@@ -908,6 +968,7 @@
       20036,
       20037
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "结算时提供+8倍率,但回合结束后有18%的概率摧毁此圣物",
@@ -924,6 +985,7 @@
     "MechanismId": [
       20038
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每次获胜该圣物+1倍率,每次失败该圣物-1倍率",
@@ -939,6 +1001,9 @@
     "SellingPrice": 105,
     "MechanismId": [
       30001
+    ],
+    "BindingID": [
+      101
     ],
     "UnlockConditionId": 10401,
     "UseType": 0,
@@ -956,6 +1021,7 @@
     "MechanismId": [
       30002
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的牌点数提供的攻击力加成翻倍",
@@ -972,6 +1038,7 @@
     "MechanismId": [
       30003
     ],
+    "BindingID": [],
     "UnlockConditionId": 10501,
     "UseType": 0,
     "Desc": "结算伤害时,将留在手牌上最大的牌点数×2转化为额外攻击力",
@@ -988,6 +1055,7 @@
     "MechanismId": [
       30004
     ],
+    "BindingID": [],
     "UnlockConditionId": 10601,
     "UseType": 0,
     "Desc": "每搓1次牌,结算时提供的倍率+1",
@@ -1004,6 +1072,7 @@
     "MechanismId": [
       30005
     ],
+    "BindingID": [],
     "UnlockConditionId": 10701,
     "UseType": 0,
     "Desc": "每次进入商店提供1次免费刷新的机会",
@@ -1020,6 +1089,7 @@
     "MechanismId": [
       30007
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张8在结算时提供+100攻击力",
@@ -1036,6 +1106,7 @@
     "MechanismId": [
       30008
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+2倍率",
@@ -1052,6 +1123,7 @@
     "MechanismId": [
       30009
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+2倍率",
@@ -1068,6 +1140,7 @@
     "MechanismId": [
       30010
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张人头牌在结算时提供+4倍率",
@@ -1084,6 +1157,7 @@
     "MechanismId": [
       30011
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每击杀1名敌人,这件圣物的出售价格+10金币",
@@ -1100,6 +1174,7 @@
     "MechanismId": [
       30012
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "回合首次亮牌时,随机有1张牌提供的攻击力永久+1",
@@ -1116,6 +1191,7 @@
     "MechanismId": [
       30013
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张9在结算时提供12金币",
@@ -1132,6 +1208,7 @@
     "MechanismId": [
       30014
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "如果本回合牌型小于所有敌人,则立即获得15金币并回复20点血量",
@@ -1148,6 +1225,7 @@
     "MechanismId": [
       30015
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每关受到的首次伤害完全免疫",
@@ -1164,6 +1242,7 @@
     "MechanismId": [
       30016
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每输1次敌人,结算时就永久提供+1倍率",
@@ -1180,6 +1259,7 @@
     "MechanismId": [
       30017
     ],
+    "BindingID": [],
     "UnlockConditionId": 10201,
     "UseType": 0,
     "Desc": "比牌时,若敌人的牌型大于同花,则会被强行视作同花(购买后10次比牌内生效)",
@@ -1196,6 +1276,7 @@
     "MechanismId": [
       30018
     ],
+    "BindingID": [],
     "UnlockConditionId": 10801,
     "UseType": 0,
     "Desc": "当牌型小于敌人时,有50%概率反转对比结果,但伤害按自身牌型计算",
@@ -1212,6 +1293,7 @@
     "MechanismId": [
       30019
     ],
+    "BindingID": [],
     "UnlockConditionId": 10402,
     "UseType": 0,
     "Desc": "每击杀1名敌人,结算时就永久提供+0.5倍率",
@@ -1228,6 +1310,7 @@
     "MechanismId": [
       30020
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "本局内,对自己曾经输过的敌人造成伤害时,伤害+50%",
@@ -1244,6 +1327,7 @@
     "MechanismId": [
       30021
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每关开始时,若血量高于50%,则获得50金币",
@@ -1260,6 +1344,7 @@
     "MechanismId": [
       30022
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "本局内,曾经赢过自己的敌人在造成伤害时,伤害-30%",
@@ -1276,6 +1361,7 @@
     "MechanismId": [
       30023
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合有25%概率使本回合所有敌人亮出的牌型顺位降1级",
@@ -1292,6 +1378,7 @@
     "MechanismId": [
       30024
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合开始时,对所有敌人造成1次自身攻击力的伤害",
@@ -1308,6 +1395,7 @@
     "MechanismId": [
       30025
     ],
+    "BindingID": [],
     "UnlockConditionId": 10502,
     "UseType": 0,
     "Desc": "所有敌人造成的伤害降低30%",
@@ -1324,6 +1412,7 @@
     "MechanismId": [
       30026
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,本局内你亮出炸弹时,就会获得300金币",
@@ -1340,6 +1429,7 @@
     "MechanismId": [
       30027
     ],
+    "BindingID": [],
     "UnlockConditionId": 10901,
     "UseType": 2,
     "Desc": "使用后,本关内你比牌获胜时的伤害+20%",
@@ -1356,6 +1446,7 @@
     "MechanismId": [
       30028
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,玩家生命上限+80,并立即恢复80点血量",
@@ -1372,6 +1463,7 @@
     "MechanismId": [
       30031
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,移除本关内的1条BOSS词缀效果",
@@ -1388,6 +1480,7 @@
     "MechanismId": [
       30032
     ],
+    "BindingID": [],
     "UnlockConditionId": 11005,
     "UseType": 0,
     "Desc": "亮出的每张牌都提供其点数对应的攻击力加成",
@@ -1404,6 +1497,7 @@
     "MechanismId": [
       40025
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%",
@@ -1420,6 +1514,7 @@
     "MechanismId": [
       30033
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每使用过1次消耗类的圣物,此圣物就会在结算时永久提供+0.5倍率",
@@ -1436,6 +1531,7 @@
     "MechanismId": [
       30034
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每使用过1次消耗类的圣物,此圣物就会永久提供+1攻击力",
@@ -1452,6 +1548,7 @@
     "MechanismId": [
       30035
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "如果你亮出的牌型为同花顺,则会随机生成一个消耗性圣物,前提是圣物栏有空位",
@@ -1468,6 +1565,7 @@
     "MechanismId": [
       30036
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌时留在手牌中的每一张K,都会提供+9倍率",
@@ -1484,6 +1582,7 @@
     "MechanismId": [
       30037
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌时留在手牌中的每一张Q,都会提供+9倍率",
@@ -1500,6 +1599,7 @@
     "MechanismId": [
       30038
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每回合随机复制1个你栏位中其他圣物的能力",
@@ -1516,6 +1616,7 @@
     "MechanismId": [
       30039
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "本关每存在1条关卡机制,你造成的伤害+40%",
@@ -1532,6 +1633,7 @@
     "MechanismId": [
       30040
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "使用透视时,随机抽走该敌人1张手牌,与你手中点数最小的1张交换",
@@ -1547,6 +1649,9 @@
     "SellingPrice": 330,
     "MechanismId": [
       40001
+    ],
+    "BindingID": [
+      101
     ],
     "UnlockConditionId": 11001,
     "UseType": 0,
@@ -1564,6 +1669,7 @@
     "MechanismId": [
       40002
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "获得240点生命上限",
@@ -1580,6 +1686,7 @@
     "MechanismId": [
       40003
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "红桃和方片视为同一花色,黑桃和梅花视为同一花色",
@@ -1596,6 +1703,7 @@
     "MechanismId": [
       40004
     ],
+    "BindingID": [],
     "UnlockConditionId": 11002,
     "UseType": 0,
     "Desc": "每关[搓牌]使用次数+1",
@@ -1612,6 +1720,7 @@
     "MechanismId": [
       40005
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "结算时,若所有技能都无剩余使用次数,则提供+12倍率",
@@ -1628,6 +1737,7 @@
     "MechanismId": [
       40006
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每拥有1个圣物,结算时提供+3倍率",
@@ -1644,6 +1754,7 @@
     "MechanismId": [
       40007
     ],
+    "BindingID": [],
     "UnlockConditionId": 11003,
     "UseType": 0,
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+3倍率",
@@ -1660,6 +1771,7 @@
     "MechanismId": [
       40008
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "所有牌均视为人头牌",
@@ -1677,6 +1789,7 @@
       40009,
       400091
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张A在结算伤害时提供+66攻击力和+6倍率",
@@ -1693,6 +1806,7 @@
     "MechanismId": [
       40010
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮牌时,该牌型本局内每重复亮出1次就提供+1倍率",
@@ -1709,6 +1823,7 @@
     "MechanismId": [
       40011
     ],
+    "BindingID": [],
     "UnlockConditionId": 11004,
     "UseType": 0,
     "Desc": "亮牌时,有50%概率将该牌型提供的倍率永久+1",
@@ -1726,6 +1841,7 @@
       40012,
       400121
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "失去2次搓牌机会,但结算时提供+15倍率",
@@ -1742,6 +1858,7 @@
     "MechanismId": [
       40013
     ],
+    "BindingID": [],
     "UnlockConditionId": 10602,
     "UseType": 0,
     "Desc": "每使用1次搓牌,该圣物永久提供+0.1倍率",
@@ -1760,6 +1877,7 @@
       400141,
       400142
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "亮出的每张7结算时必定提供+77攻击力和+7倍率",
@@ -1777,6 +1895,7 @@
       40015,
       400151
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "获得50%闪避率,且闪避成功时会对敌人造成1次自身攻击力200%的伤害",
@@ -1793,6 +1912,7 @@
     "MechanismId": [
       40016
     ],
+    "BindingID": [],
     "UnlockConditionId": 10101,
     "UseType": 0,
     "Desc": "比牌时,若敌人的牌型大于对子,则会被强行视作对子(购买后6次比牌内生效)",
@@ -1809,6 +1929,7 @@
     "MechanismId": [
       40017
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每输1次敌人,后续自身造成的伤害提高10%",
@@ -1825,6 +1946,7 @@
     "MechanismId": [
       40018
     ],
+    "BindingID": [],
     "UnlockConditionId": 11101,
     "UseType": 0,
     "Desc": "受到致命伤害时血量降为1,且下次造成伤害时回复该伤害20%的血量,每关生效1次",
@@ -1841,6 +1963,7 @@
     "MechanismId": [
       40019
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "当场上只剩一个敌人时,对其造成的伤害+100%",
@@ -1857,6 +1980,7 @@
     "MechanismId": [
       40021
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "所有敌人血量降低30%[BOSS除外]",
@@ -1874,6 +1998,7 @@
       40022,
       400221
     ],
+    "BindingID": [],
     "UnlockConditionId": 11201,
     "UseType": 0,
     "Desc": "获得50%暴击率,且触发暴击时会对其他敌人造成1次自身攻击力的伤害",
@@ -1890,6 +2015,7 @@
     "MechanismId": [
       40023
     ],
+    "BindingID": [],
     "UnlockConditionId": 11301,
     "UseType": 0,
     "Desc": "每关[透视]使用次数+1",
@@ -1906,6 +2032,7 @@
     "MechanismId": [
       40024
     ],
+    "BindingID": [],
     "UnlockConditionId": 11401,
     "UseType": 0,
     "Desc": "每回合结束后,本回合自身总伤害输出的20%转化为金币",
@@ -1922,6 +2049,7 @@
     "MechanismId": [
       40026
     ],
+    "BindingID": [],
     "UnlockConditionId": 11501,
     "UseType": 1,
     "Desc": "使用后,本次比牌你造成的伤害提高200%",
@@ -1938,6 +2066,7 @@
     "MechanismId": [
       40027
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 1,
     "Desc": "使用后,本次比牌你受到的所有伤害变为0,并恢复30%血量",
@@ -1954,6 +2083,7 @@
     "MechanismId": [
       40028
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,随机3种牌型的提供的倍率永久+5",
@@ -1970,6 +2100,7 @@
     "MechanismId": [
       40029
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 2,
     "Desc": "使用后,获得160点生命上限,并立即恢复160点血量",
@@ -1986,6 +2117,7 @@
     "MechanismId": [
       40030
     ],
+    "BindingID": [],
     "UnlockConditionId": 11601,
     "UseType": 0,
     "Desc": "每拥有40金币,你造成的伤害+10%,至多叠加20层",
@@ -2002,6 +2134,7 @@
     "MechanismId": [
       40031
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+12攻击力",
@@ -2018,6 +2151,7 @@
     "MechanismId": [
       30029
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌时,对方的牌型顺位降低1级",
@@ -2034,6 +2168,7 @@
     "MechanismId": [
       30030
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌时,自己的牌型顺位提高1级",
@@ -2050,6 +2185,7 @@
     "MechanismId": [
       30006
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "顺子牌型可以相隔1点组成[例如:2,4,5]",
@@ -2066,6 +2202,7 @@
     "MechanismId": [
       40032
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "提供+100攻击力,但每次比牌后此效果会-5攻击力",
@@ -2082,6 +2219,7 @@
     "MechanismId": [
       40033
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "比牌即使牌型小于对方,也会有10%的概率获胜",
@@ -2098,6 +2236,7 @@
     "MechanismId": [
       40034
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "每亮出过1次炸弹,该圣物就会在结算时提供+10倍率",
@@ -2114,6 +2253,7 @@
     "MechanismId": [
       40035
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "在商店中每刷新1次,该圣物就会提供+1倍率",
@@ -2130,6 +2270,7 @@
     "MechanismId": [
       40036
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "提供+20倍率,但每次比牌后此效果会-1倍率",
@@ -2146,6 +2287,7 @@
     "MechanismId": [
       40037
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "将你持有的圣物中所有关于概率的数字翻倍",
@@ -2162,6 +2304,7 @@
     "MechanismId": [
       40038
     ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "Desc": "你的A可以当作任意花色与任意点数使用",

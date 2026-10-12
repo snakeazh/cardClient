@@ -379,10 +379,7 @@ namespace App.Bootstrap
             }
 
             var dialogs = _services.Resolve<IDialogService>();
-            await PveSessionGate.ConnectWithRetryAsync(
-                dialogs,
-                SystemInfo.deviceUniqueIdentifier,
-                "Editor");
+            await PveSessionGate.ConnectWithRetryAsync(dialogs);
         }
 
         private static void LogConfigSmoke()

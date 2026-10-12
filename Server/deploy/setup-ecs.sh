@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 一次性初始化 ECS：装 ASP.NET Core 8 运行时 / PostgreSQL / Redis / Nginx，建库，装 systemd 单元。
-# 支持 Alibaba Cloud Linux 3 (dnf) 和 Ubuntu 22.04+ (apt)。root 或 sudo 执行。
+# 支持 Alibaba Cloud Linux 3 / OpenCloudOS 9 (dnf) 和 Ubuntu 22.04+ (apt)。root 或 sudo 执行。
 # 用法: REDIS_PASS=xxx PG_PASS=xxx bash setup-ecs.sh
 set -euo pipefail
 
@@ -24,7 +24,8 @@ echo "==> 包管理器: ${PM}"
 
 echo "==> 安装软件包"
 if [ "${PM}" = dnf ]; then
-    dnf install -y aspnetcore-runtime-8.0 postgresql-server postgresql redis nginx
+    # 部分机器预置了 nginx 官方源，其新版本要求的 OpenSSL 超出系统自带版本，屏蔽后用发行版源
+    dnf install -y --disablerepo=nginx-stable aspnetcore-runtime-8.0 postgresql-server postgresql redis nginx
 else
     apt-get update
     apt-get install -y aspnetcore-runtime-8.0 postgresql redis-server nginx
@@ -35,6 +36,11 @@ if [ "${PM}" = dnf ] && [ ! -d /var/lib/pgsql/data/base ]; then
     postgresql-setup --initdb
 fi
 systemctl enable --now postgresql
+if [ "${PM}" = dnf ]; then
+    # RHEL 系 initdb 默认 host 走 ident，应用 TCP 密码连接会被拒，改成 scram-sha-256
+    sed -i -E 's/^(host\s+all\s+all\s+(127.0.0.1\/32|::1\/128)\s+)ident/\1scram-sha-256/' /var/lib/pgsql/data/pg_hba.conf
+    systemctl reload postgresql
+fi
 
 echo "==> 建库（已存在会报错，可忽略）"
 # postgres 用户读不到 /root，先拷到 /tmp
@@ -45,6 +51,10 @@ rm -f /tmp/setup-postgres.sql
 sudo -u postgres psql -c "ALTER USER card WITH PASSWORD '${PG_PASS}';"
 
 echo "==> 配置 Redis（仅本机 + 密码）"
+# OpenCloudOS / Ubuntu 的 redis 配置在 /etc/redis/ 下，Alibaba Cloud Linux 在 /etc/redis.conf
+if [ ! -f "${REDIS_CONF}" ] && [ -f /etc/redis/redis.conf ]; then
+    REDIS_CONF=/etc/redis/redis.conf
+fi
 sed -i -E "s/^#? *requirepass .*/requirepass ${REDIS_PASS}/" "${REDIS_CONF}"
 grep -q '^requirepass' "${REDIS_CONF}" || echo "requirepass ${REDIS_PASS}" >> "${REDIS_CONF}"
 systemctl enable --now "${REDIS_SVC}"

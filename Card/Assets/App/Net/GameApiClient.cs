@@ -19,6 +19,7 @@ namespace App.Net
     {
         public const string AccessTokenKey = "game.api.access";
         public const string PendingSettleKey = "game.api.pending.settle.v1";
+        public const string ProviderKey = "game.api.provider";
 
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
@@ -28,12 +29,19 @@ namespace App.Net
 
         private readonly ISaveService _save;
         private string _accessToken = string.Empty;
+        private string _provider = AuthProviders.Guest;
 
         public GameApiClient(ISaveService save)
         {
             _save = save ?? throw new ArgumentNullException(nameof(save));
             DropLegacyTokens();
             _accessToken = _save.GetString(AccessTokenKey, string.Empty) ?? string.Empty;
+            // 历史版本只存 token 不存 provider，一律视为 guest
+            _provider = _save.GetString(ProviderKey, AuthProviders.Guest) ?? AuthProviders.Guest;
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                _provider = AuthProviders.Guest;
+            }
         }
 
         public bool HasSession => !string.IsNullOrEmpty(_accessToken);
@@ -42,38 +50,54 @@ namespace App.Net
 
         public string UserId { get; private set; } = string.Empty;
 
-        public async Task<LoginResponse> ConnectAsync(string deviceCode, string nickName = "")
+        public async Task<LoginResponse> ConnectAsync()
         {
+            var provider = WeChatAuth.IsWeChatPlatform ? AuthProviders.WeChat : AuthProviders.Guest;
             if (HasSession)
             {
-                try
+                // 平台 provider 与已存 token 不一致（如旧 guest token 遇到微信端），重新登录
+                if (!string.Equals(_provider, provider, StringComparison.Ordinal))
                 {
-                    var profile = await GetProfileAsync();
-                    var flushed = await FlushPendingSettleAsync();
-                    if (flushed != null)
-                    {
-                        profile = flushed;
-                    }
-
-                    UserId = profile != null ? profile.UserId ?? string.Empty : string.Empty;
-                    return new LoginResponse
-                    {
-                        AccessToken = _accessToken,
-                        Profile = profile
-                    };
-                }
-                catch (GameApiException ex)
-                {
-                    if (string.Equals(ex.Code, "connection_error", StringComparison.Ordinal))
-                    {
-                        throw;
-                    }
-
                     ClearTokens();
+                }
+                else
+                {
+                    try
+                    {
+                        var profile = await GetProfileAsync();
+                        var flushed = await FlushPendingSettleAsync();
+                        if (flushed != null)
+                        {
+                            profile = flushed;
+                        }
+
+                        UserId = profile != null ? profile.UserId ?? string.Empty : string.Empty;
+                        return new LoginResponse
+                        {
+                            AccessToken = _accessToken,
+                            Profile = profile
+                        };
+                    }
+                    catch (GameApiException ex)
+                    {
+                        if (string.Equals(ex.Code, "connection_error", StringComparison.Ordinal))
+                        {
+                            throw;
+                        }
+
+                        ClearTokens();
+                    }
                 }
             }
 
-            return await LoginGuestAsync(deviceCode, nickName);
+            if (WeChatAuth.IsWeChatPlatform)
+            {
+                var code = await WeChatAuth.LoginAsync();
+                var userInfo = await WeChatAuth.GetUserInfoAsync();
+                return await LoginWeChatAsync(code, userInfo);
+            }
+
+            return await LoginGuestAsync(SystemInfo.deviceUniqueIdentifier, string.Empty);
         }
 
         public Task<PveRunResponse> GetActiveRunAsync()
@@ -156,13 +180,31 @@ namespace App.Net
                 "/v1/auth/login",
                 new LoginRequest
                 {
-                    Provider = "guest",
+                    Provider = AuthProviders.Guest,
                     Code = string.IsNullOrEmpty(deviceCode) ? "editor-device" : deviceCode,
                     UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty },
                     PendingSettle = LoadPendingSettle()
                 },
                 auth: false);
-            StoreTokens(login);
+            StoreTokens(login, AuthProviders.Guest);
+            ClearPendingSettle();
+            return login;
+        }
+
+        public async Task<LoginResponse> LoginWeChatAsync(string code, LoginUserInfo userInfo)
+        {
+            var login = await SendAsync<LoginResponse>(
+                "POST",
+                "/v1/auth/login",
+                new LoginRequest
+                {
+                    Provider = AuthProviders.WeChat,
+                    Code = code ?? string.Empty,
+                    UserInfo = userInfo,
+                    PendingSettle = LoadPendingSettle()
+                },
+                auth: false);
+            StoreTokens(login, AuthProviders.WeChat);
             ClearPendingSettle();
             return login;
         }
@@ -240,7 +282,7 @@ namespace App.Net
         public Task<PlayerProfileDto> DebugGrantGoldAsync(int amount)
             => SendAsync<PlayerProfileDto>("POST", "/v1/debug/grant-gold", new DebugGrantGoldRequest { Amount = amount });
 
-        private void StoreTokens(LoginResponse login)
+        private void StoreTokens(LoginResponse login, string provider)
         {
             if (login == null || string.IsNullOrEmpty(login.AccessToken))
             {
@@ -248,8 +290,10 @@ namespace App.Net
             }
 
             _accessToken = login.AccessToken;
+            _provider = string.IsNullOrEmpty(provider) ? AuthProviders.Guest : provider;
             UserId = login.Profile != null ? login.Profile.UserId ?? string.Empty : string.Empty;
             _save.SetString(AccessTokenKey, _accessToken);
+            _save.SetString(ProviderKey, _provider);
             _save.Save();
         }
 
@@ -276,8 +320,10 @@ namespace App.Net
         private void ClearTokens()
         {
             _accessToken = string.Empty;
+            _provider = AuthProviders.Guest;
             UserId = string.Empty;
             _save.SetString(AccessTokenKey, string.Empty);
+            _save.SetString(ProviderKey, string.Empty);
             _save.Save();
         }
 

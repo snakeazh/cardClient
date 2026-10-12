@@ -13,7 +13,7 @@ PG/Redis 换成云托管版并改连接串，应用侧不用改代码。
 ## 0. 买机器与前置条件
 
 - ECS：**2C4G 起步**（PG + Redis + 应用同机，2C2G 也能跑，setup 脚本会自动加 2G swap），系统盘 40G+。
-- 系统：Alibaba Cloud Linux 3 或 Ubuntu 22.04+，`setup-ecs.sh` 自动识别 dnf/apt。
+- 系统：Alibaba Cloud Linux 3、OpenCloudOS 9 或 Ubuntu 22.04+，`setup-ecs.sh` 自动识别 dnf/apt（含 pg_hba ident→scram、redis 配置路径差异的处理）。
 - 面向微信/抖音小游戏：服务器放**中国大陆**，域名完成 **ICP 备案**，否则配不进小程序后台。
 - 一个域名（如 `api.example.com`）解析到 ECS 公网 IP，并在阿里云申请免费 SSL 证书。
 - 安全组：只放行 **22 / 80 / 443**。5432（PG）、6379（Redis）、5254（应用）**全部不对外**。

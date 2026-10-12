@@ -11,6 +11,11 @@ namespace App.Net
 
         public static bool IsReady => Client != null && Client.HasSession;
 
+        /// <summary>最近一次服务器下发的昵称/头像（暂存，供后续头像 UI 消费）。</summary>
+        public static string NickName { get; private set; } = string.Empty;
+
+        public static string AvatarUrl { get; private set; } = string.Empty;
+
         public static void Bind(GameApiClient client)
         {
             Client = client;
@@ -18,6 +23,8 @@ namespace App.Net
 
         public static void ApplyProfile(PlayerProfileDto profile)
         {
+            NickName = profile != null ? profile.NickName ?? string.Empty : string.Empty;
+            AvatarUrl = profile != null ? profile.AvatarUrl ?? string.Empty : string.Empty;
             ServerProfileApplier.Apply(profile);
         }
 

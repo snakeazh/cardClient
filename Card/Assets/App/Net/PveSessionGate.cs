@@ -12,7 +12,7 @@ namespace App.Net
     {
         public const string ActiveRunExists = "active_run_exists";
 
-        public static async Task ConnectWithRetryAsync(IDialogService dialogs, string deviceCode, string nickName)
+        public static async Task ConnectWithRetryAsync(IDialogService dialogs)
         {
             if (!GameApiSettings.Enabled)
             {
@@ -24,7 +24,7 @@ namespace App.Net
             {
                 try
                 {
-                    var login = await GameApi.Client.ConnectAsync(deviceCode, nickName);
+                    var login = await GameApi.Client.ConnectAsync();
                     GameApi.ApplyProfile(login.Profile);
                     AppLog.Info(LogChannel.Net, "session ok userId=" + login.Profile.UserId);
                     return;

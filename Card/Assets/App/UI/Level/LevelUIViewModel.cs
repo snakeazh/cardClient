@@ -337,10 +337,7 @@ namespace App.UI
             {
                 if (!GameApi.IsReady)
                 {
-                    await PveSessionGate.ConnectWithRetryAsync(
-                        _ui.Dialogs,
-                        UnityEngine.SystemInfo.deviceUniqueIdentifier,
-                        "Editor");
+                    await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
                     if (!GameApi.IsReady)
                     {
                         Toast.Error("未连接服务器");
@@ -426,10 +423,7 @@ namespace App.UI
             {
                 if (!GameApi.IsReady)
                 {
-                    await PveSessionGate.ConnectWithRetryAsync(
-                        _ui.Dialogs,
-                        UnityEngine.SystemInfo.deviceUniqueIdentifier,
-                        "Editor");
+                    await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
                     if (!GameApi.IsReady)
                     {
                         Toast.Error("未连接服务器");

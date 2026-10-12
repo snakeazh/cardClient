@@ -22,7 +22,9 @@ namespace App.Net
 
         // 本地调试时换用 127.0.0.1（Server/start-local.bat 起内存模式服务）：
         // public const string DefaultBaseUrl = "http://127.0.0.1:5254";
-        public const string DefaultBaseUrl = "http://121.43.167.98:5254";
+        // 旧服直连：http://121.43.167.98:5254
+        // 新服经 Nginx 80 端口反代（备案通过后换 https://api.txys.ltd）：
+        public const string DefaultBaseUrl = "http://49.235.187.59";
         public const string LocalHostBaseUrl = "http://127.0.0.1:5254";
 
         public static string BaseUrl { get; set; } = DefaultBaseUrl;

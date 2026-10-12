@@ -183,6 +183,7 @@ namespace App.Net
                     Provider = AuthProviders.Guest,
                     Code = string.IsNullOrEmpty(deviceCode) ? "editor-device" : deviceCode,
                     UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty },
+                    Editor = Application.isEditor,
                     PendingSettle = LoadPendingSettle()
                 },
                 auth: false);

@@ -20,7 +20,6 @@ public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddCardInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<GuestAuthOptions>(configuration.GetSection("GuestAuth"));
         services.Configure<WeChatAuthOptions>(configuration.GetSection("WeChat"));
         services.Configure<DouyinAuthOptions>(configuration.GetSection("Douyin"));
         services.Configure<CosAvatarOptions>(configuration.GetSection("Cos"));

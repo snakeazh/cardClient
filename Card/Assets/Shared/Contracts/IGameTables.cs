@@ -41,6 +41,8 @@ namespace CardShare.Contracts
 
         IReadOnlyList<PvpBotConfig> PvpBots { get; }
 
+        IReadOnlyList<BindingConfig> Bindings { get; }
+
         IReadOnlyList<int> Difficulties { get; }
 
         bool TryGetLevel(int id, out LevelConfig level);
@@ -64,6 +66,8 @@ namespace CardShare.Contracts
         bool TryGetPvpMode(int id, out PvpModeConfig mode);
 
         bool TryGetPvpBot(int id, out PvpBotConfig bot);
+
+        bool TryGetBinding(int id, out BindingConfig binding);
 
         IReadOnlyList<PvpRoundConfig> GetPvpRounds(int modeId);
 

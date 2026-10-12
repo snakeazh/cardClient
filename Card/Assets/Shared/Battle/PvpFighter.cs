@@ -22,6 +22,12 @@ namespace CardShare.Battle
 
         public int Gold { get; set; }
 
+        /// <summary>PvP 连胜。野怪轮不改、不发连胜奖励。</summary>
+        public int WinStreak { get; set; }
+
+        /// <summary>PvP 连败。野怪轮不改、不发连败奖励。</summary>
+        public int LoseStreak { get; set; }
+
         public bool Alive { get; set; } = true;
 
         public int Rank { get; set; }
@@ -39,6 +45,12 @@ namespace CardShare.Battle
         public int RewardGold { get; set; }
 
         public List<int> OwnedRelicIds { get; } = new List<int>();
+
+        /// <summary>与 <see cref="OwnedRelicIds"/> 对齐。每份为 1，多份各占一条。</summary>
+        public List<int> OwnedRelicPower { get; } = new List<int>();
+
+        /// <summary>已解锁的圣物槽。开局为 GameConst.PVPRelicInitialRelicNum，上限为初始槽加解锁价格档数。</summary>
+        public int RelicSlots { get; set; } = PvpRelicBag.FreeSlots;
 
         public int[] ShopPoolIds { get; set; } = Array.Empty<int>();
 
@@ -73,5 +85,32 @@ namespace CardShare.Battle
 
         /// <summary>凤凰羽毛（UseRoundNullify）已激活：本桌比牌结算时受到的伤害变为 0，结算后清除。</summary>
         public bool NullifyDamageNextHit { get; set; }
+
+        /// <summary>圣光燃烧已发动次数。本局保留，后续出手按这个次数加伤。</summary>
+        public int HolyLightCasts { get; set; }
+
+        /// <summary>命运羁绊：每次攻击叠加的永久倍率。</summary>
+        public float BindingMagForever { get; set; }
+
+        /// <summary>注魔硬币：每次消费叠加的永久伤害加成。</summary>
+        public float MagicCoinDamageBonus { get; set; }
+
+        /// <summary>权力羁绊层数。</summary>
+        public int NobilityStacks { get; set; }
+
+        /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
+        public int BindingReviveLeft { get; set; }
+
+        /// <summary>沉默诅咒：是否已武装复活次数。</summary>
+        public bool BindingReviveArmed { get; set; }
+
+        /// <summary>属性强化：永久暴击率加成。</summary>
+        public float BindingCritBonus { get; set; }
+
+        /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
+        public HashSet<int> LuckyEnhancedRanks { get; } = new HashSet<int>();
+
+        /// <summary>沉默诅咒：下一次比牌对该座位强制判负。</summary>
+        public bool SilencedNextCompare { get; set; }
     }
 }

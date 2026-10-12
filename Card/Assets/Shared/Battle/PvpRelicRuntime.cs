@@ -127,7 +127,7 @@ namespace CardShare.Battle
         }
 
         /// <summary>疯狂猴子：回合/子桌结算后按概率毁掉自身。</summary>
-        public static void ApplySelfDestroy(IGameTables tables, PvpFighter fighter, Random rng)
+        public static void ApplySelfDestroy(IGameTables tables, PvpFighter fighter, Random rng, Action<int, int>? returned = null)
         {
             if (rng == null)
             {
@@ -162,7 +162,11 @@ namespace CardShare.Battle
 
             for (var i = 0; i < destroyed.Count; i++)
             {
-                fighter.OwnedRelicIds.Remove(destroyed[i]);
+                var copies = PvpRelicBag.RemoveOne(fighter, destroyed[i]);
+                if (copies > 0)
+                {
+                    returned?.Invoke(destroyed[i], copies);
+                }
             }
 
             CleanupTrackers(fighter);
@@ -198,7 +202,7 @@ namespace CardShare.Battle
         /// <summary>写入比牌用 SeatSetup 追踪字段（含甜品加攻与当前持有圣物列表）。</summary>
         public static void ApplyTrackersToSeat(IGameTables tables, PvpFighter fighter, SeatSetup setup)
         {
-            setup.RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds);
+            setup.RelicIds = PvpRelicBag.Expand(fighter);
             setup.HandTypeShowCounts = (int[])fighter.HandTypeShowCounts.Clone();
             setup.RelicSelfDecayMag = CloneFloatDict(fighter.RelicSelfDecayMag);
             setup.RelicShopRefreshCounts = CloneIntDict(fighter.RelicShopRefreshCounts);
@@ -206,6 +210,9 @@ namespace CardShare.Battle
             setup.ConsumableUsesThisRun = fighter.ConsumableUsesThisRun;
             setup.CopiedRelicId = fighter.CopiedRelicId;
             setup.Attack = Math.Max(0, fighter.Combat.Attack + SelfDecayAttackTotal(tables, fighter));
+            setup.BindingMagForever = fighter.BindingMagForever;
+            setup.MagicCoinDamageBonus = fighter.MagicCoinDamageBonus;
+            setup.BindingCritBonus = fighter.BindingCritBonus;
         }
 
         // ——— 治疗与血量上限：PVP 服务端权威结算，口径对齐 PVE GameSession（ApplyRelicMaxHpDelta / HealPlayer） ———
@@ -226,7 +233,7 @@ namespace CardShare.Battle
         /// 保温杯低血回复（ThermosCup，语义"回合结束后"，在此按结算窗口等效判定）。</summary>
         public static void ApplyRoundStart(IGameTables tables, PvpFighter fighter)
         {
-            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
+            HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.EveryRoundGetHpMax));
             ForEachEntry(tables, fighter, (_, entry) =>
             {
@@ -238,9 +245,170 @@ namespace CardShare.Battle
                 var threshold = ValueAt(entry);
                 if (threshold > 0f && fighter.MaxHp > 0 && fighter.Hp < fighter.MaxHp * threshold)
                 {
-                    Heal(fighter, (int)Math.Round(ValueAt(entry, 1)));
+                    HealFromRelic(tables, fighter, (int)Math.Round(ValueAt(entry, 1)));
                 }
             });
+            ApplyBronzeBook(tables, fighter);
+            ArmCurseSilenceRevive(tables, fighter);
+        }
+
+        public static void ApplyBronzeBook(IGameTables tables, PvpFighter fighter)
+        {
+            var add = PvpRelicBindings.BronzeBookAttack(tables, fighter.OwnedRelicIds);
+            if (add <= 0)
+            {
+                return;
+            }
+
+            fighter.Combat.Attack = Math.Max(0, fighter.Combat.Attack + add);
+        }
+
+        public static void ArmCurseSilenceRevive(IGameTables tables, PvpFighter fighter)
+        {
+            if (fighter.BindingReviveArmed)
+            {
+                return;
+            }
+
+            var times = PvpRelicBindings.CurseSilenceReviveTimes(tables, fighter.OwnedRelicIds);
+            if (times <= 0)
+            {
+                return;
+            }
+
+            fighter.BindingReviveLeft = times;
+            fighter.BindingReviveArmed = true;
+        }
+
+        public static void OnGoldSpent(IGameTables tables, PvpFighter fighter)
+        {
+            var add = PvpRelicBindings.MagicCoinSpendBonus(tables, fighter.OwnedRelicIds);
+            if (add != 0f)
+            {
+                fighter.MagicCoinDamageBonus += add;
+            }
+        }
+
+        public static void OnSkillUsed(IGameTables tables, PvpFighter fighter, Random rng)
+        {
+            if (!PvpRelicBindings.TryRollRandomAttribute(
+                    tables,
+                    fighter.OwnedRelicIds,
+                    rng,
+                    out var atk,
+                    out var hp,
+                    out var crit))
+            {
+                return;
+            }
+
+            if (atk != 0)
+            {
+                fighter.Combat.Attack = Math.Max(0, fighter.Combat.Attack + atk);
+            }
+
+            if (hp != 0)
+            {
+                ApplyMaxHpDelta(fighter, hp);
+            }
+
+            if (crit != 0f)
+            {
+                fighter.BindingCritBonus += crit;
+            }
+        }
+
+        public static void ApplyBloodCeremony(IGameTables tables, PvpFighter healer, PvpFighter? target, int healed)
+        {
+            if (healer == null || target == null || !target.Alive || healed <= 0)
+            {
+                return;
+            }
+
+            var times = PvpRelicBindings.BloodCeremonyTimes(tables, healer.OwnedRelicIds);
+            for (var t = 0; t < times; t++)
+            {
+                target.Hp = Math.Max(0, target.Hp - healed);
+            }
+        }
+
+        public static void ApplyShowBindings(
+            IGameTables tables,
+            PvpFighter fighter,
+            HandScore score,
+            Random rng,
+            bool enhanceLucky)
+        {
+            if (fighter == null)
+            {
+                return;
+            }
+
+            var per = PvpRelicBindings.NobilityStackPerFace(tables, fighter.OwnedRelicIds);
+            if (per > 0 && score.UsedCards != null)
+            {
+                var faces = 0;
+                for (var i = 0; i < score.UsedCards.Length; i++)
+                {
+                    if (score.UsedCards[i].IsValid && score.UsedCards[i].IsFace)
+                    {
+                        faces++;
+                    }
+                }
+
+                if (faces > 0)
+                {
+                    fighter.NobilityStacks += faces * per;
+                }
+            }
+
+            if (!enhanceLucky)
+            {
+                return;
+            }
+
+            var enhance = PvpRelicBindings.LuckyNumberEnhanceCount(tables, fighter.OwnedRelicIds);
+            if (enhance <= 0 || score.UsedCards == null || rng == null)
+            {
+                return;
+            }
+
+            var candidates = new List<int>();
+            for (var i = 0; i < score.UsedCards.Length; i++)
+            {
+                var card = score.UsedCards[i];
+                if (!card.IsValid || card.IsFace)
+                {
+                    continue;
+                }
+
+                var rank = (int)card.Rank;
+                if (!fighter.LuckyEnhancedRanks.Contains(rank))
+                {
+                    candidates.Add(rank);
+                }
+            }
+
+            for (var n = 0; n < enhance && candidates.Count > 0; n++)
+            {
+                var pick = rng.Next(candidates.Count);
+                fighter.LuckyEnhancedRanks.Add(candidates[pick]);
+                candidates.RemoveAt(pick);
+            }
+        }
+
+        public static bool TryBindingRevive(IGameTables tables, PvpFighter fighter)
+        {
+            ArmCurseSilenceRevive(tables, fighter);
+            if (fighter.BindingReviveLeft <= 0)
+            {
+                return false;
+            }
+
+            fighter.BindingReviveLeft--;
+            fighter.Hp = fighter.MaxHp;
+            fighter.Alive = true;
+            return true;
         }
 
         /// <summary>使用消耗型圣物：结算 PVP 支持的即时效果。返回 false 表示该圣物含 PVP 未支持的
@@ -259,7 +427,7 @@ namespace CardShare.Battle
                 switch (entry.Type)
                 {
                     case MechanismType.HealHpPercent:
-                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
+                        HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
                         anyApplied = true;
                         break;
                     case MechanismType.MaxHpUpAndHeal:
@@ -269,7 +437,7 @@ namespace CardShare.Battle
                         break;
                     case MechanismType.UseRoundNullify:
                         fighter.NullifyDamageNextHit = true;
-                        Heal(fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
+                        HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
                         anyApplied = true;
                         break;
                     default:
@@ -389,7 +557,7 @@ namespace CardShare.Battle
         /// <summary>比牌获胜：月光酒回血（WinHeal）+ 激励徽章上限成长（DefeatGetHpMax）。</summary>
         public static void ApplyWinRewards(IGameTables tables, PvpFighter fighter)
         {
-            Heal(fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
+            HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.DefeatGetHpMax));
         }
 
@@ -411,6 +579,11 @@ namespace CardShare.Battle
             fighter.Hp = hp;
         }
 
+        private static int HealFromRelic(IGameTables tables, PvpFighter fighter, int amount)
+        {
+            return Heal(fighter, PvpHeroRuntime.ScaleRelicHeal(tables, fighter.Combat.HeroId, amount));
+        }
+
         private static int Heal(PvpFighter fighter, int amount)
         {
             if (amount <= 0 || fighter.Hp >= fighter.MaxHp)
@@ -420,6 +593,22 @@ namespace CardShare.Battle
 
             var healed = Math.Min(amount, fighter.MaxHp - fighter.Hp);
             fighter.Hp += healed;
+            return healed;
+        }
+
+        /// <summary>回血并在有对手时触发鲜血仪式。</summary>
+        public static int HealWithBloodCeremony(
+            IGameTables tables,
+            PvpFighter fighter,
+            int amount,
+            PvpFighter? opponent)
+        {
+            var healed = HealFromRelic(tables, fighter, amount);
+            if (healed > 0)
+            {
+                ApplyBloodCeremony(tables, fighter, opponent, healed);
+            }
+
             return healed;
         }
 
@@ -513,8 +702,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            var max = tables.GameConst.DefaultRelicNumMax > 0 ? tables.GameConst.DefaultRelicNumMax : 3;
-            if (fighter.OwnedRelicIds.Count >= max)
+            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
             {
                 return;
             }
@@ -523,7 +711,7 @@ namespace CardShare.Battle
             for (var i = 0; i < tables.Relics.Count; i++)
             {
                 var relic = tables.Relics[i];
-                if (relic == null || !IsConsumable(relic) || fighter.OwnedRelicIds.Contains(relic.Id))
+                if (relic == null || !IsConsumable(relic))
                 {
                     continue;
                 }
@@ -536,7 +724,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            fighter.OwnedRelicIds.Add(pool[rng.Next(pool.Count)]);
+            PvpRelicBag.Add(fighter, pool[rng.Next(pool.Count)]);
         }
 
         private static void AddHandTypeShowCount(PvpFighter fighter, HandType type)
@@ -621,9 +809,11 @@ namespace CardShare.Battle
 
         private static void ForEachEntry(IGameTables tables, PvpFighter fighter, Action<RelicConfig, RelicEntryConfig> action)
         {
+            var seen = new HashSet<int>();
             for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
             {
-                if (!tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic))
+                var relicId = fighter.OwnedRelicIds[i];
+                if (relicId <= 0 || !seen.Add(relicId) || !tables.TryGetRelic(relicId, out var relic))
                 {
                     continue;
                 }

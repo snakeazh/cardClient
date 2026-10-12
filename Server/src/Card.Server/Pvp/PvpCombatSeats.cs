@@ -68,6 +68,11 @@ internal static class PvpCombatSeats
             seats[i].ShopPoolIds = shopPoolIds;
         }
 
+        foreach (var seat in seats)
+        {
+            CombatBonuses.ApplyPvpHpBoost(seat, tables);
+        }
+
         return seats;
     }
 

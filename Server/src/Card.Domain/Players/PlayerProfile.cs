@@ -285,6 +285,36 @@ public sealed class PlayerProfile
         return Level.GetHighestCleared(snapshot.Difficulty) >= snapshot.Level - 1;
     }
 
+    /// <summary>
+    /// 选英雄界面点解锁。已在存档里则保持原样。
+    /// 有通关难度条件时只认服务器自己的关卡进度，不满足则拒绝。
+    /// </summary>
+    public void UnlockHero(int heroId, IGameConfig config)
+    {
+        if (heroId <= 0)
+        {
+            throw DomainException.Invalid("heroId is required.");
+        }
+
+        var hero = config.Tables.Heroes.FirstOrDefault(h => h.Id == heroId);
+        if (hero == null)
+        {
+            throw DomainException.Invalid($"Unknown hero {heroId}.");
+        }
+
+        if (Level.UnlockedHeroIds.Contains(heroId))
+        {
+            return;
+        }
+
+        if (hero.UnlockCondition > 0 && !IsDifficultyCleared(hero.UnlockCondition, config))
+        {
+            throw new DomainException(ErrorCodes.HeroLocked, "Hero unlock condition is not met.");
+        }
+
+        Level.TryUnlockHero(heroId);
+    }
+
     public bool IsHeroUnlocked(int heroId, IGameConfig config)
     {
         if (Level.UnlockedHeroIds.Contains(heroId))
@@ -309,10 +339,30 @@ public sealed class PlayerProfile
             Level.SetHighestCleared(snapshot.Difficulty, snapshot.Level);
         }
 
-        if (IsDifficultyCleared(snapshot.Difficulty, config))
+        SyncUnlockedHeroes(config);
+    }
+
+    /// <summary>
+    /// 把服务器已认证的英雄写入解锁列表（默认英雄、无条件、通关难度已达成）。
+    /// 返回是否新写入了英雄。读档时据此落库，响应里的列表就是客户端拿到的结果。
+    /// </summary>
+    public bool SyncUnlockedHeroes(IGameConfig config)
+    {
+        var changed = false;
+        foreach (var hero in config.Tables.Heroes)
         {
-            UnlockHeroesForDifficulty(snapshot.Difficulty, config);
+            if (!IsHeroUnlocked(hero.Id, config))
+            {
+                continue;
+            }
+
+            if (Level.TryUnlockHero(hero.Id))
+            {
+                changed = true;
+            }
         }
+
+        return changed;
     }
 
     public void ApplyUnlockStats(PveSettleStats stats, IGameConfig config)
@@ -387,17 +437,6 @@ public sealed class PlayerProfile
         if (config.Balance.DefaultHeroId > 0)
         {
             Level.TryUnlockHero(config.Balance.DefaultHeroId);
-        }
-    }
-
-    private void UnlockHeroesForDifficulty(int difficulty, IGameConfig config)
-    {
-        foreach (var hero in config.Tables.Heroes)
-        {
-            if (hero.UnlockCondition == difficulty)
-            {
-                Level.TryUnlockHero(hero.Id);
-            }
         }
     }
 

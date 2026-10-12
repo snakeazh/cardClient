@@ -25,6 +25,8 @@
 | `card_Name` | 名字 |
 | `priceframe` | 价格底图 |
 | `priceValue` | 价格数字；出售绑定时写 `SellingPrice` |
+| `lv` | 等级，文案 `LV1`。货架固定 1；已携带按合成倍数，三合一为 `LV3` |
+| `hasNum` | 持有数量，文案 `数量x2`。0 隐藏。同一等级合并成一格：两件 LV1 是 `数量x2`；三合一后是 `LV3`、`数量x1` |
 | `gold` | 可选金币图标；新卡没有这个节点 |
 | `ShopRoot` | Animator：`ani_shop_choose_start` / `ani_shop_choose_end` |
 

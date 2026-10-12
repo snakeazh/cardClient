@@ -33,7 +33,30 @@ Unity 的 `App.Game.Card` / `RunState` 不进本库，由客户端 `SharedBattle
    禁止 `UnityEngine`、ASP.NET、EF、Redis。
 
 6. **PVE / PVP 各自算，客户端不上报伤害数字**  
-   共享的是函数。PVE 只在客户端调；PVP 只在服务端调。PVP 局内叠层（贪婪/炸弹/消费主义/饮品/甜品/复制等）由 `PvpRelicRuntime` 挂在 `PvpFighter` 上，经 `SeatSetup` 进 `RelicCombat`；消耗品使用与关卡词缀仍不在 PVP。
+   共享的是函数。PVE 只在客户端调；PVP 只在服务端调。PVP 局内叠层（贪婪/炸弹/消费主义/饮品/甜品/复制等）由 `PvpRelicRuntime` 挂在 `PvpFighter` 上，经 `SeatSetup` 进 `RelicCombat`；消耗品使用与关卡词缀仍不在 PVP。PVP 英雄词条统一走 `PvpHeroRuntime`（见下节）。
+
+## PVP 英雄词条（PvpHeroRuntime）
+
+英雄词条（`HeroConfig.HeroEntryId` → `HeroEntryConfig`）在 PVP 由 `PvpHeroRuntime` 集中读取与结算，命名/语义对齐 PVE `App.Game.HeroMechanics`。
+
+已接入（配表即生效）：
+
+| MechanismType | 挂钩点 |
+|---|---|
+| Damage / HeroCritical | `CombatBonuses.BuildPlayerInput` / `EvaluatePanel` |
+| RubbingCardsNum / PerspectiveNum | `CombatBonuses.SumSkillCountBonus` |
+| ExtraAttackOneTime | `BuildPlayerInput`：与天赋 ProOfExtraAttack 求和后掷一次 |
+| InitialFunds | `PvpMatch.Open` 初始金币 |
+| RelicPricePer | `PvpShopRules.BuyPrice`（货架投影同源） |
+| EpicLegendRelicProUp | `PvpShopRules` 上架权重 |
+| GetGoldAfterLevel | `PvpMatch.ApplyDuelGold` 胜方基础金 |
+| HeroTakeDamagePer | `PvpMatch.ApplyDuelDamage` 承伤减免 |
+| MissDamagePer / MissGetDamage | `ApplyDuelDamage` 闪避与反击 |
+| BloodSucking | `ApplyDuelDamage` 胜方按实际伤害回血（PVE 仅圣物侧，英雄侧 PVP 补上） |
+
+不支持（配了也不生效）：PVE 英雄侧未实现/死代码的（AttackBossDamage、ManyMonsterDamage、OneMonsterDamage、HpUnderDamage、FirstShowCardEveryLevel、KillingGetGold、KillingGetAttack、UnableReplyHp、GainDamageUpWhenHpDecreases、UnableCritical、RelicReplyHp、HolyLightBurning、UnableMissing、UnableReplyGetGold、MonsterNumDamage、HeroHpReplyEveryLevelEnding、RelicNumMax、KillingProbabilityTen 等）；PVP 1v1 无多目标概念的（AoeDamage、VersatilePerson、VersatilePersonUp、AoeDamageWhenAttack）。完整理由见 `PvpHeroRuntime.cs` 头注释。
+
+新英雄只复用上表已有类型时纯配表即生效；新 MechanismType 需在对应钩子加一行求和，并同步 `PvpHeroRuntime` 头注释与本节清单。口径由 `tests/Card.Domain.Tests/PvpHeroRuntimeTests.cs` 锁定。
 
 7. **新圣物加成先配表，再考虑加代码**  
    已有通道（倍率/加攻）× 已有计数（花色/牌型/点数）只改 `RelicEntryConfig`。新算法才在这里加分发，并加黄金用例。

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CardShare.Contracts;
 using CardShare.Contracts.Config;
 
@@ -12,48 +9,56 @@ namespace CardShare.Battle
     {
         public const int DefaultModeId = 1;
 
-        public static bool TryLoad(
-            IGameTables tables,
-            int modeId,
-            out PvpModeConfig mode,
-            out IReadOnlyList<PvpRoundConfig> rounds)
+        /// <summary>PvP 轮基础金币。野怪轮第 1 次 10，之后 20、25、30…</summary>
+        public const int PvpGoldBase = 15;
+
+        public const int FirstMonsterGroupId = 10011;
+        public const int MonsterGroupStep = 30;
+
+        public static bool TryLoad(IGameTables tables, int modeId, out PvpModeConfig mode)
+            => tables.TryGetPvpMode(modeId, out mode!);
+
+        /// <summary>第 1 轮野怪，之后每 3 场 PvP 插 1 轮野怪（1、5、9、13…）。没有轮次上限。</summary>
+        public static bool IsMonsterRound(int round)
+            => round >= 1 && (round - 1) % 4 == 0;
+
+        public static PvpFightKind Kind(PvpModeConfig mode, int round, int aliveCount)
         {
-            rounds = Array.Empty<PvpRoundConfig>();
-            if (!tables.TryGetPvpMode(modeId, out mode!))
-            {
-                return false;
-            }
-
-            rounds = tables.GetPvpRounds(modeId);
-            return rounds.Count > 0;
-        }
-
-        public static bool TryGetRound(IReadOnlyList<PvpRoundConfig> rounds, int round, out PvpRoundConfig row)
-        {
-            for (var i = 0; i < rounds.Count; i++)
-            {
-                if (rounds[i].Round == round)
-                {
-                    row = rounds[i];
-                    return true;
-                }
-            }
-
-            row = null!;
-            return false;
-        }
-
-        public static int LastRound(IReadOnlyList<PvpRoundConfig> rounds)
-            => rounds.Count == 0 ? 0 : rounds.Max(r => r.Round);
-
-        public static PvpFightKind EffectiveKind(PvpModeConfig mode, PvpRoundConfig row, int aliveCount)
-        {
-            if (row.FightKind == PvpFightKind.Monster && mode.SkipMonsterWhenTwoLeft && aliveCount == 2)
+            if (IsMonsterRound(round) && mode.SkipMonsterWhenTwoLeft && aliveCount == 2)
             {
                 return PvpFightKind.Pvp;
             }
 
-            return row.FightKind;
+            return IsMonsterRound(round) ? PvpFightKind.Monster : PvpFightKind.Pvp;
+        }
+
+        public static int GoldBase(int round)
+        {
+            if (!IsMonsterRound(round))
+            {
+                return PvpGoldBase;
+            }
+
+            var index = (round - 1) / 4;
+            return index == 0 ? 10 : 15 + 5 * index;
+        }
+
+        /// <summary>野怪组按 10011、10041、10071… 递增。表里没有更后面的组时，用已有的最高一组。</summary>
+        public static int MonsterGroup(IGameTables tables, int round)
+        {
+            var index = round < 1 ? 0 : (round - 1) / 4;
+            var id = FirstMonsterGroupId + MonsterGroupStep * index;
+            while (id >= FirstMonsterGroupId)
+            {
+                if (tables.TryGetMonsterGroup(id, out _))
+                {
+                    return id;
+                }
+
+                id -= MonsterGroupStep;
+            }
+
+            return FirstMonsterGroupId;
         }
     }
 }

@@ -24,6 +24,9 @@ namespace App.UI.Popup
     {
         private readonly List<ShopItem> _sellItems = new List<ShopItem>();
         private readonly List<ShopItem> _mineItems = new List<ShopItem>();
+        private readonly List<int> _mineRelicIds = new List<int>();
+        private readonly List<int> _mineLevels = new List<int>();
+        private readonly List<int> _mineCounts = new List<int>();
         private GameObject _sellTemplate;
         private GameObject _mineTemplate;
         private Transform _mineContent;
@@ -94,6 +97,10 @@ namespace App.UI.Popup
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
             Binding.BindText(GetNode<TMP_Text>("MaxNum"), ViewModel.CarryNum);
+            var addNewBtn = GetNode<Button>("AddNewBtn");
+            Binding.BindCommand(addNewBtn, ViewModel.AddNewCommand);
+            Binding.BindActive(addNewBtn.gameObject, ViewModel.ShowAddNew);
+            Binding.BindText(GetNode<TMP_Text>("AddNewNum"), ViewModel.AddNewNum);
 
             EnsureSellItems();
             EnsureMineItems();
@@ -251,7 +258,9 @@ namespace App.UI.Popup
                     relic,
                     ViewModel.GetRelicIcon(relic),
                     buyPrice: price,
-                    affordable: RelicMechanics.CanAfford(ViewModel.Session.Run, price));
+                    affordable: RelicMechanics.CanAfford(ViewModel.Session.Run, price),
+                    level: 1,
+                    count: ViewModel.Session.RelicOwnedCount(relic.Id));
             }
         }
 
@@ -262,8 +271,8 @@ namespace App.UI.Popup
                 return;
             }
 
-            var owned = ViewModel.Session.Run.RelicConfigIds;
-            var shown = owned.Count;
+            CollectMineRelics(ViewModel.Session.Run.RelicConfigIds);
+            var shown = _mineRelicIds.Count;
             while (_mineItems.Count < shown)
             {
                 _mineItems.Add(CloneItem(_mineTemplate, _mineContent, $"mineItem_{_mineItems.Count}", OnMineClicked, wrapForGrid: true));
@@ -278,7 +287,8 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                var relic = RelicConfig.Get(owned[i]);
+                var relicId = _mineRelicIds[i];
+                var relic = RelicConfig.Get(relicId);
                 if (relic == null)
                 {
                     SetSlotActive(item, false, _mineContent);
@@ -286,14 +296,73 @@ namespace App.UI.Popup
                 }
 
                 SetSlotActive(item, true, _mineContent);
-                item.Bind(relic, ViewModel.GetRelicIcon(relic), forSale: false);
-                ApplyIncomingMineVisibility(item);
+                item.Bind(
+                    relic,
+                    ViewModel.GetRelicIcon(relic),
+                    forSale: false,
+                    level: _mineLevels[i],
+                    count: _mineCounts[i]);
+                ApplyIncomingMineVisibility(item, i == LastMineIndex(relicId) && relicId == _pendingMineRevealId);
             }
 
             RebuildMineLayout();
         }
 
-        private void ApplyIncomingMineVisibility(ShopItem item)
+        private void CollectMineRelics(IReadOnlyList<int> owned)
+        {
+            _mineRelicIds.Clear();
+            _mineLevels.Clear();
+            _mineCounts.Clear();
+            if (owned == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < owned.Count; i++)
+            {
+                var relicId = owned[i];
+                if (relicId <= 0)
+                {
+                    continue;
+                }
+
+                var level = ViewModel.Session.RelicLevelAt(i);
+                var slot = -1;
+                for (var n = 0; n < _mineRelicIds.Count; n++)
+                {
+                    if (_mineRelicIds[n] == relicId && _mineLevels[n] == level)
+                    {
+                        slot = n;
+                        break;
+                    }
+                }
+
+                if (slot >= 0)
+                {
+                    _mineCounts[slot]++;
+                    continue;
+                }
+
+                _mineRelicIds.Add(relicId);
+                _mineLevels.Add(level);
+                _mineCounts.Add(1);
+            }
+        }
+
+        private int LastMineIndex(int relicId)
+        {
+            for (var i = _mineRelicIds.Count - 1; i >= 0; i--)
+            {
+                if (_mineRelicIds[i] == relicId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private void ApplyIncomingMineVisibility(ShopItem item, bool hideIncoming)
         {
             var cg = GetOrAddSlotCanvasGroup(item);
             if (cg == null)
@@ -301,7 +370,7 @@ namespace App.UI.Popup
                 return;
             }
 
-            var hide = _pendingMineRevealId > 0 && item.RelicConfigId == _pendingMineRevealId;
+            var hide = hideIncoming && _pendingMineRevealId > 0 && item.RelicConfigId == _pendingMineRevealId;
             cg.alpha = hide ? 0f : 1f;
             cg.blocksRaycasts = !hide;
             if (!hide)
@@ -320,16 +389,17 @@ namespace App.UI.Popup
                 return null;
             }
 
+            ShopItem found = null;
             for (var i = 0; i < _mineItems.Count; i++)
             {
                 var item = _mineItems[i];
                 if (item != null && item.RelicConfigId == relicId && item.gameObject.activeInHierarchy)
                 {
-                    return item;
+                    found = item;
                 }
             }
 
-            return null;
+            return found;
         }
 
         private void RebuildMineLayout()

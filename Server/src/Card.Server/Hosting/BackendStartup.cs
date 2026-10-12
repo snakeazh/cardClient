@@ -133,8 +133,17 @@ public static class BackendStartup
             log.LogInformation("Postgres connected in {ElapsedMs}ms. target={Target}", sw.ElapsedMilliseconds, target);
             await db.Database.EnsureCreatedAsync();
             // SaveVersion 已废弃（实体不再映射）：老库的 players 列保留，补默认值兼容不带该列的 INSERT。
+            // 新库 EnsureCreated 建的 players 没有该列，存在时才补默认值。
             await db.Database.ExecuteSqlRawAsync(
-                """ALTER TABLE players ALTER COLUMN "SaveVersion" SET DEFAULT 1;""");
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns
+                               WHERE table_name = 'players' AND column_name = 'SaveVersion') THEN
+                        ALTER TABLE players ALTER COLUMN "SaveVersion" SET DEFAULT 1;
+                    END IF;
+                END $$;
+                """);
             await db.Database.ExecuteSqlRawAsync(
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "ScoreTotal" integer NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync(

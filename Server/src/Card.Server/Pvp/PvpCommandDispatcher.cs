@@ -82,6 +82,16 @@ public sealed class PvpCommandDispatcher
         }
     }
 
+    /// <summary>房主侧 leave 处理：判负淘汰、发奖（放弃可能触发终局）、广播。本地无对局则静默丢。</summary>
+    public async Task ProcessLeaveAsync(Guid userId, WsEnvelope incoming, CancellationToken cancellationToken)
+    {
+        if (_matches.Leave(userId, out var match) && match != null)
+        {
+            await _rewards.GrantIfFinishedAsync(match, cancellationToken);
+            await BroadcastMatchAsync(match, incoming.Seq, cancellationToken);
+        }
+    }
+
     /// <summary>逐人发 match_update（先 DrainEvents 拿增量），再把事件逐条包 match_event 发给真人。</summary>
     public async Task BroadcastMatchAsync(PvpMatch match, long seq, CancellationToken cancellationToken)
     {

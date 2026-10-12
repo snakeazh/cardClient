@@ -128,6 +128,16 @@ namespace App.Talent
                 + SumHeroEntry(hero, MechanismType.HeroCritical)
                 + critBonus;
             var dodge = SumHeroEntry(hero, MechanismType.MissDamagePer) + dodgeBonus;
+            if (HeroHas(hero, MechanismType.UnableCritical))
+            {
+                crit = 0f;
+            }
+
+            if (HeroHas(hero, MechanismType.UnableMissing))
+            {
+                dodge = 0f;
+            }
+
             var hp = (hero != null ? Math.Max(0, hero.Hp) : 0) + hpBonus;
             return new HeroPanelStats(attack, crit, dodge, hp);
         }
@@ -176,6 +186,25 @@ namespace App.Talent
             }
 
             return sum;
+        }
+
+        private static bool HeroHas(HeroConfig hero, MechanismType type)
+        {
+            if (hero?.HeroEntryId == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < hero.HeroEntryId.Length; i++)
+            {
+                var entry = HeroEntryConfig.Get(hero.HeroEntryId[i]);
+                if (entry != null && entry.Type == type)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int Round(float value)

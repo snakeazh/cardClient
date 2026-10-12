@@ -22,7 +22,6 @@ namespace App.UI
         private const string DefaultClip = "ani_default";
         private const string MissClip = "ani_atk_lv03_miss";
         private const int DeathFxSortingOrder = 240;
-        private const float HeroSkillHitHold = 0.25f;
         /// <summary>角色特效所在世界平面 Z（与主相机对位用）。</summary>
         private const float FxPlaneZ = 0f;
 
@@ -54,6 +53,8 @@ namespace App.UI
         private Vector3 _impactAttackerPos;
         private AudioClip _impactSfx;
         private bool _disposed;
+        /// <summary>特效攻击受击：不播卡牌击退抖动（主目标与溅射）。</summary>
+        private bool _skillHitNoKnockback;
         private readonly Dictionary<string, GameObject> _heroFxPrefabs = new Dictionary<string, GameObject>(4);
         private readonly List<string> _heroFxOwnedKeys = new List<string>(4);
         private readonly List<GameObject> _skillFxSpawned = new List<GameObject>(4);
@@ -315,20 +316,28 @@ namespace App.UI
             }
 
             PlayClip(victim, Clip(_impactLevel, "hit"));
+            if (_skillHitNoKnockback)
+            {
+                return;
+            }
+
             var hitPos = _enemyRoots[visualSlot] != null ? _enemyRoots[visualSlot].position : Vector3.zero;
             InsertHitKnockback(_impactBeat, _enemyCardRects[visualSlot], _impactAttackerPos, hitPos);
         }
 
         /// <summary>
-        /// 玩家出刀：释放特效（投射物飞向目标 / 非投射物直接落在目标）→ 到点结算 + 命中特效。
+        /// 玩家出刀：释放特效 → 命中瞬间同时：结算 + 受击特效 + 受击动画 + 伤害字。
         /// 预制体未预载时返回 false，由调用方回退近战。
         /// </summary>
+        /// <param name="onHit">命中瞬间结算（扣血/溶解），不要在这里出伤害字。</param>
+        /// <param name="onHitDamageText">与受击动画同帧显示伤害数字。</param>
         public bool PlayHeroSkill(
             int visualSlot,
             int level,
             HeroEffectsConfig attackFx,
             HeroEffectsConfig hitFx,
             Func<bool> onHit,
+            Action onHitDamageText,
             Action onCollisionDone,
             Action onReturned,
             Action onDone,
@@ -349,25 +358,36 @@ namespace App.UI
 
             var token = ++_playToken;
             BeginPlay(timeScale);
+            _skillHitNoKnockback = true;
             var tuning = AttackTuningConfig.Instance;
             var beat = tuning.Level(level);
             var targetAnim = _enemyAnims[visualSlot];
-            // 击退用 UI 世界坐标；特效坐标在 SpawnSkillFx 内按预制体 Layer 再转换。
             var homeUi = _playerRoot.position;
             var hitUi = _enemyRoots[visualSlot].position;
             var wait = Mathf.Max(0f, attackFx.Time);
+            var t0 = Time.realtimeSinceStartup;
+            float Elapsed() => Time.realtimeSinceStartup - t0;
 
-            // 特效攻击不播近战抬起/冲刺卡牌动画，卡保持 default。
             PlayClip(_playerAnim, DefaultClip);
 
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
 
-            // 释放特效：投射物从攻击者飞向目标（Time=飞行时长）；
-            // 非投射物：rolepoint=1 生成在人物点，否则生成在目标，再等 Time。
-            if (IsProjectile(attackFx))
+            var projectile = IsProjectile(attackFx);
+            var rolePoint = IsRolePoint(attackFx);
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroSkill][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} " +
+                $"attack={attackFx.Effects} attackTime={wait:0.###} projectile={projectile} rolepoint={rolePoint} " +
+                $"hit={hitFx.Effects} hitTime={hitFx.Time:0.###}(仅参考/不作出字延迟) hpHold={tuning.HpTextHoldDuration:0.###}");
+
+            // 释放特效：投射物飞向目标；非投射物按 rolepoint 落点后等 Time。
+            if (projectile)
             {
                 var castGo = SpawnSkillFx(attackPrefab, homeUi, life: 0f);
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段1-释放(投射物) 生成={castGo != null} 飞行={Mathf.Max(0.01f, wait):0.###}s");
                 if (castGo != null)
                 {
                     var hitFxPos = ResolveFxWorldPos(attackPrefab, hitUi);
@@ -382,11 +402,15 @@ namespace App.UI
             }
             else
             {
-                var castUi = IsRolePoint(attackFx) ? homeUi : hitUi;
+                var castUi = rolePoint ? homeUi : hitUi;
                 SpawnSkillFx(attackPrefab, castUi, life: 0f);
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段1-释放(定点) pos={(rolePoint ? "人物" : "目标")} 等待 attackTime={wait:0.###}s");
                 _seq.AppendInterval(wait);
             }
 
+            // 命中瞬间：清释放特效 → 结算 + 受击特效 + 受击动画 + 伤害字（不等 Hit.Time）。
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -394,55 +418,41 @@ namespace App.UI
                     return;
                 }
 
-                var missed = PlayHeroSkillImpact(
-                    targetAnim,
-                    level,
-                    onHit,
-                    beat,
-                    _enemyCardRects[visualSlot],
-                    homeUi,
-                    hitUi);
+                AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2-命中开始 清释放特效");
+                ClearSkillFx();
+                var missed = PlayHeroSkillImpact(targetAnim, level, onHit, beat, homeUi);
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段2a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : "hit")}）");
                 if (!missed)
                 {
                     SpawnHitFx(hitPrefab, hitFx, homeUi, hitUi);
-                }
-            });
-            // 给受击动画留足时长（与 HoldVictimClipUntilDone 对齐），避免立刻被切回 idle。
-            var hitHold = Mathf.Max(
-                HeroSkillHitHold,
-                beat.HitHoldDuration,
-                ClipLength(targetAnim, Clip(level, "hit")));
-            _seq.AppendInterval(hitHold);
-            _seq.AppendCallback(() =>
-            {
-                if (token != _playToken)
-                {
-                    return;
+                    AppLog.Info(
+                        LogChannel.UI,
+                        $"[HeroSkill][t={Elapsed():0.000}] 阶段2b-受击特效 hit={hitFx.Effects}");
                 }
 
-                PlayVictimIdle(targetAnim);
-                for (var i = 0; i < _enemyAnims.Length; i++)
-                {
-                    if (i != visualSlot)
-                    {
-                        PlayVictimIdle(_enemyAnims[i]);
-                    }
-                }
-
-                PlayClip(_playerAnim, DefaultClip);
+                AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2c-出伤害字");
+                onHitDamageText?.Invoke();
+                AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2d-collisionDone/returned");
                 onCollisionDone?.Invoke();
-            });
-            _seq.AppendCallback(() =>
-            {
-                if (token != _playToken)
-                {
-                    return;
-                }
-
                 RestoreHitTarget();
                 onReturned?.Invoke();
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段3-伤害字停留 hpHold={tuning.HpTextHoldDuration:0.###}s");
             });
             _seq.AppendInterval(tuning.HpTextHoldDuration);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段4-清命中特效");
+                ClearSkillFx();
+            });
             _seq.OnComplete(() =>
             {
                 if (token != _playToken)
@@ -450,6 +460,7 @@ namespace App.UI
                     return;
                 }
 
+                AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段5-结束 onDone");
                 SetAllAnimSpeed(1f);
                 onDone?.Invoke();
             });
@@ -733,15 +744,13 @@ namespace App.UI
             return false;
         }
 
-        /// <summary>特效攻击命中：不播攻击方抬起/收招；敌人播受击/miss，并持有至片段结束。</summary>
+        /// <summary>特效攻击命中：结算；MISS 播闪避；命中播受击动画（与特效/伤害字同帧）。无击退。</summary>
         private bool PlayHeroSkillImpact(
             Animator victim,
             int level,
             Func<bool> onHit,
             AttackTuningConfig.LevelTuning beat,
-            RectTransform hitRect,
-            Vector3 attackerWorldPos,
-            Vector3 targetWorldPos)
+            Vector3 attackerWorldPos)
         {
             _impactLevel = level;
             _impactBeat = beat;
@@ -758,7 +767,6 @@ namespace App.UI
             var hitClip = Clip(level, "hit");
             PlayClip(victim, hitClip);
             HoldVictimClipUntilDone(victim, hitClip);
-            InsertHitKnockback(beat, hitRect, attackerWorldPos, targetWorldPos);
             return false;
         }
 
@@ -879,9 +887,9 @@ namespace App.UI
                 return;
             }
 
-            // 非投射物：rolepoint=1 落在人物点，否则落在目标。
+            // 非投射物：rolepoint=1 落在人物点，否则落在目标；存活到下次清理。
             var spawnUi = IsRolePoint(hitFx) ? attackerUi : targetUi;
-            SpawnSkillFx(prefab, spawnUi, hitFx.Time);
+            SpawnSkillFx(prefab, spawnUi, life: 0f);
         }
 
         private static bool IsProjectile(HeroEffectsConfig fx)
@@ -1189,6 +1197,7 @@ namespace App.UI
             ClearSkillFx();
             SetAllAnimSpeed(1f);
             _playTimeScale = 1f;
+            _skillHitNoKnockback = false;
         }
 
         private void BeginPlay(float timeScale)

@@ -39,6 +39,15 @@ namespace App.Bootstrap
         [Tooltip("关闭后不连服务器：启动跳过登录，闯关走本地局（PVP/商店云端等不可用）")]
         [SerializeField] private bool enableServerConnection = true;
 
+        [Tooltip("HTTP API 与 PVP WebSocket 共用同一主机（ws/wss 由 BaseUrl 推导）")]
+        [SerializeField] private GameApiServerEndpoint serverEndpoint = GameApiServerEndpoint.RemoteDefault;
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效：IP 或域名，不含 http:// 与端口")]
+        [SerializeField] private string customServerHost = "127.0.0.1";
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效")]
+        [SerializeField] private int customServerPort = GameApiSettings.DefaultPort;
+
         private AppServicesHost _services;
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
@@ -56,7 +65,14 @@ namespace App.Bootstrap
         private async void Start()
         {
             QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = -1;
+            // 启动期先锁 60，防高刷屏在配置表加载前满负载空烧；
+            // 配置加载后 ApplyFrameRate 按平台放开（仅微信安卓保持 60）
+            Application.targetFrameRate = 60;
+            // 帧率 HUD 恢复（Debug/性能 菜单写存的开关；Development 构建真机常开，便于性能排查）
+            if (PlayerPrefs.GetInt(App.UI.FpsHud.PrefKey, 0) != 0 || Debug.isDebugBuild)
+            {
+                App.UI.FpsHud.Show();
+            }
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();
@@ -128,6 +144,7 @@ namespace App.Bootstrap
             await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
 
             await ConfigTables.LoadAsync(_resources.Resources);
+            ApplyFrameRate();
             UnityGameConfigLoader.LoadFromAppConfig();
             CardShare.Battle.HandEvaluator.Tables = UnityGameConfigLoader.Current;
             await PortraitLoader.PreloadAsync(_resources.Resources);
@@ -177,6 +194,32 @@ namespace App.Bootstrap
             await _ui.UI.Open(_services.Resolve<HomeViewModel>());
             await _services.Resolve<NavigationViewModel>().EnsureShown();
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
+        }
+
+        /// <summary>按平台应用目标帧率（须在配置表加载后调用）：
+        /// 微信小游戏（wx.getDeviceInfo().platform）安卓锁 60——WebGL 上非 15/30/60 的值会走
+        /// setTimeout 空转耗电，60 走 rAF 分片最稳，且需同步调 wx.setPreferredFramesPerSecond 生效；
+        /// 其余微信环境不限帧（iOS 由 rAF 平台级封顶 60，devtools 全速便于测试）；
+        /// 非微信（Editor/原生包）不限帧，跟随屏幕刷新率。</summary>
+        private void ApplyFrameRate()
+        {
+            QualitySettings.vSyncCount = 0;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            var device = WeChatWASM.WX.GetDeviceInfo();
+            var platform = device != null ? device.platform : null;
+            if (string.Equals(platform, "android", StringComparison.OrdinalIgnoreCase))
+            {
+                Application.targetFrameRate = 60;
+                WeChatWASM.WX.SetPreferredFramesPerSecond(60);
+            }
+            else
+            {
+                Application.targetFrameRate = -1;
+            }
+#else
+            Application.targetFrameRate = -1;
+#endif
+            AppLog.Info(LogChannel.Config, $"[Boot] targetFrameRate={Application.targetFrameRate}");
         }
 
         private static async Task RegisterAtlas(
@@ -315,6 +358,14 @@ namespace App.Bootstrap
         private async Task ConnectAndPrepareAsync()
         {
             GameApiSettings.Enabled = enableServerConnection;
+            GameApiSettings.BaseUrl = GameApiSettings.ResolveBaseUrl(
+                serverEndpoint,
+                customServerHost,
+                customServerPort);
+            AppLog.Info(
+                LogChannel.Net,
+                $"server endpoint={serverEndpoint}, BaseUrl={GameApiSettings.BaseUrl}, " +
+                $"WebSocket={GameApiSettings.WebSocketUrl}, enabled={GameApiSettings.Enabled}");
 
             var client = new GameApiClient(_services.Resolve<ISaveService>());
             _services.Register(client);
@@ -327,10 +378,7 @@ namespace App.Bootstrap
             }
 
             var dialogs = _services.Resolve<IDialogService>();
-            await PveSessionGate.ConnectWithRetryAsync(
-                dialogs,
-                SystemInfo.deviceUniqueIdentifier,
-                "Editor");
+            await PveSessionGate.ConnectWithRetryAsync(dialogs);
         }
 
         private static void LogConfigSmoke()

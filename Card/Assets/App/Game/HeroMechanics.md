@@ -3,14 +3,11 @@
 路径：`Card/Assets/App/Game/HeroMechanics.cs`  
 命名空间：`App.Game`
 
-`HeroConfig.HeroEntryId` 指向 `HeroEntryConfig` 词条（`MechanismType` + `Value`）。一个英雄可挂多条（如狠人 `10002` + `100021`）。  
-数据源是开局写入的 `Run.HeroId`，不要另读选角进度。收藏禁用只禁遗物，英雄词条始终生效。
-
-词条数值以 `HeroEntryConfig.Value` 为准（描述文案与表不一致时不改表）。狠人 / 武林高手暴击 = `HeroConfig.Critical` + 词条 `HeroCritical`（当前 5% + 15% = 20%）。
+`HeroConfig.HeroEntryId` 指向 `HeroEntryConfig` 词条（`MechanismType` + `Value`）。数值以 `Value` 为准。数据源是开局写入的 `Run.HeroId`。收藏禁用不禁用英雄词条。
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。遗物：[`RelicMechanics.md`](RelicMechanics.md)。天赋：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
 
-不要用已删除的枚举残留名 `MaxHp` / `EveryRoundHpUp` / `TwoThreeFive`。血上限用 `HeroHpMax`，回合回血用 `HeroHpReplyEveryRoundEnding`，235 用 `SpecialTwoThreeFive`。
+PVP 不走这套多目标结算。暗灵攻击特效多段播放未接，资源也不在 `Res/Effect/Character/`。
 
 ---
 
@@ -18,54 +15,55 @@
 
 | 表 | 路径 | 用途 |
 |----|------|------|
-| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、`HeroEntryId[]`、`HeroEffects[]` |
+| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、暴击伤害、`HeroEntryId[]`、`HeroEffects[]` |
 | HeroEntryConfig | `Res/Config/HeroEntryConfig.json` | 词条：`Type` + `Value` |
 | HeroEffectsConfig | `Res/Config/HeroEffectsConfig.json` | 出刀演出：`Type` + `IsProjectile` + `rolepoint` + `Effects` + `Time` |
 
-访问：`HeroConfig.Get(id)` / `HeroEntryConfig.Get(id)` / `HeroEffectsConfig.Get(id)`。Excel 源在仓库 `Config/`。
-
-`HeroMechanics.SumValue` / `Roll` / `SumDamagePercent` / `SumMultiplierExtra` / `BuyPrice` / `ShopWeight` 只扫当前英雄词条。与天赋、遗物同类 Type 在 `GameSession` 挂钩点相加。
-
-`HeroEffects` **只驱动玩家出刀演出**（替换冲刺近战），不改数值结算：
-- `IsProjectile != 0`：特效从攻击者飞向目标，`Time` 为飞行时长（到点结算）
-- `IsProjectile == 0` 且 `rolepoint == 1`：直接生成在人物点
-- `IsProjectile == 0` 且 `rolepoint == 0`：直接生成在目标
-- 释放行的 `Time` 为等待/飞行时长；`TryResolveEffects` 解析不出 Attack+Hit 或预制体未就绪时回退近战；敌人来打仍走近战。
+`HeroEffects` 只驱动玩家出刀演出，不改数值。`TryResolveEffects` 取第一条 Attack 和第一条 Hit；解析不出或预制体未就绪时回退近战。
 
 ---
 
-## 2. MechanismType
+## 2. 当前英雄
 
 | 英雄 | Type | 时机 | 行为 |
 |------|------|------|------|
-| 大壮 | HeroTakeDamagePer | 挨打 | 先加遗物/天赋 `HeroTakeDamage`，再 `× (1 + Value)`。怪物攻击数字仍是减伤前；飘字 `TakenDamage` 和实际扣血都是减伤后，飘字不按剩余血量截断；未闪避时至少 1 |
-| 狠人 | Damage | `ComputeAttackDamage` | 并入 `dmgPercent`：`伤害 × (1 + 天赋百分比 + Value)` |
-| 狠人 / 武林高手 | HeroCritical | `ComputeAttackDamage` | 加在 `HeroConfig.Critical` 和天赋暴击率之后 |
-| 多面手 | VersatilePerson | `ApplyPendingAttackHits` | 主目标满伤，其余存活敌人 `round(伤害 × Value)`。与溅射斩比例叠加 |
-| 射手 | ExtraAttackOneTime | `ApplyPendingAttackHits` | Value 概率对同一主目标再打一刀满伤。第二刀不触发溅射/AOE；目标已死扣 0 |
-| 大嗓门 | AoeDamage | `ApplyPendingAttackHits` | 对所有存活敌人各打 `round(原伤害 × Value)`，主目标也不再吃 100%。有 AOE 时跳过溅射 |
-| 富豪 | InitialFunds | `StartNewRun` | 与天赋富裕相加 |
-| 武林高手 | MissDamagePer | `ApplyDamage` 打玩家 | Value 概率本击 0 伤（覆盖至少 1 的保底） |
-| 赌神 | RubbingCardsNum | `ResetSkillCharges` | 与遗物搓牌次数相加 |
-| 暴发户 | EpicLegendRelicProUp | `PickWeightedRelic` | 史诗/传说权重 `× (1 + Value)` |
-| 关系户 | RelicPricePer | 购买价 | `round(Price × (1 + Value))`，下限 0。不改售价 |
-| 经济教授 | GetGoldAfterLevel | `EnterShop` | `GetGold × (1 + Value)`，再加击杀数 × `KillMonsterGetGold`，然后广告双倍翻整笔 |
-| 死灵法师 | AttackBossDamage | `ComputeAttackDamage` | `SumDamagePercent`：目标 `MonsterType` 为 Elite 或 Boss 时并入 `dmgPercent`。天赋同 Type 仍只吃 Boss |
-| 裁决使 | KillingProbabilityTen | `ComputeAttackDamage` | 非领主且攻击前血量 &lt; 10%：天赋概率 + 英雄概率求和后掷一次，成功则伤害至少等于剩余血量 |
-| 亡命徒 | HpUnderDamage | `ComputeAttackDamage` | 玩家血量 &lt; 20%（`TalentBalance.LowHpRatio`）时并入 `dmgPercent` |
-| 囤货王 | RelicNumMax | `RelicCarryMax` | 与天赋同 Type 相加 |
-| 阴阳师 | PerspectiveNum | `ResetSkillCharges` | 与遗物透视次数相加；HUD max 同步 |
-| 营养师 | HeroHpReplyEveryLevelEnding | 通关回血 | 与天赋同 Type 相加，按 `MaxHp × Value` 回血 |
-| 拾荒者 | KillingGetGold | 击杀敌人 | 立刻 `AddGold(Value)` |
-| 修炼者 | KillingGetAttack | 击杀敌人 | `PermanentAttackBonus` + Value，并同步 `Player.Attack`（本局永久） |
-| 决斗大师 | OneMonsterDamage | `ComputeAttackDamage` | 存活敌人 == 1 时并入 `dmgPercent` |
-| 孩子王 | ManyMonsterDamage | `ComputeAttackDamage` | 存活敌人 &gt; 1 时并入 `dmgPercent` |
-| 急性子 | FirstShowCardEveryLevel | `ComputeAttackDamage` | 每关第一轮比牌时倍率 +Value（`SumMultiplierExtra`） |
-| 锦鲤 | （无词条） | 面板 / 暴击 | 只靠 `HeroConfig.Critical` / `CriticalDamage`，无 `HeroEntryId` |
+| 平凡之人 | （无词条） | 面板 | 只用 `Hp` / `HeroDamage` / `Critical` / `CriticalDamage` |
+| 猎人 | HeroTakeDamagePer | 挨打 | `× (1 + Value)`，与遗物承伤相加。未闪避时至少 1 |
+| 猎人 | ExtraAttackOneTime | 出手 | Value 概率对同一主目标再打一刀满伤 |
+| 暗灵法师 | VersatilePerson | 出手 | 主目标满伤，其余存活敌人 `round(伤害 × Value)`。有群体时跳过 |
+| 暗灵法师 | VersatilePersonUp | 击杀 | 每 `Value[0]` 次击杀（当前 1）增加分裂比例：普通 `Value[1]`，精英/领主 `Value[2]`。本局累计，下一刀生效 |
+| 暗灵法师 | UnableCritical | 面板 / 出手 | 天赋和圣物暴击加完后归零。选角面板同样归零 |
+| 狂战士 | GainDamageUpWhenHpDecreases | 出手 | `floor(已损失生命 / Value[0])` 层，每层 `Value[1]`，上限 `Value[2]`，加进伤害百分比 |
+| 狂战士 | BloodSucking | 造成伤害后 | 与圣物吸血比例相加，按实际伤害回血。不受「无法圣物回血」影响 |
+| 狂战士 | UnableReplyHp | 圣物治疗 | 圣物治疗为 0。天赋回血和英雄吸血仍生效 |
+| 盗贼 | KillingGetAttack | 击杀 | `PermanentAttackBonus` 和当前攻击 +Value，本局保留 |
+| 盗贼 | AoeDamageWhenAttack | 出手 | 当前攻击 `>= Value[0]` 时，本次伤害 100% 打所有存活敌人，跳过单体和分裂 |
+| 盗贼 | AttackBossDamage | 出手 | 目标为精英或领主时并入伤害百分比。天赋同 Type 仍只吃领主 |
+| 灰烬术士 | AoeDamage | 出手 | 对所有存活敌人各打 `round(原伤害 × Value)`，主目标不再吃 100% |
+| 灰烬术士 | （面板） | 暴击 | `Critical` 15%，`CriticalDamage` 1.5 |
+| 萨满祭司 | AttackBossDamage | 出手 | 同盗贼，数值为正 |
+| 萨满祭司 | RelicReplyHp | 圣物治疗 | 治疗量 `× (1 + Value)` 后再回血 |
+| 萨满祭司 | MonsterNumDamage | 发牌前 | 伤害 = 存活敌人数 × `Value[0]`。走承伤百分比，不走闪避和反击。致死则本手不再发牌，关卡失败 |
+| 圣骑士 | HeroTakeDamagePer | 挨打 | 同猎人，数值为负 |
+| 圣骑士 | HolyLightBurning | 发牌前 / 对子获胜后 | 见下文 |
+| 圣骑士 | UnableMissing | 面板 / 挨打 | 天赋和圣物闪避加完后归零。选角面板同样归零 |
+| 旅者 | RelicPricePer | 购买价 | `round(Price × (1 + Value))`，下限 0。不改售价 |
+| 旅者 | KillingGetGold | 击杀 | 立刻 `AddGold(Value)`，不走圣物金币禁止 |
+| 旅者 | UnableReplyGetGold | 圣物加金币 | 圣物效果的正数金币不加。卖圣物、关卡结算、天赋金币、击杀金币仍加 |
+| 武僧 | MissDamagePer | 面板 / 挨打 | 加进闪避率 |
+| 武僧 | MissGetDamage | 闪避成功 | 次数 `Value[0]`、倍率 `Value[1]`，伤害 = `round(攻击 × 倍率 × 次数)` |
+| 武僧 | RubbingCardsNum | 技能次数 | 与遗物相加，`ResetSkillCharges` 夹到不低于 0 |
 
-`Damage` 名字过泛，按枚举 Id 84 使用即可。英雄词条 Id 与遗物词条 Id 都从 10001 起，但是两张表，没有冲突。
+面板血、攻、暴击率、暴击伤害来自 `HeroConfig`，再加天赋。实战暴击率和闪避率再加圣物与层数，最后才套「无法暴击 / 无法闪避」。
 
-敌人类型：进关时写入 `SeatState.MonsterType`（来自 `LevelMonster.Type`），供死灵法师判定精英。
+圣光燃烧 `Value` = 每手开始次数、攻击力比例、每次之后的加成：
+
+- 发牌前发动 `Value[0]` 次。把敌人清光则不再发牌，进入本关结算。
+- 玩家亮牌是对子并且这场比牌获胜时，致胜攻击（含追击）打完后再发动 1 次。主目标先吃正常伤害。
+- 当前这一发伤害 = `round(当前攻击 × Value[1] × (1 + 已发动次数 × Value[2]))`，然后次数 +1。
+- 已发动次数 × `Value[2]` 加进后续出手的伤害百分比。
+
+精英/领主判定读进关时写入的 `SeatState.MonsterType`。
 
 ---
 
@@ -73,15 +71,17 @@
 
 | 时机 | 方法 |
 |------|------|
-| 开局金币 | `StartNewRun` |
-| 造成伤害百分比 / 暴击 / 斩杀 / 条件加伤 / 首轮倍率 | `ComputeAttackDamage` |
-| AOE / 溅射 / 额外一刀 | `ApplyPendingAttackHits`（受击开始）；无演出时 `FinishPlayerAttack` 兜底 |
-| 受伤百分比 | `ApplyDamage`；演出飘字读 `TakenDamage` |
-| 闪避 | `ApplyDamage` |
-| 击杀金币 / 击杀加攻 | `ApplyDamage` → `ApplyHeroKillRewards` |
-| 搓牌 / 透视次数 | `ResetSkillCharges` |
-| 通关回血 | `ApplyTalentStageEndHeal`（含英雄） |
-| 通关金币 | `EnterShop`（GetGold × 经济教授 + 击杀加成，再双倍） |
-| 圣物携带上限 | `RelicCarryMax` |
-| 商店权重 | `PickWeightedRelic` |
-| 购买价 | `BuyShopRelic` / `EffectiveBuyPrice`；货架 UI 同步显示折后价 |
+| 精英/领主加减伤、掉血加伤、圣光层数 | `ComputeAttackDamage` |
+| 群体 / 分裂 / 攻击达阈值变群体 | `ApplyPlayerAttackHits` |
+| 追击 | `BeginPlayerAttack` → `ShouldRollExtraAttack` |
+| 承伤百分比 | `IncomingDamageAfterMitigation` |
+| 无法暴击 / 无法闪避 | `ResolveLivePlayerPanel`；选角 `TalentBonusManager.Evaluate` |
+| 吸血 | `ApplyBloodSucking` |
+| 圣物治疗 | `HealFromRelic` |
+| 圣物加金币 | `AddRelicGold` |
+| 击杀金币 / 击杀加攻 / 分裂成长 | `ApplyDamage` → `ApplyHeroKillRewards` |
+| 闪避反击 | `ApplyDodgeCounter` |
+| 发牌前受伤 / 回合开始圣光燃烧 | `StartRound` → `ApplyRoundStartHeroMechanics` |
+| 对子获胜后的圣光燃烧 | `FinishPlayerAttack` → `TryCastPendingHolyLight` |
+| 购买价 | `BuyShopRelic` / `HeroMechanics.BuyPrice` |
+| 搓牌次数 | `ResetSkillCharges` |

@@ -116,7 +116,8 @@ namespace App.UI
 
             card.gameObject.SetActive(false);
             card.ClearClicked();
-            card.SetSelected(false);
+            // force 绕过幂等缓存强制复位（上任视图可能直接动过缩放/颜色）
+            card.SetSelected(false, force: true);
             card.transform.localScale = Vector3.one;
             card.ShowQualityFx(QualityType.Ordinary);
             card.SetLevel(null);
@@ -135,7 +136,8 @@ namespace App.UI
             }
 
             card.gameObject.SetActive(false);
-            card.SetSelectLift(false, HeroItem.SelectAnim, HeroItem.DefaultAnim);
+            // force 绕过幂等缓存强制复位（上任视图可能直接动过动画/位置）
+            card.SetSelectLift(false, HeroItem.SelectAnim, HeroItem.DefaultAnim, force: true);
             var button = card.GetComponent<Button>();
             if (button != null)
             {

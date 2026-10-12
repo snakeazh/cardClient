@@ -47,6 +47,11 @@ namespace CardShare.Contracts.Config
         public int[] MechanismId;
 
         /// <summary>
+        /// 羁绊ID
+        /// </summary>
+        public int[] BindingID;
+
+        /// <summary>
         /// 解锁条件ID
         /// </summary>
         public int UnlockConditionId;
@@ -57,14 +62,14 @@ namespace CardShare.Contracts.Config
         public int UseType;
 
         /// <summary>
-        /// 描述
-        /// </summary>
-        public string Desc;
-
-        /// <summary>
         /// 特殊描述
         /// </summary>
         public string SpecialDesc;
+
+        /// <summary>
+        /// 描述
+        /// </summary>
+        public string Desc;
 
     }
 }

@@ -89,6 +89,10 @@ public sealed class PvpBusSubscriber : BackgroundService
             {
                 await _dispatcher.ProcessSyncAsync(message.UserId, message.Envelope, CancellationToken.None);
             }
+            else if (t == WsMessageTypes.Leave)
+            {
+                await _dispatcher.ProcessLeaveAsync(message.UserId, message.Envelope, CancellationToken.None);
+            }
         }
         catch (Exception ex)
         {

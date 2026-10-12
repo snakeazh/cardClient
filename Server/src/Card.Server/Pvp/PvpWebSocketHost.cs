@@ -149,9 +149,9 @@ public static class PvpWebSocketHost
                     continue;
                 }
 
-                if (t == WsMessageTypes.Cancel || t == WsMessageTypes.Leave)
+                if (t == WsMessageTypes.Cancel)
                 {
-                    matches.Leave(userId.Value);
+                    // 只退排队，不动对局。
                     var evt = matchmaker.Cancel(userId.Value);
                     await SendAsync(socket, new WsEnvelope { T = t, Seq = incoming.Seq }, cancellationToken);
                     if (evt != null)
@@ -163,6 +163,14 @@ public static class PvpWebSocketHost
                             0,
                             cancellationToken);
                     }
+
+                    continue;
+                }
+
+                if (t == WsMessageTypes.Leave)
+                {
+                    await HandleLeaveAsync(socket, router, matches, dispatcher, matchmaker, userId.Value, incoming, cancellationToken);
+                    continue;
                 }
             }
         }
@@ -212,6 +220,39 @@ public static class PvpWebSocketHost
         }
 
         await dispatcher.ProcessBattleAsync(userId, incoming, cancellationToken);
+    }
+
+    /// <summary>本实例收到 leave：本地有对局则直接判负淘汰，否则经总线转发房主（无总线 = 纯排队取消）；随后 ack + 退队列。</summary>
+    private static async Task HandleLeaveAsync(
+        WebSocket socket,
+        PvpMessageRouter router,
+        PvpMatchHost matches,
+        PvpCommandDispatcher dispatcher,
+        IPvpMatchmaker matchmaker,
+        Guid userId,
+        WsEnvelope incoming,
+        CancellationToken cancellationToken)
+    {
+        if (matches.TryGet(userId, out _))
+        {
+            await dispatcher.ProcessLeaveAsync(userId, incoming, cancellationToken);
+        }
+        else
+        {
+            await router.PublishCommandAsync(Guid.Empty, userId, incoming, cancellationToken);
+        }
+
+        var evt = matchmaker.Cancel(userId);
+        await SendAsync(socket, new WsEnvelope { T = WsMessageTypes.Leave, Seq = incoming.Seq }, cancellationToken);
+        if (evt != null)
+        {
+            await dispatcher.BroadcastRosterAsync(
+                evt.Recipients,
+                WsMessageTypes.QueueUpdate,
+                evt.Players,
+                0,
+                cancellationToken);
+        }
     }
 
     /// <summary>本实例收到 sync：本地是房主则直接处理，否则经总线转发房主（无总线时回 not_in_battle）。</summary>

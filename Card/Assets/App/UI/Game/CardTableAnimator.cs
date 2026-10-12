@@ -296,10 +296,40 @@ namespace App.UI
                 return;
             }
 
+            SyncIdleFloat();
             SyncAllFaces(session);
             SyncSelectLift(session);
             SyncSeeThrough(session);
             SyncRubSelectFx(session);
+        }
+
+        /// <summary>
+        /// 空闲漂浮兜底断言：己方已落位手牌开、搓牌锁定中的关；
+        /// 选中的牌开加成（幅度/摆动略微增大）。显式开关在落位/搓牌各入口已做，
+        /// 这里覆盖漏网路径（如 PVP PendingRubIndex 直接变化）与选中态变化。
+        /// </summary>
+        private void SyncIdleFloat()
+        {
+            if (_player == null)
+            {
+                return;
+            }
+
+            var seat = _session != null ? _session.Player : null;
+            for (var i = 0; i < _player.Items.Length; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var rubLocked = i == _rubLockIndex ||
+                                (_session != null && _session.PendingRubIndex == i);
+                var floating = _player.Landed[i] && !rubLocked;
+                item.SetIdleFloat(floating);
+                item.SetIdleFloatBoosted(floating && seat != null && seat.IsCardSelected(i));
+            }
         }
 
         /// <summary>
@@ -452,11 +482,13 @@ namespace App.UI
                 : item.transform.position;
             BringRubCardToFront(index);
             SetPlayerChangeSelectFx(false);
+            item.SetIdleFloat(false);
             item.PlayChangeReplaceFx();
             TintPlayerCard(index, Color.white);
             PlayRubSfx();
 
-            var revealAt = Time.realtimeSinceStartup + RubReplaceRevealDelay;
+            // 揭示等待用 scaled 时钟：倍速（Time.timeScale）下节奏同步加快；realtime 会拖满真实 1.5s。
+            var revealAt = Time.time + RubReplaceRevealDelay;
             _ = RunRubReplaceAsync(index, item, token, applyReplaceAsync, revealAt, onComplete);
         }
 
@@ -477,6 +509,7 @@ namespace App.UI
 
                 item.HideChangeCardFx();
                 RestoreRubCardLayer(index);
+                item.SetIdleFloat(true);
                 _rubLockIndex = -1;
                 _rubPlaying = false;
                 _rubSeq = null;
@@ -562,7 +595,7 @@ namespace App.UI
                 }
             }
 
-            var wait = revealAt - Time.realtimeSinceStartup;
+            var wait = revealAt - Time.time;
             if (wait > 0.01f)
             {
                 var hold = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -605,6 +638,7 @@ namespace App.UI
             var lifted = _rubRestWorldPos + SelectOffset(_player);
             SyncSlotShadow(_player, index, true);
             BringRubCardToFront(index);
+            item.SetIdleFloat(false);
             item.MoveTo(lifted, SelectLiftDuration, Ease.OutQuad).OnUpdate(FollowRubShadow);
             FollowRubShadow();
             TintPlayerCard(index, Color.white);
@@ -753,6 +787,7 @@ namespace App.UI
             var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
             RestoreRubCardLayer(index);
             item.HideDragEffects();
+            item.SetIdleFloat(true);
             item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
                 .OnUpdate(() => FollowRubShadowAt(index))
                 .OnComplete(() =>
@@ -794,6 +829,7 @@ namespace App.UI
 
             RestoreRubCardLayer(index);
             item.SetDragEffectVisible(false);
+            item.SetIdleFloat(true);
             if (_rubSuccessFxShown)
             {
                 item.HideDragSuccessLater();
@@ -1393,6 +1429,11 @@ namespace App.UI
 
                 SnapToPoint(item, point);
                 view.Landed[cardIndex] = true;
+                if (view.IsPlayer)
+                {
+                    // 呼吸波浪：只有己方手牌落位后开启，相位按 index 错开形成波浪；敌人牌不漂。
+                    item.SetIdleFloat(true, cardIndex * item.IdleFloatPhaseStep);
+                }
             });
         }
 

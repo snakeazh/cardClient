@@ -35,6 +35,9 @@ namespace CardShare.Battle
 
         public float PracticeMagForever { get; init; }
 
+        /// <summary>命运羁绊永久倍率。</summary>
+        public float BindingMagForever { get; init; }
+
         public int DefeatMagStacks { get; init; }
 
         public int GoldSpentThisRun { get; init; }
@@ -144,6 +147,8 @@ namespace CardShare.Battle
                 mag += snapshot.PracticeMagForever;
             }
 
+            mag += snapshot.BindingMagForever;
+
             return new RelicCombatResult(mag, attack, parts);
         }
 
@@ -195,7 +200,7 @@ namespace CardShare.Battle
                 case MechanismType.NoSkill:
                     return snapshot.PeekLeft == 0 && snapshot.XRayLeft == 0 && snapshot.ReplaceLeft == 0 ? value : 0f;
                 case MechanismType.EveryRelic:
-                    return snapshot.RelicIds.Count * value;
+                    return UniqueRelicCount(snapshot.RelicIds) * value;
                 case MechanismType.NoUseRubbingEveryRubbingNum:
                     return snapshot.PeekLeft * value;
                 case MechanismType.AccumulatedNumOfCardType:
@@ -587,10 +592,11 @@ namespace CardShare.Battle
             Action<RelicConfig, List<RelicEntryConfig>> action)
         {
             var ids = snapshot.RelicIds;
+            var seen = new HashSet<int>();
             for (var i = 0; i < ids.Count; i++)
             {
                 var relicId = ids[i];
-                if (relicId <= 0 || disabled.Contains(relicId) || !tables.TryGetRelic(relicId, out var relic))
+                if (relicId <= 0 || !seen.Add(relicId) || disabled.Contains(relicId) || !tables.TryGetRelic(relicId, out var relic))
                 {
                     continue;
                 }
@@ -618,6 +624,25 @@ namespace CardShare.Battle
             }
 
             return list;
+        }
+
+        private static int UniqueRelicCount(IReadOnlyList<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return 0;
+            }
+
+            var seen = new HashSet<int>();
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] > 0)
+                {
+                    seen.Add(ids[i]);
+                }
+            }
+
+            return seen.Count;
         }
 
         private static HashSet<int> ToSet(IReadOnlyList<int> ids)

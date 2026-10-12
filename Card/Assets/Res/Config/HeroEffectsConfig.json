@@ -8,11 +8,43 @@
     "Time": 1.5
   },
   {
+    "Id": 102,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 1,
+    "Effects": "Aoshufeidan01",
+    "Time": 1.5
+  },
+  {
+    "Id": 103,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "Aoshufeidan02",
+    "Time": 1.5
+  },
+  {
+    "Id": 104,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "Aoshufeidan03",
+    "Time": 0.4
+  },
+  {
     "Id": 201,
     "Type": 1,
     "IsProjectile": 0,
     "rolepoint": 0,
     "Effects": "HeroAttackFenlie01",
     "Time": 0.4
+  },
+  {
+    "Id": 202,
+    "Type": 1,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "Aoshufeidan04",
+    "Time": 0.45
   }
 ]

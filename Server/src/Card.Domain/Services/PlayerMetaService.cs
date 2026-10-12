@@ -69,6 +69,13 @@ public sealed class PlayerMetaService
             return ProfileMapper.ToDto(profile);
         }, cancellationToken);
 
+    public Task<PlayerProfileDto> UnlockHeroAsync(Guid userId, int heroId, CancellationToken cancellationToken)
+        => _session.MutateAsync(userId, profile =>
+        {
+            profile.UnlockHero(heroId, _config);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
     public Task<PlayerProfileDto> DebugGrantGoldAsync(Guid userId, int amount, CancellationToken cancellationToken)
         => _session.MutateAsync(userId, profile =>
         {

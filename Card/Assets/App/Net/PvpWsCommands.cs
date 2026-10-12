@@ -131,6 +131,13 @@ namespace App.Net
         public override Task ExecuteAsync(PvpMatchSession session) => session.ShopRefreshAsync();
     }
 
+    public sealed class PvpWsUnlockRelicSlotCommand : PvpWsCommand
+    {
+        public override string Name => "unlock_slot";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.UnlockRelicSlotAsync();
+    }
+
     public sealed class PvpWsShopDoneCommand : PvpWsCommand
     {
         public override string Name => "shop_done";
@@ -197,6 +204,8 @@ namespace App.Net
         public Task EnqueueShopSell(int relicId) => Enqueue(new PvpWsShopSellCommand(relicId));
 
         public Task EnqueueShopRefresh() => Enqueue(new PvpWsShopRefreshCommand());
+
+        public Task EnqueueUnlockRelicSlot() => Enqueue(new PvpWsUnlockRelicSlotCommand());
 
         public Task EnqueueShopDone() => Enqueue(new PvpWsShopDoneCommand());
 

@@ -1221,11 +1221,11 @@ namespace App.UI
                 forfeitNoRevive);
         }
 
-        private async Task<bool> ShowCommonTopAsync()
+        private async Task<bool> ShowCommonTopAsync(string tip = null)
         {
             var registration = _ui.Registry.GetByViewModelType(typeof(CommonTopViewModel));
             var popup = (CommonTopViewModel)_ui.Registry.CreateViewModel(registration);
-            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup);
+            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup, tip);
         }
 
         private async void OnBack()
@@ -1237,7 +1237,7 @@ namespace App.UI
 
             if (Session.IsPvp)
             {
-                var confirmed = await ShowCommonTopAsync();
+                var confirmed = await ShowCommonTopAsync("退出后将无法重新连入当前局，是否确定？");
                 if (!confirmed || !IsOpen)
                 {
                     return;

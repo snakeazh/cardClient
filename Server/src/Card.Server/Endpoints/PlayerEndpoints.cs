@@ -21,5 +21,7 @@ public static class PlayerEndpoints
             => Results.Json(await meta.ConsumeBagAsync(http.RequireUserId(), request.ItemId, request.Amount, ct)));
         v1.MapPost("/guide/complete", async (HttpContext http, GuideCompleteRequest request, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.CompleteGuideAsync(http.RequireUserId(), request.GroupId, ct)));
+        v1.MapPost("/hero/unlock", async (HttpContext http, HeroUnlockRequest request, PlayerMetaService meta, CancellationToken ct)
+            => Results.Json(await meta.UnlockHeroAsync(http.RequireUserId(), request.HeroId, ct)));
     }
 }

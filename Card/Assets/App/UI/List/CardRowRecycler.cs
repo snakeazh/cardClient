@@ -1,10 +1,23 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace App.UI.List
 {
+    /// <summary>recycler 的分帧兜底驱动：限租后仍有行待补时，由 LateUpdate 在后续帧继续补。
+    /// 仅供 CardRowRecycler 运行时使用，无序列化字段。</summary>
+    internal sealed class CardRowRecyclerDriver : MonoBehaviour
+    {
+        internal Action Tick;
+
+        private void LateUpdate()
+        {
+            Tick?.Invoke();
+        }
+    }
+
     /// <summary>
     /// 分区块卡片行的竖向虚拟化列表（纯 C#，由 View 持有并随 View 生命周期销毁）：
     /// 每个区块 = 一条横幅（常驻克隆）+ 若干卡片行，行只在视口范围（含上下缓冲行）内生成，
@@ -12,10 +25,24 @@ namespace App.UI.List
     /// Content 上的布局组件（VerticalLayoutGroup / ContentSizeFitter / GridLayoutGroup）会被停用，
     /// 行位置与 Content 高度改由本组件计算；要求 Content 顶部锚、水平拉伸（标准 ScrollRect 结构）。
     /// 行按索引排 sibling 顺序，负间距重叠式 Grid「后行盖前行」与原单 Grid 行为一致。
+    /// 快速滚动一帧可能跨多行，单帧租多行 = 整卡重绑 + rebatch 集中在一帧（真机实测 48ms 尖峰），
+    /// 每帧最多补 MaxRentsPerFrame 行，剩余由驱动组件在后续帧分摊（RowBuffer 缓冲掩盖延迟）。
     /// </summary>
     public sealed class CardRowRecycler<TItem> : IDisposable
     {
-        private const int RowBuffer = 1;
+        // 滚动方向预生成的缓冲行数：快速滑动时提前把行建好，避免每滑过一行都触发
+        // 租行+整卡重绑（SetActive 一棵卡树 + Canvas rebatch）的一帧尖峰
+        private const int RowBuffer = 3;
+
+        // 单帧最多租入的行数（快速甩动时把重绑分摊到多帧）；SetSections 首次填充不受此限。
+        // 实测 1 与 2 的 max 尖峰无差（尖峰主因在触摸期每帧 raycast），1 会让快速滚动出现
+        // 空白行，体感更差，故取 2
+        private const int MaxRentsPerFrame = 2;
+
+        private static readonly ProfilerMarker MarkerUpdate = new ProfilerMarker("CardRowRecycler.UpdateVisible");
+        private static readonly ProfilerMarker MarkerRent = new ProfilerMarker("CardRowRecycler.RentRow");
+        private static readonly ProfilerMarker MarkerBind = new ProfilerMarker("CardRowRecycler.BindRow");
+        private static readonly ProfilerMarker MarkerRecycle = new ProfilerMarker("CardRowRecycler.RecycleRow");
 
         public sealed class Section
         {
@@ -68,6 +95,10 @@ namespace App.UI.List
         private float _contentPaddingBottom;
         private float _stride = 300f;
         private float _contentHeight;
+        private CardRowRecyclerDriver _driver;
+        private int _rentFrame = -1;
+        private int _rentsThisFrame;
+        private bool _pendingRent;
 
         public void Initialize(
             ScrollRect scroll,
@@ -136,6 +167,10 @@ namespace App.UI.List
 
             _scroll.onValueChanged.RemoveListener(OnScroll);
             _scroll.onValueChanged.AddListener(OnScroll);
+
+            // 分帧补行的兜底驱动（限租后惯性滑行期间 onValueChanged 之外继续补）
+            _driver = _scroll.gameObject.AddComponent<CardRowRecyclerDriver>();
+            _driver.Tick = OnDriverTick;
         }
 
         public void SetSections(IReadOnlyList<Section> sections)
@@ -216,7 +251,7 @@ namespace App.UI.List
                 _content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0f, top));
             }
 
-            UpdateVisible();
+            UpdateVisible(burst: true);
         }
 
         /// <summary>收集当前生成中的卡槽（View 据此刷新选中态等）。</summary>
@@ -243,6 +278,12 @@ namespace App.UI.List
             {
                 _scroll.onValueChanged.RemoveListener(OnScroll);
             }
+
+            if (_driver != null)
+            {
+                UnityEngine.Object.Destroy(_driver);
+                _driver = null;
+            }
         }
 
         private void OnScroll(Vector2 _)
@@ -250,12 +291,22 @@ namespace App.UI.List
             UpdateVisible();
         }
 
-        private void UpdateVisible()
+        private void OnDriverTick()
+        {
+            if (_pendingRent)
+            {
+                UpdateVisible();
+            }
+        }
+
+        private void UpdateVisible(bool burst = false)
         {
             if (_scroll == null || _content == null)
             {
                 return;
             }
+
+            using var markerScope = MarkerUpdate.Auto();
 
             if (_rows.Count == 0)
             {
@@ -310,6 +361,16 @@ namespace App.UI.List
                 RecycleRow(_recycleBuffer[i]);
             }
 
+            // 单帧租行限额（burst=首次/整表填充不限）：一帧租多行会把整卡重绑+rebatch
+            // 集中到同一帧（真机实测 48ms 尖峰），限流后剩余行由 Driver 在后续帧补齐
+            if (_rentFrame != Time.frameCount)
+            {
+                _rentFrame = Time.frameCount;
+                _rentsThisFrame = 0;
+            }
+
+            var rented = false;
+            var throttled = false;
             for (var index = first; index <= last; index++)
             {
                 if (_active.ContainsKey(index))
@@ -317,23 +378,42 @@ namespace App.UI.List
                     continue;
                 }
 
+                if (!burst && _rentsThisFrame >= MaxRentsPerFrame)
+                {
+                    throttled = true;
+                    break;
+                }
+
                 var view = RentRow();
                 _active[index] = view;
                 BindRow(view, _rows[index]);
+                rented = true;
+                _rentsThisFrame++;
             }
 
-            // 行按索引排 sibling，保证重叠式 Grid 的叠放方向与原单 Grid 一致（后行盖前行）
-            _recycleBuffer.Clear();
-            _recycleBuffer.AddRange(_active.Keys);
-            _recycleBuffer.Sort();
-            for (var i = 0; i < _recycleBuffer.Count; i++)
+            _pendingRent = throttled;
+
+            // 行按索引排 sibling，保证重叠式 Grid 的叠放方向与原单 Grid 一致（后行盖前行）。
+            // 只在租入新行时重排：纯滚动帧（行集合不变）不再排序，也不产生 Keys 集合分配
+            if (rented)
             {
-                _active[_recycleBuffer[i]].Root.SetAsLastSibling();
+                _recycleBuffer.Clear();
+                foreach (var pair in _active)
+                {
+                    _recycleBuffer.Add(pair.Key);
+                }
+
+                _recycleBuffer.Sort();
+                for (var i = 0; i < _recycleBuffer.Count; i++)
+                {
+                    _active[_recycleBuffer[i]].Root.SetAsLastSibling();
+                }
             }
         }
 
         private RowView RentRow()
         {
+            using var markerScope = MarkerRent.Auto();
             while (_pool.Count > 0)
             {
                 var pooled = _pool.Pop();
@@ -365,6 +445,7 @@ namespace App.UI.List
 
         private void BindRow(RowView view, Row row)
         {
+            using var markerScope = MarkerBind.Auto();
             view.Root.anchoredPosition = new Vector2(0f, -row.Top);
             var items = _sections[row.SectionIndex].Items;
             while (view.Slots.Count < row.Count)
@@ -401,6 +482,7 @@ namespace App.UI.List
 
         private void RecycleRow(int index)
         {
+            using var markerScope = MarkerRecycle.Auto();
             if (!_active.TryGetValue(index, out var view))
             {
                 return;

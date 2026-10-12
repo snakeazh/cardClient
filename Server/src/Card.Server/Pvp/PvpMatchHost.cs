@@ -165,19 +165,26 @@ public sealed class PvpMatchHost
         }
     }
 
-    public void Leave(Guid userId)
+    /// <summary>离开对局：在局且存活则判负淘汰（Abandon），随后解除映射。返回 true = 有对局变化需广播，match 为该对局；纯排队/对局已结束则只清映射。</summary>
+    public bool Leave(Guid userId, out PvpMatch? match)
     {
         lock (_gate)
         {
-            if (!_byUser.Remove(userId, out var match))
+            match = null;
+            if (!_byUser.Remove(userId, out var found))
             {
-                return;
+                return false;
+            }
+
+            if (found.Abandon(userId.ToString("N")))
+            {
+                match = found;
             }
 
             var stillSeated = false;
             foreach (var pair in _byUser)
             {
-                if (ReferenceEquals(pair.Value, match))
+                if (ReferenceEquals(pair.Value, found))
                 {
                     stillSeated = true;
                     break;
@@ -186,8 +193,10 @@ public sealed class PvpMatchHost
 
             if (!stillSeated)
             {
-                _byRoom.Remove(match.RoomId);
+                _byRoom.Remove(found.RoomId);
             }
+
+            return match != null;
         }
     }
 }

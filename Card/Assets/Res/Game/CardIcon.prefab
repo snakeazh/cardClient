@@ -110,6 +110,15 @@ MonoBehaviour:
   CardDragSuccessEffect: {fileID: 5398217308811808724}
   backRenderer: {fileID: 70993717205349809}
   frontTransparentRenderer: {fileID: 180746053289002404}
+  idleFloatAmplitude: 0.03
+  idleFloatPeriod: 4
+  idleFloatSwayDegrees: 2.6
+  idleFloatSwayLag: 0.8
+  idleFloatBlendDuration: 0.6
+  idleFloatBoostAmpFactor: 1
+  idleFloatBoostSwayFactor: 1.5
+  idleFloatPhaseStep: 1.15
+  idleFloatBoostBlendDuration: 0.35
 --- !u!1 &4464075292584615947
 GameObject:
   m_ObjectHideFlags: 0

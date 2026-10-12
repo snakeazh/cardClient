@@ -191,6 +191,51 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int PvpHeroHpBoostPercent;
 
+        /// <summary>
+        /// PVP圣物槽位解锁所需金币
+        /// </summary>
+        public int[] PVPRelicNumNeedGold;
+
+        /// <summary>
+        /// PVP玩家初始携带圣物数量
+        /// </summary>
+        public int PVPRelicInitialRelicNum;
+
+        /// <summary>
+        /// PVP普通圣物重复数量
+        /// </summary>
+        public int PVPOrdinaryRelicNum;
+
+        /// <summary>
+        /// PVP稀有圣物重复数量
+        /// </summary>
+        public int PVPRareRelicNum;
+
+        /// <summary>
+        /// PVP史诗圣物重复数量
+        /// </summary>
+        public int PVPEpicRelicNum;
+
+        /// <summary>
+        /// PVP传说圣物重复数量
+        /// </summary>
+        public int PVPLegendRelicNum;
+
+        /// <summary>
+        /// PVP连胜/连败金币奖励(从5连胜/连败开始都是100)
+        /// </summary>
+        public int[] PVPWinningStreakGoldNum;
+
+        /// <summary>
+        /// PVP每拥有多少金币就额外提供多少利息
+        /// </summary>
+        public int[] PVPGoldInterestNum;
+
+        /// <summary>
+        /// PVP拥有多少金币是利息达到峰值
+        /// </summary>
+        public int PVPGoldInterestNumMax;
+
     }
 }
 

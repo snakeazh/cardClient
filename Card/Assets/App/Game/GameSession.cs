@@ -260,14 +260,22 @@ namespace App.Game
 
         /// <summary>
         /// 站在 player1 中心的敌人：只剩 1 个活人就站中间；2 个时第一个开牌的站中间；
-        /// 3 个拼牌时当前对手站中间。攻击演出未结束时，当前目标即使刚死也占住位置。
+        /// 3 个拼牌时当前对手站中间。攻击演出未结束时，当前目标/来源即使刚死也占住位置
+        /// （含出刀与挨打，避免反弹/反击斩杀后 Sync 换中）。
         /// </summary>
         public SeatState CenterStandEnemy
         {
             get
             {
-                if (AttackPlaying && !IncomingAttack)
+                if (AttackPlaying)
                 {
+                    // 出刀锁主目标；挨打锁攻击来源。刚死也占中，直到 CompletePlayerAttack。
+                    var held = IncomingAttack ? _pendingDamageSource : _pendingAttackTarget;
+                    if (held != null && held.ActiveInStage && !held.IsPlayer)
+                    {
+                        return held;
+                    }
+
                     var attacking = EnemyAtVisualSlot(AttackVisualSlot);
                     if (attacking != null && attacking.ActiveInStage)
                     {
@@ -292,6 +300,12 @@ namespace App.Game
                         return current != null && current.Alive ? current : FirstAliveEnemy();
                     }
 
+                    // 下一局前保持上一手最后占中的对手，避免先跳到 FirstAlive 再开牌换回来。
+                    if (_pendingOpenTarget != null && _pendingOpenTarget.Alive)
+                    {
+                        return _pendingOpenTarget;
+                    }
+
                     return FirstAliveEnemy();
                 }
 
@@ -302,6 +316,12 @@ namespace App.Game
                 {
                     var current = DisplayedEnemy;
                     return current != null && current.Alive ? current : null;
+                }
+
+                // 三人局下注间隙同样保持上一手占中，与下一轮队首对齐。
+                if (_pendingOpenTarget != null && _pendingOpenTarget.Alive)
+                {
+                    return _pendingOpenTarget;
                 }
 
                 return null;
@@ -1412,7 +1432,8 @@ namespace App.Game
 
             _playingExtraAttack = true;
             LastAttackMissed = false;
-            TakenDamage = Math.Max(0, PendingAttackDamage);
+            var pending = Math.Max(0, PendingAttackDamage);
+            TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             Hint = $"追击 {target.Name}！";
             Notify();
             return true;
@@ -1444,7 +1465,8 @@ namespace App.Game
             _pendingAttackTarget = target;
             _pendingDamageSource = Player;
             AttackVisualSlot = FindVisualSlot(target);
-            AttackDamage = Math.Max(0, PendingAttackDamage);
+            var pending = Math.Max(0, PendingAttackDamage);
+            AttackDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             TakenDamage = AttackDamage;
             LastAttackMissed = false;
             ResetAttackWaves();
@@ -1731,11 +1753,19 @@ namespace App.Game
             IncomingAttack = false;
             SelectingXRayTarget = false;
             SelectingRubTarget = false;
+            // 上一手最后占中且仍存活的对手排第一，避免下一轮开牌时突然换中。
+            var prefer = _pendingOpenTarget;
+            if (prefer != null && prefer.Alive)
+            {
+                _compareQueue.Add(prefer);
+            }
+
             for (var i = 0; i < Enemies.Length; i++)
             {
-                if (Enemies[i].Alive)
+                var enemy = Enemies[i];
+                if (enemy != null && enemy.Alive && !ReferenceEquals(enemy, prefer))
                 {
-                    _compareQueue.Add(Enemies[i]);
+                    _compareQueue.Add(enemy);
                 }
             }
 
@@ -1859,7 +1889,13 @@ namespace App.Game
                 TryApplyPermanentCardBonuses(openScore);
                 PendingAttackDamage = damage;
                 AttackLevel = MapAttackLevel(openScore.Type);
-                LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {damage} 伤害";
+                var shown = damage;
+                if (opener != null && opener.IsPlayer)
+                {
+                    shown += BindingBonus(damage);
+                }
+
+                LastResult = $"{HandDrama(openScore.Type)}！你的{openScore.Label}压过 {target?.Name} 的{targetScore.Label}，造成 {shown} 伤害";
                 Log(LastResult);
                 Phase = GamePhase.WaitingAttack;
                 IncomingAttack = false;
@@ -2243,6 +2279,15 @@ namespace App.Game
             var resultLine = formulaDamage == damage
                 ? $"  {effective} x {totalMag} = {damage}"
                 : $"  {effective} x {totalMag} = {formulaDamage} → {damage}";
+            var bondBase = IsPvp ? formulaDamage : damage;
+            var bond = attacker.IsPlayer ? BindingBonus(bondBase) : 0;
+            if (bond > 0)
+            {
+                resultLine += IsPvp
+                    ? $" | 羁绊+{bond}"
+                    : $" | 羁绊+{bond} = {damage + bond}";
+            }
+
             if (attacker.IsPlayer && talentDamage != 0)
             {
                 var sign = talentDamage > 0 ? "+" : string.Empty;
@@ -2438,10 +2483,10 @@ namespace App.Game
 
         /// <summary>
         /// 可携带圣物上限：PVE 为 <see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
-        /// PVP 为已解锁槽位（开局 4，最多 10），以服务端快照为准。
+        /// PVP 为已解锁槽位，以服务端快照为准；快照未到时用 GameConst.PVPRelicInitialRelicNum。
         /// </summary>
         public int RelicCarryMax => IsPvp
-            ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : 4)
+            ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : CardShare.Battle.PvpRelicBag.InitialSlots(GameConst.IsLoaded ? GameConst.Instance : null))
             : GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
 
         /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>
@@ -2504,7 +2549,7 @@ namespace App.Game
             return powers[index];
         }
 
-        /// <summary>该圣物当前占了几格。三合一之后是 1 格 LV3，不再按 3 份计。</summary>
+        /// <summary>该圣物当前占了几格。每份占一格。</summary>
         public int RelicOwnedCount(int relicId)
         {
             if (relicId <= 0 || Run.RelicConfigIds == null)
@@ -6007,6 +6052,18 @@ namespace App.Game
             StartRound();
         }
 
+        /// <summary>PVE：玩家打出的每一击，在闪避和免疫之后按已达成羁绊附加伤害。PVP 由服务端结算。</summary>
+        private int BindingBonus(int damage)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || Run?.RelicConfigIds == null)
+            {
+                return 0;
+            }
+
+            return CardShare.Battle.PvpRelicBindings.BonusDamage(tables, Run.RelicConfigIds, damage);
+        }
+
         private int ApplyDamage(SeatState target, int damage, bool main, SeatState attacker = null)
         {
             if (target == null)
@@ -6110,6 +6167,11 @@ namespace App.Game
                     ApplyLifeSiphon(attacker, survived);
                     return survived;
                 }
+            }
+
+            if (attacker != null && attacker.IsPlayer && !IsPvp && damage > 0 && target != null && !target.IsPlayer)
+            {
+                damage += BindingBonus(damage);
             }
 
             if (damage <= 0)

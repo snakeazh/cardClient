@@ -47,10 +47,13 @@ public class PvpHeroRuntimeTests
     public void VampireMitigatesIncomingDamage()
     {
         var match = Open(PvpTestTables.WithHeroEntries(pvpOnly: true), heroId: 2, hp: 1000);
+        PvpMatchTests.AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
         var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
+        var hpA = a.Hp;
+        var hpB = b.Hp;
 
         match.Showdown(a.UserId);
         match.Showdown(bId);
@@ -58,7 +61,7 @@ public class PvpHeroRuntimeTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        var scaled = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
+        var scaled = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * match.Round));
         var expected = Math.Max(0, (int)Math.Round(scaled * (1f - 0.25f)));
         if (expected > 0)
         {
@@ -67,8 +70,8 @@ public class PvpHeroRuntimeTests
 
         var loser = PvpBattleTable.SameUser(LoserId(duel, snap.Winners[0]), a.UserId) ? a : b;
         var winner = ReferenceEquals(loser, a) ? b : a;
-        Assert.Equal(1000 - expected, loser.Hp);
-        Assert.Equal(1000, winner.Hp);
+        Assert.Equal((ReferenceEquals(loser, a) ? hpA : hpB) - expected, loser.Hp);
+        Assert.Equal(ReferenceEquals(winner, a) ? hpA : hpB, winner.Hp);
         Assert.Equal(expected, match.ViewFor(a.UserId).DuelDamage);
     }
 
@@ -76,10 +79,13 @@ public class PvpHeroRuntimeTests
     public void MonkDodgesFullDamageAndCountersAttacker()
     {
         var match = Open(PvpTestTables.WithHeroEntries(pvpOnly: true), heroId: 4, hp: 1000);
+        PvpMatchTests.AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
         var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
+        var hpA = a.Hp;
+        var hpB = b.Hp;
 
         match.Showdown(a.UserId);
         match.Showdown(bId);
@@ -92,8 +98,8 @@ public class PvpHeroRuntimeTests
         // 100% 闪避：败方不掉血；反击 = round(防守方攻击 10 × 2 × 1) = 20 打给胜方。
         var loser = PvpBattleTable.SameUser(LoserId(duel, snap.Winners[0]), a.UserId) ? a : b;
         var winner = ReferenceEquals(loser, a) ? b : a;
-        Assert.Equal(1000, loser.Hp);
-        Assert.Equal(1000 - 20, winner.Hp);
+        Assert.Equal(ReferenceEquals(loser, a) ? hpA : hpB, loser.Hp);
+        Assert.Equal((ReferenceEquals(winner, a) ? hpA : hpB) - 20, winner.Hp);
         Assert.Equal(0, match.ViewFor(a.UserId).DuelDamage);
     }
 
@@ -101,6 +107,7 @@ public class PvpHeroRuntimeTests
     public void BerserkerLifestealsByActualDamageOnWin()
     {
         var match = Open(PvpTestTables.WithHeroEntries(pvpOnly: true), heroId: 5, hp: 100);
+        PvpMatchTests.AdvanceToPvpFight(match);
         foreach (var fighter in match.Fighters)
         {
             fighter.Hp = 50;
@@ -117,7 +124,7 @@ public class PvpHeroRuntimeTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        var scaled = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * 1));
+        var scaled = (int)Math.Floor(snap.Damages[snap.Winners[0]] * (1f + 0.1f * match.Round));
         var dealt = Math.Min(50, scaled);
         var heal = Math.Max(0, (int)Math.Round(dealt * 0.5f));
 
@@ -159,6 +166,7 @@ public class PvpHeroRuntimeTests
     public void MerchantWinnerGoldScalesBaseGoldByGetGoldAfterLevel()
     {
         var match = Open(PvpTestTables.WithHeroEntries(pvpOnly: true), heroId: 3);
+        PvpMatchTests.AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
@@ -172,19 +180,19 @@ public class PvpHeroRuntimeTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        // 基础金 15 × (1 + 0.2) = 18，只放大基础项。开局 230 的利息是 20。连胜 1 不加奖。
-        const int winGold = 18 + 20 * (3 + 1 + 1) + 20;
-        const int loseGold = (18 + 20 * (3 + 1 + 1)) / 2 + 20;
+        // 基础金 15 × (1 + 0.2) = 18，只放大基础项。连胜 1 不加奖。利息按发奖前金币。
+        var winBody = 18 + 20 * (3 + 1 + 1);
+        var loseBody = winBody / 2;
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
-            Assert.Equal(goldA + winGold, a.Gold);
-            Assert.Equal(goldB + loseGold, b.Gold);
+            Assert.Equal(goldA + winBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldB + loseBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
         }
         else
         {
-            Assert.Equal(goldB + winGold, b.Gold);
-            Assert.Equal(goldA + loseGold, a.Gold);
+            Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
         }
     }
 

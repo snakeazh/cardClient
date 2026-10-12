@@ -39,7 +39,7 @@ namespace CardShare.Contracts
         /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
         public int[] RelicIds { get; set; } = System.Array.Empty<int>();
 
-        /// <summary>与 RelicIds 对齐。1 = 普通携带，3 = 三合一。</summary>
+        /// <summary>与 RelicIds 对齐。每份为 1。</summary>
         public int[] RelicPower { get; set; } = System.Array.Empty<int>();
 
         /// <summary>当前已解锁槽位数。</summary>
@@ -87,7 +87,7 @@ namespace CardShare.Contracts
 
         public int[] OwnedRelicIds { get; set; } = System.Array.Empty<int>();
 
-        /// <summary>与 OwnedRelicIds 对齐。1 = 普通，3 = 三合一。</summary>
+        /// <summary>与 OwnedRelicIds 对齐。每份为 1。</summary>
         public int[] OwnedRelicPower { get; set; } = System.Array.Empty<int>();
 
         public int[] OwnedSellPrices { get; set; } = System.Array.Empty<int>();

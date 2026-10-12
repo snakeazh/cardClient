@@ -22,6 +22,7 @@ namespace App.Config
                 throw new ArgumentNullException(nameof(resources));
             }
 
+            var bindingConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BindingConfig);
             var bossEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BossEntryConfig);
             var collectionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.CollectionConfig);
             var dialogueGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.DialogueGroupConfig);
@@ -46,6 +47,7 @@ namespace App.Config
             var talentEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentEntryConfig);
             var unlockConditionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.UnlockConditionConfig);
 
+            BindingConfig.Load(ConfigJson.FromArrayJson<BindingConfig>(bindingConfigAsset.text));
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
             DialogueGroupConfig.Load(ConfigJson.FromArrayJson<DialogueGroupConfig>(dialogueGroupConfigAsset.text));

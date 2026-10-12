@@ -4,6 +4,68 @@
 namespace CardShare.Contracts.Config
 {
     /// <summary>
+    /// 由 EnumConfig.xlsx 生成的 BindingType 枚举。
+    /// </summary>
+    public enum BindingType
+    {
+        /// <summary>
+        /// 每回合开始,英雄攻击力会永久+1,可一直叠加
+        /// </summary>
+        BronzeBook = 1,
+
+        /// <summary>
+        /// 每次攻击时,提供的倍率永久+0.5,可一直叠加
+        /// </summary>
+        SilverBook = 2,
+
+        /// <summary>
+        /// 触发暴击时,会对目标造成1次英雄当前攻击力500%的雷霆斩击
+        /// </summary>
+        Leiting = 3,
+
+        /// <summary>
+        /// 攻击时,会随机将本次亮出数字牌的其中1张在后续永久获得强化,在后续亮出的牌中每包含1张强化过的数字牌,就有10%的概率使自身无视比牌规则直接获胜
+        /// </summary>
+        LuckyNumber = 4,
+
+        /// <summary>
+        /// 每亮出1次人头牌,就会叠加1层[权力],达到15层后敌人亮牌将有50%概率不会攻击自己,而是攻击其他敌人
+        /// </summary>
+        NobilityPower = 5,
+
+        /// <summary>
+        /// 进行的每次消费行为都会使你后续造成的伤害永久提高2.5%
+        /// </summary>
+        MagicCoin = 6,
+
+        /// <summary>
+        /// 每次回复生命时,如果场上有敌人,则会对所有敌人造成1次当前恢复生命值的伤害
+        /// </summary>
+        BloodCeremony = 7,
+
+        /// <summary>
+        /// 拥有1次复活机会,且每次受到伤害后都会使对方在下回合受到[沉默](无法比牌,直接判负)
+        /// </summary>
+        CurseSilence = 8,
+
+        /// <summary>
+        /// 攻击时会额外追加1次,且追加的攻击也会触发其他效果(比如暴击),但伤害效益降低至60%
+        /// </summary>
+        DoubleAttack = 9,
+
+        /// <summary>
+        /// 每次使用技能都会随机获得以下属性之一:攻击力永久+3,生命+10,暴击率永久+1%
+        /// </summary>
+        RandomAttribute = 10,
+
+        /// <summary>
+        /// 你的技能会被禁用,但不影响技能次数带来的各种收益,且你的牌型无论输赢,总是会对对方造成技能总次数x攻击力的伤害
+        /// </summary>
+        DisableSkill = 11,
+
+    }
+
+    /// <summary>
     /// 由 EnumConfig.xlsx 生成的 BossEntryType 枚举。
     /// </summary>
     public enum BossEntryType

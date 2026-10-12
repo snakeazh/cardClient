@@ -12,7 +12,6 @@ namespace App.Bootstrap.Editor
         private SerializedProperty _serverEndpoint;
         private SerializedProperty _customServerHost;
         private SerializedProperty _customServerPort;
-        private SerializedProperty _allowIosHighFrameRate;
 
         private void OnEnable()
         {
@@ -20,7 +19,6 @@ namespace App.Bootstrap.Editor
             _serverEndpoint = serializedObject.FindProperty("serverEndpoint");
             _customServerHost = serializedObject.FindProperty("customServerHost");
             _customServerPort = serializedObject.FindProperty("customServerPort");
-            _allowIosHighFrameRate = serializedObject.FindProperty("allowIosHighFrameRate");
         }
 
         public override void OnInspectorGUI()
@@ -48,10 +46,6 @@ namespace App.Bootstrap.Editor
             EditorGUILayout.HelpBox(
                 $"Play 时将使用：\nHTTP  {resolved}\nWS    {ws}",
                 MessageType.Info);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("帧率", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_allowIosHighFrameRate);
 
             serializedObject.ApplyModifiedProperties();
         }

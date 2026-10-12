@@ -118,7 +118,7 @@ namespace CardShare.Battle
                 OwnedRelicPower = ownedPower,
                 OwnedSellPrices = ownedSellPrices,
                 RelicSlots = fighter.RelicSlots,
-                NextSlotCost = PvpRelicBag.NextSlotCost(fighter.RelicSlots),
+                NextSlotCost = PvpRelicBag.NextSlotCost(tables.GameConst, fighter.RelicSlots),
                 Done = fighter.ShopDone
             };
         }

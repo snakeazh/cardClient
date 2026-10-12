@@ -210,11 +210,15 @@ namespace App.UI.Popup
         }
 
         /// <summary>卡槽数据绑定（行复用时反复调用）：品质边框（遗物页=RelicConfig.Type，缺图回退普通品质）、
-        /// 未解锁黑剪影（同天赋列表口径）、刷新选中态。</summary>
+        /// 未解锁黑剪影（同天赋列表口径）、刷新选中态。仅遗物页会建 ItemCard 槽
+        /// （收藏页 CollectSCView 已删、怪物页走 PlayerItem）。</summary>
         private void BindCardSlot(Component slot, IllustratedBookEntry entry)
         {
             var card = (ItemCard)slot;
             card.ApplyQuality(entry.Quality);
+            // 已解锁条目常驻品质特效（Item 预制体内嵌实例，激活即循环播，同天赋列表口径）；
+            // 未解锁黑剪影不亮。ShowQualityFx 先清场再点亮，槽位复用切品质不叠加
+            card.ShowQualityFx(entry.Unlocked ? entry.Quality : QualityType.Ordinary);
             card.Bind(entry.Unlocked ? entry.Name : null, GetIcon(entry), entry.Unlocked);
             card.SetIconColor(entry.Unlocked ? Color.white : Color.black);
             _entries[card] = entry;

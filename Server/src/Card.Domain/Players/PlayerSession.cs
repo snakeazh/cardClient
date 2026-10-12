@@ -33,6 +33,7 @@ public sealed class PlayerSession
         }
 
         profile.ApplyDailyReset(_config, _clock.UtcNow);
+        profile.SyncUnlockedHeroes(_config);
         return profile;
     }
 
@@ -50,6 +51,7 @@ public sealed class PlayerSession
         }
 
         var dirty = profile.ApplyDailyReset(_config, _clock.UtcNow);
+        dirty |= profile.SyncUnlockedHeroes(_config);
         var result = project(profile);
         if (dirty)
         {

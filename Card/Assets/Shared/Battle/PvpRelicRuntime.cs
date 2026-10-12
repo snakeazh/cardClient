@@ -629,18 +629,16 @@ namespace CardShare.Battle
 
         private static void ForEachEntry(IGameTables tables, PvpFighter fighter, Action<RelicConfig, RelicEntryConfig> action)
         {
+            var seen = new HashSet<int>();
             for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
             {
-                if (!tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic))
+                var relicId = fighter.OwnedRelicIds[i];
+                if (relicId <= 0 || !seen.Add(relicId) || !tables.TryGetRelic(relicId, out var relic))
                 {
                     continue;
                 }
 
-                var power = PvpRelicBag.PowerAt(fighter, i);
-                for (var n = 0; n < power; n++)
-                {
-                    ForEachRelicEntry(tables, relic, entry => action(relic, entry));
-                }
+                ForEachRelicEntry(tables, relic, entry => action(relic, entry));
             }
         }
 

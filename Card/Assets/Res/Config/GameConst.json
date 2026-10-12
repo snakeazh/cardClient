@@ -41,5 +41,30 @@
   "TalentNeedChestGold": 50,
   "EverySkillProvideGold": 20,
   "PvpBotFillDelaySeconds": 10,
-  "PvpHeroHpBoostPercent": 1300
+  "PvpHeroHpBoostPercent": 1300,
+  "PVPRelicNumNeedGold": [
+    40,
+    60,
+    80,
+    100,
+    120,
+    150
+  ],
+  "PVPRelicInitialRelicNum": 4,
+  "PVPOrdinaryRelicNum": 3,
+  "PVPRareRelicNum": 3,
+  "PVPEpicRelicNum": 3,
+  "PVPLegendRelicNum": 3,
+  "PVPWinningStreakGoldNum": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "PVPGoldInterestNum": [
+    100,
+    10
+  ],
+  "PVPGoldInterestNumMax": 500
 }

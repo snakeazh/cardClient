@@ -88,5 +88,29 @@ namespace CardShare.Battle
 
         /// <summary>圣光燃烧已发动次数。本局保留，后续出手按这个次数加伤。</summary>
         public int HolyLightCasts { get; set; }
+
+        /// <summary>命运羁绊：每次攻击叠加的永久倍率。</summary>
+        public float BindingMagForever { get; set; }
+
+        /// <summary>注魔硬币：每次消费叠加的永久伤害加成。</summary>
+        public float MagicCoinDamageBonus { get; set; }
+
+        /// <summary>权力羁绊层数。</summary>
+        public int NobilityStacks { get; set; }
+
+        /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
+        public int BindingReviveLeft { get; set; }
+
+        /// <summary>沉默诅咒：是否已武装复活次数。</summary>
+        public bool BindingReviveArmed { get; set; }
+
+        /// <summary>属性强化：永久暴击率加成。</summary>
+        public float BindingCritBonus { get; set; }
+
+        /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
+        public HashSet<int> LuckyEnhancedRanks { get; } = new HashSet<int>();
+
+        /// <summary>沉默诅咒：下一次比牌对该座位强制判负。</summary>
+        public bool SilencedNextCompare { get; set; }
     }
 }

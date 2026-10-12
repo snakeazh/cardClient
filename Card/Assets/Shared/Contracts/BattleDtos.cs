@@ -109,6 +109,15 @@ namespace CardShare.Contracts
 
         /// <summary>圣光燃烧已发动次数。开桌前写入，本手出手加成按这个次数算。</summary>
         public int HolyLightCasts { get; set; }
+
+        /// <summary>命运羁绊永久倍率。</summary>
+        public float BindingMagForever { get; set; }
+
+        /// <summary>注魔硬币永久伤害加成（加在百分比上）。</summary>
+        public float MagicCoinDamageBonus { get; set; }
+
+        /// <summary>属性强化羁绊永久暴击率加成。</summary>
+        public float BindingCritBonus { get; set; }
     }
 
     public enum BattleModeKind

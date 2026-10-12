@@ -35,6 +35,9 @@ namespace CardShare.Battle
 
         public float PracticeMagForever { get; init; }
 
+        /// <summary>命运羁绊永久倍率。</summary>
+        public float BindingMagForever { get; init; }
+
         public int DefeatMagStacks { get; init; }
 
         public int GoldSpentThisRun { get; init; }
@@ -143,6 +146,8 @@ namespace CardShare.Battle
             {
                 mag += snapshot.PracticeMagForever;
             }
+
+            mag += snapshot.BindingMagForever;
 
             return new RelicCombatResult(mag, attack, parts);
         }

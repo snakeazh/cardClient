@@ -46,6 +46,9 @@ namespace CardShare.Battle
 
         public IReadOnlyList<int> Damages { get; init; } = Array.Empty<int>();
 
+        /// <summary>与 <see cref="Damages"/> 对齐：该座位本次出手是否暴击。</summary>
+        public IReadOnlyList<bool> Crits { get; init; } = Array.Empty<bool>();
+
         public IReadOnlyList<BattleEvent> Events { get; init; } = Array.Empty<BattleEvent>();
     }
 
@@ -288,6 +291,7 @@ namespace CardShare.Battle
 
             var rng = new Random(unchecked(_seed * 1103515245 + 12345));
             var damages = new int[hands.Length];
+            var crits = new bool[hands.Length];
             var firstShow = _showdownCount == 0;
             _showdownCount++;
             var alive = 0;
@@ -349,7 +353,9 @@ namespace CardShare.Battle
                     };
                 }
 
-                damages[i] = CombatDamage.Resolve(input, rng).Damage;
+                var resolved = CombatDamage.Resolve(input, rng);
+                damages[i] = resolved.Damage;
+                crits[i] = resolved.Crit;
             }
 
             _snapshot = new BattleSnapshot
@@ -364,6 +370,7 @@ namespace CardShare.Battle
                 Scores = scores,
                 Winners = winners,
                 Damages = damages,
+                Crits = crits,
                 Events = new[] { new BattleEvent { Type = BattleEventType.Compared, Message = "showdown" } }
             };
         }

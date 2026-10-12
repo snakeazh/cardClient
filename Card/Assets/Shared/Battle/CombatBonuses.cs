@@ -208,8 +208,9 @@ namespace CardShare.Battle
                         ? PvpHeroRuntime.LostHpDamagePercent(tables, hero.Id, attackerHp, attackerMaxHp)
                           + PvpHeroRuntime.HolyLightOutgoingPercent(tables, hero.Id, situation.HolyLightCasts)
                           + PvpHeroRuntime.AttackBossDamagePercent(tables, hero.Id, situation.DefenderMonsterType)
-                        : 0f),
-                CritRate = panel.CritRate,
+                        : 0f)
+                    + seat.MagicCoinDamageBonus,
+                CritRate = panel.CritRate + seat.BindingCritBonus,
                 CritMultiplier = panel.CritMultiplier,
                 // 追击概率 = 天赋 ProOfExtraAttack + 英雄 ExtraAttackOneTime，求和后由 CombatDamage 掷一次（PVE RollCombined 语义）。
                 ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack)
@@ -282,7 +283,8 @@ namespace CardShare.Battle
                 RelicShopRefreshCounts = seat.RelicShopRefreshCounts,
                 RelicWinLoseMag = seat.RelicWinLoseMag,
                 ConsumableUsesThisRun = seat.ConsumableUsesThisRun,
-                CopiedRelicId = seat.CopiedRelicId
+                CopiedRelicId = seat.CopiedRelicId,
+                BindingMagForever = seat.BindingMagForever
             };
         }
 

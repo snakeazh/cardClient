@@ -385,6 +385,11 @@ namespace CardShare.Battle
                         duel.Pick(seat, indexes ?? Array.Empty<int>());
                         break;
                     case PvpActions.Rub:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
                         if (fighter.RubLeft <= 0)
                         {
                             throw new InvalidOperationException("No rub left.");
@@ -392,8 +397,14 @@ namespace CardShare.Battle
 
                         duel.Rub(seat, index);
                         fighter.RubLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         break;
                     case PvpActions.Replace:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
                         if (fighter.ReplaceLeft <= 0)
                         {
                             throw new InvalidOperationException("No replace left.");
@@ -401,8 +412,14 @@ namespace CardShare.Battle
 
                         duel.Replace(seat);
                         fighter.ReplaceLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         break;
                     case PvpActions.Peek:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
                         if (fighter.PeekLeft <= 0)
                         {
                             throw new InvalidOperationException("No peek left.");
@@ -410,6 +427,7 @@ namespace CardShare.Battle
 
                         duel.Peek(seat);
                         fighter.PeekLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         if (PvpRelicRuntime.HasMechanism(_tables, fighter, MechanismType.PeekSteal))
                         {
                             duel.TryPeekSteal(seat, _shopRandom);
@@ -601,7 +619,8 @@ namespace CardShare.Battle
                 return;
             }
 
-            // 第六感：败方持有时有概率反转胜负（伤害仍按新胜方座位的 Damages）。
+            // 沉默 / 幸运点数强制胜，再走第六感反转。
+            win = MaybeBindingForceWin(duel, snap, win);
             win = MaybeReverseWinner(duel, snap, win);
 
             var damage = PvpSettlementRules.ScaleDamage(snap.Damages[win], _mode.DamageRoundScale, Round);
@@ -613,6 +632,7 @@ namespace CardShare.Battle
                     winnerFighter.Combat.HeroId,
                     Math.Max(0, winnerFighter.Combat.Attack),
                     damage);
+                winnerFighter.BindingMagForever += PvpRelicBindings.SilverBookMag(_tables, winnerFighter.OwnedRelicIds);
             }
 
             // 凤凰羽毛：败方激活则本次比牌伤害归零；标记随本桌结算消费（未挡到也算用掉）。
@@ -625,6 +645,12 @@ namespace CardShare.Battle
 
             ConsumeNullify(duel);
 
+            // 权力：满层后 1v1 有概率打空。
+            if (damage > 0 && victim != null && TryNobilityVoid(_tables, victim))
+            {
+                damage = 0;
+            }
+
             var thunderBase = damage;
             var dodged = false;
             var deathHp = new Dictionary<int, int>();
@@ -636,7 +662,12 @@ namespace CardShare.Battle
                 {
                     dodged = true;
                     var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
-                    counter += PvpRelicBindings.BonusDamage(_tables, victim, counter);
+                    counter += PvpRelicBindings.BonusDamage(
+                        _tables,
+                        victim,
+                        counter,
+                        Math.Max(0, victim.Combat.Attack),
+                        isCrit: false);
                     if (counter > 0)
                     {
                         var attacker = FighterOfDuelSeat(duel, win);
@@ -657,10 +688,19 @@ namespace CardShare.Battle
                 }
             }
 
+            var isCrit = snap.Crits != null && win < snap.Crits.Count && snap.Crits[win];
             if (!nullified && !dodged && thunderBase > 0 && winnerFighter != null)
             {
-                damage += PvpRelicBindings.BonusDamage(_tables, winnerFighter, thunderBase);
+                damage += PvpRelicBindings.BonusDamage(
+                    _tables,
+                    winnerFighter,
+                    thunderBase,
+                    Math.Max(0, winnerFighter.Combat.Attack),
+                    isCrit);
             }
+
+            // 技能回响：无论输赢，双方有羁绊者都按技能次数×攻击出伤。
+            ApplyDisableSkillEcho(duel, snap, deathHp);
 
             var winnerForKill = winnerFighter;
             if (damage > 0 && winnerForKill != null && winnerForKill.Alive)
@@ -669,12 +709,40 @@ namespace CardShare.Battle
                 var heal = PvpHeroRuntime.BloodSuckingHeal(_tables, winnerForKill.Combat.HeroId, dealt);
                 if (heal > 0)
                 {
+                    var before = winnerForKill.Hp;
                     winnerForKill.Hp = Math.Min(winnerForKill.MaxHp, winnerForKill.Hp + heal);
+                    var healed = winnerForKill.Hp - before;
+                    if (healed > 0)
+                    {
+                        PvpRelicRuntime.ApplyBloodCeremony(_tables, winnerForKill, victim, healed);
+                    }
                 }
             }
 
             var victimAlive = victim != null && victim.Alive;
             ApplyToSeat(duel, 1 - win, damage, deathHp);
+            if (damage > 0 && victim != null)
+            {
+                ApplyCurseSilenceAfterHit(victim, winnerFighter);
+            }
+
+            // 夺命追击：必追加一段缩放伤害。
+            if (!nullified && !dodged && damage > 0 && winnerFighter != null &&
+                PvpRelicBindings.DoubleAttackTimes(_tables, winnerFighter.OwnedRelicIds) > 0 &&
+                victim != null && victim.Alive)
+            {
+                var scale = PvpRelicBindings.DoubleAttackDamageScale(_tables, winnerFighter.OwnedRelicIds);
+                var chase = Math.Max(0, (int)Math.Round(damage * scale));
+                if (chase > 0)
+                {
+                    ApplyToSeat(duel, 1 - win, chase, deathHp);
+                    if (victim.Alive)
+                    {
+                        ApplyCurseSilenceAfterHit(victim, winnerFighter);
+                    }
+                }
+            }
+
             if (victimAlive && victim != null && !victim.Alive && winnerForKill != null)
             {
                 GrantHeroKill(winnerForKill);
@@ -736,6 +804,98 @@ namespace CardShare.Battle
             return loser;
         }
 
+        private int MaybeBindingForceWin(PvpDuelTable duel, BattleSnapshot snap, int win)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null || !fighter.SilencedNextCompare)
+                {
+                    continue;
+                }
+
+                fighter.SilencedNextCompare = false;
+                return 1 - seat;
+            }
+
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null || seat >= snap.Scores.Length)
+                {
+                    continue;
+                }
+
+                var score = snap.Scores[seat];
+                var shown = score.UsedCards;
+                if (shown == null || shown.Length == 0)
+                {
+                    continue;
+                }
+
+                if (PvpRelicBindings.TryLuckyForceWin(
+                        _tables,
+                        fighter.OwnedRelicIds,
+                        fighter.LuckyEnhancedRanks,
+                        shown,
+                        _shopRandom))
+                {
+                    return seat;
+                }
+            }
+
+            return win;
+        }
+
+        private bool TryNobilityVoid(IGameTables tables, PvpFighter victim)
+        {
+            var threshold = PvpRelicBindings.NobilityThreshold(tables, victim.OwnedRelicIds);
+            var chance = PvpRelicBindings.NobilityRedirectChance(tables, victim.OwnedRelicIds);
+            if (threshold <= 0 || victim.NobilityStacks < threshold || chance <= 0f)
+            {
+                return false;
+            }
+
+            return _shopRandom.NextDouble() < chance;
+        }
+
+        private void ApplyCurseSilenceAfterHit(PvpFighter victim, PvpFighter? attacker)
+        {
+            if (victim == null || attacker == null)
+            {
+                return;
+            }
+
+            if (PvpRelicBindings.CurseSilenceActive(_tables, victim.OwnedRelicIds))
+            {
+                attacker.SilencedNextCompare = true;
+            }
+        }
+
+        private void ApplyDisableSkillEcho(PvpDuelTable duel, BattleSnapshot snap, Dictionary<int, int> deathHp)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                var foe = FighterOfDuelSeat(duel, 1 - seat);
+                if (fighter == null || foe == null || !foe.Alive)
+                {
+                    continue;
+                }
+
+                var charges = Math.Max(0, fighter.RubLeft) + Math.Max(0, fighter.PeekLeft) + Math.Max(0, fighter.ReplaceLeft);
+                var dmg = PvpRelicBindings.DisableSkillDamage(
+                    _tables,
+                    fighter.OwnedRelicIds,
+                    charges,
+                    Math.Max(0, fighter.Combat.Attack));
+                if (dmg > 0)
+                {
+                    ApplyToSeat(duel, 1 - seat, dmg, deathHp);
+                }
+            }
+        }
+
         private void ApplyShowdownTrackers(PvpDuelTable duel, BattleSnapshot snap, int? winner)
         {
             for (var seat = 0; seat <= 1; seat++)
@@ -753,11 +913,28 @@ namespace CardShare.Battle
                     won = seat == winner.Value;
                 }
 
+                if (seat < snap.Scores.Length)
+                {
+                    PvpRelicRuntime.ApplyShowBindings(
+                        _tables,
+                        fighter,
+                        snap.Scores[seat],
+                        _shopRandom,
+                        enhanceLucky: won == true);
+                }
+
                 PvpRelicRuntime.AfterShowdown(_tables, fighter, type, won, _shopRandom);
                 if (won == true)
                 {
                     // 月光酒回血 / 激励徽章上限成长（比牌获胜触发）。
+                    var opponent = FighterOfDuelSeat(duel, 1 - seat);
+                    var before = fighter.Hp;
                     PvpRelicRuntime.ApplyWinRewards(_tables, fighter);
+                    var healed = Math.Max(0, fighter.Hp - before);
+                    if (healed > 0)
+                    {
+                        PvpRelicRuntime.ApplyBloodCeremony(_tables, fighter, opponent, healed);
+                    }
                 }
 
                 PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom, _relicStock.Return);
@@ -1067,6 +1244,7 @@ namespace CardShare.Battle
             }
 
             fighter.Gold -= price;
+            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
             fighter.ShopOfferIds.Remove(relicId);
             PvpRelicBag.Add(fighter, relicId);
             // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
@@ -1113,6 +1291,7 @@ namespace CardShare.Battle
                 }
 
                 fighter.Gold -= cost;
+                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
                 fighter.ShopRefreshCount++;
             }
 
@@ -1134,6 +1313,7 @@ namespace CardShare.Battle
             }
 
             fighter.Gold -= cost;
+            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
             fighter.RelicSlots++;
         }
 
@@ -1174,6 +1354,11 @@ namespace CardShare.Battle
             fighter.Hp -= damage;
             if (fighter.Hp <= 0)
             {
+                if (PvpRelicRuntime.TryBindingRevive(_tables, fighter))
+                {
+                    return;
+                }
+
                 KillFighter(fighter, deathHp);
             }
         }

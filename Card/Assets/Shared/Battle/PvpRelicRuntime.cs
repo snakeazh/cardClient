@@ -210,6 +210,9 @@ namespace CardShare.Battle
             setup.ConsumableUsesThisRun = fighter.ConsumableUsesThisRun;
             setup.CopiedRelicId = fighter.CopiedRelicId;
             setup.Attack = Math.Max(0, fighter.Combat.Attack + SelfDecayAttackTotal(tables, fighter));
+            setup.BindingMagForever = fighter.BindingMagForever;
+            setup.MagicCoinDamageBonus = fighter.MagicCoinDamageBonus;
+            setup.BindingCritBonus = fighter.BindingCritBonus;
         }
 
         // ——— 治疗与血量上限：PVP 服务端权威结算，口径对齐 PVE GameSession（ApplyRelicMaxHpDelta / HealPlayer） ———
@@ -245,6 +248,167 @@ namespace CardShare.Battle
                     HealFromRelic(tables, fighter, (int)Math.Round(ValueAt(entry, 1)));
                 }
             });
+            ApplyBronzeBook(tables, fighter);
+            ArmCurseSilenceRevive(tables, fighter);
+        }
+
+        public static void ApplyBronzeBook(IGameTables tables, PvpFighter fighter)
+        {
+            var add = PvpRelicBindings.BronzeBookAttack(tables, fighter.OwnedRelicIds);
+            if (add <= 0)
+            {
+                return;
+            }
+
+            fighter.Combat.Attack = Math.Max(0, fighter.Combat.Attack + add);
+        }
+
+        public static void ArmCurseSilenceRevive(IGameTables tables, PvpFighter fighter)
+        {
+            if (fighter.BindingReviveArmed)
+            {
+                return;
+            }
+
+            var times = PvpRelicBindings.CurseSilenceReviveTimes(tables, fighter.OwnedRelicIds);
+            if (times <= 0)
+            {
+                return;
+            }
+
+            fighter.BindingReviveLeft = times;
+            fighter.BindingReviveArmed = true;
+        }
+
+        public static void OnGoldSpent(IGameTables tables, PvpFighter fighter)
+        {
+            var add = PvpRelicBindings.MagicCoinSpendBonus(tables, fighter.OwnedRelicIds);
+            if (add != 0f)
+            {
+                fighter.MagicCoinDamageBonus += add;
+            }
+        }
+
+        public static void OnSkillUsed(IGameTables tables, PvpFighter fighter, Random rng)
+        {
+            if (!PvpRelicBindings.TryRollRandomAttribute(
+                    tables,
+                    fighter.OwnedRelicIds,
+                    rng,
+                    out var atk,
+                    out var hp,
+                    out var crit))
+            {
+                return;
+            }
+
+            if (atk != 0)
+            {
+                fighter.Combat.Attack = Math.Max(0, fighter.Combat.Attack + atk);
+            }
+
+            if (hp != 0)
+            {
+                ApplyMaxHpDelta(fighter, hp);
+            }
+
+            if (crit != 0f)
+            {
+                fighter.BindingCritBonus += crit;
+            }
+        }
+
+        public static void ApplyBloodCeremony(IGameTables tables, PvpFighter healer, PvpFighter? target, int healed)
+        {
+            if (healer == null || target == null || !target.Alive || healed <= 0)
+            {
+                return;
+            }
+
+            var times = PvpRelicBindings.BloodCeremonyTimes(tables, healer.OwnedRelicIds);
+            for (var t = 0; t < times; t++)
+            {
+                target.Hp = Math.Max(0, target.Hp - healed);
+            }
+        }
+
+        public static void ApplyShowBindings(
+            IGameTables tables,
+            PvpFighter fighter,
+            HandScore score,
+            Random rng,
+            bool enhanceLucky)
+        {
+            if (fighter == null)
+            {
+                return;
+            }
+
+            var per = PvpRelicBindings.NobilityStackPerFace(tables, fighter.OwnedRelicIds);
+            if (per > 0 && score.UsedCards != null)
+            {
+                var faces = 0;
+                for (var i = 0; i < score.UsedCards.Length; i++)
+                {
+                    if (score.UsedCards[i].IsValid && score.UsedCards[i].IsFace)
+                    {
+                        faces++;
+                    }
+                }
+
+                if (faces > 0)
+                {
+                    fighter.NobilityStacks += faces * per;
+                }
+            }
+
+            if (!enhanceLucky)
+            {
+                return;
+            }
+
+            var enhance = PvpRelicBindings.LuckyNumberEnhanceCount(tables, fighter.OwnedRelicIds);
+            if (enhance <= 0 || score.UsedCards == null || rng == null)
+            {
+                return;
+            }
+
+            var candidates = new List<int>();
+            for (var i = 0; i < score.UsedCards.Length; i++)
+            {
+                var card = score.UsedCards[i];
+                if (!card.IsValid || card.IsFace)
+                {
+                    continue;
+                }
+
+                var rank = (int)card.Rank;
+                if (!fighter.LuckyEnhancedRanks.Contains(rank))
+                {
+                    candidates.Add(rank);
+                }
+            }
+
+            for (var n = 0; n < enhance && candidates.Count > 0; n++)
+            {
+                var pick = rng.Next(candidates.Count);
+                fighter.LuckyEnhancedRanks.Add(candidates[pick]);
+                candidates.RemoveAt(pick);
+            }
+        }
+
+        public static bool TryBindingRevive(IGameTables tables, PvpFighter fighter)
+        {
+            ArmCurseSilenceRevive(tables, fighter);
+            if (fighter.BindingReviveLeft <= 0)
+            {
+                return false;
+            }
+
+            fighter.BindingReviveLeft--;
+            fighter.Hp = fighter.MaxHp;
+            fighter.Alive = true;
+            return true;
         }
 
         /// <summary>使用消耗型圣物：结算 PVP 支持的即时效果。返回 false 表示该圣物含 PVP 未支持的
@@ -429,6 +593,22 @@ namespace CardShare.Battle
 
             var healed = Math.Min(amount, fighter.MaxHp - fighter.Hp);
             fighter.Hp += healed;
+            return healed;
+        }
+
+        /// <summary>回血并在有对手时触发鲜血仪式。</summary>
+        public static int HealWithBloodCeremony(
+            IGameTables tables,
+            PvpFighter fighter,
+            int amount,
+            PvpFighter? opponent)
+        {
+            var healed = HealFromRelic(tables, fighter, amount);
+            if (healed > 0)
+            {
+                ApplyBloodCeremony(tables, fighter, opponent, healed);
+            }
+
             return healed;
         }
 

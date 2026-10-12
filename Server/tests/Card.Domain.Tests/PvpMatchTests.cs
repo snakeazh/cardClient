@@ -738,13 +738,14 @@ public class PvpMatchTests
         fighter.OwnedRelicIds.Add(201);
         fighter.OwnedRelicIds.Add(301);
         fighter.OwnedRelicIds.Add(101);
-        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100, attack: 100, isCrit: true));
 
         fighter.OwnedRelicIds.Add(401);
-        Assert.Equal(40, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100, attack: 100, isCrit: false));
+        Assert.Equal(40, PvpRelicBindings.BonusDamage(tables, fighter, 100, attack: 100, isCrit: true));
 
         fighter.OwnedRelicIds.Remove(201);
-        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100));
+        Assert.Equal(0, PvpRelicBindings.BonusDamage(tables, fighter, 100, attack: 100, isCrit: true));
     }
 
     [Fact]

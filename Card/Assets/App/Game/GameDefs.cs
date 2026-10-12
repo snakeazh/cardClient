@@ -305,6 +305,8 @@ namespace App.Game
         public bool PhaseRageTriggered;
         /// <summary>不灭传说：本关是否已复活过一次。</summary>
         public bool SecondWindUsed;
+        /// <summary>沉默诅咒：下一次比牌直接判负（无法比牌）。</summary>
+        public bool SilencedNextCompare;
 
         public int CountSelectedCards()
         {
@@ -466,6 +468,20 @@ namespace App.Game
         public float StrawHealPending;
         /// <summary>练习卷累计倍率。卖掉仍加。</summary>
         public float PracticeMagForever;
+        /// <summary>命运羁绊：每次攻击叠加的永久倍率。</summary>
+        public float BindingMagForever;
+        /// <summary>注魔硬币：每次消费叠加的永久伤害加成（加在百分比上）。</summary>
+        public float MagicCoinDamageBonus;
+        /// <summary>权力羁绊层数。</summary>
+        public int NobilityStacks;
+        /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
+        public int BindingReviveLeft;
+        /// <summary>沉默诅咒：是否已按完成条件武装复活次数。</summary>
+        public bool BindingReviveArmed;
+        /// <summary>属性强化羁绊：永久暴击率加成。</summary>
+        public float BindingCritBonus;
+        /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
+        public readonly HashSet<int> LuckyEnhancedRanks = new HashSet<int>();
         /// <summary>高档甜品：遗物 Id → 剩余自衰减攻击。卖掉移除，重买重置为配置值。</summary>
         public readonly Dictionary<int, int> SelfDecayAttackLeft = new Dictionary<int, int>();
         /// <summary>高档饮品：遗物 Id → 剩余自衰减倍率。卖掉移除，重买重置为配置值。</summary>
@@ -499,6 +515,13 @@ namespace App.Game
             StrawUsedThisStage = false;
             StrawHealPending = 0f;
             PracticeMagForever = 0f;
+            BindingMagForever = 0f;
+            MagicCoinDamageBonus = 0f;
+            NobilityStacks = 0;
+            BindingReviveLeft = 0;
+            BindingReviveArmed = false;
+            BindingCritBonus = 0f;
+            LuckyEnhancedRanks.Clear();
             UseDamageMulAdd = 0f;
             UseDamageFixed = 0;
             UseNullifyIncoming = false;

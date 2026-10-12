@@ -1055,6 +1055,7 @@ namespace App.Game
                 RubRelicMagForever = run != null ? run.RubRelicMagForever : 0f,
                 HandTypeMagBonus = run != null ? run.HandTypeMagBonus(score.Type) : 0f,
                 PracticeMagForever = run != null ? run.PracticeMagForever : 0f,
+                BindingMagForever = run != null ? run.BindingMagForever : 0f,
                 DefeatMagStacks = run != null ? run.DefeatMagStacks : 0,
                 GoldSpentThisRun = run != null ? run.GoldSpentThisRun : 0,
                 RankAttackBonus = rankBonus,

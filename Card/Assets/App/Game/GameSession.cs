@@ -401,6 +401,7 @@ namespace App.Game
             Phase == GamePhase.WaitingOpen &&
             Run.PeekGoodCharges > 0 &&
             !BossMechanics.SkillsDisabled(Run) &&
+            !BindingSkillsDisabled() &&
             BossMechanics.CanAffordRub(Run);
         /// <summary>该难度已无下一关。</summary>
         public bool IsLastLevel
@@ -748,6 +749,7 @@ namespace App.Game
                 (IsPvp && _pvpHandLocked) ||
                 Run.PeekGoodCharges <= 0 ||
                 BossMechanics.SkillsDisabled(Run) ||
+                BindingSkillsDisabled() ||
                 !BossMechanics.CanAffordRub(Run) ||
                 index < 0 ||
                 index >= PlayerDealCount)
@@ -804,6 +806,7 @@ namespace App.Game
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
             Run.UsedSkillThisRun = true;
+            ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.ShuffleCard);
             if (RelicMechanics.HasMechanism(Run, MechanismType.RubbingCardRelic))
             {
@@ -1000,18 +1003,21 @@ namespace App.Game
             Run.PeekGoodCharges > 0 &&
             Phase != GamePhase.WaitingRub &&
             !BossMechanics.SkillsDisabled(Run) &&
+            !BindingSkillsDisabled() &&
             BossMechanics.CanAffordRub(Run);
 
         public bool PlayerMayUseChaKanGood =>
             PlayerMayUseItems &&
             Run.ChaKanGoodCharges > 0 &&
-            !BossMechanics.SkillsDisabled(Run);
+            !BossMechanics.SkillsDisabled(Run) &&
+            !BindingSkillsDisabled();
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
             Run.TiHuanGoodCharges > 0 &&
             (_deck != null || IsPvp) &&
             !BossMechanics.SkillsDisabled(Run) &&
+            !BindingSkillsDisabled() &&
             !BossMechanics.SwapLocked(Run);
 
         /// <summary>把剩余勇气值推进底池。全下后若还有人能下注，对手继续打边池。</summary>
@@ -1072,6 +1078,7 @@ namespace App.Game
         {
             SelectingRubTarget = Run.PeekGoodCharges > 0 &&
                                  !BossMechanics.SkillsDisabled(Run) &&
+                                 !BindingSkillsDisabled() &&
                                  BossMechanics.CanAffordRub(Run);
             if (!string.IsNullOrEmpty(message))
             {
@@ -1150,6 +1157,7 @@ namespace App.Game
             Player.PeekedType = string.Empty;
             Run.TiHuanGoodCharges--;
             Run.UsedSkillThisRun = true;
+            ApplyRandomAttributeBinding();
             if (Player.Looked)
             {
                 Hint =
@@ -1195,6 +1203,7 @@ namespace App.Game
             seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
             Run.UsedSkillThisRun = true;
+            ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.Perspective);
             TryPeekSteal(seat);
             SelectingXRayTarget = false;
@@ -1433,6 +1442,16 @@ namespace App.Game
             _playingExtraAttack = true;
             LastAttackMissed = false;
             var pending = Math.Max(0, PendingAttackDamage);
+            var tables = UnityGameConfigLoader.Current;
+            if (tables != null)
+            {
+                var scale = CardShare.Battle.PvpRelicBindings.DoubleAttackDamageScale(tables, BindingOwnedRelics());
+                if (scale != 1f)
+                {
+                    pending = Math.Max(0, (int)Math.Round(pending * scale));
+                }
+            }
+
             TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             Hint = $"追击 {target.Name}！";
             Notify();
@@ -1723,6 +1742,13 @@ namespace App.Game
                 return;
             }
 
+            if (!IsPvp && TryNobilityRedirectIncoming(attacker))
+            {
+                Hint = $"{attacker.Name} 的攻击被权力转移！";
+                Notify();
+                return;
+            }
+
             IncomingAttack = true;
             _pendingAttackTarget = Player;
             _pendingDamageSource = attacker;
@@ -1883,10 +1909,25 @@ namespace App.Game
             NotifyPlayerShowdown(_pendingPlayerScore, playerWonCompare);
             var enemySeat = opener != null && opener.IsPlayer ? target : opener;
             RecordCompareOutcome(enemySeat, playerWonCompare, _pendingPlayerScore, _pendingEnemyScore);
+            if (opener != null && opener.IsPlayer)
+            {
+                TryApplyDisableSkillDamage(target);
+            }
+            else if (target != null && target.IsPlayer)
+            {
+                TryApplyDisableSkillDamage(opener);
+            }
+
             if (_pendingOpenerWins)
             {
                 var damage = ComputeAttackDamage(opener, openScore, target);
                 TryApplyPermanentCardBonuses(openScore);
+                if (opener != null && opener.IsPlayer)
+                {
+                    TryEnhanceLuckyNumber(openScore);
+                    ApplySilverBookAfterAttack();
+                }
+
                 PendingAttackDamage = damage;
                 AttackLevel = MapAttackLevel(openScore.Type);
                 var shown = damage;
@@ -1992,6 +2033,7 @@ namespace App.Game
                 dmgPercent += HeroMechanics.HolyLightOutgoingPercent(hero, Run.HolyLightCasts);
                 dmgPercent += RelicOutgoingDamagePercent(defender);
                 dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
+                dmgPercent += Run.MagicCoinDamageBonus;
                 critRate = ResolveLivePlayerPanel().CritRate;
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero);
                 extraAttackChance = TalentMechanics.SumValue(talent, MechanismType.ProOfExtraAttack);
@@ -3656,6 +3698,104 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>编辑器外挂：一键补齐指定羁绊所需全部圣物（缺啥补啥）。PVP 顺序发 debug_grant。</summary>
+        public async void DebugGrantBindingMembers(int bindingId)
+        {
+            var binding = BindingConfig.Get(bindingId);
+            if (binding == null)
+            {
+                Hint = $"[编辑器] 没有羁绊 Id={bindingId}";
+                Log(Hint);
+                Notify();
+                return;
+            }
+
+            var members = CollectBindingMemberRelicIds(bindingId);
+            if (members.Count == 0)
+            {
+                Hint = $"[编辑器] 羁绊 {binding.Name}（{bindingId}）没有挂圣物";
+                Log(Hint);
+                Notify();
+                return;
+            }
+
+            var added = 0;
+            var skipped = 0;
+            for (var i = 0; i < members.Count; i++)
+            {
+                var relicId = members[i];
+                if (OwnsRelicConfig(relicId))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var relic = RelicConfig.Get(relicId);
+                var name = relic != null ? relic.Name : relicId.ToString();
+                if (IsPvp)
+                {
+                    if (_pvpSession == null)
+                    {
+                        Hint = "[编辑器] PVP 会话未就绪，无法添加圣物";
+                        Log(Hint);
+                        Notify();
+                        return;
+                    }
+
+                    await DebugGrantPvpRelicAsync(relicId, name);
+                    if (OwnsRelicConfig(relicId))
+                    {
+                        added++;
+                    }
+                }
+                else
+                {
+                    Run.RelicConfigIds.Add(relicId);
+                    Run.ShopOfferIds.Remove(relicId);
+                    ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
+                    Log($"[编辑器] 获得圣物 {name}（{relicId}）");
+                    added++;
+                }
+            }
+
+            Hint = $"[编辑器] 羁绊 {binding.Name}：新增 {added}，已有 {skipped}，成员 {members.Count}";
+            Log(Hint);
+            Notify();
+        }
+
+        /// <summary>编辑器外挂：表里 BindingID 含该羁绊的全部圣物 Id。</summary>
+        public static List<int> CollectBindingMemberRelicIds(int bindingId)
+        {
+            var result = new List<int>();
+            if (bindingId <= 0)
+            {
+                return result;
+            }
+
+            foreach (var pair in RelicConfig.All)
+            {
+                var relic = pair.Value;
+                if (relic?.BindingID == null)
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < relic.BindingID.Length; i++)
+                {
+                    if (relic.BindingID[i] != bindingId)
+                    {
+                        continue;
+                    }
+
+                    result.Add(relic.Id);
+                    break;
+                }
+            }
+
+            result.Sort();
+            return result;
+        }
+
         /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。PVP 走服务端 debug_grant。</summary>
         public bool DebugGrantRelic(int relicId)
         {
@@ -3955,6 +4095,26 @@ namespace App.Game
             SeatState target,
             HandScore targetScore)
         {
+            if (opener != null && opener.IsPlayer && target != null && target.SilencedNextCompare)
+            {
+                target.SilencedNextCompare = false;
+                Log($"沉默诅咒：{target.Name} 无法比牌，直接判负");
+                return true;
+            }
+
+            if (target != null && target.IsPlayer && opener != null && opener.SilencedNextCompare)
+            {
+                opener.SilencedNextCompare = false;
+                Log($"沉默诅咒：{opener.Name} 无法比牌，直接判负");
+                return false;
+            }
+
+            if (opener != null && opener.IsPlayer && BindingForceWin(openScore))
+            {
+                Log("幸运点数：无视比牌规则直接获胜");
+                return true;
+            }
+
             var playerWins = OpenerWinsCompare(opener, openScore, target, targetScore);
             if (opener == null || !opener.IsPlayer || playerWins)
             {
@@ -3999,6 +4159,7 @@ namespace App.Game
             _playerCardsShownThisRound = true;
             ApplyIronRiceBowl();
             Run.AddHandTypeShowCount(score.Type);
+            ApplyNobilityOnShow(score);
             TrySummonConsumableOnShow(score);
             if (score.Type == HandType.ThreeOfAKind && Run.FirstLeopardGoldPending > 0)
             {
@@ -4155,6 +4316,7 @@ namespace App.Game
             Run.Gold -= amount;
             Run.GoldSpentThisRun += amount;
             EnqueueRunGold(grant: false, amount);
+            ApplyMagicCoinOnSpend();
         }
 
         private void AddGold(int amount)
@@ -4465,6 +4627,8 @@ namespace App.Game
 
             DealAll();
             ApplyRoundStartRelics();
+            ApplyBronzeBookBinding();
+            ArmBindingReviveIfNeeded();
             ApplyEveryRoundHpUp();
             EnterOpenReady();
         }
@@ -6061,7 +6225,384 @@ namespace App.Game
                 return 0;
             }
 
-            return CardShare.Battle.PvpRelicBindings.BonusDamage(tables, Run.RelicConfigIds, damage);
+            var attack = Player != null ? Math.Max(0, Player.Attack) : 0;
+            return CardShare.Battle.PvpRelicBindings.BonusDamage(
+                tables,
+                Run.RelicConfigIds,
+                damage,
+                attack,
+                _lastPlayerAttackCrit);
+        }
+
+        private IReadOnlyList<int> BindingOwnedRelics()
+            => Run != null ? Run.RelicConfigIds : null;
+
+        private void ArmBindingReviveIfNeeded()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || Run == null || Run.BindingReviveArmed)
+            {
+                return;
+            }
+
+            var times = CardShare.Battle.PvpRelicBindings.CurseSilenceReviveTimes(tables, BindingOwnedRelics());
+            if (times <= 0)
+            {
+                return;
+            }
+
+            Run.BindingReviveLeft = times;
+            Run.BindingReviveArmed = true;
+            Log($"沉默诅咒：获得 {times} 次羁绊复活");
+        }
+
+        private void ApplyBronzeBookBinding()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null)
+            {
+                return;
+            }
+
+            var add = CardShare.Battle.PvpRelicBindings.BronzeBookAttack(tables, BindingOwnedRelics());
+            if (add <= 0)
+            {
+                return;
+            }
+
+            Run.PermanentAttackBonus += add;
+            if (Player != null)
+            {
+                Player.Attack = Math.Max(0, Player.Attack + add);
+            }
+
+            Log($"潜质力量：永久攻击 +{add}");
+        }
+
+        private void ApplySilverBookAfterAttack()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null)
+            {
+                return;
+            }
+
+            var add = CardShare.Battle.PvpRelicBindings.SilverBookMag(tables, BindingOwnedRelics());
+            if (add == 0f)
+            {
+                return;
+            }
+
+            Run.BindingMagForever += add;
+            Log($"命运：永久倍率 +{add}（当前 {Run.BindingMagForever}）");
+        }
+
+        private void ApplyMagicCoinOnSpend()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null)
+            {
+                return;
+            }
+
+            var add = CardShare.Battle.PvpRelicBindings.MagicCoinSpendBonus(tables, BindingOwnedRelics());
+            if (add == 0f)
+            {
+                return;
+            }
+
+            Run.MagicCoinDamageBonus += add;
+            Log($"注魔硬币：伤害永久 +{add:P1}（当前 {Run.MagicCoinDamageBonus:P1}）");
+        }
+
+        private void ApplyBloodCeremony(int healed)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || healed <= 0)
+            {
+                return;
+            }
+
+            var times = CardShare.Battle.PvpRelicBindings.BloodCeremonyTimes(tables, BindingOwnedRelics());
+            if (times <= 0)
+            {
+                return;
+            }
+
+            var any = false;
+            for (var t = 0; t < times; t++)
+            {
+                for (var i = 0; i < Enemies.Length; i++)
+                {
+                    var enemy = Enemies[i];
+                    if (enemy == null || !enemy.Alive)
+                    {
+                        continue;
+                    }
+
+                    any = true;
+                    ApplyDamage(enemy, healed, false, Player);
+                }
+            }
+
+            if (any)
+            {
+                Log($"鲜血仪式：对场上敌人造成 {healed} 点回复伤害 ×{times}");
+            }
+        }
+
+        private void TryEnhanceLuckyNumber(HandScore score)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || score.UsedCards == null)
+            {
+                return;
+            }
+
+            var count = CardShare.Battle.PvpRelicBindings.LuckyNumberEnhanceCount(tables, BindingOwnedRelics());
+            if (count <= 0)
+            {
+                return;
+            }
+
+            var numbers = new List<int>();
+            for (var i = 0; i < score.UsedCards.Length; i++)
+            {
+                var card = score.UsedCards[i];
+                if (!card.IsValid || card.IsFace)
+                {
+                    continue;
+                }
+
+                var rank = (int)card.Rank;
+                if (!Run.LuckyEnhancedRanks.Contains(rank))
+                {
+                    numbers.Add(rank);
+                }
+            }
+
+            for (var n = 0; n < count && numbers.Count > 0; n++)
+            {
+                var pick = _rng.Next(numbers.Count);
+                var rank = numbers[pick];
+                numbers.RemoveAt(pick);
+                Run.LuckyEnhancedRanks.Add(rank);
+                Log($"幸运点数：永久强化点数 {rank}");
+            }
+        }
+
+        private void ApplyNobilityOnShow(HandScore score)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || score.UsedCards == null)
+            {
+                return;
+            }
+
+            var per = CardShare.Battle.PvpRelicBindings.NobilityStackPerFace(tables, BindingOwnedRelics());
+            if (per <= 0)
+            {
+                return;
+            }
+
+            var faces = 0;
+            for (var i = 0; i < score.UsedCards.Length; i++)
+            {
+                var card = score.UsedCards[i];
+                if (card.IsValid && card.IsFace)
+                {
+                    faces++;
+                }
+            }
+
+            if (faces <= 0)
+            {
+                return;
+            }
+
+            Run.NobilityStacks += faces * per;
+            Log($"权力：+{faces * per} 层（当前 {Run.NobilityStacks}）");
+        }
+
+        private bool TryNobilityRedirectIncoming(SeatState attacker)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || attacker == null || attacker.IsPlayer)
+            {
+                return false;
+            }
+
+            var threshold = CardShare.Battle.PvpRelicBindings.NobilityThreshold(tables, BindingOwnedRelics());
+            var chance = CardShare.Battle.PvpRelicBindings.NobilityRedirectChance(tables, BindingOwnedRelics());
+            if (threshold <= 0 || Run.NobilityStacks < threshold || chance <= 0f || _rng.NextDouble() >= chance)
+            {
+                return false;
+            }
+
+            SeatState other = null;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                var enemy = Enemies[i];
+                if (enemy == null || !enemy.Alive || ReferenceEquals(enemy, attacker))
+                {
+                    continue;
+                }
+
+                other = enemy;
+                break;
+            }
+
+            if (other != null)
+            {
+                Log($"权力：{attacker.Name} 的攻击转向 {other.Name}");
+                var dmg = Math.Max(0, PendingAttackDamage);
+                if (dmg > 0)
+                {
+                    ApplyDamage(other, dmg, true, attacker);
+                }
+
+                return true;
+            }
+
+            Log($"权力：{attacker.Name} 的攻击打空");
+            return true;
+        }
+
+        private bool TryBindingRevive(SeatState target)
+        {
+            if (target == null || !target.IsPlayer || Run == null)
+            {
+                return false;
+            }
+
+            ArmBindingReviveIfNeeded();
+            if (Run.BindingReviveLeft <= 0)
+            {
+                return false;
+            }
+
+            Run.BindingReviveLeft--;
+            ApplySeatHp(Player, Player.MaxHp, Player.MaxHp);
+            HpSvc()?.Revive(Player.Id);
+            target.Banner = "羁绊复活";
+            Log($"沉默诅咒：羁绊复活（剩余 {Run.BindingReviveLeft}）");
+            return true;
+        }
+
+        private void ApplyCurseSilenceOnHit(SeatState attacker)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || attacker == null || attacker.IsPlayer)
+            {
+                return;
+            }
+
+            if (!CardShare.Battle.PvpRelicBindings.CurseSilenceActive(tables, BindingOwnedRelics()))
+            {
+                return;
+            }
+
+            attacker.SilencedNextCompare = true;
+            Log($"沉默诅咒：{attacker.Name} 下回合沉默");
+        }
+
+        private void ApplyRandomAttributeBinding()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null)
+            {
+                return;
+            }
+
+            if (!CardShare.Battle.PvpRelicBindings.TryRollRandomAttribute(
+                    tables,
+                    BindingOwnedRelics(),
+                    _rng,
+                    out var atk,
+                    out var hp,
+                    out var crit))
+            {
+                return;
+            }
+
+            if (atk != 0)
+            {
+                Run.PermanentAttackBonus += atk;
+                if (Player != null)
+                {
+                    Player.Attack = Math.Max(0, Player.Attack + atk);
+                }
+
+                Log($"属性强化：永久攻击 +{atk}");
+            }
+
+            if (hp != 0)
+            {
+                Run.PermanentMaxHpBonus += hp;
+                ApplyRelicMaxHpDelta(hp);
+                Log($"属性强化：生命 +{hp}");
+            }
+
+            if (crit != 0f)
+            {
+                Run.BindingCritBonus += crit;
+                Log($"属性强化：暴击率 +{crit:P0}");
+            }
+        }
+
+        private bool BindingSkillsDisabled()
+        {
+            var tables = UnityGameConfigLoader.Current;
+            return tables != null &&
+                   CardShare.Battle.PvpRelicBindings.DisableSkillActive(tables, BindingOwnedRelics());
+        }
+
+        private void TryApplyDisableSkillDamage(SeatState enemy)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || enemy == null || !enemy.Alive || Player == null)
+            {
+                return;
+            }
+
+            var dmg = CardShare.Battle.PvpRelicBindings.DisableSkillDamage(
+                tables,
+                BindingOwnedRelics(),
+                UnusedSkillCharges(),
+                Math.Max(0, Player.Attack));
+            if (dmg <= 0)
+            {
+                return;
+            }
+
+            Log($"技能回响：造成 {dmg} 伤害（技能次数 × 攻击）");
+            ApplyDamage(enemy, dmg, true, Player);
+        }
+
+        private bool BindingForceWin(HandScore playerScore)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null || playerScore.UsedCards == null)
+            {
+                return false;
+            }
+
+            var shown = new List<CardShare.Battle.Card>();
+            for (var i = 0; i < playerScore.UsedCards.Length; i++)
+            {
+                var card = playerScore.UsedCards[i];
+                if (card.IsValid)
+                {
+                    shown.Add(SharedBattleBridge.ToShared(card));
+                }
+            }
+
+            return CardShare.Battle.PvpRelicBindings.TryLuckyForceWin(
+                tables,
+                BindingOwnedRelics(),
+                Run.LuckyEnhancedRanks,
+                shown,
+                _rng);
         }
 
         private int ApplyDamage(SeatState target, int damage, bool main, SeatState attacker = null)
@@ -6210,6 +6751,17 @@ namespace App.Game
                 return lost;
             }
 
+            if (ReferenceEquals(target, Player) && dealt >= target.Hp && TryBindingRevive(target))
+            {
+                ApplyCurseSilenceOnHit(attacker);
+                if (main)
+                {
+                    TakenDamage = shown;
+                }
+
+                return dealt;
+            }
+
             target.Hp -= dealt;
             HpSvc()?.Damage(target.Id, dealt);
             target.Banner = main ? $"-{shown}" : $"溅射 -{shown}";
@@ -6219,6 +6771,7 @@ namespace App.Game
                 TryGrantTakeDamageGold(dealt);
                 ApplyBounce(attacker, dealt);
                 ApplyLifeSiphon(attacker, dealt);
+                ApplyCurseSilenceOnHit(attacker);
             }
 
             if (target.Hp <= 0)
@@ -7496,7 +8049,13 @@ namespace App.Game
             var before = Player.Hp;
             var hp = Math.Min(Player.MaxHp, Player.Hp + amount);
             ApplySeatHp(Player, hp, Player.MaxHp);
-            return hp - before;
+            var healed = hp - before;
+            if (healed > 0)
+            {
+                ApplyBloodCeremony(healed);
+            }
+
+            return healed;
         }
 
         /// <summary>圣物治疗。无法通过圣物回血时为 0；否则先乘回复加成再交给 <see cref="HealPlayer"/>。</summary>
@@ -7792,7 +8351,8 @@ namespace App.Game
             var hp = Player != null ? Math.Max(0, Player.MaxHp) : panel.Hp;
             var crit = panel.CritRate
                 + RelicMechanics.SumValue(Run, MechanismType.HeroCritical)
-                + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetCritical, Run.CritStacks);
+                + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetCritical, Run.CritStacks)
+                + Run.BindingCritBonus;
             var dodge = panel.DodgeRate
                 + RelicMechanics.SumValue(Run, MechanismType.MissDamagePer)
                 + RelicMechanics.StackedValue(Run, MechanismType.EveryRoundEndingGetEvade, Run.EvadeStacks);
@@ -8452,6 +9012,13 @@ namespace App.Game
                 return true;
             }
 #endif
+            var tables = UnityGameConfigLoader.Current;
+            if (tables != null &&
+                CardShare.Battle.PvpRelicBindings.DoubleAttackTimes(tables, BindingOwnedRelics()) > 0)
+            {
+                return true;
+            }
+
             return HeroMechanics.Roll(Run, MechanismType.ExtraAttackOneTime, _rng);
         }
 

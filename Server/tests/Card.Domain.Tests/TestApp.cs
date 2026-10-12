@@ -14,12 +14,20 @@ internal static class TestApp
         IPveRunRepository? runs = null,
         IGameConfig? config = null,
         IClock? clock = null,
-        IPlayerLock? locks = null)
+        IPlayerLock? locks = null,
+        IAvatarStore? avatars = null)
     {
         config ??= TestConfig.Create();
         clock ??= new TestClock();
         runs ??= new MemoryPveRunRepository();
+        avatars ??= new FakeAvatarStore();
         var session = new PlayerSession(players, config, clock, locks ?? new MemoryPlayerLock());
-        return (new PveRunService(session, runs, config, clock), new PlayerMetaService(session, config));
+        return (new PveRunService(session, runs, config, clock), new PlayerMetaService(session, config, avatars));
+    }
+
+    private sealed class FakeAvatarStore : IAvatarStore
+    {
+        public Task<string> PutAsync(Guid userId, byte[] data, string extension, CancellationToken cancellationToken)
+            => Task.FromResult($"https://fake.cos.test/avatars/{userId:N}/fake.{extension}");
     }
 }

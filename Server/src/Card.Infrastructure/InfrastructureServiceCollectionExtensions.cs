@@ -7,6 +7,7 @@ using CardShare.Infrastructure.Config;
 using CardShare.Infrastructure.Memory;
 using CardShare.Infrastructure.Postgres;
 using CardShare.Infrastructure.Redis;
+using CardShare.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,15 @@ public static class InfrastructureServiceCollectionExtensions
         services.Configure<GuestAuthOptions>(configuration.GetSection("GuestAuth"));
         services.Configure<WeChatAuthOptions>(configuration.GetSection("WeChat"));
         services.Configure<DouyinAuthOptions>(configuration.GetSection("Douyin"));
+        services.Configure<CosAvatarOptions>(configuration.GetSection("Cos"));
+        if (string.IsNullOrWhiteSpace(configuration["Cos:Bucket"]))
+        {
+            services.AddSingleton<IAvatarStore, DisabledAvatarStore>();
+        }
+        else
+        {
+            services.AddSingleton<IAvatarStore, CosAvatarStore>();
+        }
 
         var configPath = configuration["Game:ConfigPath"] ?? string.Empty;
         var timeZone = configuration["Game:TimeZone"] ?? "Asia/Shanghai";

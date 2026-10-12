@@ -59,6 +59,7 @@ vi /opt/card-server/app/appsettings.Production.json
   "Pvp": { "FillWithBots": false },
   "WeChat": { "AppId": "你的AppId", "AppSecret": "你的AppSecret" },
   "Douyin": { "AppId": "", "AppSecret": "" },
+  "Cos": { "SecretId": "", "SecretKey": "", "Region": "ap-shanghai", "Bucket": "card-avatar2-1328828696" },
   "Game": { "ConfigPath": "/opt/card-server/Config" }
 }
 ```

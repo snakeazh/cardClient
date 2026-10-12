@@ -141,6 +141,10 @@ WeChat__AppId=...
 WeChat__AppSecret=...
 Douyin__AppId=...
 Douyin__AppSecret=...
+Cos__SecretId=...
+Cos__SecretKey=...
+Cos__Region=ap-shanghai
+Cos__Bucket=card-avatar2-1328828696
 Game__ConfigPath=/path/to/Card/Assets/Res/Config
 ```
 
@@ -164,6 +168,7 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 | GET | `/v1/health` | 探活：`persistence` / `postgres` / `redis`，后端挂了返回 503 |
 | POST | `/auth/login` | `{ provider, code, userInfo?, pendingSettle? }`。登录时处理未结算 run |
 | GET | `/player/profile` | 拉主档。跨日才写回体力/广告计数，同一天的 GET 不落库 |
+| POST | `/player/avatar` | multipart 上传头像图片（PNG/JPEG，≤2MB），存 COS 并更新主档 `avatarUrl` |
 | POST | `/pve/start` | 扣体力，发 `runId`、初始金币与货架。已有未结算 run 时返回 `active_run_exists` |
 | GET | `/pve/run/active` | 当前未结算 run；没有则为 `{ "run": null }` |
 | POST | `/pve/run/progress` | `{ runId, clearedStage, score }` 上报本关进度。服务端钳制分数、累计积分、推进关卡 |
@@ -183,6 +188,15 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 | POST | `/debug/grant-gold` | Development 调试发局外金 |
 
 错误体：`{ "code", "message" }`。
+
+## 头像链路
+
+数据库只存 URL，图片本体在腾讯云 COS（`Cos:*` 配置，桶公有读）。两种来源：
+
+- **登录上报**：`userInfo.avatarUrl` 经 `AvatarUrlPolicy` 白名单（微信/抖音官方 CDN + 自有 COS 桶域名）校验后写主档，非法域名直接丢弃。
+- **客户端转存**：登录完成后客户端 `AvatarUploader` 发现主档头像是平台 CDN 地址时，后台下载字节流 `POST /v1/player/avatar`，服务端校验（PNG/JPEG 魔数、≤2MB）后传 COS、主档换成 COS 永久链接。已是 `.myqcloud.com` 地址则跳过（幂等）；失败只记客户端日志，不影响登录。
+
+服务端不主动访问平台头像 URL（`jscode2session` 只回 openid），字节流只能来自客户端。微信 `GetUserInfo` 收紧后只回灰色默认头像，真实头像需客户端接 `chooseAvatar` 后走同一条上传链路。
 
 ## WebSocket `/v1/pvp/ws`
 

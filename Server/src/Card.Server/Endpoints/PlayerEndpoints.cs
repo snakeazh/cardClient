@@ -1,4 +1,5 @@
 using CardShare.Contracts;
+using CardShare.Domain;
 using CardShare.Domain.Services;
 
 namespace CardShare.Server.Endpoints;
@@ -9,6 +10,30 @@ public static class PlayerEndpoints
     {
         v1.MapGet("/player/profile", async (HttpContext http, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.GetProfileAsync(http.RequireUserId(), ct)));
+        v1.MapPost("/player/avatar", async (HttpContext http, PlayerMetaService meta, CancellationToken ct) =>
+        {
+            if (!http.Request.HasFormContentType)
+            {
+                throw DomainException.Invalid("multipart/form-data with a file field is required.");
+            }
+
+            var form = await http.Request.ReadFormAsync(ct);
+            var file = form.Files.Count > 0 ? form.Files[0] : null;
+            if (file == null || file.Length == 0)
+            {
+                throw DomainException.Invalid("avatar file is required.");
+            }
+
+            if (file.Length > PlayerMetaService.AvatarMaxBytes)
+            {
+                throw DomainException.Invalid($"Avatar image size must be 1..{PlayerMetaService.AvatarMaxBytes} bytes.");
+            }
+
+            await using var stream = file.OpenReadStream();
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms, ct);
+            return Results.Json(await meta.UploadAvatarAsync(http.RequireUserId(), ms.ToArray(), ct));
+        });
         v1.MapPost("/talent/draw", async (HttpContext http, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.DrawTalentAsync(http.RequireUserId(), ct)));
         v1.MapPost("/energy/refill-ad", async (HttpContext http, AdProofRequest _, PlayerMetaService meta, CancellationToken ct)

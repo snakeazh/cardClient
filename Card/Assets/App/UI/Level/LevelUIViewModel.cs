@@ -372,10 +372,7 @@ namespace App.UI
 
             if (!GameApi.IsReady)
             {
-                await PveSessionGate.ConnectWithRetryAsync(
-                    _ui.Dialogs,
-                    UnityEngine.SystemInfo.deviceUniqueIdentifier,
-                    "Editor");
+                await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
                 if (!GameApi.IsReady)
                 {
                     _progress.RevokeHeroUnlock(hero.Id);

@@ -55,10 +55,11 @@ vi /opt/card-server/app/appsettings.Production.json
     "Postgres": "Host=127.0.0.1;Port=5432;Database=card;Username=card;Password=强密码",
     "Redis": "127.0.0.1:6379,password=你的Redis密码"
   },
-  "GuestAuth": { "Enabled": false },
+  "GuestAuth": { "Enabled": false, "EditorEnabled": true },
   "Pvp": { "FillWithBots": false },
   "WeChat": { "AppId": "你的AppId", "AppSecret": "你的AppSecret" },
   "Douyin": { "AppId": "", "AppSecret": "" },
+  "Cos": { "SecretId": "", "SecretKey": "", "Region": "ap-shanghai", "Bucket": "card-avatar2-1328828696" },
   "Game": { "ConfigPath": "/opt/card-server/Config" }
 }
 ```

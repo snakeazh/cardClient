@@ -18,6 +18,8 @@ namespace CardShare.Contracts
 
         /// <summary>Optional social profile from the client SDK. Not used for identity.</summary>
         public LoginUserInfo? UserInfo { get; set; }
+        /// <summary>True when running inside the Unity Editor. Only guest login honors it.</summary>
+        public bool Editor { get; set; }
         /// <summary>Optional leftover settle from the client. Applied before any forfeit of an active run.</summary>
         public PveSettleRequest? PendingSettle { get; set; }
     }

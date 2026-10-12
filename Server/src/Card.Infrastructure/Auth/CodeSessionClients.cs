@@ -6,16 +6,20 @@ using Microsoft.Extensions.Options;
 
 namespace CardShare.Infrastructure.Auth;
 
-public sealed class GuestAuthOptions
+public sealed class GuestCodeSessionClient : ICodeSessionClient
 {
-    public bool Enabled { get; set; }
-}
+    // 开关判定在 AuthService（GuestAuth:Enabled / GuestAuth:EditorEnabled），这里只做入参校验。
+    public string Provider => AuthProviders.Guest;
 
-public sealed class WeChatAuthOptions
-{
-    public string AppId { get; set; } = string.Empty;
+    public Task<CodeSession> ExchangeAsync(string code, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            throw DomainException.Invalid("Guest code (device id) is required.");
+        }
 
-    public string AppSecret { get; set; } = string.Empty;
+        return Task.FromResult(new CodeSession("guest:" + code.Trim()));
+    }
 }
 
 public sealed class DouyinAuthOptions
@@ -25,31 +29,11 @@ public sealed class DouyinAuthOptions
     public string AppSecret { get; set; } = string.Empty;
 }
 
-public sealed class GuestCodeSessionClient : ICodeSessionClient
+public sealed class WeChatAuthOptions
 {
-    private readonly GuestAuthOptions _options;
+    public string AppId { get; set; } = string.Empty;
 
-    public GuestCodeSessionClient(IOptions<GuestAuthOptions> options)
-    {
-        _options = options.Value;
-    }
-
-    public string Provider => AuthProviders.Guest;
-
-    public Task<CodeSession> ExchangeAsync(string code, CancellationToken cancellationToken)
-    {
-        if (!_options.Enabled)
-        {
-            throw new DomainException(ErrorCodes.GuestDisabled, "Guest login is disabled.");
-        }
-
-        if (string.IsNullOrWhiteSpace(code))
-        {
-            throw DomainException.Invalid("Guest code (device id) is required.");
-        }
-
-        return Task.FromResult(new CodeSession("guest:" + code.Trim()));
-    }
+    public string AppSecret { get; set; } = string.Empty;
 }
 
 public sealed class WeChatCodeSessionClient : ICodeSessionClient

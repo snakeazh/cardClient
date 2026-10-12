@@ -120,6 +120,7 @@ public class LoginUserInfoTests
             config,
             clock,
             guestEnabled: true,
+            guestEditorEnabled: false,
             pve);
     }
 

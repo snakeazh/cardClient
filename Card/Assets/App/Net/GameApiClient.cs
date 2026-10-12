@@ -183,6 +183,7 @@ namespace App.Net
                     Provider = AuthProviders.Guest,
                     Code = string.IsNullOrEmpty(deviceCode) ? "editor-device" : deviceCode,
                     UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty },
+                    Editor = Application.isEditor,
                     PendingSettle = LoadPendingSettle()
                 },
                 auth: false);
@@ -211,6 +212,43 @@ namespace App.Net
 
         public Task<PlayerProfileDto> GetProfileAsync()
             => SendAsync<PlayerProfileDto>("GET", "/v1/player/profile", null);
+
+        /// <summary>multipart 上传头像图片，返回更新后的主档。</summary>
+        public async Task<PlayerProfileDto> UploadAvatarAsync(byte[] data, string fileName)
+        {
+            var url = GameApiSettings.BaseUrl.TrimEnd('/') + "/v1/player/avatar";
+            var form = new WWWForm();
+            form.AddBinaryData("file", data, string.IsNullOrEmpty(fileName) ? "avatar.png" : fileName);
+            using (var request = UnityWebRequest.Post(url, form))
+            {
+                if (!string.IsNullOrEmpty(_accessToken))
+                {
+                    request.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                }
+
+                request.timeout = 30;
+                var op = request.SendWebRequest();
+                while (!op.isDone)
+                {
+                    await Task.Yield();
+                }
+
+                var text = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+                var status = (int)request.responseCode;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    if (request.result == UnityWebRequest.Result.ConnectionError)
+                    {
+                        throw new GameApiException("connection_error", "无法连接服务器", status);
+                    }
+
+                    var fail = ParseError<PlayerProfileDto>(text, status);
+                    throw new GameApiException(fail.Code, fail.Message, fail.Status);
+                }
+
+                return JsonConvert.DeserializeObject<PlayerProfileDto>(text, JsonSettings);
+            }
+        }
 
         public Task<PveStartResponse> StartPveAsync(int levelId, int heroId)
             => SendAsync<PveStartResponse>("POST", "/v1/pve/start", new PveStartRequest { LevelId = levelId, HeroId = heroId });

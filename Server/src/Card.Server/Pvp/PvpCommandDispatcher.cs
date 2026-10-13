@@ -61,11 +61,19 @@ public sealed class PvpCommandDispatcher
         }
     }
 
-    /// <summary>房主侧 sync 处理：标记上线、回全量快照（Seq 回显）、有变化广播 player_online。</summary>
+    /// <summary>房主侧 sync 处理：标记上线、回全量快照（Seq 回显）、有变化广播 player_online。已淘汰则解绑并回 not_in_battle。</summary>
     public async Task ProcessSyncAsync(Guid userId, WsEnvelope incoming, CancellationToken cancellationToken)
     {
         if (!_matches.TryGet(userId, out var match))
         {
+            return;
+        }
+
+        var self = FindFighter(match, userId);
+        if (self == null || !self.Alive)
+        {
+            _matches.Unbind(userId);
+            await SendErrorTo(userId, incoming.Seq, ErrorCodes.NotInBattle, "Not in a battle.", cancellationToken);
             return;
         }
 
@@ -92,18 +100,27 @@ public sealed class PvpCommandDispatcher
         }
     }
 
-    /// <summary>逐人发 match_update（先 DrainEvents 拿增量），再把事件逐条包 match_event 发给真人。</summary>
+    /// <summary>
+    /// 逐人发 match_update（先 DrainEvents 拿增量），再把事件逐条包 match_event 发给真人。
+    /// 已淘汰且已解绑的不推；本批刚淘汰的仍推一次（仍在映射里），推完后 UnbindEliminated。
+    /// </summary>
     public async Task BroadcastMatchAsync(PvpMatch match, long seq, CancellationToken cancellationToken)
     {
         var events = match.DrainEvents();
-        foreach (var player in match.Players)
+        foreach (var fighter in match.Fighters)
         {
-            if (player.IsBot || !Guid.TryParse(player.UserId, out var id))
+            if (fighter.IsBot || !Guid.TryParse(fighter.UserId, out var id))
             {
                 continue;
             }
 
-            var view = match.ViewFor(player.UserId);
+            // 已死且已解绑：后续对局不再推；仍绑定则本批是淘汰快照，再推最后一次。
+            if (!fighter.Alive && !_matches.IsBound(id))
+            {
+                continue;
+            }
+
+            var view = match.ViewFor(fighter.UserId);
             await _router.SendToUser(id, new WsEnvelope
             {
                 T = WsMessageTypes.MatchUpdate,
@@ -112,28 +129,33 @@ public sealed class PvpCommandDispatcher
             }, cancellationToken);
         }
 
-        if (events.Count == 0)
+        if (events.Count > 0)
         {
-            return;
-        }
-
-        foreach (var player in match.Players)
-        {
-            if (player.IsBot || !Guid.TryParse(player.UserId, out var id))
+            foreach (var fighter in match.Fighters)
             {
-                continue;
-            }
-
-            foreach (var evt in events)
-            {
-                await _router.SendToUser(id, new WsEnvelope
+                if (fighter.IsBot || !Guid.TryParse(fighter.UserId, out var id))
                 {
-                    T = WsMessageTypes.MatchEvent,
-                    Seq = seq,
-                    Payload = evt
-                }, cancellationToken);
+                    continue;
+                }
+
+                if (!fighter.Alive && !_matches.IsBound(id))
+                {
+                    continue;
+                }
+
+                foreach (var evt in events)
+                {
+                    await _router.SendToUser(id, new WsEnvelope
+                    {
+                        T = WsMessageTypes.MatchEvent,
+                        Seq = seq,
+                        Payload = evt
+                    }, cancellationToken);
+                }
             }
         }
+
+        _matches.UnbindEliminated(match);
     }
 
     /// <summary>开房：装配座位、建房、发 room_ready + 首轮快照；未开房：回 joiner queued、其余 queue_update。</summary>
@@ -211,6 +233,21 @@ public sealed class PvpCommandDispatcher
             Seq = seq,
             Payload = new ApiError { Code = code, Message = message }
         }, cancellationToken);
+    }
+
+    private static PvpFighter? FindFighter(PvpMatch match, Guid userId)
+    {
+        var key = userId.ToString("N");
+        foreach (var fighter in match.Fighters)
+        {
+            if (string.Equals(fighter.UserId, key, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fighter.UserId, userId.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return fighter;
+            }
+        }
+
+        return null;
     }
 
     private static WsBattleActionPayload ReadBattle(object? payload)

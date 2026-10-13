@@ -1263,8 +1263,7 @@
       30013
     ],
     "BindingID": [
-      107,
-      104
+      107
     ],
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1963,9 +1962,7 @@
       400141,
       400142
     ],
-    "BindingID": [
-      104
-    ],
+    "BindingID": [],
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",

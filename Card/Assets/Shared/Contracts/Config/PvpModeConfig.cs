@@ -42,7 +42,7 @@ namespace CardShare.Contracts.Config
         public int[] RankReward;
 
         /// <summary>
-        /// 第1到4名局外PVP分数加减（可负；落库时下限0）
+        /// 第1到4名局外PVP分数加减
         /// </summary>
         public int[] RankScore;
 

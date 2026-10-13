@@ -320,6 +320,7 @@ public class AuthServiceTests
             config,
             clock,
             guestEnabled: true,
+            guestEditorEnabled: false,
             pve);
 
         var login = await auth.LoginAsync(new LoginRequest { Provider = "guest", Code = "editor-device" }, CancellationToken.None);
@@ -349,6 +350,7 @@ public class AuthServiceTests
             config,
             clock,
             guestEnabled: true,
+            guestEditorEnabled: false,
             pve);
 
         var login = await auth.LoginAsync(new LoginRequest { Provider = "guest", Code = "forfeit-device" }, CancellationToken.None);
@@ -385,6 +387,7 @@ public class AuthServiceTests
             config,
             clock,
             guestEnabled: true,
+            guestEditorEnabled: false,
             pve);
 
         var login = await auth.LoginAsync(new LoginRequest { Provider = "guest", Code = "pending-device" }, CancellationToken.None);
@@ -409,6 +412,34 @@ public class AuthServiceTests
         var active = await pve.GetActiveRunAsync(userId, CancellationToken.None);
         Assert.True(active.Run == null || string.IsNullOrEmpty(active.Run.RunId));
         Assert.True(again.Profile.Gold > login.Profile.Gold);
+    }
+
+    [Fact]
+    public async Task GuestLoginEditorFlagHonorsEditorSwitch()
+    {
+        var config = TestConfig.Create();
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var bindings = new MemoryAuthBindingRepository();
+        var tokens = new MemoryTokenService(clock, TimeSpan.FromHours(1));
+        var (pve, _) = TestApp.Create(players, config: config, clock: clock);
+        var auth = new AuthService(
+            new ICodeSessionClient[] { new FakeGuestClient() },
+            bindings,
+            players,
+            tokens,
+            config,
+            clock,
+            guestEnabled: false,
+            guestEditorEnabled: true,
+            pve);
+
+        // 普通游客（Editor=false）被拒；带编辑器标记的放行
+        await Assert.ThrowsAsync<DomainException>(() => auth.LoginAsync(
+            new LoginRequest { Provider = "guest", Code = "device-a" }, CancellationToken.None));
+        var login = await auth.LoginAsync(
+            new LoginRequest { Provider = "guest", Code = "device-a", Editor = true }, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(login.AccessToken));
     }
 
     private sealed class FakeGuestClient : ICodeSessionClient

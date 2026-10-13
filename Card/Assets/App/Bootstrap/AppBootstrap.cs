@@ -10,6 +10,7 @@ using App.Energy;
 using App.Game;
 using App.Guide;
 using App.Level;
+using App.PvpScore;
 using App.Score;
 using App.Talent;
 using App.TTReward;
@@ -84,6 +85,7 @@ namespace App.Bootstrap
             // 重型初始化（图集/配置表/头像/业务服务/列表项预热）在忠告展示期间并发执行。
             _services.Register(SaveFramework.Create());
             RegisterWallet(_services);
+            RegisterPvpScore(_services);
             RegisterEnergy(_services);
             _services.Register(new GameSession());
             _services.Container.AddSingleton<PvpWsClient>();
@@ -288,7 +290,7 @@ namespace App.Bootstrap
             talent.Load();
             services.Register(talent);
             services.Register<ITalentService>(talent);
-            services.Register(new TalentBonusManager(talent));
+            services.Register<TalentBonusManager>(new TalentBonusManager(talent));
         }
 
         private static void RegisterWallet(AppServicesHost services)
@@ -297,6 +299,14 @@ namespace App.Bootstrap
             wallet.Load();
             services.Register(wallet);
             services.Register<IWalletService>(wallet);
+        }
+
+        private static void RegisterPvpScore(AppServicesHost services)
+        {
+            var pvpScore = new PvpScoreService(services.Resolve<ISaveService>());
+            pvpScore.Load();
+            services.Register(pvpScore);
+            services.Register<IPvpScoreService>(pvpScore);
         }
 
         private static void RegisterEnergy(AppServicesHost services)

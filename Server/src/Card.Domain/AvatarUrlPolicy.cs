@@ -11,7 +11,9 @@ public static class AvatarUrlPolicy
         ".douyinstatic.com",
         ".tiktokcdn.com",
         ".pstatp.com",
-        ".ibyteimg.com"
+        ".ibyteimg.com",
+        // 自有 COS 桶（头像上传接口落的地址），按完整主机名精确匹配
+        "card-avatar2-1328828696.cos.ap-shanghai.myqcloud.com"
     };
 
     public static bool TryNormalize(string? url, out string normalized)

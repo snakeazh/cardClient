@@ -882,15 +882,112 @@ public class PvpMatchTests
 
     private static void EnterShopPhase(PvpMatch match)
     {
+        // 机器人桌开局可能已自动结算；全员亮完后 phase 会离开 fight，勿再 Showdown。
         foreach (var fighter in match.Fighters)
         {
+            if (match.Phase != PvpMatch.PhaseFight)
+            {
+                break;
+            }
+
             match.Showdown(fighter.UserId);
         }
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1));
+        if (match.Phase == PvpMatch.PhaseSettle)
+        {
+            Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1));
+        }
+
         Assert.Equal(PvpMatch.PhaseShop, match.Phase);
     }
+
+    [Fact]
+    public void BotShopPickHighestAffordablePrefersPrice()
+    {
+        var cheap = BotShopRelic(101, 10);
+        var pricey = BotShopRelic(102, 50);
+        var mid = BotShopRelic(103, 30);
+        var tables = PvpTestTables.WithRelics(new[] { cheap, pricey, mid });
+        var fighter = new PvpFighter
+        {
+            Gold = 40,
+            RelicSlots = 4,
+            Combat = new SeatSetup { HeroId = 1 }
+        };
+        fighter.ShopOfferIds.Add(101);
+        fighter.ShopOfferIds.Add(102);
+        fighter.ShopOfferIds.Add(103);
+
+        // 40 金买不起 50，应选 30。
+        Assert.Equal(103, PvpBotShop.PickHighestAffordable(fighter, tables));
+        fighter.Gold = 50;
+        Assert.Equal(102, PvpBotShop.PickHighestAffordable(fighter, tables));
+        fighter.OwnedRelicIds.Add(1);
+        fighter.OwnedRelicIds.Add(2);
+        fighter.OwnedRelicIds.Add(3);
+        fighter.OwnedRelicIds.Add(4);
+        Assert.Null(PvpBotShop.PickHighestAffordable(fighter, tables));
+        Assert.True(PvpBotShop.CanUnlockSlot(fighter, tables));
+        fighter.Gold = 10;
+        Assert.False(PvpBotShop.CanUnlockSlot(fighter, tables));
+    }
+
+    [Fact]
+    public void BotAutoShopBuysHighestThenUnlocksWhenFullAndKeepsBuying()
+    {
+        var cheap = BotShopRelic(201, 10);
+        var pricey = BotShopRelic(202, 50);
+        var tables = PvpTestTables.WithRelics(new[] { cheap, pricey });
+        var bot = Bot("机");
+        var match = Open(
+            tables,
+            new[] { Pub("你"), bot, Bot("乙"), Bot("丙") },
+            shopPool: new[] { 201, 202 },
+            hp: 5000);
+        var botFighter = match.Fighters.First(f => f.NickName == "机");
+
+        // 槽已满进店：先开槽，再买货架上最贵的。
+        botFighter.OwnedRelicIds.AddRange(new[] { 201, 201, 201, 201 });
+        botFighter.OwnedRelicPower.AddRange(new[] { 1, 1, 1, 1 });
+        botFighter.Gold = 200;
+
+        EnterShopPhase(match);
+
+        Assert.True(botFighter.ShopDone);
+        Assert.True(botFighter.RelicSlots > PvpRelicBag.FreeSlots);
+        Assert.True(botFighter.OwnedRelicIds.Count > 4);
+        Assert.Contains(202, botFighter.OwnedRelicIds);
+        Assert.True(botFighter.OwnedRelicIds.Count(id => id == 202) >= 1);
+    }
+
+    [Fact]
+    public void BotAutoShopMarksDoneAndHumansStillShop()
+    {
+        var match = Open(
+            PvpTestTables.Classic(),
+            new[] { Pub("你"), Bot("甲"), Bot("乙"), Bot("丙") },
+            shopPool: new[] { 1, 2 });
+        EnterShopPhase(match);
+
+        Assert.All(match.Fighters.Where(f => f.IsBot), f => Assert.True(f.ShopDone));
+        Assert.False(match.Fighters[0].ShopDone);
+        Assert.Equal(PvpMatch.PhaseShop, match.Phase);
+        Assert.True(match.Fighters.Where(f => f.IsBot).Sum(f => f.OwnedRelicIds.Count) > 0);
+    }
+
+    private static RelicConfig BotShopRelic(int id, int price)
+        => new RelicConfig
+        {
+            Id = id,
+            Name = "bot" + id,
+            Type = QualityType.Ordinary,
+            UnlockConditionId = 0,
+            Price = price,
+            SellingPrice = 4,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>()
+        };
 
     [Fact]
     public void BoughtRelicPersistsIntoNextRoundView()
@@ -1060,11 +1157,14 @@ public class PvpMatchTests
         Assert.Contains(match.DrainEvents(), e => e.Kind == "match_finished");
 
         var rewards = new[] { 200, 120, 60, 30 };
+        var scores = new[] { 50, 25, 0, -40 };
         foreach (var fighter in match.Fighters)
         {
             Assert.InRange(fighter.Rank, 1, 4);
             Assert.Equal(rewards[fighter.Rank - 1], fighter.RewardGold);
+            Assert.Equal(scores[fighter.Rank - 1], fighter.RewardScore);
             Assert.Equal(fighter.RewardGold, match.ViewFor(fighter.UserId).Players[fighter.SeatIndex].RewardGold);
+            Assert.Equal(fighter.RewardScore, match.ViewFor(fighter.UserId).Players[fighter.SeatIndex].RewardScore);
         }
 
         Assert.True(match.TryMarkRewardsGranted());
@@ -1708,6 +1808,7 @@ internal static class PvpTestTables
                     ShopSeconds = 30,
                     SkipMonsterWhenTwoLeft = true,
                     RankReward = new[] { 200, 120, 60, 30 },
+                    RankScore = new[] { 50, 25, 0, -40 },
                     DamageRoundScale = 0.1f,
                     OpenPhaseSeconds = 20
                 }

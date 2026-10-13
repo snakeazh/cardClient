@@ -27,6 +27,7 @@ namespace App.Net
                     var login = await GameApi.Client.ConnectAsync();
                     GameApi.ApplyProfile(login.Profile);
                     AppLog.Info(LogChannel.Net, "session ok userId=" + login.Profile.UserId);
+                    AvatarUploader.KickOff(login.Profile != null ? login.Profile.AvatarUrl : null);
                     return;
                 }
                 catch (GameApiException ex)

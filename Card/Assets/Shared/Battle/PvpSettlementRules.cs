@@ -107,9 +107,16 @@ namespace CardShare.Battle
         public static int MonsterWinHeal(int maxHp)
             => Math.Max(1, (int)Math.Floor(maxHp * 0.1));
 
+        /// <summary>未配置 RankScore 时的默认局外分数：1~4 名 +50/+25/+0/-40。</summary>
+        private static readonly int[] DefaultRankScore = { 50, 25, 0, -40 };
+
         /// <summary>名次奖励：rank 从 1 起，越界或未配置取 0。</summary>
         public static int RewardForRank(int rank, int[]? rewards)
             => rank >= 1 && rewards != null && rank <= rewards.Length ? rewards[rank - 1] : 0;
+
+        /// <summary>名次 PVP 分数加减：rank 从 1 起；未配 RankScore 用默认表；可为负。</summary>
+        public static int ScoreForRank(int rank, int[]? scores)
+            => RewardForRank(rank, scores != null && scores.Length > 0 ? scores : DefaultRankScore);
 
         /// <summary>同轮淘汰名次：淘汰后血量更接近 0 者名次靠前，并列按座位号；返回（座位 → 名次），起始名次 = 存活数 + 1。</summary>
         public static List<KeyValuePair<int, int>> RankDeadOrder(IReadOnlyDictionary<int, int> deathHp, int aliveAfter)

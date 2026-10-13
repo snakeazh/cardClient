@@ -1,3 +1,4 @@
+using CardShare.Battle;
 using CardShare.Contracts;
 using CardShare.Contracts.Config;
 using CardShare.Domain;
@@ -48,6 +49,33 @@ public class EnergyResetTests
         profile.ApplyDailyReset(config, now.AddHours(1));
 
         Assert.Equal(2, profile.Energy.Current);
+    }
+}
+
+public class PvpScoreTests
+{
+    [Fact]
+    public void NewProfileStartsAtZeroAndClampsBelowZero()
+    {
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), TestConfig.Create(), DateTimeOffset.UtcNow);
+        Assert.Equal(0, profile.PvpScore);
+        Assert.Equal(0, profile.ApplyPvpScoreDelta(-40));
+        Assert.Equal(50, profile.ApplyPvpScoreDelta(50));
+        Assert.Equal(75, profile.ApplyPvpScoreDelta(25));
+        Assert.Equal(75, profile.ApplyPvpScoreDelta(0));
+        Assert.Equal(35, profile.ApplyPvpScoreDelta(-40));
+        Assert.Equal(0, profile.ApplyPvpScoreDelta(-100));
+    }
+
+    [Fact]
+    public void ScoreForRankUsesConfiguredOrDefaultTable()
+    {
+        Assert.Equal(50, PvpSettlementRules.ScoreForRank(1, null));
+        Assert.Equal(25, PvpSettlementRules.ScoreForRank(2, Array.Empty<int>()));
+        Assert.Equal(0, PvpSettlementRules.ScoreForRank(3, null));
+        Assert.Equal(-40, PvpSettlementRules.ScoreForRank(4, null));
+        Assert.Equal(0, PvpSettlementRules.ScoreForRank(5, null));
+        Assert.Equal(10, PvpSettlementRules.ScoreForRank(1, new[] { 10, 5 }));
     }
 }
 

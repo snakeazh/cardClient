@@ -19,8 +19,8 @@ MonoBehaviour:
     assetLoadType: 0
     compressDataPackage: 0
     VideoUrl: 
-    relativeDST: D:/UnityProject/cardclient/wxoutput
-    DST: D:/UnityProject/cardclient/wxoutput
+    relativeDST: D:/UnityProject/wxoutput
+    DST: D:/UnityProject/wxoutput
     StreamCDN: 
     bundleHashLength: 32
     bundlePathIdentifier: StreamingAssets;
@@ -61,7 +61,7 @@ MonoBehaviour:
     CustomNodePath: 
     autoAdaptScreen: 0
     showMonitorSuggestModal: 0
-    enableProfileStats: 0
+    enableProfileStats: 1
     enableRenderAnalysis: 0
     enablePerfAnalysis: 0
     iOSAutoGCInterval: 10000

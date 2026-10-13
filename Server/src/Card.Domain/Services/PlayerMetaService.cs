@@ -6,14 +6,19 @@ namespace CardShare.Domain.Services;
 
 public sealed class PlayerMetaService
 {
+    /// <summary>头像图片上限 2MB（Nginx client_max_body_size 同为 2m）。</summary>
+    public const int AvatarMaxBytes = 2 * 1024 * 1024;
+
     private readonly PlayerSession _session;
     private readonly IGameConfig _config;
+    private readonly IAvatarStore _avatars;
     private readonly Random _random = new Random();
 
-    public PlayerMetaService(PlayerSession session, IGameConfig config)
+    public PlayerMetaService(PlayerSession session, IGameConfig config, IAvatarStore avatars)
     {
         _session = session;
         _config = config;
+        _avatars = avatars;
     }
 
     public Task<PlayerProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken)
@@ -82,6 +87,38 @@ public sealed class PlayerMetaService
             profile.GrantWalletGold(amount);
             return ProfileMapper.ToDto(profile);
         }, cancellationToken);
+
+    public async Task<PlayerProfileDto> UploadAvatarAsync(Guid userId, byte[] data, CancellationToken cancellationToken)
+    {
+        var extension = DetectImageExtension(data);
+        await using var gate = await _session.AcquireAsync(userId, cancellationToken);
+        var profile = await _session.LoadAsync(userId, cancellationToken);
+        var url = await _avatars.PutAsync(userId, data, extension, cancellationToken);
+        profile.AvatarUrl = url;
+        await _session.SaveAsync(profile, cancellationToken);
+        return ProfileMapper.ToDto(profile);
+    }
+
+    private static string DetectImageExtension(byte[] data)
+    {
+        if (data.Length == 0 || data.Length > AvatarMaxBytes)
+        {
+            throw DomainException.Invalid($"Avatar image size must be 1..{AvatarMaxBytes} bytes.");
+        }
+
+        // PNG: 89 50 4E 47；JPEG: FF D8 FF
+        if (data.Length >= 4 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47)
+        {
+            return "png";
+        }
+
+        if (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
+        {
+            return "jpg";
+        }
+
+        throw DomainException.Invalid("Avatar image must be PNG or JPEG.");
+    }
 
     private int PickTalent(PlayerProfile profile)
     {

@@ -14,6 +14,7 @@ public sealed class AuthService
     private readonly IGameConfig _config;
     private readonly IClock _clock;
     private readonly bool _guestEnabled;
+    private readonly bool _guestEditorEnabled;
     private readonly PveRunService _runs;
 
     public AuthService(
@@ -24,6 +25,7 @@ public sealed class AuthService
         IGameConfig config,
         IClock clock,
         bool guestEnabled,
+        bool guestEditorEnabled,
         PveRunService runs)
     {
         _clients = clients;
@@ -33,6 +35,7 @@ public sealed class AuthService
         _config = config;
         _clock = clock;
         _guestEnabled = guestEnabled;
+        _guestEditorEnabled = guestEditorEnabled;
         _runs = runs;
     }
 
@@ -44,7 +47,7 @@ public sealed class AuthService
         }
 
         var provider = request.Provider.Trim().ToLowerInvariant();
-        if (provider == AuthProviders.Guest && !_guestEnabled)
+        if (provider == AuthProviders.Guest && !_guestEnabled && !(_guestEditorEnabled && request.Editor))
         {
             throw new DomainException(ErrorCodes.GuestDisabled, "Guest login is disabled.");
         }

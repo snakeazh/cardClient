@@ -1,0 +1,1825 @@
+using System;
+using System.Collections.Generic;
+using CardShare.Contracts;
+using CardShare.Contracts.Config;
+
+#nullable enable
+
+namespace CardShare.Battle
+{
+    public sealed class PvpMatch
+    {
+        public const string PhaseFight = PvpPhases.Fight;
+        public const string PhaseSettle = PvpPhases.Settle;
+        public const string PhaseShop = PvpPhases.Shop;
+        public const string PhaseFinished = PvpPhases.Finished;
+
+        private readonly IGameTables _tables;
+        private readonly PvpModeConfig _mode;
+        private readonly PvpFighter[] _fighters;
+        private readonly List<PvpDuelTable> _duels = new List<PvpDuelTable>();
+        private readonly List<PvpMatchEventDto> _pendingEvents = new List<PvpMatchEventDto>();
+        private readonly object _gate = new object();
+        private readonly Random _shopRandom;
+        private readonly PvpRelicStock _relicStock;
+        private int _pvpCycle;
+        private bool _rewardsGranted;
+        private int _goldBase;
+        private PvpFightKind _kind;
+
+        private PvpMatch(
+            Guid roomId,
+            int seed,
+            IReadOnlyList<PlayerPublic> players,
+            IGameTables tables,
+            PvpModeConfig mode,
+            PvpFighter[] fighters)
+        {
+            RoomId = roomId;
+            Seed = seed;
+            Players = players;
+            _tables = tables;
+            _mode = mode;
+            _fighters = fighters;
+            _shopRandom = new Random(unchecked(seed ^ 0x5A0F9));
+            _relicStock = PvpRelicStock.Create(tables);
+            ModeId = mode.Id;
+            Round = 1;
+            Phase = PhaseFight;
+        }
+
+        public Guid RoomId { get; }
+
+        public int Seed { get; }
+
+        public int ModeId { get; }
+
+        public string ModeName => _mode.Name ?? string.Empty;
+
+        public int Round { get; private set; }
+
+        public string Phase { get; private set; }
+
+        /// <summary>当前阶段截止时刻（UTC 毫秒）。0 = 无倒计时。</summary>
+        public long PhaseDeadlineUtcMs { get; private set; }
+
+        /// <summary>状态版本号：每次状态变更单调递增。</summary>
+        public long StateVersion { get; private set; }
+
+        /// <summary>进入 finished 的时刻（UTC 毫秒）。0 = 未结束，宿主据此回收房间。</summary>
+        public long FinishedUtcMs { get; private set; }
+
+        public PvpFightKind FightKind => _kind;
+
+        public IReadOnlyList<PlayerPublic> Players { get; }
+
+        public IReadOnlyList<PvpFighter> Fighters => _fighters;
+
+        public IReadOnlyList<PvpDuelTable> Duels => _duels;
+
+        /// <summary>未派发的增量事件；投影只读，清空走 DrainEvents。</summary>
+        internal IReadOnlyList<PvpMatchEventDto> PendingEvents => _pendingEvents;
+
+        public static PvpMatch Open(
+            Guid roomId,
+            int seed,
+            IReadOnlyList<PlayerPublic> players,
+            IGameTables tables,
+            IReadOnlyList<SeatSetup> combatSeats,
+            int modeId = PvpSchedule.DefaultModeId)
+        {
+            if (!PvpSchedule.TryLoad(tables, modeId, out var mode))
+            {
+                throw new InvalidOperationException($"PvpModeConfig {modeId} not found.");
+            }
+
+            var fighters = new PvpFighter[players.Count];
+            for (var i = 0; i < players.Count; i++)
+            {
+                var pub = players[i];
+                var combat = i < combatSeats.Count ? combatSeats[i] : new SeatSetup
+                {
+                    SeatId = i,
+                    UserId = pub.UserId,
+                    NickName = pub.NickName,
+                    IsHuman = !pub.IsBot,
+                    Alive = true,
+                    Hp = 1,
+                    MaxHp = 1,
+                    Attack = 1
+                };
+                var hp = combat.MaxHp > 0 ? combat.MaxHp : Math.Max(1, combat.Hp);
+                fighters[i] = new PvpFighter
+                {
+                    SeatIndex = i,
+                    UserId = pub.UserId,
+                    NickName = pub.NickName,
+                    Combat = combat,
+                    Hp = hp,
+                    MaxHp = hp,
+                    // 初始金币 = 模式基础 + 英雄 InitialFunds（对齐 PVE StartNewRun；PVP 无天赋侧）。
+                    Gold = mode.InitialGold + PvpHeroRuntime.InitialGold(tables, combat.HeroId),
+                    Alive = true,
+                    IsBot = pub.IsBot,
+                    ShopPoolIds = combat.ShopPoolIds ?? Array.Empty<int>(),
+                    RelicSlots = PvpRelicBag.InitialSlots(tables.GameConst)
+                };
+            }
+
+            var match = new PvpMatch(roomId, seed, players, tables, mode, fighters);
+            match.StartRound();
+            return match;
+        }
+
+        public int SeatOf(string userId)
+        {
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                if (PvpBattleTable.SameUser(_fighters[i].UserId, userId))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public void Showdown(string userId)
+        {
+            Act(userId, PvpActions.Showdown, 0, Array.Empty<int>());
+            AdvanceIfReady();
+        }
+
+        public void AdvanceIfReady()
+        {
+            lock (_gate)
+            {
+                TryAdvanceRound();
+            }
+        }
+
+        /// <summary>阶段到点推进：fight 自动锁定结算、settle 进商店/结束、shop 进下一轮。返回是否有状态变化。</summary>
+        public bool ApplyTimeouts(long nowUtcMs)
+        {
+            lock (_gate)
+            {
+                if (PhaseDeadlineUtcMs <= 0 || nowUtcMs < PhaseDeadlineUtcMs)
+                {
+                    return false;
+                }
+
+                if (Phase == PhaseSettle)
+                {
+                    AdvanceFromSettle();
+                    return true;
+                }
+
+                if (Phase == PhaseShop)
+                {
+                    AdvanceFromShop();
+                    return true;
+                }
+
+                if (Phase != PhaseFight)
+                {
+                    return false;
+                }
+
+                var changed = false;
+                for (var i = 0; i < _duels.Count; i++)
+                {
+                    var duel = _duels[i];
+                    if (duel.Resolved)
+                    {
+                        continue;
+                    }
+
+                    for (var seat = 0; seat <= 1; seat++)
+                    {
+                        if (!duel.IsLocked(seat))
+                        {
+                            duel.LockSeat(seat);
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (!changed)
+                {
+                    return false;
+                }
+
+                Touch();
+                SettleResolvedDuels();
+                TryAdvanceRound();
+                return true;
+            }
+        }
+
+        /// <summary>取走自上次以来的增量事件（广播后清空，只 drain 一次）。</summary>
+        public List<PvpMatchEventDto> DrainEvents()
+        {
+            lock (_gate)
+            {
+                if (_pendingEvents.Count == 0)
+                {
+                    return new List<PvpMatchEventDto>();
+                }
+
+                var events = new List<PvpMatchEventDto>(_pendingEvents);
+                _pendingEvents.Clear();
+                return events;
+            }
+        }
+
+        public void SetDisconnected(string userId, bool disconnected)
+        {
+            lock (_gate)
+            {
+                var index = SeatOf(userId);
+                if (index < 0)
+                {
+                    return;
+                }
+
+                var fighter = _fighters[index];
+                if (fighter.Disconnected == disconnected)
+                {
+                    return;
+                }
+
+                fighter.Disconnected = disconnected;
+                Bump(disconnected ? PvpEventKinds.PlayerOffline : PvpEventKinds.PlayerOnline, userId, 0);
+                if (!disconnected)
+                {
+                    return;
+                }
+
+                if (Phase == PhaseShop)
+                {
+                    // 掉线代管不买圣物：进店即 done；已在商店则立刻补 done，避免卡住全桌。
+                    if (!fighter.ShopDone)
+                    {
+                        fighter.ShopDone = true;
+                        if (AllShopDone())
+                        {
+                            AdvanceFromShop();
+                        }
+                    }
+
+                    return;
+                }
+
+                if (Phase != PhaseFight)
+                {
+                    return;
+                }
+
+                // 掉线座位当轮自动锁定（超时同款兜底），保证对局不被卡住。
+                var duel = FindDuel(userId);
+                if (duel == null || duel.Resolved)
+                {
+                    return;
+                }
+
+                var seat = duel.ViewerSeat(userId);
+                if (!duel.IsLocked(seat))
+                {
+                    duel.LockSeat(seat);
+                }
+
+                SettleResolvedDuels();
+                TryAdvanceRound();
+            }
+        }
+
+        /// <summary>逃跑/主动离开：当前桌直接判负（不比牌、对手不受伤），并淘汰拿当前最差名次。返回 true = 有状态变化需广播。</summary>
+        public bool Abandon(string userId)
+        {
+            lock (_gate)
+            {
+                if (Phase == PhaseFinished)
+                {
+                    return false;
+                }
+
+                var index = SeatOf(userId);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                var fighter = _fighters[index];
+                if (!fighter.Alive || fighter.Rank > 0)
+                {
+                    return false;
+                }
+
+                if (Phase == PhaseFight)
+                {
+                    // 逃跑 = 本场 PK 判负：不走牌型比拼，对手胜且不受伤。
+                    ForfeitCurrentDuel(userId);
+                }
+
+                fighter.Hp = 0;
+                fighter.Alive = false;
+                fighter.Disconnected = true;
+                ReleaseRelics(fighter);
+                if (Phase == PhaseShop)
+                {
+                    fighter.ShopDone = true;
+                }
+
+                Bump(PvpEventKinds.PlayerOffline, userId, 0);
+                RankDead(new Dictionary<int, int> { [index] = 0 });
+
+                if (Phase == PhaseFight)
+                {
+                    SettleResolvedDuels();
+                    TryAdvanceRound();
+                }
+                else if (Phase == PhaseShop && AllShopDone())
+                {
+                    AdvanceFromShop();
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>未结算的当前桌：逃跑方判负，对手（或野怪）胜，伤害 0。</summary>
+        private void ForfeitCurrentDuel(string fleerUserId)
+        {
+            var duel = FindDuel(fleerUserId);
+            if (duel == null || duel.Resolved)
+            {
+                return;
+            }
+
+            var fleerSeat = duel.ViewerSeat(fleerUserId);
+            var winSeat = duel.VsMonster ? 1 : 1 - fleerSeat;
+            duel.ForceForfeit(winSeat);
+            if (!duel.VsMonster)
+            {
+                ApplyDuelGold(duel, winSeat);
+            }
+
+            BumpDuelResolved(duel, 0);
+        }
+
+        /// <summary>名次奖励一次性标志：仅 finished 后首次调用返回 true。</summary>
+        public bool TryMarkRewardsGranted()
+        {
+            lock (_gate)
+            {
+                if (Phase != PhaseFinished || _rewardsGranted)
+                {
+                    return false;
+                }
+
+                _rewardsGranted = true;
+                return true;
+            }
+        }
+
+        public void Act(string userId, string action, int index, int[] indexes)
+        {
+            lock (_gate)
+            {
+                // 编辑器测试：任意阶段可塞圣物（不扣金、不占货架上限校验外的重复件限制仍保留）。
+                if (string.Equals(action, PvpActions.DebugGrant, StringComparison.OrdinalIgnoreCase))
+                {
+                    var grantee = FighterOf(userId);
+                    DebugGrantRelic(grantee, index);
+                    Touch();
+                    return;
+                }
+
+                if (Phase == PhaseShop)
+                {
+                    ActShop(userId, action, index);
+                    return;
+                }
+
+                if (Phase != PhaseFight)
+                {
+                    throw new InvalidOperationException("Match is not in a fight.");
+                }
+
+                var duel = FindDuel(userId);
+                if (duel == null)
+                {
+                    throw new InvalidOperationException("Not in a duel.");
+                }
+
+                var fighter = FighterOf(userId);
+                var seat = duel.ViewerSeat(userId);
+                switch (action)
+                {
+                    case PvpActions.Pick:
+                        duel.Pick(seat, indexes ?? Array.Empty<int>());
+                        break;
+                    case PvpActions.Rub:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
+                        if (fighter.RubLeft <= 0)
+                        {
+                            throw new InvalidOperationException("No rub left.");
+                        }
+
+                        duel.Rub(seat, index);
+                        fighter.RubLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
+                        break;
+                    case PvpActions.Replace:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
+                        if (fighter.ReplaceLeft <= 0)
+                        {
+                            throw new InvalidOperationException("No replace left.");
+                        }
+
+                        duel.Replace(seat);
+                        fighter.ReplaceLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
+                        break;
+                    case PvpActions.Peek:
+                        if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
+                        {
+                            throw new InvalidOperationException("Skills disabled by binding.");
+                        }
+
+                        if (fighter.PeekLeft <= 0)
+                        {
+                            throw new InvalidOperationException("No peek left.");
+                        }
+
+                        duel.Peek(seat);
+                        fighter.PeekLeft--;
+                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
+                        if (PvpRelicRuntime.HasMechanism(_tables, fighter, MechanismType.PeekSteal))
+                        {
+                            duel.TryPeekSteal(seat, _shopRandom);
+                        }
+
+                        break;
+                    case PvpActions.Showdown:
+                    case PvpActions.Open:
+                        duel.LockSeat(seat);
+                        SettleResolvedDuels();
+                        break;
+                    case PvpActions.Use:
+                        UseRelic(fighter, index);
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unknown battle action.");
+                }
+
+                Touch();
+            }
+        }
+
+        public PvpMatchStateDto ViewFor(string userId)
+        {
+            lock (_gate)
+            {
+                return PvpMatchViewProjector.Project(this, _tables, userId);
+            }
+        }
+
+        private void StartRound()
+        {
+            _duels.Clear();
+            var alive = AliveSeats();
+            if (alive.Count <= 1)
+            {
+                FinishSurvivor();
+                return;
+            }
+
+            // 轮次没有上限：1、5、9… 打野怪，其余打玩家，直到只剩一人。
+            _kind = PvpSchedule.Kind(_mode, Round, alive.Count);
+            _goldBase = PvpSchedule.GoldBase(Round);
+            ResetSkills();
+            for (var f = 0; f < _fighters.Length; f++)
+            {
+                if (_fighters[f].Alive)
+                {
+                    // 凤凰羽毛标记跨回合作废；回合开始治疗/上限成长（绷带/永恒之心/保温杯）。
+                    _fighters[f].NullifyDamageNextHit = false;
+                    PvpRelicRuntime.RefreshCopiedRelic(_tables, _fighters[f], _shopRandom);
+                    PvpRelicRuntime.ApplyRoundStart(_tables, _fighters[f]);
+                }
+            }
+
+            IReadOnlyList<PvpPairSlot> slots;
+            if (_kind == PvpFightKind.Monster)
+            {
+                slots = PvpPairing.ForMonster(alive);
+            }
+            else
+            {
+                slots = PvpPairing.ForPvp(alive, _pvpCycle);
+                _pvpCycle++;
+            }
+
+            var monsterGroup = PvpSchedule.MonsterGroup(_tables, Round);
+            var openingDeaths = new Dictionary<int, int>();
+            ApplyOpeningChips(slots, openingDeaths);
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                var leftFighter = _fighters[slot.LeftSeat];
+                if (!leftFighter.Alive)
+                {
+                    continue;
+                }
+
+                var rightFighter = slot.IsMonster ? null : _fighters[slot.RightSeat!.Value];
+                if (rightFighter != null && !rightFighter.Alive)
+                {
+                    continue;
+                }
+
+                SeatSetup right;
+                var vsPlayer = !slot.IsMonster;
+                if (vsPlayer)
+                {
+                    ApplyOpeningHolyLight(leftFighter, rightFighter!, openingDeaths);
+                    if (rightFighter!.Alive && leftFighter.Alive)
+                    {
+                        ApplyOpeningHolyLight(rightFighter, leftFighter, openingDeaths);
+                    }
+
+                    if (!leftFighter.Alive || !rightFighter.Alive)
+                    {
+                        var survivor = leftFighter.Alive ? leftFighter : rightFighter.Alive ? rightFighter : null;
+                        if (survivor != null)
+                        {
+                            PayRoundGold(survivor, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: true, won: true);
+                        }
+
+                        continue;
+                    }
+
+                    RunBotConsumables(leftFighter);
+                    RunBotConsumables(rightFighter);
+                    if (!leftFighter.Alive || !rightFighter.Alive)
+                    {
+                        continue;
+                    }
+
+                    right = ToPlayerSeat(rightFighter, 1);
+                }
+                else
+                {
+                    right = ToMonsterSeat(monsterGroup);
+                    ApplyOpeningHolyLightToMonster(leftFighter, right);
+                    if (!leftFighter.Alive)
+                    {
+                        continue;
+                    }
+
+                    if (right.Hp <= 0)
+                    {
+                        GrantHeroKill(leftFighter);
+                        PayRoundGold(leftFighter, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: false, won: true);
+                        continue;
+                    }
+
+                    RunBotConsumables(leftFighter);
+                    if (!leftFighter.Alive)
+                    {
+                        continue;
+                    }
+                }
+
+                var left = ToPlayerSeat(leftFighter, 0);
+                var duelSeed = unchecked(Seed * 397 ^ Round * 911 ^ i * 17);
+                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer);
+                duel.BeforeCompare = (seat, setup) =>
+                {
+                    var fighter = seat == 0 ? leftFighter : rightFighter;
+                    if (fighter == null)
+                    {
+                        return;
+                    }
+
+                    setup.RubLeft = fighter.RubLeft;
+                    setup.PeekLeft = fighter.PeekLeft;
+                    setup.ReplaceLeft = fighter.ReplaceLeft;
+                    setup.HolyLightCasts = fighter.HolyLightCasts;
+                    PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
+                };
+                _duels.Add(duel);
+            }
+
+            RankDead(openingDeaths);
+
+            Phase = PhaseFight;
+            PhaseDeadlineUtcMs = _mode.OpenPhaseSeconds > 0
+                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.DealAnimMs + _mode.OpenPhaseSeconds * 1000L
+                : 0;
+            Bump(PvpEventKinds.RoundStart, string.Empty, Round);
+            SettleResolvedDuels();
+            TryAdvanceRound();
+        }
+
+        private void SettleResolvedDuels()
+        {
+            for (var d = 0; d < _duels.Count; d++)
+            {
+                var duel = _duels[d];
+                if (!duel.Resolved || duel.HpApplied)
+                {
+                    continue;
+                }
+
+                ApplyDuelDamage(duel);
+            }
+        }
+
+        private void ApplyDuelDamage(PvpDuelTable duel)
+        {
+            var snap = duel.Engine.Snapshot;
+            if (snap.Winners == null || snap.Winners.Count != 1)
+            {
+                ConsumeNullify(duel);
+                ApplyShowdownTrackers(duel, snap, winner: null);
+                duel.MarkHpApplied(-1, 0);
+                BumpDuelResolved(duel, 0);
+                return;
+            }
+
+            var win = snap.Winners[0];
+            if (win != 0 && win != 1)
+            {
+                ConsumeNullify(duel);
+                ApplyShowdownTrackers(duel, snap, winner: null);
+                duel.MarkHpApplied(-1, 0);
+                BumpDuelResolved(duel, 0);
+                return;
+            }
+
+            // 沉默 / 幸运点数强制胜，再走第六感反转。
+            win = MaybeBindingForceWin(duel, snap, win);
+            win = MaybeReverseWinner(duel, snap, win);
+
+            var damage = PvpSettlementRules.ScaleDamage(snap.Damages[win], _mode.DamageRoundScale, Round);
+            var winnerFighter = FighterOfDuelSeat(duel, win);
+            if (winnerFighter != null)
+            {
+                damage = PvpHeroRuntime.ScaleAoeDamage(
+                    _tables,
+                    winnerFighter.Combat.HeroId,
+                    Math.Max(0, winnerFighter.Combat.Attack),
+                    damage);
+                winnerFighter.BindingMagForever += PvpRelicBindings.SilverBookMag(_tables, winnerFighter.OwnedRelicIds);
+            }
+
+            // 凤凰羽毛：败方激活则本次比牌伤害归零；标记随本桌结算消费（未挡到也算用掉）。
+            var victim = FighterOfDuelSeat(duel, 1 - win);
+            var nullified = victim != null && victim.NullifyDamageNextHit;
+            if (nullified)
+            {
+                damage = 0;
+            }
+
+            ConsumeNullify(duel);
+
+            // 权力：满层后 1v1 有概率打空。
+            if (damage > 0 && victim != null && TryNobilityVoid(_tables, victim))
+            {
+                damage = 0;
+            }
+
+            var thunderBase = damage;
+            var dodged = false;
+            var deathHp = new Dictionary<int, int>();
+            if (damage > 0 && victim != null)
+            {
+                var victimHeroId = victim.Combat.HeroId;
+                // 英雄闪避（MissDamagePer）：掷中本次伤害为 0，并按 MissGetDamage 反击攻击方。
+                if (PvpHeroRuntime.RollDodge(_tables, victimHeroId, _shopRandom))
+                {
+                    dodged = true;
+                    var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
+                    counter += PvpRelicBindings.BonusDamage(
+                        _tables,
+                        victim,
+                        counter,
+                        Math.Max(0, victim.Combat.Attack),
+                        isCrit: false);
+                    if (counter > 0)
+                    {
+                        var attacker = FighterOfDuelSeat(duel, win);
+                        var attackerAlive = attacker != null && attacker.Alive;
+                        ApplyToSeat(duel, win, counter, deathHp);
+                        if (attackerAlive && attacker != null && !attacker.Alive)
+                        {
+                            GrantHeroKill(victim);
+                        }
+                    }
+
+                    damage = 0;
+                }
+                else
+                {
+                    // 英雄承伤减免（HeroTakeDamagePer）：对齐 PVE IncomingDamageAfterMitigation 的乘区与保底。
+                    damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, victimHeroId, damage);
+                }
+            }
+
+            var isCrit = snap.Crits != null && win < snap.Crits.Count && snap.Crits[win];
+            if (!nullified && !dodged && thunderBase > 0 && winnerFighter != null)
+            {
+                damage += PvpRelicBindings.BonusDamage(
+                    _tables,
+                    winnerFighter,
+                    thunderBase,
+                    Math.Max(0, winnerFighter.Combat.Attack),
+                    isCrit);
+            }
+
+            // 技能回响：无论输赢，双方有羁绊者都按技能次数×攻击出伤。
+            ApplyDisableSkillEcho(duel, snap, deathHp);
+
+            var winnerForKill = winnerFighter;
+            if (damage > 0 && winnerForKill != null && winnerForKill.Alive)
+            {
+                var dealt = victim != null ? Math.Min(victim.Hp, damage) : damage;
+                var heal = PvpHeroRuntime.BloodSuckingHeal(_tables, winnerForKill.Combat.HeroId, dealt);
+                if (heal > 0)
+                {
+                    var before = winnerForKill.Hp;
+                    winnerForKill.Hp = Math.Min(winnerForKill.MaxHp, winnerForKill.Hp + heal);
+                    var healed = winnerForKill.Hp - before;
+                    if (healed > 0)
+                    {
+                        PvpRelicRuntime.ApplyBloodCeremony(_tables, winnerForKill, victim, healed);
+                    }
+                }
+            }
+
+            var victimAlive = victim != null && victim.Alive;
+            ApplyToSeat(duel, 1 - win, damage, deathHp);
+            if (damage > 0 && victim != null)
+            {
+                ApplyCurseSilenceAfterHit(victim, winnerFighter);
+            }
+
+            // 夺命追击：必追加一段缩放伤害。
+            if (!nullified && !dodged && damage > 0 && winnerFighter != null &&
+                PvpRelicBindings.DoubleAttackTimes(_tables, winnerFighter.OwnedRelicIds) > 0 &&
+                victim != null && victim.Alive)
+            {
+                var scale = PvpRelicBindings.DoubleAttackDamageScale(_tables, winnerFighter.OwnedRelicIds);
+                var chase = Math.Max(0, (int)Math.Round(damage * scale));
+                if (chase > 0)
+                {
+                    ApplyToSeat(duel, 1 - win, chase, deathHp);
+                    if (victim.Alive)
+                    {
+                        ApplyCurseSilenceAfterHit(victim, winnerFighter);
+                    }
+                }
+            }
+
+            if (victimAlive && victim != null && !victim.Alive && winnerForKill != null)
+            {
+                GrantHeroKill(winnerForKill);
+            }
+
+            if (duel.VsMonster && win == 0 && winnerForKill != null)
+            {
+                var monsterHp = duel.Engine.MutableSeat(1).Hp;
+                var monsterDied = monsterHp > 0 && damage >= monsterHp;
+                if (monsterDied)
+                {
+                    GrantHeroKill(winnerForKill);
+                }
+                else if (IsPairWin(snap, win))
+                {
+                    var burn = NextHolyLightDamage(winnerForKill);
+                    if (burn > 0 && monsterHp - damage > 0 && burn >= monsterHp - damage)
+                    {
+                        GrantHeroKill(winnerForKill);
+                    }
+                }
+            }
+            else if (winnerForKill != null && IsPairWin(snap, win) && victim != null && victim.Alive)
+            {
+                var burn = NextHolyLightDamage(winnerForKill);
+                if (burn > 0)
+                {
+                    ApplyToSeat(duel, 1 - win, burn, deathHp);
+                    if (!victim.Alive)
+                    {
+                        GrantHeroKill(winnerForKill);
+                    }
+                }
+            }
+
+            duel.MarkHpApplied(win, damage);
+            ApplyDuelGold(duel, win);
+            ApplyMonsterWinHeal(duel, win);
+            ApplyShowdownTrackers(duel, snap, win);
+            RankDead(deathHp);
+            BumpDuelResolved(duel, damage);
+        }
+
+        private int MaybeReverseWinner(PvpDuelTable duel, BattleSnapshot snap, int win)
+        {
+            var loser = 1 - win;
+            var loserFighter = FighterOfDuelSeat(duel, loser);
+            if (loserFighter == null)
+            {
+                return win;
+            }
+
+            if (!PvpRelicRuntime.RollReverse(_tables, loserFighter, _shopRandom))
+            {
+                return win;
+            }
+
+            // 反转后用原败方伤害；若该座位伤害为 0 则至少按对方伤害对调语义仍成立。
+            return loser;
+        }
+
+        private int MaybeBindingForceWin(PvpDuelTable duel, BattleSnapshot snap, int win)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null || !fighter.SilencedNextCompare)
+                {
+                    continue;
+                }
+
+                fighter.SilencedNextCompare = false;
+                return 1 - seat;
+            }
+
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null || seat >= snap.Scores.Length)
+                {
+                    continue;
+                }
+
+                var score = snap.Scores[seat];
+                var shown = score.UsedCards;
+                if (shown == null || shown.Length == 0)
+                {
+                    continue;
+                }
+
+                if (PvpRelicBindings.TryLuckyForceWin(
+                        _tables,
+                        fighter.OwnedRelicIds,
+                        fighter.LuckyEnhancedRanks,
+                        shown,
+                        _shopRandom))
+                {
+                    return seat;
+                }
+            }
+
+            return win;
+        }
+
+        private bool TryNobilityVoid(IGameTables tables, PvpFighter victim)
+        {
+            var threshold = PvpRelicBindings.NobilityThreshold(tables, victim.OwnedRelicIds);
+            var chance = PvpRelicBindings.NobilityRedirectChance(tables, victim.OwnedRelicIds);
+            if (threshold <= 0 || victim.NobilityStacks < threshold || chance <= 0f)
+            {
+                return false;
+            }
+
+            return _shopRandom.NextDouble() < chance;
+        }
+
+        private void ApplyCurseSilenceAfterHit(PvpFighter victim, PvpFighter? attacker)
+        {
+            if (victim == null || attacker == null)
+            {
+                return;
+            }
+
+            if (PvpRelicBindings.CurseSilenceActive(_tables, victim.OwnedRelicIds))
+            {
+                attacker.SilencedNextCompare = true;
+            }
+        }
+
+        private void ApplyDisableSkillEcho(PvpDuelTable duel, BattleSnapshot snap, Dictionary<int, int> deathHp)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                var foe = FighterOfDuelSeat(duel, 1 - seat);
+                if (fighter == null || foe == null || !foe.Alive)
+                {
+                    continue;
+                }
+
+                var charges = Math.Max(0, fighter.RubLeft) + Math.Max(0, fighter.PeekLeft) + Math.Max(0, fighter.ReplaceLeft);
+                var dmg = PvpRelicBindings.DisableSkillDamage(
+                    _tables,
+                    fighter.OwnedRelicIds,
+                    charges,
+                    Math.Max(0, fighter.Combat.Attack));
+                if (dmg > 0)
+                {
+                    ApplyToSeat(duel, 1 - seat, dmg, deathHp);
+                }
+            }
+        }
+
+        private void ApplyShowdownTrackers(PvpDuelTable duel, BattleSnapshot snap, int? winner)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter == null)
+                {
+                    continue;
+                }
+
+                var type = seat < snap.Scores.Length ? snap.Scores[seat].Type : HandType.HighCard;
+                bool? won = null;
+                if (winner.HasValue)
+                {
+                    won = seat == winner.Value;
+                }
+
+                if (seat < snap.Scores.Length)
+                {
+                    PvpRelicRuntime.ApplyShowBindings(
+                        _tables,
+                        fighter,
+                        snap.Scores[seat],
+                        _shopRandom,
+                        enhanceLucky: won == true);
+                }
+
+                PvpRelicRuntime.AfterShowdown(_tables, fighter, type, won, _shopRandom);
+                if (won == true)
+                {
+                    // 月光酒回血 / 激励徽章上限成长（比牌获胜触发）。
+                    var opponent = FighterOfDuelSeat(duel, 1 - seat);
+                    var before = fighter.Hp;
+                    PvpRelicRuntime.ApplyWinRewards(_tables, fighter);
+                    var healed = Math.Max(0, fighter.Hp - before);
+                    if (healed > 0)
+                    {
+                        PvpRelicRuntime.ApplyBloodCeremony(_tables, fighter, opponent, healed);
+                    }
+                }
+
+                PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom, _relicStock.Return);
+            }
+        }
+
+        /// <summary>清掉本桌双方的凤凰羽毛标记：该道具保护"这一桌这一次比牌"，结算即消费。</summary>
+        private void ConsumeNullify(PvpDuelTable duel)
+        {
+            for (var seat = 0; seat <= 1; seat++)
+            {
+                var fighter = FighterOfDuelSeat(duel, seat);
+                if (fighter != null)
+                {
+                    fighter.NullifyDamageNextHit = false;
+                }
+            }
+        }
+
+        private PvpFighter? FighterOfDuelSeat(PvpDuelTable duel, int duelSeat)
+        {
+            if (duelSeat == 0)
+            {
+                return FighterAt(duel.LeftUserId);
+            }
+
+            if (duel.VsMonster)
+            {
+                return null;
+            }
+
+            return FighterAt(duel.RightUserId);
+        }
+
+        /// <summary>野怪轮玩家胜：回复 10% 最大生命（至少 1，不超过上限）。败北/平局不回。</summary>
+        private void ApplyMonsterWinHeal(PvpDuelTable duel, int win)
+        {
+            if (!duel.VsMonster || win != 0)
+            {
+                return;
+            }
+
+            var winner = FighterAt(duel.LeftUserId);
+            if (winner == null || !winner.Alive)
+            {
+                return;
+            }
+
+            winner.Hp = Math.Min(winner.MaxHp, winner.Hp + PvpSettlementRules.MonsterWinHeal(winner.MaxHp));
+        }
+
+        /// <summary>
+        /// 胜 = 本轮基础（英雄 GetGoldAfterLevel 只放大这一项）+ 未用技能×单价 + 连胜 + 利息。
+        /// 负 =（本人基础 + 本人未用技能×单价）/ 2 + 连败 + 利息。平局不结算。
+        /// 野怪轮照发基础/技能/利息，但不改连胜连败、不加连胜连败奖励。
+        /// </summary>
+        private void ApplyDuelGold(PvpDuelTable duel, int win)
+        {
+            var unit = PvpSettlementRules.SkillGoldUnit(_tables.GameConst);
+            var countStreak = !duel.VsMonster;
+
+            var winner = win == 0 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
+            if (winner != null)
+            {
+                PayRoundGold(winner, unit, countStreak, won: true);
+            }
+
+            var loser = win == 1 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
+            if (loser != null)
+            {
+                PayRoundGold(loser, unit, countStreak, won: false);
+            }
+        }
+
+        private void PayRoundGold(PvpFighter fighter, int skillGoldUnit, bool countStreak, bool won)
+        {
+            if (countStreak)
+            {
+                if (won)
+                {
+                    fighter.WinStreak++;
+                    fighter.LoseStreak = 0;
+                }
+                else
+                {
+                    fighter.LoseStreak++;
+                    fighter.WinStreak = 0;
+                }
+            }
+
+            var streak = countStreak ? (won ? fighter.WinStreak : fighter.LoseStreak) : 0;
+            var unused = fighter.RubLeft + fighter.ReplaceLeft + fighter.PeekLeft;
+            var baseGold = PvpHeroRuntime.SettlementGold(_tables, fighter.Combat.HeroId, _goldBase);
+            fighter.Gold += PvpSettlementRules.RoundGold(
+                baseGold, skillGoldUnit, unused, streak, fighter.Gold, won, _tables.GameConst);
+        }
+
+        private void BumpDuelResolved(PvpDuelTable duel, int damage)
+        {
+            Bump(PvpEventKinds.DuelResolved, duel.LeftUserId, damage);
+            if (!duel.VsMonster)
+            {
+                Bump(PvpEventKinds.DuelResolved, duel.RightUserId, damage);
+            }
+        }
+
+        private PvpFighter? FighterAt(string userId)
+        {
+            var index = SeatOf(userId);
+            return index < 0 ? null : _fighters[index];
+        }
+
+        private void TryAdvanceRound()
+        {
+            if (Phase != PhaseFight || !AllResolved())
+            {
+                return;
+            }
+
+            EnterSettle();
+        }
+
+        private void EnterSettle()
+        {
+            Phase = PhaseSettle;
+            PhaseDeadlineUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.SettleAnimMs;
+            Bump(PvpEventKinds.SettleStart, string.Empty, 0);
+        }
+
+        private void AdvanceFromSettle()
+        {
+            var alive = AliveSeats();
+            if (alive.Count <= 1)
+            {
+                FinishSurvivor();
+                return;
+            }
+
+            if (_mode.ShopSeconds <= 0)
+            {
+                AdvanceFromShop();
+                return;
+            }
+
+            EnterShop();
+        }
+
+        private void EnterShop()
+        {
+            Phase = PhaseShop;
+            PhaseDeadlineUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + _mode.ShopSeconds * 1000L;
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                var fighter = _fighters[i];
+                if (!fighter.Alive)
+                {
+                    continue;
+                }
+
+                // 断线代管：不买圣物，直接 done；机器人进店后自动买/开槽再 done。
+                fighter.ShopDone = fighter.Disconnected;
+                fighter.ShopRefreshCount = 0;
+                fighter.FreeShopRefreshLeft = 0;
+                _relicStock.ReturnShelf(fighter);
+                if (fighter.ShopDone)
+                {
+                    continue;
+                }
+
+                PvpShopRules.FillOffers(fighter, _tables, _shopRandom, _relicStock);
+                if (fighter.IsBot)
+                {
+                    RunBotShop(fighter);
+                    fighter.ShopDone = true;
+                }
+            }
+
+            Bump(PvpEventKinds.ShopStart, string.Empty, 0);
+            if (AllShopDone())
+            {
+                AdvanceFromShop();
+            }
+        }
+
+        /// <summary>机器人商店：优先买最贵且买得起的；槽满则开槽；开完继续买。不刷新。</summary>
+        private void RunBotShop(PvpFighter fighter)
+        {
+            // 上限：每轮最多买满货架 + 开满额外槽，防止异常死循环。
+            var guard = PvpShopRules.OfferCount + PvpRelicBag.MaxSlotsFor(_tables.GameConst) + 4;
+            for (var n = 0; n < guard; n++)
+            {
+                if (fighter.OwnedRelicIds.Count < fighter.RelicSlots)
+                {
+                    var relicId = PvpBotShop.PickHighestAffordable(fighter, _tables);
+                    if (relicId == null)
+                    {
+                        return;
+                    }
+
+                    BuyRelic(fighter, relicId.Value);
+                    continue;
+                }
+
+                if (!PvpBotShop.CanUnlockSlot(fighter, _tables))
+                {
+                    return;
+                }
+
+                UnlockRelicSlot(fighter);
+            }
+        }
+
+        /// <summary>机器人开战前主动用消耗品；加生命类仅在已扣血时用。</summary>
+        private void RunBotConsumables(PvpFighter fighter)
+        {
+            if (!fighter.IsBot || !fighter.Alive)
+            {
+                return;
+            }
+
+            var guard = fighter.OwnedRelicIds.Count + 2;
+            for (var n = 0; n < guard; n++)
+            {
+                var relicId = PvpBotConsumables.PickToUse(fighter, _tables);
+                if (relicId == null)
+                {
+                    return;
+                }
+
+                UseRelic(fighter, relicId.Value);
+            }
+        }
+
+        private void AdvanceFromShop()
+        {
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                _relicStock.ReturnShelf(_fighters[i]);
+            }
+
+            Round++;
+            StartRound();
+        }
+
+        private bool AllShopDone()
+        {
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                if (_fighters[i].Alive && !_fighters[i].ShopDone)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void ActShop(string userId, string action, int index)
+        {
+            var fighter = FighterOf(userId);
+            if (!fighter.Alive || fighter.ShopDone)
+            {
+                throw new InvalidOperationException("Shop is closed.");
+            }
+
+            switch (action)
+            {
+                case PvpActions.Buy:
+                    BuyRelic(fighter, index);
+                    break;
+                case PvpActions.Sell:
+                    SellRelic(fighter, index);
+                    break;
+                case PvpActions.Refresh:
+                    RefreshShop(fighter);
+                    break;
+                case PvpActions.UnlockSlot:
+                    UnlockRelicSlot(fighter);
+                    break;
+                case PvpActions.ShopDone:
+                    fighter.ShopDone = true;
+                    if (AllShopDone())
+                    {
+                        AdvanceFromShop();
+                    }
+
+                    break;
+                default:
+                    throw new InvalidOperationException("Unknown shop action.");
+            }
+
+            Touch();
+        }
+
+        /// <summary>使用消耗型圣物（UseType 1/2）：结算即时效果后移出持有（UseConsumable 计数 +1）。
+        /// 含 PVP 未支持消耗类型的圣物拒绝使用（商店也不会上架）。</summary>
+        private void UseRelic(PvpFighter fighter, int relicId)
+        {
+            if (!_tables.TryGetRelic(relicId, out var relic) || !fighter.OwnedRelicIds.Contains(relicId))
+            {
+                throw new InvalidOperationException("Relic not owned.");
+            }
+
+            if (relic.UseType != 1 && relic.UseType != 2)
+            {
+                throw new InvalidOperationException("Relic is not consumable.");
+            }
+
+            if (!PvpRelicRuntime.TryApplyConsumable(_tables, fighter, relic))
+            {
+                throw new InvalidOperationException("Relic has no pvp effect.");
+            }
+
+            var spent = PvpRelicBag.RemoveOne(fighter, relicId);
+            for (var i = 1; i < spent; i++)
+            {
+                PvpRelicRuntime.TryApplyConsumable(_tables, fighter, relic);
+            }
+
+            fighter.ConsumableUsesThisRun++;
+            PvpRelicRuntime.CleanupTrackers(fighter);
+        }
+
+        /// <summary>编辑器测试加圣物：写入 OwnedRelicIds，下一手比牌 / BeforeCompare 生效。</summary>
+        private void DebugGrantRelic(PvpFighter fighter, int relicId)
+        {
+            if (relicId <= 0 || !_tables.TryGetRelic(relicId, out _))
+            {
+                throw new InvalidOperationException("Unknown relic.");
+            }
+
+            if (fighter.OwnedRelicIds.Contains(relicId))
+            {
+                throw new InvalidOperationException("Relic already owned.");
+            }
+
+            PvpRelicBag.Add(fighter, relicId);
+            // 血量上限类与购买同口径（编辑器测试能直接看到血条变化）。
+            PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
+            // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。
+            var combat = fighter.Combat;
+            fighter.RubLeft += CombatBonuses.SumSkillCountBonus(
+                _tables, new[] { relicId }, combat.HeroId, Array.Empty<CombatTalentCount>(), MechanismType.RubbingCardsNum);
+            fighter.PeekLeft += CombatBonuses.SumSkillCountBonus(
+                _tables, new[] { relicId }, combat.HeroId, Array.Empty<CombatTalentCount>(), MechanismType.PerspectiveNum);
+        }
+
+        private void BuyRelic(PvpFighter fighter, int relicId)
+        {
+            if (!fighter.ShopOfferIds.Contains(relicId) || !_tables.TryGetRelic(relicId, out var relic))
+            {
+                throw new InvalidOperationException("Relic is not on sale.");
+            }
+
+            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            {
+                throw new InvalidOperationException("Relic bag is full.");
+            }
+
+            var price = PvpShopRules.BuyPrice(_tables, fighter.Combat.HeroId, relic);
+            if (fighter.Gold < price)
+            {
+                throw new InvalidOperationException("Not enough gold.");
+            }
+
+            fighter.Gold -= price;
+            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+            fighter.ShopOfferIds.Remove(relicId);
+            PvpRelicBag.Add(fighter, relicId);
+            // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
+            PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
+            // 懒初始化甜品/饮品满值：下次 ToPlayerSeat / Tick 时写入。
+        }
+
+        private void SellRelic(PvpFighter fighter, int relicId)
+        {
+            if (!fighter.OwnedRelicIds.Contains(relicId) || !_tables.TryGetRelic(relicId, out var relic))
+            {
+                throw new InvalidOperationException("Relic not owned.");
+            }
+
+            var copies = PvpRelicBag.RemoveOne(fighter, relicId);
+            if (copies <= 0)
+            {
+                throw new InvalidOperationException("Relic not owned.");
+            }
+
+            fighter.Gold += PvpShopRules.SellPrice(relic) * copies;
+            _relicStock.Return(relicId, copies);
+            for (var i = 1; i < copies; i++)
+            {
+                PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
+            }
+            // 血量上限类反向回收（当前血夹到新上限，不低于 1）。
+            PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
+            PvpRelicRuntime.CleanupTrackers(fighter);
+        }
+
+        private void RefreshShop(PvpFighter fighter)
+        {
+            if (fighter.FreeShopRefreshLeft > 0)
+            {
+                fighter.FreeShopRefreshLeft--;
+            }
+            else
+            {
+                var cost = PvpShopRules.RefreshCost(fighter, _tables.GameConst);
+                if (fighter.Gold < cost)
+                {
+                    throw new InvalidOperationException("Not enough gold.");
+                }
+
+                fighter.Gold -= cost;
+                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+                fighter.ShopRefreshCount++;
+            }
+
+            PvpRelicRuntime.OnShopRefreshed(_tables, fighter);
+            PvpShopRules.RerollOffers(fighter, _tables, _shopRandom, _relicStock);
+        }
+
+        private void UnlockRelicSlot(PvpFighter fighter)
+        {
+            if (fighter.RelicSlots >= PvpRelicBag.MaxSlotsFor(_tables.GameConst))
+            {
+                throw new InvalidOperationException("Relic slots are maxed.");
+            }
+
+            var cost = PvpRelicBag.NextSlotCost(_tables.GameConst, fighter.RelicSlots);
+            if (fighter.Gold < cost)
+            {
+                throw new InvalidOperationException("Not enough gold.");
+            }
+
+            fighter.Gold -= cost;
+            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+            fighter.RelicSlots++;
+        }
+
+        private void ReleaseRelics(PvpFighter fighter)
+        {
+            _relicStock.ReturnShelf(fighter);
+            _relicStock.ReturnCarried(fighter);
+        }
+
+        private void ApplyToSeat(PvpDuelTable duel, int duelSeat, int damage, Dictionary<int, int> deathHp)
+        {
+            string userId;
+            if (duelSeat == 0)
+            {
+                userId = duel.LeftUserId;
+            }
+            else if (duel.VsMonster)
+            {
+                return;
+            }
+            else
+            {
+                userId = duel.RightUserId;
+            }
+
+            var index = SeatOf(userId);
+            if (index < 0)
+            {
+                return;
+            }
+
+            var fighter = _fighters[index];
+            if (!fighter.Alive)
+            {
+                return;
+            }
+
+            fighter.Hp -= damage;
+            if (fighter.Hp <= 0)
+            {
+                if (PvpRelicRuntime.TryBindingRevive(_tables, fighter))
+                {
+                    return;
+                }
+
+                KillFighter(fighter, deathHp);
+            }
+        }
+
+        private void KillFighter(PvpFighter fighter, Dictionary<int, int> deathHp)
+        {
+            if (!fighter.Alive)
+            {
+                return;
+            }
+
+            deathHp[fighter.SeatIndex] = fighter.Hp;
+            fighter.Alive = false;
+            ReleaseRelics(fighter);
+        }
+
+        private void ApplyOpeningChips(IReadOnlyList<PvpPairSlot> slots, Dictionary<int, int> deathHp)
+        {
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                var left = _fighters[slot.LeftSeat];
+                if (left.Alive)
+                {
+                    ApplyHeroChip(left, deathHp);
+                }
+
+                if (slot.IsMonster)
+                {
+                    continue;
+                }
+
+                var right = _fighters[slot.RightSeat!.Value];
+                if (right.Alive)
+                {
+                    ApplyHeroChip(right, deathHp);
+                }
+            }
+        }
+
+        private void ApplyHeroChip(PvpFighter fighter, Dictionary<int, int> deathHp)
+        {
+            var raw = PvpHeroRuntime.MonsterNumChip(_tables, fighter.Combat.HeroId, 1);
+            if (raw <= 0 || !fighter.Alive)
+            {
+                return;
+            }
+
+            var damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, fighter.Combat.HeroId, raw);
+            if (damage <= 0)
+            {
+                return;
+            }
+
+            fighter.Hp -= damage;
+            if (fighter.Hp <= 0)
+            {
+                KillFighter(fighter, deathHp);
+            }
+        }
+
+        private void ApplyOpeningHolyLight(PvpFighter caster, PvpFighter target, Dictionary<int, int> deathHp)
+        {
+            var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
+            for (var i = 0; i < times && caster.Alive && target.Alive; i++)
+            {
+                var damage = NextHolyLightDamage(caster);
+                if (damage <= 0)
+                {
+                    continue;
+                }
+
+                target.Hp -= damage;
+                if (target.Hp <= 0)
+                {
+                    KillFighter(target, deathHp);
+                    GrantHeroKill(caster);
+                }
+            }
+        }
+
+        private void ApplyOpeningHolyLightToMonster(PvpFighter caster, SeatSetup monster)
+        {
+            var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
+            for (var i = 0; i < times && caster.Alive && monster.Hp > 0; i++)
+            {
+                var damage = NextHolyLightDamage(caster);
+                if (damage <= 0)
+                {
+                    continue;
+                }
+
+                monster.Hp = Math.Max(0, monster.Hp - damage);
+            }
+        }
+
+        private int NextHolyLightDamage(PvpFighter caster)
+        {
+            if (!PvpHeroRuntime.TryHolyLight(_tables, caster.Combat.HeroId, out var ratio, out var perCast))
+            {
+                return 0;
+            }
+
+            var damage = PvpHeroRuntime.HolyLightDamage(
+                Math.Max(0, caster.Combat.Attack),
+                ratio,
+                caster.HolyLightCasts,
+                perCast);
+            caster.HolyLightCasts++;
+            return damage;
+        }
+
+        private void GrantHeroKill(PvpFighter killer)
+        {
+            var gold = PvpHeroRuntime.KillGold(_tables, killer.Combat.HeroId);
+            if (gold != 0)
+            {
+                killer.Gold += gold;
+            }
+
+            var attack = PvpHeroRuntime.KillAttack(_tables, killer.Combat.HeroId);
+            if (attack != 0)
+            {
+                killer.Combat.Attack = Math.Max(0, killer.Combat.Attack + attack);
+            }
+        }
+
+        private static bool IsPairWin(BattleSnapshot snap, int win)
+        {
+            return win >= 0 && win < snap.Scores.Length && snap.Scores[win].Type == HandType.Pair;
+        }
+
+        private void RankDead(Dictionary<int, int> deathHp)
+        {
+            if (deathHp.Count == 0)
+            {
+                return;
+            }
+
+            var aliveAfter = 0;
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                if (_fighters[i].Alive)
+                {
+                    aliveAfter++;
+                }
+            }
+
+            foreach (var pair in PvpSettlementRules.RankDeadOrder(deathHp, aliveAfter))
+            {
+                var fighter = _fighters[pair.Key];
+                fighter.Rank = pair.Value;
+                if (fighter.Hp < 0)
+                {
+                    fighter.Hp = 0;
+                }
+
+                Bump(PvpEventKinds.PlayerEliminated, fighter.UserId, fighter.Rank);
+            }
+        }
+
+        private void FinishSurvivor()
+        {
+            Phase = PhaseFinished;
+            PhaseDeadlineUtcMs = 0;
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                if (_fighters[i].Alive && _fighters[i].Rank == 0)
+                {
+                    _fighters[i].Rank = 1;
+                }
+            }
+
+            FillRankRewards();
+            FinishedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            Bump(PvpEventKinds.MatchFinished, string.Empty, 0);
+        }
+
+        private void FillRankRewards()
+        {
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                _fighters[i].RewardGold = PvpSettlementRules.RewardForRank(_fighters[i].Rank, _mode.RankReward);
+                _fighters[i].RewardScore = PvpSettlementRules.ScoreForRank(_fighters[i].Rank, _mode.RankScore);
+            }
+        }
+
+        private void Bump(string kind, string userId, int value)
+        {
+            StateVersion++;
+            _pendingEvents.Add(new PvpMatchEventDto
+            {
+                Version = StateVersion,
+                Kind = kind,
+                Round = Round,
+                UserId = userId,
+                Value = value
+            });
+        }
+
+        /// <summary>只推进状态版本（不产生事件）：pick/rub/replace/peek/单方锁定/商店操作等
+        /// 不触发阶段事件的变更也必须让版本号前进，否则客户端版本过滤会把这些快照当重复丢弃。</summary>
+        private void Touch()
+        {
+            StateVersion++;
+        }
+
+        private bool AllResolved()
+        {
+            if (_duels.Count == 0)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < _duels.Count; i++)
+            {
+                if (!_duels[i].Resolved)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private List<int> AliveSeats()
+        {
+            var list = new List<int>(_fighters.Length);
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                if (_fighters[i].Alive)
+                {
+                    list.Add(i);
+                }
+            }
+
+            return list;
+        }
+
+        private PvpDuelTable? FindDuel(string userId)
+        {
+            for (var i = 0; i < _duels.Count; i++)
+            {
+                if (_duels[i].Involves(userId))
+                {
+                    return _duels[i];
+                }
+            }
+
+            return null;
+        }
+
+        private PvpFighter FighterOf(string userId)
+        {
+            var index = SeatOf(userId);
+            if (index < 0)
+            {
+                throw new InvalidOperationException("Not in a duel.");
+            }
+
+            return _fighters[index];
+        }
+
+        private void ResetSkills()
+        {
+            var rub = _tables.GameConst.DefaultSkillShuffleNum;
+            var replace = _tables.GameConst.DefaultSkillReplaceNum;
+            var peek = _tables.GameConst.DefaultSkillPerspectiveNum;
+            if (rub <= 0)
+            {
+                rub = 3;
+            }
+
+            if (replace <= 0)
+            {
+                replace = 1;
+            }
+
+            if (peek <= 0)
+            {
+                peek = 1;
+            }
+
+            for (var i = 0; i < _fighters.Length; i++)
+            {
+                var fighter = _fighters[i];
+                if (!fighter.Alive)
+                {
+                    continue;
+                }
+
+                // 词条枚举无换牌次数类型，替换只吃基础值；搓牌/透视叠加持有圣物 + 英雄 + 天赋加成。
+                var combat = fighter.Combat;
+                var carried = PvpRelicBag.Expand(fighter);
+                fighter.RubLeft = Math.Max(0, rub + CombatBonuses.SumSkillCountBonus(
+                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
+                fighter.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
+                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
+                fighter.ReplaceLeft = replace;
+            }
+        }
+
+        private SeatSetup ToPlayerSeat(PvpFighter fighter, int seatId)
+        {
+            var combat = fighter.Combat;
+            var setup = new SeatSetup
+            {
+                SeatId = seatId,
+                UserId = fighter.UserId,
+                NickName = fighter.NickName,
+                IsHuman = !fighter.IsBot && !fighter.Disconnected,
+                Alive = true,
+                Attack = combat.Attack,
+                Hp = fighter.Hp,
+                MaxHp = fighter.MaxHp,
+                HeroId = combat.HeroId,
+                Talents = CombatBonuses.CloneTalents(combat.Talents),
+                RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds),
+                RubLeft = fighter.RubLeft,
+                PeekLeft = fighter.PeekLeft,
+                ReplaceLeft = fighter.ReplaceLeft,
+                HolyLightCasts = fighter.HolyLightCasts
+            };
+            PvpRelicRuntime.ApplyTrackersToSeat(_tables, fighter, setup);
+            return setup;
+        }
+
+        private SeatSetup ToMonsterSeat(int groupId)
+        {
+            if (_tables.TryGetMonsterGroup(groupId, out var group)
+                && _tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster))
+            {
+                return new SeatSetup
+                {
+                    SeatId = 1,
+                    UserId = string.Empty,
+                    NickName = string.IsNullOrEmpty(monster.Name) ? "野怪" : monster.Name,
+                    IsHuman = false,
+                    Alive = true,
+                    Attack = Math.Max(1, monster.MonsterDamage),
+                    Hp = Math.Max(1, monster.MonsterHp),
+                    MaxHp = Math.Max(1, monster.MonsterHp),
+                    MonsterType = monster.Type
+                };
+            }
+
+            return new SeatSetup
+            {
+                SeatId = 1,
+                NickName = "野怪",
+                IsHuman = false,
+                Alive = true,
+                Attack = 1,
+                Hp = 1,
+                MaxHp = 1
+            };
+        }
+    }
+}

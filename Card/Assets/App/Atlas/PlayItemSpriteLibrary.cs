@@ -1,5 +1,5 @@
-using App.Config;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using UnityEngine;
 
@@ -39,7 +39,12 @@ namespace App.Atlas
                 return null;
             }
 
-            return _atlas.GetSprite(ResResourcePaths.PlayItemAtlas, spriteName);
+            if (_atlas.TryGetSprite(ResResourcePaths.PlayItemAtlas, spriteName, out var sprite) && sprite != null)
+            {
+                return sprite;
+            }
+
+            return null;
         }
 
         private static string SpriteName(QualityType type, int layer)

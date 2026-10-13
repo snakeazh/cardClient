@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using App.Energy;
+using App.Net;
+using App.UI;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
@@ -23,7 +25,7 @@ namespace App.UI.Popup
             AdInfo = new ObservableProperty<string>();
             ShowAdBtn = new ObservableProperty<bool>();
             AdCommand = new RelayCommand(WatchAd);
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         public ObservableProperty<string> Info { get; }
@@ -52,18 +54,28 @@ namespace App.UI.Popup
             ShowAdBtn.Value = left > 0;
         }
 
-        private void WatchAd()
+        private async void WatchAd()
         {
-            if (_energy.TryRefillByAd())
+            if (!GameApi.IsReady)
             {
-                _ = _dialogs.CloseWithResult(true);
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            Refresh();
+            try
+            {
+                var resp = await GameApi.Client.RefillEnergyByAdAsync();
+                GameApi.ApplyProfile(resp.Profile);
+                _ = _dialogs.CloseWithResult(true);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                Refresh();
+            }
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _dialogs.CloseWithResult(false);
         }

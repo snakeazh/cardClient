@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Framework.Save;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Unlock
 {
@@ -29,6 +30,9 @@ namespace App.Unlock
         /// 累加类：进度 += amount × StackedValue；取最大类（通关难度 / 持有金币 / 单次伤害）：进度 = max(当前, amount)。
         /// </summary>
         void Report(ContidionType type, int amount = 1);
+
+        /// <summary>用服务器主档覆盖解锁进度。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(IReadOnlyList<UnlockConditionProgressEntry> progress);
 
         void Load();
     }

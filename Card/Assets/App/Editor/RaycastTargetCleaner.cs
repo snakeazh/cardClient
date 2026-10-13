@@ -13,7 +13,8 @@ namespace App.Editor
     /// 保留规则（一律不关）：
     ///   1. 同节点挂 Selectable / EventTrigger / 其它 IEventSystemHandler 组件；
     ///   2. 被本预制体内任何 Selectable 引用为 targetGraphic；
-    ///   3. 位于 ScrollRect 子树内（滚动拖拽面）。
+    ///   3. ScrollRect 节点自身或其 Viewport 节点上的 Graphic（滚动拖拽面保底；
+    ///      列表项内部不再豁免——项内 Button 的 targetGraphic 已按规则 2 保留，点击与拖拽不受影响）。
     /// 注意：GameUI 的装饰图可能承担"挡住牌桌点击"的作用，关闭后点击会穿透到世界卡牌——
     /// 先跑扫描看清单，确认无穿透风险再应用。
     /// </summary>
@@ -139,9 +140,14 @@ namespace App.Editor
                 return true;
             }
 
-            if (graphic.GetComponentInParent<ScrollRect>(true) != null)
+            // 滚动拖拽面保底：只保留 ScrollRect 节点自身与 Viewport 节点上的 Graphic。
+            // 列表项内部不再豁免——拖拽沿命中 Graphic 的父链冒泡到 ScrollRect，
+            // 项内 Button 的 targetGraphic 已由上一条规则保留，空档由 Viewport 兜底。
+            var scrollRect = graphic.GetComponentInParent<ScrollRect>(true);
+            if (scrollRect != null
+                && (graphic.transform == scrollRect.transform || graphic.transform == scrollRect.viewport))
             {
-                reason = "ScrollRect 子树(拖拽面)";
+                reason = "ScrollRect/Viewport 拖拽面";
                 return true;
             }
 

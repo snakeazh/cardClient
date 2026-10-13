@@ -51,6 +51,14 @@ namespace App.Guide
             Save();
         }
 
+        public void ReplaceFromServer(int[] completedGroupIds)
+        {
+            _completed = completedGroupIds == null || completedGroupIds.Length == 0
+                ? Array.Empty<int>()
+                : (int[])completedGroupIds.Clone();
+            _dirty = true;
+        }
+
         public void ResetAll()
         {
             if (_completed.Length == 0)

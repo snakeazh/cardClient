@@ -48,6 +48,14 @@ namespace App.Resources
         public const string CardPointEffect01 = "Effect/UI/Card/CardPointEffect01";
         public const string CardPointEffect02 = "Effect/UI/Card/CardPointEffect02";
         public const string CardPointEffect03 = "Effect/UI/Card/CardPointEffect03";
+        /// <summary>英雄局内攻击特效目录 Assets/Res/Effect/Character/。完整 key = HeroEffect(name)。</summary>
+        public const string HeroEffectRoot = "Effect/Character/";
+
+        /// <summary>英雄攻击特效：Assets/Res/Effect/Character/{effectsName}.prefab。</summary>
+        public static string HeroEffect(string effectsName)
+        {
+            return string.IsNullOrEmpty(effectsName) ? null : HeroEffectRoot + effectsName;
+        }
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";
@@ -77,10 +85,12 @@ namespace App.Resources
         public const string CardTypeValueAtlas = "Altas/cardTypeValue";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Relic.spriteatlasv2.</summary>
         public const string RelicAtlas = "Altas/Relic";
-        /// <summary>SpriteAtlas under Assets/Res/Altas/ItemBg.spriteatlasv2（源图 Assets/Sprites/ItemBg）。</summary>
-        public const string ItemBgAtlas = "Altas/ItemBg";
-        /// <summary>SpriteAtlas under Assets/Res/Altas/playitem.spriteatlasv2（源图 Assets/Sprites/playeritem，品质卡背 {品质}CardFrameBack{1,2,3}）。</summary>
+        /// <summary>SpriteAtlas under Assets/Res/Altas/playitem.spriteatlasv2（源图 Assets/Sprites/playeritem；含原 ItemBg 的框/卡背/怪物底）。</summary>
         public const string PlayItemAtlas = "Altas/playitem";
+        /// <summary>已并入 <see cref="PlayItemAtlas"/>；保留常量以免外部硬编码断裂。</summary>
+        public const string ItemBgAtlas = PlayItemAtlas;
+        /// <summary>SpriteAtlas under Assets/Res/Altas/enemy.spriteatlasv2（源图 Assets/Res/Textures/enemy，sprite 名={Icon}_attack/_damage/_dead）。</summary>
+        public const string EnemyAtlas = "Altas/enemy";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
         public const string TalentAtlas = "Altas/Talent";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>
@@ -119,7 +129,7 @@ namespace App.Resources
         }
 
         /// <summary>
-        /// <see cref="App.Config.HeroConfig.Icon"/> + _attack / _damage / _dead。
+        /// <see cref="CardShare.Contracts.Config.HeroConfig.Icon"/> + _attack / _damage / _dead。
         /// </summary>
         public static string RolePortrait(string icon, string suffix)
         {
@@ -127,30 +137,43 @@ namespace App.Resources
         }
 
         /// <summary>
-        /// <see cref="App.Config.MonsterConfig.Icon"/> + _attack / _damage / _dead。
-        /// normal 态（_attack）已挪到 Textures/enemytujian 并打进图集（图鉴整页展示用）；
-        /// _damage / _dead 仍在 Textures/enemy 按张加载（局内懒加载、退局释放）。
+        /// 怪物立绘资源键 / 图集 sprite 名：{Icon}_attack / _damage / _dead。
+        /// 贴图在 Assets/Res/Textures/enemy，运行时从 <see cref="EnemyAtlas"/> 取，不再按张 Load。
         /// </summary>
         public static string EnemyPortrait(string icon, string suffix)
         {
-            var folder = string.Equals(suffix, PortraitAttack, System.StringComparison.Ordinal)
-                ? "Textures/enemytujian"
-                : "Textures/enemy";
-            return ComposeIcon(folder, icon, suffix);
+            return ComposeIcon("Textures/enemy", icon, suffix);
         }
 
         /// <summary>
-        /// <see cref="App.Config.RelicConfig.Icon"/> 对应 Assets/Res/Textures/Relic 下的文件名（无扩展名）。
+        /// <see cref="CardShare.Contracts.Config.RelicConfig.Icon"/> 对应 Assets/Res/Textures/Relic 下的文件名（无扩展名）。
         /// </summary>
         public static string RelicIcon(string icon)
         {
             return ComposeIcon("Textures/Relic", icon, null);
         }
 
-        public static string EnemyAttack(int index) => $"Textures/enemytujian/enemy{index}_attack";
+        /// <summary>图集内 sprite 名（无路径），如 enemy1_attack。</summary>
+        public static string EnemySpriteName(string icon, string suffix)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+
+            var name = icon.Trim();
+            if (string.IsNullOrWhiteSpace(suffix))
+            {
+                return name;
+            }
+
+            return name + "_" + suffix.Trim();
+        }
+
+        public static string EnemyAttack(int index) => EnemySpriteName("enemy" + index, PortraitAttack);
 
         /// <summary>
-        /// <see cref="App.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
+        /// <see cref="CardShare.Contracts.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
         /// </summary>
         public static string CommonIcon(string icon)
         {

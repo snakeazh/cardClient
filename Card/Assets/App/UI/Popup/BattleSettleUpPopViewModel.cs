@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using Framework.Assets;
 using Framework.UI;
@@ -115,7 +116,7 @@ namespace App.UI.Popup
                 bar?.ReleaseHeldGold();
             }
 
-            Close();
+            ClosePop();
         }
 
         public bool TryBeginDouble(GameResourceViewModel bar, out int extra)
@@ -146,7 +147,7 @@ namespace App.UI.Popup
                 bar?.ReleaseHeldGold(extra);
             }
 
-            Close();
+            ClosePop();
         }
 
         protected override Task OnClose()
@@ -234,7 +235,7 @@ namespace App.UI.Popup
             // View 拦截 DoubleBtn 点击并播飞币；命令仅用于 CanExecute。
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _dialogs.CloseWithResult(true);
         }

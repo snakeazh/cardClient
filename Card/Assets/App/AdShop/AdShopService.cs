@@ -54,6 +54,15 @@ namespace App.AdShop
 
         public event Action Changed;
 
+        public void ReplaceFromServer(int staminaCount, int goldCount)
+        {
+            _staminaCount = staminaCount < 0 ? 0 : staminaCount;
+            _goldCount = goldCount < 0 ? 0 : goldCount;
+            _gameDay = TodayGameDay();
+            _dirty = true;
+            Changed?.Invoke();
+        }
+
         public bool TryPurchaseStamina()
         {
             EnsureDailyReset();

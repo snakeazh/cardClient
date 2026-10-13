@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -151,6 +152,28 @@ namespace App.Unlock
             _dirty = true;
             SyncUnlockedRelics(toast: true);
             Save();
+        }
+
+        public void ReplaceFromServer(IReadOnlyList<UnlockConditionProgressEntry> progress)
+        {
+            _progress.Clear();
+            _unlockedRelics.Clear();
+            if (progress != null)
+            {
+                for (var i = 0; i < progress.Count; i++)
+                {
+                    var entry = progress[i];
+                    if (entry == null || entry.ConditionId <= 0 || entry.Amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    _progress[entry.ConditionId] = entry.Amount;
+                }
+            }
+
+            _dirty = true;
+            SyncUnlockedRelics(toast: false);
         }
 
         private static bool UsesMaxProgress(ContidionType type)

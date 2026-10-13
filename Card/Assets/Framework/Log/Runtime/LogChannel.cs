@@ -13,6 +13,7 @@ namespace Framework.Log
         Assets = 8,
         Save = 9,
         Talent = 10,
-        Energy = 11
+        Energy = 11,
+        Net = 12
     }
 }

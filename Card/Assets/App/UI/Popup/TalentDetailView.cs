@@ -1,5 +1,6 @@
 using System;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
@@ -51,7 +52,7 @@ namespace App.UI.Popup
                 // 未拥有观感同天赋列表：Mask 激活 + card_Name ？？？ + card_icon 黑色剪影
                 Binding.Add(ViewModel.CardOwned.Subscribe(ApplyCardOwned));
                 Binding.Add(ViewModel.LevelText.Subscribe(_card.SetLevel));
-                // 品质边框（Altas/ItemBg），切换/升级换行时随快照刷新
+                // 品质卡背（Altas/playitem），切换/升级换行时随快照刷新
                 Binding.Add(ViewModel.Quality.Subscribe(_card.ApplyQuality));
                 // 切条目品质变化时同步换常驻品质特效
                 Binding.Add(ViewModel.Quality.Subscribe(OnQualityFxChanged));
@@ -98,6 +99,11 @@ namespace App.UI.Popup
             var acquire = UI.GetGameObject("AcquireMethod");
             Binding.BindActive(acquire, ViewModel.ShowAcquireMethod);
             Binding.BindText(acquire.GetComponent<TMP_Text>(), ViewModel.AcquireMethodText);
+
+            // 特殊描述文本（图鉴遗物页开，文案=RelicConfig.SpecialDesc）
+            var specialDes = UI.GetGameObject("ItemDes");
+            Binding.BindActive(specialDes, ViewModel.ShowSpecialDesc);
+            Binding.BindText(specialDes.GetComponent<TMP_Text>(), ViewModel.SpecialDescText);
 
             Binding.BindText(UI.GetGameObject("Detail").GetComponent<TMP_Text>(), ViewModel.DescText);
             BindMaskClose();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Game
 {
@@ -56,37 +57,12 @@ namespace App.Game
 
         public static float SumMultiplierExtra(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
-            var extra = 0f;
-            ForEachEntry(run, (_, entry) =>
-            {
-                extra += MultiplierFromEntry(entry, score, run, ctx);
-            });
-            if (!HasMechanism(run, MechanismType.RubbingCardRelic))
-            {
-                extra += run != null ? run.RubRelicMagForever : 0f;
-            }
-
-            if (!HasMechanism(run, MechanismType.ProOfUpCardType) && run != null)
-            {
-                extra += run.HandTypeMagBonus(score.Type);
-            }
-
-            if (!HasMechanism(run, MechanismType.NoKillMonsterGetMagnification) && run != null)
-            {
-                extra += run.PracticeMagForever;
-            }
-
-            return extra;
+            return EvaluateShared(run, score, ctx).MagExtra;
         }
 
         public static float SumAttackExtra(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
-            var extra = 0f;
-            ForEachEntry(run, (_, entry) =>
-            {
-                extra += AttackFromEntry(entry, score, run, ctx);
-            });
-            return extra;
+            return EvaluateShared(run, score, ctx).AttackExtra;
         }
 
         /// <summary>按装备栏顺序收集本手触发的倍率/攻击加成，一件装备一条。</summary>
@@ -97,39 +73,16 @@ namespace App.Game
             RelicCombatContext ctx = default)
         {
             dest?.Clear();
-            if (dest == null || run?.RelicConfigIds == null)
+            if (dest == null)
             {
                 return;
             }
 
-            var ids = run.RelicConfigIds;
-            for (var i = 0; i < ids.Count; i++)
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var relicId = ids[i];
-                if (relicId <= 0 || IsDisabled(run, relicId))
-                {
-                    continue;
-                }
-
-                var relic = RelicConfig.Get(relicId);
-                if (relic == null)
-                {
-                    continue;
-                }
-
-                var multiplierAdd = 0f;
-                var attackAdd = 0f;
-                ForEachRelicEntry(relic, entry =>
-                {
-                    multiplierAdd += MultiplierFromEntry(entry, score, run, ctx);
-                    attackAdd += AttackFromEntry(entry, score, run, ctx);
-                });
-                if (multiplierAdd == 0f && attackAdd == 0f)
-                {
-                    continue;
-                }
-
-                dest.Add(new RelicBonusPart(relic.Id, multiplierAdd, attackAdd));
+                var part = parts[i];
+                dest.Add(new RelicBonusPart(part.RelicId, part.MagAdd, part.AttackAdd));
             }
         }
 
@@ -146,42 +99,35 @@ namespace App.Game
                 return;
             }
 
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                if (relic == null || relic.Id <= 0)
+                var part = parts[i];
+                if ((part.MagAdd != 0f || part.AttackAdd != 0f) && !dest.Contains(part.RelicId))
                 {
-                    return;
+                    dest.Add(part.RelicId);
                 }
-
-                if (MultiplierFromEntry(entry, score, run, ctx) == 0f &&
-                    AttackFromEntry(entry, score, run, ctx) == 0f)
-                {
-                    return;
-                }
-
-                if (!dest.Contains(relic.Id))
-                {
-                    dest.Add(relic.Id);
-                }
-            });
+            }
         }
 
         /// <summary>已触发的倍率词条，如「粗制长剑+1, 青铜项链+1」。未触发的不写。</summary>
         public static string CollectMultiplierParts(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
             string text = null;
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var add = MultiplierFromEntry(entry, score, run, ctx);
-                if (add == 0f)
+                var part = parts[i];
+                if (part.MagAdd == 0f)
                 {
-                    return;
+                    continue;
                 }
 
-                var name = relic != null && !string.IsNullOrEmpty(relic.Name) ? relic.Name : entry.Name;
+                var add = part.MagAdd;
+                var name = !string.IsNullOrEmpty(part.Name) ? part.Name : part.RelicId.ToString();
                 var piece = add == (int)add ? $"{name}+{(int)add}" : $"{name}+{add}";
                 text = text == null ? piece : text + ", " + piece;
-            });
+            }
 
             // 与 SumMultiplierExtra 一致：对应圣物已不在栏时，永久累计仍计入遗物加成。
             if (!HasMechanism(run, MechanismType.RubbingCardRelic) &&
@@ -219,19 +165,20 @@ namespace App.Game
         public static string CollectAttackParts(RunState run, HandScore score, RelicCombatContext ctx = default)
         {
             string text = null;
-            ForEachEntry(run, (relic, entry) =>
+            var parts = EvaluateShared(run, score, ctx).Parts;
+            for (var i = 0; i < parts.Count; i++)
             {
-                var add = AttackFromEntry(entry, score, run, ctx);
-                if (add == 0f)
+                var part = parts[i];
+                if (part.AttackAdd == 0f)
                 {
-                    return;
+                    continue;
                 }
 
-                var name = relic != null && !string.IsNullOrEmpty(relic.Name) ? relic.Name : entry.Name;
-                var rounded = (int)Math.Round(add);
-                var piece = $"{name}+{rounded}";
+                var name = !string.IsNullOrEmpty(part.Name) ? part.Name : part.RelicId.ToString();
+                var piece = $"{name}+{(int)Math.Round(part.AttackAdd)}";
                 text = text == null ? piece : text + ", " + piece;
-            });
+            }
+
             return text ?? string.Empty;
         }
 
@@ -275,7 +222,7 @@ namespace App.Game
 
         public static bool Roll(RunState run, MechanismType type, Random rng)
         {
-            var chance = SumValue(run, type);
+            var chance = SumProbability(run, type);
             if (chance <= 0f || rng == null)
             {
                 return false;
@@ -484,6 +431,401 @@ namespace App.Game
             return sum;
         }
 
+        /// <summary>幸运之子：这些机制的 Value 是触发概率，会被翻倍；暴击/闪避等属性值与层数上限不在此列。</summary>
+        private static bool IsProbabilityType(MechanismType type)
+        {
+            switch (type)
+            {
+                case MechanismType.ReverseResult:
+                case MechanismType.AllPeacePer:
+                case MechanismType.SteppingStone:
+                case MechanismType.ProOfUpCardType:
+                case MechanismType.ProOfHeadCardFunds:
+                case MechanismType.EveryRoundEndingGetGoldPer:
+                case MechanismType.DownGrade:
+                case MechanismType.SpecialSevenCardPro:
+                case MechanismType.SelfDestroyPerRound:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>读词条概率值；持有幸运之子时概率翻倍。</summary>
+        public static float ProbabilityValue(RunState run, RelicEntryConfig entry, int index = 0)
+        {
+            var value = ValueAt(entry, index);
+            if (value > 0f && IsProbabilityType(entry.Type) && HasMechanism(run, MechanismType.LuckyDouble))
+            {
+                value *= 2f;
+            }
+
+            return value;
+        }
+
+        /// <summary>按概率语义求和：幸运之子只翻概率型机制。</summary>
+        public static float SumProbability(RunState run, MechanismType type, int index = 0)
+        {
+            var sum = 0f;
+            ForEachEntry(run, (_, entry) =>
+            {
+                if (entry.Type == type)
+                {
+                    sum += ProbabilityValue(run, entry, index);
+                }
+            });
+            return sum;
+        }
+
+        /// <summary>逐条机制独立掷骰（逆转沙漏与第六感分开判定），命中返回 true 并给出触发圣物名。</summary>
+        public static bool RollEach(RunState run, MechanismType type, Random rng, out string relicName)
+        {
+            relicName = null;
+            if (run == null || rng == null)
+            {
+                return false;
+            }
+
+            var hit = false;
+            string hitName = null;
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (hit || entry.Type != type)
+                {
+                    return;
+                }
+
+                var chance = ProbabilityValue(run, entry);
+                if (chance > 0f && rng.NextDouble() < chance)
+                {
+                    hit = true;
+                    hitName = relic?.Name;
+                }
+            });
+            relicName = hitName;
+            return hit;
+        }
+
+        /// <summary>高档甜品：当前剩余自衰减攻击合计（加在英雄攻击面板上）。缺键懒初始化满值。</summary>
+        public static int SelfDecayAttackTotal(RunState run)
+        {
+            var total = 0;
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type == MechanismType.SelfDecayAttack)
+                {
+                    total += SelfDecayAttackLeftFor(run, relic, entry);
+                }
+            });
+            return total;
+        }
+
+        /// <summary>高档饮品：某遗物剩余自衰减倍率。缺键懒初始化满值。</summary>
+        public static float SelfDecayMagLeftFor(RunState run, int relicId)
+        {
+            var relic = RelicConfig.Get(relicId);
+            var left = 0f;
+            ForEachRelicEntry(relic, entry =>
+            {
+                if (entry.Type == MechanismType.SelfDecayMult)
+                {
+                    left += SelfDecayMagLeftFor(run, relic, entry);
+                }
+            });
+            return left;
+        }
+
+        /// <summary>每次亮牌结算后调用：自衰减攻击/倍率各降一档（下限 0），返回要从英雄攻击扣掉的总量。</summary>
+        public static int TickSelfDecay(RunState run)
+        {
+            var attackLoss = 0;
+            if (run == null)
+            {
+                return 0;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type == MechanismType.SelfDecayAttack)
+                {
+                    var left = SelfDecayAttackLeftFor(run, relic, entry);
+                    var decay = Math.Max(0, (int)Math.Round(ValueAt(entry, 1)));
+                    var loss = Math.Min(left, decay);
+                    if (loss > 0)
+                    {
+                        run.SelfDecayAttackLeft[relic.Id] = left - loss;
+                        attackLoss += loss;
+                    }
+                }
+                else if (entry.Type == MechanismType.SelfDecayMult)
+                {
+                    var left = SelfDecayMagLeftFor(run, relic, entry);
+                    var decay = Math.Max(0f, ValueAt(entry, 1));
+                    var loss = Math.Min(left, decay);
+                    if (loss > 0f)
+                    {
+                        run.SelfDecayMagLeft[relic.Id] = left - loss;
+                    }
+                }
+            });
+            return attackLoss;
+        }
+
+        /// <summary>贪婪：每次比牌胜利自身倍率 +Value[0]，失败 -Value[1]，下限 0。跨关保留，卖掉重买重置。</summary>
+        public static void OnCompareResult(RunState run, bool won)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.SelfMultWinLose || relic == null)
+                {
+                    return;
+                }
+
+                run.WinLoseRelicMag.TryGetValue(relic.Id, out var current);
+                var delta = won ? ValueAt(entry) : -ValueAt(entry, 1);
+                run.WinLoseRelicMag[relic.Id] = Math.Max(0f, current + delta);
+            });
+        }
+
+        /// <summary>商店每刷新一次（含免费刷新）调用：持有中的消费主义计数 +1。</summary>
+        public static void OnShopRefreshed(RunState run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            ForEachEntry(run, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.ShopRefreshGetMult)
+                {
+                    return;
+                }
+
+                run.ShopRefreshRelicCounts.TryGetValue(relic.Id, out var count);
+                run.ShopRefreshRelicCounts[relic.Id] = count + 1;
+            });
+        }
+
+        /// <summary>倍率叠加 / 力量叠加：每次使用消耗类圣物后 +1。</summary>
+        public static void OnConsumableUsed(RunState run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            run.ConsumableUsesThisRun++;
+        }
+
+        /// <summary>复制：每回合随机选一个其它已持有圣物；无候选则清零。</summary>
+        public static void RefreshCopiedRelic(RunState run, Random rng)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            run.RoundCopiedRelicId = 0;
+            if (rng == null || !HasMechanism(run, MechanismType.CopyRandomRelic))
+            {
+                return;
+            }
+
+            var candidates = new List<int>();
+            for (var i = 0; i < run.RelicConfigIds.Count; i++)
+            {
+                var id = run.RelicConfigIds[i];
+                if (id <= 0 || IsDisabled(run, id))
+                {
+                    continue;
+                }
+
+                var relic = RelicConfig.Get(id);
+                if (relic == null || IsConsumable(relic))
+                {
+                    continue;
+                }
+
+                var isCopy = false;
+                ForEachRelicEntry(relic, entry =>
+                {
+                    if (entry.Type == MechanismType.CopyRandomRelic)
+                    {
+                        isCopy = true;
+                    }
+                });
+                if (isCopy)
+                {
+                    continue;
+                }
+
+                candidates.Add(id);
+            }
+
+            if (candidates.Count == 0)
+            {
+                return;
+            }
+
+            run.RoundCopiedRelicId = candidates[rng.Next(candidates.Count)];
+        }
+
+        /// <summary>召唤：亮出同花顺且栏位有空时，随机塞入 1 个消耗品圣物。成功返回 true。</summary>
+        public static bool TrySummonConsumable(RunState run, HandType shownType, Random rng, int carryMax, out RelicConfig summoned)
+        {
+            summoned = null;
+            if (run == null || rng == null || shownType != HandType.StraightFlush)
+            {
+                return false;
+            }
+
+            if (!HasMechanism(run, MechanismType.SummonConsumable))
+            {
+                return false;
+            }
+
+            if (run.RelicConfigIds.Count >= carryMax)
+            {
+                return false;
+            }
+
+            var pool = new List<RelicConfig>();
+            foreach (var kv in RelicConfig.All)
+            {
+                var relic = kv.Value;
+                if (relic == null || !IsConsumable(relic) || run.RelicConfigIds.Contains(relic.Id))
+                {
+                    continue;
+                }
+
+                pool.Add(relic);
+            }
+
+            if (pool.Count == 0)
+            {
+                return false;
+            }
+
+            summoned = pool[rng.Next(pool.Count)];
+            run.RelicConfigIds.Add(summoned.Id);
+            return true;
+        }
+
+        /// <summary>
+        /// 清理已不持有的遗物追踪器（衰减/刷新计数），重买时从头来过。返回需从英雄攻击扣掉的剩余自衰减攻击。
+        /// </summary>
+        public static int CleanupRelicTrackers(RunState run)
+        {
+            var attackLoss = 0;
+            if (run == null)
+            {
+                return 0;
+            }
+
+            attackLoss = PruneUnownedAttack(run);
+            PruneUnowned(run.SelfDecayMagLeft, run);
+            PruneUnowned(run.ShopRefreshRelicCounts, run);
+            PruneUnowned(run.WinLoseRelicMag, run);
+            return attackLoss;
+        }
+
+        private static int PruneUnownedAttack(RunState run)
+        {
+            var dict = run.SelfDecayAttackLeft;
+            if (dict.Count == 0)
+            {
+                return 0;
+            }
+
+            var loss = 0;
+            List<int> stale = null;
+            foreach (var kv in dict)
+            {
+                if (!run.RelicConfigIds.Contains(kv.Key))
+                {
+                    loss += kv.Value;
+                    (stale ??= new List<int>()).Add(kv.Key);
+                }
+            }
+
+            if (stale != null)
+            {
+                for (var i = 0; i < stale.Count; i++)
+                {
+                    dict.Remove(stale[i]);
+                }
+            }
+
+            return loss;
+        }
+
+        private static void PruneUnowned<T>(Dictionary<int, T> dict, RunState run)
+        {
+            if (dict.Count == 0)
+            {
+                return;
+            }
+
+            List<int> stale = null;
+            foreach (var key in dict.Keys)
+            {
+                if (!run.RelicConfigIds.Contains(key))
+                {
+                    (stale ??= new List<int>()).Add(key);
+                }
+            }
+
+            if (stale == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < stale.Count; i++)
+            {
+                dict.Remove(stale[i]);
+            }
+        }
+
+        private static int SelfDecayAttackLeftFor(RunState run, RelicConfig relic, RelicEntryConfig entry)
+        {
+            if (run == null || relic == null)
+            {
+                return 0;
+            }
+
+            if (run.SelfDecayAttackLeft.TryGetValue(relic.Id, out var left))
+            {
+                return left;
+            }
+
+            left = Math.Max(0, (int)Math.Round(ValueAt(entry)));
+            run.SelfDecayAttackLeft[relic.Id] = left;
+            return left;
+        }
+
+        private static float SelfDecayMagLeftFor(RunState run, RelicConfig relic, RelicEntryConfig entry)
+        {
+            if (run == null || relic == null)
+            {
+                return 0f;
+            }
+
+            if (run.SelfDecayMagLeft.TryGetValue(relic.Id, out var left))
+            {
+                return left;
+            }
+
+            left = Math.Max(0f, ValueAt(entry));
+            run.SelfDecayMagLeft[relic.Id] = left;
+            return left;
+        }
+
         public static bool HasMechanism(RunState run, MechanismType type)
         {
             var found = false;
@@ -536,7 +878,7 @@ namespace App.Game
         {
             var treatAllAsFace = HasMechanism(run, MechanismType.AllCardIsHeadCard);
             var luckyHits = 0;
-            var chance = SumValue(run, MechanismType.SpecialSevenCardPro);
+            var chance = SumProbability(run, MechanismType.SpecialSevenCardPro);
             if (chance > 0f && score.UsedCards != null && rng != null)
             {
                 for (var i = 0; i < score.UsedCards.Length; i++)
@@ -667,329 +1009,87 @@ namespace App.Game
             }
         }
 
-        private static float MultiplierFromEntry(
-            RelicEntryConfig entry,
-            HandScore score,
+        private static CardShare.Battle.RelicCombatResult EvaluateShared(
             RunState run,
+            HandScore score,
             RelicCombatContext ctx)
         {
-            var value = ValueAt(entry);
-            switch (entry.Type)
-            {
-                case MechanismType.CardMagnification:
-                    return value;
-                case MechanismType.SquarePlate:
-                    return CountSuit(score, Suit.Diamond, run) * value;
-                case MechanismType.Spades:
-                    return CountSuit(score, Suit.Spade, run) * value;
-                case MechanismType.RedHeart:
-                    return CountSuit(score, Suit.Heart, run) * value;
-                case MechanismType.PlumBlossom:
-                    return CountSuit(score, Suit.Club, run) * value;
-                case MechanismType.Couplet:
-                    return score.Type == HandType.Pair ? value : 0f;
-                case MechanismType.Flush:
-                    return score.Type == HandType.Flush ? value : 0f;
-                case MechanismType.Straight:
-                    return score.Type == HandType.Straight ? value : 0f;
-                case MechanismType.StraightFlush:
-                    return score.Type == HandType.StraightFlush ? value : 0f;
-                case MechanismType.Leopard:
-                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
-                case MechanismType.EvenNumberCard:
-                    return CountEven(score) * value;
-                case MechanismType.OddNumberCard:
-                    return CountOdd(score) * value;
-                case MechanismType.HeadCard:
-                    return CountFace(score, ctx) * value;
-                case MechanismType.SpecialACard:
-                    return CountRank(score, Rank.Ace) * value;
-                case MechanismType.Camera:
-                    return CountUnshown(ctx, black: true) * value;
-                case MechanismType.Cupid:
-                    return CountUnshown(ctx, black: false) * value;
-                case MechanismType.EveryUseRubbingNum:
-                    return ctx.RubsUsedThisHand * value;
-                case MechanismType.NoSkill:
-                    return ctx.PeekLeft == 0 && ctx.XRayLeft == 0 && ctx.ReplaceLeft == 0 ? value : 0f;
-                case MechanismType.EveryRelic:
-                    return (run?.RelicConfigIds != null ? run.RelicConfigIds.Count : 0) * value;
-                case MechanismType.NoUseRubbingEveryRubbingNum:
-                    return ctx.PeekLeft * value;
-                case MechanismType.AccumulatedNumOfCardType:
-                    return (run != null ? run.HandTypeShowCount(score.Type) : 0) * value;
-                case MechanismType.RubbingCardRelic:
-                    return run != null ? run.RubRelicMagForever : 0f;
-                case MechanismType.ProOfUpCardType:
-                    return run != null ? run.HandTypeMagBonus(score.Type) : 0f;
-                case MechanismType.SpecialSevenCard:
-                    return ctx.LuckySevenHits * value;
-                case MechanismType.DefeatGetMagnification:
-                    return StackedValue(run, MechanismType.DefeatGetMagnification, run != null ? run.DefeatMagStacks : 0);
-                case MechanismType.NoKillMonsterGetMagnification:
-                    return run != null ? run.PracticeMagForever : 0f;
-                default:
-                    return 0f;
-            }
+            return CardShare.Battle.RelicCombat.Evaluate(
+                UnityGameConfigLoader.Current,
+                ToSnapshot(run, score, ctx),
+                SharedBattleBridge.ToShared(score));
         }
 
-        private static float AttackFromEntry(
-            RelicEntryConfig entry,
-            HandScore score,
+        private static CardShare.Battle.RelicCombatSnapshot ToSnapshot(
             RunState run,
+            HandScore score,
             RelicCombatContext ctx)
         {
-            var value = ValueAt(entry);
-            switch (entry.Type)
+            var ids = run != null && run.RelicConfigIds != null
+                ? (IReadOnlyList<int>)run.RelicConfigIds
+                : Array.Empty<int>();
+            var disabled = run != null && run.DisabledRelicIds != null && run.DisabledRelicIds.Count > 0
+                ? new List<int>(run.DisabledRelicIds)
+                : (IReadOnlyList<int>)Array.Empty<int>();
+            var rankBonus = new int[14];
+            if (run != null)
             {
-                case MechanismType.SquarePlateAttack:
-                    return CountSuit(score, Suit.Diamond, run) * value;
-                case MechanismType.SpadesAttack:
-                    return CountSuit(score, Suit.Spade, run) * value;
-                case MechanismType.RedHeartAttack:
-                    return CountSuit(score, Suit.Heart, run) * value;
-                case MechanismType.PlumBlossomAttack:
-                    return CountSuit(score, Suit.Club, run) * value;
-                case MechanismType.CoupletAttack:
-                    return score.Type == HandType.Pair ? value : 0f;
-                case MechanismType.StraightAttack:
-                    return score.Type == HandType.Straight ? value : 0f;
-                case MechanismType.FlushAttack:
-                    return score.Type == HandType.Flush ? value : 0f;
-                case MechanismType.StraightFlushAttack:
-                    return score.Type == HandType.StraightFlush ? value : 0f;
-                case MechanismType.LeopardAttack:
-                    return score.Type == HandType.ThreeOfAKind ? value : 0f;
-                case MechanismType.SpecialEightCard:
-                    return CountRank(score, Rank.Eight) * value;
-                case MechanismType.DoubleCardAttack:
-                    return Math.Max(0, score.BaseChips) * value;
-                case MechanismType.HeadCardAttack:
-                    return CountFace(score, ctx) * value;
-                case MechanismType.ACardAttack:
-                    return CountRank(score, Rank.Ace) * value;
-                case MechanismType.TheSwordOfVictory:
-                    var maxChip = MaxUnshownChip(ctx);
-                    var factor = value == 0f ? 1f : value;
-                    return maxChip * factor;
-                case MechanismType.ConsumeFundsGetAttack:
-                    if (run == null || value <= 0f)
-                    {
-                        return 0f;
-                    }
-
-                    return (float)Math.Floor(run.GoldSpentThisRun / (double)value);
-                case MechanismType.SpecialSevenCardAttack:
-                    return ctx.LuckySevenHits * value;
-                case MechanismType.CardProvideAttack:
-                    return SumCardProvideAttack(entry, run, ctx);
-                case MechanismType.EveryRubbingNum:
-                    return ctx.PeekLeft * value;
-                default:
-                    return 0f;
+                for (var i = 0; i < rankBonus.Length; i++)
+                {
+                    rankBonus[i] = run.RankAttackBonus((Rank)i);
+                }
             }
+
+            return new CardShare.Battle.RelicCombatSnapshot
+            {
+                RelicIds = ids,
+                DisabledRelicIds = disabled,
+                Shown = SharedBattleBridge.ToShared(ctx.Shown),
+                Unshown = SharedBattleBridge.ToShared(ctx.Unshown),
+                RubsUsedThisHand = ctx.RubsUsedThisHand,
+                PeekLeft = ctx.PeekLeft,
+                XRayLeft = ctx.XRayLeft,
+                ReplaceLeft = ctx.ReplaceLeft,
+                LuckySevenHits = ctx.LuckySevenHits,
+                HandTypeShowCount = run != null ? run.HandTypeShowCount(score.Type) : 0,
+                RubRelicMagForever = run != null ? run.RubRelicMagForever : 0f,
+                HandTypeMagBonus = run != null ? run.HandTypeMagBonus(score.Type) : 0f,
+                PracticeMagForever = run != null ? run.PracticeMagForever : 0f,
+                BindingMagForever = run != null ? run.BindingMagForever : 0f,
+                DefeatMagStacks = run != null ? run.DefeatMagStacks : 0,
+                GoldSpentThisRun = run != null ? run.GoldSpentThisRun : 0,
+                RankAttackBonus = rankBonus,
+                HandTypeShowCounts = run != null
+                    ? (int[])run.HandTypeShowCounts.Clone()
+                    : Array.Empty<int>(),
+                RelicSelfDecayMag = BuildSelfDecayMag(run),
+                RelicShopRefreshCounts = run != null ? run.ShopRefreshRelicCounts : null,
+                RelicWinLoseMag = run != null ? run.WinLoseRelicMag : null,
+                ConsumableUsesThisRun = run != null ? run.ConsumableUsesThisRun : 0,
+                CopiedRelicId = run != null ? run.RoundCopiedRelicId : 0
+            };
         }
 
-        private static float SumCardProvideAttack(RelicEntryConfig entry, RunState run, RelicCombatContext ctx)
+        /// <summary>高档饮品：各持有遗物的剩余自衰减倍率（懒初始化满值），供共享结算读取。</summary>
+        private static Dictionary<int, float> BuildSelfDecayMag(RunState run)
         {
-            if (entry?.Value == null || ctx.Shown == null)
+            if (run == null)
             {
-                return 0f;
+                return null;
             }
 
-            var extra = 0f;
-            for (var i = 0; i < entry.Value.Length; i++)
+            Dictionary<int, float> map = null;
+            ForEachEntry(run, (relic, entry) =>
             {
-                var index = (int)Math.Round(entry.Value[i]) - 1;
-                if (index < 0 || index >= ctx.Shown.Length)
+                if (entry.Type != MechanismType.SelfDecayMult)
                 {
-                    continue;
+                    return;
                 }
 
-                var card = ctx.Shown[index];
-                if (!card.IsValid)
-                {
-                    continue;
-                }
-
-                extra += BossMechanics.ChipValueOf(run, card);
-                extra += run != null ? run.RankAttackBonus(card.Rank) : 0;
-            }
-
-            return extra;
-        }
-
-        private static int CountSuit(HandScore score, Suit suit, RunState run)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var dual = false;
-            var displaySuit = default(Suit);
-            if (HasMechanism(run, MechanismType.SpecialFlush) &&
-                (score.Type == HandType.Flush || score.Type == HandType.StraightFlush))
-            {
-                dual = HandEvaluator.TryColorFlushDisplaySuit(cards, out displaySuit);
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var real = cards[i].Suit;
-                if (real == suit)
-                {
-                    count++;
-                }
-                else if (dual && displaySuit == suit)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountRank(HandScore score, Rank rank)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (cards[i].Rank == rank)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountFace(HandScore score, RelicCombatContext ctx)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            if (ctx.TreatAllAsFace)
-            {
-                return cards.Length;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (cards[i].IsFace)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountEven(HandScore score)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var rank = cards[i].Rank;
-                if (rank == Rank.Two || rank == Rank.Four || rank == Rank.Six || rank == Rank.Eight || rank == Rank.Ten)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountOdd(HandScore score)
-        {
-            var cards = score.UsedCards;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var rank = cards[i].Rank;
-                if (rank == Rank.Ace || rank == Rank.Three || rank == Rank.Five || rank == Rank.Seven || rank == Rank.Nine)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int CountUnshown(RelicCombatContext ctx, bool black)
-        {
-            var cards = ctx.Unshown;
-            if (cards == null)
-            {
-                return 0;
-            }
-
-            var count = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                var card = cards[i];
-                if (!card.IsValid)
-                {
-                    continue;
-                }
-
-                var isBlack = card.Suit == Suit.Spade || card.Suit == Suit.Club;
-                if (black == isBlack)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int MaxUnshownChip(RelicCombatContext ctx)
-        {
-            var cards = ctx.Unshown;
-            if (cards == null || cards.Length == 0)
-            {
-                return 0;
-            }
-
-            var max = 0;
-            for (var i = 0; i < cards.Length; i++)
-            {
-                if (!cards[i].IsValid)
-                {
-                    continue;
-                }
-
-                var chip = cards[i].ChipValue;
-                if (chip > max)
-                {
-                    max = chip;
-                }
-            }
-
-            return max;
+                map ??= new Dictionary<int, float>();
+                map[relic.Id] = SelfDecayMagLeftFor(run, relic, entry);
+            });
+            return map;
         }
 
         /// <summary>亮出用牌恰好是 2+3+5，不依赖遗物改牌型。</summary>

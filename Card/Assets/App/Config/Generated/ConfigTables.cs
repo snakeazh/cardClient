@@ -4,13 +4,14 @@
 using System;
 using System.Threading.Tasks;
 using App.Resources;
+using CardShare.Contracts.Config;
 using Framework.Assets;
 using UnityEngine;
 
 namespace App.Config
 {
     /// <summary>
-    /// 启动时加载全部配置表。业务访问走各表自身静态接口。
+    /// 启动时加载全部配置表（共享类），业务访问走各表自身静态接口。
     /// </summary>
     public static class ConfigTables
     {
@@ -21,6 +22,7 @@ namespace App.Config
                 throw new ArgumentNullException(nameof(resources));
             }
 
+            var bindingConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BindingConfig);
             var bossEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.BossEntryConfig);
             var collectionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.CollectionConfig);
             var dialogueGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.DialogueGroupConfig);
@@ -29,18 +31,23 @@ namespace App.Config
             var guideStepConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.GuideStepConfig);
             var handScoreConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HandScoreConfig);
             var heroConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroConfig);
+            var heroEffectsConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEffectsConfig);
             var heroEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.HeroEntryConfig);
             var itemConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.ItemConfig);
             var levelConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.LevelConfig);
             var monsterConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterConfig);
             var monsterGroupConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterGroupConfig);
             var monsterLogicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.MonsterLogicConfig);
+            var pvpBotConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpBotConfig);
+            var pvpModeConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpModeConfig);
+            var pvpRoundConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.PvpRoundConfig);
             var relicConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicConfig);
             var relicEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.RelicEntryConfig);
             var talentConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentConfig);
             var talentEntryConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.TalentEntryConfig);
             var unlockConditionConfigAsset = await resources.LoadAsync<TextAsset>(ResResourcePaths.UnlockConditionConfig);
 
+            BindingConfig.Load(ConfigJson.FromArrayJson<BindingConfig>(bindingConfigAsset.text));
             BossEntryConfig.Load(ConfigJson.FromArrayJson<BossEntryConfig>(bossEntryConfigAsset.text));
             CollectionConfig.Load(ConfigJson.FromArrayJson<CollectionConfig>(collectionConfigAsset.text));
             DialogueGroupConfig.Load(ConfigJson.FromArrayJson<DialogueGroupConfig>(dialogueGroupConfigAsset.text));
@@ -49,12 +56,16 @@ namespace App.Config
             GuideStepConfig.Load(ConfigJson.FromArrayJson<GuideStepConfig>(guideStepConfigAsset.text));
             HandScoreConfig.Load(ConfigJson.FromArrayJson<HandScoreConfig>(handScoreConfigAsset.text));
             HeroConfig.Load(ConfigJson.FromArrayJson<HeroConfig>(heroConfigAsset.text));
+            HeroEffectsConfig.Load(ConfigJson.FromArrayJson<HeroEffectsConfig>(heroEffectsConfigAsset.text));
             HeroEntryConfig.Load(ConfigJson.FromArrayJson<HeroEntryConfig>(heroEntryConfigAsset.text));
             ItemConfig.Load(ConfigJson.FromArrayJson<ItemConfig>(itemConfigAsset.text));
             LevelConfig.Load(ConfigJson.FromArrayJson<LevelConfig>(levelConfigAsset.text));
             MonsterConfig.Load(ConfigJson.FromArrayJson<MonsterConfig>(monsterConfigAsset.text));
             MonsterGroupConfig.Load(ConfigJson.FromArrayJson<MonsterGroupConfig>(monsterGroupConfigAsset.text));
             MonsterLogicConfig.Load(ConfigJson.FromArrayJson<MonsterLogicConfig>(monsterLogicConfigAsset.text));
+            PvpBotConfig.Load(ConfigJson.FromArrayJson<PvpBotConfig>(pvpBotConfigAsset.text));
+            PvpModeConfig.Load(ConfigJson.FromArrayJson<PvpModeConfig>(pvpModeConfigAsset.text));
+            PvpRoundConfig.Load(ConfigJson.FromArrayJson<PvpRoundConfig>(pvpRoundConfigAsset.text));
             RelicConfig.Load(ConfigJson.FromArrayJson<RelicConfig>(relicConfigAsset.text));
             RelicEntryConfig.Load(ConfigJson.FromArrayJson<RelicEntryConfig>(relicEntryConfigAsset.text));
             TalentConfig.Load(ConfigJson.FromArrayJson<TalentConfig>(talentConfigAsset.text));

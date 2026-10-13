@@ -5,6 +5,7 @@ namespace App.Resources
 {
     public static partial class ResResourcePaths
     {
+        public const string BindingConfig = "Config/BindingConfig";
         public const string BossEntryConfig = "Config/BossEntryConfig";
         public const string CollectionConfig = "Config/CollectionConfig";
         public const string DialogueGroupConfig = "Config/DialogueGroupConfig";
@@ -13,12 +14,16 @@ namespace App.Resources
         public const string GuideStepConfig = "Config/GuideStepConfig";
         public const string HandScoreConfig = "Config/HandScoreConfig";
         public const string HeroConfig = "Config/HeroConfig";
+        public const string HeroEffectsConfig = "Config/HeroEffectsConfig";
         public const string HeroEntryConfig = "Config/HeroEntryConfig";
         public const string ItemConfig = "Config/ItemConfig";
         public const string LevelConfig = "Config/LevelConfig";
         public const string MonsterConfig = "Config/MonsterConfig";
         public const string MonsterGroupConfig = "Config/MonsterGroupConfig";
         public const string MonsterLogicConfig = "Config/MonsterLogicConfig";
+        public const string PvpBotConfig = "Config/PvpBotConfig";
+        public const string PvpModeConfig = "Config/PvpModeConfig";
+        public const string PvpRoundConfig = "Config/PvpRoundConfig";
         public const string RelicConfig = "Config/RelicConfig";
         public const string RelicEntryConfig = "Config/RelicEntryConfig";
         public const string TalentConfig = "Config/TalentConfig";

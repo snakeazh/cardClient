@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Level;
 using App.Unlock;
 using Framework.Assets;
@@ -84,7 +85,7 @@ namespace App.UI.Popup
             CurItemNum = new ObservableProperty<string>("0/0");
             TipTitle = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>();
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
             BuildEntries();
             // 收藏页签已从界面移除，默认展示遗物页
             ApplyTab(IllustratedBookTab.Relic, force: true);
@@ -205,6 +206,8 @@ namespace App.UI.Popup
                         index = i;
                     }
 
+                    // 遗物页特殊描述（RelicConfig.SpecialDesc，同 Desc 口径未解锁也显示），其余页不显示
+                    var relicRow = sibling.Tab == IllustratedBookTab.Relic ? RelicConfig.Get(sibling.Id) : null;
                     displays.Add(new TalentDetailViewModel.DisplayEntry
                     {
                         Name = sibling.Unlocked ? sibling.Name : null,
@@ -213,6 +216,7 @@ namespace App.UI.Popup
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
                         Icon = iconResolver != null ? iconResolver(sibling) : null,
                         AcquireMethod = ResolveAcquireMethod(sibling),
+                        SpecialDesc = relicRow != null ? relicRow.SpecialDesc : null,
                         MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0,
                         Quality = sibling.Quality
                     });
@@ -481,7 +485,7 @@ namespace App.UI.Popup
             return condition.Desc + "（" + progress + "）";
         }
 
-        private void Close()
+        private void ClosePop()
         {
             HideTip();
             _navigation.ShowHome();

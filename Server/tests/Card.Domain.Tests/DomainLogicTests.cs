@@ -1,0 +1,142 @@
+using CardShare.Battle;
+using CardShare.Contracts;
+using CardShare.Contracts.Config;
+using CardShare.Domain;
+using CardShare.Domain.Config;
+using CardShare.Domain.Players;
+using CardShare.Infrastructure.Config;
+using Xunit;
+
+namespace CardShare.Domain.Tests;
+
+public sealed class TestClock : IClock
+{
+    public DateTimeOffset UtcNow { get; set; } = new DateTimeOffset(2026, 9, 15, 10, 0, 0, TimeSpan.Zero);
+}
+
+public static class TestConfig
+{
+    public static IGameConfig Create() => SharedGameConfig.Fallback(TimeZoneInfo.Utc);
+}
+
+public class EnergyResetTests
+{
+    [Fact]
+    public void CrossDayRefillsToMaxAndClearsAdCounters()
+    {
+        var config = TestConfig.Create();
+        var now = new DateTimeOffset(2026, 9, 15, 10, 0, 0, TimeSpan.Zero);
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, now.AddDays(-1));
+        profile.Energy.Current = 1;
+        profile.Energy.AdRefillCount = 2;
+        profile.AdShop.GoldCount = 3;
+
+        profile.ApplyDailyReset(config, now);
+
+        Assert.Equal(config.Balance.EnergyMax, profile.Energy.Current);
+        Assert.Equal(0, profile.Energy.AdRefillCount);
+        Assert.Equal(0, profile.AdShop.GoldCount);
+    }
+
+    [Fact]
+    public void SameDayKeepsCurrentEnergy()
+    {
+        var config = TestConfig.Create();
+        var now = new DateTimeOffset(2026, 9, 15, 10, 0, 0, TimeSpan.Zero);
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, now);
+        profile.Energy.Current = 2;
+
+        profile.ApplyDailyReset(config, now.AddHours(1));
+
+        Assert.Equal(2, profile.Energy.Current);
+    }
+}
+
+public class PvpScoreTests
+{
+    [Fact]
+    public void NewProfileStartsAtZeroAndClampsBelowZero()
+    {
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), TestConfig.Create(), DateTimeOffset.UtcNow);
+        Assert.Equal(0, profile.PvpScore);
+        Assert.Equal(0, profile.ApplyPvpScoreDelta(-40));
+        Assert.Equal(50, profile.ApplyPvpScoreDelta(50));
+        Assert.Equal(75, profile.ApplyPvpScoreDelta(25));
+        Assert.Equal(75, profile.ApplyPvpScoreDelta(0));
+        Assert.Equal(35, profile.ApplyPvpScoreDelta(-40));
+        Assert.Equal(0, profile.ApplyPvpScoreDelta(-100));
+    }
+
+    [Fact]
+    public void ScoreForRankUsesConfiguredOrDefaultTable()
+    {
+        Assert.Equal(50, PvpSettlementRules.ScoreForRank(1, null));
+        Assert.Equal(25, PvpSettlementRules.ScoreForRank(2, Array.Empty<int>()));
+        Assert.Equal(0, PvpSettlementRules.ScoreForRank(3, null));
+        Assert.Equal(-40, PvpSettlementRules.ScoreForRank(4, null));
+        Assert.Equal(0, PvpSettlementRules.ScoreForRank(5, null));
+        Assert.Equal(10, PvpSettlementRules.ScoreForRank(1, new[] { 10, 5 }));
+    }
+}
+
+public class TalentDrawTests
+{
+    [Fact]
+    public void DrawCostStartsAtBaseThenPriceSteps()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+        Assert.Equal(50, profile.GetDrawCost(config));
+
+        profile.GrantWalletGold(50);
+        var first = profile.DrawTalent(101, config);
+        Assert.Equal(50, first.GoldSpent);
+        Assert.Equal(1, first.Count);
+        Assert.Equal(1, profile.Talent.DrawCount);
+        Assert.Equal(100, profile.GetDrawCost(config));
+    }
+
+    [Fact]
+    public void DrawFailsWhenGoldIsShort()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+        var ex = Assert.Throws<DomainException>(() => profile.DrawTalent(101, config));
+        Assert.Equal(ErrorCodes.InsufficientGold, ex.Code);
+    }
+}
+
+public class UnlockRulesTests
+{
+    [Fact]
+    public void AccumulateAddsStackedValue()
+    {
+        var unlock = new UnlockState();
+        var stats = new PveSettleStats { KillMonster = 3 };
+        var conditions = new[]
+        {
+            new UnlockConditionConfig { Id = 10401, Type = ContidionType.KillMonster, StackedValue = 1, Value = 20 }
+        };
+
+        UnlockRules.Apply(unlock, stats, conditions);
+        UnlockRules.Apply(unlock, stats, conditions);
+
+        Assert.Equal(6, unlock.GetAmount(10401));
+    }
+
+    [Fact]
+    public void MaxTypesKeepPeak()
+    {
+        var unlock = new UnlockState();
+        var conditions = new[]
+        {
+            new UnlockConditionConfig { Id = 1, Type = ContidionType.OneDamage, StackedValue = 1, Value = 100 }
+        };
+
+        UnlockRules.Apply(unlock, new PveSettleStats { OneDamage = 40 }, conditions);
+        UnlockRules.Apply(unlock, new PveSettleStats { OneDamage = 25 }, conditions);
+        UnlockRules.Apply(unlock, new PveSettleStats { OneDamage = 90 }, conditions);
+
+        Assert.Equal(90, unlock.GetAmount(1));
+    }
+}

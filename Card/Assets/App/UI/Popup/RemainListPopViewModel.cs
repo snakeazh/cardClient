@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
 using Framework.Assets;
@@ -32,7 +33,7 @@ namespace App.UI.Popup
             _ui = ui;
             GoldText = new ObservableProperty<string>(session.Run.Gold.ToString());
             ListVersion = new ObservableProperty<int>();
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         /// <summary>飞出动画播完、弹窗真正关掉后完成。</summary>
@@ -94,7 +95,7 @@ namespace App.UI.Popup
             ListVersion.Value++;
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _ui.Close(this);
         }

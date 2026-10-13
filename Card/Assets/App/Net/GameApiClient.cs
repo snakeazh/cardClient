@@ -1,0 +1,492 @@
+using System;
+using System.Text;
+using System.Threading.Tasks;
+using CardShare.Contracts;
+using Framework.Log;
+using Framework.Save;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using UnityEngine;
+using UnityEngine.Networking;
+
+namespace App.Net
+{
+    /// <summary>
+    /// 局外 HTTP 客户端。登录后带 Bearer；access 失效则重新登录。
+    /// </summary>
+    public sealed class GameApiClient
+    {
+        public const string AccessTokenKey = "game.api.access";
+        public const string PendingSettleKey = "game.api.pending.settle.v1";
+        public const string ProviderKey = "game.api.provider";
+
+        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore
+        };
+
+        private readonly ISaveService _save;
+        private string _accessToken = string.Empty;
+        private string _provider = AuthProviders.Guest;
+
+        public GameApiClient(ISaveService save)
+        {
+            _save = save ?? throw new ArgumentNullException(nameof(save));
+            DropLegacyTokens();
+            _accessToken = _save.GetString(AccessTokenKey, string.Empty) ?? string.Empty;
+            // 历史版本只存 token 不存 provider，一律视为 guest
+            _provider = _save.GetString(ProviderKey, AuthProviders.Guest) ?? AuthProviders.Guest;
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                _provider = AuthProviders.Guest;
+            }
+        }
+
+        public bool HasSession => !string.IsNullOrEmpty(_accessToken);
+
+        public string AccessToken => _accessToken;
+
+        public string UserId { get; private set; } = string.Empty;
+
+        public async Task<LoginResponse> ConnectAsync()
+        {
+            var provider = WeChatAuth.IsWeChatPlatform ? AuthProviders.WeChat : AuthProviders.Guest;
+            if (HasSession)
+            {
+                // 平台 provider 与已存 token 不一致（如旧 guest token 遇到微信端），重新登录
+                if (!string.Equals(_provider, provider, StringComparison.Ordinal))
+                {
+                    ClearTokens();
+                }
+                else
+                {
+                    try
+                    {
+                        var profile = await GetProfileAsync();
+                        var flushed = await FlushPendingSettleAsync();
+                        if (flushed != null)
+                        {
+                            profile = flushed;
+                        }
+
+                        UserId = profile != null ? profile.UserId ?? string.Empty : string.Empty;
+                        return new LoginResponse
+                        {
+                            AccessToken = _accessToken,
+                            Profile = profile
+                        };
+                    }
+                    catch (GameApiException ex)
+                    {
+                        if (string.Equals(ex.Code, "connection_error", StringComparison.Ordinal))
+                        {
+                            throw;
+                        }
+
+                        ClearTokens();
+                    }
+                }
+            }
+
+            if (WeChatAuth.IsWeChatPlatform)
+            {
+                var code = await WeChatAuth.LoginAsync();
+                var userInfo = await WeChatAuth.GetUserInfoAsync();
+                return await LoginWeChatAsync(code, userInfo);
+            }
+
+            return await LoginGuestAsync(SystemInfo.deviceUniqueIdentifier, string.Empty);
+        }
+
+        public Task<PveRunResponse> GetActiveRunAsync()
+            => SendAsync<PveRunResponse>("GET", "/v1/pve/run/active", null);
+
+        public void SavePendingSettle(PveSettleRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            _save.SetString(PendingSettleKey, JsonConvert.SerializeObject(request, JsonSettings));
+            _save.Save();
+        }
+
+        public PveSettleRequest LoadPendingSettle()
+        {
+            if (!_save.HasKey(PendingSettleKey))
+            {
+                return null;
+            }
+
+            var json = _save.GetString(PendingSettleKey, string.Empty);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<PveSettleRequest>(json, JsonSettings);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, "pending settle parse failed: " + ex.Message);
+                return null;
+            }
+        }
+
+        public void ClearPendingSettle()
+        {
+            _save.DeleteKey(PendingSettleKey);
+            _save.Save();
+        }
+
+        public async Task<PlayerProfileDto> FlushPendingSettleAsync()
+        {
+            var pending = LoadPendingSettle();
+            if (pending == null || string.IsNullOrEmpty(pending.RunId))
+            {
+                return null;
+            }
+
+            try
+            {
+                var resp = await SettlePveAsync(pending);
+                ClearPendingSettle();
+                return resp?.Profile;
+            }
+            catch (GameApiException ex)
+            {
+                if (string.Equals(ex.Code, ErrorCodes.RunNotFound, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.RunAlreadySettled, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.Conflict, StringComparison.Ordinal) ||
+                    string.Equals(ex.Code, ErrorCodes.InvalidRequest, StringComparison.Ordinal))
+                {
+                    ClearPendingSettle();
+                    return null;
+                }
+
+                throw;
+            }
+        }
+
+        public async Task<LoginResponse> LoginGuestAsync(string deviceCode, string nickName = "")
+        {
+            var login = await SendAsync<LoginResponse>(
+                "POST",
+                "/v1/auth/login",
+                new LoginRequest
+                {
+                    Provider = AuthProviders.Guest,
+                    Code = string.IsNullOrEmpty(deviceCode) ? "editor-device" : deviceCode,
+                    UserInfo = new LoginUserInfo { NickName = nickName ?? string.Empty, AvatarUrl = string.Empty },
+                    Editor = Application.isEditor,
+                    PendingSettle = LoadPendingSettle()
+                },
+                auth: false);
+            StoreTokens(login, AuthProviders.Guest);
+            ClearPendingSettle();
+            return login;
+        }
+
+        public async Task<LoginResponse> LoginWeChatAsync(string code, LoginUserInfo userInfo)
+        {
+            var login = await SendAsync<LoginResponse>(
+                "POST",
+                "/v1/auth/login",
+                new LoginRequest
+                {
+                    Provider = AuthProviders.WeChat,
+                    Code = code ?? string.Empty,
+                    UserInfo = userInfo,
+                    PendingSettle = LoadPendingSettle()
+                },
+                auth: false);
+            StoreTokens(login, AuthProviders.WeChat);
+            ClearPendingSettle();
+            return login;
+        }
+
+        public Task<PlayerProfileDto> GetProfileAsync()
+            => SendAsync<PlayerProfileDto>("GET", "/v1/player/profile", null);
+
+        /// <summary>multipart 上传头像图片，返回更新后的主档。</summary>
+        public async Task<PlayerProfileDto> UploadAvatarAsync(byte[] data, string fileName)
+        {
+            var url = GameApiSettings.BaseUrl.TrimEnd('/') + "/v1/player/avatar";
+            var form = new WWWForm();
+            form.AddBinaryData("file", data, string.IsNullOrEmpty(fileName) ? "avatar.png" : fileName);
+            using (var request = UnityWebRequest.Post(url, form))
+            {
+                if (!string.IsNullOrEmpty(_accessToken))
+                {
+                    request.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                }
+
+                request.timeout = 30;
+                var op = request.SendWebRequest();
+                while (!op.isDone)
+                {
+                    await Task.Yield();
+                }
+
+                var text = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+                var status = (int)request.responseCode;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    if (request.result == UnityWebRequest.Result.ConnectionError)
+                    {
+                        throw new GameApiException("connection_error", "无法连接服务器", status);
+                    }
+
+                    var fail = ParseError<PlayerProfileDto>(text, status);
+                    throw new GameApiException(fail.Code, fail.Message, fail.Status);
+                }
+
+                return JsonConvert.DeserializeObject<PlayerProfileDto>(text, JsonSettings);
+            }
+        }
+
+        public Task<PveStartResponse> StartPveAsync(int levelId, int heroId)
+            => SendAsync<PveStartResponse>("POST", "/v1/pve/start", new PveStartRequest { LevelId = levelId, HeroId = heroId });
+
+        public Task<PveSettleResponse> SettlePveAsync(PveSettleRequest request)
+            => SendAsync<PveSettleResponse>("POST", "/v1/pve/settle", request);
+
+        public Task<PveRunResponse> ReportPveProgressAsync(string runId, bool clearedStage, int score)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/run/progress", new PveProgressRequest
+            {
+                RunId = runId ?? string.Empty,
+                ClearedStage = clearedStage,
+                Score = score
+            });
+
+        public Task<TalentDrawResponse> DrawTalentAsync()
+            => SendAsync<TalentDrawResponse>("POST", "/v1/talent/draw", new object());
+
+        public Task<EnergyRefillResponse> RefillEnergyByAdAsync()
+            => SendAsync<EnergyRefillResponse>("POST", "/v1/energy/refill-ad", new AdProofRequest());
+
+        public Task<AdShopClaimResponse> ClaimAdShopAsync(string kind)
+            => SendAsync<AdShopClaimResponse>("POST", "/v1/adshop/claim", new AdShopClaimRequest { Kind = kind });
+
+        public Task<PlayerProfileDto> GrantBagAsync(int itemId, int amount)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/bag/grant", new BagMutateRequest { ItemId = itemId, Amount = amount });
+
+        public Task<PlayerProfileDto> ConsumeBagAsync(int itemId, int amount)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/bag/consume", new BagMutateRequest { ItemId = itemId, Amount = amount });
+
+        public Task<PlayerProfileDto> CompleteGuideAsync(int groupId)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/guide/complete", new GuideCompleteRequest { GroupId = groupId });
+
+        public Task<PlayerProfileDto> UnlockHeroAsync(int heroId)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/hero/unlock", new HeroUnlockRequest { HeroId = heroId });
+
+        public Task<PveRunResponse> EnterShopAsync(string runId, int freeShopRefreshLeft)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/enter", new PveShopEnterRequest
+            {
+                RunId = runId,
+                FreeShopRefreshLeft = freeShopRefreshLeft
+            });
+
+        public Task<PveRunResponse> BuyShopRelicAsync(string runId, int relicId)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/buy", new PveShopActionRequest { RunId = runId, RelicId = relicId });
+
+        public Task<PveRunResponse> SellShopRelicAsync(string runId, int relicId)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/sell", new PveShopActionRequest { RunId = runId, RelicId = relicId });
+
+        public Task<PveRunResponse> RefreshShopAsync(string runId)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/refresh", new PveShopActionRequest { RunId = runId });
+
+        public Task<PveRunResponse> GrantRunGoldAsync(string runId, int amount, string reason)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/run/grant-gold", new PveRunGoldRequest
+            {
+                RunId = runId,
+                Amount = amount,
+                Reason = reason ?? string.Empty
+            });
+
+        public Task<PveRunResponse> SpendRunGoldAsync(string runId, int amount, string kind)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/run/spend", new PveRunSpendRequest
+            {
+                RunId = runId,
+                Amount = amount,
+                Kind = kind ?? string.Empty
+            });
+
+        public Task<PlayerProfileDto> DebugGrantGoldAsync(int amount)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/debug/grant-gold", new DebugGrantGoldRequest { Amount = amount });
+
+        private void StoreTokens(LoginResponse login, string provider)
+        {
+            if (login == null || string.IsNullOrEmpty(login.AccessToken))
+            {
+                throw new GameApiException("invalid_request", "登录响应缺少 token");
+            }
+
+            _accessToken = login.AccessToken;
+            _provider = string.IsNullOrEmpty(provider) ? AuthProviders.Guest : provider;
+            UserId = login.Profile != null ? login.Profile.UserId ?? string.Empty : string.Empty;
+            _save.SetString(AccessTokenKey, _accessToken);
+            _save.SetString(ProviderKey, _provider);
+            _save.Save();
+        }
+
+        private void DropLegacyTokens()
+        {
+            _save.DeleteKey("game.api.access.v1");
+            _save.DeleteKey("game.api.access.v2");
+            _save.DeleteKey("game.api.refresh.v1");
+            _save.DeleteKey("game.api.refresh.v2");
+            _save.Save();
+        }
+
+        private static void ApplyLoginJson(LoginResponse login, string text)
+        {
+            if (!string.IsNullOrEmpty(login.AccessToken))
+            {
+                return;
+            }
+
+            var jo = JObject.Parse(text);
+            login.AccessToken = (string)jo["accessToken"] ?? (string)jo["AccessToken"] ?? string.Empty;
+        }
+
+        private void ClearTokens()
+        {
+            _accessToken = string.Empty;
+            _provider = AuthProviders.Guest;
+            UserId = string.Empty;
+            _save.SetString(AccessTokenKey, string.Empty);
+            _save.SetString(ProviderKey, string.Empty);
+            _save.Save();
+        }
+
+        private async Task<T> SendAsync<T>(string method, string path, object body, bool auth = true)
+        {
+            var result = await SendOnceAsync<T>(method, path, body, auth);
+            if (result.Succeeded)
+            {
+                return result.Value;
+            }
+
+            if (auth && result.Status == 401)
+            {
+                ClearTokens();
+            }
+
+            throw new GameApiException(result.Code, result.Message, result.Status);
+        }
+
+        private async Task<ApiResult<T>> SendOnceAsync<T>(string method, string path, object body, bool auth)
+        {
+            var url = GameApiSettings.BaseUrl.TrimEnd('/') + path;
+            using (var request = new UnityWebRequest(url, method))
+            {
+                request.downloadHandler = new DownloadHandlerBuffer();
+                if (body != null && !string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                {
+                    var json = JsonConvert.SerializeObject(body, JsonSettings);
+                    request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+                    request.SetRequestHeader("Content-Type", "application/json; charset=utf-8");
+                }
+
+                if (auth && !string.IsNullOrEmpty(_accessToken))
+                {
+                    request.SetRequestHeader("Authorization", "Bearer " + _accessToken);
+                }
+
+                request.timeout = 15;
+                var op = request.SendWebRequest();
+                while (!op.isDone)
+                {
+                    await Task.Yield();
+                }
+
+                var text = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+                var status = (int)request.responseCode;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    if (request.result == UnityWebRequest.Result.ConnectionError ||
+                        request.result == UnityWebRequest.Result.DataProcessingError)
+                    {
+                        AppLog.Warn(LogChannel.Net, $"{method} {path} 连接失败: {request.error}");
+                        return ApiResult<T>.Fail("connection_error", "无法连接服务器", status);
+                    }
+
+                    return ParseError<T>(text, status);
+                }
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return ApiResult<T>.Ok(default);
+                }
+
+                try
+                {
+                    var value = JsonConvert.DeserializeObject<T>(text, JsonSettings);
+                    if (value is LoginResponse login)
+                    {
+                        ApplyLoginJson(login, text);
+                    }
+
+                    return ApiResult<T>.Ok(value);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn(LogChannel.Net, $"{method} {path} 解析失败: {ex.Message}");
+                    return ApiResult<T>.Fail("invalid_request", "服务器返回无法解析", status);
+                }
+            }
+        }
+
+        private static ApiResult<T> ParseError<T>(string text, int status)
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<ApiError>(text, JsonSettings);
+                    if (error != null && !string.IsNullOrEmpty(error.Code))
+                    {
+                        return ApiResult<T>.Fail(error.Code, error.Message, status);
+                    }
+                }
+                catch (Exception)
+                {
+                    // fall through
+                }
+            }
+
+            var code = status == 401 ? ErrorCodes.Unauthorized : "http_error";
+            var message = status == 401 ? "登录已过期" : $"请求失败 ({status})";
+            return ApiResult<T>.Fail(code, message, status);
+        }
+
+        private readonly struct ApiResult<T>
+        {
+            public bool Succeeded { get; }
+            public T Value { get; }
+            public string Code { get; }
+            public string Message { get; }
+            public int Status { get; }
+
+            private ApiResult(bool ok, T value, string code, string message, int status)
+            {
+                Succeeded = ok;
+                Value = value;
+                Code = code;
+                Message = message;
+                Status = status;
+            }
+
+            public static ApiResult<T> Ok(T value) => new ApiResult<T>(true, value, string.Empty, string.Empty, 200);
+
+            public static ApiResult<T> Fail(string code, string message, int status)
+                => new ApiResult<T>(false, default, code, message, status);
+        }
+    }
+}

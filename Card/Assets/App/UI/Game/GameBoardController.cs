@@ -159,7 +159,7 @@ namespace App.UI
                 return;
             }
 
-            _vm.Session.TogglePlayerCard(index);
+            _vm.ToggleOpenCard(index);
         }
 
         private void ApplyInstantRub(int index)
@@ -172,7 +172,7 @@ namespace App.UI
             _rubCompleting = true;
             _cards.PlayRubReplace(
                 index,
-                () => _vm != null && _vm.Session.TryRubPlayerCard(index),
+                () => _vm != null ? _vm.TryRubPlayerCardAsync(index) : Task.FromResult(false),
                 () =>
                 {
                     _rubCompleting = false;

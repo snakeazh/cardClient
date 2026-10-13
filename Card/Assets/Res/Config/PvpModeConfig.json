@@ -1,0 +1,24 @@
+[
+  {
+    "Id": 1,
+    "Name": "经典",
+    "PlayerCount": 4,
+    "InitialGold": 150,
+    "ShopSeconds": 30,
+    "SkipMonsterWhenTwoLeft": true,
+    "RankReward": [
+      200,
+      120,
+      60,
+      30
+    ],
+    "RankScore": [
+      50,
+      25,
+      0,
+      -40
+    ],
+    "DamageRoundScale": 0.1,
+    "OpenPhaseSeconds": 20
+  }
+]

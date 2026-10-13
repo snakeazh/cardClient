@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.UI;
 using TMPro;
 using UnityEngine;
@@ -12,9 +14,8 @@ namespace App.Item
     /// 图鉴/收集类单卡显示控制，挂在预制体 <c>Res/UI/Icon/Item</c> 根节点上。
     /// 节点与 <see cref="PlayerItem"/> 一致走序列化字段优先、按名懒查找兜底，预制体无需手动拖引用。
     /// 界面结构：Item(Button) / ItemRoot(Animator) / cardFrame(IconBG + Mask + card(card_Name、card_icon) + CardBG)。
-    /// card 节点 Image 为品质卡面图、CardBG 为品质卡背背景，ApplyQuality 时按品质从 Altas/ItemBg 图集取图；
-    /// card 下 bg/direct/di 三层卡背按品质取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
-    /// Mask 为未解锁遮罩，SetUnlocked 控制。
+    /// CardBG 卡背背景按品质取 Altas/playitem 三层卡背的第 1 层；card 下 bg/direct/di 取第 1/2/3 层
+    /// （{品质}CardFrameBack{1,2,3}，稀有为 Blue 系列）。Mask 为未解锁遮罩，SetUnlocked 控制。
     /// </summary>
     public sealed class ItemCard : MonoBehaviour
     {
@@ -95,9 +96,20 @@ namespace App.Item
         private bool _bgCached;
         private bool _circleCached;
         private bool _selected;
+        // SetSelected 已应用态（-1=未应用过）：行复用重绑时选中态基本不变，幂等跳过换色与缩放
+        private int _selectedApplied = -1;
+        // 引用只解析一次（树结构固定），见 EnsureRefs
+        private bool _refsResolved;
         private bool _hasSelectAnim;
         private bool _selectAnimOn;
         private QualityType _quality = QualityType.Ordinary;
+
+        // 品质特效节点缓存：FindDeep 整树深查找每卡只做一次；换层/挂组件为一次性准备；
+        // 品质未变时 ShowQualityFx 整体跳过（行复用绑回同品质是常态）。
+        private Dictionary<string, Transform> _rewardFxNodes;
+        private HashSet<string> _rewardFxPrepared;
+        private QualityType _fxQuality = QualityType.Ordinary;
+        private bool _fxQualityApplied;
 
         public QualityType Quality => _quality;
 
@@ -239,11 +251,20 @@ namespace App.Item
             }
         }
 
-        /// <summary>选中态通过 IconBG/card_Circle 换色 + 轻微放大 ItemRoot 表达（原始色在 Awake 缓存）。</summary>
-        public void SetSelected(bool selected)
+        /// <summary>选中态通过 IconBG/card_Circle 换色 + 轻微放大 ItemRoot 表达（原始色在 Awake 缓存）。
+        /// 幂等：值未变化时跳过（localScale 直写不做相同值检查，每次写都标脏触发 SyncTransform）。</summary>
+        public void SetSelected(bool selected, bool force = false)
         {
             EnsureRefs();
             _selected = selected;
+            var applied = selected ? 1 : 0;
+            // 幂等跳过；force 供池租用复位（上任视图可能绕过本方法动过缩放/颜色）
+            if (!force && _selectedApplied == applied)
+            {
+                return;
+            }
+
+            _selectedApplied = applied;
             ApplyThemeColors();
 
             if (itemRoot != null)
@@ -266,9 +287,8 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 按品质切换 card 节点卡面图与 CardBG 卡背背景（Altas/ItemBg）。目标品质缺图时回退普通品质，
-        /// 图集整体不可用时保留当前图（预制体默认即 Ordinary）。
-        /// 品质完全由卡面图表达，不改任何节点颜色；选中态高亮仍走 SetSelected。
+        /// 按品质切换 CardBG 与 bg/direct/di 三层卡背（Altas/playitem）。目标品质缺图时回退普通品质，
+        /// 图集整体不可用时保留当前图。品质完全由卡面图表达，不改节点颜色；选中高亮仍走 SetSelected。
         /// </summary>
         public void ApplyQuality(QualityType type)
         {
@@ -277,10 +297,12 @@ namespace App.Item
             ApplyFrame(type);
         }
 
-        /// <summary>品质边框与卡背图；目标品质缺图时回退普通品质，图集整体不可用时不动当前图。</summary>
+        /// <summary>
+        /// 按品质切换 CardBG 卡背与 bg/direct/di 三层（均 Altas/playitem）。
+        /// card 外框图已无独立 CardFrame，保留当前预制体 sprite。
+        /// </summary>
         private void ApplyFrame(QualityType type)
         {
-            ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, type);
             ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, type);
             ApplyQualityLayer(cardQualityBg, type, 1);
             ApplyQualityLayer(cardQualityDirect, type, 2);
@@ -308,12 +330,10 @@ namespace App.Item
         }
 
         /// <summary>
-        /// 防护：初始化时把 card 边框与 CardBG 卡背统一切到图集版普通品质图。源图已入 ItemBg 图集，
-        /// prefab 对源图的直引在图集绑定完成前的窗口会渲染空白（丢背景），运行时以图集 sprite 为准。
+        /// 防护：初始化时把 CardBG 与三层卡背切到图集普通品质图。源图在 Altas/playitem。
         /// </summary>
         private void EnsureDefaultFrame()
         {
-            ApplySprite(cardImage, ItemBgSpriteLibrary.GetCardFrame, QualityType.Ordinary);
             ApplySprite(cardBack, ItemBgSpriteLibrary.GetCardFrameBack, QualityType.Ordinary);
             ApplyQualityLayer(cardQualityBg, QualityType.Ordinary, 1);
             ApplyQualityLayer(cardQualityDirect, QualityType.Ordinary, 2);
@@ -402,9 +422,18 @@ namespace App.Item
             ApplyQualityFx(quality);
         }
 
-        /// <summary>清掉全部品质特效后点亮目标品质（普通品质只清不亮）。</summary>
+        /// <summary>清掉全部品质特效后点亮目标品质（普通品质只清不亮）。品质未变时整体跳过。</summary>
         private void ApplyQualityFx(QualityType quality)
         {
+            EnsureRewardFxRefs();
+            if (_fxQualityApplied && _fxQuality == quality)
+            {
+                return;
+            }
+
+            _fxQualityApplied = true;
+            _fxQuality = quality;
+
             for (var i = 0; i < RewardFxNames.Length; i++)
             {
                 SetRewardFxActive(RewardFxNames[i], false);
@@ -417,39 +446,79 @@ namespace App.Item
             }
         }
 
-        /// <summary>
-        /// 激活并重播指定特效。品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
-        /// 故整树按名深查找，不能只在 itemRoot 下找。
-        /// </summary>
-        private void PrepareRewardFx(string fxName)
+        /// <summary>特效节点按名懒缓存：首次点亮时整树深查找一次，之后复用（行复用不再 FindDeep）。</summary>
+        private void EnsureRewardFxRefs()
         {
-            var fx = FindDeep(transform, fxName);
-            if (fx == null)
+            if (_rewardFxNodes != null)
             {
                 return;
             }
 
-            fx.gameObject.SetActive(true);
-            UiFx.ApplyUiLayer(fx.gameObject);
-            if (fx.GetComponent<EffectSortingInherit>() == null)
+            _rewardFxNodes = new Dictionary<string, Transform>(RewardFxNames.Length + 1);
+            CacheRewardFx("ChoukaEffect01");
+            for (var i = 0; i < RewardFxNames.Length; i++)
             {
-                var inherit = fx.gameObject.AddComponent<EffectSortingInherit>();
-                inherit.OrderOffset = 10;
+                CacheRewardFx(RewardFxNames[i]);
+            }
+        }
+
+        private void CacheRewardFx(string fxName)
+        {
+            var fx = FindDeep(transform, fxName);
+            if (fx != null)
+            {
+                _rewardFxNodes[fxName] = fx;
+            }
+        }
+
+        /// <summary>
+        /// 激活并重播指定特效。品质特效挂在 card 节点下、ChoukaEffect01 挂在 ItemRoot 下，
+        /// 首次准备时整树换 UI 层并挂排序/裁剪组件，之后只重启粒子。
+        /// </summary>
+        private void PrepareRewardFx(string fxName)
+        {
+            EnsureRewardFxRefs();
+            if (!_rewardFxNodes.TryGetValue(fxName, out var fx) || fx == null)
+            {
+                return;
             }
 
-            // 列表视口裁剪：父链上有 RectMask2D 时粒子按视口矩形裁剪（UIParticleClipper 自行判断）
-            if (fx.GetComponent<UIParticleClipper>() == null)
+            var go = fx.gameObject;
+            go.SetActive(true);
+            if (_rewardFxPrepared == null)
             {
-                fx.gameObject.AddComponent<UIParticleClipper>();
+                _rewardFxPrepared = new HashSet<string>();
             }
 
-            UiFx.RestartParticles(fx.gameObject);
+            if (_rewardFxPrepared.Add(fxName))
+            {
+                UiFx.ApplyUiLayer(go);
+                if (fx.GetComponent<EffectSortingInherit>() == null)
+                {
+                    var inherit = go.AddComponent<EffectSortingInherit>();
+                    inherit.OrderOffset = 10;
+                }
+
+                // 列表视口裁剪：父链上有 RectMask2D 时粒子按视口矩形裁剪（UIParticleClipper 自行判断）
+                if (fx.GetComponent<UIParticleClipper>() == null)
+                {
+                    go.AddComponent<UIParticleClipper>();
+                }
+            }
+
+            UiFx.RestartParticles(go);
         }
 
         private void SetRewardFxActive(string fxName, bool active)
         {
-            var fx = FindDeep(transform, fxName);
-            if (fx != null)
+            if (_rewardFxNodes == null
+                || !_rewardFxNodes.TryGetValue(fxName, out var fx)
+                || fx == null)
+            {
+                return;
+            }
+
+            if (fx.gameObject.activeSelf != active)
             {
                 fx.gameObject.SetActive(active);
             }
@@ -577,6 +646,14 @@ namespace App.Item
 
         private void EnsureRefs()
         {
+            // 一次性解析：树结构固定（池化复用不改层级），找不到的引用也只找这一次，
+            // 避免行复用重绑时对缺失引用反复 FindDeep 全树（重绑 GC 小分配的大头）
+            if (_refsResolved)
+            {
+                return;
+            }
+
+            _refsResolved = true;
             if (iconBg == null)
             {
                 iconBg = FindImage("IconBG");

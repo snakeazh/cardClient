@@ -1,6 +1,7 @@
 using System;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.UI;
 using DG.Tweening;
 using TMPro;
@@ -11,9 +12,9 @@ namespace App.Game
 {
     /// <summary>
     /// 局内角色/敌人信息卡。人物用 card，敌人用 enemycard，头像与数值在 <see cref="Bind"/> 时赋值。
-    /// 玩家 attack/heart 底图取 Altas/ItemBg 的 {品质}RectangleFrame，
+    /// 玩家 attack/heart 底图取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame，
     /// card 下 bg/direct/di 三层卡背取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
-    /// 怪物 enemycard 底图取 MonsterConfig.BaseMap，attack/heart 取 HealthBar，贴图也在 Altas/playitem。
+    /// 怪物头像取 Altas/enemy（{Icon}_attack/_damage/_dead）；enemycard 底图 BaseMap、attack/heart 取 HealthBar，贴图在 Altas/playitem。
     /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
@@ -60,6 +61,10 @@ namespace App.Game
         private bool _stateHidden;
         private bool _enemyVisual;
         private bool _visualReady;
+        // SetSelectLift 已应用的选中态（-1=未应用过）：行复用重绑时选中态基本不变，幂等跳过
+        private int _selectLiftApplied = -1;
+        // 引用只解析一次（树结构固定），见 EnsureRefs
+        private bool _refsResolved;
         private bool _dialogRefsReady;
         private Tween _dialogTween;
         private GameObject _activeDialog;
@@ -130,9 +135,20 @@ namespace App.Game
         /// 选角抬卡。取消选中必须关掉 Animator 再把 card Y 打回 0：默认 clip 不写该曲线，
         /// 且 Play 同一状态不会重头播，否则会一直停在抬起高度。
         /// </summary>
-        public void SetSelectLift(bool selected, string selectState, string idleState)
+        public void SetSelectLift(bool selected, string selectState, string idleState, bool force = false)
         {
             EnsureRefs();
+            // 幂等：列表行复用重绑时绝大多数是未选中态，直接跳过，避免每次重绑都写
+            // Animator 属性与 anchoredPosition（Transform setter 不做相同值检查，
+            // 每次写都标脏 → SyncTransform/Rebuild，是滚动重绑尖峰的主要构成之一）。
+            // force：池租用复位用——上任视图可能绕过本方法直接动过卡，缓存不可信
+            var applied = selected ? 1 : 0;
+            if (!force && _selectLiftApplied == applied)
+            {
+                return;
+            }
+
+            _selectLiftApplied = applied;
             var card = ResolveAnimatedCard();
             if (playerAnimator == null)
             {
@@ -186,6 +202,11 @@ namespace App.Game
             }
 
             var pos = rect.anchoredPosition;
+            if (pos.y == y)
+            {
+                return;
+            }
+
             pos.y = y;
             rect.anchoredPosition = pos;
         }
@@ -391,8 +412,8 @@ namespace App.Game
         }
 
         /// <summary>
-        /// attack/heart 数值底图按品质取 Altas/ItemBg 的 {品质}RectangleFrame（预制体默认即
-        /// OrdinaryRectangleFrame 的直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
+        /// attack/heart 数值底图按品质取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame
+        /// （预制体默认直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
         /// 普通品质，图集整体不可用时保留当前图。
         /// </summary>
         private void ApplyStatFrame(QualityType quality)
@@ -682,6 +703,14 @@ namespace App.Game
 
         private void EnsureRefs()
         {
+            // 一次性解析：树结构固定（池化复用不改层级），找不到的引用也只找这一次。
+            // 否则行复用重绑时对缺失引用每次都 FindDeep 全树递归，是重绑 GC 小分配的大头
+            if (_refsResolved)
+            {
+                return;
+            }
+
+            _refsResolved = true;
             if (cardName == null)
             {
                 cardName = FindText("card_Name");

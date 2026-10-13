@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using Framework.Save;
 
 namespace App.Talent
@@ -53,6 +54,9 @@ namespace App.Talent
         /// Extra copies past max level are kept but do not raise level.
         /// </summary>
         TalentAddResult Add(int talentId, int amount = 1);
+
+        /// <summary>用服务器主档覆盖天赋持有与抽取次数。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(IReadOnlyList<TalentSaveEntry> entries, int drawCount);
 
         void Clear();
 

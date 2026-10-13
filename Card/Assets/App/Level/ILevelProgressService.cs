@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Framework.Save;
 
@@ -8,6 +9,9 @@ namespace App.Level
     /// </summary>
     public interface ILevelProgressService : ISaveFlushable
     {
+        /// <summary>解锁列表或关卡进度被服务器档案覆盖、或本地解锁写入后触发。</summary>
+        event Action Changed;
+
         bool IsDirty { get; }
 
         int LastHeroId { get; }
@@ -46,6 +50,9 @@ namespace App.Level
 
         bool TryUnlockHero(int heroId);
 
+        /// <summary>撤回本地刚写入、服务器未确认的英雄解锁。</summary>
+        bool RevokeHeroUnlock(int heroId);
+
         /// <summary>
         /// 难度已解锁，且第 1 关默认开；之后必须先通关同一难度的上一关。
         /// </summary>
@@ -54,6 +61,14 @@ namespace App.Level
         IReadOnlyList<int> GetClearedDifficulties();
 
         void Clear();
+
+        /// <summary>用服务器主档覆盖关卡进度。仅 <c>ApplyServerProfile</c> 调用。</summary>
+        void ReplaceFromServer(
+            IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            int lastHeroId,
+            int lastLevelId,
+            int lastDifficulty,
+            IReadOnlyList<int> unlockedHeroIds);
 
         void Load();
     }

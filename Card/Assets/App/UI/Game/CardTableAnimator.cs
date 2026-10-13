@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Audio;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
 using DG.Tweening;
@@ -271,7 +272,15 @@ namespace App.UI
 
             if (session.DealSerial != _shownDeal)
             {
-                PlayDeal(session);
+                if (session.ConsumePvpSnapDeal())
+                {
+                    SnapPresentHands(session);
+                }
+                else
+                {
+                    PlayDeal(session);
+                }
+
                 return;
             }
 
@@ -295,10 +304,40 @@ namespace App.UI
                 return;
             }
 
+            SyncIdleFloat();
             SyncAllFaces(session);
             SyncSelectLift(session);
             SyncSeeThrough(session);
             SyncRubSelectFx(session);
+        }
+
+        /// <summary>
+        /// 空闲漂浮兜底断言：己方已落位手牌开、搓牌锁定中的关；
+        /// 选中的牌开加成（幅度/摆动略微增大）。显式开关在落位/搓牌各入口已做，
+        /// 这里覆盖漏网路径（如 PVP PendingRubIndex 直接变化）与选中态变化。
+        /// </summary>
+        private void SyncIdleFloat()
+        {
+            if (_player == null)
+            {
+                return;
+            }
+
+            var seat = _session != null ? _session.Player : null;
+            for (var i = 0; i < _player.Items.Length; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var rubLocked = i == _rubLockIndex ||
+                                (_session != null && _session.PendingRubIndex == i);
+                var floating = _player.Landed[i] && !rubLocked;
+                item.SetIdleFloat(floating);
+                item.SetIdleFloatBoosted(floating && seat != null && seat.IsCardSelected(i));
+            }
         }
 
         /// <summary>
@@ -405,13 +444,28 @@ namespace App.UI
 
         public void BeginInstantRub(int index)
         {
-            PlayRubReplace(index, null, null);
+            PlayRubReplace(index, (Func<Task<bool>>)null, null);
         }
 
         /// <summary>
         /// 选中一张牌搓牌：立刻翻到背面并播 ChangeCard01，约 1.5 秒后翻回正面揭示新牌。
         /// </summary>
         public void PlayRubReplace(int index, Func<bool> applyReplace, Action onComplete)
+        {
+            Func<Task<bool>> asyncApply = null;
+            if (applyReplace != null)
+            {
+                asyncApply = () => Task.FromResult(applyReplace());
+            }
+
+            PlayRubReplace(index, asyncApply, onComplete);
+        }
+
+        /// <summary>
+        /// 搓牌（可异步换牌）：翻背面后立刻 <paramref name="applyReplaceAsync"/>（PVP 应等 match_update），
+        /// 成功则在背面 SetCard，再揭正面；失败翻回旧牌。
+        /// </summary>
+        public void PlayRubReplace(int index, Func<Task<bool>> applyReplaceAsync, Action onComplete)
         {
             if (_player == null || index < 0 || index >= CardsPerHand)
             {
@@ -436,12 +490,24 @@ namespace App.UI
                 : item.transform.position;
             BringRubCardToFront(index);
             SetPlayerChangeSelectFx(false);
+            item.SetIdleFloat(false);
             item.PlayChangeReplaceFx();
             TintPlayerCard(index, Color.white);
             PlayRubSfx();
 
-            var replaced = false;
+            // 揭示等待用 scaled 时钟：倍速（Time.timeScale）下节奏同步加快；realtime 会拖满真实 1.5s。
+            var revealAt = Time.time + RubReplaceRevealDelay;
+            _ = RunRubReplaceAsync(index, item, token, applyReplaceAsync, revealAt, onComplete);
+        }
 
+        private async Task RunRubReplaceAsync(
+            int index,
+            CardItem item,
+            int token,
+            Func<Task<bool>> applyReplaceAsync,
+            float revealAt,
+            Action onComplete)
+        {
             void Done()
             {
                 if (token != _rubPlayToken)
@@ -451,20 +517,20 @@ namespace App.UI
 
                 item.HideChangeCardFx();
                 RestoreRubCardLayer(index);
+                item.SetIdleFloat(true);
                 _rubLockIndex = -1;
                 _rubPlaying = false;
                 _rubSeq = null;
                 onComplete?.Invoke();
             }
 
-            void FlipFront()
+            void FlipFrontAndDone()
             {
                 if (token != _rubPlayToken)
                 {
                     return;
                 }
 
-                ApplyReplaceIfNeeded();
                 item.StopTweenAnimation();
                 var flip = item.FlipTo(CardFaceState.Front, FlipDuration);
                 if (flip == null)
@@ -479,35 +545,80 @@ namespace App.UI
                     .OnComplete(Done);
             }
 
-            void ApplyReplaceIfNeeded()
-            {
-                if (token != _rubPlayToken || replaced)
-                {
-                    return;
-                }
-
-                if (item.FaceState != CardFaceState.Back)
-                {
-                    item.SetFace(CardFaceState.Back);
-                }
-
-                applyReplace?.Invoke();
-                replaced = true;
-            }
-
+            var flippedBack = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var flipBack = item.FlipTo(CardFaceState.Back, FlipDuration);
             if (flipBack != null)
             {
-                flipBack.OnComplete(ApplyReplaceIfNeeded);
+                flipBack.OnComplete(() => flippedBack.TrySetResult(true));
             }
             else
             {
-                ApplyReplaceIfNeeded();
+                item.SetFace(CardFaceState.Back);
+                flippedBack.TrySetResult(true);
             }
 
-            _rubSeq = DOTween.Sequence()
-                .AppendInterval(RubReplaceRevealDelay)
-                .OnComplete(FlipFront);
+            await flippedBack.Task;
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            if (item.FaceState != CardFaceState.Back)
+            {
+                item.SetFace(CardFaceState.Back);
+            }
+
+            var ok = true;
+            if (applyReplaceAsync != null)
+            {
+                try
+                {
+                    ok = await applyReplaceAsync();
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Warn(LogChannel.UI, "rub replace apply failed: " + ex.Message);
+                    ok = false;
+                }
+            }
+
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            if (!ok)
+            {
+                FlipFrontAndDone();
+                return;
+            }
+
+            // 权威手牌已写入 Session：背面锁住时换贴图，揭开才是新牌。
+            if (_session != null && _session.Player != null)
+            {
+                var card = ShownCard(_session.Player, index, true, _session);
+                if (!item.Card.Equals(card))
+                {
+                    item.SetCard(card);
+                }
+            }
+
+            var wait = revealAt - Time.time;
+            if (wait > 0.01f)
+            {
+                var hold = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _rubSeq = DOTween.Sequence()
+                    .AppendInterval(wait)
+                    .OnComplete(() => hold.TrySetResult(true));
+                await hold.Task;
+            }
+
+            if (token != _rubPlayToken)
+            {
+                return;
+            }
+
+            FlipFrontAndDone();
         }
 
         /// <summary>长按搓牌：抬起并翻到背面，翻完后才可拖拽抖动。</summary>
@@ -535,6 +646,7 @@ namespace App.UI
             var lifted = _rubRestWorldPos + SelectOffset(_player);
             SyncSlotShadow(_player, index, true);
             BringRubCardToFront(index);
+            item.SetIdleFloat(false);
             item.MoveTo(lifted, SelectLiftDuration, Ease.OutQuad).OnUpdate(FollowRubShadow);
             FollowRubShadow();
             TintPlayerCard(index, Color.white);
@@ -683,6 +795,7 @@ namespace App.UI
             var dest = _player.Points[index] != null ? _player.Points[index].position : _rubRestWorldPos;
             RestoreRubCardLayer(index);
             item.HideDragEffects();
+            item.SetIdleFloat(true);
             item.MoveTo(dest, SelectLiftDuration, Ease.OutQuad)
                 .OnUpdate(() => FollowRubShadowAt(index))
                 .OnComplete(() =>
@@ -724,6 +837,7 @@ namespace App.UI
 
             RestoreRubCardLayer(index);
             item.SetDragEffectVisible(false);
+            item.SetIdleFloat(true);
             if (_rubSuccessFxShown)
             {
                 item.HideDragSuccessLater();
@@ -821,6 +935,74 @@ namespace App.UI
             _revealSfx = null;
             _rubSfx = null;
             _resources = null;
+        }
+
+        /// <summary>重连瞬时落牌：座位上直接亮出当前手牌（含摊牌选中），不播放发牌飞牌。</summary>
+        private void SnapPresentHands(GameSession session)
+        {
+            StopRubReplace(restore: false);
+            _dealSeq?.Kill();
+            _revealSeq?.Kill();
+            _revealing = false;
+            _dealing = false;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
+            _shownDeal = session.DealSerial;
+            _shownEnemyId = session.DisplayedEnemy != null ? session.DisplayedEnemy.Id : int.MinValue;
+            _shownReveal = session.RevealPlaySerial;
+            _dealToken++;
+            _seeThroughToken++;
+            ClearAllItems();
+            HideDealPile();
+            PlaceSeatHand(_player, session.Player, true, session);
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null && displayed.Alive)
+            {
+                PlaceSeatHand(_other, displayed, false, session);
+            }
+
+            SyncIdleFloat();
+            SyncSelectLift(session);
+            DealFinished?.Invoke();
+        }
+
+        private void PlaceSeatHand(SeatView view, SeatState seat, bool player, GameSession session)
+        {
+            if (view == null || seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            var count = GameBalance.CardsDealt(player, session != null ? session.Run : null);
+            for (var i = 0; i < count && i < view.Points.Length; i++)
+            {
+                var point = view.Points[i];
+                if (point == null)
+                {
+                    continue;
+                }
+
+                var card = ShownCard(seat, i, player, session);
+                var item = SpawnLooseDealCard(card);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.gameObject.name = player
+                    ? "PlayerCard" + (i + 1)
+                    : "EnemyCard" + (i + 1);
+                item.SetSpritesVisible(true);
+                EnsureCollider(item);
+                SnapToPoint(item, point);
+                view.Items[i] = item;
+                view.Landed[i] = true;
+                ApplyFace(item, DesiredFace(session, seat, player, i), false);
+                if (player)
+                {
+                    item.SetIdleFloat(true, i * item.IdleFloatPhaseStep);
+                }
+            }
         }
 
         private void PlayDeal(GameSession session)
@@ -1114,6 +1296,12 @@ namespace App.UI
                 item.SetCard(card);
             }
 
+            // PVP/透视后对手可能已是正面；先盖回再翻，才能播开牌动画。
+            if (!seat.IsPlayer && item.FaceState == CardFaceState.Front)
+            {
+                item.SetFace(CardFaceState.Back);
+            }
+
             ApplyFace(item, CardFaceState.Front, true);
         }
 
@@ -1317,6 +1505,11 @@ namespace App.UI
 
                 SnapToPoint(item, point);
                 view.Landed[cardIndex] = true;
+                if (view.IsPlayer)
+                {
+                    // 呼吸波浪：只有己方手牌落位后开启，相位按 index 错开形成波浪；敌人牌不漂。
+                    item.SetIdleFloat(true, cardIndex * item.IdleFloatPhaseStep);
+                }
             });
         }
 

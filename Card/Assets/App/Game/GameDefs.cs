@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 
 namespace App.Game
 {
@@ -304,6 +305,8 @@ namespace App.Game
         public bool PhaseRageTriggered;
         /// <summary>不灭传说：本关是否已复活过一次。</summary>
         public bool SecondWindUsed;
+        /// <summary>沉默诅咒：下一次比牌直接判负（无法比牌）。</summary>
+        public bool SilencedNextCompare;
 
         public int CountSelectedCards()
         {
@@ -376,7 +379,7 @@ namespace App.Game
         public int AdsExtraRubThisStage;
         public int AdsDoubleGoldToday;
         public bool DoubleGoldThisStage;
-        /// <summary>本关随机抽中的 <see cref="App.Config.BossEntryConfig.Id"/>，数量来自 <c>LevelConfig.LevelEntryNum</c>。</summary>
+        /// <summary>本关随机抽中的 <see cref="CardShare.Contracts.Config.BossEntryConfig.Id"/>，数量来自 <c>LevelConfig.LevelEntryNum</c>。</summary>
         public readonly List<int> LevelEntryIds = new List<int>();
         /// <summary>收藏禁用：本手失效的 RelicConfig Id。</summary>
         public readonly HashSet<int> DisabledRelicIds = new HashSet<int>();
@@ -389,13 +392,15 @@ namespace App.Game
         public ConsumableId? DisabledConsumable;
         /// <summary>当前持有的 RelicConfig Id。消耗或卖掉后会移除，商店可再次刷出。</summary>
         public readonly List<int> RelicConfigIds = new List<int>();
+        /// <summary>与 <see cref="RelicConfigIds"/> 对齐的份数倍数。空或越界按 1。</summary>
+        public readonly List<int> RelicPowers = new List<int>();
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();
         /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter。</summary>
         public int ShopRefreshCount;
         /// <summary>当前关卡 <see cref="App.Level.LevelSnapshot.Id"/>。</summary>
         public int LevelId;
-        /// <summary>当前上场英雄 <see cref="App.Config.HeroConfig.Id"/>。</summary>
+        /// <summary>当前上场英雄 <see cref="CardShare.Contracts.Config.HeroConfig.Id"/>。</summary>
         public int HeroId;
         /// <summary>本关是否含 BOSS，来自关卡配置。</summary>
         public bool HasBoss;
@@ -433,6 +438,12 @@ namespace App.Game
         public int PendingLevelHpMaxBonus;
         /// <summary>会员卡：本店剩余免费刷新次数。</summary>
         public int FreeShopRefreshLeft;
+        /// <summary>暗灵分裂成长：本局累计的额外分裂比例。击杀后下一刀生效。</summary>
+        public float VersatilePersonBonus;
+        /// <summary>暗灵分裂成长：距下一档还差的击杀进度。</summary>
+        public float VersatilePersonKillProgress;
+        /// <summary>圣光燃烧已发动次数。本局保留，乘每层加成后加进后续伤害。</summary>
+        public int HolyLightCasts;
         /// <summary>垫脚石 / 勇气徽章永久攻击。卖掉不清，进关加在英雄攻击上。</summary>
         public int PermanentAttackBonus;
         /// <summary>永恒之心 / 激励徽章永久血上限。卖掉不清，进关加在英雄血上。</summary>
@@ -457,6 +468,32 @@ namespace App.Game
         public float StrawHealPending;
         /// <summary>练习卷累计倍率。卖掉仍加。</summary>
         public float PracticeMagForever;
+        /// <summary>命运羁绊：每次攻击叠加的永久倍率。</summary>
+        public float BindingMagForever;
+        /// <summary>注魔硬币：每次消费叠加的永久伤害加成（加在百分比上）。</summary>
+        public float MagicCoinDamageBonus;
+        /// <summary>权力羁绊层数。</summary>
+        public int NobilityStacks;
+        /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
+        public int BindingReviveLeft;
+        /// <summary>沉默诅咒：是否已按完成条件武装复活次数。</summary>
+        public bool BindingReviveArmed;
+        /// <summary>属性强化羁绊：永久暴击率加成。</summary>
+        public float BindingCritBonus;
+        /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
+        public readonly HashSet<int> LuckyEnhancedRanks = new HashSet<int>();
+        /// <summary>高档甜品：遗物 Id → 剩余自衰减攻击。卖掉移除，重买重置为配置值。</summary>
+        public readonly Dictionary<int, int> SelfDecayAttackLeft = new Dictionary<int, int>();
+        /// <summary>高档饮品：遗物 Id → 剩余自衰减倍率。卖掉移除，重买重置为配置值。</summary>
+        public readonly Dictionary<int, float> SelfDecayMagLeft = new Dictionary<int, float>();
+        /// <summary>消费主义：遗物 Id → 持有期间商店刷新次数（含免费刷新）。卖掉移除，重买重新计数。</summary>
+        public readonly Dictionary<int, int> ShopRefreshRelicCounts = new Dictionary<int, int>();
+        /// <summary>贪婪：遗物 Id → 比牌胜负累计倍率（胜 +/负 -，下限 0）。跨关保留，卖掉移除，重买重置。</summary>
+        public readonly Dictionary<int, float> WinLoseRelicMag = new Dictionary<int, float>();
+        /// <summary>本局已使用消耗类圣物次数（倍率叠加 / 力量叠加）。跨关保留。</summary>
+        public int ConsumableUsesThisRun;
+        /// <summary>复制：本回合随机选中的其它圣物 Id；0 表示未复制。</summary>
+        public int RoundCopiedRelicId;
         public readonly List<string> Log = new List<string>();
 
         public void ClearRunProgress()
@@ -464,6 +501,9 @@ namespace App.Game
             GoldSpentThisRun = 0;
             RubRelicMagForever = 0f;
             FreeShopRefreshLeft = 0;
+            VersatilePersonBonus = 0f;
+            VersatilePersonKillProgress = 0f;
+            HolyLightCasts = 0;
             PermanentAttackBonus = 0;
             PermanentMaxHpBonus = 0;
             CritStacks = 0;
@@ -475,6 +515,13 @@ namespace App.Game
             StrawUsedThisStage = false;
             StrawHealPending = 0f;
             PracticeMagForever = 0f;
+            BindingMagForever = 0f;
+            MagicCoinDamageBonus = 0f;
+            NobilityStacks = 0;
+            BindingReviveLeft = 0;
+            BindingReviveArmed = false;
+            BindingCritBonus = 0f;
+            LuckyEnhancedRanks.Clear();
             UseDamageMulAdd = 0f;
             UseDamageFixed = 0;
             UseNullifyIncoming = false;
@@ -490,6 +537,12 @@ namespace App.Game
             Array.Clear(HandTypeMagForever, 0, HandTypeMagForever.Length);
             Array.Clear(HandTypeShowCounts, 0, HandTypeShowCounts.Length);
             RelicSellBonus.Clear();
+            SelfDecayAttackLeft.Clear();
+            SelfDecayMagLeft.Clear();
+            ShopRefreshRelicCounts.Clear();
+            WinLoseRelicMag.Clear();
+            ConsumableUsesThisRun = 0;
+            RoundCopiedRelicId = 0;
         }
 
         public bool LostToMonster(int monsterId)

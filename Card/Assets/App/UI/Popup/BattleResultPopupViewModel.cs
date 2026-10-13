@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Game;
+using App.Net;
 using App.Score;
+using App.UI;
 using App.Wallet;
+using CardShare.Contracts;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
@@ -37,6 +40,7 @@ namespace App.UI.Popup
         private readonly List<ResultStageRow> _stageRows = new List<ResultStageRow>();
         private bool _granted;
         private bool _forfeitNoRevive;
+        private bool _settling;
 
         public BattleResultPopupViewModel(
             GameSession session,
@@ -76,7 +80,7 @@ namespace App.UI.Popup
 
         public IRelayCommand AgainCommand { get; }
 
-        protected override Task OnOpen(object args)
+        protected override async Task OnOpen(object args)
         {
             _forfeitNoRevive = args is bool forfeit && forfeit;
             var success = !_forfeitNoRevive && Session.Phase == GamePhase.RunComplete;
@@ -88,11 +92,10 @@ namespace App.UI.Popup
             RefreshStageRows();
             if (success)
             {
-                GrantOutGameGold(funds);
+                await SettleAsync(cleared: true);
             }
 
             AgainCommand.RaiseCanExecuteChanged();
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -129,22 +132,88 @@ namespace App.UI.Popup
                    Session.Run.AdsReviveThisStage < 1;
         }
 
-        private void GrantOutGameGold(int funds)
+        private async Task<bool> SettleAsync(bool cleared)
         {
-            if (_granted || funds <= 0 || _wallet == null)
+            if (_granted)
+            {
+                return true;
+            }
+
+            if (!Session.HasServerRun)
+            {
+                _granted = true;
+                return true;
+            }
+
+            if (_settling)
+            {
+                return false;
+            }
+
+            _settling = true;
+            await Session.FlushServerRunAsync();
+            if (!cleared)
+            {
+                await Session.ReportRunProgressAsync(false);
+            }
+
+            var request = Session.BuildSettleRequest(cleared, _forfeitNoRevive);
+            GameApi.Client.SavePendingSettle(request);
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var resp = await GameApi.Client.SettlePveAsync(request);
+                        GameApi.ApplyProfile(resp.Profile);
+                        GameApi.Client.ClearPendingSettle();
+                        CoinNum.Value = resp.GoldGranted.ToString();
+                        _granted = true;
+                        return true;
+                    }
+                    catch (GameApiException ex)
+                    {
+                        Toast.Error(GameApi.Describe(ex));
+                        if (ex.Code == ErrorCodes.RunNotFound)
+                        {
+                            GameApi.Client.ClearPendingSettle();
+                            _granted = true;
+                            return true;
+                        }
+
+                        var retry = await _dialogs.ConfirmAsync(
+                            "结算失败",
+                            GameApi.Describe(ex) + "\n请检查网络后重试，否则进度可能丢失。",
+                            DialogButtons.OkCancel,
+                            "重试",
+                            "返回");
+                        if (retry != DialogResult.Ok)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _settling = false;
+            }
+        }
+
+        private async void Back()
+        {
+            if (_settling)
             {
                 return;
             }
 
-            _wallet.Add(funds);
-            _granted = true;
-        }
-
-        private void Back()
-        {
             if (!_granted)
             {
-                GrantOutGameGold(ScoreBalance.PointsToGold(Session.Score.Total));
+                if (!await SettleAsync(cleared: ShowSuccess.Value))
+                {
+                    return;
+                }
             }
 
             _ = _dialogs.CloseWithResult(BattleResultAction.Back);

@@ -1,14 +1,18 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
 using App.Level;
+using App.Net;
 using App.Talent;
 using App.UI.Popup;
+using CardShare.Contracts;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
+using Framework.UI.Dialog;
 using Framework.UI.View;
 
 namespace App.UI
@@ -37,6 +41,8 @@ namespace App.UI
         private readonly TalentBonusManager _talentBonus;
         private readonly List<HeroConfig> _heroes = new List<HeroConfig>();
         private readonly List<LevelSnapshot> _stages = new List<LevelSnapshot>();
+        private bool _unlockingHero;
+        private bool _startingGame;
 
         public LevelUIViewModel(
             IUIManager ui,
@@ -66,11 +72,13 @@ namespace App.UI
             SelectedDifficulty.Value = ResolveInitialDifficulty();
             ApplyDifficultySelection(SelectedDifficulty.Value);
 
+            _progress.Changed += OnLevelProgressChanged;
+
             LastBtnCommand = new RelayCommand(OnLast);
             UseHeroCommand = new RelayCommand(EnterStageSelect, () => IsSelectedHeroUnlocked());
             UnlockHeroCommand = new RelayCommand(UnlockSelectedHero, () => CanUnlockSelectedHero());
             StartGameCommand = new RelayCommand(StartGame, () =>
-                Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
+                !_startingGame && Phase.Value == LevelUiPhase.Stage && IsSelectedLevelUnlocked());
             UnlockLevelCommand = new RelayCommand(
                 () => { },
                 () => false);
@@ -161,7 +169,7 @@ namespace App.UI
                 return true;
             }
 
-            return _progress.IsHeroUnlocked(hero.Id) || MeetsDifficultyUnlock(hero);
+            return _progress.IsHeroUnlocked(hero.Id);
         }
 
         public bool HasUnlockCondition(HeroConfig hero)
@@ -262,6 +270,25 @@ namespace App.UI
             return System.Threading.Tasks.Task.CompletedTask;
         }
 
+        protected override void OnDispose()
+        {
+            _progress.Changed -= OnLevelProgressChanged;
+        }
+
+        private void OnLevelProgressChanged()
+        {
+            if (!IsOpen)
+            {
+                return;
+            }
+
+            RefreshHeroPanel();
+            if (Phase.Value == LevelUiPhase.Stage)
+            {
+                RefreshStagePanel();
+            }
+        }
+
         private void EnterHeroSelect(bool applyDefault)
         {
             Phase.Value = LevelUiPhase.Hero;
@@ -315,27 +342,76 @@ namespace App.UI
             SelectedLevelId.Value = first != null ? first.Id : 0;
         }
 
-        private void UnlockSelectedHero()
+        private async void UnlockSelectedHero()
         {
-            TryUnlockSelectedHero();
-            RefreshHeroPanel();
+            if (_unlockingHero)
+            {
+                return;
+            }
+
+            var hero = HeroConfig.Get(SelectedHeroId.Value);
+            if (hero == null || IsHeroUnlocked(hero))
+            {
+                return;
+            }
+
+            if (!MeetsDifficultyUnlock(hero))
+            {
+                Toast.Show(UnlockDeniedText(hero));
+                return;
+            }
+
+            if (!_progress.TryUnlockHero(hero.Id))
+            {
+                return;
+            }
+
+            if (!GameApiSettings.Enabled)
+            {
+                return;
+            }
+
+            if (!GameApi.IsReady)
+            {
+                await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
+                if (!GameApi.IsReady)
+                {
+                    _progress.RevokeHeroUnlock(hero.Id);
+                    Toast.Error("未连接服务器");
+                    return;
+                }
+            }
+
+            _unlockingHero = true;
+            UnlockHeroCommand.RaiseCanExecuteChanged();
+            try
+            {
+                var profile = await GameApi.Client.UnlockHeroAsync(hero.Id);
+                GameApi.ApplyProfile(profile);
+            }
+            catch (GameApiException ex)
+            {
+                _progress.RevokeHeroUnlock(hero.Id);
+                Toast.Error(ex.Code == ErrorCodes.HeroLocked
+                    ? UnlockDeniedText(hero)
+                    : GameApi.Describe(ex));
+            }
+            finally
+            {
+                _unlockingHero = false;
+                UnlockHeroCommand.RaiseCanExecuteChanged();
+            }
         }
 
         private bool CanUnlockSelectedHero()
         {
-            var hero = HeroConfig.Get(SelectedHeroId.Value);
-            return hero != null && !IsHeroUnlocked(hero);
-        }
-
-        private bool TryUnlockSelectedHero()
-        {
-            var hero = HeroConfig.Get(SelectedHeroId.Value);
-            if (hero == null || IsHeroUnlocked(hero))
+            if (_unlockingHero)
             {
                 return false;
             }
 
-            return _progress.TryUnlockHero(hero.Id);
+            var hero = HeroConfig.Get(SelectedHeroId.Value);
+            return hero != null && !IsHeroUnlocked(hero);
         }
 
         private bool MeetsDifficultyUnlock(HeroConfig hero)
@@ -346,6 +422,12 @@ namespace App.UI
             }
 
             return _progress.IsCleared(hero.UnlockCondition);
+        }
+
+        private string UnlockDeniedText(HeroConfig hero)
+        {
+            var condition = GetUnlockCondition(hero);
+            return string.IsNullOrEmpty(condition) ? "英雄未解锁" : condition;
         }
 
         private async void OnLast()
@@ -362,7 +444,7 @@ namespace App.UI
 
         private async void StartGame()
         {
-            if (!IsSelectedLevelUnlocked())
+            if (_startingGame || !IsSelectedLevelUnlocked())
             {
                 return;
             }
@@ -372,34 +454,67 @@ namespace App.UI
                 return;
             }
 
-            _progress.SetLastHero(SelectedHeroId.Value);
-            _progress.SetLastLevel(SelectedLevelId.Value);
-            _progress.SetLastDifficulty(SelectedDifficulty.Value);
-            if (!await TrySpendEnergyWithPopupAsync())
+            _startingGame = true;
+            StartGameCommand.RaiseCanExecuteChanged();
+            try
             {
-                return;
+                _progress.SetLastHero(SelectedHeroId.Value);
+                _progress.SetLastLevel(SelectedLevelId.Value);
+                _progress.SetLastDifficulty(SelectedDifficulty.Value);
+
+                if (GameApiSettings.Enabled)
+                {
+                    if (!GameApi.IsReady)
+                    {
+                        await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
+                        if (!GameApi.IsReady)
+                        {
+                            Toast.Error("未连接服务器");
+                            return;
+                        }
+                    }
+
+                    try
+                    {
+                        var started = await GameApi.Client.StartPveAsync(SelectedLevelId.Value, SelectedHeroId.Value);
+                        GameApi.ApplyProfile(started.Profile);
+                        _session.StartNewRun();
+                        _session.BindServerRun(started.Run);
+                    }
+                    catch (GameApiException ex)
+                    {
+                        if (ex.Code == ErrorCodes.InsufficientEnergy)
+                        {
+                            await PresentEnergyInsufficientPopupAsync();
+                            return;
+                        }
+
+                        if (ex.Code == PveSessionGate.ActiveRunExists || ex.Code == "active_run_exists")
+                        {
+                            await PveSessionGate.ForfeitActiveRunIfAnyAsync(_ui.Dialogs);
+                            Toast.Show("上次未完成的闯关已按失败结算");
+                            return;
+                        }
+
+                        Toast.Error(GameApi.Describe(ex));
+                        return;
+                    }
+                }
+
+                _session.StartNewRun();
+                _tableVm.ResetOpeningGate();
+                BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
+                // 先 Open GameUI（选关先当遮罩盖住加载），等 OnViewOpen/预加载完成后再拆掉选关，避免露底闪一下。
+                await _ui.Open(_tableVm);
+                BattleTrace.Log("StartGame GameUI ready, closing LevelUI");
+                await _ui.Close(this);
+                BattleTrace.Log("StartGame LevelUI closed");
             }
-
-            _session.StartNewRun();
-            _tableVm.ResetOpeningGate();
-            BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
-            // 等局内 OnViewOpen/预加载完成后再关选关，避免露底闪一下。
-            await _ui.Open(_tableVm);
-            BattleTrace.Log("StartGame GameUI ready, closing LevelUI");
-            await _ui.Close(this);
-            BattleTrace.Log("StartGame LevelUI closed");
-        }
-
-        /// <summary>扣开局体力。不足时弹 CommonTop，确定后打开体力商店；返回是否可开局。</summary>
-        private async Task<bool> TrySpendEnergyWithPopupAsync()
-        {
-            if (_energy.TrySpendRunCost())
+            finally
             {
-                return true;
+                _startingGame = false;
+                StartGameCommand.RaiseCanExecuteChanged();
             }
-
-            await PresentEnergyInsufficientPopupAsync();
-            return false;
         }
 
         private async Task PresentEnergyInsufficientPopupAsync()

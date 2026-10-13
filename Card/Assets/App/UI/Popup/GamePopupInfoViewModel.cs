@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using Framework.UI;
 using Framework.UI.Core;
@@ -20,7 +21,7 @@ namespace App.UI.Popup
             Session = session;
             _ui = ui;
             ListVersion = new ObservableProperty<int>();
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         public GameSession Session { get; }
@@ -41,7 +42,7 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _ui.Close(this);
         }

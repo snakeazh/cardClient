@@ -35,11 +35,20 @@ namespace Framework.UI.Dialog
         public string Title { get; }
         public string Message { get; }
         public DialogButtons Buttons { get; }
+
+        public string ConfirmLabel { get; set; }
+
+        public string DismissLabel { get; set; }
     }
 
     public interface IDialogService
     {
-        Task<DialogResult> ConfirmAsync(string title, string message, DialogButtons buttons = DialogButtons.OkCancel);
+        Task<DialogResult> ConfirmAsync(
+            string title,
+            string message,
+            DialogButtons buttons = DialogButtons.OkCancel,
+            string confirmLabel = null,
+            string dismissLabel = null);
         Task<TResult> ShowCustomAsync<TVm, TResult>(TVm viewModel, object args = null) where TVm : ViewModelBase;
         Task CloseWithResult<TResult>(TResult result);
     }
@@ -61,7 +70,9 @@ namespace Framework.UI.Dialog
         public async Task<DialogResult> ConfirmAsync(
             string title,
             string message,
-            DialogButtons buttons = DialogButtons.OkCancel)
+            DialogButtons buttons = DialogButtons.OkCancel,
+            string confirmLabel = null,
+            string dismissLabel = null)
         {
             if (_confirmTcs != null)
             {
@@ -73,7 +84,11 @@ namespace Framework.UI.Dialog
             _activeDialogViewModel = viewModel;
             await _navigator.Open(
                 viewModel,
-                new ConfirmDialogArgs(title, message, buttons));
+                new ConfirmDialogArgs(title, message, buttons)
+                {
+                    ConfirmLabel = confirmLabel,
+                    DismissLabel = dismissLabel
+                });
             var result = await _confirmTcs.Task;
             _confirmTcs = null;
             _activeDialogViewModel = null;
@@ -194,21 +209,23 @@ namespace Framework.UI.Dialog
                     ShowCancel.Value = false;
                     ShowYes.Value = false;
                     ShowNo.Value = false;
-                    OkLabel.Value = "OK";
+                    OkLabel.Value = string.IsNullOrEmpty(request.ConfirmLabel) ? "确定" : request.ConfirmLabel;
                     break;
                 case DialogButtons.YesNo:
                     ShowOk.Value = false;
                     ShowCancel.Value = false;
                     ShowYes.Value = true;
                     ShowNo.Value = true;
+                    YesLabel.Value = string.IsNullOrEmpty(request.ConfirmLabel) ? "是" : request.ConfirmLabel;
+                    NoLabel.Value = string.IsNullOrEmpty(request.DismissLabel) ? "否" : request.DismissLabel;
                     break;
                 default:
                     ShowOk.Value = true;
                     ShowCancel.Value = true;
                     ShowYes.Value = false;
                     ShowNo.Value = false;
-                    OkLabel.Value = "OK";
-                    CancelLabel.Value = "Cancel";
+                    OkLabel.Value = string.IsNullOrEmpty(request.ConfirmLabel) ? "确定" : request.ConfirmLabel;
+                    CancelLabel.Value = string.IsNullOrEmpty(request.DismissLabel) ? "取消" : request.DismissLabel;
                     break;
             }
 

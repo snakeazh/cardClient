@@ -1,8 +1,10 @@
 using System.Threading.Tasks;
 using App.Atlas;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
+using App.UI;
 using Framework.Assets;
 using Framework.UI;
 using Framework.UI.Core;
@@ -43,6 +45,7 @@ namespace App.UI.Popup
             Quality = new ObservableProperty<QualityType>(QualityType.Ordinary);
             ShowBuy = new ObservableProperty<bool>(false);
             ShowSell = new ObservableProperty<bool>(false);
+            ShowVideoBuy = new ObservableProperty<bool>(false);
             ShowBuyUse = new ObservableProperty<bool>(false);
             ShowUse = new ObservableProperty<bool>(false);
             CanAffordBuy = new ObservableProperty<bool>(true);
@@ -84,6 +87,9 @@ namespace App.UI.Popup
         public ObservableProperty<bool> ShowBuy { get; }
 
         public ObservableProperty<bool> ShowSell { get; }
+
+        /// <summary>看广告免费买：仅 PvE；PVP 无广告入口。</summary>
+        public ObservableProperty<bool> ShowVideoBuy { get; }
 
         /// <summary>货架消耗品：购买并立刻使用。</summary>
         public ObservableProperty<bool> ShowBuyUse { get; }
@@ -156,9 +162,8 @@ namespace App.UI.Popup
             CloseCommand.RaiseCanExecuteChanged();
         }
 
-        public bool TryBeginSell(GameResourceViewModel bar, out int gold)
+        public async Task<bool> TryBeginSellAsync(GameResourceViewModel bar)
         {
-            gold = 0;
             if (Buying || RelicId <= 0)
             {
                 return false;
@@ -170,7 +175,7 @@ namespace App.UI.Popup
                 return false;
             }
 
-            gold = Session.EffectiveSellPrice(RelicId);
+            var gold = Session.EffectiveSellPrice(RelicId);
             if (gold > 0)
             {
                 bar?.HoldGold(gold, refresh: false);
@@ -178,9 +183,7 @@ namespace App.UI.Popup
 
             _awaitingSellFx = true;
             _pendingSellGold = gold;
-            var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            Session.SellShopRelic(RelicId);
-            if (ownedBefore && !Session.OwnsRelicConfig(RelicId))
+            if (await Session.TrySellShopRelicAsync(RelicId))
             {
                 return true;
             }
@@ -196,6 +199,8 @@ namespace App.UI.Popup
             return false;
         }
 
+        public int PendingSellGold => _pendingSellGold;
+
         public void CompleteSell(GameResourceViewModel bar, int gold, bool coinFxOwnsGold = false)
         {
             _coinFxOwnsGold = coinFxOwnsGold;
@@ -209,7 +214,7 @@ namespace App.UI.Popup
             Dismiss();
         }
 
-        public bool TryBeginBuy(bool watchAd)
+        public async Task<bool> TryBeginBuyAsync(bool watchAd)
         {
             if (!Buying || RelicId <= 0)
             {
@@ -223,17 +228,25 @@ namespace App.UI.Popup
             }
 
             _awaitingBuyFx = true;
-            var ownedBefore = Session.OwnsRelicConfig(RelicId);
-            if (watchAd)
+            if (await Session.TryBuyShopRelicAsync(RelicId, watchAd))
             {
-                Session.WatchAdBuyShopRelic(RelicId);
-            }
-            else
-            {
-                Session.BuyShopRelic(RelicId);
+                return true;
             }
 
-            if (Session.OwnsRelicConfig(RelicId) && !ownedBefore)
+            _awaitingBuyFx = false;
+            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
+            return false;
+        }
+
+        public async Task<bool> TryBeginBuyAndUseAsync()
+        {
+            if (!Buying || RelicId <= 0)
+            {
+                return false;
+            }
+
+            _awaitingBuyFx = true;
+            if (await Session.TryBuyAndUseShopRelicAsync(RelicId))
             {
                 return true;
             }
@@ -247,24 +260,6 @@ namespace App.UI.Popup
         {
             _awaitingBuyFx = false;
             Dismiss();
-        }
-
-        public bool TryBeginBuyAndUse()
-        {
-            if (!Buying || RelicId <= 0)
-            {
-                return false;
-            }
-
-            _awaitingBuyFx = true;
-            if (Session.TryBuyAndUseShopRelic(RelicId))
-            {
-                return true;
-            }
-
-            _awaitingBuyFx = false;
-            ShowFail(string.IsNullOrEmpty(Session.Hint) ? "购买失败" : Session.Hint);
-            return false;
         }
 
         public void TryUse()
@@ -321,6 +316,7 @@ namespace App.UI.Popup
             IconSprite.Value = GetRelicIcon(relic);
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;
+            ShowVideoBuy.Value = Buying && !Session.IsPvp;
             ShowBuyUse.Value = Buying && Session.CanUseRelicNow(RelicId, requireOwned: false);
             ShowUse.Value = !Buying && Session.CanUseRelicNow(RelicId, requireOwned: true);
             TipText.Value = DefaultTip;

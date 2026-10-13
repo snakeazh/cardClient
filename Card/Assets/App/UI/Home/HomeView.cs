@@ -21,16 +21,36 @@ namespace App.UI
         {
             _playerItem = GetComponentInChildren<PlayerItem>(true);
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
+            Binding.BindText(UI.GetGameObject("pvpValue").GetComponent<TMP_Text>(), ViewModel.PvpValueText);
+            var pvpTime = UI.GetGameObject("pvpTime");
+            Binding.BindText(pvpTime.GetComponent<TMP_Text>(), ViewModel.PvpTimeText);
+            Binding.BindActive(pvpTime, ViewModel.ShowPvpTime);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
-            Binding.BindCommand(UI.GetGameObject("TTRewardItem").GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
-            Binding.BindActive(UI.GetGameObject("TTRewardItem"), ViewModel.TTRewardEntryVisible);
+            BindTTRewardItem();
+            Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);
             BindHero();
+        }
+
+        /// <summary>抖音侧边栏奖励入口；微信小游戏无此能力，直接隐藏。</summary>
+        private void BindTTRewardItem()
+        {
+            var item = UI.GetGameObject("TTRewardItem");
+#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            item.SetActive(false);
+#else
+            Binding.BindCommand(item.GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
+#endif
         }
 
         protected override Task OnViewOpen()
         {
             BindHero();
             return Task.CompletedTask;
+        }
+
+        public override void OnPresented()
+        {
+            ViewModel.OnPresented();
         }
 
         private void BindHero()

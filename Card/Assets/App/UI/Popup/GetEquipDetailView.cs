@@ -1,4 +1,5 @@
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Item;
 using App.Resources;
 using Framework.UI.Navigation;

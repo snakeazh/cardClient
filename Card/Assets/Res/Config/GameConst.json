@@ -9,7 +9,7 @@
   "ShopRefreshAfter": 15,
   "ShopRefreshGoldUpNumMax": 100,
   "GoldIcon": "coin",
-  "TalentChestNeedGold": 0,
+  "TalentChestNeedGold": 50,
   "PlayerInitialGoldNum": 0,
   "DamageTurnToGold": [
     12,
@@ -39,5 +39,32 @@
   "DefaultSkillReplaceNum": 1,
   "DefaultSkillPerspectiveNum": 1,
   "TalentNeedChestGold": 50,
-  "EverySkillProvideGold": 20
+  "EverySkillProvideGold": 20,
+  "PvpBotFillDelaySeconds": 15,
+  "PvpHeroHpBoostPercent": 1300,
+  "PVPRelicNumNeedGold": [
+    40,
+    60,
+    80,
+    100,
+    120,
+    150
+  ],
+  "PVPRelicInitialRelicNum": 4,
+  "PVPOrdinaryRelicNum": 3,
+  "PVPRareRelicNum": 3,
+  "PVPEpicRelicNum": 3,
+  "PVPLegendRelicNum": 3,
+  "PVPWinningStreakGoldNum": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "PVPGoldInterestNum": [
+    100,
+    10
+  ],
+  "PVPGoldInterestNumMax": 500
 }

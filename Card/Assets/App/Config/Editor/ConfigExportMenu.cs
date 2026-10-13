@@ -72,7 +72,7 @@ namespace App.Config.Editor
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "dotnet",
+                FileName = ResolveDotnetExecutable(),
                 Arguments = arguments,
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
@@ -95,6 +95,30 @@ namespace App.Config.Editor
                 process.WaitForExit();
                 return process.ExitCode;
             }
+        }
+
+        /// <summary>Unity 图形界面进程不继承 shell 的 PATH（/etc/paths.d 只对终端生效），按常见安装位置兜底。</summary>
+        private static string ResolveDotnetExecutable()
+        {
+            var candidates = new[]
+            {
+                "/usr/local/share/dotnet/dotnet", // macOS 官方 pkg 默认安装位置
+                "/usr/local/bin/dotnet",
+                "/opt/homebrew/bin/dotnet",
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    ".dotnet/dotnet"),
+                "C:\\Program Files\\dotnet\\dotnet.exe"
+            };
+            foreach (var path in candidates)
+            {
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return "dotnet"; // 兜底：编辑器从终端启动时 PATH 可查
         }
 
         private static string GetRepoRoot()

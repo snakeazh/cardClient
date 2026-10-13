@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CardShare.Battle</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Card.Contracts\Card.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- 与 Unity 客户端共享源码（ET 式源码共享）：源文件在 Card/Assets/Shared/Battle，两端各自编译。 -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Card\Assets\Shared\Battle\**\*.cs" />
+  </ItemGroup>
+
+</Project>

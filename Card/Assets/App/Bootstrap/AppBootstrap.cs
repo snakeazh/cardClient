@@ -5,21 +5,26 @@ using App.Atlas;
 using App.Audio;
 using App.Bag;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
 using App.Guide;
 using App.Level;
+using App.PvpScore;
 using App.Score;
 using App.Talent;
 using App.TTReward;
 using App.Unlock;
 using App.Wallet;
+using App.Net;
 using App.UI;
+using App.UI.Popup;
 using App.UI.Splash;
 using Framework.Assets;
 using Framework.Log;
 using Framework.Save;
 using Framework.UI;
+using Framework.UI.Dialog;
 using UnityEngine;
 
 namespace App.Bootstrap
@@ -31,6 +36,19 @@ namespace App.Bootstrap
     /// </summary>
     public sealed class AppBootstrap : MonoBehaviour
     {
+        [Header("网络")]
+        [Tooltip("关闭后不连服务器：启动跳过登录，闯关走本地局（PVP/商店云端等不可用）")]
+        [SerializeField] private bool enableServerConnection = true;
+
+        [Tooltip("HTTP API 与 PVP WebSocket 共用同一主机（ws/wss 由 BaseUrl 推导）")]
+        [SerializeField] private GameApiServerEndpoint serverEndpoint = GameApiServerEndpoint.RemoteDefault;
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效：IP 或域名，不含 http:// 与端口")]
+        [SerializeField] private string customServerHost = "127.0.0.1";
+
+        [Tooltip("仅当「服务器地址」为 Custom 时生效")]
+        [SerializeField] private int customServerPort = GameApiSettings.DefaultPort;
+
         private AppServicesHost _services;
         private ResourceFrameworkContext _resources;
         private UIFrameworkContext _ui;
@@ -47,12 +65,15 @@ namespace App.Bootstrap
 
         private async void Start()
         {
-            // 微信小游戏端锁 60：设 120 会在高刷屏上满负载发热降频，帧率反而更低更不稳
-#if WEIXINMINIGAME || PLATFORM_WEIXINMINIGAME
+            QualitySettings.vSyncCount = 0;
+            // 启动期先锁 60，防高刷屏在配置表加载前满负载空烧；
+            // 配置加载后 ApplyFrameRate 按平台放开（仅微信安卓保持 60）
             Application.targetFrameRate = 60;
-#else
-            Application.targetFrameRate = 120;
-#endif
+            // 帧率 HUD 恢复（Debug/性能 菜单写存的开关；Development 构建真机常开，便于性能排查）
+            if (PlayerPrefs.GetInt(App.UI.FpsHud.PrefKey, 0) != 0 || Debug.isDebugBuild)
+            {
+                App.UI.FpsHud.Show();
+            }
             _services = AppServices.Create();
 
             _resources = ResourceFramework.Create();
@@ -64,8 +85,11 @@ namespace App.Bootstrap
             // 重型初始化（图集/配置表/头像/业务服务/列表项预热）在忠告展示期间并发执行。
             _services.Register(SaveFramework.Create());
             RegisterWallet(_services);
+            RegisterPvpScore(_services);
             RegisterEnergy(_services);
             _services.Register(new GameSession());
+            _services.Container.AddSingleton<PvpWsClient>();
+            _services.Container.AddSingleton<PvpMatchSession>();
             _services.Container.AddSingleton<GameTableViewModel>();
             _services.Container.AddSingleton<NavigationViewModel>();
             _services.Container.AddSingleton<MainResourceViewModel>();
@@ -122,6 +146,9 @@ namespace App.Bootstrap
             await _services.Resolve<IAudioService>().PreloadUiClickAsync(_resources.Resources);
 
             await ConfigTables.LoadAsync(_resources.Resources);
+            ApplyFrameRate();
+            UnityGameConfigLoader.LoadFromAppConfig();
+            CardShare.Battle.HandEvaluator.Tables = UnityGameConfigLoader.Current;
             await PortraitLoader.PreloadAsync(_resources.Resources);
             RegisterBag(_services);
             RegisterLevel(_services);
@@ -133,6 +160,10 @@ namespace App.Bootstrap
             LogConfigSmoke();
 
             RegisterGuide(_services);
+
+            // 业务服务注册完后登录（ApplyProfile 依赖 IAdShopService 等）；
+            // 失败弹重试窗，成功才让重型初始化完成、进入后续界面。
+            await ConnectAndPrepareAsync();
 
             await PrewarmLevelItemsAsync();
         }
@@ -167,6 +198,32 @@ namespace App.Bootstrap
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
         }
 
+        /// <summary>按平台应用目标帧率（须在配置表加载后调用）：
+        /// 微信小游戏（wx.getDeviceInfo().platform）安卓锁 60——WebGL 上非 15/30/60 的值会走
+        /// setTimeout 空转耗电，60 走 rAF 分片最稳，且需同步调 wx.setPreferredFramesPerSecond 生效；
+        /// 其余微信环境不限帧（iOS 由 rAF 平台级封顶 60，devtools 全速便于测试）；
+        /// 非微信（Editor/原生包）不限帧，跟随屏幕刷新率。</summary>
+        private void ApplyFrameRate()
+        {
+            QualitySettings.vSyncCount = 0;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            var device = WeChatWASM.WX.GetDeviceInfo();
+            var platform = device != null ? device.platform : null;
+            if (string.Equals(platform, "android", StringComparison.OrdinalIgnoreCase))
+            {
+                Application.targetFrameRate = 60;
+                WeChatWASM.WX.SetPreferredFramesPerSecond(60);
+            }
+            else
+            {
+                Application.targetFrameRate = -1;
+            }
+#else
+            Application.targetFrameRate = -1;
+#endif
+            AppLog.Info(LogChannel.Config, $"[Boot] targetFrameRate={Application.targetFrameRate}");
+        }
+
         private static async Task RegisterAtlas(
             AppServicesHost services,
             IResourceService resources)
@@ -178,6 +235,7 @@ namespace App.Bootstrap
             CardSpriteLibrary.Bind(atlas);
             ItemBgSpriteLibrary.Bind(atlas);
             PlayItemSpriteLibrary.Bind(atlas);
+            PortraitLoader.Bind(atlas);
         }
 
         private static void RegisterAudio(AppServicesHost services)
@@ -232,7 +290,7 @@ namespace App.Bootstrap
             talent.Load();
             services.Register(talent);
             services.Register<ITalentService>(talent);
-            services.Register(new TalentBonusManager(talent));
+            services.Register<TalentBonusManager>(new TalentBonusManager(talent));
         }
 
         private static void RegisterWallet(AppServicesHost services)
@@ -241,6 +299,14 @@ namespace App.Bootstrap
             wallet.Load();
             services.Register(wallet);
             services.Register<IWalletService>(wallet);
+        }
+
+        private static void RegisterPvpScore(AppServicesHost services)
+        {
+            var pvpScore = new PvpScoreService(services.Resolve<ISaveService>());
+            pvpScore.Load();
+            services.Register(pvpScore);
+            services.Register<IPvpScoreService>(pvpScore);
         }
 
         private static void RegisterEnergy(AppServicesHost services)
@@ -297,6 +363,32 @@ namespace App.Bootstrap
                 targets);
             services.Register(guide);
             services.Register<IGuideService>(guide);
+        }
+
+        private async Task ConnectAndPrepareAsync()
+        {
+            GameApiSettings.Enabled = enableServerConnection;
+            GameApiSettings.BaseUrl = GameApiSettings.ResolveBaseUrl(
+                serverEndpoint,
+                customServerHost,
+                customServerPort);
+            AppLog.Info(
+                LogChannel.Net,
+                $"server endpoint={serverEndpoint}, BaseUrl={GameApiSettings.BaseUrl}, " +
+                $"WebSocket={GameApiSettings.WebSocketUrl}, enabled={GameApiSettings.Enabled}");
+
+            var client = new GameApiClient(_services.Resolve<ISaveService>());
+            _services.Register(client);
+            GameApi.Bind(client);
+
+            if (!GameApiSettings.Enabled)
+            {
+                AppLog.Info(LogChannel.Net, "server connection disabled, skip login");
+                return;
+            }
+
+            var dialogs = _services.Resolve<IDialogService>();
+            await PveSessionGate.ConnectWithRetryAsync(dialogs);
         }
 
         private static void LogConfigSmoke()

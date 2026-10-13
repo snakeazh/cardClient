@@ -1,0 +1,47 @@
+### Build
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+
+### Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+*.DotSettings.user
+
+### Debug / coverage
+*.pdb
+*.nupkg
+*.snupkg
+*.coverage
+*.coveragexml
+coverage*
+**/[Nn]uget/[Pp]ackages/*
+
+### Local secrets (keep appsettings.json / Development / Production)
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+
+### Python tools
+__pycache__/
+*.pyc
+
+### OS
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+$RECYCLE.BIN/
+*.lnk

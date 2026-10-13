@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -107,6 +108,28 @@ namespace App.Bag
             _counts.Clear();
             _dirty = true;
             Save();
+        }
+
+        public void ReplaceFromServer(IReadOnlyList<BagEntry> entries)
+        {
+            _counts.Clear();
+            if (entries != null)
+            {
+                for (var i = 0; i < entries.Count; i++)
+                {
+                    var entry = entries[i];
+                    if (entry == null || entry.ItemId <= 0 || entry.Count <= 0)
+                    {
+                        continue;
+                    }
+
+                    WarnIfUnknownItem(entry.ItemId);
+                    _counts.TryGetValue(entry.ItemId, out var current);
+                    _counts[entry.ItemId] = current + entry.Count;
+                }
+            }
+
+            _dirty = true;
         }
 
         public void Load()

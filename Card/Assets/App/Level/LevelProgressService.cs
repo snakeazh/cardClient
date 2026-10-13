@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CardShare.Contracts.Config;
 using Framework.Log;
 using Framework.Save;
 using UnityEngine;
@@ -12,6 +13,8 @@ namespace App.Level
     public sealed class LevelProgressService : ILevelProgressService
     {
         public const string SaveKey = "level.progress.v1";
+
+        public event Action Changed;
 
         private readonly ISaveService _save;
         private readonly ILevelService _levels;
@@ -100,6 +103,8 @@ namespace App.Level
                 _dirty = true;
                 Save();
             }
+
+            UnlockHeroesMatchingProgress();
         }
 
         public void SetLastHero(int heroId)
@@ -152,6 +157,20 @@ namespace App.Level
 
             _dirty = true;
             Save();
+            Changed?.Invoke();
+            return true;
+        }
+
+        public bool RevokeHeroUnlock(int heroId)
+        {
+            if (!_unlockedHeroes.Remove(heroId))
+            {
+                return false;
+            }
+
+            _dirty = true;
+            Save();
+            Changed?.Invoke();
             return true;
         }
 
@@ -202,6 +221,60 @@ namespace App.Level
                 _dirty = true;
                 Save();
             }
+        }
+
+        public void ReplaceFromServer(
+            IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            int lastHeroId,
+            int lastLevelId,
+            int lastDifficulty,
+            IReadOnlyList<int> unlockedHeroIds)
+        {
+            if (MatchesServer(
+                    difficultyProgress,
+                    lastHeroId,
+                    lastLevelId,
+                    lastDifficulty,
+                    unlockedHeroIds))
+            {
+                return;
+            }
+
+            _cleared.Clear();
+            _unlockedHeroes.Clear();
+            _highestCleared.Clear();
+            LastHeroId = lastHeroId;
+            LastLevelId = lastLevelId;
+            LastDifficulty = lastDifficulty > 0 ? lastDifficulty : _levels.DefaultDifficulty;
+            if (difficultyProgress != null)
+            {
+                for (var i = 0; i < difficultyProgress.Count; i++)
+                {
+                    var entry = difficultyProgress[i];
+                    if (entry == null || entry.Difficulty <= 0 || entry.HighestClearedLevel <= 0)
+                    {
+                        continue;
+                    }
+
+                    _highestCleared[entry.Difficulty] = entry.HighestClearedLevel;
+                }
+            }
+
+            if (unlockedHeroIds != null)
+            {
+                for (var i = 0; i < unlockedHeroIds.Count; i++)
+                {
+                    var heroId = unlockedHeroIds[i];
+                    if (heroId > 0)
+                    {
+                        _unlockedHeroes.Add(heroId);
+                    }
+                }
+            }
+
+            SyncClearedFromHighest();
+            _dirty = true;
+            Changed?.Invoke();
         }
 
         public void Load()
@@ -338,6 +411,106 @@ namespace App.Level
             _save.SetString(SaveKey, JsonUtility.ToJson(data));
             _save.Save();
             _dirty = false;
+        }
+
+        /// <summary>与服务器相同：无条件或对应难度已通关的英雄写入解锁列表。</summary>
+        private void UnlockHeroesMatchingProgress()
+        {
+            var changed = false;
+            foreach (var pair in HeroConfig.All)
+            {
+                var hero = pair.Value;
+                if (hero == null || hero.Id <= 0)
+                {
+                    continue;
+                }
+
+                if (hero.UnlockCondition > 0 && !IsCleared(hero.UnlockCondition))
+                {
+                    continue;
+                }
+
+                if (_unlockedHeroes.Add(hero.Id))
+                {
+                    changed = true;
+                }
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            _dirty = true;
+            Save();
+            Changed?.Invoke();
+        }
+
+        private bool MatchesServer(
+            IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            int lastHeroId,
+            int lastLevelId,
+            int lastDifficulty,
+            IReadOnlyList<int> unlockedHeroIds)
+        {
+            var difficulty = lastDifficulty > 0 ? lastDifficulty : _levels.DefaultDifficulty;
+            if (LastHeroId != lastHeroId || LastLevelId != lastLevelId || LastDifficulty != difficulty)
+            {
+                return false;
+            }
+
+            var incomingHighest = 0;
+            if (difficultyProgress != null)
+            {
+                for (var i = 0; i < difficultyProgress.Count; i++)
+                {
+                    var entry = difficultyProgress[i];
+                    if (entry != null && entry.Difficulty > 0 && entry.HighestClearedLevel > 0)
+                    {
+                        incomingHighest++;
+                    }
+                }
+            }
+
+            if (incomingHighest != _highestCleared.Count)
+            {
+                return false;
+            }
+
+            if (difficultyProgress != null)
+            {
+                for (var i = 0; i < difficultyProgress.Count; i++)
+                {
+                    var entry = difficultyProgress[i];
+                    if (entry == null || entry.Difficulty <= 0 || entry.HighestClearedLevel <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (GetHighestClearedLevel(entry.Difficulty) != entry.HighestClearedLevel)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            var incomingHeroes = 0;
+            if (unlockedHeroIds != null)
+            {
+                for (var i = 0; i < unlockedHeroIds.Count; i++)
+                {
+                    if (unlockedHeroIds[i] > 0)
+                    {
+                        incomingHeroes++;
+                        if (!_unlockedHeroes.Contains(unlockedHeroIds[i]))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return incomingHeroes == _unlockedHeroes.Count;
         }
 
         private void SyncClearedFromHighest()

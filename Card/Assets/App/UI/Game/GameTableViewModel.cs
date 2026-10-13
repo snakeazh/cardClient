@@ -7,13 +7,17 @@ using App.Bootstrap;
 using App.Game;
 using App.Guide;
 using App.Level;
+using App.Net;
 using App.Resources;
 using App.UI.Popup;
+using App.UI.Game.Director;
+using CardShare.Contracts;
 using Framework.Assets;
 using Framework.Log;
 using Framework.Save;
 using Framework.UI;
 using Framework.UI.Core;
+using Framework.UI.Dialog;
 using Framework.UI.View;
 using UnityEngine;
 
@@ -27,6 +31,9 @@ namespace App.UI
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
         private readonly IAudioService _audio;
+        private readonly PvpMatchSession _pvp;
+        private readonly BattleDirector _pvpDirector;
+        private readonly PvpBattleDriver _pvpDriver;
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
@@ -34,6 +41,10 @@ namespace App.UI
         private bool _remainListOpen;
         private bool _settleShownThisShop;
         private string _shownInfoKey;
+        private bool _pvpShopDoneRequested;
+        private bool _pvpReconnecting;
+        private bool _pvpLeaving;
+        private long _pvpDeadlineLocalMs;
 
         // Refresh 挂在 Session.Changed 上(每个动作/演出帧都进):字符串只在源值变化时重建
         private int _lastStage = -1;
@@ -60,7 +71,8 @@ namespace App.UI
             IAtlasService atlas,
             IGuideService guide,
             ISaveService save,
-            IAudioService audio)
+            IAudioService audio,
+            PvpMatchSession pvp)
         {
             Session = session;
             Resources = resources;
@@ -71,6 +83,10 @@ namespace App.UI
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             _save = save ?? throw new ArgumentNullException(nameof(save));
             _audio = audio;
+            _pvp = pvp;
+            _pvpDirector = new BattleDirector(session);
+            _pvpDriver = new PvpBattleDriver(session, _pvpDirector);
+            Session.AttachPvpSession(pvp);
             Session.Changed += Refresh;
             BlindBetCommand = new RelayCommand(
                 () => Session.BlindBet(),
@@ -84,15 +100,49 @@ namespace App.UI
             LookCommand = new RelayCommand(() => Session.LookCards(), () => Session.PlayerMayLookCards);
             FoldCommand = new RelayCommand(() => Session.Fold(), () => Session.PlayerMayFold);
             OpenCommand = new RelayCommand(
-                () => Session.RequestShowdown(),
+                () =>
+                {
+                    if (Session.IsPvp)
+                    {
+                        SendPvp(_pvp.Invoker.EnqueueShowdown());
+                        return;
+                    }
+
+                    Session.RequestShowdown();
+                },
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
-            PeekGoodCommand = new RelayCommand(() => Session.UsePeekGood(), () => Session.PlayerMayUsePeekGood);
-            ChaKanGoodCommand = new RelayCommand(() => Session.UseChaKanGood(), () => Session.PlayerMayUseChaKanGood);
+            PeekGoodCommand = new RelayCommand(
+                () => Session.UsePeekGood(),
+                () => Session.PlayerMayTogglePeekGood);
+            ChaKanGoodCommand = new RelayCommand(
+                () =>
+                {
+                    if (Session.IsPvp)
+                    {
+                        SendPvpSkill(() => _pvp.Invoker.EnqueuePeek());
+                        return;
+                    }
+
+                    Session.UseChaKanGood();
+                },
+                () => Session.IsPvp ? Session.PlayerMayUseChaKanGood : Session.PlayerMayUseChaKanGood);
             XRayPlayerCommand = new RelayCommand(
                 () => Session.TryXRayPlayer(),
                 () => Session.SelectingXRayTarget && Session.PlayerMayUseChaKanGood);
-            TiHuanGoodCommand = new RelayCommand(() => Session.UseTiHuanGood(), () => Session.PlayerMayUseTiHuanGood);
+            TiHuanGoodCommand = new RelayCommand(
+                () =>
+                {
+                    if (Session.IsPvp)
+                    {
+                        Session.ClearPvpSelection();
+                        SendPvpSkill(() => _pvp.Invoker.EnqueueReplace());
+                        return;
+                    }
+
+                    Session.UseTiHuanGood();
+                },
+                () => Session.PlayerMayUseTiHuanGood);
             RubCommand = new RelayCommand(() => Session.TryRubSelected(), () => Session.Phase == GamePhase.WaitingRub);
             SkipRubCommand = new RelayCommand(() => Session.CancelLookOrRub(), () => Session.PlayerMayCancelLookOrRub);
             MinusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(-GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
@@ -241,6 +291,7 @@ namespace App.UI
         public bool ShouldHoldDealVisual()
         {
             return Session != null &&
+                   !Session.IsPvp &&
                    Session.DealSerial > 0 &&
                    Session.StageRoundIndex == 1 &&
                    _openingCompletedSerial != Session.DealSerial;
@@ -265,11 +316,494 @@ namespace App.UI
             ShowTableButtons.Value = true;
             ShowRoundInfo.Value = true;
             GuideSignals.NotifyDealFinished(Session.DealSerial);
+            if (Session.IsPvp)
+            {
+                Session.NotifyPvpDealFinished();
+            }
+
             Refresh();
+        }
+
+        public void ToggleOpenCard(int index)
+        {
+            Session.TogglePlayerCard(index);
+            if (!Session.IsPvp || Session.PvpHandLocked || _pvp == null || Session.Player.CountSelectedCards() != GameBalance.OpenHandSize)
+            {
+                return;
+            }
+
+            var pick = new int[GameBalance.OpenHandSize];
+            var n = 0;
+            for (var i = 0; i < Session.Player.CardSelected.Length && n < pick.Length; i++)
+            {
+                if (Session.Player.CardSelected[i])
+                {
+                    pick[n++] = i;
+                }
+            }
+
+            SendPvp(_pvp.Invoker.EnqueuePick(pick));
+        }
+
+        public bool TryRubPlayerCard(int index)
+        {
+            if (Session.IsPvp)
+            {
+                if (!Session.CanRubPlayerCard(index) || _pvp == null)
+                {
+                    return false;
+                }
+
+                SendPvp(_pvp.Invoker.EnqueueRub(index));
+                return true;
+            }
+
+            return Session.TryRubPlayerCard(index);
+        }
+
+        /// <summary>搓牌：PVE 本地换牌；PVP 发 rub 并等 match_update 写入 Session 后再揭面。</summary>
+        public async Task<bool> TryRubPlayerCardAsync(int index)
+        {
+            if (!Session.IsPvp)
+            {
+                return Session.TryRubPlayerCard(index);
+            }
+
+            if (!Session.CanRubPlayerCard(index) || _pvp == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var ok = await _pvp.BattleAndWaitAsync(() => _pvp.Invoker.EnqueueRub(index));
+                if (!ok)
+                {
+                    Toast.Error("搓牌超时，请重试");
+                    return false;
+                }
+
+                // 快照已扣次：按剩余次数退出/保持点选，避免次数用尽后按钮因 CanExecute=false 取消不了。
+                Session.RefreshRubSelectAfterRub();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+        }
+
+        private async void SendPvp(Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        /// <summary>PVP 技能：先挂 waiter 再发 battle，等 match_update 落桌后再继续（透视/替换）。</summary>
+        private async void SendPvpSkill(Func<Task> send)
+        {
+            if (_pvp == null || send == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var ok = await _pvp.BattleAndWaitAsync(send);
+                if (!ok)
+                {
+                    Toast.Error("操作超时，请重试");
+                }
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        private void UnbindPvp()
+        {
+            if (_pvp == null)
+            {
+                return;
+            }
+
+            _pvp.Updated -= OnPvpUpdated;
+            _pvp.Finished -= OnPvpFinished;
+            _pvp.Failed -= OnPvpFailed;
+            _pvp.MatchEvent -= OnPvpMatchEvent;
+            _pvp.Notice -= OnPvpNotice;
+            _pvp.Reconnecting -= OnPvpReconnecting;
+            _pvp.Reconnected -= OnPvpReconnected;
+            _pvpShopDoneRequested = false;
+            _pvpReconnecting = false;
+        }
+
+        private void OnPvpUpdated()
+        {
+            if (!Session.IsPvp || _pvp == null)
+            {
+                return;
+            }
+
+            var state = _pvp.State;
+            _pvpDeadlineLocalMs = state != null && state.PhaseDeadlineUtcMs > 0
+                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (state.PhaseDeadlineUtcMs - state.ServerNowUtcMs)
+                : 0;
+            var catchUp = _pvp.ConsumeCatchUpSnap();
+            _pvpDriver.OnMatch(
+                state,
+                GameApi.Client != null ? GameApi.Client.UserId : string.Empty,
+                catchUp);
+            if (catchUp)
+            {
+                Refresh();
+                if (state != null
+                    && string.Equals(state.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pvpShopDoneRequested = false;
+                    _ = OpenShopAfterCatchUpAsync();
+                }
+            }
+
+            // 本人已死：服务端不再推后续对局；整局 finished 留给 OnPvpFinished（有完整奖励）。
+            if (_pvpLeaving
+                || state == null
+                || string.Equals(state.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var self = _pvp.Self;
+            if (self != null && !self.Alive)
+            {
+                _ = LeaveAfterSelfEliminatedAsync();
+            }
+        }
+
+        /// <summary>重连进商店：等摊牌结果演出（发牌+翻牌）结束后再弹商店。</summary>
+        private async Task OpenShopAfterCatchUpAsync()
+        {
+            for (var i = 0; i < 300 && _pvpDriver != null && _pvpDriver.IsBusy; i++)
+            {
+                await Task.Yield();
+            }
+
+            if (!IsOpen || _pvpLeaving || Session == null || Session.Phase != GamePhase.Shop)
+            {
+                return;
+            }
+
+            Refresh();
+            TryPresentShopPopup();
+        }
+
+        /// <summary>中途淘汰：等演出排空后提示名次并离场（终局奖励仍由服务端落库，不在此等 finished）。</summary>
+        private async Task LeaveAfterSelfEliminatedAsync()
+        {
+            if (_pvpLeaving)
+            {
+                return;
+            }
+
+            _pvpLeaving = true;
+            for (var i = 0; i < 180 && _pvpDriver != null && _pvpDriver.IsBusy; i++)
+            {
+                await Task.Yield();
+            }
+
+            var self = _pvp != null ? _pvp.Self : null;
+            var tip = self != null && self.Rank > 0
+                ? $"你已被淘汰，第 {self.Rank} 名"
+                : "你已被淘汰";
+            try
+            {
+                if (_ui != null)
+                {
+                    await _ui.Dialogs.ConfirmAsync("PVP 结算", tip, DialogButtons.Ok, "返回大厅");
+                }
+                else
+                {
+                    Toast.Show(tip);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                Toast.Show(tip);
+            }
+
+            await StopPvpAndLeave();
+        }
+
+        /// <summary>PVP 选牌倒计时：服务器快照下发 deadline + 服务器当前时刻，换算成本地截止点后本地秒级跳动。到期不做任何事，等服务器快照驱动。</summary>
+        public void TickPvpCountdown()
+        {
+            if (!Session.IsPvp || _pvpDeadlineLocalMs <= 0)
+            {
+                return;
+            }
+
+            RoundInfo.Value = FormatRoundInfo();
+        }
+
+        private string FormatRoundInfo()
+        {
+            if (Session.IsPvp && _pvp != null && _pvp.State != null)
+            {
+                var round = $"第{_pvp.State.Round}轮";
+                if (_pvpDeadlineLocalMs <= 0)
+                {
+                    return round;
+                }
+
+                var leftMs = _pvpDeadlineLocalMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var seconds = (int)Math.Max(0, (leftMs + 999) / 1000);
+                var phase = _pvp.State.Phase;
+                var label = string.Equals(phase, "shop", StringComparison.OrdinalIgnoreCase)
+                    ? "商店"
+                    : string.Equals(phase, "settle", StringComparison.OrdinalIgnoreCase)
+                        ? "结算"
+                        : "选牌";
+                return $"{round} · {label} {seconds}s";
+            }
+
+            return $"第{Session.StageRoundIndex}轮";
+        }
+
+        /// <summary>match_event 入口：演出类事件转给 Driver，商店/掉线提示在这里处理。同批 match_update 已先处理。</summary>
+        private void OnPvpMatchEvent(PvpMatchEventDto evt)
+        {
+            if (!Session.IsPvp || _pvp == null || evt == null)
+            {
+                return;
+            }
+
+            var userId = GameApi.Client != null ? GameApi.Client.UserId : string.Empty;
+            _pvpDriver.OnEvent(evt, userId);
+            if (evt.Kind == PvpEventKinds.ShopStart)
+            {
+                TryPresentShopPopup();
+                return;
+            }
+
+            if (evt.Kind == PvpEventKinds.PlayerOffline || evt.Kind == PvpEventKinds.PlayerOnline)
+            {
+                NotifyPvpPresence(evt, userId);
+            }
+        }
+
+        /// <summary>对手掉线/回来：Toast 提示（座位"离线"标识由 ApplyPvpTable 按 fighter.Disconnected 刷新）。自己的重连走 Reconnecting/Reconnected。</summary>
+        private void NotifyPvpPresence(PvpMatchEventDto evt, string userId)
+        {
+            if (PvpMatchSession.SameUser(evt.UserId, userId))
+            {
+                return;
+            }
+
+            var nick = FindPvpNick(evt.UserId);
+            if (string.IsNullOrEmpty(nick))
+            {
+                return;
+            }
+
+            Toast.Show(evt.Kind == PvpEventKinds.PlayerOffline ? $"{nick} 掉线了，由托管代打" : $"{nick} 回来了");
+        }
+
+        private string FindPvpNick(string userId)
+        {
+            var players = _pvp != null && _pvp.State != null ? _pvp.State.Players : null;
+            if (players != null)
+            {
+                for (var i = 0; i < players.Length; i++)
+                {
+                    if (PvpMatchSession.SameUser(players[i].UserId, userId))
+                    {
+                        return players[i].NickName;
+                    }
+                }
+            }
+
+            return _pvp != null && _pvp.TryGetPlayer(userId, out var player) ? player.NickName : null;
+        }
+
+        private void OnPvpNotice(string message)
+        {
+            if (!string.IsNullOrEmpty(message))
+            {
+                Toast.Error(message);
+            }
+        }
+
+        private void OnPvpReconnecting()
+        {
+            if (!Session.IsPvp)
+            {
+                return;
+            }
+
+            _pvpReconnecting = true;
+            ShowMask.Value = true;
+            Toast.Show("连接中断，正在重连…");
+        }
+
+        private void OnPvpReconnected()
+        {
+            _pvpReconnecting = false;
+            ShowMask.Value = false;
+            Toast.Show("已重新连接");
+            // sync 的 catchUp Updated 已 SnapTo（商店可能正在播上轮摊牌）；忙时不要再 Clear 打断。
+            if (_pvp != null && _pvp.State != null && _pvpDriver != null && !_pvpDriver.IsBusy)
+            {
+                _pvpDriver.SnapTo(_pvp.State, GameApi.Client != null ? GameApi.Client.UserId : string.Empty);
+            }
+
+            Refresh();
+        }
+
+        private async void OnPvpFinished()
+        {
+            if (!Session.IsPvp || _pvpLeaving)
+            {
+                return;
+            }
+
+            // 服务端在 settle 演出窗结束后才发 finished，演出必然已排空，直接结算。
+            _pvpLeaving = true;
+            await LeaveAfterPvpFinished();
+        }
+
+        private async Task LeaveAfterPvpFinished()
+        {
+            await ShowPvpResultAsync();
+            await StopPvpAndLeave();
+        }
+
+        /// <summary>PVP 结算：名次 + 名次金币/分数 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
+        private async Task ShowPvpResultAsync()
+        {
+            if (_ui == null || _pvp == null)
+            {
+                return;
+            }
+
+            var state = _pvp.State;
+            var players = state != null ? state.Players : null;
+            if (players == null || players.Length == 0)
+            {
+                return;
+            }
+
+            var userId = GameApi.Client != null ? GameApi.Client.UserId : string.Empty;
+            var ranked = new List<PvpFighterDto>(players);
+            ranked.Sort((a, b) => RankOf(a).CompareTo(RankOf(b)));
+            var sb = new System.Text.StringBuilder();
+            for (var i = 0; i < ranked.Count; i++)
+            {
+                var p = ranked[i];
+                if (sb.Length > 0)
+                {
+                    sb.Append('\n');
+                }
+
+                sb.Append(p.Rank > 0 ? $"第{p.Rank}名" : "未排名");
+                sb.Append(' ').Append(string.IsNullOrEmpty(p.NickName) ? "玩家" : p.NickName);
+                if (p.IsBot)
+                {
+                    sb.Append("(bot)");
+                }
+
+                if (PvpMatchSession.SameUser(p.UserId, userId))
+                {
+                    sb.Append("（你）");
+                }
+
+                if (p.RewardGold > 0)
+                {
+                    sb.Append("  +").Append(p.RewardGold).Append("金币");
+                }
+
+                if (p.RewardScore > 0)
+                {
+                    sb.Append("  +").Append(p.RewardScore).Append("分");
+                }
+                else if (p.RewardScore < 0)
+                {
+                    sb.Append("  ").Append(p.RewardScore).Append("分");
+                }
+            }
+
+            try
+            {
+                await _ui.Dialogs.ConfirmAsync("PVP 结算", sb.ToString(), DialogButtons.Ok, "返回大厅");
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                var self = _pvp.Self;
+                Toast.Show(self != null && self.Rank > 0 ? $"PVP 结束，第 {self.Rank} 名" : "PVP 结束");
+            }
+        }
+
+        private static int RankOf(PvpFighterDto fighter)
+        {
+            return fighter != null && fighter.Rank > 0 ? fighter.Rank : int.MaxValue;
+        }
+
+        private async void OnPvpFailed(string message)
+        {
+            if (_pvpLeaving)
+            {
+                return;
+            }
+
+            _pvpLeaving = true;
+            Toast.Error(string.IsNullOrEmpty(message) ? "对战中断" : message);
+            await StopPvpAndLeave();
+        }
+
+        private async Task StopPvpAndLeave()
+        {
+            _pvpReconnecting = false;
+            ShowMask.Value = false;
+            if (_shopPopupOpen && _ui != null)
+            {
+                // 商店弹窗还挂着（如断线判死时）：先关掉再离场，避免残留在 Popup 层。
+                await _ui.Dialogs.CloseWithResult(false);
+            }
+
+            _pvpDriver.Reset();
+            if (_pvp != null)
+            {
+                await _pvp.StopAsync();
+            }
+
+            Session.EndPvp();
+            if (IsOpen)
+            {
+                await LeaveToHome();
+            }
         }
 
         public void Refresh()
         {
+            if (Session.IsPvp && Session.Phase != GamePhase.Shop)
+            {
+                _pvpShopDoneRequested = false;
+                if (_shopPopupOpen)
+                {
+                    // PVP 商店：阶段离开 shop（服务端推进）时从外部关掉弹窗。
+                    _ = _ui.Dialogs.CloseWithResult(false);
+                }
+            }
+
             if (Session.DealSerial != _seenDealSerial)
             {
                 _seenDealSerial = Session.DealSerial;
@@ -292,6 +826,18 @@ namespace App.UI
             }
 
             var entries = BossMechanics.ResolveAll(run);
+            Title.Value = run.HasBoss
+                ? $"第{run.Stage}关 BOSS"
+                : $"第{run.Stage}关";
+            StageInfoText.Value = $"第{run.Stage}关";
+            if (Session.IsPvp && _pvp != null && _pvp.State != null)
+            {
+                var fight = string.Equals(_pvp.State.FightKind, "monster", StringComparison.OrdinalIgnoreCase)
+                    ? "野怪"
+                    : "对战";
+                Title.Value = $"PVP 第{_pvp.State.Round}轮 {fight}";
+                StageInfoText.Value = Title.Value;
+            }
             RoundBuffVisible.Value = entries.Count > 0;
             RoundBuffName.Value = FormatEntryNames(entries);
             RoundBuffDesc.Value = FormatEntryDescs(entries);
@@ -320,14 +866,20 @@ namespace App.UI
                 RoundInfo.Value = $"第{_lastRoundIndex}轮";
             }
 
+            PlayerChips.Value = Session.IsPvp
+                ? $"HP {Session.Player.Hp}/{Session.Player.MaxHp}"
+                : $"勇气 {Session.Player.Courage}";
+            PlayerBet.Value = BetLabel(Session.Player);
+            PlayerState.Value = SeatLine(Session.Player);
+            RoundInfo.Value = FormatRoundInfo();
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
             var rubMax = SkillChargeMax(
                 GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
-                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum) +
-                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.RubbingCardsNum));
+                RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
+                HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum));
             if (Session.Run.PeekGoodCharges != _lastRubCur || rubMax != _lastRubMax)
             {
                 _lastRubCur = Session.Run.PeekGoodCharges;
@@ -338,8 +890,8 @@ namespace App.UI
             PeekGoodArmed.Value = Session.SelectingRubTarget;
             var xrayMax = SkillChargeMax(
                 GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
-                RelicMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum) +
-                HeroMechanics.SumValue(Session.Run, App.Config.MechanismType.PerspectiveNum));
+                RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum) +
+                HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum));
             if (Session.Run.ChaKanGoodCharges != _lastXrayCur || xrayMax != _lastXrayMax)
             {
                 _lastXrayCur = Session.Run.ChaKanGoodCharges;
@@ -354,6 +906,24 @@ namespace App.UI
                 _lastReplaceMax = replaceMax;
                 TiHuanGoodLabel.Value = FormatCharges("替换", _lastReplaceCur, _lastReplaceMax);
             }
+            PeekGoodLabel.Value = FormatCharges(
+                "搓牌",
+                Session.Run.PeekGoodCharges,
+                SkillChargeMax(
+                    GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                    RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
+                    HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum)));
+            PeekGoodArmed.Value = Session.SelectingRubTarget;
+            ChaKanGoodLabel.Value = FormatCharges(
+                "透视",
+                Session.Run.ChaKanGoodCharges,
+                SkillChargeMax(
+                    GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
+                    RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum)));
+            TiHuanGoodLabel.Value = FormatCharges(
+                "替换",
+                Session.Run.TiHuanGoodCharges,
+                GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges);
             ShowLook.Value = false;
             ShowBlind.Value = false;
             ShowActions.Value = false;
@@ -377,9 +947,11 @@ namespace App.UI
             TryPresentShopPopup();
             TryPresentResultPopup();
             TryPresentGamePopupInfo();
-            ShowAttack.Value = !Session.SequentialCompare &&
-                               (Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget);
-            if (!Session.AttackPlaying)
+            ShowAttack.Value = Session.IsPvp
+                ? Session.AttackPlaying
+                : !Session.SequentialCompare &&
+                  (Session.Phase == GamePhase.WaitingAttack || Session.SelectingOpenTarget);
+            if (!Session.AttackPlaying && !_pvpReconnecting)
             {
                 ShowMask.Value = false;
                 ShowHpText.Value = false;
@@ -446,7 +1018,27 @@ namespace App.UI
             await StartBattleBgmAsync();
             BattleTrace.Log("GameTableVM ShowGameResource…");
             await ShowGameResource();
-            _guide.TryStart(App.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+            if (!Session.IsPvp)
+            {
+                _guide.TryStart(CardShare.Contracts.Config.GuideTriggerType.ScreenOpen, AppScreenIds.GameUI);
+            }
+
+            if (_pvp != null)
+            {
+                _pvpLeaving = false;
+                _pvp.Updated += OnPvpUpdated;
+                _pvp.Finished += OnPvpFinished;
+                _pvp.Failed += OnPvpFailed;
+                _pvp.MatchEvent += OnPvpMatchEvent;
+                _pvp.Notice += OnPvpNotice;
+                _pvp.Reconnecting += OnPvpReconnecting;
+                _pvp.Reconnected += OnPvpReconnected;
+                if (Session.IsPvp && _pvp.State != null)
+                {
+                    OnPvpUpdated();
+                }
+            }
+
             BattleTrace.Log("GameTableVM.OnOpen end");
         }
 
@@ -473,12 +1065,14 @@ namespace App.UI
             RestorePlaybackSpeed();
             _guide.Abort();
             ReleaseBattleResources();
+            UnbindPvp();
             await CloseGameResource();
         }
 
         protected override void OnDispose()
         {
             RestorePlaybackSpeed();
+            UnbindPvp();
             Session.Changed -= Refresh;
             ReleaseBattleResources();
             _ = CloseGameResource();
@@ -613,7 +1207,44 @@ namespace App.UI
 
         private async void TryPresentShopPopup()
         {
-            if (!IsOpen || Session.Phase != GamePhase.Shop || _shopPopupOpen || _ui == null)
+            if (!IsOpen || _shopPopupOpen || _ui == null)
+            {
+                return;
+            }
+
+            if (Session.IsPvp)
+            {
+                // PVP 商店：shop_start / 快照进入 shop 阶段时开一次；点"下一关"发 shop_done 关闭；
+                // 服务端推进阶段（phase 离开 shop）由 Refresh 从外部关闭。
+                if (!IsPvpShopOpen())
+                {
+                    return;
+                }
+
+                _shopPopupOpen = true;
+                SetShowBackBtn(false);
+                try
+                {
+                    var pvpRegistration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
+                    var pvpPopup = (BattleShopPopViewModel)_ui.Registry.CreateViewModel(pvpRegistration);
+                    await _ui.Dialogs.ShowCustomAsync<BattleShopPopViewModel, bool>(pvpPopup);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Exception(LogChannel.UI, ex);
+                }
+                finally
+                {
+                    _shopPopupOpen = false;
+                    // 本阶段不再自动重开（已 shop_done 或被外部关闭）；phase 离开 shop 时 Refresh 会清零。
+                    _pvpShopDoneRequested = true;
+                    SetShowBackBtn(!_resultPopupOpen);
+                }
+
+                return;
+            }
+
+            if (Session.Phase != GamePhase.Shop)
             {
                 return;
             }
@@ -643,6 +1274,8 @@ namespace App.UI
                         }
                     }
 
+                    await Session.WaitShopReadyAsync();
+
                     while (IsOpen && Session.Phase == GamePhase.Shop)
                     {
                         var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
@@ -665,6 +1298,18 @@ namespace App.UI
             TryPresentGamePopupInfo();
         }
 
+        /// <summary>PVP 商店弹窗条件：shop 阶段 + 本人有商店（淘汰观战 Shop 为 null）+ 未点过"下一关"（shop_done）。</summary>
+        private bool IsPvpShopOpen()
+        {
+            return Session.IsPvp &&
+                   _pvp != null &&
+                   _pvp.State != null &&
+                   Session.Phase == GamePhase.Shop &&
+                   _pvp.State.Shop != null &&
+                   !_pvp.State.Shop.Done &&
+                   !_pvpShopDoneRequested;
+        }
+
         private async Task<BattleResultAction> ShowBattleResultAsync(bool forfeitNoRevive = false)
         {
             var registration = _ui.Registry.GetByViewModelType(typeof(BattleResultPopupViewModel));
@@ -674,17 +1319,29 @@ namespace App.UI
                 forfeitNoRevive);
         }
 
-        private async Task<bool> ShowCommonTopAsync()
+        private async Task<bool> ShowCommonTopAsync(string tip = null)
         {
             var registration = _ui.Registry.GetByViewModelType(typeof(CommonTopViewModel));
             var popup = (CommonTopViewModel)_ui.Registry.CreateViewModel(registration);
-            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup);
+            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup, tip);
         }
 
         private async void OnBack()
         {
             if (_ui == null || _resultPopupOpen || _shopPopupOpen)
             {
+                return;
+            }
+
+            if (Session.IsPvp)
+            {
+                var confirmed = await ShowCommonTopAsync("退出将判负且无法重连，是否确定？");
+                if (!confirmed || !IsOpen)
+                {
+                    return;
+                }
+
+                await StopPvpAndLeave();
                 return;
             }
 
@@ -802,6 +1459,16 @@ namespace App.UI
                     EnemyChips[i].Value = string.Empty;
                     EnemyBet[i].Value = string.Empty;
                     EnemyState[i].Value = string.Empty;
+                }
+            }
+
+            // PVP 撞击期间强制露出目标槽，避免 ShowEnemy 关掉导致 AttackCutscene 拿不到 root。
+            if (Session.IsPvp && Session.AttackPlaying)
+            {
+                var slot = Session.AttackVisualSlot;
+                if (slot >= 0 && slot < ShowEnemy.Length)
+                {
+                    ShowEnemy[slot].Value = true;
                 }
             }
         }
@@ -996,7 +1663,7 @@ namespace App.UI
             return $"{name}({Math.Max(0, current)}/{Math.Max(0, max)})";
         }
 
-        private static string FormatEntryNames(List<App.Config.BossEntryConfig> entries)
+        private static string FormatEntryNames(List<CardShare.Contracts.Config.BossEntryConfig> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -1012,7 +1679,7 @@ namespace App.UI
             return string.Join("、", parts);
         }
 
-        private static string FormatEntryDescs(List<App.Config.BossEntryConfig> entries)
+        private static string FormatEntryDescs(List<CardShare.Contracts.Config.BossEntryConfig> entries)
         {
             if (entries == null || entries.Count == 0)
             {

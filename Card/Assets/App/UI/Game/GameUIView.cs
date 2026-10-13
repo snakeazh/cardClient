@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
 using App.Guide;
 using App.Resources;
@@ -108,6 +109,7 @@ namespace App.UI
         private bool _holdAttackDisplay;
         private PlayerItem _heldAttackItem;
         private int _heldAttackValue;
+        private readonly Dictionary<PlayerItem, int> _lastAttackShown = new Dictionary<PlayerItem, int>(4);
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
@@ -254,6 +256,20 @@ namespace App.UI
             await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
 
             var run = ViewModel.Session?.Run;
+            // 本局英雄固定：进桌预载释放/命中特效，出刀只走缓存，不再临时 Load。
+            if (run != null)
+            {
+                var hero = HeroMechanics.Resolve(run);
+                await _attackFx.PreloadHeroEffectsAsync(resources, hero);
+                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                    !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
+                {
+                    AppLog.Warn(
+                        LogChannel.UI,
+                        $"[GameUI] 英雄特效预载未就绪 attack={attackFx.Effects} hit={hitFx.Effects}，出刀将回退近战");
+                }
+            }
+
             if (run != null && run.HasBoss)
             {
                 try
@@ -304,7 +320,7 @@ namespace App.UI
         private void OnGUI()
         {
             GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加圣物（仅编辑器）");
+            GUILayout.Label("测试加圣物（仅编辑器；PVP 走服务端）");
             GUILayout.BeginHorizontal();
             var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
             if (next != _debugRelicIdText)
@@ -477,7 +493,7 @@ namespace App.UI
             }
 
             // 退局卸载本界面预热的资源（与 OnViewOpen/PreloadBattleFxAsync 的 LoadAsync 一一对应；
-            // 未进缓存的 key Release 为空操作）
+            // 未进缓存的 key Release 为空操作）。英雄特效由 _attackFx.Dispose → ReleaseHeroFxPrefabs 释放。
             var resources = ViewModel?.Resources;
             if (resources != null)
             {
@@ -515,6 +531,15 @@ namespace App.UI
             TryStartOpening();
             TryPlayAttack();
             TryScheduleAiDelay();
+        }
+
+        private void LateUpdate()
+        {
+            // PVP 翻牌回调里启攻击时，偶发同一帧订阅未刷到；兜底轮询。
+            if (ViewModel != null && ViewModel.Session != null && ViewModel.Session.IsPvp)
+            {
+                TryPlayAttack();
+            }
         }
 
         private async Task EnsureBattlePortraits()
@@ -651,6 +676,33 @@ namespace App.UI
             }
 
             _playedAttack = session.AttackPlaySerial;
+            // PVP 自己出伤：走与 PVE 相同的圣物攻/倍率分项结算链，最终数字用服务端 AttackDamage。
+            // PVP 挨打：对手无本地圣物栏，仍直接跳最终伤害再撞击。
+            if (session.IsPvp && session.IncomingAttack)
+            {
+                _attackFx.Bind(transform, _playerItem, _enemyItems);
+                var slot = session.AttackVisualSlot;
+                if (slot >= 0 && slot < _enemyItems.Length && _enemyItems[slot] != null)
+                {
+                    _enemyItems[slot].gameObject.SetActive(true);
+                    CancelDeathDissolve(_enemyItems[slot]);
+                    _enemyItems[slot].ResetDissolve();
+                }
+
+                _holdAttackDisplay = true;
+                _heldAttackItem = AttackItemAtSlot(slot);
+                _heldAttackValue = Math.Max(1, session.AttackDamage);
+                if (_heldAttackItem != null)
+                {
+                    _heldAttackItem.SetAttack(_heldAttackValue);
+                }
+
+                HideBeilvInfo();
+                ViewModel.ShowMask.Value = true;
+                PlayAttackCutscene(session, 1f);
+                return;
+            }
+
             PlaySettleThenAttack(session);
         }
 
@@ -936,6 +988,41 @@ namespace App.UI
                 session.NotifyUi();
                 return session.LastAttackMissed;
             };
+            // 特效攻击：命中瞬间同时结算 + 受击动画/特效 + 出字；无震屏。
+            Func<bool> onHeroSkillHit = () =>
+            {
+                AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] onHeroSkillHit 结算扣血");
+                session.ApplyPendingAttackHits();
+                TryDissolveIfLethal(session);
+                session.NotifyUi();
+                return session.LastAttackMissed;
+            };
+            Action onHeroSkillDamageText = () =>
+            {
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] onHeroSkillDamageText 出字 miss={session.LastAttackMissed} dmg={session.TakenDamage}");
+                ShowAttackHpTexts(session);
+                if (_hpTextRt != null && _hpTextRt.parent != null)
+                {
+                    _hpTextRt.parent.SetAsLastSibling();
+                    _hpTextRt.SetAsLastSibling();
+                }
+
+                if (!session.IncomingAttack)
+                {
+                    var mainSlot = session.AttackVisualSlot;
+                    for (var slot = 0; slot < _enemyItems.Length; slot++)
+                    {
+                        if (slot == mainSlot || !session.LastAttackHitApplied(slot))
+                        {
+                            continue;
+                        }
+
+                        _attackFx.ReactSlot(slot, session.LastAttackHitMissed(slot));
+                    }
+                }
+            };
             Action onCollisionDone = PlayPendingEnemyDeathEffects;
             Action onReturned = () =>
             {
@@ -979,6 +1066,29 @@ namespace App.UI
             }
             else
             {
+                var hero = HeroMechanics.Resolve(session.Run);
+                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                    _attackFx.CanPlayHeroSkill(attackFx, hitFx) &&
+                    _attackFx.PlayHeroSkill(
+                        session.AttackVisualSlot,
+                        session.AttackLevel,
+                        attackFx,
+                        hitFx,
+                        onHeroSkillHit,
+                        onHeroSkillDamageText,
+                        onCollisionDone,
+                        onReturned,
+                        onDone,
+                        timeScale))
+                {
+                    AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] 走特效出刀路径");
+                    return;
+                }
+
+                AppLog.Warn(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] 回退近战 resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
+
                 _attackFx.Play(
                     session.AttackVisualSlot,
                     session.AttackLevel,
@@ -1426,6 +1536,12 @@ namespace App.UI
                 return;
             }
 
+            // mask 开打时会 SetAsLastSibling；伤害字要把整支 hptextdi 抬到 mask 之上才看得见。
+            if (_hpTextRt.parent != null)
+            {
+                _hpTextRt.parent.SetAsLastSibling();
+            }
+
             _hpTextRt.SetAsLastSibling();
             _hpTextRt.position = hit;
             if (playAnim)
@@ -1764,10 +1880,12 @@ namespace App.UI
                     }
                 }
 
+                var playerAttack = AttackDisplay(_playerItem, session.Player.Attack);
                 _playerItem.Bind(
                     session.Player,
                     PortraitLoader.Get(session.Player),
-                    AttackDisplay(_playerItem, session.Player.Attack));
+                    playerAttack);
+                ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
             }
 
             var activeCount = 0;
@@ -1803,14 +1921,29 @@ namespace App.UI
                     item.gameObject.SetActive(true);
                 }
 
+                var enemyAttack = AttackDisplay(item, enemy.Attack);
                 item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    AttackDisplay(item, enemy.Attack));
+                    enemyAttack);
+                ShakeOnPvpAttackChange(session, item, enemyAttack);
             }
 
             SyncEnemyCompareStand(session);
             EnsurePlayerAtOpeningPose();
+        }
+
+        /// <summary>PVP 攻击力跳动：显示值变化时播数字抖动（涨 high / 跌 low）。基础攻击 → 比牌伤害都走这里。</summary>
+        private void ShakeOnPvpAttackChange(GameSession session, PlayerItem item, int value)
+        {
+            var last = _lastAttackShown.TryGetValue(item, out var shown) ? shown : -1;
+            _lastAttackShown[item] = value;
+            if (!session.IsPvp || item == null || last < 0 || value == last || value <= 0)
+            {
+                return;
+            }
+
+            item.PlayAttackNumberShake(value < last, value > last);
         }
 
         /// <summary>

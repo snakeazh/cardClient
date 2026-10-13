@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Game;
+using App.Net;
 using App.Talent;
+using App.UI;
 using App.Wallet;
 using UnityEditor;
 using UnityEngine;
@@ -19,11 +22,37 @@ namespace App.Game.Editor
         private const string OneHitMenuPath = "Debug/外挂/一击必杀";
         private const string ExtraAttackMenuPath = "Debug/外挂/强制连击";
         private const string ForceMissMenuPath = "Debug/外挂/强制MISS";
+        private const string ServerMenuPath = "Debug/网络/连接服务器";
+
+        [MenuItem(ServerMenuPath, false, 1)]
+        public static void ToggleServerConnection()
+        {
+            GameApiSettings.Enabled = !GameApiSettings.Enabled;
+            Menu.SetChecked(ServerMenuPath, GameApiSettings.Enabled);
+            Debug.Log($"[网络] 连接服务器 {(GameApiSettings.Enabled ? "开启" : "关闭")}（下次启动以 AppBootstrap 上的勾选为准）");
+            if (!GameApiSettings.Enabled)
+            {
+                Debug.LogWarning("[网络] 已关闭：当前会话不再主动连服；闯关将走本地局。重启 Play 后仍以场景里 AppBootstrap.enableServerConnection 为准。");
+            }
+        }
+
+        [MenuItem(ServerMenuPath, true)]
+        public static bool ToggleServerConnectionValidate()
+        {
+            Menu.SetChecked(ServerMenuPath, GameApiSettings.Enabled);
+            return true;
+        }
 
         [MenuItem("Debug/外挂/添加指定圣物", false, 16)]
         public static void OpenGrantRelic()
         {
             GrantRelicCheatWindow.Open();
+        }
+
+        [MenuItem("Debug/外挂/一键添加羁绊圣物", false, 16)]
+        public static void OpenGrantBinding()
+        {
+            GrantBindingCheatWindow.Open();
         }
 
         [MenuItem("Debug/外挂/指定关卡词缀", false, 17)]
@@ -44,7 +73,7 @@ namespace App.Game.Editor
         }
 
         [MenuItem("Debug/外挂/局外金币 +99999", false, 10)]
-        public static void AddWalletGold()
+        public static async void AddWalletGold()
         {
             if (!Application.isPlaying || !AppServices.IsReady)
             {
@@ -52,10 +81,23 @@ namespace App.Game.Editor
                 return;
             }
 
-            var wallet = AppServices.Resolve<IWalletService>();
-            wallet.Add(99999);
-            wallet.Save();
-            Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
+            if (!GameApi.IsReady)
+            {
+                Toast.Error("未连接服务器");
+                return;
+            }
+
+            try
+            {
+                var profile = await GameApi.Client.DebugGrantGoldAsync(99999);
+                GameApi.ApplyProfile(profile);
+                var wallet = AppServices.Resolve<IWalletService>();
+                Debug.Log($"[外挂] 局外金币 +99999，当前余额 {wallet.Gold}");
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
         }
 
         [MenuItem("Debug/外挂/随机获得一个天赋", false, 14)]
@@ -192,6 +234,7 @@ namespace App.Game.Editor
         private void OnGUI()
         {
             EditorGUILayout.LabelField("Play 对局中输入圣物 Id，立即加入本局（不扣金币、不占上限）");
+            EditorGUILayout.HelpBox("PVE：本地立刻生效。PVP：发往服务端 debug_grant，等 match_update 后栏位更新。", MessageType.None);
             EditorGUILayout.Space(4f);
             _relicId = EditorGUILayout.IntField("圣物 Id", _relicId);
 
@@ -261,6 +304,173 @@ namespace App.Game.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+    }
+
+    /// <summary>局内测试：选羁绊 Id，一键补齐该羁绊全部成员圣物。</summary>
+    public sealed class GrantBindingCheatWindow : EditorWindow
+    {
+        private int _bindingId = 103;
+        private string _filter = string.Empty;
+        private Vector2 _memberScroll;
+        private Vector2 _catalogScroll;
+
+        public static void Open()
+        {
+            var window = GetWindow<GrantBindingCheatWindow>("羁绊圣物");
+            window.minSize = new Vector2(420f, 360f);
+            window.Show();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Play 对局中选择羁绊 Id，一键补齐成员圣物（缺啥补啥，不扣金币、不占上限）");
+            EditorGUILayout.HelpBox("PVE：本地立刻生效。PVP：按件顺序发 debug_grant。", MessageType.None);
+            EditorGUILayout.Space(4f);
+            _bindingId = EditorGUILayout.IntField("羁绊 Id", _bindingId);
+
+            BindingConfig binding = null;
+            if (Application.isPlaying)
+            {
+                binding = BindingConfig.Get(_bindingId);
+            }
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.TextField("名称", binding != null ? binding.Name : "—");
+                EditorGUILayout.TextField("效果", binding != null ? binding.Desc : "—");
+            }
+
+            EditorGUILayout.Space(4f);
+            using (new EditorGUI.DisabledScope(!Application.isPlaying || binding == null))
+            {
+                if (GUILayout.Button("一键添加该羁绊全部圣物", GUILayout.Height(28f)))
+                {
+                    Grant();
+                }
+            }
+
+            if (!Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("需要在 Play 模式且已进入对局。", MessageType.Info);
+                return;
+            }
+
+            DrawMembers();
+            EditorGUILayout.Space(8f);
+            DrawCatalog();
+        }
+
+        private void Grant()
+        {
+            if (!GameCheatMenu.TryGetSession(out var session))
+            {
+                return;
+            }
+
+            session.DebugGrantBindingMembers(_bindingId);
+            Repaint();
+        }
+
+        private void DrawMembers()
+        {
+            var members = GameSession.CollectBindingMemberRelicIds(_bindingId);
+            var ownedCount = 0;
+            if (AppServices.IsReady)
+            {
+                var session = AppServices.Resolve<GameSession>();
+                for (var i = 0; i < members.Count; i++)
+                {
+                    if (session != null && session.OwnsRelicConfig(members[i]))
+                    {
+                        ownedCount++;
+                    }
+                }
+            }
+
+            EditorGUILayout.LabelField($"成员圣物 {members.Count} 件（已持有 {ownedCount}）");
+            if (members.Count == 0)
+            {
+                EditorGUILayout.HelpBox("该羁绊没有挂圣物（或 Id 无效）。", MessageType.Warning);
+                return;
+            }
+
+            _memberScroll = EditorGUILayout.BeginScrollView(_memberScroll, GUILayout.MaxHeight(160f));
+            for (var i = 0; i < members.Count; i++)
+            {
+                var id = members[i];
+                var relic = RelicConfig.Get(id);
+                var owned = AppServices.IsReady &&
+                            AppServices.Resolve<GameSession>()?.OwnsRelicConfig(id) == true;
+                var name = relic != null ? relic.Name : "?";
+                EditorGUILayout.LabelField($"{id}  {name}  {(owned ? "✓" : "缺")}");
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawCatalog()
+        {
+            EditorGUILayout.LabelField("全部羁绊");
+            _filter = EditorGUILayout.TextField("筛选", _filter);
+            var rows = new List<BindingConfig>(BindingConfig.Count);
+            foreach (var pair in BindingConfig.All)
+            {
+                if (pair.Value != null && MatchFilter(pair.Value, _filter))
+                {
+                    rows.Add(pair.Value);
+                }
+            }
+
+            rows.Sort((a, b) => a.Id.CompareTo(b.Id));
+            _catalogScroll = EditorGUILayout.BeginScrollView(_catalogScroll);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var members = GameSession.CollectBindingMemberRelicIds(row.Id);
+                EditorGUILayout.BeginHorizontal();
+                var tip = string.IsNullOrEmpty(row.Desc) ? row.Name : row.Desc;
+                EditorGUILayout.LabelField(new GUIContent($"{row.Id}  {row.Name}（{members.Count}）", tip));
+                if (GUILayout.Button("选择", GUILayout.Width(52f)))
+                {
+                    _bindingId = row.Id;
+                }
+
+                using (new EditorGUI.DisabledScope(!Application.isPlaying))
+                {
+                    if (GUILayout.Button("添加", GUILayout.Width(52f)))
+                    {
+                        _bindingId = row.Id;
+                        Grant();
+                    }
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private static bool MatchFilter(BindingConfig row, string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+            {
+                return true;
+            }
+
+            if (row.Id.ToString().IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(row.Name) &&
+                row.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(row.Desc) &&
+                   row.Desc.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 

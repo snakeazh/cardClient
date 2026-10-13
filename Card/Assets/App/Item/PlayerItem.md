@@ -25,7 +25,7 @@
 | `card_Name` | 人物名字 |
 | `card_attackValue` | 人物攻击力数字 |
 | `card_attackHeart` | 人物当前血量 |
-| `attack` | 人物攻击力整块；值为 0 时隐藏。底图按品质取 `Altas/ItemBg` 的 `{品质}RectangleFrame` |
+| `attack` | 人物攻击力整块；值为 0 时隐藏。底图按品质取 `Altas/playitem` 的 Yellow/Blue/Purple/Red `RectangleFrame` |
 | `heart` | 人物血量整块。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 0 |
 | `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap`（贴图在 `Altas/playitem`，如 `KhakiMonsterBaseFrame`） |
 | `enemycard_icon` | 敌人头像 |
@@ -73,14 +73,14 @@
 
 配置表 `Icon` 是文件名前缀，再拼血量分档后缀。路径和缓存由 [`PortraitLoader.cs`](../UI/Game/PortraitLoader.cs) 统一管：
 
-- 启动：`PortraitLoader.PreloadAsync` 只预热全部英雄 / 怪物的 `_attack`
-- 局内：`EnsureBattleStatesAsync` 对上场玩家和本关怪物补 `_damage` / `_dead`；换关遇到新怪物再补
-- 取图：界面只调 `Get` / `GetRole` / `GetEnemy`，不要再各自 `LoadAsync`。受伤图还没到时先显示 `_attack`
+- 启动：`AtlasService.PreloadAsync` 预载 `Altas/enemy`；`PortraitLoader.PreloadAsync` 只预热全部英雄的 `_attack`
+- 局内：`EnsureBattleStatesAsync` 对上场玩家补 `_damage` / `_dead`；怪物三态均在图集，无需补载
+- 取图：界面只调 `Get` / `GetRole` / `GetEnemy`，不要再各自 `LoadAsync`。英雄受伤图还没到时先显示 `_attack`
 
 | 角色 | 配置 | 资源目录 | 例子 |
 |------|------|----------|------|
-| 玩家 | `HeroConfig.Icon` | `Textures/role/` | `Adventurer_attack` |
-| 怪物 | `MonsterConfig.Icon` | `Textures/enemy/` | `Monster1_attack` |
+| 玩家 | `HeroConfig.Icon` | `Textures/role/`（按张） | `Adventurer_attack` |
+| 怪物 | `MonsterConfig.Icon` | `Altas/enemy`（源图 `Textures/enemy/`） | `enemy1_attack` |
 
 | 分档 | 条件 | 后缀 |
 |------|------|------|
@@ -90,7 +90,7 @@
 
 局内 `GameUIView` 在受击演出开始（`onHit`）调用 `ApplyPendingAttackHits` 扣血，随后 `RefreshPlayerItems` 按新的 `Hp / MaxHp` 取图，和卡上血量同一拍。局外（主页、选角、图鉴怪物）没有战斗血量，固定 `_attack`。图鉴收藏品仍走 `RoleIcon`（无后缀，如 `Adventurer1`），不要拼分档、也不进 `PortraitLoader`。
 
-怪物资源将从现有的 `enemy{n}_*` 改名为配置表 `Icon`（`Monster1_attack` 等）；改名前预热会 Warn 并缓存空图，不做旧名映射。
+怪物资源将从现有的 `enemy{n}_*` 改名为配置表 `Icon`（如仍用 `enemy1`）；图集缺图时 `GetEnemy` 返回 null，不做旧名映射。
 
 局内绑法：
 

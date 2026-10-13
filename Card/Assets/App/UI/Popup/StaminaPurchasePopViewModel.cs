@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using App.AdShop;
+using App.Net;
+using App.UI;
 using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.View;
@@ -33,7 +35,7 @@ namespace App.UI.Popup
             CoinBtnText = new ObservableProperty<string>(BtnText(shop.GoldPurchasesLeftToday));
             BuyStaminaCommand = new RelayCommand(BuyStamina, () => shop.StaminaPurchasesLeftToday > 0);
             BuyCoinCommand = new RelayCommand(BuyCoin, () => shop.GoldPurchasesLeftToday > 0);
-            CloseCommand = new RelayCommand(Close);
+            CloseCommand = new RelayCommand(ClosePop);
         }
 
         public ObservableProperty<string> StaminaAmountText { get; }
@@ -86,29 +88,49 @@ namespace App.UI.Popup
             BuyCoinCommand.RaiseCanExecuteChanged();
         }
 
-        private void BuyStamina()
+        private async void BuyStamina()
         {
-            if (_shop.TryPurchaseStamina())
+            if (!GameApi.IsReady)
             {
+                Toast.Error("未连接服务器");
+                return;
+            }
+
+            try
+            {
+                var resp = await GameApi.Client.ClaimAdShopAsync("stamina");
+                GameApi.ApplyProfile(resp.Profile);
                 _toast?.ShowSuccess($"体力 +{_shop.StaminaPerPurchase}");
-                return;
             }
-
-            Refresh();
-        }
-
-        private void BuyCoin()
-        {
-            if (_shop.TryPurchaseGold())
+            catch (GameApiException ex)
             {
-                _toast?.ShowSuccess($"金币 +{_shop.GoldPerPurchase}");
+                Toast.Error(GameApi.Describe(ex));
+                Refresh();
+            }
+        }
+
+        private async void BuyCoin()
+        {
+            if (!GameApi.IsReady)
+            {
+                Toast.Error("未连接服务器");
                 return;
             }
 
-            Refresh();
+            try
+            {
+                var resp = await GameApi.Client.ClaimAdShopAsync("gold");
+                GameApi.ApplyProfile(resp.Profile);
+                _toast?.ShowSuccess($"金币 +{_shop.GoldPerPurchase}");
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                Refresh();
+            }
         }
 
-        private void Close()
+        private void ClosePop()
         {
             _ = _ui.Close(this);
         }

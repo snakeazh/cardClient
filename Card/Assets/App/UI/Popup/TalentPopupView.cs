@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts.Config;
 using App.Guide;
 using App.Item;
 using App.Resources;
@@ -274,7 +275,7 @@ namespace App.UI.Popup
             return card;
         }
 
-        /// <summary>卡槽数据绑定（行复用时反复调用）：品质染色 + card 节点品质边框（Altas/ItemBg），
+        /// <summary>卡槽数据绑定（行复用时反复调用）：品质染色 + card 节点品质卡背（Altas/playitem），
         /// 解锁态（未解锁黑剪影+？？？、无等级角标、无品质特效），图标取 Altas/Talent 图集。</summary>
         private void BindCardSlot(Component slot, TalentItem item)
         {

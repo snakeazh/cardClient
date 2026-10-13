@@ -234,15 +234,10 @@ namespace Framework.UI.Navigation
             object args,
             GameObject keepCoverOnTop = null)
         {
-            UnityEngine.Debug.LogWarning(
-                $"[BattleTrace] CreateInstance begin id={registration.Id} key={registration.AssetKey} vm={viewModel?.GetType().Name}");
             var prefab = registration.Prefab;
             if (prefab == null)
             {
-                UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance LoadAsync prefab… {registration.AssetKey}");
                 prefab = await _resources.LoadAsync<GameObject>(registration.AssetKey);
-                UnityEngine.Debug.LogWarning(
-                    $"[BattleTrace] CreateInstance prefab loaded={(prefab != null)} {registration.AssetKey}");
                 if (keepCoverOnTop != null)
                 {
                     keepCoverOnTop.transform.SetAsLastSibling();
@@ -258,9 +253,7 @@ namespace Framework.UI.Navigation
             {
                 keepCoverOnTop.transform.SetAsLastSibling();
             }
-
-            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance instantiated {go.name}");
-
+            
             var view = go.GetComponent<IView>();
             if (view == null)
             {
@@ -269,14 +262,12 @@ namespace Framework.UI.Navigation
                     $"Prefab for screen '{registration.Id}' must have a component implementing IView.");
             }
 
-            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance view.Open… {registration.Id}");
             await view.Open(viewModel, args);
             if (keepCoverOnTop != null)
             {
                 keepCoverOnTop.transform.SetAsLastSibling();
             }
 
-            UnityEngine.Debug.LogWarning($"[BattleTrace] CreateInstance view.Open done {registration.Id}");
             return new ScreenInstance(registration, view, viewModel);
         }
 

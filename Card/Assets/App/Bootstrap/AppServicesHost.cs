@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using App.Net;
 using Framework.Log;
 using Framework.Save;
 using Framework.UI.DI;
@@ -99,6 +100,12 @@ namespace App.Bootstrap
             {
                 AppServices.Detach();
             }
+        }
+
+        private void Update()
+        {
+            var ws = Container != null ? Container.GetService(typeof(PvpWsClient)) as PvpWsClient : null;
+            ws?.Pump();
         }
     }
 }

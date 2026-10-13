@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using App.Audio;
 using App.Config;
+using CardShare.Contracts;
 using CardShare.Contracts.Config;
 using App.Energy;
 using App.Game;
@@ -35,6 +36,8 @@ namespace App.UI
         private readonly IPvpScoreService _pvpScore;
         private bool _pvpStarting;
         private bool _openingLevel;
+        private bool _pvpResumeChecked;
+        private Task _resumeTask;
         private int _matchTimerGeneration;
 
         public HomeViewModel(
@@ -100,6 +103,18 @@ namespace App.UI
         {
             _pvpScore.Changed += OnPvpScoreChanged;
             await RefreshOnReturnAsync();
+            // 重连探测不能放在 OnOpen：此时 Home 尚未入栈，若在这里 Open(GameTable)，
+            // 随后 Home 入栈会盖住桌面，表现为「还显示着主页」。
+        }
+
+        /// <summary>Home 已入栈并 Present 后调用：探测断线对局并弹重连。</summary>
+        public void OnPresented()
+        {
+            // 仅自动探测残局；手动点匹配会 CancelProbe，不会等这个任务。
+            if (_resumeTask == null)
+            {
+                _resumeTask = TryOfferPvpResumeAsync();
+            }
         }
 
         protected override Task OnClose()
@@ -256,6 +271,70 @@ namespace App.UI
             }
         }
 
+        /// <summary>
+        /// 断线重登：sync 探测未结束对局 → CommonTop 确认返回对局，取消则 leave 判负逃跑。
+        /// 每个登录会话只探测一次（Home 压栈复用时不重复弹）。
+        /// </summary>
+        private async Task TryOfferPvpResumeAsync()
+        {
+            if (_pvpResumeChecked || !GameApiSettings.Enabled || !GameApi.IsReady || _pvp == null)
+            {
+                return;
+            }
+
+            _pvpResumeChecked = true;
+            try
+            {
+                var hasMatch = await _pvp.TryProbeActiveMatchAsync();
+                if (!hasMatch)
+                {
+                    return;
+                }
+
+                var confirmed = await ShowCommonTopAsync("是否重连回对局？");
+                if (confirmed)
+                {
+                    var self = _pvp.Self;
+                    if (_pvp.State == null
+                        || string.Equals(_pvp.State.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase)
+                        || self == null
+                        || !self.Alive)
+                    {
+                        Toast.Error(self != null && !self.Alive ? "你已淘汰，无法重连" : "对局已结束");
+                        await _pvp.StopAsync();
+                        return;
+                    }
+
+                    _pvp.ActivateResumedMatch();
+                    _navigation.HideBar();
+                    _session.BeginPvp();
+                    await _ui.Open(_table);
+                    return;
+                }
+
+                // 取消 = 直接逃跑（leave → Abandon 判负）
+                await _pvp.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                try
+                {
+                    await _pvp.StopAsync();
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        private async Task<bool> ShowCommonTopAsync(string tip)
+        {
+            var registration = _ui.Registry.GetByViewModelType(typeof(CommonTopViewModel));
+            var popup = (CommonTopViewModel)_ui.Registry.CreateViewModel(registration);
+            return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup, tip);
+        }
+
         private async void StartPvp()
         {
             if (_pvpStarting)
@@ -282,6 +361,10 @@ namespace App.UI
                         return;
                     }
                 }
+
+                // 手动点匹配 = 开新局，不要重连探针：取消探测并占住 resume 标记，直接排队。
+                _pvpResumeChecked = true;
+                _pvp.CancelProbe();
 
                 _navigation.HideBar();
                 StartMatchTimer();

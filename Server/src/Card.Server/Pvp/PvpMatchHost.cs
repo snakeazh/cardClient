@@ -54,6 +54,48 @@ public sealed class PvpMatchHost
         }
     }
 
+    public bool IsBound(Guid userId)
+    {
+        lock (_gate)
+        {
+            return _byUser.ContainsKey(userId);
+        }
+    }
+
+    /// <summary>仅解除 user→match 映射，不 Abandon（用于已淘汰玩家停推/禁重连）。</summary>
+    public void Unbind(Guid userId)
+    {
+        lock (_gate)
+        {
+            _byUser.Remove(userId);
+        }
+    }
+
+    /// <summary>
+    /// 淘汰后的真人从映射解绑：不再 sync/重连，也不再收后续对局推送。
+    /// 须在「本批已把淘汰快照推给本人」之后调用。
+    /// </summary>
+    public void UnbindEliminated(PvpMatch match)
+    {
+        if (match == null)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            foreach (var fighter in match.Fighters)
+            {
+                if (fighter.Alive || fighter.IsBot || !Guid.TryParse(fighter.UserId, out var userId))
+                {
+                    continue;
+                }
+
+                _byUser.Remove(userId);
+            }
+        }
+    }
+
     /// <summary>标记玩家断线/重连。match 为 null = 无对局；返回 true = 有状态变化需广播。</summary>
     public bool SetConnected(Guid userId, bool connected, out PvpMatch? match)
     {

@@ -2,7 +2,10 @@
 setlocal
 cd /d "%~dp0"
 set PORT=5254
+set ASPNETCORE_ENVIRONMENT=Development
+set Persistence__Provider=Postgres
 set ConnectionStrings__Redis=127.0.0.1:6379
+set GuestAuth__Enabled=true
 
 echo Starting Card.Server (Postgres + Redis) on port %PORT% ...
 echo URL: http://localhost:%PORT%
@@ -24,7 +27,7 @@ if not errorlevel 1 (
     exit /b 1
 )
 
-dotnet run --project src/Card.Server
+dotnet run --project src/Card.Server --launch-profile postgres
 echo.
 echo Server exited.
 pause

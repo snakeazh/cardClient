@@ -1233,14 +1233,14 @@ public class PvpMatchTests
         var match = Open(PvpTestTables.OnePvpRound(), new[] { Pub("甲"), Pub("乙") });
         var a = match.Fighters[0];
         var b = match.Fighters[1];
+        var hpB = b.Hp;
 
         Assert.True(match.Abandon(a.UserId));
         Assert.Equal(2, a.Rank);
-        // 对手尚未锁定，对局不卡也不提前结束。
-        Assert.Equal(PvpMatch.PhaseFight, match.Phase);
-
-        match.Showdown(b.UserId);
+        // 逃跑当桌直接判负，对手不受伤；只剩一人后进 settle。
+        Assert.Equal(hpB, b.Hp);
         Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
+        Assert.True(match.Duels.All(d => d.Resolved));
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Assert.True(match.ApplyTimeouts(now + PvpTiming.SettleAnimMs + 1));
@@ -1251,6 +1251,34 @@ public class PvpMatchTests
 
         // 已结束再放弃：无副作用。
         Assert.False(match.Abandon(b.UserId));
+    }
+
+    [Fact]
+    public void AbandonForfeitsPvpDuelWithoutDamagingOpponent()
+    {
+        var match = Open(PvpTestTables.Classic(), hp: 500);
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        AdvanceThrough(match);
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpFightKind.Pvp, match.FightKind);
+
+        var a = match.Fighters[0];
+        var duel = match.Duels.First(d => d.Involves(a.UserId));
+        var foeId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
+        var foe = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, foeId));
+        var foeHp = foe.Hp;
+
+        Assert.True(match.Abandon(a.UserId));
+        Assert.False(a.Alive);
+        Assert.Equal(4, a.Rank);
+        Assert.True(duel.Resolved);
+        Assert.Equal(foeHp, foe.Hp);
+        Assert.True(foe.Alive);
+        Assert.Contains(match.DrainEvents(), e => e.Kind == "duel_resolved" && e.Value == 0);
     }
 
     [Fact]

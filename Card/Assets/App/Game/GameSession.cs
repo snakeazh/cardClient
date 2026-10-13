@@ -9444,20 +9444,52 @@ namespace App.Game
             _pvpHandLocked = false;
             Phase = GamePhase.Idle;
             DealSerial = 0;
+            PvpSnapDeal = false;
             CardsRevealed = false;
             SelectingRubTarget = false;
             Hint = "点击开始闯关";
             Notify();
         }
 
+        /// <summary>重连对齐：下一帧牌桌立刻落位亮牌，不播发牌动画。</summary>
+        public bool PvpSnapDeal { get; private set; }
+
+        /// <summary>抬 DealSerial 并标记瞬时落牌（保留手牌/选中/CardsRevealed）。</summary>
+        public void RequestPvpSnapDeal()
+        {
+            if (DealSerial <= 0)
+            {
+                DealSerial = 1;
+            }
+            else
+            {
+                DealSerial++;
+            }
+
+            PvpSnapDeal = true;
+            Notify();
+        }
+
+        public bool ConsumePvpSnapDeal()
+        {
+            if (!PvpSnapDeal)
+            {
+                return false;
+            }
+
+            PvpSnapDeal = false;
+            return true;
+        }
+
         /// <summary>PVP 状态同步：座位/手牌/HP/技能/Hint 即时写入，不触发演出。演出由 App.UI.Game.Director 的命令驱动。</summary>
         public void ApplyPvpState(PvpMatchStateDto match, string userId)
         {
-            ApplyPvpState(match, userId, deferHp: false);
+            ApplyPvpState(match, userId, deferHp: false, catchUpResult: false);
         }
 
         /// <param name="deferHp">比牌快照先不同双方座位的 HP/攻击（含对方，淘汰/死亡动画由座位 Hp=0 触发）：等攻击命令播完再应用，避免提前剧透结果。</param>
-        public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp)
+        /// <param name="catchUpResult">重连进 shop/settle：先按摊牌结果展示（牌面+牌型），稍后再切商店。</param>
+        public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp, bool catchUpResult = false)
         {
             if (!IsPvp || match == null)
             {
@@ -9468,8 +9500,12 @@ namespace App.Game
                            string.Equals(match.Duel.Phase, BattlePhaseNames.Showdown, StringComparison.OrdinalIgnoreCase);
             SplitPvpSeats(match, userId, out var mine, out var foe, out _);
             BindPvpFighters(match, userId, applyHp: !deferHp);
-            ApplyPvpShop(match);
-            ApplyPvpTable(match, userId, mine, foe, showdown, deferHp);
+            if (!catchUpResult)
+            {
+                ApplyPvpShop(match);
+            }
+
+            ApplyPvpTable(match, userId, mine, foe, showdown, deferHp, catchUpResult);
             Notify();
         }
 
@@ -9814,11 +9850,15 @@ namespace App.Game
             BattleSeatDto mine,
             BattleSeatDto foe,
             bool showdown,
-            bool deferHp)
+            bool deferHp,
+            bool catchUpResult = false)
         {
             var shopPhase = string.Equals(match.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase);
             var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
+            // 重连进商店：先按摊牌结果展示，不立刻切 Shop（否则只剩牌型文案、牌桌 DealSerial=0 无牌）。
+            var showcaseResult = catchUpResult && showdown && (shopPhase || settlePhase);
             CopyPvpHand(Player, mine, true);
+            Player.ShowCards = true;
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
             if (foe != null)
@@ -9867,12 +9907,18 @@ namespace App.Game
             _pvpHandLocked = showdown || (mine != null && mine.Locked);
             var foeLocked = foe != null && foe.Locked;
             CardsRevealed = showdown;
-            Phase = shopPhase ? GamePhase.Shop : (showdown ? GamePhase.Showdown : GamePhase.WaitingOpen);
+            Phase = shopPhase && !showcaseResult
+                ? GamePhase.Shop
+                : (showdown || showcaseResult ? GamePhase.Showdown : GamePhase.WaitingOpen);
             Player.Looked = true;
             var self = FindPvpSelf(match, userId);
             if (string.Equals(match.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase))
             {
                 Hint = FormatPvpRank(self);
+            }
+            else if (showcaseResult || (showdown && !shopPhase))
+            {
+                Hint = FormatPvpCompareHint(mine, foe, enemy.Name);
             }
             else if (shopPhase)
             {
@@ -9881,10 +9927,6 @@ namespace App.Game
             else if (settlePhase)
             {
                 Hint = "结算中…";
-            }
-            else if (showdown)
-            {
-                Hint = FormatPvpCompareHint(mine, foe, enemy.Name);
             }
             else if (match.Duel == null)
             {

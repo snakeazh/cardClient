@@ -48,6 +48,11 @@ namespace App.UI
             return Task.CompletedTask;
         }
 
+        public override void OnPresented()
+        {
+            ViewModel.OnPresented();
+        }
+
         private void BindHero()
         {
             if (_playerItem == null)

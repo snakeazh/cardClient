@@ -175,18 +175,30 @@ namespace TMPro.EditorUtilities
                 "Desc", "Name", "Title", "Tip", "Hint", "Message", "Effect", "Label", "Text", "Content", "Dialog"
             };
 
-            var generatedConfigRoot = Path.Combine(AssetsRoot, "App", "Config", "Generated");
-            if (!Directory.Exists(generatedConfigRoot))
+            // 配置行类生成在 Shared/Contracts/Config（共享源码，双端同编），Generated 下只有加载器，两处都要扫，
+            // 否则 NickName 等字段漏收（2026-10 机器人"乙/丙"缺字即此因）。
+            var configRowRoots = new[]
             {
-                return fieldNames;
+                Path.Combine(AssetsRoot, "App", "Config", "Generated"),
+                Path.Combine(AssetsRoot, "Shared", "Contracts", "Config")
+            };
+
+            var generatedFiles = new List<string>();
+            foreach (var configRoot in configRowRoots)
+            {
+                if (!Directory.Exists(configRoot))
+                {
+                    continue;
+                }
+
+                generatedFiles.AddRange(Directory.GetFiles(configRoot, "*.cs", SearchOption.TopDirectoryOnly));
             }
 
-            var generatedFiles = Directory.GetFiles(generatedConfigRoot, "*.cs", SearchOption.TopDirectoryOnly);
             // 支持 string / string[] / List<string>，数组文案字段（如 TalentDesc）同样进白名单。
             var fieldRegex = new Regex(
                 @"public\s+(?:string\s*(?:\[\]|<[^>]*>)?|List\s*<\s*string\s*>)\s*(\w+)\s*;",
                 RegexOptions.Compiled);
-            foreach (var file in generatedFiles)
+            foreach (var file in NormalizePaths(generatedFiles))
             {
                 var source = File.ReadAllText(file, Encoding.UTF8);
                 foreach (Match match in fieldRegex.Matches(source))

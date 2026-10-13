@@ -213,6 +213,28 @@ namespace CardShare.Battle
             }
         }
 
+        /// <summary>逃跑/放弃：不比牌，直接判 <paramref name="winnerSeat"/> 胜，伤害 0。</summary>
+        public void ForceForfeit(int winnerSeat)
+        {
+            lock (_gate)
+            {
+                if (Resolved)
+                {
+                    return;
+                }
+
+                if (winnerSeat != 0 && winnerSeat != 1)
+                {
+                    throw new InvalidOperationException("Invalid seat.");
+                }
+
+                _locked[0] = true;
+                _locked[1] = true;
+                Resolved = true;
+                MarkHpApplied(winnerSeat, 0);
+            }
+        }
+
         public BattleSnapshot Showdown()
         {
             lock (_gate)

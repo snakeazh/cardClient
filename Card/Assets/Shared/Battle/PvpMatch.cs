@@ -250,7 +250,27 @@ namespace CardShare.Battle
 
                 fighter.Disconnected = disconnected;
                 Bump(disconnected ? PvpEventKinds.PlayerOffline : PvpEventKinds.PlayerOnline, userId, 0);
-                if (!disconnected || Phase != PhaseFight)
+                if (!disconnected)
+                {
+                    return;
+                }
+
+                if (Phase == PhaseShop)
+                {
+                    // 掉线代管不买圣物：进店即 done；已在商店则立刻补 done，避免卡住全桌。
+                    if (!fighter.ShopDone)
+                    {
+                        fighter.ShopDone = true;
+                        if (AllShopDone())
+                        {
+                            AdvanceFromShop();
+                        }
+                    }
+
+                    return;
+                }
+
+                if (Phase != PhaseFight)
                 {
                     return;
                 }
@@ -273,7 +293,7 @@ namespace CardShare.Battle
             }
         }
 
-        /// <summary>主动放弃本局：判负淘汰拿当前最差名次，座位按断线同款兜底不再被等待。返回 true = 有状态变化需广播。</summary>
+        /// <summary>逃跑/主动离开：当前桌直接判负（不比牌、对手不受伤），并淘汰拿当前最差名次。返回 true = 有状态变化需广播。</summary>
         public bool Abandon(string userId)
         {
             lock (_gate)
@@ -295,6 +315,12 @@ namespace CardShare.Battle
                     return false;
                 }
 
+                if (Phase == PhaseFight)
+                {
+                    // 逃跑 = 本场 PK 判负：不走牌型比拼，对手胜且不受伤。
+                    ForfeitCurrentDuel(userId);
+                }
+
                 fighter.Hp = 0;
                 fighter.Alive = false;
                 fighter.Disconnected = true;
@@ -309,17 +335,6 @@ namespace CardShare.Battle
 
                 if (Phase == PhaseFight)
                 {
-                    // 掉线座位当轮自动锁定（超时同款兜底），保证对局不被卡住。
-                    var duel = FindDuel(userId);
-                    if (duel != null && !duel.Resolved)
-                    {
-                        var seat = duel.ViewerSeat(userId);
-                        if (!duel.IsLocked(seat))
-                        {
-                            duel.LockSeat(seat);
-                        }
-                    }
-
                     SettleResolvedDuels();
                     TryAdvanceRound();
                 }
@@ -330,6 +345,26 @@ namespace CardShare.Battle
 
                 return true;
             }
+        }
+
+        /// <summary>未结算的当前桌：逃跑方判负，对手（或野怪）胜，伤害 0。</summary>
+        private void ForfeitCurrentDuel(string fleerUserId)
+        {
+            var duel = FindDuel(fleerUserId);
+            if (duel == null || duel.Resolved)
+            {
+                return;
+            }
+
+            var fleerSeat = duel.ViewerSeat(fleerUserId);
+            var winSeat = duel.VsMonster ? 1 : 1 - fleerSeat;
+            duel.ForceForfeit(winSeat);
+            if (!duel.VsMonster)
+            {
+                ApplyDuelGold(duel, winSeat);
+            }
+
+            BumpDuelResolved(duel, 0);
         }
 
         /// <summary>名次奖励一次性标志：仅 finished 后首次调用返回 true。</summary>
@@ -1107,7 +1142,7 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                // 断线代管仍跳过商店；机器人进店后自动买/开槽再 done。
+                // 断线代管：不买圣物，直接 done；机器人进店后自动买/开槽再 done。
                 fighter.ShopDone = fighter.Disconnected;
                 fighter.ShopRefreshCount = 0;
                 fighter.FreeShopRefreshLeft = 0;

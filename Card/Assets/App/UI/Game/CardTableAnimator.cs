@@ -272,7 +272,15 @@ namespace App.UI
 
             if (session.DealSerial != _shownDeal)
             {
-                PlayDeal(session);
+                if (session.ConsumePvpSnapDeal())
+                {
+                    SnapPresentHands(session);
+                }
+                else
+                {
+                    PlayDeal(session);
+                }
+
                 return;
             }
 
@@ -927,6 +935,74 @@ namespace App.UI
             _revealSfx = null;
             _rubSfx = null;
             _resources = null;
+        }
+
+        /// <summary>重连瞬时落牌：座位上直接亮出当前手牌（含摊牌选中），不播放发牌飞牌。</summary>
+        private void SnapPresentHands(GameSession session)
+        {
+            StopRubReplace(restore: false);
+            _dealSeq?.Kill();
+            _revealSeq?.Kill();
+            _revealing = false;
+            _dealing = false;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
+            _shownDeal = session.DealSerial;
+            _shownEnemyId = session.DisplayedEnemy != null ? session.DisplayedEnemy.Id : int.MinValue;
+            _shownReveal = session.RevealPlaySerial;
+            _dealToken++;
+            _seeThroughToken++;
+            ClearAllItems();
+            HideDealPile();
+            PlaceSeatHand(_player, session.Player, true, session);
+            var displayed = session.DisplayedEnemy;
+            if (displayed != null && displayed.Alive)
+            {
+                PlaceSeatHand(_other, displayed, false, session);
+            }
+
+            SyncIdleFloat();
+            SyncSelectLift(session);
+            DealFinished?.Invoke();
+        }
+
+        private void PlaceSeatHand(SeatView view, SeatState seat, bool player, GameSession session)
+        {
+            if (view == null || seat == null || seat.Hand == null)
+            {
+                return;
+            }
+
+            var count = GameBalance.CardsDealt(player, session != null ? session.Run : null);
+            for (var i = 0; i < count && i < view.Points.Length; i++)
+            {
+                var point = view.Points[i];
+                if (point == null)
+                {
+                    continue;
+                }
+
+                var card = ShownCard(seat, i, player, session);
+                var item = SpawnLooseDealCard(card);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.gameObject.name = player
+                    ? "PlayerCard" + (i + 1)
+                    : "EnemyCard" + (i + 1);
+                item.SetSpritesVisible(true);
+                EnsureCollider(item);
+                SnapToPoint(item, point);
+                view.Items[i] = item;
+                view.Landed[i] = true;
+                ApplyFace(item, DesiredFace(session, seat, player, i), false);
+                if (player)
+                {
+                    item.SetIdleFloat(true, i * item.IdleFloatPhaseStep);
+                }
+            }
         }
 
         private void PlayDeal(GameSession session)

@@ -178,7 +178,7 @@ public static class PvpWebSocketHost
         {
             if (userId != null)
             {
-                // WS 断开 = 代管，不退赛：置断线标志，有变化（含自动锁定结算）则广播。
+                // WS 断开 = 代管出牌，不退赛；手动 leave 才逃跑判负。重连发 sync 恢复。
                 if (matches.SetConnected(userId.Value, false, out var left) && left != null)
                 {
                     await dispatcher.BroadcastMatchAsync(left, 0, cancellationToken);

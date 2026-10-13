@@ -33,6 +33,9 @@ namespace App.UI.Game.Director
 
         public bool HasPending => _pending != null;
 
+        /// <summary>演出队列忙或有暂存快照：淘汰离场前等它排空，避免掐掉死亡/结算演出。</summary>
+        public bool IsBusy => _director.IsBusy || _pending != null;
+
         public void Reset()
         {
             _lastRound = 0;
@@ -49,8 +52,20 @@ namespace App.UI.Game.Director
 
         public void OnMatch(PvpMatchStateDto match, string userId)
         {
+            OnMatch(match, userId, catchUp: false);
+        }
+
+        /// <param name="catchUp">sync/冷恢复：清空演出队列，静态对齐到快照，不重播发牌/比牌/死亡。</param>
+        public void OnMatch(PvpMatchStateDto match, string userId, bool catchUp)
+        {
             if (match == null)
             {
+                return;
+            }
+
+            if (catchUp)
+            {
+                SnapTo(match, userId);
                 return;
             }
 
@@ -72,6 +87,50 @@ namespace App.UI.Game.Director
             }
 
             Process(match, userId);
+        }
+
+        /// <summary>
+        /// 重连/进桌对齐。settle/shop 带上轮摊牌时：瞬时亮出结果牌面，稍停再切商店（不发牌、不播攻击）。
+        /// 其它阶段静态对齐并用 SnapDeal 落牌。
+        /// </summary>
+        public void SnapTo(PvpMatchStateDto match, string userId)
+        {
+            if (match == null)
+            {
+                return;
+            }
+
+            _director.Clear();
+            _pending = null;
+            _pendingUserId = null;
+            _dealPendingRound = 0;
+            _compareRetryOnDrain = false;
+            _lastMatch = match;
+            _lastUserId = userId;
+            _lastRound = match.Round;
+            _dealtRound = match.Round;
+
+            var shopPhase = string.Equals(match.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase);
+            var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
+            var showdown = IsShowdown(match);
+            _compareEnqueued = showdown || shopPhase || settlePhase
+                || string.Equals(match.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase);
+
+            if ((shopPhase || settlePhase) && showdown)
+            {
+                // 直接亮摊牌结果 → 短停 → 进商店（不播发牌/翻牌/攻击）。
+                _session.ApplyPvpState(match, userId, deferHp: false, catchUpResult: true);
+                _session.RequestPvpSnapDeal();
+                _director.Enqueue(new WaitCommand(0.8f));
+                _director.Enqueue(new ActionCommand(() => _session.ApplyPvpState(match, userId)));
+                return;
+            }
+
+            _session.ApplyPvpState(match, userId);
+            if (match.Duel != null && match.Round > 0)
+            {
+                _session.RequestPvpSnapDeal();
+            }
         }
 
         /// <summary>
@@ -169,15 +228,17 @@ namespace App.UI.Game.Director
             _lastMatch = match;
             _lastUserId = userId;
             var showdown = IsShowdown(match);
+            var fightPhase = string.Equals(match.Phase, PvpPhases.Fight, StringComparison.OrdinalIgnoreCase);
             if (showdown && _compareEnqueued)
             {
-                // 同一桌比牌的后续快照（如 finished）：状态已在比牌序列末尾应用，这里只同步（排名 Hint 等）。
+                // 同一桌比牌的后续快照（settle/shop/finished）：状态已在比牌序列末尾应用，这里只同步。
                 _session.ApplyPvpState(match, userId);
                 _lastRound = match.Round;
                 return;
             }
 
-            if (showdown)
+            // 仅 fight 期内首次摊牌才从快照兜底比牌；settle/shop 残留 Showdown Duel 不能重播。
+            if (showdown && fightPhase)
             {
                 EnqueueCompare(match, userId);
                 _lastRound = match.Round;

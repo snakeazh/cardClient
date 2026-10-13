@@ -597,7 +597,7 @@ namespace App.UI
             await StopPvpAndLeave();
         }
 
-        /// <summary>PVP 结算：名次 + 名次奖励金币 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
+        /// <summary>PVP 结算：名次 + 名次金币/分数 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
         private async Task ShowPvpResultAsync()
         {
             if (_ui == null || _pvp == null)
@@ -639,6 +639,15 @@ namespace App.UI
                 if (p.RewardGold > 0)
                 {
                     sb.Append("  +").Append(p.RewardGold).Append("金币");
+                }
+
+                if (p.RewardScore > 0)
+                {
+                    sb.Append("  +").Append(p.RewardScore).Append("分");
+                }
+                else if (p.RewardScore < 0)
+                {
+                    sb.Append("  ").Append(p.RewardScore).Append("分");
                 }
             }
 

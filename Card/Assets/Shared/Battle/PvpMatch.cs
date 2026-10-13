@@ -533,6 +533,13 @@ namespace CardShare.Battle
                         continue;
                     }
 
+                    RunBotConsumables(leftFighter);
+                    RunBotConsumables(rightFighter);
+                    if (!leftFighter.Alive || !rightFighter.Alive)
+                    {
+                        continue;
+                    }
+
                     right = ToPlayerSeat(rightFighter, 1);
                 }
                 else
@@ -548,6 +555,12 @@ namespace CardShare.Battle
                     {
                         GrantHeroKill(leftFighter);
                         PayRoundGold(leftFighter, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: false, won: true);
+                        continue;
+                    }
+
+                    RunBotConsumables(leftFighter);
+                    if (!leftFighter.Alive)
+                    {
                         continue;
                     }
                 }
@@ -1094,13 +1107,21 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                fighter.ShopDone = fighter.IsBot || fighter.Disconnected;
+                // 断线代管仍跳过商店；机器人进店后自动买/开槽再 done。
+                fighter.ShopDone = fighter.Disconnected;
                 fighter.ShopRefreshCount = 0;
                 fighter.FreeShopRefreshLeft = 0;
                 _relicStock.ReturnShelf(fighter);
-                if (!fighter.ShopDone)
+                if (fighter.ShopDone)
                 {
-                    PvpShopRules.FillOffers(fighter, _tables, _shopRandom, _relicStock);
+                    continue;
+                }
+
+                PvpShopRules.FillOffers(fighter, _tables, _shopRandom, _relicStock);
+                if (fighter.IsBot)
+                {
+                    RunBotShop(fighter);
+                    fighter.ShopDone = true;
                 }
             }
 
@@ -1108,6 +1129,55 @@ namespace CardShare.Battle
             if (AllShopDone())
             {
                 AdvanceFromShop();
+            }
+        }
+
+        /// <summary>机器人商店：优先买最贵且买得起的；槽满则开槽；开完继续买。不刷新。</summary>
+        private void RunBotShop(PvpFighter fighter)
+        {
+            // 上限：每轮最多买满货架 + 开满额外槽，防止异常死循环。
+            var guard = PvpShopRules.OfferCount + PvpRelicBag.MaxSlotsFor(_tables.GameConst) + 4;
+            for (var n = 0; n < guard; n++)
+            {
+                if (fighter.OwnedRelicIds.Count < fighter.RelicSlots)
+                {
+                    var relicId = PvpBotShop.PickHighestAffordable(fighter, _tables);
+                    if (relicId == null)
+                    {
+                        return;
+                    }
+
+                    BuyRelic(fighter, relicId.Value);
+                    continue;
+                }
+
+                if (!PvpBotShop.CanUnlockSlot(fighter, _tables))
+                {
+                    return;
+                }
+
+                UnlockRelicSlot(fighter);
+            }
+        }
+
+        /// <summary>机器人开战前主动用消耗品；加生命类仅在已扣血时用。</summary>
+        private void RunBotConsumables(PvpFighter fighter)
+        {
+            if (!fighter.IsBot || !fighter.Alive)
+            {
+                return;
+            }
+
+            var guard = fighter.OwnedRelicIds.Count + 2;
+            for (var n = 0; n < guard; n++)
+            {
+                var relicId = PvpBotConsumables.PickToUse(fighter, _tables);
+                if (relicId == null)
+                {
+                    return;
+                }
+
+                UseRelic(fighter, relicId.Value);
             }
         }
 
@@ -1542,6 +1612,7 @@ namespace CardShare.Battle
             for (var i = 0; i < _fighters.Length; i++)
             {
                 _fighters[i].RewardGold = PvpSettlementRules.RewardForRank(_fighters[i].Rank, _mode.RankReward);
+                _fighters[i].RewardScore = PvpSettlementRules.ScoreForRank(_fighters[i].Rank, _mode.RankScore);
             }
         }
 

@@ -14,6 +14,9 @@ namespace CardShare.Contracts
 
         public int Gold { get; set; }
 
+        /// <summary>局外 PVP 分数。初始 0，下限 0。</summary>
+        public int PvpScore { get; set; }
+
         public EnergyDto Energy { get; set; } = new EnergyDto();
 
         public AdShopDto AdShop { get; set; } = new AdShopDto();

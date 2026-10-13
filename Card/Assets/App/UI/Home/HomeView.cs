@@ -21,6 +21,10 @@ namespace App.UI
         {
             _playerItem = GetComponentInChildren<PlayerItem>(true);
             Binding.BindText(UI.GetGameObject("StaminaNum").GetComponent<TMP_Text>(), ViewModel.StaminaText);
+            Binding.BindText(UI.GetGameObject("pvpValue").GetComponent<TMP_Text>(), ViewModel.PvpValueText);
+            var pvpTime = UI.GetGameObject("pvpTime");
+            Binding.BindText(pvpTime.GetComponent<TMP_Text>(), ViewModel.PvpTimeText);
+            Binding.BindActive(pvpTime, ViewModel.ShowPvpTime);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             BindTTRewardItem();
             Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);

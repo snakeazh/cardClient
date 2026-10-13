@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using CardShare.Battle;
 using CardShare.Contracts;
 using Xunit;
@@ -130,24 +132,96 @@ public class PvpHealTests
         Assert.Contains(999, a.OwnedRelicIds);
     }
 
+    [Fact]
+    public void BotPickHealConsumableOnlyWhenDamaged()
+    {
+        var tables = PvpTestTables.WithHealRelics();
+        var fighter = new PvpFighter
+        {
+            Alive = true,
+            Hp = 100,
+            MaxHp = 100,
+            IsBot = true
+        };
+        fighter.OwnedRelicIds.Add(119);
+        fighter.OwnedRelicPower.Add(1);
+
+        Assert.True(PvpRelicRuntime.ConsumableHeals(tables, tables.Relics.First(r => r.Id == 119)));
+        Assert.Null(PvpBotConsumables.PickToUse(fighter, tables));
+
+        fighter.Hp = 40;
+        Assert.Equal(119, PvpBotConsumables.PickToUse(fighter, tables));
+    }
+
+    [Fact]
+    public void BotUsesHealConsumableAtRoundStartWhenDamaged()
+    {
+        var tables = PvpTestTables.WithHealRelics();
+        var bot = new PlayerPublic
+        {
+            UserId = Guid.NewGuid().ToString("N"),
+            NickName = "机",
+            IsBot = true
+        };
+        var pubs = new[]
+        {
+            new PlayerPublic { UserId = Guid.NewGuid().ToString("N"), NickName = "你" },
+            bot,
+            new PlayerPublic { UserId = Guid.NewGuid().ToString("N"), NickName = "乙", IsBot = true },
+            new PlayerPublic { UserId = Guid.NewGuid().ToString("N"), NickName = "丙", IsBot = true }
+        };
+        var match = Open(tables, pubs, hp: 100, shopPool: new[] { 1, 2 });
+        var botFighter = match.Fighters.First(f => f.NickName == "机");
+        botFighter.OwnedRelicIds.Add(119);
+        botFighter.OwnedRelicPower.Add(1);
+        botFighter.Hp = 40;
+
+        // 进商店再下一轮开战：StartRound 前会对机器人跑消耗品。
+        EnterShop(match);
+        foreach (var fighter in match.Fighters)
+        {
+            if (!fighter.ShopDone)
+            {
+                match.Act(fighter.UserId, PvpActions.ShopDone, 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.DoesNotContain(119, botFighter.OwnedRelicIds);
+        Assert.Equal(60, botFighter.Hp);
+        Assert.Equal(1, botFighter.ConsumableUsesThisRun);
+    }
+
     private static void EnterShop(PvpMatch match)
     {
         foreach (var fighter in match.Fighters)
         {
+            if (match.Phase != PvpMatch.PhaseFight)
+            {
+                break;
+            }
+
             match.Showdown(fighter.UserId);
         }
 
-        match.ApplyTimeouts(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.SettleAnimMs + 1);
+        if (match.Phase == PvpMatch.PhaseSettle)
+        {
+            match.ApplyTimeouts(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.SettleAnimMs + 1);
+        }
+
         Assert.Equal(PvpMatch.PhaseShop, match.Phase);
     }
 
     private static PvpMatch Open(GameTables tables, int hp = 0, int[]? shopPool = null)
+        => Open(tables, new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") }, hp, shopPool);
+
+    private static PvpMatch Open(GameTables tables, PlayerPublic[] pubs, int hp = 0, int[]? shopPool = null)
     {
-        var pubs = new[] { Pub("甲"), Pub("乙"), Pub("丙"), Pub("丁") };
         var seats = new SeatSetup[pubs.Length];
         for (var i = 0; i < pubs.Length; i++)
         {
             seats[i] = CombatBonuses.BuildSeat(i, pubs[i].UserId, pubs[i].NickName, 1, Array.Empty<CombatTalentCount>(), tables);
+            seats[i].IsHuman = !pubs[i].IsBot;
             seats[i].ShopPoolIds = shopPool ?? Array.Empty<int>();
             if (hp > 0)
             {
@@ -160,5 +234,5 @@ public class PvpHealTests
     }
 
     private static PlayerPublic Pub(string name)
-        => new() { UserId = Guid.NewGuid().ToString(), NickName = name };
+        => new() { UserId = Guid.NewGuid().ToString("N"), NickName = name };
 }

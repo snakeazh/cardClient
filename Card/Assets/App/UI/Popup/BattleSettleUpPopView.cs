@@ -581,6 +581,12 @@ namespace App.UI.Popup
                 row.name = $"Round_{rows[i].Round}";
                 row.transform.SetSiblingIndex(_roundTemplate.transform.GetSiblingIndex() + 1 + i);
                 ApplyRoundRow(row, rows[i]);
+                // 行底纹：奇数行（第 1、3、5…行）显示，偶数行关闭；克隆继承模板的开启状态，须显式写。
+                var stripe = row.GetComponent<Image>();
+                if (stripe != null)
+                {
+                    stripe.enabled = i % 2 == 0;
+                }
                 _roundRows.Add(row);
             }
         }

@@ -3710,8 +3710,17 @@ namespace App.UI
                 return string.Empty;
             }
 
-            var monster = FindMonster(enemy.MonsterId);
-            var desc = monster != null ? monster.Desc ?? string.Empty : string.Empty;
+            string desc;
+            if (enemy.DisplayAsHero)
+            {
+                var hero = FindHeroByIcon(enemy.Icon);
+                desc = hero != null ? hero.Desc ?? string.Empty : string.Empty;
+            }
+            else
+            {
+                var monster = FindMonster(enemy.MonsterId);
+                desc = monster != null ? monster.Desc ?? string.Empty : string.Empty;
+            }
             var session = ViewModel?.Session;
             var stats = session != null
                 ? session.ResolveLiveEnemyPanel(enemy)
@@ -3742,6 +3751,25 @@ namespace App.UI
             }
 
             return best;
+        }
+
+        private static HeroConfig FindHeroByIcon(string icon)
+        {
+            if (string.IsNullOrEmpty(icon))
+            {
+                return null;
+            }
+
+            foreach (var kv in HeroConfig.All)
+            {
+                var row = kv.Value;
+                if (row != null && string.Equals(row.Icon, icon, StringComparison.Ordinal))
+                {
+                    return row;
+                }
+            }
+
+            return null;
         }
 
         private void OnEquipTipUseClicked()

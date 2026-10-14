@@ -65,9 +65,20 @@ namespace App.UI
                 return false;
             }
 
-            var pending = new List<(bool enemy, string icon)>(1);
+            var pending = new List<(bool enemy, string icon)>(2);
             TryQueueHurt(pending, false, player != null ? player.Icon : null);
-            // enemies：Altas/enemy 已含 _damage/_dead，不排队按张加载。
+            if (enemies != null)
+            {
+                for (var i = 0; i < enemies.Length; i++)
+                {
+                    var enemy = enemies[i];
+                    // 野怪立绘在 enemy 图集里。机器人/玩家对手按英雄立绘补 _damage/_dead。
+                    if (enemy != null && enemy.DisplayAsHero)
+                    {
+                        TryQueueHurt(pending, false, enemy.Icon);
+                    }
+                }
+            }
 
             if (pending.Count == 0)
             {
@@ -106,7 +117,7 @@ namespace App.UI
                 return null;
             }
 
-            return seat.IsPlayer
+            return seat.IsPlayer || seat.DisplayAsHero
                 ? GetRole(seat.Icon, seat.Hp, seat.MaxHp)
                 : GetEnemy(seat.Icon, seat.Hp, seat.MaxHp);
         }

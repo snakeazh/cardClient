@@ -262,6 +262,8 @@ namespace App.Game
         public int Id;
         public string Name;
         public bool IsPlayer;
+        /// <summary>PVP 对手是玩家或机器人：用英雄卡面和英雄立绘。野怪与闯关敌人保持 false。</summary>
+        public bool DisplayAsHero;
         public bool IsBoss;
         /// <summary>敌人怪物类型（普通/精英/领主）。玩家为 <see cref="MonsterType.Normal"/>。</summary>
         public MonsterType MonsterType;

@@ -479,16 +479,3 @@ public class PvpMatchmakerTests
         };
     }
 }
-
-public class NullPvpBusTests
-{
-    [Fact]
-    public async Task PublishIsNoOpAndCommandReportsNoBus()
-    {
-        var bus = new NullPvpBus();
-        Assert.NotEqual(Guid.Empty, bus.InstanceId);
-        await bus.PublishToUserAsync(Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.MatchUpdate }, CancellationToken.None);
-        var published = await bus.PublishCommandAsync(Guid.NewGuid(), Guid.NewGuid(), new WsEnvelope { T = WsMessageTypes.Battle }, CancellationToken.None);
-        Assert.False(published);
-    }
-}

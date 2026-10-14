@@ -8,7 +8,7 @@ namespace CardShare.Server.Hosting;
 
 public sealed class BackendStatus
 {
-    public string Persistence { get; init; } = "Memory";
+    public string Persistence { get; init; } = "Postgres";
 
     public bool? Postgres { get; init; }
 
@@ -26,37 +26,28 @@ public static class BackendHealth
     {
         using var scope = services.CreateScope();
         var sp = scope.ServiceProvider;
-        var persistence = configuration["Persistence:Provider"] ?? "Memory";
-        bool? postgres = null;
-        bool? redis = null;
 
-        if (string.Equals(persistence, "Postgres", StringComparison.OrdinalIgnoreCase))
-        {
-            var db = sp.GetRequiredService<CardDbContext>();
-            postgres = await db.Database.CanConnectAsync(cancellationToken);
-        }
+        var db = sp.GetRequiredService<CardDbContext>();
+        var postgres = await db.Database.CanConnectAsync(cancellationToken);
 
-        var redisCs = configuration.GetConnectionString("Redis");
-        if (!string.IsNullOrWhiteSpace(redisCs))
+        var redis = false;
+        var mux = sp.GetService<IConnectionMultiplexer>();
+        if (mux is { IsConnected: true })
         {
-            var mux = sp.GetService<IConnectionMultiplexer>();
-            redis = mux is { IsConnected: true };
-            if (redis == true)
+            try
             {
-                try
-                {
-                    await mux!.GetDatabase().PingAsync();
-                }
-                catch
-                {
-                    redis = false;
-                }
+                await mux.GetDatabase().PingAsync();
+                redis = true;
+            }
+            catch
+            {
+                redis = false;
             }
         }
 
         return new BackendStatus
         {
-            Persistence = persistence,
+            Persistence = "Postgres",
             Postgres = postgres,
             Redis = redis
         };
@@ -69,43 +60,19 @@ public static class BackendStartup
     {
         var config = app.Configuration;
         var log = app.Logger;
-        var persistence = config["Persistence:Provider"] ?? "Memory";
         var postgresCs = config.GetConnectionString("Postgres");
         var redisCs = config.GetConnectionString("Redis");
         var guest = config.GetValue("GuestAuth:Enabled", false);
         var fillBots = config.GetValue("Pvp:FillWithBots", false);
-        var usePostgres = string.Equals(persistence, "Postgres", StringComparison.OrdinalIgnoreCase);
         log.LogInformation(
-            "Server starting. persistence={Persistence} postgres={Postgres} redis={Redis} guest={Guest} fillBots={FillBots}",
-            persistence,
-            usePostgres ? Redact(postgresCs) : "off",
-            string.IsNullOrWhiteSpace(redisCs) ? "off" : Redact(redisCs),
+            "Server starting. postgres={Postgres} redis={Redis} guest={Guest} fillBots={FillBots}",
+            Redact(postgresCs),
+            Redact(redisCs),
             guest,
             fillBots);
 
-        if (usePostgres)
-        {
-            await EnsurePostgresAsync(app, postgresCs);
-        }
-        else
-        {
-            log.LogInformation("Postgres off. Player/auth/pve data stays in process memory.");
-        }
-
-        if (app.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(redisCs))
-        {
-            throw new InvalidOperationException(
-                "Development requires ConnectionStrings:Redis. Access tokens live in Redis.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(redisCs))
-        {
-            await EnsureRedisAsync(app, redisCs);
-        }
-        else
-        {
-            log.LogInformation("Redis off. Tokens/locks/pvp queue stay in process memory.");
-        }
+        await EnsurePostgresAsync(app, postgresCs);
+        await EnsureRedisAsync(app, redisCs);
     }
 
     private static async Task EnsurePostgresAsync(WebApplication app, string? connectionString)

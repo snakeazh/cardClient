@@ -3,7 +3,7 @@ using CardShare.Domain.Pvp;
 
 namespace CardShare.Server.Pvp;
 
-/// <summary>PvP 发送收口：本地有 socket 直发，否则经 IPvpBus 投递到目标所在实例。单实例（NullPvpBus）下与直连等价。</summary>
+/// <summary>PvP 发送收口：本地有 socket 直发，否则经 IPvpBus 投递到目标所在实例。</summary>
 public sealed class PvpMessageRouter
 {
     private readonly PvpConnectionHub _hub;

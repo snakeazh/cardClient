@@ -62,7 +62,7 @@ dotnet test
 dotnet run --project src/Card.Server
 ```
 
-Development 默认 `Persistence:Provider=Postgres`，`ConnectionStrings:Redis=127.0.0.1:6379`，`GuestAuth:Enabled=true`，`Pvp:FillWithBots=true`。监听 `http://localhost:5254`。主档进 Postgres；token / 锁 / PVP 排队进 Redis。Postgres 模式下 Redis 必填，连不上会直接退出。
+Development 默认 `ConnectionStrings:Redis=127.0.0.1:6379`，`GuestAuth:Enabled=true`，`Pvp:FillWithBots=true`。监听 `http://localhost:5254`。主档进 Postgres；token / 锁 / PVP 排队进 Redis。Postgres 和 Redis 都必填，连不上会直接退出。
 
 第一次先装 PostgreSQL，双击 `setup-postgres.bat` 建库，再 `start-server.bat`。
 
@@ -113,7 +113,6 @@ POST /v1/auth/login
 |------|--------|
 | Postgres | 主档 `players`、登录绑定 `auth_bindings`、PVE `pve_runs` |
 | Redis | access token、单玩家锁、PVP 匹配队列 |
-| Memory（无 Postgres） | 全进程内存，仅测试/无库场景 |
 
 **本机第一次：**
 
@@ -133,7 +132,6 @@ Editor 这条路径仍 `GuestAuth=true`。主档和 token 会跨进程重启保�
 **生产配置**（`appsettings.Production.json` 或环境变量）：
 
 ```
-Persistence__Provider=Postgres
 ConnectionStrings__Postgres=Host=127.0.0.1;Port=5432;Database=card;Username=card;Password=***
 ConnectionStrings__Redis=127.0.0.1:6379
 GuestAuth__Enabled=false
@@ -151,8 +149,7 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 
 启动时 `EnsureCreated` 会建 `players` / `auth_bindings` / `pve_runs`。
 
-- `Persistence:Provider=Postgres` 必须同时配 `ConnectionStrings:Redis`：主档落库，token/锁/PVP 队列走 Redis。
-- `Persistence:Provider=Memory` 且 Redis 留空：全部在进程内存，仅本地测试。
+- Postgres 与 Redis 都是必填：主档落库，token/锁/PVP 队列走 Redis；缺任何一个启动直接失败。
 - 微信 / 抖音未填 AppId 时，对应 `provider` 登录返回 `501` + `provider_not_configured`。
 
 ## HTTP `/v1`
@@ -227,4 +224,4 @@ Development 默认 `Pvp:FillWithBots=true`：真人排队超过 `GameConst.PvpBo
 3. 若之后仍有 active run：服务端按失败结算（与局内放弃相同）。积分金、已推进最高关、商店/局内金相关解锁照发；不发整章通关金。开局已扣体力不退。
 4. 返回的 `PlayerProfileDto` 已是处理后的主档。客户端只 `ApplyServerProfile`。
 5. 选关若仍碰到 `active_run_exists`（同一次启动里未结算就再开一局）：客户端再按失败结算并提示。
-6. Memory 存储下重启 Server 会清空 run。挂单补报得到 `run_not_found` / `conflict` / `invalid_request` 即忽略，视为对局已失效。
+6. 挂单补报得到 `run_not_found` / `conflict` / `invalid_request` 即忽略，视为对局已失效。

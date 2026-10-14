@@ -8,7 +8,7 @@ namespace App.Net
         /// <summary>远程开发服（<see cref="GameApiSettings.DefaultBaseUrl"/>）。</summary>
         RemoteDefault = 0,
 
-        /// <summary>本机（127.0.0.1，配合 Server/start-local.bat）。</summary>
+        /// <summary>本机（127.0.0.1，配合 Server/start-server.bat 起的本机开发服）。</summary>
         LocalHost = 1,
 
         /// <summary>自定义 IP/域名与端口。</summary>
@@ -20,7 +20,7 @@ namespace App.Net
     {
         public const int DefaultPort = 5254;
 
-        // 本地调试时换用 127.0.0.1（Server/start-local.bat 起内存模式服务）：
+        // 本地调试时换用 127.0.0.1（本机起 Server 开发服）：
         // public const string DefaultBaseUrl = "http://127.0.0.1:5254";
         // 旧服直连：http://121.43.167.98:5254
         // 新服经 Nginx 80 端口反代（备案通过后换 https://api.txys.ltd）：

@@ -2646,8 +2646,8 @@ namespace App.Game
             var slotsBefore = _pvpRelicSlots;
             try
             {
-                await pvp.Invoker.EnqueueUnlockRelicSlot();
-                await pvp.WaitNextUpdateAsync(3000);
+                // 先挂等待再发命令。本地回包可能在发送完成前就进 Pump，事后再等会漏掉这次快照，空等满 3 秒。
+                await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueUnlockRelicSlot());
                 if (_pvpRelicSlots <= slotsBefore)
                 {
                     return false;
@@ -2756,7 +2756,7 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>PVP 商店刷新：命令走长链接，货架等下一个 match_update 快照回来刷新。</summary>
+        /// <summary>PVP 商店刷新：先挂快照等待再发 refresh，避免本地回包被漏掉后空等超时。</summary>
         private async Task RefreshPvpShopAsync()
         {
             var pvp = _pvpSession;
@@ -2774,8 +2774,7 @@ namespace App.Game
 
             try
             {
-                await pvp.Invoker.EnqueueShopRefresh();
-                await pvp.WaitNextUpdateAsync(3000);
+                await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueShopRefresh());
             }
             catch (GameApiException ex)
             {
@@ -2783,7 +2782,7 @@ namespace App.Game
             }
         }
 
-        /// <summary>PVP 商店购买：命令走长链接，等服务端快照确认入手；服务端校验失败（金币不足等）经 Notice 提示。</summary>
+        /// <summary>PVP 商店购买：先挂快照等待再发 buy。本地回包经常早于「发送完成之后再等」，漏等会卡满超时。</summary>
         private async Task<bool> TryPvpBuyShopRelicAsync(int relicId)
         {
             var pvp = _pvpSession;
@@ -2810,8 +2809,7 @@ namespace App.Game
             var countBefore = Run.RelicConfigIds.Count;
             try
             {
-                await pvp.Invoker.EnqueueShopBuy(relicId);
-                await pvp.WaitNextUpdateAsync(3000);
+                await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueShopBuy(relicId));
                 if (Run.Gold >= goldBefore && Run.RelicConfigIds.Count == countBefore)
                 {
                     return false;
@@ -2829,7 +2827,7 @@ namespace App.Game
             }
         }
 
-        /// <summary>PVP 商店出售：命令走长链接，等服务端快照确认移除。</summary>
+        /// <summary>PVP 商店出售：先挂快照等待再发 sell，避免本地回包被漏掉后空等超时。</summary>
         private async Task<bool> TryPvpSellShopRelicAsync(int relicId)
         {
             var pvp = _pvpSession;
@@ -2841,8 +2839,7 @@ namespace App.Game
             var copiesBefore = RelicCopyCount(relicId);
             try
             {
-                await pvp.Invoker.EnqueueShopSell(relicId);
-                await pvp.WaitNextUpdateAsync(3000);
+                await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueShopSell(relicId));
                 if (RelicCopyCount(relicId) >= copiesBefore)
                 {
                     return false;
@@ -8102,6 +8099,7 @@ namespace App.Game
                         seat.Profile = monster.IsBoss ? AiProfile.Expert : DefaultEnemyProfile(seat.Id);
                         seat.Name = EnemyDisplayName(monster, i);
                         seat.MonsterId = monster.MonsterId;
+                        seat.DisplayAsHero = false;
                         ApplySeatHp(seat, monster.Hp, monster.Hp);
                         seat.Attack = Math.Max(0, monster.Damage);
                         seat.BaseAttack = seat.Attack;
@@ -8145,6 +8143,7 @@ namespace App.Game
                 seat.SecondWindUsed = false;
                 seat.Icon = null;
                 seat.MonsterId = 0;
+                seat.DisplayAsHero = false;
                 seat.Banner = string.Empty;
                 ClearRound(seat);
                 ApplyEnemySpawnRelics(seat);
@@ -8183,6 +8182,7 @@ namespace App.Game
             seat.SecondWindUsed = false;
             seat.Icon = null;
             seat.MonsterId = 0;
+            seat.DisplayAsHero = false;
         }
 
         private void ApplyEnemySpawnRelics(SeatState seat)
@@ -9424,6 +9424,11 @@ namespace App.Game
                 enemy.Looked = true;
                 enemy.ShowCards = false;
                 enemy.Attack = 0;
+                enemy.DisplayAsHero = false;
+                enemy.IsBoss = false;
+                enemy.MonsterType = MonsterType.Normal;
+                enemy.MonsterId = 0;
+                enemy.Icon = null;
                 enemy.ClearCardSelected();
                 ClearHand(enemy);
             }
@@ -9442,6 +9447,11 @@ namespace App.Game
 
             IsPvp = false;
             _pvpHandLocked = false;
+            for (var i = 0; i < Enemies.Length; i++)
+            {
+                Enemies[i].DisplayAsHero = false;
+            }
+
             Phase = GamePhase.Idle;
             DealSerial = 0;
             PvpSnapDeal = false;
@@ -9844,6 +9854,89 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 野怪轮用怪物立绘和怪物卡面；玩家或机器人用英雄立绘和英雄卡面。
+        /// 野怪图标来自与服务端相同的 <see cref="CardShare.Battle.PvpSchedule.MonsterGroup"/>。
+        /// </summary>
+        private static void ApplyPvpOpponentLook(PvpMatchStateDto match, BattleSeatDto foe, SeatState enemy)
+        {
+            if (enemy == null || match == null)
+            {
+                return;
+            }
+
+            if (string.Equals(match.FightKind, "monster", StringComparison.OrdinalIgnoreCase))
+            {
+                ApplyPvpMonsterLook(enemy, match.Round);
+                return;
+            }
+
+            var foeFighter = foe != null ? FindPvpSelf(match, foe.UserId) : null;
+            if (foeFighter == null)
+            {
+                return;
+            }
+
+            ApplyPvpHeroLook(enemy, foeFighter.HeroId);
+        }
+
+        private static void ApplyPvpHeroLook(SeatState seat, int heroId)
+        {
+            seat.DisplayAsHero = true;
+            seat.MonsterId = 0;
+            seat.IsBoss = false;
+            seat.MonsterType = MonsterType.Normal;
+            var hero = heroId > 0 ? HeroConfig.Get(heroId) : null;
+            if (hero == null && GameConst.IsLoaded)
+            {
+                hero = HeroConfig.Get(GameConst.Instance.DefaultHeroId);
+            }
+
+            if (hero == null)
+            {
+                foreach (var pair in HeroConfig.All)
+                {
+                    hero = pair.Value;
+                    if (hero != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            seat.Icon = hero != null && !string.IsNullOrEmpty(hero.Icon) ? hero.Icon : null;
+        }
+
+        private static void ApplyPvpMonsterLook(SeatState seat, int round)
+        {
+            seat.DisplayAsHero = false;
+            var tables = UnityGameConfigLoader.Current;
+            MonsterConfig monster = null;
+            if (tables != null)
+            {
+                var groupId = CardShare.Battle.PvpSchedule.MonsterGroup(tables, round);
+                if (tables.TryGetMonsterGroup(groupId, out var group) &&
+                    tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var row))
+                {
+                    monster = row;
+                }
+            }
+
+            if (monster == null)
+            {
+                seat.MonsterId = 0;
+                seat.Icon = null;
+                seat.IsBoss = false;
+                seat.MonsterType = MonsterType.Normal;
+                return;
+            }
+
+            seat.MonsterId = monster.MonsterId;
+            seat.Icon = monster.Icon;
+            seat.MonsterType = monster.Type;
+            seat.IsBoss = monster.Type == MonsterType.Boss;
+        }
+
         private void ApplyPvpTable(
             PvpMatchStateDto match,
             string userId,
@@ -9861,6 +9954,7 @@ namespace App.Game
             Player.ShowCards = true;
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
+            ApplyPvpOpponentLook(match, foe, enemy);
             if (foe != null)
             {
                 enemy.Name = string.IsNullOrEmpty(foe.NickName) ? enemy.Name : foe.NickName;

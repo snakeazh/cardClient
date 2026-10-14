@@ -356,9 +356,9 @@ namespace App.Game
         public void Bind(SeatState seat, Sprite portrait, int attack = 0)
         {
             EnsureRefs();
-            var enemy = seat != null && !seat.IsPlayer;
-            SetEnemyVisual(enemy);
-            if (enemy)
+            var asMonster = seat != null && !seat.IsPlayer && !seat.DisplayAsHero;
+            SetEnemyVisual(asMonster);
+            if (asMonster)
             {
                 ApplyMonsterFrames(seat.MonsterId);
             }

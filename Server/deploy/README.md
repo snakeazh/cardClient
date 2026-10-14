@@ -50,7 +50,6 @@ vi /opt/card-server/app/appsettings.Production.json
 ```json
 {
   "Urls": "http://127.0.0.1:5254",
-  "Persistence": { "Provider": "Postgres" },
   "ConnectionStrings": {
     "Postgres": "Host=127.0.0.1;Port=5432;Database=card;Username=card;Password=强密码",
     "Redis": "127.0.0.1:6379,password=你的Redis密码"

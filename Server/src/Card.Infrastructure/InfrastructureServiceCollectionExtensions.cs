@@ -4,7 +4,6 @@ using CardShare.Domain.Config;
 using CardShare.Domain.Pvp;
 using CardShare.Infrastructure.Auth;
 using CardShare.Infrastructure.Config;
-using CardShare.Infrastructure.Memory;
 using CardShare.Infrastructure.Postgres;
 using CardShare.Infrastructure.Redis;
 using CardShare.Infrastructure.Storage;
@@ -40,84 +39,56 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IGameConfigLoader>(_ => new FileGameConfigLoader(configPath));
         services.AddSingleton<IClock, SystemClock>();
 
-        var provider = configuration["Persistence:Provider"] ?? "Memory";
-        if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase))
+        var postgresCs = configuration.GetConnectionString("Postgres");
+        if (string.IsNullOrWhiteSpace(postgresCs))
         {
-            var cs = configuration.GetConnectionString("Postgres")
-                     ?? throw new InvalidOperationException("ConnectionStrings:Postgres is required when Persistence:Provider=Postgres.");
-            services.AddDbContext<CardDbContext>(o => o.UseNpgsql(cs));
-            services.AddScoped<IPlayerRepository, PostgresPlayerRepository>();
-            services.AddScoped<IAuthBindingRepository, PostgresAuthBindingRepository>();
-            services.AddScoped<IPveRunRepository, PostgresPveRunRepository>();
+            throw new InvalidOperationException("ConnectionStrings:Postgres is required. Player/auth/pve data lives in Postgres.");
         }
-        else
-        {
-            services.AddSingleton<MemoryPlayerRepository>();
-            services.AddSingleton<MemoryAuthBindingRepository>();
-            services.AddSingleton<MemoryPveRunRepository>();
-            services.AddSingleton<IPlayerRepository>(sp => sp.GetRequiredService<MemoryPlayerRepository>());
-            services.AddSingleton<IAuthBindingRepository>(sp => sp.GetRequiredService<MemoryAuthBindingRepository>());
-            services.AddSingleton<IPveRunRepository>(sp => sp.GetRequiredService<MemoryPveRunRepository>());
-        }
+
+        services.AddDbContext<CardDbContext>(o => o.UseNpgsql(postgresCs));
+        services.AddScoped<IPlayerRepository, PostgresPlayerRepository>();
+        services.AddScoped<IAuthBindingRepository, PostgresAuthBindingRepository>();
+        services.AddScoped<IPveRunRepository, PostgresPveRunRepository>();
 
         var accessMinutes = configuration.GetValue("Auth:AccessTokenMinutes", 120);
         var accessTtl = TimeSpan.FromMinutes(accessMinutes);
 
         var redisCs = configuration.GetConnectionString("Redis");
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                          ?? configuration["ASPNETCORE_ENVIRONMENT"]
-                          ?? string.Empty;
-        var isDevelopment = string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase);
-        if ((isDevelopment || string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase)) &&
-            string.IsNullOrWhiteSpace(redisCs))
+        if (string.IsNullOrWhiteSpace(redisCs))
         {
-            throw new InvalidOperationException(
-                "ConnectionStrings:Redis is required in Development and when Persistence:Provider=Postgres. Access tokens live in Redis, not Postgres.");
+            throw new InvalidOperationException("ConnectionStrings:Redis is required. Access tokens/locks/pvp queue live in Redis.");
         }
 
-        if (!string.IsNullOrWhiteSpace(redisCs))
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
-            services.AddSingleton<IConnectionMultiplexer>(sp =>
+            var log = sp.GetRequiredService<ILoggerFactory>().CreateLogger("CardShare.Redis");
+            var options = ConfigurationOptions.Parse(redisCs);
+            options.AbortOnConnectFail = true;
+            options.ConnectTimeout = 5000;
+            options.ConnectRetry = 2;
+            log.LogInformation("Redis multiplexer connecting {Target} ...", redisCs);
+            try
             {
-                var log = sp.GetRequiredService<ILoggerFactory>().CreateLogger("CardShare.Redis");
-                var options = ConfigurationOptions.Parse(redisCs);
-                options.AbortOnConnectFail = true;
-                options.ConnectTimeout = 5000;
-                options.ConnectRetry = 2;
-                log.LogInformation("Redis multiplexer connecting {Target} ...", redisCs);
-                try
-                {
-                    var mux = ConnectionMultiplexer.Connect(options);
-                    log.LogInformation(
-                        "Redis multiplexer connected. endpoints={Endpoints} isConnected={IsConnected}",
-                        string.Join(",", mux.GetEndPoints().Select(e => e.ToString())),
-                        mux.IsConnected);
-                    return mux;
-                }
-                catch (Exception ex)
-                {
-                    log.LogError(ex, "Redis multiplexer connect failed. target={Target}", redisCs);
-                    throw;
-                }
-            });
-            services.AddSingleton<IPlayerLock, RedisPlayerLock>();
-            services.AddSingleton<IPvpBus, RedisPvpBus>();
-            services.AddSingleton<RedisPvpMatchmaker>();
-            AddMatchmaker<RedisPvpMatchmaker>(services, configuration.GetValue("Pvp:FillWithBots", false));
-            services.AddSingleton<ITokenService>(sp => new RedisTokenService(
-                sp.GetRequiredService<IConnectionMultiplexer>(),
-                accessTtl));
-        }
-        else
-        {
-            services.AddSingleton<IPlayerLock, MemoryPlayerLock>();
-            services.AddSingleton<IPvpBus, NullPvpBus>();
-            services.AddSingleton<InMemoryPvpMatchmaker>();
-            AddMatchmaker<InMemoryPvpMatchmaker>(services, configuration.GetValue("Pvp:FillWithBots", false));
-            services.AddSingleton<ITokenService>(sp => new MemoryTokenService(
-                sp.GetRequiredService<IClock>(),
-                accessTtl));
-        }
+                var mux = ConnectionMultiplexer.Connect(options);
+                log.LogInformation(
+                    "Redis multiplexer connected. endpoints={Endpoints} isConnected={IsConnected}",
+                    string.Join(",", mux.GetEndPoints().Select(e => e.ToString())),
+                    mux.IsConnected);
+                return mux;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Redis multiplexer connect failed. target={Target}", redisCs);
+                throw;
+            }
+        });
+        services.AddSingleton<IPlayerLock, RedisPlayerLock>();
+        services.AddSingleton<IPvpBus, RedisPvpBus>();
+        services.AddSingleton<RedisPvpMatchmaker>();
+        AddMatchmaker<RedisPvpMatchmaker>(services, configuration.GetValue("Pvp:FillWithBots", false));
+        services.AddSingleton<ITokenService>(sp => new RedisTokenService(
+            sp.GetRequiredService<IConnectionMultiplexer>(),
+            accessTtl));
 
         services.AddHttpClient<WeChatCodeSessionClient>();
         services.AddHttpClient<DouyinCodeSessionClient>();

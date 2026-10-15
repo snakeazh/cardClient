@@ -63,6 +63,11 @@ namespace CardShare.Contracts.Config
         /// </summary>
         DisableSkill = 11,
 
+        /// <summary>
+        /// 每回合开始+5金币,且商店中圣物与槽位购买价格-20%
+        /// </summary>
+        Capital = 12,
+
     }
 
     /// <summary>
@@ -1476,6 +1481,191 @@ namespace CardShare.Contracts.Config
         /// 无法通过圣物效果获得金币
         /// </summary>
         UnableReplyGetGold = 178,
+
+        /// <summary>
+        /// 暴击伤害提高百分比
+        /// </summary>
+        CritDamageUp = 179,
+
+        /// <summary>
+        /// 每回合首次比牌造成的伤害提高
+        /// </summary>
+        RoundFirstFightDamageUp = 180,
+
+        /// <summary>
+        /// 造成固定伤害加值
+        /// </summary>
+        FlatDamage = 181,
+
+        /// <summary>
+        /// 每次受到的伤害固定降低
+        /// </summary>
+        FlatDamageReduce = 182,
+
+        /// <summary>
+        /// 金币达到门槛时降低承伤(参数:金币门槛|减伤)
+        /// </summary>
+        GoldDamageReduce = 183,
+
+        /// <summary>
+        /// 回合未受到伤害时回合结束获得金币
+        /// </summary>
+        NoHurtGetGold = 184,
+
+        /// <summary>
+        /// 血量高于阈值时伤害提高(参数:血量阈值|提高)
+        /// </summary>
+        HighHpDamageUp = 185,
+
+        /// <summary>
+        /// 亮出的三张牌同色时伤害提高
+        /// </summary>
+        SameColorDamageUp = 186,
+
+        /// <summary>
+        /// 每关替换次数
+        /// </summary>
+        ReplaceCardsNum = 187,
+
+        /// <summary>
+        /// 金币低于阈值时回合开始获得金币(参数:阈值|金币)
+        /// </summary>
+        LowGoldGetGold = 188,
+
+        /// <summary>
+        /// 暴击时回复生命
+        /// </summary>
+        CriticalHealHp = 189,
+
+        /// <summary>
+        /// 击败敌人概率掉落消耗品圣物(参数:概率,需栏位空)
+        /// </summary>
+        KillDropConsumable = 190,
+
+        /// <summary>
+        /// 商店单件稀有以上保底概率(参数:概率)
+        /// </summary>
+        ShopRareGuarantee = 191,
+
+        /// <summary>
+        /// 商店刷新价格不再随次数上涨
+        /// </summary>
+        RefreshPriceFixed = 192,
+
+        /// <summary>
+        /// 对手攻击力高于自己时伤害提高
+        /// </summary>
+        UnderdogDamageUp = 193,
+
+        /// <summary>
+        /// 本回合未使用任何技能时伤害提高
+        /// </summary>
+        UnusedSkillDamageUp = 194,
+
+        /// <summary>
+        /// 闪避成功获得金币
+        /// </summary>
+        MissGetGold = 195,
+
+        /// <summary>
+        /// 每首次亮出一种牌型永久加攻击(参数:攻击|上限种数)
+        /// </summary>
+        FirstTypeGetAttack = 196,
+
+        /// <summary>
+        /// 敌人血量低于阈值时伤害提高(参数:阈值|提高)
+        /// </summary>
+        LowHpEnemyDamageUp = 197,
+
+        /// <summary>
+        /// 固定攻击力加成
+        /// </summary>
+        FlatAttack = 198,
+
+        /// <summary>
+        /// 每回合开始支付金币,付不起则失效(参数:金币)
+        /// </summary>
+        RoundPayGold = 199,
+
+        /// <summary>
+        /// 受到伤害时消耗金币抵挡(参数:金币)
+        /// </summary>
+        GoldBlockDamage = 200,
+
+        /// <summary>
+        /// 战胜不低于指定牌型的敌人获得金币(参数:牌型|金币)
+        /// </summary>
+        WinStrongTypeGold = 201,
+
+        /// <summary>
+        /// 每卖出1件圣物永久加攻击
+        /// </summary>
+        SellGetAttack = 202,
+
+        /// <summary>
+        /// 使用消耗品概率不消耗(参数:概率)
+        /// </summary>
+        KeepConsumablePer = 203,
+
+        /// <summary>
+        /// 同回合每额外击杀1名敌人获得金币(参数:金币)
+        /// </summary>
+        ExtraKillGold = 204,
+
+        /// <summary>
+        /// 每个空圣物栏位提高伤害
+        /// </summary>
+        EmptySlotDamageUp = 205,
+
+        /// <summary>
+        /// 金币为0或以下时伤害提高
+        /// </summary>
+        NoGoldDamageUp = 206,
+
+        /// <summary>
+        /// 每回合开始本回合内临时攻击加成
+        /// </summary>
+        RoundTempAttack = 207,
+
+        /// <summary>
+        /// 敌人数量达标时降低承伤(参数:敌人数|降低)
+        /// </summary>
+        ManyEnemyDamageReduce = 208,
+
+        /// <summary>
+        /// 比牌失败时仍造成1次攻击力伤害
+        /// </summary>
+        LoseFightAttack = 209,
+
+        /// <summary>
+        /// 击败敌人获得的金币提高
+        /// </summary>
+        KillGoldUp = 210,
+
+        /// <summary>
+        /// 搓牌改为支付金币不耗次数(参数:每次金币)
+        /// </summary>
+        RubbingPayGold = 211,
+
+        /// <summary>
+        /// 使用透视时降低该敌人牌型顺位
+        /// </summary>
+        PeekDownGrade = 212,
+
+        /// <summary>
+        /// 双方牌型相同时伤害提高
+        /// </summary>
+        SameTypeDamageUp = 213,
+
+        /// <summary>
+        /// 每关开始回复已损失生命百分比
+        /// </summary>
+        HealMissingHp = 214,
+
+        /// <summary>
+        /// 自身伤害提高且承伤提高(参数:增伤|增承伤)
+        /// </summary>
+        AllInDamage = 215,
 
         MaxHp = 1111,
 

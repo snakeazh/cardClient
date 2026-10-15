@@ -91,7 +91,6 @@ namespace App.Bootstrap
             _services.Container.AddSingleton<PvpWsClient>();
             _services.Container.AddSingleton<PvpMatchSession>();
             _services.Container.AddSingleton<GameTableViewModel>();
-            _services.Container.AddSingleton<NavigationViewModel>();
             _services.Container.AddSingleton<MainResourceViewModel>();
 
             await _resources.Resources.LoadAsync<UnityEngine.GameObject>(Framework.UI.Navigation.UIRoot.ResourcesPath);
@@ -194,7 +193,6 @@ namespace App.Bootstrap
         private async Task OpenHomeWithNavigation()
         {
             await _ui.UI.Open(_services.Resolve<HomeViewModel>());
-            await _services.Resolve<NavigationViewModel>().EnsureShown();
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
         }
 

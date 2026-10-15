@@ -49,7 +49,6 @@ namespace App.UI.Popup
     /// </summary>
     public sealed class IllustratedBookPopViewModel : ViewModelBase
     {
-        private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
         private readonly ILevelProgressService _progress;
         private readonly IUnlockConditionService _unlock;
@@ -59,7 +58,6 @@ namespace App.UI.Popup
         private readonly List<IllustratedBookEntry> _monsters = new List<IllustratedBookEntry>();
 
         public IllustratedBookPopViewModel(
-            NavigationViewModel navigation,
             MainResourceViewModel mainResource,
             ILevelProgressService progress,
             IUnlockConditionService unlock,
@@ -67,7 +65,6 @@ namespace App.UI.Popup
             IAtlasService atlas,
             IUIManager ui)
         {
-            _navigation = navigation;
             _mainResource = mainResource;
             _progress = progress;
             _unlock = unlock;
@@ -297,7 +294,6 @@ namespace App.UI.Popup
         protected override Task OnClose()
         {
             _mainResource?.ShowBar();
-            _navigation.NotifyBookClosed();
             return Task.CompletedTask;
         }
 
@@ -488,7 +484,7 @@ namespace App.UI.Popup
         private void ClosePop()
         {
             HideTip();
-            _navigation.ShowHome();
+            _ = _ui.Close(this);
         }
     }
 }

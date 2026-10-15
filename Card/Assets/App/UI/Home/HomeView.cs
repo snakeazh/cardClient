@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Game;
+using App.Guide;
 using App.Resources;
 using Framework.UI.Navigation;
 using Framework.UI.View;
@@ -16,6 +19,8 @@ namespace App.UI
     public sealed class HomeView : ViewBase<HomeViewModel>
     {
         private PlayerItem _playerItem;
+        private GuideTargetRegistry _guideTargets;
+        private readonly List<string> _guideTargetIds = new List<string>(1);
 
         protected override void OnBind()
         {
@@ -24,6 +29,10 @@ namespace App.UI
             Binding.BindText(UI.GetGameObject("pvpValue").GetComponent<TMP_Text>(), ViewModel.PvpValueText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             BindTTRewardItem();
+            Binding.BindCommand(UI.GetGameObject("IllustrateBtn").GetComponent<Button>(), ViewModel.OpenIllustrateCommand);
+            var talentBtn = UI.GetGameObject("TalentBtn");
+            Binding.BindCommand(talentBtn.GetComponent<Button>(), ViewModel.OpenTalentCommand);
+            RegisterGuideTalentBtn(talentBtn);
             Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);
             BindHero();
         }
@@ -43,6 +52,38 @@ namespace App.UI
         {
             BindHero();
             return Task.CompletedTask;
+        }
+
+        protected override async Task OnViewClose()
+        {
+            UnregisterGuideTargets();
+            await base.OnViewClose();
+        }
+
+        /// <summary>
+        /// 引导目标 Navigation.TalentBtn 原由底部导航栏注册，导航栏停用后
+        /// 由 Home 的 TalentBtn 接管（GuideStepConfig.TargetId 未变）。
+        /// </summary>
+        private void RegisterGuideTalentBtn(GameObject talentBtn)
+        {
+            if (talentBtn == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            _guideTargets = AppServices.Resolve<GuideTargetRegistry>();
+            _guideTargets.RegisterUi(GuideTargetIds.TalentBtn, (RectTransform)talentBtn.transform);
+            _guideTargetIds.Add(GuideTargetIds.TalentBtn);
+        }
+
+        private void UnregisterGuideTargets()
+        {
+            if (_guideTargets != null && _guideTargetIds.Count > 0)
+            {
+                _guideTargets.UnregisterAll(_guideTargetIds);
+            }
+
+            _guideTargetIds.Clear();
         }
 
         public override void OnPresented()

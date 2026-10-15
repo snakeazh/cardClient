@@ -56,6 +56,7 @@ namespace App.UI.Popup
         protected override void OnBind()
         {
             BindBuyCost();
+            BindBackBtn();
             FillList();
             RegisterGuideTargets();
         }
@@ -372,6 +373,24 @@ namespace App.UI.Popup
 
             // 购买后刷新列表，让新天赋解除锁定显示；初始填充由 OnBind 的 FillList 负责
             Binding.Add(ViewModel.ListVersion.Subscribe(_ => FillList(), false));
+        }
+
+        private void BindBackBtn()
+        {
+            var back = UI.GetGameObject("BackBtn");
+            if (back == null)
+            {
+                return;
+            }
+
+            var button = back.GetComponent<Button>();
+            if (button == null)
+            {
+                button = back.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+            }
+
+            Binding.BindCommand(button, ViewModel.CloseCommand);
         }
 
         private void EnsureTemplate(RectTransform content)

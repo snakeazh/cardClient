@@ -95,9 +95,21 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
         "if not removed then return {0, {}} end " +
         "return {1, redis.call('ZRANGE', @key, 0, -1)}");
 
+    /// <summary>普通排队的 score 比优先排队大这一截，保证优先的人永远排在前面。约 3 年的毫秒数，远大于一次排队。</summary>
+    private const long NormalScoreBand = 100_000_000_000L;
+
     private static readonly LuaScript SweepScript = LuaScript.Prepare(
-        "local stale = redis.call('ZRANGEBYSCORE', @key, '-inf', @maxScore) " +
-        "for i, m in ipairs(stale) do redis.call('ZREM', @key, m) end " +
+        "local all = redis.call('ZRANGE', @key, 0, -1) " +
+        "local stale = {} " +
+        "local maxEnqueued = tonumber(@maxEnqueued) " +
+        "for i, m in ipairs(all) do " +
+        "  local n = string.match(m, '\"enqueuedUtcMs\":(%d+)') " +
+        "  local enqueued = tonumber(n) or 0 " +
+        "  if enqueued > 0 and enqueued <= maxEnqueued then " +
+        "    redis.call('ZREM', @key, m) " +
+        "    table.insert(stale, m) " +
+        "  end " +
+        "end " +
         "return {stale, redis.call('ZRANGE', @key, 0, -1)}");
 
     private sealed class QueueEntry
@@ -115,7 +127,11 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
         _db = redis.GetDatabase();
     }
 
-    public MatchEvent Enqueue(PlayerPublic player)
+    public MatchEvent Enqueue(PlayerPublic player) => Enqueue(player, priority: false);
+
+    public MatchEvent EnqueuePriority(PlayerPublic player) => Enqueue(player, priority: true);
+
+    private MatchEvent Enqueue(PlayerPublic player, bool priority)
     {
         if (player == null || !Guid.TryParse(player.UserId, out var userId))
         {
@@ -124,12 +140,13 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var member = Member(userId, new QueueEntry { Player = Clone(player), EnqueuedUtcMs = now });
+        var score = priority ? now : now + NormalScoreBand;
         var result = Evaluate(EnqueueScript, new
         {
             key = (RedisKey)QueueKey,
             prefixLen = UserIdPrefixLength,
             uid = userId.ToString("N"),
-            score = now,
+            score,
             member,
             roomSize = PvpRules.RoomSize
         });
@@ -204,11 +221,11 @@ public sealed class RedisPvpMatchmaker : IPvpMatchmaker
 
     public IReadOnlyList<Guid> SweepExpired(long nowUtcMs, long timeoutMs, out IReadOnlyList<PlayerPublic> remaining)
     {
-        var maxScore = timeoutMs > 0 ? nowUtcMs - timeoutMs : long.MinValue;
+        var maxEnqueued = timeoutMs > 0 ? nowUtcMs - timeoutMs : long.MinValue;
         var result = Evaluate(SweepScript, new
         {
             key = (RedisKey)QueueKey,
-            maxScore
+            maxEnqueued
         });
         var parts = (RedisResult[])result!;
         var stale = (RedisResult[])parts[0]!;

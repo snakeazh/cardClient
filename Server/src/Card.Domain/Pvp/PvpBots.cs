@@ -62,18 +62,22 @@ public sealed class PvpBotFillMatchmaker : IPvpMatchmaker
 
     public int FillDelayMs => Math.Max(0, _tables.GameConst.PvpBotFillDelaySeconds) * 1000;
 
-    public MatchEvent Enqueue(PlayerPublic player)
+    public MatchEvent Enqueue(PlayerPublic player) => Enqueue(player, priority: false);
+
+    public MatchEvent EnqueuePriority(PlayerPublic player) => Enqueue(player, priority: true);
+
+    private MatchEvent Enqueue(PlayerPublic player, bool priority)
     {
+        var queued = priority ? _inner.EnqueuePriority(player) : _inner.Enqueue(player);
         if (FillDelayMs <= 0)
         {
-            return FillNow(_inner.Enqueue(player), player);
+            return FillNow(queued, player);
         }
 
-        var evt = _inner.Enqueue(player);
-        ClearSeatedPending(evt);
-        if (evt.RoomOpened || player.IsBot || !Guid.TryParse(player.UserId, out var userId))
+        ClearSeatedPending(queued);
+        if (queued.RoomOpened || player.IsBot || !Guid.TryParse(player.UserId, out var userId))
         {
-            return evt;
+            return queued;
         }
 
         lock (_gate)
@@ -81,7 +85,7 @@ public sealed class PvpBotFillMatchmaker : IPvpMatchmaker
             _pendingDueUtcMs[userId] = _nowUtcMs() + FillDelayMs;
         }
 
-        return evt;
+        return queued;
     }
 
     /// <summary>到期真人用机器人补满开房，返回开房事件；无到期或无变化返回 null。每次最多开一房。</summary>

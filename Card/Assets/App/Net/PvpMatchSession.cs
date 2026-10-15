@@ -71,6 +71,28 @@ namespace App.Net
         /// <summary>满 4 人开房：RoomId / Seed / ModeId 与最终 4 人名单。头像只在此时下发，已缓存进 <see cref="TryGetPlayer"/>。</summary>
         public event Action<WsRoomReadyPayload> RoomReady;
 
+        /// <summary>房间内所有真人已点接受。机器人视为已接受。</summary>
+        public event Action AllAccepted;
+
+        /// <summary>已点接受的真人 UserId（N 格式）。</summary>
+        public event Action<string[]> AcceptUpdated;
+
+        /// <summary>有人没接受或接受超时：房间解散，本人已被放回优先队列。</summary>
+        public event Action AcceptFailed;
+
+        /// <summary>开房时的 4 人名单，顺序与座位一致。</summary>
+        public PlayerPublic[] RoomPlayers { get; private set; } = Array.Empty<PlayerPublic>();
+
+        public Task AcceptAsync()
+        {
+            return _ws.AcceptAsync();
+        }
+
+        public Task DeclineAsync()
+        {
+            return _ws.DeclineAsync();
+        }
+
         public PvpFighterDto Self
         {
             get
@@ -395,6 +417,7 @@ namespace App.Net
             IsActive = false;
             State = null;
             _players.Clear();
+            RoomPlayers = Array.Empty<PlayerPublic>();
             _lastVersion = 0;
             _acceptAnySnapshot = false;
             var waiter = _updateWaiter;
@@ -495,7 +518,38 @@ namespace App.Net
 
                 _queued?.TrySetResult(DefaultQueueTimeoutMs);
                 Remember(ready.Players);
+                RoomPlayers = ready.Players ?? Array.Empty<PlayerPublic>();
                 RoomReady?.Invoke(ready);
+                return;
+            }
+
+            if (type == WsMessageTypes.Accept)
+            {
+                return;
+            }
+
+            if (type == WsMessageTypes.AcceptUpdate)
+            {
+                var update = payload != null ? payload.ToObject<WsAcceptUpdatePayload>() : null;
+                AcceptUpdated?.Invoke(update != null && update.UserIds != null
+                    ? update.UserIds
+                    : Array.Empty<string>());
+                return;
+            }
+
+            if (type == WsMessageTypes.AcceptFailed)
+            {
+                IsActive = false;
+                State = null;
+                RoomPlayers = Array.Empty<PlayerPublic>();
+                _lastVersion = 0;
+                AcceptFailed?.Invoke();
+                return;
+            }
+
+            if (type == WsMessageTypes.AllAccepted)
+            {
+                AllAccepted?.Invoke();
                 return;
             }
 
@@ -545,6 +599,11 @@ namespace App.Net
 
                 AppLog.Info(LogChannel.Net, Describe(state));
                 State = state;
+                if (!_probing)
+                {
+                    IsActive = true;
+                }
+
                 _opened?.TrySetResult(state);
                 var waiter = _updateWaiter;
                 _updateWaiter = null;

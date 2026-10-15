@@ -43,6 +43,8 @@ public sealed class PvpTimeoutSweeper : BackgroundService
             MatchEvent? fillEvt = null;
             try
             {
+                await _dispatcher.SweepBotAcceptsAsync(stoppingToken);
+                await _dispatcher.SweepAcceptFailuresAsync(stoppingToken);
                 _matches.PurgeFinishedRooms(DateTimeOffset.UtcNow);
                 changed = _matches.SweepTimeouts();
                 // 真人排队超过 GameConst.PvpBotFillDelaySeconds 秒没满 4 人：补机器人开房
@@ -69,6 +71,11 @@ public sealed class PvpTimeoutSweeper : BackgroundService
 
             foreach (var match in changed)
             {
+                if (!_matches.IsTracked(match.RoomId))
+                {
+                    continue;
+                }
+
                 await _rewards.GrantIfFinishedAsync(match, stoppingToken);
                 await _dispatcher.BroadcastMatchAsync(match, 0, stoppingToken);
             }

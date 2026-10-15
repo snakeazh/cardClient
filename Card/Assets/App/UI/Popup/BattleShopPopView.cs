@@ -32,6 +32,7 @@ namespace App.UI.Popup
         private Transform _mineContent;
         private int _pendingMineRevealId;
         private CanvasGroup _pendingMineGroup;
+        private int _lastShownCount = -1;
 
         public static BattleShopPopView FindOpen()
         {
@@ -96,11 +97,8 @@ namespace App.UI.Popup
             Binding.BindActive(refreshNum.gameObject, ViewModel.ShowRefreshNum);
             Binding.BindCommand(GetNode<Button>("RefreshBtn"), ViewModel.RefreshCommand);
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
+            Binding.BindCommand(GetNode<Button>("ReturnToHomeBtn"), ViewModel.ReturnToHomeCommand);
             Binding.BindText(GetNode<TMP_Text>("MaxNum"), ViewModel.CarryNum);
-            var addNewBtn = GetNode<Button>("AddNewBtn");
-            Binding.BindCommand(addNewBtn, ViewModel.AddNewCommand);
-            Binding.BindActive(addNewBtn.gameObject, ViewModel.ShowAddNew);
-            Binding.BindText(GetNode<TMP_Text>("AddNewNum"), ViewModel.AddNewNum);
 
             EnsureSellItems();
             EnsureMineItems();
@@ -219,8 +217,20 @@ namespace App.UI.Popup
 
         private void OnMineClicked(ShopItem item)
         {
-            if (item == null || item.RelicConfigId <= 0)
+            if (item == null)
             {
+                return;
+            }
+
+            if (item.State == ShopItemState.BuySlot)
+            {
+                ViewModel.AddNewCommand.Execute();
+                return;
+            }
+
+            if (item.RelicConfigId <= 0)
+            {
+                // Empty 态与无数据格不可交互。
                 return;
             }
 
@@ -264,6 +274,10 @@ namespace App.UI.Popup
             }
         }
 
+        /// <summary>
+        /// MineHor 拼格：[聚合圣物格 …][空槽格 × (CarryMax − 已持份数)][买槽格 × 1（还有可解锁槽时）]。
+        /// 聚合段在前，飞入动画的索引语义（LastMineIndex / FindMineItem）不受后段影响。
+        /// </summary>
         private void RefreshMineItems()
         {
             if (_mineTemplate == null || _mineContent == null)
@@ -271,8 +285,11 @@ namespace App.UI.Popup
                 return;
             }
 
-            CollectMineRelics(ViewModel.Session.Run.RelicConfigIds);
-            var shown = _mineRelicIds.Count;
+            var session = ViewModel.Session;
+            CollectMineRelics(session.Run.RelicConfigIds);
+            var emptySlots = Math.Max(0, session.RelicCarryMax - session.Run.RelicConfigIds.Count);
+            var showBuySlot = ViewModel.ShowAddNew.Value;
+            var shown = _mineRelicIds.Count + emptySlots + (showBuySlot ? 1 : 0);
             while (_mineItems.Count < shown)
             {
                 _mineItems.Add(CloneItem(_mineTemplate, _mineContent, $"mineItem_{_mineItems.Count}", OnMineClicked, wrapForGrid: true));
@@ -287,25 +304,62 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                var relicId = _mineRelicIds[i];
-                var relic = RelicConfig.Get(relicId);
-                if (relic == null)
-                {
-                    SetSlotActive(item, false, _mineContent);
-                    continue;
-                }
-
                 SetSlotActive(item, true, _mineContent);
-                item.Bind(
-                    relic,
-                    ViewModel.GetRelicIcon(relic),
-                    forSale: false,
-                    level: _mineLevels[i],
-                    count: _mineCounts[i]);
-                ApplyIncomingMineVisibility(item, i == LastMineIndex(relicId) && relicId == _pendingMineRevealId);
+                if (i < _mineRelicIds.Count)
+                {
+                    BindMineRelic(item, i);
+                }
+                else if (showBuySlot && i == shown - 1)
+                {
+                    BindBuySlot(item);
+                }
+                else
+                {
+                    item.SetState(ShopItemState.Empty);
+                }
             }
 
             RebuildMineLayout();
+            if (_pendingMineGroup != null)
+            {
+                // 买入圣物：滚到待揭示格可见（可见则视口不动）。
+                ScrollMineToRect(_pendingMineGroup.transform as RectTransform);
+            }
+            else if (_lastShownCount >= 0 && shown > _lastShownCount)
+            {
+                // 解锁槽位会让格子总数 +1（新槽在底部），滚到底展示；首帧与买入（总数不变）不滚。
+                ScrollMineToBottom();
+            }
+
+            _lastShownCount = shown;
+        }
+
+        private void BindMineRelic(ShopItem item, int i)
+        {
+            var relicId = _mineRelicIds[i];
+            var relic = RelicConfig.Get(relicId);
+            if (relic == null)
+            {
+                SetSlotActive(item, false, _mineContent);
+                return;
+            }
+
+            item.Bind(
+                relic,
+                ViewModel.GetRelicIcon(relic),
+                forSale: false,
+                level: _mineLevels[i],
+                count: _mineCounts[i]);
+            ApplyIncomingMineVisibility(item, i == LastMineIndex(relicId) && relicId == _pendingMineRevealId);
+        }
+
+        private void BindBuySlot(ShopItem item)
+        {
+            var session = ViewModel.Session;
+            var showsPrice = ViewModel.BuySlotShowsPrice;
+            var price = showsPrice ? session.PvpNextRelicSlotCost : 0;
+            item.SetState(ShopItemState.BuySlot);
+            item.SetBuySlotContent(price, affordable: !showsPrice || RelicMechanics.CanAfford(session.Run, price), showPrice: showsPrice);
         }
 
         private void CollectMineRelics(IReadOnlyList<int> owned)
@@ -378,8 +432,9 @@ namespace App.UI.Popup
                 return;
             }
 
+            // 只记录待揭示格；滚动挪到 RefreshMineItems 末尾布局完成后做，
+            // 且不再滚底——槽位视图下买入落点在聚合段，滚底会把落点带出视口。
             _pendingMineGroup = cg;
-            ScrollMineToBottom();
         }
 
         private ShopItem FindMineItem(int relicId)
@@ -424,6 +479,56 @@ namespace App.UI.Popup
             }
 
             scroll.verticalNormalizedPosition = 0f;
+        }
+
+        /// <summary>纵向滚动 MineHor 让目标槽在视口内可见；已可见不动，避免视口跳动。</summary>
+        private void ScrollMineToRect(RectTransform slot)
+        {
+            if (slot == null)
+            {
+                return;
+            }
+
+            var mineHor = UI.GetGameObject("MineHor");
+            var scroll = mineHor != null ? mineHor.GetComponent<ScrollRect>() : null;
+            if (scroll == null || scroll.viewport == null || scroll.content == null)
+            {
+                return;
+            }
+
+            var content = scroll.content;
+            var viewport = scroll.viewport;
+            var scrollable = content.rect.height - viewport.rect.height;
+            if (scrollable <= 0f)
+            {
+                return;
+            }
+
+            // 统一换算成"距 content 顶部"的一维坐标（UGUI y 向上，越往下值越大）。
+            var contentTop = content.TransformPoint(0f, content.rect.yMax, 0f).y;
+            var viewTop = viewport.TransformPoint(0f, viewport.rect.yMax, 0f).y;
+            var viewHeight = viewport.rect.height;
+            var slotTop = contentTop - slot.TransformPoint(0f, slot.rect.yMax, 0f).y;
+            var slotBottom = contentTop - slot.TransformPoint(0f, slot.rect.yMin, 0f).y;
+            var viewAt = contentTop - viewTop;
+
+            const float pad = 20f;
+            float target;
+            if (slotBottom < viewAt + pad)
+            {
+                target = slotBottom - pad;
+            }
+            else if (slotTop > viewAt + viewHeight - pad)
+            {
+                target = slotTop - viewHeight + pad;
+            }
+            else
+            {
+                return;
+            }
+
+            target = Mathf.Clamp(target, 0f, scrollable);
+            scroll.verticalNormalizedPosition = 1f - target / scrollable;
         }
 
         private Transform GetSlotRoot(ShopItem item)

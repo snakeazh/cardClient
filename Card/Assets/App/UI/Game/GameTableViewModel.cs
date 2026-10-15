@@ -40,6 +40,8 @@ namespace App.UI
         private bool _infoPopupOpen;
         private bool _remainListOpen;
         private bool _settleShownThisShop;
+        /// <summary>商店里确认返回主页：置位后 PVE 商店 while 循环不再重开弹窗。</summary>
+        private bool _quittingToHome;
         private string _shownInfoKey;
         private bool _pvpShopDoneRequested;
         private bool _pvpReconnecting;
@@ -942,6 +944,7 @@ namespace App.UI
             if (Session.Phase != GamePhase.Shop)
             {
                 _settleShownThisShop = false;
+                _quittingToHome = false;
             }
 
             TryPresentShopPopup();
@@ -1276,7 +1279,7 @@ namespace App.UI
 
                     await Session.WaitShopReadyAsync();
 
-                    while (IsOpen && Session.Phase == GamePhase.Shop)
+                    while (IsOpen && !_quittingToHome && Session.Phase == GamePhase.Shop)
                     {
                         var registration = _ui.Registry.GetByViewModelType(typeof(BattleShopPopViewModel));
                         var popup = (BattleShopPopViewModel)_ui.Registry.CreateViewModel(registration);
@@ -1372,6 +1375,80 @@ namespace App.UI
                 _resultPopupOpen = false;
                 SetShowBackBtn(!_shopPopupOpen);
             }
+        }
+
+        /// <summary>
+        /// 商店弹窗里点"返回主页"：确认后放弃当前对局回 Home。
+        /// 由 BattleShopPopViewModel 通过 GameUIView.FindOpen 转发调用。
+        /// 商店弹窗是 DialogService 正在等待结果的 custom dialog，必须先关掉它，
+        /// 确认/结算弹窗才有资格弹出（否则 "A custom dialog is already awaiting a result"）；
+        /// 先立 _quittingToHome 再关弹窗，防 PVE 商店 while 循环立刻重开抢回 dialog 名额。
+        /// 取消 / 再来一局则由 <see cref="RestoreShopAfterCancel"/> 重开商店。
+        /// </summary>
+        public async Task ReturnToHomeFromShopAsync()
+        {
+            if (_ui == null || _resultPopupOpen)
+            {
+                return;
+            }
+
+            _quittingToHome = true;
+            if (_shopPopupOpen)
+            {
+                await _ui.Dialogs.CloseWithResult(false);
+            }
+
+            if (Session.IsPvp)
+            {
+                var confirmed = await ShowCommonTopAsync("退出将判负且无法重连，是否确定？");
+                if (!confirmed || !IsOpen)
+                {
+                    RestoreShopAfterCancel();
+                    return;
+                }
+
+                await StopPvpAndLeave();
+                return;
+            }
+
+            _resultPopupOpen = true;
+            SetShowBackBtn(false);
+            try
+            {
+                var confirmed = await ShowCommonTopAsync();
+                if (!confirmed || !IsOpen)
+                {
+                    RestoreShopAfterCancel();
+                    return;
+                }
+
+                var action = await ShowBattleResultAsync(forfeitNoRevive: true);
+                if (action == BattleResultAction.Again)
+                {
+                    RestoreShopAfterCancel();
+                    return;
+                }
+
+                await LeaveToHome();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                RestoreShopAfterCancel();
+            }
+            finally
+            {
+                _resultPopupOpen = false;
+                SetShowBackBtn(!_shopPopupOpen);
+            }
+        }
+
+        /// <summary>放弃返回主页（取消确认 / 结算选再来一局）：清退出标志并重开商店弹窗。</summary>
+        private void RestoreShopAfterCancel()
+        {
+            _quittingToHome = false;
+            _pvpShopDoneRequested = false;
+            TryPresentShopPopup();
         }
 
         private async Task LeaveToHome()

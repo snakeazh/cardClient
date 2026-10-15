@@ -5,6 +5,7 @@ using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
 using App.Resources;
+using App.UI;
 using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
@@ -42,8 +43,10 @@ namespace App.UI.Popup
             ShowAddNew = new ObservableProperty<bool>(CanShowAddNew());
             ShopRevision = new ObservableProperty<int>();
             RefreshCommand = new RelayCommand(() => Session.RefreshShopOffers(), () => Session.CanRefreshShop);
-            AddNewCommand = new RelayCommand(UnlockSlot, CanUnlockSlot);
+            // 买槽格恒可点：PVP 金币不足时点了 Toast 提示，不置灰。
+            AddNewCommand = new RelayCommand(UnlockSlot);
             NextStageCommand = new RelayCommand(Leave);
+            ReturnToHomeCommand = new RelayCommand(ReturnToHomeFromShop);
         }
 
         public GameSession Session { get; }
@@ -60,10 +63,13 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> CarryNum { get; }
 
-        /// <summary>解锁下一圣物槽的金币。非 PVP 或已满为空。</summary>
+        /// <summary>解锁下一圣物槽的金币。PVP 显示价格；PVE 看广告解锁为空。</summary>
         public ObservableProperty<string> AddNewNum { get; }
 
         public ObservableProperty<bool> ShowAddNew { get; }
+
+        /// <summary>买槽格是否显示金币价格：PVP 花金币显示，PVE 看广告解锁隐藏。</summary>
+        public bool BuySlotShowsPrice => Session.IsPvp;
 
         public ObservableProperty<int> ShopRevision { get; }
 
@@ -72,6 +78,9 @@ namespace App.UI.Popup
         public IRelayCommand AddNewCommand { get; }
 
         public IRelayCommand NextStageCommand { get; }
+
+        /// <summary>返回主页：结束当前对局回 Home。确认/结算/关屏流程在对局面板。</summary>
+        public IRelayCommand ReturnToHomeCommand { get; }
 
         public Sprite GetRelicIcon(RelicConfig relic)
         {
@@ -160,7 +169,6 @@ namespace App.UI.Popup
             AddNewNum.Value = FormatAddNewNum();
             ShowAddNew.Value = CanShowAddNew();
             RefreshCommand.RaiseCanExecuteChanged();
-            AddNewCommand.RaiseCanExecuteChanged();
             ShopRevision.Value++;
         }
 
@@ -172,19 +180,18 @@ namespace App.UI.Popup
 
         private bool CanShowAddNew()
         {
-            return Session.IsPvp && Session.PvpNextRelicSlotCost > 0;
-        }
-
-        private bool CanUnlockSlot()
-        {
-            return CanShowAddNew() && Session.Run.Gold >= Session.PvpNextRelicSlotCost;
+            return Session.CanUnlockRelicSlot;
         }
 
         private async void UnlockSlot()
         {
             try
             {
-                await Session.TryUnlockPvpRelicSlotAsync();
+                // PVP 花金币（金币不足在 Session 里写入 Hint）；PVE 看广告（模拟发放）。
+                if (!await Session.TryUnlockRelicSlotAsync() && !string.IsNullOrEmpty(Session.Hint))
+                {
+                    Toast.Show(Session.Hint);
+                }
             }
             catch (Exception ex)
             {
@@ -214,6 +221,30 @@ namespace App.UI.Popup
 
             Session.LeaveShop();
             _ = _dialogs.CloseWithResult(true);
+        }
+
+        private async void ReturnToHomeFromShop()
+        {
+            try
+            {
+                if (_detail != null)
+                {
+                    var detail = _detail;
+                    _detail = null;
+                    await _ui.Close(detail);
+                }
+
+                // 确认、结算、PVP 离场、关 GameTable 都在对局面板：它持有屏幕关闭权与既有退出流程。
+                var table = UnityEngine.Object.FindObjectOfType<GameUIView>()?.ViewModel;
+                if (table != null)
+                {
+                    await table.ReturnToHomeFromShopAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
         }
     }
 }

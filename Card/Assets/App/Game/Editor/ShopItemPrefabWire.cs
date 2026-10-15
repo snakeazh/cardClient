@@ -57,20 +57,33 @@ namespace App.Game.Editor
                 }
 
                 var so = new SerializedObject(item);
+                var normalRoot = FindNamed<Transform>(root.transform, "Item");
                 var changed = Assign(so, "cardName", FindNamed<TMP_Text>(root.transform, "card_Name"), force);
                 changed |= Assign(so, "cardIcon", FindNamed<Image>(root.transform, "card_icon"), force);
                 changed |= Assign(so, "iconBg", FindNamed<Image>(root.transform, "IconBG"), force);
                 changed |= Assign(so, "iconTitleBg", FindNamed<Image>(root.transform, "IconTitleBG"), force);
                 changed |= Assign(so, "cardCircle", FindNamed<Image>(root.transform, "card_Circle"), force);
+                // BuySlot 子树里也有同名 priceValue，正常卡价格文本须限定在 Item 子树内查找。
                 changed |= Assign(
                     so,
                     "goldNum",
-                    FindNamed<TMP_Text>(root.transform, "priceValue") ?? FindNamed<TMP_Text>(root.transform, "goldNum"),
+                    FindNamed<TMP_Text>(normalRoot, "priceValue") ?? FindNamed<TMP_Text>(normalRoot, "goldNum"),
                     force);
                 changed |= Assign(so, "gold", FindNamed<Image>(root.transform, "gold"), force);
                 changed |= Assign(so, "lv", FindNamed<TMP_Text>(root.transform, "lv"), force);
                 changed |= Assign(so, "hasNum", FindNamed<TMP_Text>(root.transform, "hasNum"), force);
                 changed |= Assign(so, "button", item.GetComponent<Button>(), force);
+                changed |= Assign(so, "normalRoot", normalRoot != null ? normalRoot.gameObject : null, force);
+                changed |= Assign(
+                    so,
+                    "emptyRoot",
+                    FindNamed<Transform>(root.transform, "IsEmpty") is { } empty ? empty.gameObject : null,
+                    force);
+                changed |= Assign(
+                    so,
+                    "buySlotRoot",
+                    FindNamed<Transform>(root.transform, "BuySlot") is { } buySlot ? buySlot.gameObject : null,
+                    force);
                 if (!changed)
                 {
                     return false;

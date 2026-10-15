@@ -36,6 +36,9 @@ namespace CardShare.Contracts
         /// <summary>对局结束后的名次奖励金币；未结束为 0。</summary>
         public int RewardGold { get; set; }
 
+        /// <summary>对局结束后的名次 PVP 分数加减；未结束为 0。可为负。</summary>
+        public int RewardScore { get; set; }
+
         /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
         public int[] RelicIds { get; set; } = System.Array.Empty<int>();
 

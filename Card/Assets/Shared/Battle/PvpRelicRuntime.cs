@@ -415,37 +415,77 @@ namespace CardShare.Battle
         /// 消耗类型（如 PVE 专属的改牌型/商店折扣），调用方应拒绝使用，防止花钱白用。</summary>
         public static bool TryApplyConsumable(IGameTables tables, PvpFighter fighter, RelicConfig relic)
         {
-            if (relic?.MechanismId == null || relic.MechanismId.Length == 0)
+            if (!IsUsableConsumable(tables, relic))
             {
                 return false;
             }
 
-            var anyApplied = false;
-            var allSupported = true;
             ForEachRelicEntry(tables, relic, entry =>
             {
                 switch (entry.Type)
                 {
                     case MechanismType.HealHpPercent:
                         HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry)));
-                        anyApplied = true;
                         break;
                     case MechanismType.MaxHpUpAndHeal:
                         // 配表 Value=[X, X]：上限+X 且当前血同步+X（等效"立即恢复 X"，同 PVE 只取 value[0] 的口径）。
                         ApplyMaxHpDelta(fighter, (int)Math.Round(ValueAt(entry)));
-                        anyApplied = true;
                         break;
                     case MechanismType.UseRoundNullify:
                         fighter.NullifyDamageNextHit = true;
                         HealFromRelic(tables, fighter, (int)Math.Round(fighter.MaxHp * ValueAt(entry, 1)));
-                        anyApplied = true;
+                        break;
+                }
+            });
+            return true;
+        }
+
+        /// <summary>PVP 可主动使用的消耗品：UseType 1/2，且机制条目全部是可结算的消耗效果。</summary>
+        public static bool IsUsableConsumable(IGameTables tables, RelicConfig relic)
+        {
+            if (relic == null || !IsConsumable(relic) || relic.MechanismId == null || relic.MechanismId.Length == 0)
+            {
+                return false;
+            }
+
+            var any = false;
+            var allSupported = true;
+            ForEachRelicEntry(tables, relic, entry =>
+            {
+                switch (entry.Type)
+                {
+                    case MechanismType.HealHpPercent:
+                    case MechanismType.MaxHpUpAndHeal:
+                    case MechanismType.UseRoundNullify:
+                        any = true;
                         break;
                     default:
                         allSupported = false;
                         break;
                 }
             });
-            return anyApplied && allSupported;
+            return any && allSupported;
+        }
+
+        /// <summary>消耗品是否含回血/加生命效果（满血时机器人不主动用）。</summary>
+        public static bool ConsumableHeals(IGameTables tables, RelicConfig relic)
+        {
+            if (relic == null)
+            {
+                return false;
+            }
+
+            var heals = false;
+            ForEachRelicEntry(tables, relic, entry =>
+            {
+                if (entry.Type == MechanismType.HealHpPercent
+                    || entry.Type == MechanismType.MaxHpUpAndHeal
+                    || entry.Type == MechanismType.UseRoundNullify)
+                {
+                    heals = true;
+                }
+            });
+            return heals;
         }
 
         /// <summary>圣物全部机制条目都被 PVP 结算消费才允许上架/使用；白名单外的圣物不上 PVP 商店货架。

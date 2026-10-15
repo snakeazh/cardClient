@@ -1,4 +1,4 @@
-// LTY/FX/Simple — 日常特效：主贴图 + 颜色 + 双 Mask（轻量 Vert/Frag）
+// LTY/FX/Simple — 日常特效：主贴图 + 颜色 + 双 Mask + 可选溶解（轻量 Vert/Frag）
 Shader "LTY/FX/Simple"
 {
 	Properties
@@ -22,6 +22,14 @@ Shader "LTY/FX/Simple"
 		_MASKTEX2("MASKTEX2", 2D) = "white" {}
 		_MASK2_u_speed("MASK2_u_speed", Float) = 0
 		_MASK2_v_speed("MASK2_v_speed", Float) = 0
+
+		[Header(Dissolve)]
+		_DISSOLVETEX("DISSOLVETEX(噪声图)", 2D) = "white" {}
+		_DISSOLVE_u_speed("DISSOLVE_u_speed", Float) = 0
+		_DISSOLVE_v_speed("DISSOLVE_v_speed", Float) = 0
+		_DissolveProgress("溶解进度(0=不溶,C#经MPB写)", Range(0, 1)) = 0
+		_DissolveEdgeWidth("溶解边缘宽度", Range(0.001, 0.5)) = 0.08
+		[HDR]_DissolveEdgeColor("溶解边缘色", Color) = (2, 0.63, 0.27, 1)
 
 		[Header(Overdraw)]
 		[Toggle(_SOFT_PARTICLE_ON)] _UseSoftParticle("软粒子(采样深度,费)", Float) = 0
@@ -77,10 +85,18 @@ Shader "LTY/FX/Simple"
 			half _MASK_u_speed;
 			half _MASK_v_speed;
 
-			sampler2D _MASKTEX2;
-			float4 _MASKTEX2_ST;
-			half _MASK2_u_speed;
-			half _MASK2_v_speed;
+		sampler2D _MASKTEX2;
+		float4 _MASKTEX2_ST;
+		half _MASK2_u_speed;
+		half _MASK2_v_speed;
+
+		sampler2D _DISSOLVETEX;
+		float4 _DISSOLVETEX_ST;
+		half _DISSOLVE_u_speed;
+		half _DISSOLVE_v_speed;
+		half _DissolveProgress;
+		half _DissolveEdgeWidth;
+		half4 _DissolveEdgeColor;
 
 		UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 		half _soft;
@@ -170,6 +186,17 @@ Shader "LTY/FX/Simple"
 					mask2UV += _Time.y * half2(_MASK2_u_speed, _MASK2_v_speed);
 					alpha *= tex2D(_MASKTEX2, mask2UV).r;
 				#endif
+
+				// 溶解：进度0走原路径零开销；进度由 C# 经 MaterialPropertyBlock 按实例写入（同 _UseClipRect 模式）
+				UNITY_BRANCH
+				if (_DissolveProgress > 0.0001)
+				{
+					float2 dissolveUV = i.uv0 * _DISSOLVETEX_ST.xy + _DISSOLVETEX_ST.zw;
+					dissolveUV += _Time.y * half2(_DISSOLVE_u_speed, _DISSOLVE_v_speed);
+					half d = tex2D(_DISSOLVETEX, dissolveUV).r - _DissolveProgress * (1 + _DissolveEdgeWidth);
+					clip(d);
+					emis += _DissolveEdgeColor.rgb * saturate(1 - d / _DissolveEdgeWidth);
+				}
 
 				#ifdef _SOFT_PARTICLE_ON
 					float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.screenPos)));

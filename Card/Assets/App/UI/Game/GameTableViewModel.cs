@@ -457,7 +457,90 @@ namespace App.UI
             _pvpDeadlineLocalMs = state != null && state.PhaseDeadlineUtcMs > 0
                 ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (state.PhaseDeadlineUtcMs - state.ServerNowUtcMs)
                 : 0;
-            _pvpDriver.OnMatch(state, GameApi.Client != null ? GameApi.Client.UserId : string.Empty);
+            var catchUp = _pvp.ConsumeCatchUpSnap();
+            _pvpDriver.OnMatch(
+                state,
+                GameApi.Client != null ? GameApi.Client.UserId : string.Empty,
+                catchUp);
+            if (catchUp)
+            {
+                Refresh();
+                if (state != null
+                    && string.Equals(state.Phase, PvpPhases.Shop, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pvpShopDoneRequested = false;
+                    _ = OpenShopAfterCatchUpAsync();
+                }
+            }
+
+            // 本人已死：服务端不再推后续对局；整局 finished 留给 OnPvpFinished（有完整奖励）。
+            if (_pvpLeaving
+                || state == null
+                || string.Equals(state.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var self = _pvp.Self;
+            if (self != null && !self.Alive)
+            {
+                _ = LeaveAfterSelfEliminatedAsync();
+            }
+        }
+
+        /// <summary>重连进商店：等摊牌结果演出（发牌+翻牌）结束后再弹商店。</summary>
+        private async Task OpenShopAfterCatchUpAsync()
+        {
+            for (var i = 0; i < 300 && _pvpDriver != null && _pvpDriver.IsBusy; i++)
+            {
+                await Task.Yield();
+            }
+
+            if (!IsOpen || _pvpLeaving || Session == null || Session.Phase != GamePhase.Shop)
+            {
+                return;
+            }
+
+            Refresh();
+            TryPresentShopPopup();
+        }
+
+        /// <summary>中途淘汰：等演出排空后提示名次并离场（终局奖励仍由服务端落库，不在此等 finished）。</summary>
+        private async Task LeaveAfterSelfEliminatedAsync()
+        {
+            if (_pvpLeaving)
+            {
+                return;
+            }
+
+            _pvpLeaving = true;
+            for (var i = 0; i < 180 && _pvpDriver != null && _pvpDriver.IsBusy; i++)
+            {
+                await Task.Yield();
+            }
+
+            var self = _pvp != null ? _pvp.Self : null;
+            var tip = self != null && self.Rank > 0
+                ? $"你已被淘汰，第 {self.Rank} 名"
+                : "你已被淘汰";
+            try
+            {
+                if (_ui != null)
+                {
+                    await _ui.Dialogs.ConfirmAsync("PVP 结算", tip, DialogButtons.Ok, "返回大厅");
+                }
+                else
+                {
+                    Toast.Show(tip);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                Toast.Show(tip);
+            }
+
+            await StopPvpAndLeave();
         }
 
         /// <summary>PVP 选牌倒计时：服务器快照下发 deadline + 服务器当前时刻，换算成本地截止点后本地秒级跳动。到期不做任何事，等服务器快照驱动。</summary>
@@ -576,6 +659,12 @@ namespace App.UI
             _pvpReconnecting = false;
             ShowMask.Value = false;
             Toast.Show("已重新连接");
+            // sync 的 catchUp Updated 已 SnapTo（商店可能正在播上轮摊牌）；忙时不要再 Clear 打断。
+            if (_pvp != null && _pvp.State != null && _pvpDriver != null && !_pvpDriver.IsBusy)
+            {
+                _pvpDriver.SnapTo(_pvp.State, GameApi.Client != null ? GameApi.Client.UserId : string.Empty);
+            }
+
             Refresh();
         }
 
@@ -597,7 +686,7 @@ namespace App.UI
             await StopPvpAndLeave();
         }
 
-        /// <summary>PVP 结算：名次 + 名次奖励金币 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
+        /// <summary>PVP 结算：名次 + 名次金币/分数 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
         private async Task ShowPvpResultAsync()
         {
             if (_ui == null || _pvp == null)
@@ -639,6 +728,15 @@ namespace App.UI
                 if (p.RewardGold > 0)
                 {
                     sb.Append("  +").Append(p.RewardGold).Append("金币");
+                }
+
+                if (p.RewardScore > 0)
+                {
+                    sb.Append("  +").Append(p.RewardScore).Append("分");
+                }
+                else if (p.RewardScore < 0)
+                {
+                    sb.Append("  ").Append(p.RewardScore).Append("分");
                 }
             }
 
@@ -1237,7 +1335,7 @@ namespace App.UI
 
             if (Session.IsPvp)
             {
-                var confirmed = await ShowCommonTopAsync("退出后将无法重新连入当前局，是否确定？");
+                var confirmed = await ShowCommonTopAsync("退出将判负且无法重连，是否确定？");
                 if (!confirmed || !IsOpen)
                 {
                     return;

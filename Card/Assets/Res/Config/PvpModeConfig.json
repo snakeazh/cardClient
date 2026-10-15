@@ -12,6 +12,12 @@
       60,
       30
     ],
+    "RankScore": [
+      50,
+      25,
+      0,
+      -40
+    ],
     "DamageRoundScale": 0.1,
     "OpenPhaseSeconds": 20
   }

@@ -44,6 +44,9 @@ namespace CardShare.Battle
 
         public int RewardGold { get; set; }
 
+        /// <summary>对局结束后的名次 PVP 分数加减；未结束为 0。可为负。</summary>
+        public int RewardScore { get; set; }
+
         public List<int> OwnedRelicIds { get; } = new List<int>();
 
         /// <summary>与 <see cref="OwnedRelicIds"/> 对齐。每份为 1，多份各占一条。</summary>

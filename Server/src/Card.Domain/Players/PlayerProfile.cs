@@ -15,6 +15,9 @@ public sealed class PlayerProfile
 
     public int Gold { get; set; }
 
+    /// <summary>局外 PVP 分数。新建档为 0，结算加减分后下限钳到 0。</summary>
+    public int PvpScore { get; set; }
+
     public EnergyState Energy { get; set; } = new EnergyState();
 
     public AdShopState AdShop { get; set; } = new AdShopState();
@@ -200,6 +203,19 @@ public sealed class PlayerProfile
         }
 
         Gold += amount;
+    }
+
+    /// <summary>按名次加减 PVP 分数，结果不低于 0。返回变更后的分数。</summary>
+    public int ApplyPvpScoreDelta(int delta)
+    {
+        var next = PvpScore + delta;
+        if (next < 0)
+        {
+            next = 0;
+        }
+
+        PvpScore = next;
+        return PvpScore;
     }
 
     public int GetDrawCost(IGameConfig config)

@@ -15,12 +15,12 @@ MonoBehaviour:
   ProjectConf:
     projectName: "\u5929\u9009\u52C7\u58EB"
     Appid: wxe11329edae4de537
-    CDN: http://192.168.1.109:8080/webgl/
+    CDN: https://cardwar-1328828696.cos.ap-shanghai.myqcloud.com/CardClient/WXGame/
     assetLoadType: 0
     compressDataPackage: 0
     VideoUrl: 
-    relativeDST: D:/UnityProject/cardclient/wxoutput
-    DST: D:/UnityProject/cardclient/wxoutput
+    relativeDST: D:/UnityProject/wxoutput
+    DST: D:/UnityProject/wxoutput
     StreamCDN: 
     bundleHashLength: 32
     bundlePathIdentifier: StreamingAssets;
@@ -65,7 +65,7 @@ MonoBehaviour:
     enableRenderAnalysis: 0
     enablePerfAnalysis: 0
     iOSAutoGCInterval: 10000
-    enableIOSPerformancePlus: 0
+    enableIOSPerformancePlus: 1
     enableiOSMetal: 0
     enableEmscriptenGLX: 0
     brotliMT: 0

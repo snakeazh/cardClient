@@ -53,6 +53,7 @@ namespace CardShare.Battle
                     IsBot = f.IsBot,
                     Disconnected = f.Disconnected,
                     RewardGold = f.RewardGold,
+                    RewardScore = f.RewardScore,
                     RelicIds = f.OwnedRelicIds.ToArray(),
                     RelicPower = f.OwnedRelicPower.ToArray(),
                     RelicSlots = f.RelicSlots,

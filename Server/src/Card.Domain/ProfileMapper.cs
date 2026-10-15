@@ -13,6 +13,7 @@ public static class ProfileMapper
             NickName = profile.NickName,
             AvatarUrl = profile.AvatarUrl,
             Gold = profile.Gold,
+            PvpScore = profile.PvpScore < 0 ? 0 : profile.PvpScore,
             Energy = new EnergyDto
             {
                 Current = profile.Energy.Current,

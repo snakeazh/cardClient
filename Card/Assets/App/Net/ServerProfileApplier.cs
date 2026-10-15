@@ -5,6 +5,7 @@ using App.Bootstrap;
 using App.Energy;
 using App.Guide;
 using App.Level;
+using App.PvpScore;
 using App.Talent;
 using App.Unlock;
 using App.Wallet;
@@ -26,6 +27,7 @@ namespace App.Net
             }
 
             AppServices.Resolve<IWalletService>().ReplaceFromServer(profile.Gold);
+            AppServices.Resolve<IPvpScoreService>().ReplaceFromServer(profile.PvpScore);
 
             var energy = profile.Energy ?? new EnergyDto();
             AppServices.Resolve<IEnergyService>().ReplaceFromServer(energy.Current, energy.AdRefillCount);
@@ -40,6 +42,7 @@ namespace App.Net
             AppServices.Resolve<IGuideProgressService>().ReplaceFromServer(profile.GuideCompletedGroupIds);
 
             AppServices.Resolve<IWalletService>().Save();
+            AppServices.Resolve<IPvpScoreService>().Save();
             AppServices.Resolve<IEnergyService>().Save();
             AppServices.Resolve<IAdShopService>().Save();
             AppServices.Resolve<ITalentService>().Save();
@@ -48,7 +51,9 @@ namespace App.Net
             AppServices.Resolve<IBagService>().Save();
             AppServices.Resolve<IGuideProgressService>().Save();
 
-            AppLog.Info(LogChannel.Net, $"applied profile gold={profile.Gold} energy={energy.Current}");
+            AppLog.Info(
+                LogChannel.Net,
+                $"applied profile gold={profile.Gold} pvpScore={profile.PvpScore} energy={energy.Current}");
         }
 
         private static void ApplyTalent(TalentDto talent)

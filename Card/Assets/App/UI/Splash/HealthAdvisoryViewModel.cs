@@ -5,6 +5,7 @@ using App.UI;
 using Framework.Log;
 using Framework.UI;
 using Framework.UI.Core;
+using Framework.UI.Dialog;
 using Framework.UI.View;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace App.UI.Splash
     public sealed class HealthAdvisoryViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
+        private readonly IDialogService _dialogs;
         private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
         private readonly LaunchInitialization _launchInit;
@@ -20,11 +22,13 @@ namespace App.UI.Splash
 
         public HealthAdvisoryViewModel(
             IUIManager ui,
+            IDialogService dialogs,
             NavigationViewModel navigation,
             MainResourceViewModel mainResource,
             LaunchInitialization launchInit)
         {
             _ui = ui;
+            _dialogs = dialogs;
             _navigation = navigation;
             _mainResource = mainResource;
             _launchInit = launchInit;
@@ -68,16 +72,40 @@ namespace App.UI.Splash
             }
             catch (Exception ex)
             {
-                AppLog.Exception(LogChannel.UI, ex);
+                // 重型初始化失败时绝不能进首页：HomeViewModel 依赖尚未注册的服务
+                //（如 TalentBonusManager），会把真正的启动异常掩盖成 DI 未注册。
+                var root = Unwrap(ex);
+                AppLog.Exception(LogChannel.UI, root);
                 try
                 {
-                    await EnterHomeAsync();
+                    if (_dialogs != null)
+                    {
+                        await _dialogs.ConfirmAsync(
+                            "启动失败",
+                            root.Message + "\n请查看日志中更早的异常后重启。",
+                            DialogButtons.Ok,
+                            "确定");
+                    }
                 }
-                catch (Exception retryEx)
+                catch (Exception dialogEx)
                 {
-                    AppLog.Exception(LogChannel.UI, retryEx);
+                    AppLog.Exception(LogChannel.UI, dialogEx);
                 }
             }
+        }
+
+        private static Exception Unwrap(Exception ex)
+        {
+            if (ex is AggregateException aggregate)
+            {
+                var flat = aggregate.Flatten();
+                if (flat.InnerException != null)
+                {
+                    return flat.InnerException;
+                }
+            }
+
+            return ex ?? new InvalidOperationException("unknown launch failure");
         }
 
         private static async Task DelayRealtimeAsync(int milliseconds)

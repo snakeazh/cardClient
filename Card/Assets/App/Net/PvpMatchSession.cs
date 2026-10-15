@@ -25,6 +25,8 @@ namespace App.Net
         private TaskCompletionSource<bool> _updateWaiter;
         private long _lastVersion;
         private bool _acceptAnySnapshot;
+        private bool _catchUpSnap;
+        private bool _probing;
         private bool _reconnecting;
 
         // 与服务端 PvpRules.QueueTimeoutMs 对齐的兜底值；房间直接开成（机器人补房/第4人入队）
@@ -99,6 +101,9 @@ namespace App.Net
                 throw new GameApiException("unauthorized", "请先登录", 401);
             }
 
+            // 双保险：若探测仍占着 WS，先取消，避免 Connect 掐断 Sync 空等 8s。
+            CancelProbe();
+
             _players.Clear();
             _lastVersion = 0;
             _acceptAnySnapshot = false;
@@ -114,6 +119,163 @@ namespace App.Net
             var state = await Wait(_opened.Task, waitMs, "匹配超时");
             IsActive = true;
             State = state;
+        }
+
+        /// <summary>
+        /// 冷启动探测未结束对局：连 WS 后发 sync。
+        /// 命中则保持连接并写入 <see cref="State"/>（IsActive 仍为 false，需 <see cref="ActivateResumedMatch"/>）；
+        /// 未命中或已结束则断开并返回 false。
+        /// </summary>
+        public async Task<bool> TryProbeActiveMatchAsync()
+        {
+            if (IsActive)
+            {
+                return State != null && !IsFinishedPhase(State) && IsSelfAlive(State);
+            }
+
+            if (GameApi.Client == null || !GameApi.Client.HasSession)
+            {
+                return false;
+            }
+
+            _probing = true;
+            _players.Clear();
+            _lastVersion = 0;
+            _acceptAnySnapshot = true;
+            State = null;
+            _authed = new TaskCompletionSource<bool>();
+            _synced = new TaskCompletionSource<bool>();
+            try
+            {
+                await _ws.ConnectAsync(GameApi.Client.AccessToken);
+                if (!_probing)
+                {
+                    return false;
+                }
+
+                await Wait(_authed.Task, 8000, "对战鉴权超时");
+                if (!_probing)
+                {
+                    return false;
+                }
+
+                await _ws.SyncAsync();
+                await Wait(_synced.Task, 8000, "对局同步超时");
+            }
+            catch (GameApiException ex)
+            {
+                await SafeDisconnectAsync();
+                State = null;
+                if (string.Equals(ex.Code, ErrorCodes.NotInBattle, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(ex.Code, "probe_cancelled", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                AppLog.Warn(LogChannel.Net, "pvp probe failed: " + ex.Message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                await SafeDisconnectAsync();
+                State = null;
+                AppLog.Warn(LogChannel.Net, "pvp probe failed: " + ex.Message);
+                return false;
+            }
+            finally
+            {
+                _probing = false;
+            }
+
+            if (State == null || IsFinishedPhase(State) || !IsSelfAlive(State))
+            {
+                // 已死/已结束：不断言 leave（服务端应已解绑）；只断连，不弹重连。
+                await SafeDisconnectAsync();
+                State = null;
+                return false;
+            }
+
+            AppLog.Info(LogChannel.Net, "pvp probe: active match found phase=" + State.Phase);
+            return true;
+        }
+
+        /// <summary>取消进行中的冷启动探测，释放 WS 给匹配/其它连接。</summary>
+        public void CancelProbe()
+        {
+            if (!_probing)
+            {
+                return;
+            }
+
+            _probing = false;
+            _acceptAnySnapshot = false;
+            var cancelled = new GameApiException("probe_cancelled", "重连探测已取消", 0);
+            _authed?.TrySetException(cancelled);
+            _synced?.TrySetException(cancelled);
+            _ = SafeDisconnectAsync();
+        }
+
+        /// <summary>探测成功后确认重连：标记对局活跃，之后断线会走自动重连。</summary>
+        public void ActivateResumedMatch()
+        {
+            if (State == null || IsFinishedPhase(State) || !IsSelfAlive(State))
+            {
+                throw new InvalidOperationException("no active match to resume");
+            }
+
+            IsActive = true;
+            _acceptAnySnapshot = false;
+            // 探测阶段 sync 时桌面尚未订阅；进桌时需静态对齐，不能按摊牌快照重播比牌/死亡。
+            _catchUpSnap = true;
+        }
+
+        /// <summary>消费一次 catch-up 标记（sync 重连 / 冷恢复进桌）。Driver 应 SnapTo 而非播演出。</summary>
+        public bool ConsumeCatchUpSnap()
+        {
+            if (!_catchUpSnap)
+            {
+                return false;
+            }
+
+            _catchUpSnap = false;
+            return true;
+        }
+
+        private static bool IsFinishedPhase(PvpMatchStateDto state)
+        {
+            return state != null
+                && string.Equals(state.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsSelfAlive(PvpMatchStateDto state)
+        {
+            var players = state != null ? state.Players : null;
+            if (players == null)
+            {
+                return false;
+            }
+
+            var userId = GameApi.Client != null ? GameApi.Client.UserId : string.Empty;
+            for (var i = 0; i < players.Length; i++)
+            {
+                if (SameUser(players[i].UserId, userId))
+                {
+                    return players[i].Alive;
+                }
+            }
+
+            return false;
+        }
+
+        private async Task SafeDisconnectAsync()
+        {
+            try
+            {
+                await _ws.DisconnectAsync();
+            }
+            catch (Exception)
+            {
+            }
         }
 
         public Task PickAsync(int[] indexes) => _ws.BattleAsync(PvpActions.Pick, 0, indexes);
@@ -387,19 +549,35 @@ namespace App.Net
                 var waiter = _updateWaiter;
                 _updateWaiter = null;
                 waiter?.TrySetResult(true);
+                if (catchUp)
+                {
+                    // 先打标再 Updated：桌面用 SnapTo 静态对齐，避免 settle/shop 残留摊牌快照重播死亡。
+                    _catchUpSnap = true;
+                }
+
                 Updated?.Invoke();
                 if (catchUp)
                 {
                     var synced = _synced;
                     _synced = null;
                     synced?.TrySetResult(true);
-                    // sync 全量快照内嵌了广播尚未 drain 的增量事件：补发一遍，消费方（Driver/ViewModel）幂等。
+                    // 只补发在线状态类事件；RoundStart/DuelResolved/SettleStart 会误触发发牌/比牌卡住。
                     var events = state.Events;
                     if (events != null)
                     {
                         for (var i = 0; i < events.Length; i++)
                         {
-                            MatchEvent?.Invoke(events[i]);
+                            var evt = events[i];
+                            if (evt == null)
+                            {
+                                continue;
+                            }
+
+                            if (evt.Kind == PvpEventKinds.PlayerOffline
+                                || evt.Kind == PvpEventKinds.PlayerOnline)
+                            {
+                                MatchEvent?.Invoke(evt);
+                            }
                         }
                     }
                 }

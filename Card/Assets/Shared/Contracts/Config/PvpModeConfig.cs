@@ -42,6 +42,11 @@ namespace CardShare.Contracts.Config
         public int[] RankReward;
 
         /// <summary>
+        /// 第1到4名局外PVP分数加减
+        /// </summary>
+        public int[] RankScore;
+
+        /// <summary>
         /// 每轮伤害加成
         /// </summary>
         public float DamageRoundScale;

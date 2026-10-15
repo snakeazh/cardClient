@@ -15,7 +15,6 @@ namespace App.UI.Splash
     {
         private readonly IUIManager _ui;
         private readonly IDialogService _dialogs;
-        private readonly NavigationViewModel _navigation;
         private readonly MainResourceViewModel _mainResource;
         private readonly LaunchInitialization _launchInit;
         private bool _enteredHome;
@@ -23,13 +22,11 @@ namespace App.UI.Splash
         public HealthAdvisoryViewModel(
             IUIManager ui,
             IDialogService dialogs,
-            NavigationViewModel navigation,
             MainResourceViewModel mainResource,
             LaunchInitialization launchInit)
         {
             _ui = ui;
             _dialogs = dialogs;
-            _navigation = navigation;
             _mainResource = mainResource;
             _launchInit = launchInit;
             Title = new ObservableProperty<string>(HealthAdvisoryText.Title);
@@ -136,7 +133,6 @@ namespace App.UI.Splash
             var registration = _ui.Registry.GetByViewModelType(typeof(HomeViewModel));
             var home = (HomeViewModel)_ui.Registry.CreateViewModel(registration);
             await _ui.Open(home);
-            await _navigation.EnsureShown();
             await _mainResource.EnsureShown();
         }
     }

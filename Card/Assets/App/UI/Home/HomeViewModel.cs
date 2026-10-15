@@ -25,7 +25,6 @@ namespace App.UI
     public sealed class HomeViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
@@ -42,7 +41,6 @@ namespace App.UI
 
         public HomeViewModel(
             IUIManager ui,
-            NavigationViewModel navigation,
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
@@ -54,7 +52,6 @@ namespace App.UI
             IPvpScoreService pvpScore)
         {
             _ui = ui;
-            _navigation = navigation;
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
@@ -70,6 +67,8 @@ namespace App.UI
             ShowPvpTime = new ObservableProperty<bool>(false);
             StartCommand = new RelayCommand(OpenLevelUI, () => !_openingLevel);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
+            OpenIllustrateCommand = new RelayCommand(OpenIllustrate);
+            OpenTalentCommand = new RelayCommand(OpenTalent);
             PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
@@ -97,6 +96,13 @@ namespace App.UI
 
         /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
         public IRelayCommand OpenTTRewardCommand { get; }
+
+        /// <summary>打开图鉴弹窗（Home IllustrateBtn）。</summary>
+        public IRelayCommand OpenIllustrateCommand { get; }
+
+        /// <summary>打开天赋弹窗（Home TalentBtn）。</summary>
+        public IRelayCommand OpenTalentCommand { get; }
+
         public IRelayCommand PvpCommand { get; }
 
         protected override async Task OnOpen(object args)
@@ -237,16 +243,14 @@ namespace App.UI
             StartCommand.RaiseCanExecuteChanged();
             try
             {
-                _navigation.HideBar();
                 var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
                 var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
                 await _ui.Open(vm);
             }
             catch (Exception ex)
             {
-                // async void 吞异常会让按钮"点了没反应"：记录并恢复导航栏，提示重试。
+                // async void 吞异常会让按钮"点了没反应"：记录并提示重试。
                 AppLog.Exception(LogChannel.UI, ex);
-                await _navigation.EnsureShown();
                 _toast?.ShowWarning("选关界面打开失败，请重试");
             }
             finally
@@ -268,6 +272,36 @@ namespace App.UI
             {
                 AppLog.Exception(LogChannel.UI, ex);
                 _toast?.ShowWarning("奖励界面打开失败，请重试");
+            }
+        }
+
+        private async void OpenIllustrate()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(IllustratedBookPopViewModel));
+                var vm = (IllustratedBookPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("图鉴打开失败，请重试");
+            }
+        }
+
+        private async void OpenTalent()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TalentPopupViewModel));
+                var vm = (TalentPopupViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("天赋界面打开失败，请重试");
             }
         }
 
@@ -306,7 +340,6 @@ namespace App.UI
                     }
 
                     _pvp.ActivateResumedMatch();
-                    _navigation.HideBar();
                     _session.BeginPvp();
                     await _ui.Open(_table);
                     return;
@@ -366,7 +399,6 @@ namespace App.UI
                 _pvpResumeChecked = true;
                 _pvp.CancelProbe();
 
-                _navigation.HideBar();
                 StartMatchTimer();
                 await _pvp.Invoker.EnqueueStartQueue();
                 _session.BeginPvp();
@@ -377,7 +409,6 @@ namespace App.UI
                 Toast.Error(GameApi.Describe(ex));
                 await _pvp.StopAsync();
                 _session.EndPvp();
-                await _navigation.EnsureShown();
             }
             catch (Exception ex)
             {
@@ -385,7 +416,6 @@ namespace App.UI
                 Toast.Error("匹配失败");
                 await _pvp.StopAsync();
                 _session.EndPvp();
-                await _navigation.EnsureShown();
             }
             finally
             {

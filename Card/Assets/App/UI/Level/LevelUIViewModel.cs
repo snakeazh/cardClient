@@ -31,7 +31,6 @@ namespace App.UI
         public const string LockedText = "???";
 
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly GameSession _session;
         private readonly GameTableViewModel _tableVm;
         private readonly ILevelService _levels;
@@ -46,7 +45,6 @@ namespace App.UI
 
         public LevelUIViewModel(
             IUIManager ui,
-            NavigationViewModel navigation,
             GameSession session,
             GameTableViewModel tableVm,
             ILevelService levels,
@@ -57,7 +55,6 @@ namespace App.UI
             IResourceService resources)
         {
             _ui = ui;
-            _navigation = navigation;
             _session = session;
             _tableVm = tableVm;
             _levels = levels;
@@ -439,7 +436,6 @@ namespace App.UI
             }
 
             await _ui.Close(this);
-            await _navigation.EnsureShown();
         }
 
         private async void StartGame()

@@ -25,10 +25,10 @@ using HandType = App.Game.HandType;
 namespace App.UI
 {
     /// <summary>
-    /// 对局 HUD。player1/2/3 是人物卡槽；敌人手牌在 GameHud.otherNode。
+    /// 对局 HUD。player1/2/3 是人物卡槽；PvpRoles 列出本局其他敌人；bonds 显示已持有羁绊。
     /// </summary>
     [AutoScreen(AppScreenIds.GameUI, UILayer.Page, ResResourcePaths.GameUI)]
-    public sealed class GameUIView : ViewBase<GameTableViewModel>
+    public sealed partial class GameUIView : ViewBase<GameTableViewModel>
     {
         private const float ExtraAttackTimeScale = 1.5f;
         private static readonly string[] EnemySlotKeys = { "player1", "player2", "player3" };
@@ -134,6 +134,7 @@ namespace App.UI
             BattleTrace.Log("GameUI.OnBind begin");
             BindPlayerInfo();
             BindRoundBuff();
+            BindPvpSide();
             SpawnEnemyInfos();
             BindPhaseButtons();
             BindCardInfo();
@@ -148,6 +149,7 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
+            RefreshPvpSide();
             GuideSignals.Raised += OnGuideSignal;
             var session = ViewModel?.Session;
             BattleTrace.Log(
@@ -419,6 +421,7 @@ namespace App.UI
             GuideSignals.Raised -= OnGuideSignal;
             StopPeekHold();
             HideEquipTip();
+            ReleasePvpSide();
 
             _peekGoodArmedSub?.Dispose();
             _peekGoodArmedSub = null;
@@ -528,6 +531,7 @@ namespace App.UI
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
+            RefreshPvpSide();
             TryStartOpening();
             TryPlayAttack();
             TryScheduleAiDelay();
@@ -3490,6 +3494,7 @@ namespace App.UI
                 return;
             }
 
+            HideBondsTip();
             HideWinTip();
             _equipTipAnchor = slot;
             SetEquipTipTexts(title, body);
@@ -3531,6 +3536,7 @@ namespace App.UI
             }
 
             HideWinTip();
+            HideBondsTip();
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(false);

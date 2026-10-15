@@ -63,6 +63,59 @@ namespace CardShare.Battle
             return false;
         }
 
+        /// <summary>已持有至少一件成员圣物的羁绊。未凑齐仍返回，由界面置灰。</summary>
+        public static void CollectHeld(
+            IGameTables tables,
+            IReadOnlyList<int>? ownedRelicIds,
+            List<BindingHold> into)
+        {
+            if (into == null)
+            {
+                return;
+            }
+
+            into.Clear();
+            if (tables == null || ownedRelicIds == null || ownedRelicIds.Count == 0)
+            {
+                return;
+            }
+
+            var bindings = tables.Bindings;
+            var relics = tables.Relics;
+            for (var i = 0; i < bindings.Count; i++)
+            {
+                var binding = bindings[i];
+                if (binding == null)
+                {
+                    continue;
+                }
+
+                var required = 0;
+                var owned = 0;
+                for (var r = 0; r < relics.Count; r++)
+                {
+                    var relic = relics[r];
+                    if (relic == null || !Contains(relic.BindingID, binding.Id))
+                    {
+                        continue;
+                    }
+
+                    required++;
+                    if (Owns(ownedRelicIds, relic.Id))
+                    {
+                        owned++;
+                    }
+                }
+
+                if (required <= 0 || owned <= 0)
+                {
+                    continue;
+                }
+
+                into.Add(new BindingHold(binding, owned, required));
+            }
+        }
+
         public static void ForEachComplete(
             IGameTables tables,
             IReadOnlyList<int>? ownedRelicIds,
@@ -377,6 +430,24 @@ namespace CardShare.Battle
             }
 
             return binding.Value[index];
+        }
+
+        public readonly struct BindingHold
+        {
+            public BindingHold(BindingConfig binding, int owned, int required)
+            {
+                Binding = binding;
+                Owned = owned;
+                Required = required;
+            }
+
+            public BindingConfig Binding { get; }
+
+            public int Owned { get; }
+
+            public int Required { get; }
+
+            public bool Complete => Required > 0 && Owned >= Required;
         }
 
         private static bool Owns(IReadOnlyList<int>? ownedRelicIds, int relicId)

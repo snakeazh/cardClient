@@ -246,7 +246,7 @@ namespace App.UI.Popup
             }
         }
 
-        /// <summary>向 UiCardPool 租用 ItemCard 槽位（装饰幂等：缩放固定 1、关阴影动画、清旧订阅再订阅点击），
+        /// <summary>向 UiCardPool 租用 ItemCard 槽位（装饰幂等：缩放固定 0.9、关阴影动画、清旧订阅再订阅点击），
         /// 数据绑定走 BindCardSlot；视图关闭时槽位回收进池复用。</summary>
         private Component CreateCardSlot(Transform parent)
         {
@@ -258,8 +258,8 @@ namespace App.UI.Popup
 
             var go = card.gameObject;
             go.name = "Talent_" + go.GetInstanceID();
-            // 池内卡可能带上一任视图的残留缩放（图鉴页租用后设 0.9），天赋页卡片固定 1
-            go.transform.localScale = Vector3.one;
+            // 池化复用：上一任视图可能改过缩放，天赋页每次租用都设回 0.9
+            go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
             {

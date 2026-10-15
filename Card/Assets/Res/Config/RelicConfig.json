@@ -11,6 +11,7 @@
       10001
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -30,6 +31,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -49,6 +51,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -68,6 +71,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -87,6 +91,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -106,6 +111,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -125,6 +131,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -144,6 +151,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -163,6 +171,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -182,6 +191,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -201,6 +211,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -220,6 +231,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -239,6 +251,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -258,6 +271,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -277,6 +291,7 @@
     "BindingID": [
       103
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -294,6 +309,7 @@
       10016
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -311,6 +327,7 @@
       10017
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -328,6 +345,7 @@
       10018
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -345,6 +363,7 @@
       10019
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -364,6 +383,7 @@
     "BindingID": [
       109
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -381,6 +401,7 @@
       10021
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -398,6 +419,7 @@
       10022
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -415,6 +437,7 @@
       10023
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -432,6 +455,7 @@
       10024
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -449,6 +473,7 @@
       10025
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -466,6 +491,7 @@
       10026
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -483,6 +509,7 @@
       10027
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -500,6 +527,7 @@
       10028
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -519,6 +547,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -538,6 +567,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -557,6 +587,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -576,6 +607,7 @@
     "BindingID": [
       102
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -593,6 +625,7 @@
       20005
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -610,6 +643,7 @@
       20006
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -627,6 +661,7 @@
       20007
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -644,6 +679,7 @@
       20008
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -661,6 +697,7 @@
       20009
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -681,6 +718,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -698,6 +736,7 @@
       20011
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -717,6 +756,7 @@
     "BindingID": [
       105
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -737,6 +777,7 @@
       105,
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -754,6 +795,7 @@
       20014
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -771,6 +813,7 @@
       20015
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -788,6 +831,7 @@
       20016
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -807,6 +851,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -826,6 +871,7 @@
     "BindingID": [
       109
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -843,6 +889,7 @@
       20019
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -862,6 +909,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -881,6 +929,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -898,6 +947,7 @@
       20022
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -915,6 +965,7 @@
       20023
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10301,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -934,6 +985,7 @@
     "BindingID": [
       109
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -953,6 +1005,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -970,6 +1023,7 @@
       20026
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -987,6 +1041,7 @@
       20027
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1004,6 +1059,7 @@
       20028
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1023,6 +1079,7 @@
     "BindingID": [
       108
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1040,6 +1097,7 @@
       20030
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1057,6 +1115,7 @@
       20031
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1074,6 +1133,7 @@
       20032
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1093,6 +1153,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1112,6 +1173,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1131,6 +1193,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1149,6 +1212,7 @@
       20037
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1166,6 +1230,7 @@
       20038
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1183,6 +1248,7 @@
       20039
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1200,6 +1266,7 @@
       20040
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1217,6 +1284,7 @@
       20041
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1234,6 +1302,7 @@
       20042
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1251,6 +1320,7 @@
       20043
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1268,6 +1338,7 @@
       20044
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1285,6 +1356,7 @@
       20045
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1302,6 +1374,7 @@
       20046
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1319,6 +1392,7 @@
       20047
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1336,6 +1410,7 @@
       20048
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1353,6 +1428,7 @@
       20049
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1370,6 +1446,7 @@
       20050
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1389,6 +1466,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10401,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1408,6 +1486,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1425,6 +1504,7 @@
       30003
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10501,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1442,6 +1522,7 @@
       30004
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10601,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1459,6 +1540,7 @@
       30005
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10701,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1476,6 +1558,7 @@
       30007
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1495,6 +1578,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1514,6 +1598,7 @@
     "BindingID": [
       104
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1533,6 +1618,7 @@
     "BindingID": [
       105
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1552,6 +1638,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1569,6 +1656,7 @@
       30012
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1588,6 +1676,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1605,6 +1694,7 @@
       30014
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1622,6 +1712,7 @@
       30015
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1639,6 +1730,7 @@
       30016
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1656,6 +1748,7 @@
       30017
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10201,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1673,6 +1766,7 @@
       30018
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10701,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1690,6 +1784,7 @@
       30019
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 10402,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1709,6 +1804,7 @@
     "BindingID": [
       109
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1728,6 +1824,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1745,6 +1842,7 @@
       30022
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1762,6 +1860,7 @@
       30023
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1779,6 +1878,7 @@
       30024
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1796,6 +1896,7 @@
       30025
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 10502,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1813,6 +1914,7 @@
       30026
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1830,6 +1932,7 @@
       30027
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 10801,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1847,6 +1950,7 @@
       30028
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1864,6 +1968,7 @@
       30031
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1881,6 +1986,7 @@
       30032
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10905,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1898,6 +2004,7 @@
       40025
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1915,6 +2022,7 @@
       30033
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1932,6 +2040,7 @@
       30034
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1951,6 +2060,7 @@
     "BindingID": [
       106
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1970,6 +2080,7 @@
     "BindingID": [
       105
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1989,6 +2100,7 @@
     "BindingID": [
       105
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2006,6 +2118,7 @@
       30038
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2023,6 +2136,7 @@
       30039
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2040,6 +2154,7 @@
       30040
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2057,6 +2172,7 @@
       30041
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2075,6 +2191,7 @@
       30043
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2093,6 +2210,7 @@
       30045
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2110,6 +2228,7 @@
       30046
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2127,6 +2246,7 @@
       30047
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2144,6 +2264,7 @@
       30048
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2161,6 +2282,7 @@
       30049
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2178,6 +2300,7 @@
       30050
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2195,6 +2318,7 @@
       30051
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2212,6 +2336,7 @@
       30052
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2229,6 +2354,7 @@
       30053
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2246,6 +2372,7 @@
       30054
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2263,6 +2390,7 @@
       30055
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2282,6 +2410,7 @@
     "BindingID": [
       101
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10901,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2299,6 +2428,7 @@
       40002
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2316,6 +2446,7 @@
       40003
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2333,6 +2464,7 @@
       40004
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 10902,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2350,6 +2482,7 @@
       40005
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2367,6 +2500,7 @@
       40006
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2384,6 +2518,7 @@
       40007
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10903,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2403,6 +2538,7 @@
     "BindingID": [
       105
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2421,6 +2557,7 @@
       400091
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2438,6 +2575,7 @@
       40010
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2455,6 +2593,7 @@
       40011
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10904,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2473,6 +2612,7 @@
       400121
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2490,6 +2630,7 @@
       40013
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10602,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2509,6 +2650,7 @@
       400142
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2527,6 +2669,7 @@
       400151
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2544,6 +2687,7 @@
       40016
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 10101,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2561,6 +2705,7 @@
       40017
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2578,6 +2723,7 @@
       40018
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 11091,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2595,6 +2741,7 @@
       40019
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2612,6 +2759,7 @@
       40021
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2632,6 +2780,7 @@
     "BindingID": [
       103
     ],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 11201,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2649,6 +2798,7 @@
       40023
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 11301,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2668,6 +2818,7 @@
     "BindingID": [
       107
     ],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 11401,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2685,6 +2836,7 @@
       40026
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 11501,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2702,6 +2854,7 @@
       40027
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2719,6 +2872,7 @@
       40028
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2736,6 +2890,7 @@
       40029
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 2,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2753,6 +2908,7 @@
       40030
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 11601,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2770,6 +2926,7 @@
       40031
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2787,6 +2944,7 @@
       30029
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2804,6 +2962,7 @@
       30030
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2821,6 +2980,7 @@
       30006
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2838,6 +2998,7 @@
       40032
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2855,6 +3016,7 @@
       40033
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2872,6 +3034,7 @@
       40034
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2889,6 +3052,7 @@
       40035
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2906,6 +3070,7 @@
       40036
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2923,6 +3088,7 @@
       40037
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2940,6 +3106,7 @@
       40038
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2957,6 +3124,7 @@
       40039
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2974,6 +3142,7 @@
       40040
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2991,6 +3160,7 @@
       40041
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -3008,6 +3178,7 @@
       40042
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -3025,6 +3196,7 @@
       40043
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -3042,6 +3214,7 @@
       40044
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -3059,6 +3232,7 @@
       40045
     ],
     "BindingID": [],
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",

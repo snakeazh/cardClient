@@ -396,6 +396,8 @@ namespace App.Game
         public readonly List<int> RelicConfigIds = new List<int>();
         /// <summary>与 <see cref="RelicConfigIds"/> 对齐的份数倍数。空或越界按 1。</summary>
         public readonly List<int> RelicPowers = new List<int>();
+        /// <summary>PVE 本局看广告解锁的圣物槽数，计入 <see cref="GameSession.RelicCarryMax"/>。本局有效。</summary>
+        public int BoughtRelicSlots;
         /// <summary>当前商店货架上的 RelicConfig Id。</summary>
         public readonly List<int> ShopOfferIds = new List<int>();
         /// <summary>本店已付费刷新次数。下次费用 = ShopRefreshFirst + min(次数, ShopRefreshGoldUpNumMax) × ShopRefreshAfter。</summary>

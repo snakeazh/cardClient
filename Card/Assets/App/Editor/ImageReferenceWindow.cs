@@ -474,18 +474,17 @@ namespace App.Editor
             // 预览必须用源文件原始像素：导入管线对小图有 DXT/BC 块压缩，"发虚"的根源就在这
             ReleasePreview();
             _detailPreview = LoadPreviewTexture(info.Path, out _previewIsRuntime);
-            _detailIcon.image = _detailPreview;
+            if (info.Icon == null)
+                info.Icon = AssetDatabase.GetCachedIcon(info.Path);
+            // 只能用源文件解码的原始像素显示；GetCachedIcon 是 32px 级小图标，拉大必糊，仅解码失败时兜底
+            _detailIcon.image = _detailPreview != null ? (Texture)_detailPreview : info.Icon;
             // 显示区跟随源图尺寸：小图 1:1 最锐利，大图封顶 256
             _detailIcon.style.width = _detailPreview != null ? Math.Min(_detailPreview.width, 256) : 128;
             _detailIcon.style.height = _detailPreview != null ? Math.Min(_detailPreview.height, 256) : 128;
             _detailPath.text = _detailPreview != null
                 ? $"{info.Path}（源图 {_detailPreview.width}x{_detailPreview.height}）"
                 : info.Path;
-            if (info.Icon == null)
-                info.Icon = AssetDatabase.GetCachedIcon(info.Path);
-            _detailIcon.image = info.Icon;
             _detailName.text = info.Name;
-            _detailPath.text = info.Path;
             if (info.Referencers.Count == 0)
             {
                 _detailCount.text = "未被任何资源引用";

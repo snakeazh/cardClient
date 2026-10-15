@@ -18,8 +18,8 @@ using UnityEngine.UI;
 namespace App.UI.Popup
 {
     /// <summary>
-    /// 图鉴弹窗。CollectToggle / RelicToggle / MonsterToggle 切换页签；
-    /// 收藏页 CollectSCView 已删除（切到收藏页为空页），遗物/怪物页各一份 ScrollRect。
+    /// 图鉴弹窗。RelicToggle / MonsterToggle 切换页签（收藏页签 CollectToggle 已从预制体删除）；
+    /// 遗物/怪物页各一份 ScrollRect。
     /// 收藏/遗物两页用 Item(ItemCard)，怪物页用 PlayerItem（卡面带攻击/血量块）。
     /// </summary>
     [AutoScreen(AppScreenIds.IllustratedBookPop, UILayer.Page, ResResourcePaths.IllustratedBookPop)]
@@ -78,19 +78,19 @@ namespace App.UI.Popup
         protected override void OnBind()
         {
             _canvas = GetComponentInParent<Canvas>();
-            // 新预制体已删 CloseBtn 节点（关闭走底栏导航页签）；旧预制体仍带按钮时保持绑定。
+            // BackBtn 的 UIBind 目标不一定是 Button（当前存的是 CanvasRenderer），从节点再取按钮。
+            var backBtn = UI.GetGameObject("BackBtn").GetComponent<Button>();
+            Binding.BindCommand(backBtn, ViewModel.CloseCommand);
             if (UI.TryGet<Button>("CloseBtn", out var closeBtn))
             {
                 Binding.BindCommand(closeBtn, ViewModel.CloseCommand);
             }
 
             Binding.BindText(UI.Get<TMP_Text>("CurItemNum"), ViewModel.CurItemNum);
-            // CollectSCView 节点已从预制体删除（收藏页签保留但无滚动区）
             Binding.BindActive(UI.GetGameObject("RelicSCView"), ViewModel.ShowRelic);
             Binding.BindActive(UI.GetGameObject("MonsterSCView"), ViewModel.ShowMonster);
             // 怪物页隐藏界面顶部标题横幅（分区横幅自带标题，UIReference 键由编辑器注册）
             Binding.BindActive(UI.GetGameObject("TitleBg"), ViewModel.ShowTitleBar);
-            BindTab(UI.Get<Toggle>("CollectToggle"), ViewModel.CollectOn, IllustratedBookTab.Collect);
             BindTab(UI.Get<Toggle>("RelicToggle"), ViewModel.RelicOn, IllustratedBookTab.Relic);
             BindTab(UI.Get<Toggle>("MonsterToggle"), ViewModel.MonsterOn, IllustratedBookTab.Monster);
             // 打开只构建当前页（默认遗物），避免一帧克隆三页全部卡片造成卡顿

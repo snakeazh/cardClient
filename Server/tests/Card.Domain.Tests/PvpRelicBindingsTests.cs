@@ -23,6 +23,18 @@ public class PvpRelicBindingsTests
                 new BindingConfig { Id = 111, Type = BindingType.DisableSkill, Value = new[] { 1f, 1f } }
             });
 
+        var held = new List<PvpRelicBindings.BindingHold>();
+        PvpRelicBindings.CollectHeld(tables, new[] { 1 }, held);
+        Assert.Single(held);
+        Assert.Equal(110, held[0].Binding.Id);
+        Assert.False(held[0].Complete);
+        Assert.Equal(1, held[0].Owned);
+        Assert.Equal(2, held[0].Required);
+        PvpRelicBindings.CollectHeld(tables, new[] { 1, 2 }, held);
+        Assert.True(held[0].Complete);
+        PvpRelicBindings.CollectHeld(tables, Array.Empty<int>(), held);
+        Assert.Empty(held);
+
         Assert.False(PvpRelicBindings.IsComplete(tables, new[] { 1 }, 110));
         Assert.True(PvpRelicBindings.IsComplete(tables, new[] { 1, 2 }, 110));
         Assert.False(PvpRelicBindings.IsComplete(tables, new[] { 1, 2 }, 111));

@@ -9,6 +9,14 @@ using UnityEngine.UI;
 
 namespace App.Game
 {
+    /// <summary>格子形态：正常卡 / 空槽位 / 购买槽位。</summary>
+    public enum ShopItemState
+    {
+        Normal,
+        Empty,
+        BuySlot
+    }
+
     /// <summary>
     /// 商店货架单卡。节点在预制体上直接挂到序列化字段，展示由 <see cref="Bind"/> 写入，点击通过 <see cref="Clicked"/> 抛出。
     /// </summary>
@@ -28,8 +36,13 @@ namespace App.Game
         [SerializeField] private Image gold;
         [SerializeField] private Button button;
         [SerializeField] private Animator animator;
+        [SerializeField] private GameObject normalRoot;
+        [SerializeField] private GameObject emptyRoot;
+        [SerializeField] private GameObject buySlotRoot;
 
         public ShopItemDef Data { get; private set; }
+
+        public ShopItemState State { get; private set; } = ShopItemState.Normal;
 
         public int RelicConfigId => Data != null ? Data.RelicConfigId : 0;
 
@@ -43,9 +56,13 @@ namespace App.Game
         private ItemCard _innerCard;
         private Color _priceColor = Color.black;
         private bool _priceColorCached;
+        private Color _buySlotPriceColor = Color.black;
+        private bool _buySlotPriceColorCached;
 
         public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null, bool affordable = true, int level = 1, int count = 0)
         {
+            // 池化格子上一轮可能是 Empty/BuySlot 态，绑定数据即回到正常卡形态。
+            SetState(ShopItemState.Normal);
             Data = def;
             SetName(def != null ? def.Name : string.Empty);
             SetIcon(icon);
@@ -158,6 +175,80 @@ namespace App.Game
 
             gold.sprite = goldSprite;
             gold.enabled = true;
+        }
+
+        /// <summary>
+        /// 三态互斥显隐：Normal = 正常卡（Item 子树），Empty = 空槽位，BuySlot = 购买槽位。
+        /// 非 Normal 态清掉 Data，避免池化格子的残留配置被当成可点击圣物。
+        /// </summary>
+        public void SetState(ShopItemState state)
+        {
+            EnsureStateRoots();
+            State = state;
+            if (state != ShopItemState.Normal)
+            {
+                Data = null;
+            }
+
+            if (normalRoot != null)
+            {
+                normalRoot.SetActive(state == ShopItemState.Normal);
+            }
+
+            if (emptyRoot != null)
+            {
+                emptyRoot.SetActive(state == ShopItemState.Empty);
+            }
+
+            if (buySlotRoot != null)
+            {
+                buySlotRoot.SetActive(state == ShopItemState.BuySlot);
+            }
+        }
+
+        /// <summary>
+        /// 买槽格内容。PVP 显示金币价格（Price 子树，买不起变红）；PVE 看广告解锁时切到 AD 图。
+        /// BuySlot 子树内自带 priceValue，与正常卡的 priceValue 同名，须限定子树查找。
+        /// </summary>
+        public void SetBuySlotContent(int price, bool affordable, bool showPrice)
+        {
+            EnsureStateRoots();
+            if (buySlotRoot == null)
+            {
+                return;
+            }
+
+            var ad = FindNamedUnder<Transform>(buySlotRoot.transform, "AD");
+            if (ad != null)
+            {
+                ad.gameObject.SetActive(!showPrice);
+            }
+
+            var priceRoot = FindNamedUnder<Transform>(buySlotRoot.transform, "Price");
+            if (priceRoot != null)
+            {
+                priceRoot.gameObject.SetActive(showPrice);
+            }
+
+            if (!showPrice)
+            {
+                return;
+            }
+
+            var priceText = FindNamedUnder<TMP_Text>(buySlotRoot.transform, "priceValue");
+            if (priceText == null)
+            {
+                return;
+            }
+
+            if (!_buySlotPriceColorCached)
+            {
+                _buySlotPriceColor = priceText.color;
+                _buySlotPriceColorCached = true;
+            }
+
+            priceText.text = Mathf.Max(0, price).ToString();
+            priceText.color = affordable ? _buySlotPriceColor : ThemeColors.ShopPriceUnaffordable;
         }
 
         /// <summary>
@@ -357,7 +448,10 @@ namespace App.Game
                 return;
             }
 
-            goldNum = FindNamed<TMP_Text>("priceValue") ?? FindNamed<TMP_Text>("goldNum");
+            // BuySlot 子树里也有同名 priceValue，须限定在正常卡（Item）子树内查找。
+            EnsureStateRoots();
+            var normal = normalRoot != null ? normalRoot.transform : null;
+            goldNum = FindNamedUnder<TMP_Text>(normal, "priceValue") ?? FindNamedUnder<TMP_Text>(normal, "goldNum");
         }
 
         private void EnsureAnimator()
@@ -391,6 +485,52 @@ namespace App.Game
                 if (nodes[i].name == nodeName)
                 {
                     return nodes[i].GetComponent<T>();
+                }
+            }
+
+            return null;
+        }
+
+        private void EnsureStateRoots()
+        {
+            if (normalRoot == null)
+            {
+                var node = FindNamed<Transform>("Item");
+                normalRoot = node != null ? node.gameObject : null;
+            }
+
+            if (emptyRoot == null)
+            {
+                var node = FindNamed<Transform>("IsEmpty");
+                emptyRoot = node != null ? node.gameObject : null;
+            }
+
+            if (buySlotRoot == null)
+            {
+                var node = FindNamed<Transform>("BuySlot");
+                buySlotRoot = node != null ? node.gameObject : null;
+            }
+        }
+
+        /// <summary>限定 root 子树内按名查找，避免与其它子树的同名节点（如正常卡与 BuySlot 各有 priceValue）混淆。</summary>
+        private static T FindNamedUnder<T>(Transform root, string nodeName) where T : Component
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == nodeName)
+            {
+                return root.GetComponent<T>();
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = FindNamedUnder<T>(root.GetChild(i), nodeName);
+                if (found != null)
+                {
+                    return found;
                 }
             }
 
@@ -463,6 +603,24 @@ namespace App.Game
             if (animator == null)
             {
                 animator = FindNamed<Animator>("ShopRoot");
+            }
+
+            if (normalRoot == null)
+            {
+                var node = FindNamed<Transform>("Item");
+                normalRoot = node != null ? node.gameObject : null;
+            }
+
+            if (emptyRoot == null)
+            {
+                var node = FindNamed<Transform>("IsEmpty");
+                emptyRoot = node != null ? node.gameObject : null;
+            }
+
+            if (buySlotRoot == null)
+            {
+                var node = FindNamed<Transform>("BuySlot");
+                buySlotRoot = node != null ? node.gameObject : null;
             }
         }
 #endif

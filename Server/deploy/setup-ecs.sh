@@ -69,6 +69,11 @@ if ! swapon --show | grep -q .; then
     grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
 
+echo "==> journald 日志上限 500M（防撑盘）"
+sed -i -E 's/^#?SystemMaxUse=.*/SystemMaxUse=500M/' /etc/systemd/journald.conf
+grep -q '^SystemMaxUse=' /etc/systemd/journald.conf || echo 'SystemMaxUse=500M' >> /etc/systemd/journald.conf
+systemctl restart systemd-journald
+
 echo "==> 部署目录"
 mkdir -p ${APP_DIR}/app ${APP_DIR}/Config
 

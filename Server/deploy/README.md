@@ -104,5 +104,5 @@ curl http://127.0.0.1:5254/v1/health
   `0 4 * * * sudo -u postgres pg_dump card | gzip > /data/backup/card-$(date +\%F).sql.gz`，
   并定期拷到 OSS。Redis 里只有 token/锁/PVP 队列，丢了最多玩家重新登录，可不备。
 - **配表更新**：改 xlsx 后先跑 `Config/一键导出.bat` 更新 `Card/Assets/Res/Config`，再跑 `deploy.sh`。
-- **日志磁盘**：journald 默认有上限，长期运行建议在 `/etc/systemd/journald.conf` 设 `SystemMaxUse=500M`。
+- **日志磁盘**：setup 脚本已把 journald 上限设为 500M（`/etc/systemd/journald.conf` 的 `SystemMaxUse`）。
 - 后续量上来要拆库：PG/Redis 换 RDS/云 Redis，只改 `appsettings.Production.json` 两个连接串。

@@ -2524,15 +2524,31 @@ namespace App.Game
             : (Run.FreeShopRefreshLeft > 0 ? 0 : ShopRefreshCost);
 
         /// <summary>
-        /// 可携带圣物上限：PVE 为 <see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax。
-        /// PVP 为已解锁槽位，以服务端快照为准；快照未到时用 GameConst.PVPRelicInitialRelicNum。
+        /// 可携带圣物上限：PVE 为 <see cref="GameBalance.MaxRelics"/> + 天赋 RelicNumMax + 本局看广告解锁的槽
+        /// （<see cref="RunState.BoughtRelicSlots"/>）。PVP 为已解锁槽位，以服务端快照为准；
+        /// 快照未到时用 GameConst.PVPRelicInitialRelicNum。
         /// </summary>
         public int RelicCarryMax => IsPvp
             ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : CardShare.Battle.PvpRelicBag.InitialSlots(GameConst.IsLoaded ? GameConst.Instance : null))
-            : GameBalance.MaxRelics + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax));
+            : GameBalance.MaxRelics
+              + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax))
+              + Run.BoughtRelicSlots;
 
         /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>
         public int PvpNextRelicSlotCost => IsPvp ? _pvpNextSlotCost : 0;
+
+        /// <summary>PVE 还能看广告解锁的圣物槽数。上限与 PVP 一致（解锁曲线长度），天赋槽不占预算。</summary>
+        public int PveRelicSlotUnlockLeft
+        {
+            get
+            {
+                var curve = CardShare.Battle.PvpRelicBag.SlotGold(GameConst.IsLoaded ? GameConst.Instance : null);
+                return Math.Max(0, curve.Length - Run.BoughtRelicSlots);
+            }
+        }
+
+        /// <summary>商店里是否还有可解锁的圣物槽（PVP 看服务端快照价格，PVE 看本地剩余次数）。</summary>
+        public bool CanUnlockRelicSlot => IsPvp ? _pvpNextSlotCost > 0 : PveRelicSlotUnlockLeft > 0;
 
         public int EffectiveSellPrice(int relicId)
         {
@@ -2662,6 +2678,27 @@ namespace App.Game
                 Toast.Error(GameApi.Describe(ex));
                 return false;
             }
+        }
+
+        /// <summary>PVE 看广告解锁 1 个圣物槽（广告当前为模拟发放）。本局有效。</summary>
+        public bool WatchAdUnlockRelicSlot()
+        {
+            if (IsPvp || Phase != GamePhase.Shop || PveRelicSlotUnlockLeft <= 0)
+            {
+                return false;
+            }
+
+            Run.BoughtRelicSlots++;
+            Log($"观看广告，圣物槽 +1（当前 {RelicCarryMax}）");
+            Hint = $"已解锁第 {RelicCarryMax} 个圣物槽";
+            Notify();
+            return true;
+        }
+
+        /// <summary>解锁下一圣物槽：PVP 花金币（服务端权威），PVE 看广告（本局）。</summary>
+        public async Task<bool> TryUnlockRelicSlotAsync()
+        {
+            return IsPvp ? await TryUnlockPvpRelicSlotAsync() : WatchAdUnlockRelicSlot();
         }
 
         public bool CanRefreshShop =>

@@ -3205,7 +3205,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
   _popupAnim: {fileID: 3854314251039412974}
-  BgBottomEdge: 50
+  BgBottomEdge: -40
 --- !u!1 &6476188837855457230
 GameObject:
   m_ObjectHideFlags: 0

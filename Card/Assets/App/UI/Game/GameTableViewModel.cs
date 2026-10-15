@@ -182,6 +182,11 @@ namespace App.UI
         public ILevelProgressService Progress { get; }
         public IAtlasService Atlas { get; }
 
+        public PvpMatchStateDto PvpState => _pvp != null ? _pvp.State : null;
+
+        public string PvpUserId =>
+            GameApi.Client != null ? GameApi.Client.UserId ?? string.Empty : string.Empty;
+
         public ObservableProperty<string> Title { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> Hint { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> GoldText { get; } = new ObservableProperty<string>();

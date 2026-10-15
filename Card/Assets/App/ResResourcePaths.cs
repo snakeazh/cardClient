@@ -36,6 +36,7 @@ namespace App.Resources
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
+        public const string BondsTip = "UI/Top/BondsTip";
         public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";
         /// <summary>对局桌面背景 Assets/Res/Textures/Background/BigBackgroundBaseFrame.png。</summary>
@@ -175,6 +176,12 @@ namespace App.Resources
         /// <summary>
         /// <see cref="CardShare.Contracts.Config.GameConst.GoldIcon"/> 等对应 Assets/Res/Textures/Common 下的文件名（无扩展名）。
         /// </summary>
+        /// <summary>羁绊图标 Assets/Res/Textures/Battle/{name}.png，未成型用同名 Gray。</summary>
+        public static string BattleIcon(string name)
+        {
+            return string.IsNullOrEmpty(name) ? null : "Textures/Battle/" + name;
+        }
+
         public static string CommonIcon(string icon)
         {
             return ComposeIcon("Textures/Common", icon, null);

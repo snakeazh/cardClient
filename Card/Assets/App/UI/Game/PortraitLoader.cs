@@ -93,6 +93,32 @@ namespace App.UI
             return true;
         }
 
+        /// <summary>补齐一组英雄立绘的 _damage / _dead。怪物走图集，不用这里。</summary>
+        public static async Task EnsureRoleStatesAsync(IReadOnlyList<string> icons)
+        {
+            if (_resources == null || icons == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < icons.Count; i++)
+            {
+                var icon = icons[i];
+                if (string.IsNullOrWhiteSpace(icon))
+                {
+                    continue;
+                }
+
+                icon = icon.Trim();
+                if (HasHurtStates(false, icon))
+                {
+                    continue;
+                }
+
+                await LoadHurtSet(_resources, false, icon);
+            }
+        }
+
         /// <summary>退局时释放本局补载的英雄 _damage/_dead 立绘（_attack 常驻；怪物图集不释放）。重复调用安全。</summary>
         public static void ReleaseBattleStates()
         {

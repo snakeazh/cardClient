@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _normalSprite: {fileID: 21300000, guid: 8d95ab81c02806e40a1c0433f8ba77b0, type: 3}
-  _bossSprite: {fileID: 21300000, guid: 5f6362068bafb81438938ccf40bd3653, type: 3} 
+  _bossSprite: {fileID: 21300000, guid: 5f6362068bafb81438938ccf40bd3653, type: 3}
 --- !u!1 &402726913153524587
 GameObject:
   m_ObjectHideFlags: 0

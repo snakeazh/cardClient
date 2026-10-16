@@ -23,7 +23,6 @@ namespace App.UI
         private const float SuccessHoldSeconds = 1f;
 
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly GameSession _session;
         private readonly GameTableViewModel _table;
         private readonly PvpMatchSession _pvp;
@@ -41,7 +40,6 @@ namespace App.UI
 
         public PvpPageViewModel(
             IUIManager ui,
-            NavigationViewModel navigation,
             GameSession session,
             GameTableViewModel table,
             PvpMatchSession pvp,
@@ -49,7 +47,6 @@ namespace App.UI
             MainResourceViewModel mainResource)
         {
             _ui = ui;
-            _navigation = navigation;
             _session = session;
             _table = table;
             _pvp = pvp ?? throw new ArgumentNullException(nameof(pvp));
@@ -146,7 +143,6 @@ namespace App.UI
             if (!_entered && !_introStarted)
             {
                 _mainResource.ShowBar();
-                await _navigation.EnsureShown();
             }
         }
 

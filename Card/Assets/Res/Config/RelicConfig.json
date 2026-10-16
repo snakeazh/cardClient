@@ -10,7 +10,9 @@
     "MechanismId": [
       10001
     ],
-    "BindingID": [],
+    "BindingID": [
+      102
+    ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -28,9 +30,7 @@
     "MechanismId": [
       10002
     ],
-    "BindingID": [
-      101
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -48,9 +48,7 @@
     "MechanismId": [
       10003
     ],
-    "BindingID": [
-      101
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -68,9 +66,7 @@
     "MechanismId": [
       10004
     ],
-    "BindingID": [
-      101
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -88,9 +84,7 @@
     "MechanismId": [
       10005
     ],
-    "BindingID": [
-      101
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -298,7 +292,9 @@
     "MechanismId": [
       10016
     ],
-    "BindingID": [],
+    "BindingID": [
+      101
+    ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -408,9 +404,7 @@
     "MechanismId": [
       20001
     ],
-    "BindingID": [
-      102
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -428,9 +422,7 @@
     "MechanismId": [
       20002
     ],
-    "BindingID": [
-      102
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -448,9 +440,7 @@
     "MechanismId": [
       20003
     ],
-    "BindingID": [
-      102
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -468,9 +458,7 @@
     "MechanismId": [
       20004
     ],
-    "BindingID": [
-      102
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -600,7 +588,7 @@
       20011
     ],
     "BindingID": [
-      112
+      106
     ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
@@ -775,9 +763,7 @@
     "MechanismId": [
       20020
     ],
-    "BindingID": [
-      108
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -871,10 +857,7 @@
     "MechanismId": [
       20025
     ],
-    "BindingID": [
-      107,
-      108
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1139,9 +1122,7 @@
     "MechanismId": [
       30002
     ],
-    "BindingID": [
-      104
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1159,7 +1140,9 @@
     "MechanismId": [
       30003
     ],
-    "BindingID": [],
+    "BindingID": [
+      111
+    ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 10501,
     "UseType": 0,
@@ -1217,7 +1200,9 @@
     "MechanismId": [
       30007
     ],
-    "BindingID": [],
+    "BindingID": [
+      111
+    ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1235,9 +1220,7 @@
     "MechanismId": [
       30008
     ],
-    "BindingID": [
-      104
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1255,9 +1238,7 @@
     "MechanismId": [
       30009
     ],
-    "BindingID": [
-      104
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1333,9 +1314,7 @@
     "MechanismId": [
       30013
     ],
-    "BindingID": [
-      112
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1353,9 +1332,7 @@
     "MechanismId": [
       30014
     ],
-    "BindingID": [
-      107
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1647,7 +1624,9 @@
     "MechanismId": [
       30032
     ],
-    "BindingID": [],
+    "BindingID": [
+      111
+    ],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 10905,
     "UseType": 0,
@@ -1737,9 +1716,7 @@
     "MechanismId": [
       30036
     ],
-    "BindingID": [
-      105
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1757,9 +1734,7 @@
     "MechanismId": [
       30037
     ],
-    "BindingID": [
-      105
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1851,9 +1826,7 @@
     "MechanismId": [
       40002
     ],
-    "BindingID": [
-      108
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1907,9 +1880,7 @@
     "MechanismId": [
       40005
     ],
-    "BindingID": [
-      110
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -1945,9 +1916,7 @@
     "MechanismId": [
       40007
     ],
-    "BindingID": [
-      111
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 10903,
     "UseType": 0,
@@ -1965,9 +1934,7 @@
     "MechanismId": [
       40008
     ],
-    "BindingID": [
-      105
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2041,9 +2008,7 @@
       40012,
       400121
     ],
-    "BindingID": [
-      111
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2102,10 +2067,7 @@
       40015,
       400151
     ],
-    "BindingID": [
-      108,
-      109
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2141,9 +2103,7 @@
     "MechanismId": [
       40017
     ],
-    "BindingID": [
-      109
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2219,7 +2179,7 @@
     "BindingID": [
       103
     ],
-    "PVPDoNotAppear": 1,
+    "PVPDoNotAppear": 0,
     "UnlockConditionId": 11201,
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -2254,9 +2214,7 @@
     "MechanismId": [
       40024
     ],
-    "BindingID": [
-      112
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 11401,
     "UseType": 0,
@@ -2346,9 +2304,7 @@
     "MechanismId": [
       40030
     ],
-    "BindingID": [
-      106
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 11601,
     "UseType": 0,
@@ -2366,9 +2322,7 @@
     "MechanismId": [
       40031
     ],
-    "BindingID": [
-      111
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2494,9 +2448,7 @@
     "MechanismId": [
       40035
     ],
-    "BindingID": [
-      106
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
@@ -2532,9 +2484,7 @@
     "MechanismId": [
       40037
     ],
-    "BindingID": [
-      103
-    ],
+    "BindingID": [],
     "PVPDoNotAppear": 1,
     "UnlockConditionId": 0,
     "UseType": 0,

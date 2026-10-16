@@ -2029,7 +2029,7 @@ GameObject:
   - component: {fileID: 2143725764318445247}
   - component: {fileID: 5226693232035183520}
   m_Layer: 0
-  m_Name: Text (TMP)
+  m_Name: grade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

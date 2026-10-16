@@ -22,10 +22,10 @@ namespace CardShare.Battle
 
         public int Gold { get; set; }
 
-        /// <summary>PvP 连胜。野怪轮不改、不发连胜奖励。</summary>
+        /// <summary>PvP 连胜。野怪轮也加次数，但不发连胜奖励。</summary>
         public int WinStreak { get; set; }
 
-        /// <summary>PvP 连败。野怪轮不改、不发连败奖励。</summary>
+        /// <summary>PvP 连败。野怪轮也加次数，但不发连败奖励。</summary>
         public int LoseStreak { get; set; }
 
         public bool Alive { get; set; } = true;

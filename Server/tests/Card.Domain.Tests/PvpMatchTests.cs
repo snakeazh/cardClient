@@ -628,15 +628,17 @@ public class PvpMatchTests
                 continue;
             }
 
-            // 野怪轮不改连胜，也不发连胜奖励。利息按发奖前 150。
-            Assert.Equal(4, fighter.WinStreak);
-            Assert.Equal(0, fighter.LoseStreak);
+            // 野怪轮改连胜连败次数，但不发连胜连败奖励。利息按发奖前 150。
             if (snap.Winners[0] == 0)
             {
+                Assert.Equal(5, fighter.WinStreak);
+                Assert.Equal(0, fighter.LoseStreak);
                 Assert.Equal(goldBefore[i] + 10 + 20 * (3 + 1 + 1) + 10, fighter.Gold);
             }
             else
             {
+                Assert.Equal(0, fighter.WinStreak);
+                Assert.Equal(1, fighter.LoseStreak);
                 Assert.Equal(goldBefore[i] + (10 + 20 * (3 + 1 + 1)) / 2 + 10, fighter.Gold);
             }
         }

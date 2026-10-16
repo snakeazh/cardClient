@@ -21,11 +21,13 @@ namespace App.UI
     {
         private struct PvpRoleEntry
         {
+            public string UserId;
             public string Icon;
             public bool Monster;
             public int Hp;
             public int MaxHp;
             public bool Alive;
+            public int[] RelicIds;
         }
 
         private bool _pvpSideBound;
@@ -52,6 +54,16 @@ namespace App.UI
         private GameObject _bondsTipItemTemplate;
         private readonly List<ItemCard> _bondsTipItems = new List<ItemCard>(8);
         private int _shownBondId;
+        private GameObject _streakTip;
+        private TMP_Text _streakText;
+        private GameObject _hasTip;
+        private Task _ensuringHasTip;
+        private TMP_Text _hasTipTitle;
+        private Transform _hasTipGrid;
+        private GameObject _hasTipItemTemplate;
+        private readonly List<ItemCard> _hasTipItems = new List<ItemCard>(8);
+        private readonly List<int> _hasTipRelicIds = new List<int>(8);
+        private string _shownHasUserId;
 
         private static readonly Color BondMissingTint = new Color(0.45f, 0.45f, 0.45f, 1f);
         private static readonly Color RoleHpAlive = new Color(0.31764707f, 1f, 0f, 1f);
@@ -77,6 +89,30 @@ namespace App.UI
             }
 
             _pvpSideBound = _pvpRolesRoot != null || _bondsRoot != null;
+            for (var i = 0; i < _pvpRoleSlots.Count; i++)
+            {
+                HookRoleClick(_pvpRoleSlots[i], i);
+            }
+
+            _streakTip = ResolveSlot("winTip") != null ? ResolveSlot("winTip").gameObject : null;
+            if (_streakTip == null)
+            {
+                var streak = transform.Find("winTip") ?? FindDeep(transform, "winTip");
+                _streakTip = streak != null ? streak.gameObject : null;
+            }
+
+            var streakText = ResolveSlot("winTipText");
+            _streakText = streakText != null ? streakText.GetComponent<TMP_Text>() : null;
+            if (_streakText == null && _streakTip != null)
+            {
+                var textNode = FindDeep(_streakTip.transform, "winTipText");
+                _streakText = textNode != null ? textNode.GetComponent<TMP_Text>() : null;
+            }
+
+            if (_streakTip != null)
+            {
+                _streakTip.SetActive(false);
+            }
         }
 
         private void RefreshPvpSide()
@@ -88,6 +124,7 @@ namespace App.UI
 
             RebuildPvpRoles();
             RebuildBonds();
+            ApplyStreakTip();
             var sig = PvpSideSignature();
             if (sig == _pvpSideSig)
             {
@@ -97,6 +134,7 @@ namespace App.UI
             _pvpSideSig = sig;
             ApplyPvpRoles();
             ApplyBonds();
+            RefreshOpenHasTip();
             if (_shownBondId > 0 && !BondStillHeld(_shownBondId))
             {
                 CloseBondsTipOnly();
@@ -176,14 +214,15 @@ namespace App.UI
             var enemy = session.Enemies != null && session.Enemies.Length > 0 ? session.Enemies[0] : null;
             if (enemy != null && enemy.ActiveInStage && !enemy.DisplayAsHero && !string.IsNullOrEmpty(enemy.Icon))
             {
-                _pvpRoleEntries.Add(new PvpRoleEntry
-                {
-                    Icon = enemy.Icon,
-                    Monster = true,
-                    Hp = enemy.Hp,
-                    MaxHp = enemy.MaxHp,
-                    Alive = enemy.Alive && enemy.Hp > 0
-                });
+            _pvpRoleEntries.Add(new PvpRoleEntry
+            {
+                Icon = enemy.Icon,
+                Monster = true,
+                Hp = enemy.Hp,
+                MaxHp = enemy.MaxHp,
+                Alive = enemy.Alive && enemy.Hp > 0,
+                RelicIds = Array.Empty<int>()
+            });
                 return;
             }
 
@@ -208,7 +247,8 @@ namespace App.UI
                 Monster = true,
                 Hp = hp,
                 MaxHp = hp,
-                Alive = true
+                Alive = true,
+                RelicIds = Array.Empty<int>()
             });
         }
 
@@ -216,11 +256,13 @@ namespace App.UI
         {
             _pvpRoleEntries.Add(new PvpRoleEntry
             {
+                UserId = player.UserId,
                 Icon = HeroIconOf(player.HeroId),
                 Monster = false,
                 Hp = player.Hp,
                 MaxHp = player.MaxHp,
-                Alive = player.Alive && player.Hp > 0
+                Alive = player.Alive && player.Hp > 0,
+                RelicIds = player.RelicIds ?? Array.Empty<int>()
             });
         }
 
@@ -740,6 +782,479 @@ namespace App.UI
             return _battleSprites.TryGetValue(key, out var sprite) ? sprite : null;
         }
 
+        private void HookRoleClick(Transform slot, int index)
+        {
+            if (slot == null)
+            {
+                return;
+            }
+
+            var graphic = slot.GetComponent<Graphic>();
+            if (graphic == null)
+            {
+                var image = slot.gameObject.AddComponent<Image>();
+                image.color = new Color(1f, 1f, 1f, 0.01f);
+                graphic = image;
+            }
+
+            graphic.raycastTarget = true;
+            var button = slot.GetComponent<Button>();
+            if (button == null)
+            {
+                button = slot.gameObject.AddComponent<Button>();
+            }
+
+            button.targetGraphic = graphic;
+            button.transition = Selectable.Transition.None;
+            button.onClick.RemoveAllListeners();
+            var captured = index;
+            button.onClick.AddListener(() => OnRoleClicked(captured));
+        }
+
+        private void OnRoleClicked(int index)
+        {
+            if (index < 0 || index >= _pvpRoleEntries.Count)
+            {
+                return;
+            }
+
+            var entry = _pvpRoleEntries[index];
+            if (entry.Monster || string.IsNullOrEmpty(entry.UserId))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(_shownHasUserId) &&
+                PvpMatchSession.SameUser(_shownHasUserId, entry.UserId) &&
+                _hasTip != null &&
+                _hasTip.activeSelf)
+            {
+                HideEquipTip();
+                return;
+            }
+
+            _ = ShowHasTip(index);
+        }
+
+        private void ApplyStreakTip()
+        {
+            if (_streakTip == null)
+            {
+                return;
+            }
+
+            var session = ViewModel != null ? ViewModel.Session : null;
+            var state = ViewModel != null ? ViewModel.PvpState : null;
+            PvpFighterDto self = null;
+            if (session != null && session.IsPvp && state != null && state.Players != null)
+            {
+                var selfId = ViewModel.PvpUserId;
+                for (var i = 0; i < state.Players.Length; i++)
+                {
+                    var player = state.Players[i];
+                    if (player != null && PvpMatchSession.SameUser(player.UserId, selfId))
+                    {
+                        self = player;
+                        break;
+                    }
+                }
+            }
+
+            var win = self != null ? self.WinStreak : 0;
+            var lose = self != null ? self.LoseStreak : 0;
+            if (win <= 0 && lose <= 0)
+            {
+                _streakTip.SetActive(false);
+                return;
+            }
+
+            if (_streakText != null)
+            {
+                _streakText.text = win > 0
+                    ? ChineseCount(win) + "连胜"
+                    : ChineseCount(lose) + "连败";
+            }
+
+            _streakTip.SetActive(true);
+        }
+
+        private static string ChineseCount(int value)
+        {
+            if (value <= 0)
+            {
+                return "零";
+            }
+
+            if (value >= 100)
+            {
+                return value.ToString();
+            }
+
+            var digits = new[] { "零", "一", "二", "三", "四", "五", "六", "七", "八", "九" };
+            if (value < 10)
+            {
+                return digits[value];
+            }
+
+            if (value == 10)
+            {
+                return "十";
+            }
+
+            var tens = value / 10;
+            var ones = value % 10;
+            var tenText = tens == 1 ? "十" : digits[tens] + "十";
+            return ones == 0 ? tenText : tenText + digits[ones];
+        }
+
+        private async Task ShowHasTip(int index)
+        {
+            if (index < 0 || index >= _pvpRoleEntries.Count)
+            {
+                return;
+            }
+
+            var entry = _pvpRoleEntries[index];
+            if (entry.Monster || string.IsNullOrEmpty(entry.UserId))
+            {
+                return;
+            }
+
+            await EnsureHasTip();
+            if (_hasTip == null || !_pvpSideAlive)
+            {
+                return;
+            }
+
+            index = IndexOfRole(entry.UserId);
+            if (index < 0)
+            {
+                return;
+            }
+
+            entry = _pvpRoleEntries[index];
+            var anchor = index < _pvpRoleSlots.Count ? _pvpRoleSlots[index] : _pvpRolesRoot;
+            HideEquipTip();
+            _shownHasUserId = entry.UserId;
+            FillHasTip(entry);
+            EnsureEquipTipCatcher();
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(true);
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _hasTip.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            var tipRt = _hasTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+
+            _hasTip.transform.SetAsLastSibling();
+            if (anchor != null)
+            {
+                PositionTip(_hasTip, anchor, placeRight: true);
+            }
+        }
+
+        private Task EnsureHasTip()
+        {
+            if (_hasTip != null || ViewModel == null || ViewModel.Resources == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (_ensuringHasTip == null)
+            {
+                _ensuringHasTip = LoadHasTip();
+            }
+
+            return _ensuringHasTip;
+        }
+
+        private async Task LoadHasTip()
+        {
+            try
+            {
+                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.HasTip);
+                if (prefab == null || !_pvpSideAlive || _hasTip != null)
+                {
+                    if (prefab != null && _hasTip == null)
+                    {
+                        ViewModel?.Resources?.Release(ResResourcePaths.HasTip);
+                    }
+
+                    return;
+                }
+
+                _hasTip = Instantiate(prefab, transform, false);
+                _hasTip.name = "HasTip";
+                _hasTip.SetActive(false);
+                _hasTipTitle = null;
+                var title = FindDeep(_hasTip.transform, "title");
+                _hasTipTitle = title != null ? title.GetComponent<TMP_Text>() : null;
+                if (_hasTipTitle != null)
+                {
+                    _hasTipTitle.text = "圣物列表";
+                }
+
+                _hasTipGrid = FindDeep(_hasTip.transform, "vecLayout");
+                if (_hasTipGrid != null && _hasTipGrid.childCount > 0)
+                {
+                    _hasTipItemTemplate = _hasTipGrid.GetChild(0).gameObject;
+                    _hasTipItemTemplate.SetActive(false);
+                }
+
+                if (_hudCanvas == null)
+                {
+                    _hudCanvas = GetComponentInParent<Canvas>();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.UI, "HasTip load failed: " + ex.Message);
+            }
+        }
+
+        private void RefreshOpenHasTip()
+        {
+            if (string.IsNullOrEmpty(_shownHasUserId) || _hasTip == null || !_hasTip.activeSelf)
+            {
+                return;
+            }
+
+            var index = IndexOfRole(_shownHasUserId);
+            if (index < 0)
+            {
+                CloseHasTipOnly();
+                return;
+            }
+
+            FillHasTip(_pvpRoleEntries[index]);
+        }
+
+        private void FillHasTip(PvpRoleEntry entry)
+        {
+            if (_hasTip == null || _hasTipGrid == null || _hasTipItemTemplate == null)
+            {
+                return;
+            }
+
+            var relics = entry.RelicIds ?? Array.Empty<int>();
+            _hasTipRelicIds.Clear();
+            for (var n = 0; n < relics.Length; n++)
+            {
+                _hasTipRelicIds.Add(relics[n]);
+            }
+            while (_hasTipItems.Count < relics.Length)
+            {
+                var clone = Instantiate(_hasTipItemTemplate, _hasTipGrid, false);
+                clone.name = "Item" + (_hasTipItems.Count + 1);
+                var card = clone.GetComponent<ItemCard>();
+                if (card == null)
+                {
+                    card = clone.AddComponent<ItemCard>();
+                }
+
+                card.SetAnimationEnabled(false);
+                card.Clicked -= OnHasRelicClicked;
+                card.Clicked += OnHasRelicClicked;
+                _hasTipItems.Add(card);
+            }
+
+            var atlas = ViewModel != null ? ViewModel.Atlas : null;
+            for (var i = 0; i < _hasTipItems.Count; i++)
+            {
+                var card = _hasTipItems[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                var visible = i < relics.Length;
+                if (visible)
+                {
+                    card.SetAnimationEnabled(false);
+                }
+
+                card.gameObject.SetActive(visible);
+                if (!visible)
+                {
+                    continue;
+                }
+
+                var relic = RelicConfig.Get(relics[i]);
+                Sprite sprite = null;
+                if (relic != null && atlas != null && !string.IsNullOrWhiteSpace(relic.Icon))
+                {
+                    atlas.TryGetSprite(ResResourcePaths.RelicAtlas, relic.Icon.Trim(), out sprite);
+                }
+
+                card.Bind(relic != null ? relic.Name : string.Empty, sprite, true);
+                card.SetLevel(null);
+                if (relic != null)
+                {
+                    card.ApplyQuality(relic.Type);
+                }
+
+                HookHasRelicHit(card);
+            }
+
+            var tipRt = _hasTip.GetComponent<RectTransform>();
+            if (tipRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+            }
+        }
+
+        private int IndexOfRole(string userId)
+        {
+            for (var i = 0; i < _pvpRoleEntries.Count; i++)
+            {
+                if (!_pvpRoleEntries[i].Monster && PvpMatchSession.SameUser(_pvpRoleEntries[i].UserId, userId))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int _hasRelicClickFrame = -1;
+
+        private void HookHasRelicHit(ItemCard card)
+        {
+            if (card == null)
+            {
+                return;
+            }
+
+            var host = FindDeep(card.transform, "cardFrame") ?? card.transform;
+            var hit = host.Find("HasHit");
+            if (hit == null)
+            {
+                var go = new GameObject(
+                    "HasHit",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image),
+                    typeof(Button));
+                go.layer = card.gameObject.layer;
+                go.SetActive(false);
+                hit = go.transform;
+                hit.SetParent(host, false);
+                var rt = (RectTransform)hit;
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+                rt.localScale = Vector3.one;
+                var image = go.GetComponent<Image>();
+                image.color = new Color(1f, 1f, 1f, 0f);
+                image.raycastTarget = true;
+                var created = go.GetComponent<Button>();
+                created.targetGraphic = image;
+                created.transition = Selectable.Transition.None;
+                go.SetActive(true);
+            }
+
+            hit.SetAsLastSibling();
+            var button = hit.GetComponent<Button>();
+            if (button == null)
+            {
+                return;
+            }
+
+            button.onClick.RemoveAllListeners();
+            var captured = card;
+            button.onClick.AddListener(() => OnHasRelicClicked(captured));
+        }
+
+        private void OnHasRelicClicked(ItemCard card)
+        {
+            var index = card != null ? _hasTipItems.IndexOf(card) : -1;
+            if (index < 0 || index >= _hasTipRelicIds.Count)
+            {
+                return;
+            }
+
+            var relic = RelicConfig.Get(_hasTipRelicIds[index]);
+            if (relic == null)
+            {
+                return;
+            }
+
+            if (Time.frameCount == _hasRelicClickFrame)
+            {
+                return;
+            }
+
+            _hasRelicClickFrame = Time.frameCount;
+            if (_shownEquipRelicId == relic.Id && _equipTip != null && _equipTip.activeSelf)
+            {
+                HideHasRelicDetail();
+                return;
+            }
+
+            var anchor = FindDeep(card.transform, "cardFrame") ?? card.transform;
+            _ = ShowHasRelicDetail(anchor, relic);
+        }
+
+        private async Task ShowHasRelicDetail(Transform slot, RelicConfig relic)
+        {
+            _shownEquipRelicId = relic.Id;
+            _shownRoundBuffId = 0;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            await PresentItemTip(slot, relic.Name, relic.Desc ?? string.Empty, showUse: false, placeRight: false);
+            if (!_pvpSideAlive || _hasTip == null || !_hasTip.activeSelf || _equipTip == null)
+            {
+                return;
+            }
+
+            if (_equipTipCatcher != null)
+            {
+                _equipTipCatcher.transform.SetAsLastSibling();
+            }
+
+            _hasTip.transform.SetAsLastSibling();
+            _equipTip.transform.SetAsLastSibling();
+            PositionTipAbove(_equipTip, slot);
+        }
+
+        private void HideHasRelicDetail()
+        {
+            _shownEquipRelicId = 0;
+            _equipTipAnchor = null;
+            if (_equipTip != null)
+            {
+                _equipTip.SetActive(false);
+            }
+        }
+
+        private void HideHasTip()
+        {
+            _shownHasUserId = null;
+            if (_hasTip != null)
+            {
+                _hasTip.SetActive(false);
+            }
+        }
+
+        private void CloseHasTipOnly()
+        {
+            HideHasTip();
+            if ((_equipTip == null || !_equipTip.activeSelf) &&
+                (_bondsTip == null || !_bondsTip.activeSelf) &&
+                (_winTip == null || !_winTip.activeSelf) &&
+                _equipTipCatcher != null)
+            {
+                _equipTipCatcher.SetActive(false);
+            }
+        }
+
         private void HideBondsTip()
         {
             _shownBondId = 0;
@@ -763,14 +1278,22 @@ namespace App.UI
             _pvpSideAlive = false;
             _pvpSideSerial++;
             HideBondsTip();
+            HideHasTip();
             if (_bondsTip != null)
             {
                 Destroy(_bondsTip);
                 _bondsTip = null;
             }
 
+            if (_hasTip != null)
+            {
+                Destroy(_hasTip);
+                _hasTip = null;
+            }
+
             var resources = ViewModel != null ? ViewModel.Resources : null;
             resources?.Release(ResResourcePaths.BondsTip);
+            resources?.Release(ResResourcePaths.HasTip);
             for (var i = 0; i < _battleSpriteKeys.Count; i++)
             {
                 resources?.Release(_battleSpriteKeys[i]);
@@ -796,6 +1319,15 @@ namespace App.UI
                     hash = (hash * 31) + (entry.Alive ? 1 : 0);
                     hash = (hash * 31) + (entry.Monster ? 1 : 0);
                     hash = (hash * 31) + (entry.Icon != null ? entry.Icon.GetHashCode() : 0);
+                    hash = (hash * 31) + (entry.UserId != null ? entry.UserId.GetHashCode() : 0);
+                    var relics = entry.RelicIds;
+                    if (relics != null)
+                    {
+                        for (var r = 0; r < relics.Length; r++)
+                        {
+                            hash = (hash * 31) + relics[r];
+                        }
+                    }
                 }
 
                 for (var i = 0; i < _bondHolds.Count; i++)

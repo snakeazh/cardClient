@@ -41,6 +41,7 @@ namespace App.Resources
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
         public const string BondsTip = "UI/Top/BondsTip";
+        public const string HasTip = "UI/Top/HasTip";
         public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";
         /// <summary>对局桌面背景 Assets/Res/Textures/Background/BigBackgroundBaseFrame.png。</summary>

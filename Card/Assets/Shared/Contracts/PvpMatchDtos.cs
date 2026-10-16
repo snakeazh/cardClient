@@ -39,6 +39,12 @@ namespace CardShare.Contracts
         /// <summary>对局结束后的名次 PVP 分数加减；未结束为 0。可为负。</summary>
         public int RewardScore { get; set; }
 
+        /// <summary>当前 PvP 连胜。野怪轮也计入。</summary>
+        public int WinStreak { get; set; }
+
+        /// <summary>当前 PvP 连败。野怪轮也计入。</summary>
+        public int LoseStreak { get; set; }
+
         /// <summary>当前持有的圣物（商店购入），观战可见。</summary>
         public int[] RelicIds { get; set; } = System.Array.Empty<int>();
 

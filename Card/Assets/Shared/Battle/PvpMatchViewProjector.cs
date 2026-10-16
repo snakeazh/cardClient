@@ -54,6 +54,8 @@ namespace CardShare.Battle
                     Disconnected = f.Disconnected,
                     RewardGold = f.RewardGold,
                     RewardScore = f.RewardScore,
+                    WinStreak = f.WinStreak,
+                    LoseStreak = f.LoseStreak,
                     RelicIds = f.OwnedRelicIds.ToArray(),
                     RelicPower = f.OwnedRelicPower.ToArray(),
                     RelicSlots = f.RelicSlots,

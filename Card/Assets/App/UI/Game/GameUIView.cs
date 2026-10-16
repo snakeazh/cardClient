@@ -2277,7 +2277,14 @@ namespace App.UI
                 return;
             }
 
-            slot.gameObject.SetActive(true);
+            var pvp = ViewModel.Session != null && ViewModel.Session.IsPvp;
+            slot.gameObject.SetActive(!pvp);
+            if (pvp)
+            {
+                Time.timeScale = 1f;
+                return;
+            }
+
             var button = slot.GetComponent<Button>();
             if (button == null)
             {
@@ -3574,6 +3581,7 @@ namespace App.UI
 
             HideWinTip();
             HideBondsTip();
+            HideHasTip();
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(false);
@@ -3648,6 +3656,33 @@ namespace App.UI
                 : new Vector2(
                     local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
                     local.y + (0.5f - tipRt.pivot.y) * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
+        }
+
+        private void PositionTipAbove(GameObject tip, Transform slot)
+        {
+            var tipRt = tip != null ? tip.GetComponent<RectTransform>() : null;
+            var itemRt = slot as RectTransform;
+            var parent = transform as RectTransform;
+            if (tipRt == null || itemRt == null || parent == null)
+            {
+                return;
+            }
+
+            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
+            itemRt.GetWorldCorners(_equipTipCorners);
+            var top = (_equipTipCorners[1] + _equipTipCorners[2]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, top);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
+            {
+                return;
+            }
+
+            var tipWidth = tipRt.rect.width;
+            var tipHeight = tipRt.rect.height;
+            tipRt.anchoredPosition = new Vector2(
+                local.x + (0.5f - tipRt.pivot.x) * tipWidth,
+                local.y + 8f + tipRt.pivot.y * tipHeight);
             ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 

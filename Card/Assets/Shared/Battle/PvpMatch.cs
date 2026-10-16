@@ -1067,7 +1067,7 @@ namespace CardShare.Battle
         /// <summary>
         /// 胜 = 本轮基础（英雄 GetGoldAfterLevel 只放大这一项）+ 未用技能×单价 + 连胜 + 利息。
         /// 负 =（本人基础 + 本人未用技能×单价）/ 2 + 连败 + 利息。平局不结算。
-        /// 野怪轮照发基础/技能/利息，但不改连胜连败、不加连胜连败奖励。
+        /// 野怪轮照发基础/技能/利息，并改连胜连败次数，但不加连胜连败奖励。
         /// </summary>
         private void ApplyDuelGold(PvpDuelTable duel, int win)
         {
@@ -1089,18 +1089,15 @@ namespace CardShare.Battle
 
         private void PayRoundGold(PvpFighter fighter, int skillGoldUnit, bool countStreak, bool won)
         {
-            if (countStreak)
+            if (won)
             {
-                if (won)
-                {
-                    fighter.WinStreak++;
-                    fighter.LoseStreak = 0;
-                }
-                else
-                {
-                    fighter.LoseStreak++;
-                    fighter.WinStreak = 0;
-                }
+                fighter.WinStreak++;
+                fighter.LoseStreak = 0;
+            }
+            else
+            {
+                fighter.LoseStreak++;
+                fighter.WinStreak = 0;
             }
 
             var streak = countStreak ? (won ? fighter.WinStreak : fighter.LoseStreak) : 0;
@@ -1677,6 +1674,8 @@ namespace CardShare.Battle
             {
                 var fighter = _fighters[pair.Key];
                 fighter.Rank = pair.Value;
+                fighter.RewardGold = PvpSettlementRules.RewardForRank(fighter.Rank, _mode.RankReward);
+                fighter.RewardScore = PvpSettlementRules.ScoreForRank(fighter.Rank, _mode.RankScore);
                 if (fighter.Hp < 0)
                 {
                     fighter.Hp = 0;

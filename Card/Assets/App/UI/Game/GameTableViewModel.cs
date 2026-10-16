@@ -514,7 +514,7 @@ namespace App.UI
             TryPresentShopPopup();
         }
 
-        /// <summary>中途淘汰：等演出排空后提示名次并离场（终局奖励仍由服务端落库，不在此等 finished）。</summary>
+        /// <summary>中途淘汰：等演出排空后弹名次页。名次奖励已写在淘汰快照上。</summary>
         private async Task LeaveAfterSelfEliminatedAsync()
         {
             if (_pvpLeaving)
@@ -528,27 +528,7 @@ namespace App.UI
                 await Task.Yield();
             }
 
-            var self = _pvp != null ? _pvp.Self : null;
-            var tip = self != null && self.Rank > 0
-                ? $"你已被淘汰，第 {self.Rank} 名"
-                : "你已被淘汰";
-            try
-            {
-                if (_ui != null)
-                {
-                    await _ui.Dialogs.ConfirmAsync("PVP 结算", tip, DialogButtons.Ok, "返回大厅");
-                }
-                else
-                {
-                    Toast.Show(tip);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppLog.Exception(LogChannel.UI, ex);
-                Toast.Show(tip);
-            }
-
+            await ShowPvpResultAsync();
             await StopPvpAndLeave();
         }
 

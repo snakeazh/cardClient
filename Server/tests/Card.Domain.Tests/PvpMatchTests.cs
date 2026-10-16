@@ -452,6 +452,30 @@ public class PvpMatchTests
         }
 
         Assert.False(match.ApplyTimeouts(after.PhaseDeadlineUtcMs - 1));
+        var timed = duel.Engine.Snapshot;
+        HandEvaluator.Tables = PvpTestTables.OnePvpRound();
+        for (var seat = 0; seat <= 1; seat++)
+        {
+            var hole = timed.Hands[seat];
+            var cards = new Card[hole.Count];
+            for (var i = 0; i < hole.Count; i++)
+            {
+                cards[i] = hole[i];
+            }
+
+            var flags = new bool[cards.Length];
+            HandEvaluator.SelectBestOpen(cards, flags, cards.Length);
+            var expected = new List<int>();
+            for (var i = 0; i < flags.Length; i++)
+            {
+                if (flags[i])
+                {
+                    expected.Add(i);
+                }
+            }
+
+            Assert.Equal(expected, timed.Picked[seat]);
+        }
     }
 
     [Fact]

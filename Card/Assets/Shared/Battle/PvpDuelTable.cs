@@ -328,26 +328,19 @@ namespace CardShare.Battle
                 beforeCompare(1, Engine.MutableSeat(1));
             }
 
-            // 亮牌前给没显式选牌的座位补选：机器人/野怪取 5 张里牌型最高的 3 张，
-            // 真人（倒计时超时未选）兜底前 3 张。都走 Pick 命令，摊牌后 Selected 即实际比牌。
-            var snap = Engine.Snapshot;
+            // 没显式选牌就锁定（倒计时到点、掉线、机器人）时，按当前手牌补成最大牌型。
             for (var seat = 0; seat <= 1; seat++)
             {
+                var snap = Engine.Snapshot;
                 if (seat >= snap.PickedExplicit.Length || snap.PickedExplicit[seat])
                 {
                     continue;
                 }
 
-                var pick = snap.Picked[seat];
-                if (pick == null || pick.Count != BattleLimits.OpenHandSize)
+                var indexes = Engine.BestPick(seat);
+                if (indexes == null || indexes.Length != BattleLimits.OpenHandSize)
                 {
                     continue;
-                }
-
-                var indexes = new int[pick.Count];
-                for (var n = 0; n < pick.Count; n++)
-                {
-                    indexes[n] = pick[n];
                 }
 
                 Engine.Apply(new BattleCommand { Type = BattleCommandType.Pick, SeatId = seat, Indexes = indexes });

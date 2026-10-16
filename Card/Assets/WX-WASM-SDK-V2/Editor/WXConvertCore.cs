@@ -26,8 +26,8 @@ namespace WeChatWASM
 
         public static void Init()
         {
-            string templateHeader = "PROJECT:";
 #if TUANJIE_2022_3_OR_NEWER
+            string templateHeader = "PROJECT:";
             PlayerSettings.WeixinMiniGame.threadsSupport = WXConvertCore.EnableRenderThread;
             PlayerSettings.runInBackground = false;
             PlayerSettings.WeixinMiniGame.compressionFormat = WeixinMiniGameCompressionFormat.Disabled;
@@ -54,13 +54,7 @@ namespace WeChatWASM
             PlayerSettings.WebGL.threadsSupport = false;
             PlayerSettings.runInBackground = false;
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
-#if UNITY_2022_3_OR_NEWER
-        PlayerSettings.WebGL.template = $"{templateHeader}WXTemplate2022";
-#elif UNITY_2020_1_OR_NEWER
-            PlayerSettings.WebGL.template = $"{templateHeader}WXTemplate2020";
-#else
-            PlayerSettings.WebGL.template = $"{templateHeader}WXTemplate";
-#endif
+            PlayerSettings.WebGL.template = "APPLICATION:Default";
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
             PlayerSettings.WebGL.dataCaching = false;
 #if UNITY_2021_2_OR_NEWER

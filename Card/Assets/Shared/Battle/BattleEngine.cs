@@ -388,6 +388,28 @@ namespace CardShare.Battle
             }
         }
 
+        /// <summary>当前手牌里牌型最高的 3 张下标。倒计时未选牌时用它锁定。</summary>
+        public int[] BestPick(int seatId)
+        {
+            var prev = HandEvaluator.Tables;
+            HandEvaluator.Tables = _tables;
+            try
+            {
+                var hand = _snapshot.Hands[seatId];
+                var cards = new Card[hand.Count];
+                for (var i = 0; i < hand.Count; i++)
+                {
+                    cards[i] = hand[i];
+                }
+
+                return PickBest(cards);
+            }
+            finally
+            {
+                HandEvaluator.Tables = prev;
+            }
+        }
+
         private int[] AutoPick(int seat, Card[] hand)
         {
             if (!_seats[seat].IsHuman && hand.Length >= BattleLimits.OpenHandSize)

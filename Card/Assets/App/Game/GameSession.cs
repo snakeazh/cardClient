@@ -3797,39 +3797,6 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>编辑器外挂：表里 BindingID 含该羁绊的全部圣物 Id。</summary>
-        public static List<int> CollectBindingMemberRelicIds(int bindingId)
-        {
-            var result = new List<int>();
-            if (bindingId <= 0)
-            {
-                return result;
-            }
-
-            foreach (var pair in RelicConfig.All)
-            {
-                var relic = pair.Value;
-                if (relic?.BindingID == null)
-                {
-                    continue;
-                }
-
-                for (var i = 0; i < relic.BindingID.Length; i++)
-                {
-                    if (relic.BindingID[i] != bindingId)
-                    {
-                        continue;
-                    }
-
-                    result.Add(relic.Id);
-                    break;
-                }
-            }
-
-            result.Sort();
-            return result;
-        }
-
         /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。PVP 走服务端 debug_grant。</summary>
         public bool DebugGrantRelic(int relicId)
         {
@@ -3991,6 +3958,39 @@ namespace App.Game
             }
         }
 #endif
+
+        /// <summary>表里 BindingID 含该羁绊的全部圣物 Id。</summary>
+        public static List<int> CollectBindingMemberRelicIds(int bindingId)
+        {
+            var result = new List<int>();
+            if (bindingId <= 0)
+            {
+                return result;
+            }
+
+            foreach (var pair in RelicConfig.All)
+            {
+                var relic = pair.Value;
+                if (relic?.BindingID == null)
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < relic.BindingID.Length; i++)
+                {
+                    if (relic.BindingID[i] != bindingId)
+                    {
+                        continue;
+                    }
+
+                    result.Add(relic.Id);
+                    break;
+                }
+            }
+
+            result.Sort();
+            return result;
+        }
 
         /// <summary>旧摊牌 <see cref="HandEvaluator.ComputeDamage"/> 用。主路径攻击见 ComputeAttackDamage：遗物/天赋加在牌型倍率上。</summary>
         public float RelicMultiplier(HandScore score)

@@ -305,7 +305,6 @@ namespace App.UI
             BattleTrace.Log("GameUI.OnPresented → SetInBattleFit(true)");
         }
 
-#if UNITY_EDITOR
         private void Update()
         {
             if (ViewModel == null)
@@ -313,12 +312,16 @@ namespace App.UI
                 return;
             }
 
+            ViewModel.TickPvpCountdown();
+#if UNITY_EDITOR
             if (Input.GetKeyDown(KeyCode.G))
             {
                 ViewModel.Session.DebugAddGold();
             }
+#endif
         }
 
+#if UNITY_EDITOR
         private void OnGUI()
         {
             GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);

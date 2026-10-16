@@ -99,10 +99,30 @@ namespace App.UI.Popup
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
             Binding.BindCommand(GetNode<Button>("ReturnToHomeBtn"), ViewModel.ReturnToHomeCommand);
             Binding.BindText(GetNode<TMP_Text>("MaxNum"), ViewModel.CarryNum);
+            BindShopTime();
 
             EnsureSellItems();
             EnsureMineItems();
             Binding.Add(ViewModel.ShopRevision.Subscribe(_ => RefreshItems(), emitCurrent: true));
+        }
+
+        private void BindShopTime()
+        {
+            var time = GetNode<TMP_Text>("timeText");
+            var table = ViewModel.Table;
+            if (time == null)
+            {
+                return;
+            }
+
+            if (table == null)
+            {
+                time.gameObject.SetActive(false);
+                return;
+            }
+
+            Binding.BindText(time, table.TimeValue);
+            Binding.BindActive(time.gameObject, table.ShowTime);
         }
 
         protected override Task OnViewClose()

@@ -10,5 +10,11 @@ namespace CardShare.Battle
 
         /// <summary>比牌演出：settle 阶段总时长（翻牌+攻击+扣血）。</summary>
         public const int SettleAnimMs = 6000;
+
+        /// <summary>机器人定牌：发牌演出结束后再等的最短毫秒。</summary>
+        public const int BotLockMinMs = 3000;
+
+        /// <summary>机器人定牌：发牌演出结束后再等的最长毫秒（含）。</summary>
+        public const int BotLockMaxMs = 5000;
     }
 }

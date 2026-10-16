@@ -323,7 +323,7 @@ namespace App.UI
         public void NotifyDealReady()
         {
             ShowTableButtons.Value = true;
-            ShowRoundInfo.Value = true;
+            ShowRoundInfo.Value = Session == null || !Session.IsPvp;
             GuideSignals.NotifyDealFinished(Session.DealSerial);
             if (Session.IsPvp)
             {
@@ -890,7 +890,12 @@ namespace App.UI
                     ? "野怪"
                     : "对战";
                 Title.Value = $"PVP 第{_pvp.State.Round}轮 {fight}";
-                StageInfoText.Value = Title.Value;
+                StageInfoText.Value = $"第{_pvp.State.Round}轮";
+            }
+
+            if (Session.IsPvp)
+            {
+                ShowRoundInfo.Value = false;
             }
             RoundBuffVisible.Value = entries.Count > 0;
             RoundBuffName.Value = FormatEntryNames(entries);

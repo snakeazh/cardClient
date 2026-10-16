@@ -71,6 +71,9 @@ namespace App.UI.Popup
         /// <summary>买槽格是否显示金币价格：PVP 花金币显示，PVE 看广告解锁隐藏。</summary>
         public bool BuySlotShowsPrice => Session.IsPvp;
 
+        /// <summary>PVP 商店剩余秒数，与局内 timeValue 同一倒计时。</summary>
+        public GameTableViewModel Table => _ui.FindOpen<GameTableViewModel>();
+
         public ObservableProperty<int> ShopRevision { get; }
 
         public IRelayCommand RefreshCommand { get; }

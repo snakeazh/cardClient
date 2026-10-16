@@ -13,6 +13,7 @@ namespace CardShare.Battle
         private readonly PlayerPublic[] _publics;
         private readonly bool[] _peeked = new bool[2];
         private readonly bool[] _locked = new bool[2];
+        private readonly long[] _lockDueUtcMs = new long[2];
 
         private PvpDuelTable(BattleEngine engine, PlayerPublic[] publics, bool vsMonster, string monsterName)
         {
@@ -50,7 +51,9 @@ namespace CardShare.Battle
             SeatSetup left,
             SeatSetup right,
             IGameTables tables,
-            bool vsPlayer)
+            bool vsPlayer,
+            bool lockLeftNow,
+            bool lockRightNow)
         {
             left.SeatId = 0;
             right.SeatId = 1;
@@ -63,14 +66,57 @@ namespace CardShare.Battle
                 new PlayerPublic { UserId = right.UserId, NickName = right.NickName }
             };
             var table = new PvpDuelTable(engine, publics, !vsPlayer, vsPlayer ? string.Empty : right.NickName);
-            table._locked[0] = !left.IsHuman;
-            table._locked[1] = !right.IsHuman;
+            table._locked[0] = lockLeftNow;
+            table._locked[1] = lockRightNow;
             if (table._locked[0] && table._locked[1])
             {
                 table.Compare();
             }
 
             return table;
+        }
+
+        /// <summary>机器人座位在发牌后的指定时刻自动锁定。已锁定的座位忽略。</summary>
+        public void ScheduleLock(int seatId, long dueUtcMs)
+        {
+            if (seatId < 0 || seatId > 1 || dueUtcMs <= 0 || _locked[seatId])
+            {
+                return;
+            }
+
+            _lockDueUtcMs[seatId] = dueUtcMs;
+        }
+
+        /// <summary>到点锁定已排期的座位。双方都锁定后比牌。返回是否有座位刚被锁定。</summary>
+        public bool ApplyDueLocks(long nowUtcMs)
+        {
+            lock (_gate)
+            {
+                if (Resolved)
+                {
+                    return false;
+                }
+
+                var changed = false;
+                for (var seat = 0; seat <= 1; seat++)
+                {
+                    if (_locked[seat] || _lockDueUtcMs[seat] <= 0 || nowUtcMs < _lockDueUtcMs[seat])
+                    {
+                        continue;
+                    }
+
+                    _locked[seat] = true;
+                    _lockDueUtcMs[seat] = 0;
+                    changed = true;
+                }
+
+                if (changed && _locked[0] && _locked[1])
+                {
+                    Compare();
+                }
+
+                return changed;
+            }
         }
 
         public bool Involves(string userId)

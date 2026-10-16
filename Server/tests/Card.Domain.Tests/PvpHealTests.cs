@@ -172,12 +172,12 @@ public class PvpHealTests
         };
         var match = Open(tables, pubs, hp: 100, shopPool: new[] { 1, 2 });
         var botFighter = match.Fighters.First(f => f.NickName == "机");
+
+        // 第一轮先打完。受伤和治疗消耗品放在进店之后，避免这一轮的伤害覆盖掉脚本血量。
+        EnterShop(match);
         botFighter.OwnedRelicIds.Add(119);
         botFighter.OwnedRelicPower.Add(1);
         botFighter.Hp = 40;
-
-        // 进商店再下一轮开战：StartRound 前会对机器人跑消耗品。
-        EnterShop(match);
         foreach (var fighter in match.Fighters)
         {
             if (!fighter.ShopDone)

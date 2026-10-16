@@ -624,7 +624,7 @@ namespace App.UI
             ApplyPvpRoles();
             for (var i = 0; i < _bondHolds.Count; i++)
             {
-                var stem = BondArtName(_bondHolds[i].Binding != null ? _bondHolds[i].Binding.Type : 0);
+                var stem = ResResourcePaths.BondArtName(_bondHolds[i].Binding != null ? _bondHolds[i].Binding.Type : 0);
                 if (string.IsNullOrEmpty(stem))
                 {
                     continue;
@@ -707,7 +707,7 @@ namespace App.UI
         private Sprite BondSprite(PvpRelicBindings.BindingHold hold, out Color tint)
         {
             tint = Color.white;
-            var stem = BondArtName(hold.Binding != null ? hold.Binding.Type : 0);
+            var stem = ResResourcePaths.BondArtName(hold.Binding != null ? hold.Binding.Type : 0);
             if (string.IsNullOrEmpty(stem))
             {
                 return null;
@@ -899,35 +899,5 @@ namespace App.UI
             return false;
         }
 
-        private static string BondArtName(BindingType type)
-        {
-            switch (type)
-            {
-                case BindingType.BronzeBook:
-                    return "PotentialPower";
-                case BindingType.SilverBook:
-                    return "Fate";
-                case BindingType.Leiting:
-                    return "ThunderSlash";
-                case BindingType.LuckyNumber:
-                    return "LuckyPoint";
-                case BindingType.NobilityPower:
-                    return "Power";
-                case BindingType.MagicCoin:
-                    return "EnchantedCoin";
-                case BindingType.BloodCeremony:
-                    return "BloodRitual";
-                case BindingType.CurseSilence:
-                    return "SilenceCurse";
-                case BindingType.DoubleAttack:
-                    return "DeadlyChase";
-                case BindingType.RandomAttribute:
-                    return "AttributeEnhance";
-                case BindingType.DisableSkill:
-                    return "SkillEcho";
-                default:
-                    return null;
-            }
-        }
     }
 }

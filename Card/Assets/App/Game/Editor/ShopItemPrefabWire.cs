@@ -84,6 +84,9 @@ namespace App.Game.Editor
                     "buySlotRoot",
                     FindNamed<Transform>(root.transform, "BuySlot") is { } buySlot ? buySlot.gameObject : null,
                     force);
+                var battleHor = FindNamed<RectTransform>(root.transform, "battleHor");
+                changed |= Assign(so, "battleHor", battleHor, force);
+                changed |= Assign(so, "bondIcon", FindNamed<Image>(battleHor, "icon"), force);
                 if (!changed)
                 {
                     return false;

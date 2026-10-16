@@ -66,7 +66,7 @@ namespace App.UI
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             OpenIllustrateCommand = new RelayCommand(OpenIllustrate);
             OpenTalentCommand = new RelayCommand(OpenTalent);
-            PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
+            PvpCommand = new RelayCommand(OpenPvpPage, () => !_openingPvp);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -367,45 +367,24 @@ namespace App.UI
 
             _openingPvp = true;
             PvpCommand.RaiseCanExecuteChanged();
+            var nav = _ui.FindOpen<NavigationViewModel>();
             try
             {
-                if (!GameApiSettings.Enabled)
-                {
-                    Toast.Error("服务器连接已关闭");
-                    return;
-                }
-
-                if (!GameApi.IsReady)
-                {
-                    await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
-                    if (!GameApi.IsReady)
-                    {
-                        Toast.Error("未连接服务器");
-                        return;
-                    }
-                }
-
-                // 手动点匹配 = 开新局，不要重连探针：取消探测并占住 resume 标记，直接排队。
                 _pvpResumeChecked = true;
                 _pvp.CancelProbe();
-
-                StartMatchTimer();
-                await _pvp.Invoker.EnqueueStartQueue();
-                _session.BeginPvp();
-                await _ui.Open(_table);
-            }
-            catch (GameApiException ex)
-            {
-                Toast.Error(GameApi.Describe(ex));
-                await _pvp.StopAsync();
-                _session.EndPvp();
+                nav?.HideBar();
+                var registration = _ui.Registry.GetByViewModelType(typeof(PvpPageViewModel));
+                var vm = (PvpPageViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
-                Toast.Error("匹配失败");
-                await _pvp.StopAsync();
-                _session.EndPvp();
+                _toast?.ShowWarning("竞技场打开失败，请重试");
+                if (nav != null)
+                {
+                    await nav.EnsureShown();
+                }
             }
             finally
             {

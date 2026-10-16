@@ -66,6 +66,7 @@ namespace App.UI
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
             OpenIllustrateCommand = new RelayCommand(OpenIllustrate);
             OpenTalentCommand = new RelayCommand(OpenTalent);
+            OpenSettingCommand = new RelayCommand(OpenSetting);
             PvpCommand = new RelayCommand(OpenPvpPage, () => !_openingPvp);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
@@ -93,6 +94,9 @@ namespace App.UI
 
         /// <summary>打开天赋弹窗（Home TalentBtn）。</summary>
         public IRelayCommand OpenTalentCommand { get; }
+
+        /// <summary>打开设置弹窗（Home SettingBtn）。</summary>
+        public IRelayCommand OpenSettingCommand { get; }
 
         public IRelayCommand PvpCommand { get; }
 
@@ -291,6 +295,21 @@ namespace App.UI
             {
                 AppLog.Exception(LogChannel.UI, ex);
                 _toast?.ShowWarning("天赋界面打开失败，请重试");
+            }
+        }
+
+        private async void OpenSetting()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(SettingPopViewModel));
+                var vm = (SettingPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("设置界面打开失败，请重试");
             }
         }
 

@@ -33,6 +33,7 @@ namespace App.UI
             var talentBtn = UI.GetGameObject("TalentBtn");
             Binding.BindCommand(talentBtn.GetComponent<Button>(), ViewModel.OpenTalentCommand);
             RegisterGuideTalentBtn(talentBtn);
+            BindSettingBtn();
             Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);
             BindHero();
         }
@@ -46,6 +47,25 @@ namespace App.UI
 #else
             Binding.BindCommand(item.GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
 #endif
+        }
+
+        /// <summary>设置入口（SettingBtn）。</summary>
+        private void BindSettingBtn()
+        {
+            var setting = UI.GetGameObject("SettingBtn");
+            if (setting == null)
+            {
+                return;
+            }
+
+            var button = setting.GetComponent<Button>();
+            if (button == null)
+            {
+                button = setting.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+            }
+
+            Binding.BindCommand(button, ViewModel.OpenSettingCommand);
         }
 
         protected override Task OnViewOpen()

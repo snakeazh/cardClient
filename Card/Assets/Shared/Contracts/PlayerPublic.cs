@@ -14,5 +14,8 @@ namespace CardShare.Contracts
 
         /// <summary>配表 PvpBotConfig.Id；非机器人或未知为 0。</summary>
         public int BotConfigId { get; set; }
+
+        /// <summary>局外 PVP 分数。真人来自主档；机器人是开房时写入的假分数。</summary>
+        public int PvpScore { get; set; }
     }
 }

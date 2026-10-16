@@ -20,6 +20,7 @@ namespace App.UI
     public sealed class PvpPageViewModel : ViewModelBase
     {
         private const int AcceptSeconds = 60;
+        private const float SuccessHoldSeconds = 1f;
 
         private readonly IUIManager _ui;
         private readonly GameSession _session;
@@ -64,12 +65,12 @@ namespace App.UI
             ShowSearch = new ObservableProperty<bool>(true);
             ShowSearchSuccess = new ObservableProperty<bool>(false);
 
-            BackCommand = new RelayCommand(Back);
+            BackCommand = new RelayCommand(Back, () => !_introStarted);
             StartCommand = new RelayCommand(StartMatch, () => _phase == PvpPagePhase.Idle && !_entering && !_starting);
             CancelCommand = new RelayCommand(CancelMatch, () => _phase == PvpPagePhase.Searching);
             AcceptCommand = new RelayCommand(AcceptMatch, () =>
                 _phase == PvpPagePhase.Accepting && !_entering && !_localAccepted && !_introStarted);
-            DeclineCommand = new RelayCommand(DeclineMatch, () => _phase == PvpPagePhase.Accepting && !_entering);
+            DeclineCommand = new RelayCommand(DeclineMatch, () => _phase == PvpPagePhase.Accepting && !_entering && !_introStarted);
         }
 
         public ObservableProperty<string> GradeValueText { get; }
@@ -133,13 +134,13 @@ namespace App.UI
             _pvp.AcceptFailed -= OnAcceptFailed;
             _pvp.RoomReady -= OnRoomReady;
             _generation++;
-            if (!_entered && _phase != PvpPagePhase.Idle)
+            if (!_entered && !_introStarted && _phase != PvpPagePhase.Idle)
             {
                 _phase = PvpPagePhase.Idle;
                 await LeaveMatchAsync();
             }
 
-            if (!_entered)
+            if (!_entered && !_introStarted)
             {
                 _mainResource.ShowBar();
             }
@@ -295,7 +296,10 @@ namespace App.UI
                 _session.BeginPvp();
                 _entered = true;
                 await _ui.Open(_table);
-                await _ui.Close(this);
+                if (IsOpen)
+                {
+                    await _ui.Close(this);
+                }
             }
             catch (Exception ex)
             {
@@ -600,6 +604,7 @@ namespace App.UI
                     UserId = player != null ? player.UserId : string.Empty,
                     NickName = player != null ? player.NickName : string.Empty,
                     AvatarUrl = player != null ? player.AvatarUrl : string.Empty,
+                    Score = player != null ? player.PvpScore : 0,
                     Revealed = revealed
                 };
             }
@@ -621,7 +626,7 @@ namespace App.UI
             return false;
         }
 
-        /// <summary>全员接受后头像往外飞，再进局。</summary>
+        /// <summary>全员接受后先停 1 秒展示头像，再往外飞，然后进局。这段时间关不了页面；页面若已被关掉，仍然进局。</summary>
         private async void OnAllAccepted()
         {
             if (_phase != PvpPagePhase.Accepting || _entering || _introStarted || !IsOpen)
@@ -629,10 +634,10 @@ namespace App.UI
                 return;
             }
 
-            var generation = _generation;
             _introStarted = true;
             ApplySuccess();
-            await PlaySuccessThenEnterAsync(generation);
+            RaiseCommands();
+            await PlaySuccessThenEnterAsync();
         }
 
         /// <summary>藏起排队和接受按钮，只留四个头像往外飞。</summary>
@@ -649,24 +654,28 @@ namespace App.UI
             RaiseCommands();
         }
 
-        private async Task PlaySuccessThenEnterAsync(int generation)
+        private async Task PlaySuccessThenEnterAsync()
         {
+            var holdUntil = Time.realtimeSinceStartup + SuccessHoldSeconds;
+            while (Time.realtimeSinceStartup < holdUntil)
+            {
+                await Task.Yield();
+            }
+
             var play = PlaySuccessIntro;
-            var finished = true;
             if (play != null)
             {
                 try
                 {
-                    finished = await play();
+                    await play();
                 }
                 catch (Exception ex)
                 {
                     AppLog.Exception(LogChannel.UI, ex);
-                    finished = false;
                 }
             }
 
-            if (!finished || !IsPhase(generation, PvpPagePhase.Accepting) || _entering)
+            if (_entered)
             {
                 return;
             }
@@ -680,6 +689,7 @@ namespace App.UI
             CancelCommand.RaiseCanExecuteChanged();
             AcceptCommand.RaiseCanExecuteChanged();
             DeclineCommand.RaiseCanExecuteChanged();
+            BackCommand.RaiseCanExecuteChanged();
         }
 
         private enum PvpPagePhase
@@ -697,6 +707,8 @@ namespace App.UI
         public string NickName { get; set; } = string.Empty;
 
         public string AvatarUrl { get; set; } = string.Empty;
+
+        public int Score { get; set; }
 
         /// <summary>已点接受，或机器人已被服务端替点接受。未揭开时名称和头像显示 ???。</summary>
         public bool Revealed { get; set; }

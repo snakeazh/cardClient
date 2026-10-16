@@ -10,7 +10,7 @@
 - 排队有服务端超时（`PvpRules.QueueTimeoutMs`，当前 60s）：到期踢出并给本人发 `queue_timeout`，其余排队者收 `queue_update`。`queued` / `queue_update` 都带 `timeoutMs`，客户端以它为准。
 - 排队中可 `cancel` / `leave` / 断线出队。**开房后断线不是退赛**：座位由服务端代管（自动选牌锁定），重连发 `sync` 恢复，详见 pvp-match.md。
 - 开房后立刻用房间 `seed` 走共享 `BattleEngine(PvpMode)` 发牌；比牌指令与单机主线同一套 `Apply`。
-- 出伤与 PVE 玩家同一公式：开房读各人主档 `LastHeroId` 与天赋袋；圣物**开局不带**，由局内商店购买后下一轮生效（摊牌时 `CombatBonuses` 结算圣物本手倍率/加攻，英雄伤害%、暴击、追击照旧）。PVP 没有 BOSS、燧石；斩杀不对玩家生效。
+- 出伤与 PVE 玩家同一公式。开房时**真人和机器人都从英雄表随机一个英雄**（`PvpCombatSeats`，同一英雄可以重复）；真人天赋袋和商店池仍读主档，机器人不带天赋。`PvpBotConfig.HeroId` 不参与抽选。圣物**开局不带**，由局内商店购买后下一轮生效（摊牌时 `CombatBonuses` 结算圣物本手倍率/加攻，英雄伤害%、暴击、追击照旧）。PVP 没有 BOSS、燧石；斩杀不对玩家生效。
 - 头像是登录时客户端上报的社交头像 URL，不是局内英雄 `People1`。WebSocket **不传图片**，只传 URL。
 - 牌面不上内部 `Card` struct，只下发 `suit`/`rank` 整数。摊牌前只能看到自己的牌。
 

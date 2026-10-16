@@ -142,6 +142,12 @@ namespace App.UI
                 nameText.text = revealed && !string.IsNullOrEmpty(seat.NickName) ? seat.NickName : "???";
             }
 
+            var grade = FindText(play, "grade");
+            if (grade != null)
+            {
+                grade.text = revealed ? seat.Score.ToString() : "???";
+            }
+
             var role = FindChild(play, "roleIcon");
             var mask = role != null ? FindChild(role, "Mask") : null;
             if (mask != null)

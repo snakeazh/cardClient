@@ -66,7 +66,8 @@ public static class ProfileMapper
         {
             UserId = profile.UserId.ToString("N"),
             NickName = profile.NickName,
-            AvatarUrl = profile.AvatarUrl
+            AvatarUrl = profile.AvatarUrl,
+            PvpScore = profile.PvpScore
         };
     }
 }

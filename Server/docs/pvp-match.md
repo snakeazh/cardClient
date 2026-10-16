@@ -9,7 +9,7 @@
 |---|---|
 | `PvpModeConfig` | 一行一个模式：人数、初始金、商店秒数（`ShopSeconds`）、选牌秒数（`OpenPhaseSeconds`）、剩 2 人跳过野怪、排名奖励（`RankReward`）、轮次伤害系数 |
 | `PvpRoundConfig` | 一个模式多行：`Round` + `FightKind`（Monster / Pvp）+ `MonsterGroup` + 本轮基础金币 `GoldBase` |
-| `PvpBotConfig` | 开发补房机器人基础数据：`Id`（100000 段）、昵称、头像、英雄；运行时 `UserId` 仍是 Guid |
+| `PvpBotConfig` | 开发补房机器人基础数据：`Id`（100000 段）、昵称、头像。英雄开房时随机，不读表里的 `HeroId`。运行时 `UserId` 仍是 Guid |
 
 野怪组走已有 `MonsterGroupConfig` → `MonsterConfig`。当前数据：模式 1「经典」共 13 轮（1/5/9/13 野怪，其余 PvP）。
 
@@ -29,7 +29,14 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 最后一轮：fight → settle → finished（settle 播完才发 finished，客户端结算弹窗不用猜演出）
 ```
 
-演出时长常量在共享代码 `PvpTiming`（`Card/Assets/Shared/Battle/PvpTiming.cs`）：`DealAnimMs=2000`、`SettleAnimMs=6000`，双端同源。
+演出时长常量在共享代码 `PvpTiming`（`Card/Assets/Shared/Battle/PvpTiming.cs`）：`DealAnimMs=2000`、`SettleAnimMs=6000`，双端同源。机器人定牌在发牌演出结束后再等 `BotLockMinMs`～`BotLockMaxMs`（3000～5000，含两端）。
+
+## 选牌
+
+- 真人未点选、倒计时到点或掉线被锁定时，按**当前手牌的最大牌型**补 3 张（`BattleEngine.BestPick`），不再用发牌时的前 3 张。已经显式选过的牌保持原样。
+- 机器人发牌后不立刻锁定。每座在发牌演出结束（`DealAnimMs`）后再等 3～5 秒，由 `ApplyTimeouts` 里的 `ApplyDueBotLocks` 锁定并比牌。
+- 野怪开桌即锁定。选牌上限是同花（`HandScoreConfig` 里「同花」的 Level，当前 3）。顺子、同花顺、豹子 Level 更高，野怪不会出。真人和机器人不套这个上限。
+- 掉线座位当轮未锁定则立刻锁定；之后每轮发牌即锁定，不等 3～5 秒。
 
 ## 经济
 
@@ -39,7 +46,8 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 - 利息：发奖前所持金币每 100 给 10，所持达到 500 后封顶（最多 +50）
 - 野怪轮玩家胜同样发基础/技能/利息，并**回复 10% 最大生命**（`max(1, floor(MaxHp×0.1))`，不超上限）
 - 淘汰：HP ≤ 0 立即写 `Alive=false` 和名次；同轮多人死亡按 `|淘汰后血量|` 升序（更接近 0 名次靠前）
-- 名次奖励：终局按 `RankReward`（1~4 名 200/120/60/30）填 `fighter.RewardGold`，由 `PvpRewardService` 一次性落库到局外钱包金币（`TryMarkRewardsGranted` CAS 保证整局只发一次；单人失败记 Error 日志不阻塞他人）
+- 名次奖励：终局按 `RankReward`（1~4 名 200/120/60/30）填 `fighter.RewardGold`，按 `RankScore`（未配时 1~4 名 +50/+25/0/-40）填 `fighter.RewardScore`。`PvpRewardService` 一次性落库到局外钱包金币和 PVP 分数（分数下限 0；`TryMarkRewardsGranted` CAS 保证整局只发一次；单人失败记 Error 日志不阻塞他人）
+- 客户端终局弹 [`BattleResultPopup`](../../Card/Assets/App/UI/Popup/BattleResultPopup.md)：名次图 + `pvpgrade`（本地局外分与 `RewardScore`）。终局快照不另下发更新后的总分
 
 ## 商店阶段
 
@@ -53,7 +61,7 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 
 ## 断线 = 代管，可重连接管
 
-- WS 断开**不再退赛**：座位标 `Disconnected`，当前桌未锁定则自动锁定结算；后续轮该座位发牌即自动锁定（机器人同款自动选牌）代打；房间内广播 `player_offline`
+- WS 断开**不再退赛**：座位标 `Disconnected`，当前桌未锁定则自动锁定结算；后续轮该座位发牌即自动锁定代打（选最大牌型，不等机器人的 3～5 秒）；房间内广播 `player_offline`
 - 重连：重连 WS → `auth` → 发 `sync` → 服务端回 `match_update` 全量快照（按 userId 找局）并广播 `player_online`；`error(not_in_battle)` 表示对局已不在
 - 死者留局观战（`duel=null`），名次奖励照发；`leave` 仍可用（对局索引清人）
 

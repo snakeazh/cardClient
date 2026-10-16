@@ -1,6 +1,6 @@
 # BattleResultPopup 使用文档
 
-闯关结算页。成功 / 失败两套节点；`coinNum` 是局外货币。
+闯关结算页，PVP 终局也用这一页。闯关显示成功 / 失败与逐关金币；PVP 显示名次与局外分加减。
 
 脚本：`Assets/App/UI/Popup/BattleResultPopupView.cs`  
 视图模型：`Assets/App/UI/Popup/BattleResultPopupViewModel.cs`  
@@ -21,6 +21,7 @@
 | 成功 | `GamePhase.RunComplete`（打完该难度全部关卡，商店点下一关） | `logosuccess2` |
 | 失败 | `GamePhase.StageFail`（阵亡） | `logofail2` |
 | 失败（无复活） | 局内 `backBtn` 经 `CommonTop` 确定退出 | `logofail2`，隐藏 `AgainBtn` |
+| PVP 终局 | `PvpMatchSession.Finished` → `GameTableViewModel.ShowPvpResultAsync` | 名次图 + `pvptip` + `pvpgrade`；隐藏闯关明细 |
 
 不再弹出独立的 `BattleFailPopup`（预制体与脚本保留，暂不使用）。阵亡直接出本页。主动退出先弹 [`CommonTop`](CommonTopView.cs)，确定后再以 `forfeitNoRevive` 打开本页。
 
@@ -46,7 +47,11 @@
 | `coinNum` | 最底部总金币（SummeryArea 内） |
 | `BackBtn` | 回到主界面 |
 | `AgainBtn` | 广告复活 |
-| `Scroll View` | 逐关明细滚动区（未直接使用，行克隆走 FindDeep 找 Content/Text1；View 不写它的 sizeDelta，靠拉伸锚点跟随 BG） |
+| `Scroll View` | 闯关逐关明细滚动区（未直接使用，行克隆走 FindDeep 找 Content/Text1；View 不写它的 sizeDelta，靠拉伸锚点跟随 BG）。PVP 隐藏 |
+| `SummeryArea` | 闯关总金币。PVP 隐藏 |
+| `FirstPlace` / `SecondPlace` / `ThirdPlace` / `FourthPlace` | Title 下的名次图。PVP 只亮本人名次（1～4），闯关全部隐藏 |
+| `pvptip` | 文案「获得分数」。仅 PVP 显示 |
+| `pvpgrade` | 局外分与本局加减。仅 PVP 显示 |
 
 行模板 `Text1` 与 `Content` 没绑 UIBind，View 用 `FindDeep` 按名字取。
 
@@ -100,3 +105,17 @@ TallScreenFitScale（只写 localScale，不冲突）。行数极多时纸面会
 var funds = ScoreBalance.PointsToGold(session.Score.Total);
 wallet.Add(funds);
 ```
+
+---
+
+## PVP 终局
+
+`ShowPvpResultAsync` 以 `BattleResultArgs`（`IsPvp=true`）打开本页，不走闯关兑金、不建逐关行、不播入场行链。`BackBtn` 只关弹窗，随后离场回大厅。`AgainBtn`、`logosuccess2`、`logofail2`、`Scroll View`、`SummeryArea` 都隐藏。
+
+| 节点 | 内容 |
+|------|------|
+| Title 名次图 | `Rank==1..4` 分别亮 `FirstPlace`～`FourthPlace` |
+| `pvptip` | 预制体文案「获得分数」 |
+| `pvpgrade` | `{局外分} <size=64><color=#008728>+加减</color></size>` |
+
+局外分读本地 `IPvpScoreService.Score`（开局前缓存，终局快照不下发新总分）。加减是本人 `RewardScore`（名次分，可为负）。加分与 0 用 `#008728` 并带 `+`；扣分用 `#C44545`，数字自带负号。例：`111 <size=64><color=#008728>+50</color></size>`。

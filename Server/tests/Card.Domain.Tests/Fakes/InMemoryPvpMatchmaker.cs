@@ -195,7 +195,8 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
             NickName = player.NickName,
             AvatarUrl = player.AvatarUrl,
             IsBot = player.IsBot,
-            BotConfigId = player.BotConfigId
+            BotConfigId = player.BotConfigId,
+            PvpScore = player.PvpScore
         };
     }
 }

@@ -244,10 +244,12 @@ public class PvpMatchmakerTests
         var profile = PlayerProfile.CreateNew(Guid.NewGuid(), TestConfig.Create(), DateTimeOffset.UtcNow);
         profile.NickName = "游客甲";
         profile.AvatarUrl = "https://wx.qlogo.cn/x";
+        profile.PvpScore = 111;
         var pub = ProfileMapper.ToPublic(profile);
         Assert.Equal(profile.UserId.ToString("N"), pub.UserId);
         Assert.Equal("游客甲", pub.NickName);
         Assert.Equal("https://wx.qlogo.cn/x", pub.AvatarUrl);
+        Assert.Equal(111, pub.PvpScore);
     }
 
     [Fact]

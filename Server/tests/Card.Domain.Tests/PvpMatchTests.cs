@@ -241,7 +241,8 @@ public class PvpMatchTests
 
         var flags = new bool[5];
         HandEvaluator.Tables = PvpTestTables.Classic();
-        HandEvaluator.SelectBestOpen(cards, flags, 5);
+        var cap = HandEvaluator.TypeLevel(CardShare.Battle.HandType.Flush);
+        HandEvaluator.SelectBestOpen(cards, flags, 5, maxHandScoreLevel: cap);
         var expected = new List<int>();
         for (var i = 0; i < flags.Length; i++)
         {
@@ -252,6 +253,25 @@ public class PvpMatchTests
         }
 
         Assert.Equal(expected, engine.Snapshot.Picked[1]);
+    }
+
+    [Fact]
+    public void MonsterBestOpenStopsAtFlushWhenTripsExist()
+    {
+        var cards = new[]
+        {
+            new Card(Suit.Heart, Rank.Ace),
+            new Card(Suit.Heart, Rank.King),
+            new Card(Suit.Heart, Rank.Nine),
+            new Card(Suit.Spade, Rank.Ace),
+            new Card(Suit.Club, Rank.Ace)
+        };
+        HandEvaluator.Tables = PvpTestTables.Classic();
+        var cap = HandEvaluator.TypeLevel(CardShare.Battle.HandType.Flush);
+        var flags = new bool[cards.Length];
+        var score = HandEvaluator.SelectBestOpen(cards, flags, cards.Length, maxHandScoreLevel: cap);
+        Assert.Equal(CardShare.Battle.HandType.Flush, score.Type);
+        Assert.True(score.Level <= cap);
     }
 
     [Fact]

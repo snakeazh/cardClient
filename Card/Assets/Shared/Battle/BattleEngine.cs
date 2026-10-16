@@ -212,7 +212,7 @@ namespace CardShare.Battle
             _rubsUsed[seatId]++;
             if (!_seats[seatId].IsHuman)
             {
-                _picked[seatId] = PickBest(hand);
+                _picked[seatId] = PickBest(hand, MonsterHandLevelCap(seatId));
             }
 
             PublishDealt(hands, "rub");
@@ -402,7 +402,7 @@ namespace CardShare.Battle
                     cards[i] = hand[i];
                 }
 
-                return PickBest(cards);
+                return PickBest(cards, MonsterHandLevelCap(seatId));
             }
             finally
             {
@@ -414,7 +414,7 @@ namespace CardShare.Battle
         {
             if (!_seats[seat].IsHuman && hand.Length >= BattleLimits.OpenHandSize)
             {
-                return PickBest(hand);
+                return PickBest(hand, MonsterHandLevelCap(seat));
             }
 
             return DefaultPick(hand.Length);
@@ -543,10 +543,10 @@ namespace CardShare.Battle
             return pick;
         }
 
-        private static int[] PickBest(Card[] hand)
+        private static int[] PickBest(Card[] hand, int maxHandScoreLevel = 0)
         {
             var flags = new bool[hand.Length];
-            HandEvaluator.SelectBestOpen(hand, flags, hand.Length);
+            HandEvaluator.SelectBestOpen(hand, flags, hand.Length, maxHandScoreLevel: maxHandScoreLevel);
             var pick = DefaultPick(hand.Length);
             var n = 0;
             for (var i = 0; i < flags.Length && n < pick.Length; i++)
@@ -558,6 +558,23 @@ namespace CardShare.Battle
             }
 
             return pick;
+        }
+
+        /// <summary>野怪选牌上限：同花。顺子、同花顺、豹子不再入选。真人与机器人不限制。</summary>
+        private int MonsterHandLevelCap(int seat)
+        {
+            if (seat < 0 || seat >= _seats.Count)
+            {
+                return 0;
+            }
+
+            var setup = _seats[seat];
+            if (setup == null || setup.IsHuman || !string.IsNullOrEmpty(setup.UserId))
+            {
+                return 0;
+            }
+
+            return HandEvaluator.TypeLevel(HandType.Flush);
         }
 
         private static int[][] EmptyPicked()

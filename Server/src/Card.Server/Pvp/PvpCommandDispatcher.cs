@@ -13,17 +13,20 @@ public sealed class PvpCommandDispatcher
     private readonly PvpMatchHost _matches;
     private readonly PvpMessageRouter _router;
     private readonly PvpRewardService _rewards;
+    private readonly IPvpMatchmaker _matchmaker;
     private readonly IServiceScopeFactory _scopes;
 
     public PvpCommandDispatcher(
         PvpMatchHost matches,
         PvpMessageRouter router,
         PvpRewardService rewards,
+        IPvpMatchmaker matchmaker,
         IServiceScopeFactory scopes)
     {
         _matches = matches;
         _router = router;
         _rewards = rewards;
+        _matchmaker = matchmaker;
         _scopes = scopes;
     }
 
@@ -156,6 +159,102 @@ public sealed class PvpCommandDispatcher
         }
 
         _matches.UnbindEliminated(match);
+    }
+
+    /// <summary>接受没凑齐：通知房间里的真人，再把要留下的人插回队列前面。</summary>
+    public async Task<bool> FailAcceptAsync(Guid userId, bool requeueUser, CancellationToken cancellationToken)
+    {
+        if (!_matches.TryFailAccept(userId, requeueUser, out var group))
+        {
+            return false;
+        }
+
+        await BroadcastAcceptFailAsync(group, cancellationToken);
+        return true;
+    }
+
+    public async Task SweepAcceptFailuresAsync(CancellationToken cancellationToken)
+    {
+        var groups = _matches.SweepAcceptTimeouts(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        for (var i = 0; i < groups.Count; i++)
+        {
+            await BroadcastAcceptFailAsync(groups[i], cancellationToken);
+        }
+    }
+
+    public async Task SweepBotAcceptsAsync(CancellationToken cancellationToken)
+    {
+        var ticks = _matches.SweepBotAccepts(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        for (var i = 0; i < ticks.Count; i++)
+        {
+            await BroadcastAcceptProgressAsync(ticks[i], cancellationToken);
+        }
+    }
+
+    public Task BroadcastAcceptProgressAsync(PvpMatchHost.AcceptProgress progress, CancellationToken cancellationToken)
+    {
+        return BroadcastAcceptProgressAsync(
+            progress.Humans,
+            progress.AcceptedIds,
+            progress.AllAccepted,
+            progress.Match,
+            cancellationToken);
+    }
+
+    private async Task BroadcastAcceptProgressAsync(
+        Guid[] humans,
+        string[] acceptedIds,
+        bool allAccepted,
+        PvpMatch? match,
+        CancellationToken cancellationToken)
+    {
+        var update = new WsEnvelope
+        {
+            T = WsMessageTypes.AcceptUpdate,
+            Seq = 0,
+            Payload = new WsAcceptUpdatePayload { UserIds = acceptedIds ?? Array.Empty<string>() }
+        };
+        for (var i = 0; i < humans.Length; i++)
+        {
+            await _router.SendToUser(humans[i], update, cancellationToken);
+        }
+
+        if (!allAccepted)
+        {
+            return;
+        }
+
+        var ready = new WsEnvelope { T = WsMessageTypes.AllAccepted, Seq = 0 };
+        for (var i = 0; i < humans.Length; i++)
+        {
+            await _router.SendToUser(humans[i], ready, cancellationToken);
+        }
+
+        if (match != null)
+        {
+            await BroadcastMatchAsync(match, 0, cancellationToken);
+        }
+    }
+
+    private async Task BroadcastAcceptFailAsync(PvpMatchHost.AcceptFailGroup group, CancellationToken cancellationToken)
+    {
+        var failed = new WsEnvelope { T = WsMessageTypes.AcceptFailed, Seq = 0 };
+        for (var i = 0; i < group.Humans.Length; i++)
+        {
+            await _router.SendToUser(group.Humans[i], failed, cancellationToken);
+        }
+
+        for (var i = 0; i < group.Requeue.Length; i++)
+        {
+            var player = group.Requeue[i];
+            if (player == null || !Guid.TryParse(player.UserId, out var id))
+            {
+                continue;
+            }
+
+            var evt = _matchmaker.EnqueuePriority(player);
+            await BroadcastRoomEventAsync(evt, id, 0, cancellationToken);
+        }
     }
 
     /// <summary>开房：装配座位、建房、发 room_ready + 首轮快照；未开房：回 joiner queued、其余 queue_update。</summary>

@@ -63,6 +63,11 @@ namespace CardShare.Contracts.Config
         /// </summary>
         DisableSkill = 11,
 
+        /// <summary>
+        /// 每回合开始+5金币,且商店中圣物与槽位购买价格-20%
+        /// </summary>
+        Capital = 12,
+
     }
 
     /// <summary>

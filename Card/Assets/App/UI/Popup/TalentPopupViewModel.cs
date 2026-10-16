@@ -60,6 +60,7 @@ namespace App.UI.Popup
             Atlas = atlas;
             BuyCommand = new RelayCommand(Buy);
             OpenRulesCommand = new RelayCommand(OpenRules);
+            CloseCommand = new RelayCommand(ClosePop);
             BuyCostText = new ObservableProperty<string>(_talent.GetDrawCost().ToString());
             ListVersion = new ObservableProperty<int>(0);
             RebuildItems();
@@ -82,6 +83,9 @@ namespace App.UI.Popup
 
         /// <summary>打开天赋规则说明弹窗（DetailBtn）。</summary>
         public IRelayCommand OpenRulesCommand { get; }
+
+        /// <summary>关闭天赋页返回主页（BackBtn）。</summary>
+        public IRelayCommand CloseCommand { get; }
 
         protected override Task OnOpen(object args)
         {
@@ -161,6 +165,11 @@ namespace App.UI.Popup
             {
                 AppLog.Exception(LogChannel.UI, ex);
             }
+        }
+
+        private void ClosePop()
+        {
+            _ = _ui.Close(this);
         }
 
         private async void Buy()

@@ -25,7 +25,6 @@ namespace App.UI
     public sealed class HomeViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly TalentBonusManager _talentBonus;
         private readonly IAudioService _audio;
         private readonly IUnlockConditionService _unlock;
@@ -34,15 +33,13 @@ namespace App.UI
         private readonly GameTableViewModel _table;
         private readonly PvpMatchSession _pvp;
         private readonly IPvpScoreService _pvpScore;
-        private bool _pvpStarting;
+        private bool _openingPvp;
         private bool _openingLevel;
         private bool _pvpResumeChecked;
         private Task _resumeTask;
-        private int _matchTimerGeneration;
 
         public HomeViewModel(
             IUIManager ui,
-            NavigationViewModel navigation,
             TalentBonusManager talentBonus,
             IResourceService resources,
             IAudioService audio,
@@ -54,7 +51,6 @@ namespace App.UI
             IPvpScoreService pvpScore)
         {
             _ui = ui;
-            _navigation = navigation;
             _talentBonus = talentBonus;
             _audio = audio;
             _unlock = unlock;
@@ -66,11 +62,11 @@ namespace App.UI
             Resources = resources;
             StaminaText = new ObservableProperty<string>();
             PvpValueText = new ObservableProperty<string>();
-            PvpTimeText = new ObservableProperty<string>(string.Empty);
-            ShowPvpTime = new ObservableProperty<bool>(false);
             StartCommand = new RelayCommand(OpenLevelUI, () => !_openingLevel);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
-            PvpCommand = new RelayCommand(StartPvp, () => !_pvpStarting);
+            OpenIllustrateCommand = new RelayCommand(OpenIllustrate);
+            OpenTalentCommand = new RelayCommand(OpenTalent);
+            PvpCommand = new RelayCommand(OpenPvpPage, () => !_openingPvp);
             Hero = HeroConfig.Get(LevelUIViewModel.GetDefaultHeroId());
         }
 
@@ -87,16 +83,17 @@ namespace App.UI
         /// <summary>Home 页 pvpValue：局外 PVP 分数，如 "0分"。</summary>
         public ObservableProperty<string> PvpValueText { get; }
 
-        /// <summary>Home/pvpBtn/pvpTime：匹配已等待时长，如 "00:05"。</summary>
-        public ObservableProperty<string> PvpTimeText { get; }
-
-        /// <summary>仅匹配中显示 pvpTime。</summary>
-        public ObservableProperty<bool> ShowPvpTime { get; }
-
         public IRelayCommand StartCommand { get; }
 
         /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
         public IRelayCommand OpenTTRewardCommand { get; }
+
+        /// <summary>打开图鉴弹窗（Home IllustrateBtn）。</summary>
+        public IRelayCommand OpenIllustrateCommand { get; }
+
+        /// <summary>打开天赋弹窗（Home TalentBtn）。</summary>
+        public IRelayCommand OpenTalentCommand { get; }
+
         public IRelayCommand PvpCommand { get; }
 
         protected override async Task OnOpen(object args)
@@ -119,14 +116,12 @@ namespace App.UI
 
         protected override Task OnClose()
         {
-            StopMatchTimer();
             _pvpScore.Changed -= OnPvpScoreChanged;
             return Task.CompletedTask;
         }
 
         protected override void OnDispose()
         {
-            StopMatchTimer();
             _pvpScore.Changed -= OnPvpScoreChanged;
         }
 
@@ -237,16 +232,14 @@ namespace App.UI
             StartCommand.RaiseCanExecuteChanged();
             try
             {
-                _navigation.HideBar();
                 var registration = _ui.Registry.GetByViewModelType(typeof(LevelUIViewModel));
                 var vm = (LevelUIViewModel)_ui.Registry.CreateViewModel(registration);
                 await _ui.Open(vm);
             }
             catch (Exception ex)
             {
-                // async void 吞异常会让按钮"点了没反应"：记录并恢复导航栏，提示重试。
+                // async void 吞异常会让按钮"点了没反应"：记录并提示重试。
                 AppLog.Exception(LogChannel.UI, ex);
-                await _navigation.EnsureShown();
                 _toast?.ShowWarning("选关界面打开失败，请重试");
             }
             finally
@@ -268,6 +261,36 @@ namespace App.UI
             {
                 AppLog.Exception(LogChannel.UI, ex);
                 _toast?.ShowWarning("奖励界面打开失败，请重试");
+            }
+        }
+
+        private async void OpenIllustrate()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(IllustratedBookPopViewModel));
+                var vm = (IllustratedBookPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("图鉴打开失败，请重试");
+            }
+        }
+
+        private async void OpenTalent()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(TalentPopupViewModel));
+                var vm = (TalentPopupViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("天赋界面打开失败，请重试");
             }
         }
 
@@ -306,7 +329,6 @@ namespace App.UI
                     }
 
                     _pvp.ActivateResumedMatch();
-                    _navigation.HideBar();
                     _session.BeginPvp();
                     await _ui.Open(_table);
                     return;
@@ -335,96 +357,39 @@ namespace App.UI
             return await _ui.Dialogs.ShowCustomAsync<CommonTopViewModel, bool>(popup, tip);
         }
 
-        private async void StartPvp()
+        /// <summary>竞技场入口：打开 PVPPage，匹配与接受都在该页进行。</summary>
+        private async void OpenPvpPage()
         {
-            if (_pvpStarting)
+            if (_openingPvp)
             {
                 return;
             }
 
-            _pvpStarting = true;
+            _openingPvp = true;
             PvpCommand.RaiseCanExecuteChanged();
+            var nav = _ui.FindOpen<NavigationViewModel>();
             try
             {
-                if (!GameApiSettings.Enabled)
-                {
-                    Toast.Error("服务器连接已关闭");
-                    return;
-                }
-
-                if (!GameApi.IsReady)
-                {
-                    await PveSessionGate.ConnectWithRetryAsync(_ui.Dialogs);
-                    if (!GameApi.IsReady)
-                    {
-                        Toast.Error("未连接服务器");
-                        return;
-                    }
-                }
-
-                // 手动点匹配 = 开新局，不要重连探针：取消探测并占住 resume 标记，直接排队。
                 _pvpResumeChecked = true;
                 _pvp.CancelProbe();
-
-                _navigation.HideBar();
-                StartMatchTimer();
-                await _pvp.Invoker.EnqueueStartQueue();
-                _session.BeginPvp();
-                await _ui.Open(_table);
-            }
-            catch (GameApiException ex)
-            {
-                Toast.Error(GameApi.Describe(ex));
-                await _pvp.StopAsync();
-                _session.EndPvp();
-                await _navigation.EnsureShown();
+                nav?.HideBar();
+                var registration = _ui.Registry.GetByViewModelType(typeof(PvpPageViewModel));
+                var vm = (PvpPageViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
-                Toast.Error("匹配失败");
-                await _pvp.StopAsync();
-                _session.EndPvp();
-                await _navigation.EnsureShown();
+                _toast?.ShowWarning("竞技场打开失败，请重试");
+                if (nav != null)
+                {
+                    await nav.EnsureShown();
+                }
             }
             finally
             {
-                StopMatchTimer();
-                _pvpStarting = false;
+                _openingPvp = false;
                 PvpCommand.RaiseCanExecuteChanged();
-            }
-        }
-
-        private void StartMatchTimer()
-        {
-            var generation = ++_matchTimerGeneration;
-            ShowPvpTime.Value = true;
-            PvpTimeText.Value = "00:00";
-            _ = RunMatchTimerAsync(generation);
-        }
-
-        private void StopMatchTimer()
-        {
-            _matchTimerGeneration++;
-            ShowPvpTime.Value = false;
-            PvpTimeText.Value = string.Empty;
-        }
-
-        /// <summary>匹配等待计时：WebGL/微信上 Task.Delay 不可靠，用 realtime + Yield 按秒刷新。</summary>
-        private async Task RunMatchTimerAsync(int generation)
-        {
-            var start = Time.realtimeSinceStartup;
-            while (_matchTimerGeneration == generation)
-            {
-                var elapsed = Mathf.Max(0f, Time.realtimeSinceStartup - start);
-                var totalSeconds = (int)elapsed;
-                PvpTimeText.Value = $"{totalSeconds / 60:00}:{totalSeconds % 60:00}";
-
-                var nextTick = start + totalSeconds + 1f;
-                while (_matchTimerGeneration == generation && Time.realtimeSinceStartup < nextTick)
-                {
-                    await Task.Yield();
-                }
             }
         }
     }

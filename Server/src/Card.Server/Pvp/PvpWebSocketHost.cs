@@ -167,6 +167,33 @@ public static class PvpWebSocketHost
                     continue;
                 }
 
+                if (t == WsMessageTypes.Accept)
+                {
+                    if (!matches.TryAccept(userId.Value, out var allAccepted, out var humans, out var acceptedIds, out var match))
+                    {
+                        await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Not waiting to accept.", cancellationToken);
+                        continue;
+                    }
+
+                    await SendAsync(socket, new WsEnvelope { T = WsMessageTypes.Accept, Seq = incoming.Seq }, cancellationToken);
+                    await dispatcher.BroadcastAcceptProgressAsync(
+                        new PvpMatchHost.AcceptProgress(humans, acceptedIds, allAccepted, match),
+                        cancellationToken);
+                    continue;
+                }
+
+                if (t == WsMessageTypes.Decline)
+                {
+                    if (!await dispatcher.FailAcceptAsync(userId.Value, true, cancellationToken))
+                    {
+                        await SendError(socket, incoming.Seq, ErrorCodes.InvalidRequest, "Not waiting to accept.", cancellationToken);
+                        continue;
+                    }
+
+                    await SendAsync(socket, new WsEnvelope { T = WsMessageTypes.Decline, Seq = incoming.Seq }, cancellationToken);
+                    continue;
+                }
+
                 if (t == WsMessageTypes.Leave)
                 {
                     await HandleLeaveAsync(socket, router, matches, dispatcher, matchmaker, userId.Value, incoming, cancellationToken);
@@ -233,6 +260,23 @@ public static class PvpWebSocketHost
         WsEnvelope incoming,
         CancellationToken cancellationToken)
     {
+        if (await dispatcher.FailAcceptAsync(userId, false, cancellationToken))
+        {
+            var cancelled = matchmaker.Cancel(userId);
+            await SendAsync(socket, new WsEnvelope { T = WsMessageTypes.Leave, Seq = incoming.Seq }, cancellationToken);
+            if (cancelled != null)
+            {
+                await dispatcher.BroadcastRosterAsync(
+                    cancelled.Recipients,
+                    WsMessageTypes.QueueUpdate,
+                    cancelled.Players,
+                    0,
+                    cancellationToken);
+            }
+
+            return;
+        }
+
         if (matches.TryGet(userId, out _))
         {
             await dispatcher.ProcessLeaveAsync(userId, incoming, cancellationToken);

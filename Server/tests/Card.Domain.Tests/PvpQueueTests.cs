@@ -469,6 +469,22 @@ public class PvpMatchmakerTests
         Assert.Single(remaining);
     }
 
+    [Fact]
+    public void PriorityEnqueueIsSeatedAheadOfEarlierPlayers()
+    {
+        var matchmaker = new InMemoryPvpMatchmaker();
+        matchmaker.Enqueue(Public("甲"));
+        matchmaker.Enqueue(Public("乙"));
+        matchmaker.Enqueue(Public("丙"));
+
+        var ready = matchmaker.EnqueuePriority(Public("优先"));
+        Assert.True(ready.RoomOpened);
+        Assert.Equal("优先", ready.Players[0].NickName);
+        Assert.Equal("甲", ready.Players[1].NickName);
+        Assert.Equal("乙", ready.Players[2].NickName);
+        Assert.Equal("丙", ready.Players[3].NickName);
+    }
+
     private static PlayerPublic Public(string nick, string avatar = "")
     {
         return new PlayerPublic

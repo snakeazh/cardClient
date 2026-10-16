@@ -52,6 +52,11 @@ namespace CardShare.Contracts.Config
         public int[] BindingID;
 
         /// <summary>
+        /// PVP不出现
+        /// </summary>
+        public int PVPDoNotAppear;
+
+        /// <summary>
         /// 解锁条件ID
         /// </summary>
         public int UnlockConditionId;

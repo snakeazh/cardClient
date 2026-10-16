@@ -158,6 +158,23 @@ namespace CardShare.Battle
             }
         }
 
+        /// <summary>接受确认前对局被挂起的时长补回截止时间，避免一确认就因等待被判超时。</summary>
+        public void ShiftDeadline(long deltaMs)
+        {
+            if (deltaMs <= 0)
+            {
+                return;
+            }
+
+            lock (_gate)
+            {
+                if (PhaseDeadlineUtcMs > 0)
+                {
+                    PhaseDeadlineUtcMs += deltaMs;
+                }
+            }
+        }
+
         /// <summary>阶段到点推进：fight 自动锁定结算、settle 进商店/结束、shop 进下一轮。返回是否有状态变化。</summary>
         public bool ApplyTimeouts(long nowUtcMs)
         {

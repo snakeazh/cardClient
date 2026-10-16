@@ -27,7 +27,6 @@ namespace App.UI
     public sealed class GameTableViewModel : ViewModelBase
     {
         private readonly IUIManager _ui;
-        private readonly NavigationViewModel _navigation;
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
         private readonly IAudioService _audio;
@@ -68,7 +67,6 @@ namespace App.UI
             GameSession session,
             IResourceService resources,
             IUIManager ui,
-            NavigationViewModel navigation,
             ILevelProgressService progress,
             IAtlasService atlas,
             IGuideService guide,
@@ -81,7 +79,6 @@ namespace App.UI
             Progress = progress;
             Atlas = atlas;
             _ui = ui;
-            _navigation = navigation;
             _guide = guide ?? throw new ArgumentNullException(nameof(guide));
             _save = save ?? throw new ArgumentNullException(nameof(save));
             _audio = audio;
@@ -1473,7 +1470,6 @@ namespace App.UI
                 await _ui.Open(home);
             }
 
-            await _navigation.EnsureShown();
             TryStartFirstTalentGuide();
         }
 

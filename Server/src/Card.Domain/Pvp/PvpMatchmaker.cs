@@ -8,6 +8,9 @@ public static class PvpRules
 
     /// <summary>排队超时（毫秒）：超过该时长未开房的玩家被踢出队列。</summary>
     public const long QueueTimeoutMs = 60_000;
+
+    /// <summary>开房后等人点接受的时长。超时未全员接受则解散，回到队列。</summary>
+    public const long AcceptTimeoutMs = 60_000;
 }
 
 public sealed class PvpRoom
@@ -35,6 +38,9 @@ public sealed class MatchEvent
 public interface IPvpMatchmaker
 {
     MatchEvent Enqueue(PlayerPublic player);
+
+    /// <summary>插到普通排队之前，入队时间按现在重算。满员则照常开房。</summary>
+    MatchEvent EnqueuePriority(PlayerPublic player);
 
     MatchEvent? Cancel(Guid userId);
 

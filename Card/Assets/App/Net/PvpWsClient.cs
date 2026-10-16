@@ -58,6 +58,10 @@ namespace App.Net
 
         public Task CancelAsync() => SendAsync(WsMessageTypes.Cancel, null);
 
+        public Task AcceptAsync() => SendAsync(WsMessageTypes.Accept, null);
+
+        public Task DeclineAsync() => SendAsync(WsMessageTypes.Decline, null);
+
         public Task LeaveAsync() => SendAsync(WsMessageTypes.Leave, null);
 
         /// <summary>断线重连后的对局同步：RoomId 空表示按 userId 查当前对局。</summary>

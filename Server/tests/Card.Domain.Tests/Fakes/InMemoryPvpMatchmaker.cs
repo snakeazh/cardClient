@@ -11,6 +11,8 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         public PlayerPublic Player { get; init; } = new PlayerPublic();
 
         public long EnqueuedUtcMs { get; init; }
+
+        public bool Priority { get; init; }
     }
 
     private readonly object _gate = new object();
@@ -23,7 +25,11 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         _nowUtcMs = nowUtcMs ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
-    public MatchEvent Enqueue(PlayerPublic player)
+    public MatchEvent Enqueue(PlayerPublic player) => Enqueue(player, priority: false);
+
+    public MatchEvent EnqueuePriority(PlayerPublic player) => Enqueue(player, priority: true);
+
+    private MatchEvent Enqueue(PlayerPublic player, bool priority)
     {
         if (player == null || !Guid.TryParse(player.UserId, out var userId))
         {
@@ -33,7 +39,22 @@ public sealed class InMemoryPvpMatchmaker : IPvpMatchmaker
         lock (_gate)
         {
             RemoveLocked(userId);
-            _waiting.Add(new QueueEntry { Player = Clone(player), EnqueuedUtcMs = _nowUtcMs() });
+            var entry = new QueueEntry { Player = Clone(player), EnqueuedUtcMs = _nowUtcMs(), Priority = priority };
+            if (priority)
+            {
+                var index = 0;
+                while (index < _waiting.Count && _waiting[index].Priority)
+                {
+                    index++;
+                }
+
+                _waiting.Insert(index, entry);
+            }
+            else
+            {
+                _waiting.Add(entry);
+            }
+
             if (_waiting.Count < PvpRules.RoomSize)
             {
                 var snapshot = SnapshotLocked();

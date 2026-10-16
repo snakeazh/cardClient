@@ -31,6 +31,11 @@ namespace CardShare.Contracts
         public const string MatchEvent = "match_event";
         public const string Sync = "sync";
         public const string QueueTimeout = "queue_timeout";
+        public const string Accept = "accept";
+        public const string Decline = "decline";
+        public const string AcceptUpdate = "accept_update";
+        public const string AcceptFailed = "accept_failed";
+        public const string AllAccepted = "all_accepted";
     }
 
     public sealed class WsAuthPayload
@@ -61,5 +66,10 @@ namespace CardShare.Contracts
         public int ModeId { get; set; }
 
         public PlayerPublic[] Players { get; set; } = System.Array.Empty<PlayerPublic>();
+    }
+
+    public sealed class WsAcceptUpdatePayload
+    {
+        public string[] UserIds { get; set; } = System.Array.Empty<string>();
     }
 }

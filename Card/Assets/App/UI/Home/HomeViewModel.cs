@@ -386,12 +386,10 @@ namespace App.UI
 
             _openingPvp = true;
             PvpCommand.RaiseCanExecuteChanged();
-            var nav = _ui.FindOpen<NavigationViewModel>();
             try
             {
                 _pvpResumeChecked = true;
                 _pvp.CancelProbe();
-                nav?.HideBar();
                 var registration = _ui.Registry.GetByViewModelType(typeof(PvpPageViewModel));
                 var vm = (PvpPageViewModel)_ui.Registry.CreateViewModel(registration);
                 await _ui.Open(vm);
@@ -400,10 +398,6 @@ namespace App.UI
             {
                 AppLog.Exception(LogChannel.UI, ex);
                 _toast?.ShowWarning("竞技场打开失败，请重试");
-                if (nav != null)
-                {
-                    await nav.EnsureShown();
-                }
             }
             finally
             {

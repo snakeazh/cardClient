@@ -2,15 +2,20 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Bootstrap;
 using App.Guide;
-using App.Resources;
-using Framework.UI.Navigation;
 using Framework.UI.View;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace App.UI
 {
-    [AutoScreen(AppScreenIds.Navigation, UILayer.Navigation, ResResourcePaths.MainInterfaceBottom)]
+    /// <summary>
+    /// 底部导航栏（已停用）：入口改由 Home 预制体按钮承担（图鉴/天赋/设置）。
+    /// 刻意保留 [AutoScreen] 移除状态——特性一旦存在，ScreenAutoRegistrar 会自动注册
+    /// 本 View 与 NavigationViewModel，任何残留的 EnsureShown() 调用都会把底栏拉回
+    /// （PvpPageViewModel 曾因合并带回该调用导致底栏偶发重现）。
+    /// 恢复方法：加回特性 [AutoScreen(AppScreenIds.Navigation, UILayer.Navigation,
+    /// ResResourcePaths.MainInterfaceBottom)] 并补 AppBootstrap 单例注册即可。
+    /// </summary>
     public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         private GuideTargetRegistry _guideTargets;

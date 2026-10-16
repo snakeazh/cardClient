@@ -740,7 +740,7 @@ namespace App.UI
             await StopPvpAndLeave();
         }
 
-        /// <summary>PVP 结算：名次 + 名次金币/分数 + 全桌排名（简化弹窗，复用通用确认框，不新建预制体）。</summary>
+        /// <summary>PVP 结算：名次图、获得分数、局外分加减。闯关明细和汇总隐藏。</summary>
         private async Task ShowPvpResultAsync()
         {
             if (_ui == null || _pvp == null)
@@ -750,65 +750,45 @@ namespace App.UI
 
             var state = _pvp.State;
             var players = state != null ? state.Players : null;
-            if (players == null || players.Length == 0)
-            {
-                return;
-            }
-
             var userId = GameApi.Client != null ? GameApi.Client.UserId : string.Empty;
-            var ranked = new List<PvpFighterDto>(players);
-            ranked.Sort((a, b) => RankOf(a).CompareTo(RankOf(b)));
-            var sb = new System.Text.StringBuilder();
-            for (var i = 0; i < ranked.Count; i++)
+            PvpFighterDto self = null;
+            if (players != null)
             {
-                var p = ranked[i];
-                if (sb.Length > 0)
+                for (var i = 0; i < players.Length; i++)
                 {
-                    sb.Append('\n');
-                }
-
-                sb.Append(p.Rank > 0 ? $"第{p.Rank}名" : "未排名");
-                sb.Append(' ').Append(string.IsNullOrEmpty(p.NickName) ? "玩家" : p.NickName);
-                if (p.IsBot)
-                {
-                    sb.Append("(bot)");
-                }
-
-                if (PvpMatchSession.SameUser(p.UserId, userId))
-                {
-                    sb.Append("（你）");
-                }
-
-                if (p.RewardGold > 0)
-                {
-                    sb.Append("  +").Append(p.RewardGold).Append("金币");
-                }
-
-                if (p.RewardScore > 0)
-                {
-                    sb.Append("  +").Append(p.RewardScore).Append("分");
-                }
-                else if (p.RewardScore < 0)
-                {
-                    sb.Append("  ").Append(p.RewardScore).Append("分");
+                    if (PvpMatchSession.SameUser(players[i].UserId, userId))
+                    {
+                        self = players[i];
+                        break;
+                    }
                 }
             }
 
+            var score = 0;
+            var pvpScore = AppServices.Resolve<App.PvpScore.IPvpScoreService>();
+            if (pvpScore != null)
+            {
+                score = pvpScore.Score;
+            }
+
+            var args = new BattleResultArgs
+            {
+                IsPvp = true,
+                Rank = self != null ? self.Rank : 0,
+                Score = score,
+                ScoreDelta = self != null ? self.RewardScore : 0
+            };
             try
             {
-                await _ui.Dialogs.ConfirmAsync("PVP 结算", sb.ToString(), DialogButtons.Ok, "返回大厅");
+                var registration = _ui.Registry.GetByViewModelType(typeof(BattleResultPopupViewModel));
+                var popup = (BattleResultPopupViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Dialogs.ShowCustomAsync<BattleResultPopupViewModel, BattleResultAction>(popup, args);
             }
             catch (Exception ex)
             {
                 AppLog.Exception(LogChannel.UI, ex);
-                var self = _pvp.Self;
                 Toast.Show(self != null && self.Rank > 0 ? $"PVP 结束，第 {self.Rank} 名" : "PVP 结束");
             }
-        }
-
-        private static int RankOf(PvpFighterDto fighter)
-        {
-            return fighter != null && fighter.Rank > 0 ? fighter.Rank : int.MaxValue;
         }
 
         private async void OnPvpFailed(string message)

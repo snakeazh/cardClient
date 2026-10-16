@@ -139,7 +139,13 @@ GameUI
 
 ## 积分条
 
-`roundInfo`：`第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。
+`roundInfo`：PVE 为 `第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。PVP 隐藏 `roundInfo`，轮次改写在 `stageInfoText`，只显示 `第{N}轮`（N 为服务端 `State.Round`）。
+
+PVP 选牌倒计时在 `timeValue`（父节点 `time`）。没有截止时间时整圈隐藏。`GameUIView.Update` 每帧按开快照时换算好的本地截止点减秒，不每帧用过期的 `serverNowUtcMs` 重算。商店弹窗 `BattleShopPop.timeText` 绑同一份 `TimeValue` / `ShowTime`。
+
+PVP 选牌提示：对方已锁定而我未锁定显示 `otherinfoshow`（对方已定牌）；我已锁定而对方未完成显示 `mineInfoshow`（等待对方选牌），并隐藏 `horBtns2`（搓牌 / 透视 / 替换）。双方都未锁定或都已锁定时两条都隐藏。
+
+PVP 终局走 [`BattleResultPopup`](../Popup/BattleResultPopup.md) 的名次页，不走闯关成功/失败页。
 
 `roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时，开场对话/VS 和发牌都结束后会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 

@@ -865,7 +865,7 @@ GameObject:
   - component: {fileID: 3261671873725605909}
   - component: {fileID: 1183005137793564863}
   m_Layer: 0
-  m_Name: Text (TMP)
+  m_Name: grade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1078,7 +1078,7 @@ GameObject:
   - component: {fileID: 7245067738546047907}
   - component: {fileID: 8230117474875565670}
   m_Layer: 0
-  m_Name: Text (TMP)
+  m_Name: grade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2703,7 +2703,7 @@ GameObject:
   - component: {fileID: 8121333145328022037}
   - component: {fileID: 3575727648086641333}
   m_Layer: 0
-  m_Name: Text (TMP)
+  m_Name: grade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

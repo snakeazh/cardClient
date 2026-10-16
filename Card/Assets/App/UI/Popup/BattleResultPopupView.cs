@@ -48,6 +48,7 @@ namespace App.UI.Popup
             var againButton = GetNode<Button>("AgainBtn");
             Binding.BindCommand(againButton, ViewModel.AgainCommand);
             Binding.BindActive(againButton.gameObject, ViewModel.ShowAgain);
+            BindResultMode();
 
             // 同 BattleSettleUpPop：OnBind 先于 VM.OnOpen，StageRows 此时还是空的，
             // 须订阅版本号等 Refresh 建行后再播入场动画（动画要枚举行，顺序不能反）；
@@ -57,6 +58,33 @@ namespace App.UI.Popup
                 RefreshStageList();
                 PlayEntranceOnce();
             }, emitCurrent: false));
+        }
+
+        private void BindResultMode()
+        {
+            BindActiveNamed("Scroll View", ViewModel.ShowStageList);
+            BindActiveNamed("SummeryArea", ViewModel.ShowSummary);
+            BindActiveNamed("pvptip", ViewModel.ShowPvp);
+            var grade = GetNode<TMP_Text>("pvpgrade");
+            if (grade != null)
+            {
+                Binding.BindText(grade, ViewModel.PvpGrade);
+                Binding.BindActive(grade.gameObject, ViewModel.ShowPvp);
+            }
+
+            BindActiveNamed("FirstPlace", ViewModel.ShowFirst);
+            BindActiveNamed("SecondPlace", ViewModel.ShowSecond);
+            BindActiveNamed("ThirdPlace", ViewModel.ShowThird);
+            BindActiveNamed("FourthPlace", ViewModel.ShowFourth);
+        }
+
+        private void BindActiveNamed(string name, ObservableProperty<bool> visible)
+        {
+            var node = UI.TryGet<GameObject>(name, out var bound) ? bound : FindDeep(transform, name)?.gameObject;
+            if (node != null)
+            {
+                Binding.BindActive(node, visible);
+            }
         }
 
         protected override Task OnViewClose()

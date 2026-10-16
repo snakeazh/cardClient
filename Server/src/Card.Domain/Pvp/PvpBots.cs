@@ -22,9 +22,13 @@ public static class PvpBots
             NickName = string.IsNullOrWhiteSpace(row.NickName) ? $"机器人{index + 1}" : row.NickName,
             AvatarUrl = row.AvatarUrl ?? string.Empty,
             IsBot = true,
-            BotConfigId = row.Id
+            BotConfigId = row.Id,
+            PvpScore = FakeScores[index % FakeScores.Length]
         };
     }
+
+    /// <summary>机器人没有主档分数，接受页用这组固定假分数。</summary>
+    private static readonly int[] FakeScores = { 86, 142, 230, 318 };
 
     private static PvpBotConfig Pick(IReadOnlyList<PvpBotConfig> bots, int index)
     {

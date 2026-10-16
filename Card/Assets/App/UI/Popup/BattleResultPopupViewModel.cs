@@ -70,6 +70,22 @@ namespace App.UI.Popup
 
         public ObservableProperty<string> CoinNum { get; }
 
+        public ObservableProperty<bool> ShowStageList { get; } = new ObservableProperty<bool>(true);
+
+        public ObservableProperty<bool> ShowSummary { get; } = new ObservableProperty<bool>(true);
+
+        public ObservableProperty<bool> ShowPvp { get; } = new ObservableProperty<bool>(false);
+
+        public ObservableProperty<string> PvpGrade { get; } = new ObservableProperty<string>(string.Empty);
+
+        public ObservableProperty<bool> ShowFirst { get; } = new ObservableProperty<bool>(false);
+
+        public ObservableProperty<bool> ShowSecond { get; } = new ObservableProperty<bool>(false);
+
+        public ObservableProperty<bool> ShowThird { get; } = new ObservableProperty<bool>(false);
+
+        public ObservableProperty<bool> ShowFourth { get; } = new ObservableProperty<bool>(false);
+
         /// <summary>逐关金币明细（自上而下），最底部的总数即 <see cref="CoinNum"/>。</summary>
         public IReadOnlyList<ResultStageRow> StageRows => _stageRows;
 
@@ -82,6 +98,12 @@ namespace App.UI.Popup
 
         protected override async Task OnOpen(object args)
         {
+            if (args is BattleResultArgs pvp && pvp.IsPvp)
+            {
+                ApplyPvp(pvp);
+                return;
+            }
+
             _forfeitNoRevive = args is bool forfeit && forfeit;
             var success = !_forfeitNoRevive && Session.Phase == GamePhase.RunComplete;
             ShowSuccess.Value = success;
@@ -96,6 +118,31 @@ namespace App.UI.Popup
             }
 
             AgainCommand.RaiseCanExecuteChanged();
+        }
+
+        private void ApplyPvp(BattleResultArgs pvp)
+        {
+            ShowSuccess.Value = false;
+            ShowFail.Value = false;
+            ShowAgain.Value = false;
+            ShowStageList.Value = false;
+            ShowSummary.Value = false;
+            ShowPvp.Value = true;
+            _granted = true;
+            ShowFirst.Value = pvp.Rank == 1;
+            ShowSecond.Value = pvp.Rank == 2;
+            ShowThird.Value = pvp.Rank == 3;
+            ShowFourth.Value = pvp.Rank == 4;
+            PvpGrade.Value = FormatPvpGrade(pvp.Score, pvp.ScoreDelta);
+            AgainCommand.RaiseCanExecuteChanged();
+        }
+
+        /// <summary>局外分 + 本局加减。正数绿色，负数红色。</summary>
+        public static string FormatPvpGrade(int score, int delta)
+        {
+            var color = delta < 0 ? "#C44545" : "#008728";
+            var deltaText = delta > 0 ? "+" + delta : delta.ToString();
+            return score + " <size=64><color=" + color + ">" + deltaText + "</color></size>";
         }
 
         /// <summary>
@@ -231,5 +278,17 @@ namespace App.UI.Popup
             Session.WatchAdRevive();
             _ = _dialogs.CloseWithResult(BattleResultAction.Again);
         }
+    }
+
+    /// <summary>PVP 终局结算。Score 是开局前的局外分，ScoreDelta 是本局名次加减。</summary>
+    public sealed class BattleResultArgs
+    {
+        public bool IsPvp { get; set; }
+
+        public int Rank { get; set; }
+
+        public int Score { get; set; }
+
+        public int ScoreDelta { get; set; }
     }
 }

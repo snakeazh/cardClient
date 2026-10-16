@@ -194,6 +194,11 @@ namespace App.UI
         public ObservableProperty<string> StageInfoText { get; } = new ObservableProperty<string>();
         public ObservableProperty<string> RoundInfo { get; } = new ObservableProperty<string>();
         public ObservableProperty<bool> ShowRoundInfo { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<string> TimeValue { get; } = new ObservableProperty<string>(string.Empty);
+        public ObservableProperty<bool> ShowTime { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<bool> ShowOtherInfo { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<bool> ShowMineInfo { get; } = new ObservableProperty<bool>(false);
+        public ObservableProperty<bool> ShowOperateButtons { get; } = new ObservableProperty<bool>(true);
         public ObservableProperty<string> RoundBuffName { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<string> RoundBuffDesc { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<bool> RoundBuffVisible { get; } = new ObservableProperty<bool>(false);
@@ -550,33 +555,78 @@ namespace App.UI
         /// <summary>PVP 选牌倒计时：服务器快照下发 deadline + 服务器当前时刻，换算成本地截止点后本地秒级跳动。到期不做任何事，等服务器快照驱动。</summary>
         public void TickPvpCountdown()
         {
-            if (!Session.IsPvp || _pvpDeadlineLocalMs <= 0)
+            if (Session == null || !Session.IsPvp || _pvpDeadlineLocalMs <= 0)
             {
+                if (ShowTime.Value)
+                {
+                    ShowTime.Value = false;
+                    TimeValue.Value = string.Empty;
+                }
+
                 return;
             }
 
-            RoundInfo.Value = FormatRoundInfo();
+            ApplyPvpCountdown();
+        }
+
+        private void ApplyPvpCountdown()
+        {
+            if (Session == null || !Session.IsPvp || _pvpDeadlineLocalMs <= 0)
+            {
+                ShowTime.Value = false;
+                TimeValue.Value = string.Empty;
+                return;
+            }
+
+            var leftMs = _pvpDeadlineLocalMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var seconds = (int)Math.Max(0, (leftMs + 999) / 1000);
+            ShowTime.Value = true;
+            TimeValue.Value = seconds.ToString();
+        }
+
+        /// <summary>选牌阶段：对方已定牌而我未定则显示 otherinfoshow；我已定牌而对方未完则显示 mineInfoshow。</summary>
+        private void ApplyPvpPickHints()
+        {
+            var showOther = false;
+            var showMine = false;
+            var state = _pvp != null ? _pvp.State : null;
+            if (Session != null
+                && Session.IsPvp
+                && state != null
+                && string.Equals(state.Phase, PvpPhases.Fight, StringComparison.OrdinalIgnoreCase)
+                && Session.Phase == GamePhase.WaitingOpen)
+            {
+                var mineLocked = Session.PvpHandLocked;
+                var foeLocked = false;
+                var duel = state.Duel;
+                if (duel != null && duel.Seats != null)
+                {
+                    for (var i = 0; i < duel.Seats.Count; i++)
+                    {
+                        var seat = duel.Seats[i];
+                        var mine = seat.SeatId == duel.ViewerSeat
+                            || PvpMatchSession.SameUser(seat.UserId, PvpUserId);
+                        if (!mine)
+                        {
+                            foeLocked = seat.Locked;
+                        }
+                    }
+                }
+
+                showOther = foeLocked && !mineLocked;
+                showMine = mineLocked && !foeLocked;
+            }
+
+            ShowOtherInfo.Value = showOther;
+            ShowMineInfo.Value = showMine;
+            ShowOperateButtons.Value = !showMine;
         }
 
         private string FormatRoundInfo()
         {
             if (Session.IsPvp && _pvp != null && _pvp.State != null)
             {
-                var round = $"第{_pvp.State.Round}轮";
-                if (_pvpDeadlineLocalMs <= 0)
-                {
-                    return round;
-                }
-
-                var leftMs = _pvpDeadlineLocalMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                var seconds = (int)Math.Max(0, (leftMs + 999) / 1000);
-                var phase = _pvp.State.Phase;
-                var label = string.Equals(phase, "shop", StringComparison.OrdinalIgnoreCase)
-                    ? "商店"
-                    : string.Equals(phase, "settle", StringComparison.OrdinalIgnoreCase)
-                        ? "结算"
-                        : "选牌";
-                return $"{round} · {label} {seconds}s";
+                return $"第{_pvp.State.Round}轮";
             }
 
             return $"第{Session.StageRoundIndex}轮";
@@ -876,6 +926,8 @@ namespace App.UI
             PlayerBet.Value = BetLabel(Session.Player);
             PlayerState.Value = SeatLine(Session.Player);
             RoundInfo.Value = FormatRoundInfo();
+            ApplyPvpCountdown();
+            ApplyPvpPickHints();
             BetAmount.Value = string.Empty;
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;

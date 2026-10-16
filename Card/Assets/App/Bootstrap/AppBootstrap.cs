@@ -149,6 +149,7 @@ namespace App.Bootstrap
             UnityGameConfigLoader.LoadFromAppConfig();
             CardShare.Battle.HandEvaluator.Tables = UnityGameConfigLoader.Current;
             await PortraitLoader.PreloadAsync(_resources.Resources);
+            await BondIconLoader.PreloadAsync(_resources.Resources);
             RegisterBag(_services);
             RegisterLevel(_services);
             RegisterScore(_services);

@@ -1603,6 +1603,7 @@ namespace App.UI
             }
 
             BindRoundInfo();
+            BindPvpStatus();
             RefreshPlayerItems();
         }
 
@@ -1624,6 +1625,39 @@ namespace App.UI
             if (text != null)
             {
                 Binding.BindText(text, ViewModel.RoundInfo);
+            }
+        }
+
+        private void BindPvpStatus()
+        {
+            var timeValue = ResolveSlot("timeValue");
+            if (timeValue != null)
+            {
+                var text = timeValue.GetComponent<TMP_Text>();
+                if (text != null)
+                {
+                    Binding.BindText(text, ViewModel.TimeValue);
+                }
+
+                var timeRoot = timeValue.parent != null ? timeValue.parent.gameObject : timeValue.gameObject;
+                Binding.BindActive(timeRoot, ViewModel.ShowTime);
+            }
+
+            BindActiveSlot("otherinfoshow", ViewModel.ShowOtherInfo);
+            BindActiveSlot("mineInfoshow", ViewModel.ShowMineInfo);
+            var skills = ResolveSlot("horBtns2") ?? transform.Find("horBtns2");
+            if (skills != null)
+            {
+                Binding.BindActive(skills.gameObject, ViewModel.ShowOperateButtons);
+            }
+        }
+
+        private void BindActiveSlot(string key, ObservableProperty<bool> visible)
+        {
+            var slot = ResolveSlot(key);
+            if (slot != null)
+            {
+                Binding.BindActive(slot.gameObject, visible);
             }
         }
 

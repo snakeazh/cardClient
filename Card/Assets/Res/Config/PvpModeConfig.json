@@ -3,7 +3,7 @@
     "Id": 1,
     "Name": "经典",
     "PlayerCount": 4,
-    "InitialGold": 150,
+    "InitialGold": 250,
     "ShopSeconds": 30,
     "SkipMonsterWhenTwoLeft": true,
     "RankReward": [

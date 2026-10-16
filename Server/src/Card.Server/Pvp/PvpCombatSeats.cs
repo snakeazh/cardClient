@@ -19,24 +19,21 @@ internal static class PvpCombatSeats
         var tables = scope.ServiceProvider.GetRequiredService<IGameTables>();
         var config = scope.ServiceProvider.GetRequiredService<IGameConfig>();
         var seats = new SeatSetup[room.Players.Count];
+        var heroIds = HeroIds(tables);
+        var rng = new Random(room.Seed);
         for (var i = 0; i < room.Players.Count; i++)
         {
             var pub = room.Players[i];
+            var heroId = heroIds.Count > 0
+                ? heroIds[rng.Next(heroIds.Count)]
+                : tables.GameConst.DefaultHeroId;
             if (pub.IsBot)
             {
-                var botHeroId = tables.GameConst.DefaultHeroId;
-                if (pub.BotConfigId > 0
-                    && tables.TryGetPvpBot(pub.BotConfigId, out var bot)
-                    && bot.HeroId > 0)
-                {
-                    botHeroId = bot.HeroId;
-                }
-
                 seats[i] = CombatBonuses.BuildSeat(
                     i,
                     pub.UserId,
                     pub.NickName,
-                    botHeroId,
+                    heroId,
                     Array.Empty<CombatTalentCount>(),
                     tables);
                 seats[i].IsHuman = false;
@@ -50,14 +47,7 @@ internal static class PvpCombatSeats
                 profile = await players.GetAsync(userId, cancellationToken);
             }
 
-            var heroId = 0;
-            var shopPoolIds = Array.Empty<int>();
-            if (profile != null)
-            {
-                heroId = profile.Level.LastHeroId;
-                shopPoolIds = profile.ShopRelicIds(config);
-            }
-
+            var shopPoolIds = profile != null ? profile.ShopRelicIds(config) : Array.Empty<int>();
             seats[i] = CombatBonuses.BuildSeat(
                 i,
                 pub.UserId,
@@ -74,6 +64,21 @@ internal static class PvpCombatSeats
         }
 
         return seats;
+    }
+
+    /// <summary>可随机到的英雄。同一局里允许重复抽到同一个。</summary>
+    private static List<int> HeroIds(IGameTables tables)
+    {
+        var ids = new List<int>();
+        foreach (var hero in tables.Heroes)
+        {
+            if (hero != null && hero.Id > 0)
+            {
+                ids.Add(hero.Id);
+            }
+        }
+
+        return ids;
     }
 
     private static int[] DefaultRelicIds(IGameTables tables)

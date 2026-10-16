@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using App.Config;
+using App.Resources;
+using App.UI;
 using CardShare.Contracts.Config;
 using App.Item;
 using TMPro;
@@ -39,6 +42,8 @@ namespace App.Game
         [SerializeField] private GameObject normalRoot;
         [SerializeField] private GameObject emptyRoot;
         [SerializeField] private GameObject buySlotRoot;
+        [SerializeField] private RectTransform battleHor;
+        [SerializeField] private Image bondIcon;
 
         public ShopItemDef Data { get; private set; }
 
@@ -58,6 +63,8 @@ namespace App.Game
         private bool _priceColorCached;
         private Color _buySlotPriceColor = Color.black;
         private bool _buySlotPriceColorCached;
+        private readonly List<Image> _bondIcons = new List<Image>(4);
+        private int _bondSerial;
 
         public void Bind(ShopItemDef def, Sprite icon = null, Sprite goldSprite = null, bool affordable = true, int level = 1, int count = 0)
         {
@@ -73,6 +80,8 @@ namespace App.Game
             {
                 SetGoldIcon(goldSprite);
             }
+
+            ApplyBonds(null);
         }
 
         public void Bind(RelicConfig relic, Sprite icon = null, Sprite goldSprite = null, bool forSale = true, int sellPrice = -1, int buyPrice = -1, bool affordable = true, int level = 1, int count = 0)
@@ -90,6 +99,7 @@ namespace App.Game
                     RelicConfigId = relic.Id
                 }, icon, goldSprite, affordable, level, count);
             ApplyQuality(relic != null ? relic.Type : QualityType.Ordinary);
+            ApplyBonds(relic != null ? relic.BindingID : null);
         }
 
         public void Bind(string name, Sprite icon, int price, Sprite goldSprite = null)
@@ -204,6 +214,11 @@ namespace App.Game
             {
                 buySlotRoot.SetActive(state == ShopItemState.BuySlot);
             }
+
+            if (state != ShopItemState.Normal)
+            {
+                ApplyBonds(null);
+            }
         }
 
         /// <summary>
@@ -263,6 +278,160 @@ namespace App.Game
             }
 
             _innerCard?.ApplyQuality(type);
+        }
+
+        /// <summary>
+        /// battleHor 展示这件圣物所属羁绊的图标。没有 BindingID、空槽、买槽时收起。
+        /// 图标未进缓存时先藏起来，加载完成后再刷一次。
+        /// </summary>
+        private void ApplyBonds(int[] bindingIds)
+        {
+            var serial = ++_bondSerial;
+            PaintBonds(bindingIds, serial, requestLoad: true);
+        }
+
+        private void PaintBonds(int[] bindingIds, int serial, bool requestLoad)
+        {
+            EnsureBattleHor();
+            HideBondIcons();
+            if (State != ShopItemState.Normal || bindingIds == null || bindingIds.Length == 0)
+            {
+                SetBattleHorActive(false);
+                return;
+            }
+
+            var missing = false;
+            var shown = 0;
+            for (var i = 0; i < bindingIds.Length; i++)
+            {
+                var id = bindingIds[i];
+                if (id <= 0 || !BindingConfig.TryGet(id, out var binding) || binding == null)
+                {
+                    continue;
+                }
+
+                var stem = ResResourcePaths.BondArtName(binding.Type);
+                if (string.IsNullOrEmpty(stem))
+                {
+                    continue;
+                }
+
+                if (!BondIconLoader.TryGet(stem, out var sprite))
+                {
+                    missing = true;
+                    continue;
+                }
+
+                var image = RentBondIcon();
+                if (image == null)
+                {
+                    continue;
+                }
+
+                image.sprite = sprite;
+                image.color = Color.white;
+                image.enabled = true;
+                image.raycastTarget = false;
+                image.gameObject.SetActive(true);
+                shown++;
+            }
+
+            SetBattleHorActive(shown > 0);
+            if (shown > 0 && battleHor != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(battleHor);
+            }
+
+            if (missing && requestLoad)
+            {
+                _ = LoadBonds(serial, bindingIds);
+            }
+        }
+
+        private async System.Threading.Tasks.Task LoadBonds(int serial, int[] bindingIds)
+        {
+            for (var i = 0; i < bindingIds.Length; i++)
+            {
+                var id = bindingIds[i];
+                if (id <= 0 || !BindingConfig.TryGet(id, out var binding) || binding == null)
+                {
+                    continue;
+                }
+
+                await BondIconLoader.EnsureAsync(ResResourcePaths.BondArtName(binding.Type));
+                if (serial != _bondSerial)
+                {
+                    return;
+                }
+            }
+
+            if (serial != _bondSerial)
+            {
+                return;
+            }
+
+            PaintBonds(bindingIds, serial, requestLoad: false);
+        }
+
+        private void HideBondIcons()
+        {
+            if (bondIcon != null)
+            {
+                bondIcon.gameObject.SetActive(false);
+            }
+
+            for (var i = 0; i < _bondIcons.Count; i++)
+            {
+                var image = _bondIcons[i];
+                if (image != null)
+                {
+                    image.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private Image RentBondIcon()
+        {
+            EnsureBattleHor();
+            if (bondIcon == null || battleHor == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < _bondIcons.Count; i++)
+            {
+                var existing = _bondIcons[i];
+                if (existing != null && !existing.gameObject.activeSelf)
+                {
+                    return existing;
+                }
+            }
+
+            var clone = Instantiate(bondIcon, battleHor);
+            clone.raycastTarget = false;
+            _bondIcons.Add(clone);
+            return clone;
+        }
+
+        private void SetBattleHorActive(bool active)
+        {
+            if (battleHor != null)
+            {
+                battleHor.gameObject.SetActive(active);
+            }
+        }
+
+        private void EnsureBattleHor()
+        {
+            if (battleHor == null)
+            {
+                battleHor = FindNamed<RectTransform>("battleHor");
+            }
+
+            if (bondIcon == null && battleHor != null)
+            {
+                bondIcon = FindNamedUnder<Image>(battleHor, "icon");
+            }
         }
 
         public void BindClick(Action<ShopItem> onClick)
@@ -380,6 +549,7 @@ namespace App.Game
             DragBegan = null;
             DragMoved = null;
             DragEnded = null;
+            _bondSerial++;
         }
 
         private void HookClick()
@@ -621,6 +791,16 @@ namespace App.Game
             {
                 var node = FindNamed<Transform>("BuySlot");
                 buySlotRoot = node != null ? node.gameObject : null;
+            }
+
+            if (battleHor == null)
+            {
+                battleHor = FindNamed<RectTransform>("battleHor");
+            }
+
+            if (bondIcon == null && battleHor != null)
+            {
+                bondIcon = FindNamedUnder<Image>(battleHor, "icon");
             }
         }
 #endif

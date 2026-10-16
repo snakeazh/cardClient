@@ -1,3 +1,5 @@
+using CardShare.Contracts.Config;
+
 namespace App.Resources
 {
     /// <summary>
@@ -34,6 +36,7 @@ namespace App.Resources
         public const string EnergyPopup = "UI/Popup/EnergyPopup";
         public const string StaminaPurchasePop = "UI/Popup/StaminaPurchasePop";
         public const string TTRewardPop = "UI/Popup/TTRewardPop";
+        public const string SettingPop = "UI/Popup/SettingPop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
@@ -181,6 +184,38 @@ namespace App.Resources
         public static string BattleIcon(string name)
         {
             return string.IsNullOrEmpty(name) ? null : "Textures/Battle/" + name;
+        }
+
+        /// <summary>羁绊机制对应的 Battle 图标文件名（无扩展名）。没有美术的机制返回 null。</summary>
+        public static string BondArtName(BindingType type)
+        {
+            switch (type)
+            {
+                case BindingType.BronzeBook:
+                    return "PotentialPower";
+                case BindingType.SilverBook:
+                    return "Fate";
+                case BindingType.Leiting:
+                    return "ThunderSlash";
+                case BindingType.LuckyNumber:
+                    return "LuckyPoint";
+                case BindingType.NobilityPower:
+                    return "Power";
+                case BindingType.MagicCoin:
+                    return "EnchantedCoin";
+                case BindingType.BloodCeremony:
+                    return "BloodRitual";
+                case BindingType.CurseSilence:
+                    return "SilenceCurse";
+                case BindingType.DoubleAttack:
+                    return "DeadlyChase";
+                case BindingType.RandomAttribute:
+                    return "AttributeEnhance";
+                case BindingType.DisableSkill:
+                    return "SkillEcho";
+                default:
+                    return null;
+            }
         }
 
         public static string CommonIcon(string icon)

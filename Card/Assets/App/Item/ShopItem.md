@@ -28,6 +28,8 @@
 | `lv` | 等级，文案 `LV1`。货架固定 1；已携带按合成倍数，三合一为 `LV3` |
 | `hasNum` | 持有数量，文案 `数量x2`。0 隐藏。同一等级合并成一格：两件 LV1 是 `数量x2`；三合一后是 `LV3`、`数量x1` |
 | `gold` | 可选金币图标；新卡没有这个节点 |
+| `battleHor` | 羁绊图标横排。圣物 `BindingID` 有羁绊时显示对应彩色图标，没有则隐藏。空槽 / 买槽不显示 |
+| `icon` | `battleHor` 下的图标模板，运行时按羁绊数量克隆 |
 | `ShopRoot` | Animator：`ani_shop_choose_start` / `ani_shop_choose_end` |
 
 根上和内嵌 `Item` 都有 Button。点击以根 `Clicked` 为准，内层 `ItemCard.Clicked` 会转发出去。

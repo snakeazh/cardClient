@@ -282,9 +282,14 @@ public class PvpMatchTests
             new[] { you, Bot("甲"), Bot("乙"), Bot("丙") });
         Assert.Equal(1, match.Round);
         Assert.Equal(PvpFightKind.Monster, match.FightKind);
-        Assert.Equal(1, match.Duels.Count(d => !d.Resolved));
-        Assert.Equal(3, match.Duels.Count(d => d.Resolved));
+        Assert.All(match.Duels, d => Assert.False(d.Resolved));
+        Assert.All(match.Duels, d => Assert.True(d.IsLocked(1)));
         Assert.Contains(match.ViewFor(you.UserId).Players, p => p.IsBot);
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + PvpTiming.BotLockMaxMs));
+        Assert.Equal(1, match.Duels.Count(d => !d.Resolved));
+        Assert.True(match.Duels.First(d => !d.Resolved).Involves(you.UserId));
 
         match.Showdown(you.UserId);
         Assert.Equal(PvpMatch.PhaseSettle, match.Phase);
@@ -292,6 +297,10 @@ public class PvpMatchTests
 
         Assert.Equal(2, match.Round);
         Assert.Equal(PvpFightKind.Pvp, match.FightKind);
+        Assert.All(match.Duels, d => Assert.False(d.Resolved));
+
+        now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + PvpTiming.BotLockMaxMs));
         Assert.Equal(1, match.Duels.Count(d => !d.Resolved));
         Assert.True(match.Duels.First(d => !d.Resolved).Involves(you.UserId));
     }
@@ -320,14 +329,20 @@ public class PvpMatchTests
         Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Count);
         Assert.Equal(BattleLimits.OpenHandSize, snap.Picked[1].Distinct().Count());
 
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + PvpTiming.BotLockMaxMs));
+        Assert.NotEqual(PvpMatch.PhaseFight, match.Phase);
         AdvanceThrough(match);
 
-        // PVP 轮：只锁真人、机器人座位未选时，亮牌同样给机器人补最高牌型。
+        // PVP 轮：机器人尚未到点，真人亮牌前它还没显式选牌；亮牌后补最高牌型。
         var botDuel = match.Duels.First(d => d.Involves(you.UserId));
         snap = botDuel.Engine.Snapshot;
         var botSeat = PvpBattleTable.SameUser(botDuel.LeftUserId, you.UserId) ? 1 : 0;
         Assert.False(snap.PickedExplicit[botSeat]);
         match.Showdown(you.UserId);
+        Assert.False(botDuel.Resolved);
+        now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.True(match.ApplyTimeouts(now + PvpTiming.DealAnimMs + PvpTiming.BotLockMaxMs));
         Assert.True(botDuel.Resolved);
         snap = botDuel.Engine.Snapshot;
         Assert.True(snap.PickedExplicit[botSeat]);

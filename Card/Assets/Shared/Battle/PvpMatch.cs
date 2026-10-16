@@ -180,9 +180,10 @@ namespace CardShare.Battle
         {
             lock (_gate)
             {
+                var botLocked = ApplyDueBotLocks(nowUtcMs);
                 if (PhaseDeadlineUtcMs <= 0 || nowUtcMs < PhaseDeadlineUtcMs)
                 {
-                    return false;
+                    return botLocked;
                 }
 
                 if (Phase == PhaseSettle)
@@ -619,7 +620,19 @@ namespace CardShare.Battle
 
                 var left = ToPlayerSeat(leftFighter, 0);
                 var duelSeed = unchecked(Seed * 397 ^ Round * 911 ^ i * 17);
-                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer);
+                var lockLeftNow = !leftFighter.IsBot && !left.IsHuman;
+                var lockRightNow = !vsPlayer || (rightFighter != null && !rightFighter.IsBot && !right.IsHuman);
+                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer, lockLeftNow, lockRightNow);
+                var thinkBase = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.DealAnimMs;
+                if (leftFighter.IsBot)
+                {
+                    duel.ScheduleLock(0, thinkBase + BotLockDelayMs());
+                }
+
+                if (vsPlayer && rightFighter != null && rightFighter.IsBot)
+                {
+                    duel.ScheduleLock(1, thinkBase + BotLockDelayMs());
+                }
                 duel.BeforeCompare = (seat, setup) =>
                 {
                     var fighter = seat == 0 ? leftFighter : rightFighter;
@@ -1111,6 +1124,37 @@ namespace CardShare.Battle
             var index = SeatOf(userId);
             return index < 0 ? null : _fighters[index];
         }
+
+        /// <summary>发牌演出结束后，机器人再等 3–5 秒定牌。野怪开桌即锁定，不走这里。</summary>
+        private bool ApplyDueBotLocks(long nowUtcMs)
+        {
+            if (Phase != PhaseFight)
+            {
+                return false;
+            }
+
+            var changed = false;
+            for (var i = 0; i < _duels.Count; i++)
+            {
+                if (_duels[i].ApplyDueLocks(nowUtcMs))
+                {
+                    changed = true;
+                }
+            }
+
+            if (!changed)
+            {
+                return false;
+            }
+
+            Touch();
+            SettleResolvedDuels();
+            TryAdvanceRound();
+            return true;
+        }
+
+        private int BotLockDelayMs()
+            => _shopRandom.Next(PvpTiming.BotLockMinMs, PvpTiming.BotLockMaxMs + 1);
 
         private void TryAdvanceRound()
         {

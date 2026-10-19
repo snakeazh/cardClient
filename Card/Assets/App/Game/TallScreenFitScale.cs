@@ -37,7 +37,13 @@ namespace App.Game
 
         private void OnDisable()
         {
-            transform.localScale = originalScale;
+            // 值没变就不要写 Transform：编辑器里 OnDisable 也会跑，写回相同 scale 会把
+            // 预制体/场景标脏，下次打开又弹保存。
+            if ((transform.localScale - originalScale).sqrMagnitude >= 1e-6f)
+            {
+                transform.localScale = originalScale;
+            }
+
             _appliedFactor = 1f;
         }
 
@@ -144,7 +150,17 @@ namespace App.Game
             }
 
             _appliedFactor = factor;
-            transform.localScale = originalScale * factor;
+
+            // 编辑器里 OnEnable / OnValidate 会带 force=true 走到这里。即使算出来的缩放与当前值一致，
+            // 直接写 transform.localScale 也会让 Unity 把预制体/场景标脏（写 Transform 不比较新旧值），
+            // 于是每次打开 BattleSettleUpPop 这类挂了本组件的预制体都会提示保存。值相同就不写。
+            Vector3 target = originalScale * factor;
+            if ((transform.localScale - target).sqrMagnitude < 1e-6f)
+            {
+                return;
+            }
+
+            transform.localScale = target;
         }
 
         private float ComputeFactor(int width, int height)

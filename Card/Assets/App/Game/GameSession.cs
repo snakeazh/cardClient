@@ -8255,7 +8255,7 @@ namespace App.Game
             }
 
             var progress = ProgressSvc();
-            progress?.MarkCleared(current.Id);
+            progress?.MarkCleared(current.Id, Run.HeroId);
             progress?.SetLastLevel(current.Id);
             progress?.SetLastDifficulty(current.Difficulty);
 

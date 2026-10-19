@@ -20,6 +20,9 @@ public sealed class LevelProgressState
 {
     public List<DifficultyProgressEntry> DifficultyProgress { get; set; } = new List<DifficultyProgressEntry>();
 
+    /// <summary>按英雄记录的通关进度：同一难度下每个英雄各自记最高通关关卡。</summary>
+    public List<HeroProgressEntry> HeroProgress { get; set; } = new List<HeroProgressEntry>();
+
     public int LastHeroId { get; set; }
 
     public int LastLevelId { get; set; }
@@ -59,6 +62,38 @@ public sealed class LevelProgressState
         });
     }
 
+    public int GetHeroHighestCleared(int heroId, int difficulty)
+    {
+        foreach (var entry in HeroProgress)
+        {
+            if (entry.HeroId == heroId && entry.Difficulty == difficulty)
+            {
+                return entry.HighestClearedLevel;
+            }
+        }
+
+        return 0;
+    }
+
+    public void SetHeroHighestCleared(int heroId, int difficulty, int level)
+    {
+        foreach (var entry in HeroProgress)
+        {
+            if (entry.HeroId == heroId && entry.Difficulty == difficulty)
+            {
+                entry.HighestClearedLevel = level;
+                return;
+            }
+        }
+
+        HeroProgress.Add(new HeroProgressEntry
+        {
+            HeroId = heroId,
+            Difficulty = difficulty,
+            HighestClearedLevel = level
+        });
+    }
+
     public bool TryUnlockHero(int heroId)
     {
         if (heroId <= 0 || UnlockedHeroIds.Contains(heroId))
@@ -73,6 +108,15 @@ public sealed class LevelProgressState
 
 public sealed class DifficultyProgressEntry
 {
+    public int Difficulty { get; set; }
+
+    public int HighestClearedLevel { get; set; }
+}
+
+public sealed class HeroProgressEntry
+{
+    public int HeroId { get; set; }
+
     public int Difficulty { get; set; }
 
     public int HighestClearedLevel { get; set; }

@@ -192,7 +192,41 @@ namespace App.UI
         private string FormatUnlockedSkillInfo(HeroConfig hero)
         {
             var desc = hero != null && !string.IsNullOrEmpty(hero.Desc) ? hero.Desc : string.Empty;
-            return TalentBonusManager.AppendPanelLines(desc, GetHeroPanelStats(hero));
+            // 选角面板按两行两列显示（生命值/攻击力、暴击率/闪避率），下面再接该英雄的最高纪录。
+            var lines = TalentBonusManager.AppendPanelLinesTwoColumns(desc, GetHeroPanelStats(hero));
+            return hero == null ? lines : lines + "\n" + GetHeroRecordText(hero.Id);
+        }
+
+        /// <summary>该英雄是否已打完全部关卡、通关指定难度。</summary>
+        public bool IsHeroDifficultyCleared(int heroId, int difficulty)
+        {
+            var max = _levels.GetMaxLevel(difficulty);
+            return max > 0 && _progress.GetHeroHighestCleared(heroId, difficulty) >= max;
+        }
+
+        /// <summary>该英雄的最高纪录：进度最深的难度 + 该难度已通关的最高关。</summary>
+        public string GetHeroRecordText(int heroId)
+        {
+            var bestDifficulty = 0;
+            var bestLevel = 0;
+            var diffs = _levels.GetDifficulties();
+            if (diffs != null)
+            {
+                for (var i = 0; i < diffs.Count; i++)
+                {
+                    var difficulty = diffs[i];
+                    var level = _progress.GetHeroHighestCleared(heroId, difficulty);
+                    if (level > 0 && difficulty > bestDifficulty)
+                    {
+                        bestDifficulty = difficulty;
+                        bestLevel = level;
+                    }
+                }
+            }
+
+            return bestDifficulty > 0
+                ? $"最高纪录 难度{bestDifficulty} 关卡{bestLevel}"
+                : "最高纪录 暂无";
         }
 
         public bool IsLevelUnlocked(LevelSnapshot snapshot)

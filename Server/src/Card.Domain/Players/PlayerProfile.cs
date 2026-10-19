@@ -347,12 +347,21 @@ public sealed class PlayerProfile
         return hero.UnlockCondition <= 0 || IsDifficultyCleared(hero.UnlockCondition, config);
     }
 
-    public void MarkCleared(LevelConfig snapshot, IGameConfig config)
+    public void MarkCleared(LevelConfig snapshot, int heroId, IGameConfig config)
     {
         var prev = Level.GetHighestCleared(snapshot.Difficulty);
         if (snapshot.Level > prev)
         {
             Level.SetHighestCleared(snapshot.Difficulty, snapshot.Level);
+        }
+
+        if (heroId > 0)
+        {
+            var heroPrev = Level.GetHeroHighestCleared(heroId, snapshot.Difficulty);
+            if (snapshot.Level > heroPrev)
+            {
+                Level.SetHeroHighestCleared(heroId, snapshot.Difficulty, snapshot.Level);
+            }
         }
 
         SyncUnlockedHeroes(config);

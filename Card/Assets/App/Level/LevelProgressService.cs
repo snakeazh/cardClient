@@ -21,6 +21,7 @@ namespace App.Level
         private readonly HashSet<int> _cleared = new HashSet<int>();
         private readonly HashSet<int> _unlockedHeroes = new HashSet<int>();
         private readonly Dictionary<int, int> _highestCleared = new Dictionary<int, int>();
+        private readonly Dictionary<int, Dictionary<int, int>> _heroHighest = new Dictionary<int, Dictionary<int, int>>();
         private bool _dirty;
 
         public LevelProgressService(ISaveService save, ILevelService levels)
@@ -77,7 +78,20 @@ namespace App.Level
             return _highestCleared.TryGetValue(difficulty, out var level) ? level : 0;
         }
 
-        public void MarkCleared(int levelId)
+        public int GetHeroHighestCleared(int heroId, int difficulty)
+        {
+            if (heroId <= 0)
+            {
+                return 0;
+            }
+
+            return _heroHighest.TryGetValue(heroId, out var byDifficulty) &&
+                   byDifficulty.TryGetValue(difficulty, out var level)
+                ? level
+                : 0;
+        }
+
+        public void MarkCleared(int levelId, int heroId)
         {
             if (!_levels.TryGetById(levelId, out var snapshot) || snapshot == null)
             {
@@ -89,6 +103,12 @@ namespace App.Level
             if (snapshot.Level > prev)
             {
                 _highestCleared[snapshot.Difficulty] = snapshot.Level;
+                _dirty = true;
+                Save();
+            }
+
+            if (SetHeroHighest(heroId, snapshot.Difficulty, snapshot.Level))
+            {
                 _dirty = true;
                 Save();
             }
@@ -207,12 +227,14 @@ namespace App.Level
             var hadData = _cleared.Count > 0 ||
                           _unlockedHeroes.Count > 0 ||
                           _highestCleared.Count > 0 ||
+                          _heroHighest.Count > 0 ||
                           LastHeroId != 0 ||
                           LastLevelId != 0 ||
                           LastDifficulty != 0;
             _cleared.Clear();
             _unlockedHeroes.Clear();
             _highestCleared.Clear();
+            _heroHighest.Clear();
             LastHeroId = 0;
             LastLevelId = 0;
             LastDifficulty = 0;
@@ -225,6 +247,7 @@ namespace App.Level
 
         public void ReplaceFromServer(
             IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            IReadOnlyList<HeroProgressEntry> heroProgress,
             int lastHeroId,
             int lastLevelId,
             int lastDifficulty,
@@ -232,6 +255,7 @@ namespace App.Level
         {
             if (MatchesServer(
                     difficultyProgress,
+                    heroProgress,
                     lastHeroId,
                     lastLevelId,
                     lastDifficulty,
@@ -243,6 +267,7 @@ namespace App.Level
             _cleared.Clear();
             _unlockedHeroes.Clear();
             _highestCleared.Clear();
+            _heroHighest.Clear();
             LastHeroId = lastHeroId;
             LastLevelId = lastLevelId;
             LastDifficulty = lastDifficulty > 0 ? lastDifficulty : _levels.DefaultDifficulty;
@@ -257,6 +282,20 @@ namespace App.Level
                     }
 
                     _highestCleared[entry.Difficulty] = entry.HighestClearedLevel;
+                }
+            }
+
+            if (heroProgress != null)
+            {
+                for (var i = 0; i < heroProgress.Count; i++)
+                {
+                    var entry = heroProgress[i];
+                    if (entry == null || entry.HeroId <= 0 || entry.Difficulty <= 0 || entry.HighestClearedLevel <= 0)
+                    {
+                        continue;
+                    }
+
+                    SetHeroHighest(entry.HeroId, entry.Difficulty, entry.HighestClearedLevel);
                 }
             }
 
@@ -282,6 +321,7 @@ namespace App.Level
             _cleared.Clear();
             _unlockedHeroes.Clear();
             _highestCleared.Clear();
+            _heroHighest.Clear();
             LastHeroId = 0;
             LastLevelId = 0;
             LastDifficulty = 0;
@@ -353,6 +393,21 @@ namespace App.Level
             LastHeroId = data.LastHeroId;
             LastLevelId = data.LastLevelId;
             LastDifficulty = data.LastDifficulty > 0 ? data.LastDifficulty : _levels.DefaultDifficulty;
+
+            if (data.HeroProgress != null)
+            {
+                for (var i = 0; i < data.HeroProgress.Length; i++)
+                {
+                    var entry = data.HeroProgress[i];
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    SetHeroHighest(entry.HeroId, entry.Difficulty, entry.HighestClearedLevel);
+                }
+            }
+
             SyncClearedFromHighest();
             if (data.UnlockedHeroIds == null)
             {
@@ -397,6 +452,20 @@ namespace App.Level
                 unlocked[u++] = heroId;
             }
 
+            var heroProgress = new List<HeroProgressEntry>();
+            foreach (var heroPair in _heroHighest)
+            {
+                foreach (var difficultyPair in heroPair.Value)
+                {
+                    heroProgress.Add(new HeroProgressEntry
+                    {
+                        HeroId = heroPair.Key,
+                        Difficulty = difficultyPair.Key,
+                        HighestClearedLevel = difficultyPair.Value
+                    });
+                }
+            }
+
             var data = new LevelProgressSaveData
             {
                 ClearedDifficulties = cleared.ToArray(),
@@ -405,7 +474,8 @@ namespace App.Level
                 LastDifficulty = LastDifficulty,
                 UnlockedHeroIds = unlocked,
                 HighestClearedLevel = GetHighestClearedLevel(_levels.DefaultDifficulty),
-                DifficultyProgress = progress
+                DifficultyProgress = progress,
+                HeroProgress = heroProgress.ToArray()
             };
 
             _save.SetString(SaveKey, JsonUtility.ToJson(data));
@@ -448,6 +518,7 @@ namespace App.Level
 
         private bool MatchesServer(
             IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            IReadOnlyList<HeroProgressEntry> heroProgress,
             int lastHeroId,
             int lastLevelId,
             int lastDifficulty,
@@ -494,6 +565,30 @@ namespace App.Level
                 }
             }
 
+            var incomingHeroProgress = 0;
+            if (heroProgress != null)
+            {
+                for (var i = 0; i < heroProgress.Count; i++)
+                {
+                    var entry = heroProgress[i];
+                    if (entry == null || entry.HeroId <= 0 || entry.Difficulty <= 0 || entry.HighestClearedLevel <= 0)
+                    {
+                        continue;
+                    }
+
+                    incomingHeroProgress++;
+                    if (GetHeroHighestCleared(entry.HeroId, entry.Difficulty) != entry.HighestClearedLevel)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (incomingHeroProgress != CountHeroEntries())
+            {
+                return false;
+            }
+
             var incomingHeroes = 0;
             if (unlockedHeroIds != null)
             {
@@ -530,6 +625,40 @@ namespace App.Level
                     _cleared.Add(difficulty);
                 }
             }
+        }
+
+        /// <summary>写入某英雄在某难度的最高通关关；没有变高则返回 false（不标脏）。</summary>
+        private bool SetHeroHighest(int heroId, int difficulty, int level)
+        {
+            if (heroId <= 0 || difficulty <= 0 || level <= 0)
+            {
+                return false;
+            }
+
+            if (!_heroHighest.TryGetValue(heroId, out var byDifficulty))
+            {
+                byDifficulty = new Dictionary<int, int>();
+                _heroHighest[heroId] = byDifficulty;
+            }
+
+            if (byDifficulty.TryGetValue(difficulty, out var current) && current >= level)
+            {
+                return false;
+            }
+
+            byDifficulty[difficulty] = level;
+            return true;
+        }
+
+        private int CountHeroEntries()
+        {
+            var count = 0;
+            foreach (var pair in _heroHighest)
+            {
+                count += pair.Value.Count;
+            }
+
+            return count;
         }
 
         private void WarnIfUnknownDifficulty(int difficulty)

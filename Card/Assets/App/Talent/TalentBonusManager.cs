@@ -109,10 +109,29 @@ namespace App.Talent
                 + "生命值：" + stats.Hp;
         }
 
+        /// <summary>
+        /// 两行两列排版：第一行 生命值 / 攻击力，第二行 暴击率 / 闪避率。
+        /// 第二列用 TMP 的 &lt;pos=x%&gt; 定位（按文本控件宽度算）。
+        /// LevelUI 的 skillinfo 宽 472、字号 36：50% 会顶到 roleinfo 右缘外，45%（≈212px）
+        /// 留出约 14px 列距，第二列右缘落在框内。框宽变了就调这个百分比。
+        /// </summary>
+        public static string FormatPanelLinesTwoColumns(HeroPanelStats stats)
+        {
+            return "生命值：" + stats.Hp + "<pos=45%>攻击力：" + stats.Attack + "\n"
+                + "暴击率：" + FormatRate(stats.CritRate) + "<pos=45%>闪避率：" + FormatRate(stats.DodgeRate);
+        }
+
         /// <summary>描述后空一行再拼面板属性；无描述则只显示属性。</summary>
         public static string AppendPanelLines(string desc, HeroPanelStats stats)
         {
             var lines = FormatPanelLines(stats);
+            return string.IsNullOrEmpty(desc) ? lines : desc + "\n\n" + lines;
+        }
+
+        /// <summary>描述后空一行，再接两行两列面板属性；无描述则只显示属性。</summary>
+        public static string AppendPanelLinesTwoColumns(string desc, HeroPanelStats stats)
+        {
+            var lines = FormatPanelLinesTwoColumns(stats);
             return string.IsNullOrEmpty(desc) ? lines : desc + "\n\n" + lines;
         }
 

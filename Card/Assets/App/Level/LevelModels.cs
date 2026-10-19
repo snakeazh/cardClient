@@ -118,6 +118,15 @@ namespace App.Level
         public int HighestClearedLevel;
     }
 
+    /// <summary>按英雄记录的通关进度：同一难度下每个英雄各自记最高通关关卡。</summary>
+    [Serializable]
+    public sealed class HeroProgressEntry
+    {
+        public int HeroId;
+        public int Difficulty;
+        public int HighestClearedLevel;
+    }
+
     [Serializable]
     public sealed class LevelProgressSaveData
     {
@@ -129,5 +138,7 @@ namespace App.Level
         /// <summary>旧存档：仅默认难度的最高关卡。新存档以 DifficultyProgress 为准。</summary>
         public int HighestClearedLevel;
         public DifficultyProgressEntry[] DifficultyProgress = Array.Empty<DifficultyProgressEntry>();
+        /// <summary>按英雄的通关进度；旧存档没有该字段，读出来是空数组。</summary>
+        public HeroProgressEntry[] HeroProgress = Array.Empty<HeroProgressEntry>();
     }
 }

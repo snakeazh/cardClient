@@ -36,9 +36,14 @@ namespace App.Level
         int GetHighestClearedLevel(int difficulty);
 
         /// <summary>
-        /// 报刚打完的关卡 Id。更新该难度最高关卡；若是最后一关则该难度完成。
+        /// 指定英雄在该难度已通关的最高关卡号。未通关任何关为 0。
         /// </summary>
-        void MarkCleared(int levelId);
+        int GetHeroHighestCleared(int heroId, int difficulty);
+
+        /// <summary>
+        /// 报刚打完的关卡 Id。更新该难度最高关卡（账号级与该英雄各一份）；若是最后一关则该难度完成。
+        /// </summary>
+        void MarkCleared(int levelId, int heroId);
 
         void SetLastHero(int heroId);
 
@@ -65,6 +70,7 @@ namespace App.Level
         /// <summary>用服务器主档覆盖关卡进度。仅 <c>ApplyServerProfile</c> 调用。</summary>
         void ReplaceFromServer(
             IReadOnlyList<DifficultyProgressEntry> difficultyProgress,
+            IReadOnlyList<HeroProgressEntry> heroProgress,
             int lastHeroId,
             int lastLevelId,
             int lastDifficulty,

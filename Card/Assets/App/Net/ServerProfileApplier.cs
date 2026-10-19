@@ -99,10 +99,39 @@ namespace App.Net
 
             AppServices.Resolve<ILevelProgressService>().ReplaceFromServer(
                 progress,
+                BuildHeroProgress(level?.HeroProgress),
                 level?.LastHeroId ?? 0,
                 level?.LastLevelId ?? 0,
                 level?.LastDifficulty ?? 0,
                 level?.UnlockedHeroIds);
+        }
+
+        /// <summary>服务器按英雄进度转成本地模型（无该字段的旧档返回空表）。</summary>
+        private static List<HeroProgressEntry> BuildHeroProgress(HeroProgressDto[] rows)
+        {
+            var result = new List<HeroProgressEntry>();
+            if (rows == null)
+            {
+                return result;
+            }
+
+            for (var i = 0; i < rows.Length; i++)
+            {
+                var row = rows[i];
+                if (row == null)
+                {
+                    continue;
+                }
+
+                result.Add(new HeroProgressEntry
+                {
+                    HeroId = row.HeroId,
+                    Difficulty = row.Difficulty,
+                    HighestClearedLevel = row.HighestClearedLevel
+                });
+            }
+
+            return result;
         }
 
         private static void ApplyUnlock(UnlockDto unlock)

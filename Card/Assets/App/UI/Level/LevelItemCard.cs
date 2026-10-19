@@ -17,6 +17,7 @@ namespace App.UI
         private const float CardArtHeight = 173f;
 
         [SerializeField] private TMP_Text levelText;
+        [SerializeField] private TMP_Text difficultTip;
         [SerializeField] private GameObject mask;
         [SerializeField] private RectTransform itemRoot;
 
@@ -94,6 +95,16 @@ namespace App.UI
             }
         }
 
+        /// <summary>该英雄是否通关此难度：通关后把按钮上固定的「难度」小字换成「已通关」。</summary>
+        public void SetClearStatus(bool cleared)
+        {
+            EnsureRefs();
+            if (difficultTip != null)
+            {
+                difficultTip.text = cleared ? "已通关" : "难度";
+            }
+        }
+
         /// <summary>
         /// 选中抬卡：ItemRoot 上移 LiftHeightRatio × 卡高，撤销选中回退。replay 为 true 时同状态也重播（面板重新激活用）。
         /// </summary>
@@ -166,6 +177,12 @@ namespace App.UI
             {
                 var node = transform.Find("ItemRoot/LevelText");
                 levelText = node != null ? node.GetComponent<TMP_Text>() : null;
+            }
+
+            if (difficultTip == null)
+            {
+                var node = transform.Find("ItemRoot/DifficultTip");
+                difficultTip = node != null ? node.GetComponent<TMP_Text>() : null;
             }
 
             if (mask == null)

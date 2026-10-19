@@ -59,6 +59,9 @@ namespace CardShare.Contracts
     {
         public DifficultyProgressDto[] DifficultyProgress { get; set; } = System.Array.Empty<DifficultyProgressDto>();
 
+        /// <summary>按英雄记录的通关进度；账号级进度仍看 <see cref="DifficultyProgress"/>。</summary>
+        public HeroProgressDto[] HeroProgress { get; set; } = System.Array.Empty<HeroProgressDto>();
+
         public int LastHeroId { get; set; }
 
         public int LastLevelId { get; set; }
@@ -66,6 +69,15 @@ namespace CardShare.Contracts
         public int LastDifficulty { get; set; }
 
         public int[] UnlockedHeroIds { get; set; } = System.Array.Empty<int>();
+    }
+
+    public sealed class HeroProgressDto
+    {
+        public int HeroId { get; set; }
+
+        public int Difficulty { get; set; }
+
+        public int HighestClearedLevel { get; set; }
     }
 
     public sealed class DifficultyProgressDto

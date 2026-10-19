@@ -3541,6 +3541,14 @@ namespace App.UI
             HideBondsTip();
             HideWinTip();
             _equipTipAnchor = slot;
+            // 两列属性文本必须撑满弹窗宽度：ItemTip 的 VerticalLayoutGroup 默认只给子节点首选宽度（约 325），
+            // 36 号字的两列需要约 380，第二列会压到第一列上。单列说明（圣物/道具）维持原紧凑排版。
+            var tipLayout = _equipTip.GetComponent<VerticalLayoutGroup>();
+            if (tipLayout != null)
+            {
+                tipLayout.childForceExpandWidth = body != null && body.Contains("<pos=");
+            }
+
             SetEquipTipTexts(title, body);
             SetEquipTipUseVisible(showUse);
             EnsureEquipTipCatcher();
@@ -3778,8 +3786,8 @@ namespace App.UI
             var stats = session != null
                 ? session.ResolveLivePlayerPanel()
                 : TalentBonusManager.EvaluateBase(hero);
-            // 局内提示与选角面板统一成两行两列（ItemTip 宽 500，列距按 <pos=45%> 定位）。
-            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats);
+            // 局内提示与选角面板统一成两行两列；ItemTip 撑满后文本区约 440，列位取 52%。
+            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats, columnPercent: 52);
         }
 
         private string BuildEnemyTipBody(SeatState enemy)
@@ -3804,7 +3812,7 @@ namespace App.UI
             var stats = session != null
                 ? session.ResolveLiveEnemyPanel(enemy)
                 : new HeroPanelStats(enemy.Attack, 0f, 0f, enemy.MaxHp);
-            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats);
+            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats, columnPercent: 52);
         }
 
         private static MonsterConfig FindMonster(int monsterId)

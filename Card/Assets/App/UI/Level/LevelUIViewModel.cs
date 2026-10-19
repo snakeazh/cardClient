@@ -530,8 +530,13 @@ namespace App.UI
                         return;
                     }
                 }
+                else
+                {
+                    // 只有不连服务器才在这里复位本地局。连服务器时上面已经 StartNewRun + BindServerRun，
+                    // 这里再调一次会把 _serverRunId 清空，导致整局不上报进度、不结算（存档也就不会被服务端记录）。
+                    _session.StartNewRun();
+                }
 
-                _session.StartNewRun();
                 _tableVm.ResetOpeningGate();
                 BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
                 // 先 Open GameUI（选关先当遮罩盖住加载），等 OnViewOpen/预加载完成后再拆掉选关，避免露底闪一下。

@@ -7461,18 +7461,27 @@ namespace App.Game
             ApplyTalentRoundGold();
             ApplyMonsterGrow();
             Phase = GamePhase.RoundSettle;
-            if (!AnyEnemyAlive())
+            if (!IsPvp && !AnyEnemyAlive())
             {
-                Hint = LastResult + (IsLastLevel
-                    ? "\n已击杀全部敌人，点击进入总结算"
-                    : "\n已击杀全部敌人，点击进入商店");
-            }
-            else
-            {
-                Hint = LastResult + "\n点击「下一局」继续";
+                // 清场后不再要求点「下一局」：本手结算完直接进商店 / 总结算。
+                EnterAfterClear();
+                return;
             }
 
+            Hint = LastResult + "\n点击「下一局」继续";
             Notify();
+        }
+
+        /// <summary>敌人全灭后的下一站：最后一关进总结算，其余进本关结算 + 商店。</summary>
+        private void EnterAfterClear()
+        {
+            if (IsLastLevel)
+            {
+                CompleteLastLevel();
+                return;
+            }
+
+            EnterShop();
         }
 
         private void EnterShop()
@@ -8667,10 +8676,7 @@ namespace App.Game
             {
                 LastResult = "圣光燃烧清场";
                 Phase = GamePhase.RoundSettle;
-                Hint = LastResult + (IsLastLevel
-                    ? "\n已击杀全部敌人，点击进入总结算"
-                    : "\n已击杀全部敌人，点击进入商店");
-                Notify();
+                EnterAfterClear();
                 return true;
             }
 

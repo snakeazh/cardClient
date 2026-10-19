@@ -1282,7 +1282,12 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
-            await PresentItemTip(slot, relic.Name, relic.Desc ?? string.Empty, showUse: false, placeRight: false);
+            await PresentItemTip(
+                slot,
+                relic.Name,
+                RelicMechanics.FormatDisplayDesc(ViewModel?.Session?.Run, relic),
+                showUse: false,
+                placeRight: false);
             if (!_pvpSideAlive || _hasTip == null || !_hasTip.activeSelf || _equipTip == null)
             {
                 return;

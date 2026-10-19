@@ -317,7 +317,7 @@ namespace App.UI.Popup
             var relic = RelicConfig.Get(RelicId);
             Quality.Value = relic != null ? relic.Type : QualityType.Ordinary;
             NameText.Value = relic != null ? relic.Name : string.Empty;
-            DescText.Value = relic != null ? relic.Desc ?? string.Empty : string.Empty;
+            DescText.Value = RelicMechanics.FormatDisplayDesc(Session.Run, relic);
             IconSprite.Value = GetRelicIcon(relic);
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;

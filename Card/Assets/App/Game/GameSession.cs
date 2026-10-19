@@ -125,6 +125,12 @@ namespace App.Game
 
         public event Action Changed;
 
+        /// <summary>圣物效果加了金币。参数是来源圣物 Id（消耗后已不在栏上则为 0）和数量。UI 用来从圣物列表飞币。</summary>
+        public event Action<int, int> RelicGoldGranted;
+
+        /// <summary>消耗品刚写入牌型永久倍率。UI 打开 WinTip，展示每个牌型加成后的倍率。</summary>
+        public event Action HandTypeMagRevealed;
+
         public bool IsPvp { get; private set; }
 
         /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
@@ -997,27 +1003,27 @@ namespace App.Game
             return !thisHand && Phase == GamePhase.Shop;
         }
 
+        public bool PlayerSkillsLocked =>
+            BossMechanics.SkillsDisabled(Run) || BindingSkillsDisabled();
+
         public bool PlayerMayUsePeekGood =>
             PlayerMayUseItems &&
             Player.Looked &&
             Run.PeekGoodCharges > 0 &&
             Phase != GamePhase.WaitingRub &&
-            !BossMechanics.SkillsDisabled(Run) &&
-            !BindingSkillsDisabled() &&
+            !PlayerSkillsLocked &&
             BossMechanics.CanAffordRub(Run);
 
         public bool PlayerMayUseChaKanGood =>
             PlayerMayUseItems &&
             Run.ChaKanGoodCharges > 0 &&
-            !BossMechanics.SkillsDisabled(Run) &&
-            !BindingSkillsDisabled();
+            !PlayerSkillsLocked;
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
             Run.TiHuanGoodCharges > 0 &&
             (_deck != null || IsPvp) &&
-            !BossMechanics.SkillsDisabled(Run) &&
-            !BindingSkillsDisabled() &&
+            !PlayerSkillsLocked &&
             !BossMechanics.SwapLocked(Run);
 
         /// <summary>把剩余勇气值推进底池。全下后若还有人能下注，对手继续打边池。</summary>
@@ -3318,12 +3324,19 @@ namespace App.Game
             return !CanApplyConsumable(relic, out failHint);
         }
 
+        private bool _pendingHandTypeMagReveal;
+
         private void ApplyConsumableUseCore(int relicId)
         {
+            _pendingHandTypeMagReveal = false;
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             RelicMechanics.OnConsumableUsed(Run);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
+            if (_pendingHandTypeMagReveal)
+            {
+                HandTypeMagRevealed?.Invoke();
+            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)
@@ -3373,13 +3386,22 @@ namespace App.Game
                     var handType = HandEvaluator.FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
                     var mag = RelicMechanics.ValueAt(entry, 1);
                     Run.AddHandTypeMagBonus(handType, mag);
+                    if (mag != 0f)
+                    {
+                        _pendingHandTypeMagReveal = true;
+                    }
+
                     Log($"消耗品：{HandEvaluator.TypeName(handType)} 倍率永久 +{mag}");
                     break;
                 }
                 case MechanismType.RandomHandTypeMagUp:
-                    ApplyRandomHandTypeMagUp(
+                    if (ApplyRandomHandTypeMagUp(
                         RelicMechanics.ValueAt(entry, 0),
-                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1)));
+                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1))))
+                    {
+                        _pendingHandTypeMagReveal = true;
+                    }
+
                     break;
                 case MechanismType.HealHpPercent:
                 {
@@ -3454,7 +3476,7 @@ namespace App.Game
             }
         }
 
-        private void ApplyRandomHandTypeMagUp(float mag, int count)
+        private bool ApplyRandomHandTypeMagUp(float mag, int count)
         {
             var types = new[]
             {
@@ -3467,6 +3489,7 @@ namespace App.Game
             };
             var remain = types.Length;
             var take = Math.Min(Math.Max(0, count), remain);
+            var applied = false;
             for (var i = 0; i < take; i++)
             {
                 var pick = _rng.Next(i, remain);
@@ -3474,8 +3497,11 @@ namespace App.Game
                 types[i] = types[pick];
                 types[pick] = tmp;
                 Run.AddHandTypeMagBonus(types[i], mag);
+                applied |= mag != 0f;
                 Log($"消耗品：{HandEvaluator.TypeName(types[i])} 倍率永久 +{mag}");
             }
+
+            return applied;
         }
 
         private void ClearThisHandConsumables()
@@ -4056,8 +4082,8 @@ namespace App.Game
             return snapshot != null ? snapshot.MonsterCardHandScoreLevelLimit : 0;
         }
 
-        /// <summary>评估座位牌型。BOSS 失效花色会先过滤玩家手牌。</summary>
-        public HandScore EvaluateSeat(SeatState seat)
+        /// <summary>评估座位牌型。BOSS 失效花色会先过滤玩家手牌。applyTypeRankShift 为 false 时不算升职/变形魔方/降低/好运来这些顺位改写，供结算动画结束前的展示。</summary>
+        public HandScore EvaluateSeat(SeatState seat, bool applyTypeRankShift = true)
         {
             GetScoreBan(seat, out var banned, out var banned2, out var banFaces, out var banned3);
             var rules = GetHandEvalRules(seat);
@@ -4075,9 +4101,12 @@ namespace App.Game
                     score = RelicMechanics.ApplyTwoThreeFive(score);
                 }
 
-                score = RelicMechanics.ApplyPlayerTypeRewrite(Run, score);
+                if (applyTypeRankShift)
+                {
+                    score = RelicMechanics.ApplyPlayerTypeRewrite(Run, score);
+                }
             }
-            else if (seat != null && !seat.IsPlayer)
+            else if (applyTypeRankShift && seat != null && !seat.IsPlayer)
             {
                 score = RelicMechanics.ApplyEnemyTypeRewrite(Run, score, _enemyDowngradeSteps);
                 score = RelicMechanics.ApplyCompareRankBonus(Run, score);
@@ -4207,7 +4236,7 @@ namespace App.Game
             if (score.Type == HandType.ThreeOfAKind && Run.FirstLeopardGoldPending > 0)
             {
                 var gold = Run.FirstLeopardGoldPending;
-                if (AddRelicGold(gold))
+                if (AddRelicGold(gold, FindRelicId(MechanismType.FirstLeopardGold)))
                 {
                     Log($"豹子精髓 +{gold} 金币（总金币 {Run.Gold}）");
                 }
@@ -4304,29 +4333,36 @@ namespace App.Game
             }
 
             var nineGold = RelicMechanics.SumValue(Run, MechanismType.SpecialNineCard);
-            var gained = 0;
+            var headGained = 0;
+            var nineGained = 0;
             for (var i = 0; i < cards.Length; i++)
             {
                 var card = cards[i];
                 if ((allFace || card.IsFace) && headChance > 0f && _rng.NextDouble() < headChance)
                 {
-                    gained += (int)Math.Round(headGold);
+                    headGained += (int)Math.Round(headGold);
                 }
 
                 if (card.Rank == Rank.Nine && nineGold != 0f)
                 {
-                    gained += (int)Math.Round(nineGold);
+                    nineGained += (int)Math.Round(nineGold);
                 }
             }
 
+            var gained = headGained + nineGained;
             if (gained == 0)
             {
                 return;
             }
 
-            if (!AddRelicGold(gained))
+            if (headGained > 0)
             {
-                return;
+                AddRelicGold(headGained, FindRelicId(MechanismType.ProOfHeadCardFunds));
+            }
+
+            if (nineGained > 0)
+            {
+                AddRelicGold(nineGained, FindRelicId(MechanismType.SpecialNineCard));
             }
 
             Log($"亮牌结算 +{gained} 金币（总金币 {Run.Gold}）");
@@ -4382,8 +4418,9 @@ namespace App.Game
             }
         }
 
-        /// <summary>圣物效果加金币。旅者无法通过圣物获得金币时正数不加；卖价和关卡结算不走这里。</summary>
-        private bool AddRelicGold(int amount)
+        /// <summary>圣物效果加金币。旅者无法通过圣物获得金币时正数不加；卖价和关卡结算不走这里。
+        /// <paramref name="relicId"/> 是飞币起点；消耗后已离栏时传 0，从圣物列表飞出。</summary>
+        private bool AddRelicGold(int amount, int relicId = 0)
         {
             if (amount == 0)
             {
@@ -4396,7 +4433,25 @@ namespace App.Game
             }
 
             AddGold(amount);
+            if (amount > 0)
+            {
+                RelicGoldGranted?.Invoke(relicId, amount);
+            }
+
             return true;
+        }
+
+        private int FindRelicId(MechanismType type)
+        {
+            var id = 0;
+            RelicMechanics.ForEachEntry(Run, (relic, entry) =>
+            {
+                if (id == 0 && relic != null && entry.Type == type)
+                {
+                    id = relic.Id;
+                }
+            });
+            return id;
         }
 
         private void EnqueueRunGold(bool grant, int amount)
@@ -6871,7 +6926,7 @@ namespace App.Game
             }
 
             var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TakeDamageGetFunds));
-            if (gold != 0 && AddRelicGold(gold))
+            if (gold != 0 && AddRelicGold(gold, FindRelicId(MechanismType.TakeDamageGetFunds)))
             {
                 Log($"补偿金 +{gold} 金币（总金币 {Run.Gold}）");
             }
@@ -7120,7 +7175,7 @@ namespace App.Game
                 var heal = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGoldAndReplyHp, 1));
                 if (gold != 0)
                 {
-                if (AddRelicGold(gold))
+                if (AddRelicGold(gold, FindRelicId(MechanismType.DefeatAllGetGoldAndReplyHp)))
                 {
                     Log($"后备计划 +{gold} 金币（总金币 {Run.Gold}）");
                 }
@@ -7148,7 +7203,7 @@ namespace App.Game
             }
 
             _ironRiceBowlGranted = true;
-            if (!AddRelicGold(gold))
+            if (!AddRelicGold(gold, FindRelicId(MechanismType.IronRiceBowl)))
             {
                 return;
             }
@@ -7159,7 +7214,7 @@ namespace App.Game
         private void ApplyRoundStartRelics()
         {
             var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.EveryRoundGetGold));
-            if (gold != 0 && AddRelicGold(gold))
+            if (gold != 0 && AddRelicGold(gold, FindRelicId(MechanismType.EveryRoundGetGold)))
             {
                 Log($"小钱包 +{gold} 金币（总金币 {Run.Gold}）");
             }
@@ -7173,7 +7228,8 @@ namespace App.Game
 
             var nobleHp = RelicMechanics.SumValue(Run, MechanismType.NobleBadge);
             var nobleGold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.NobleBadge, 1));
-            if (nobleGold != 0 && Player.MaxHp > 0 && Player.Hp > Player.MaxHp * nobleHp && AddRelicGold(nobleGold))
+            if (nobleGold != 0 && Player.MaxHp > 0 && Player.Hp > Player.MaxHp * nobleHp &&
+                AddRelicGold(nobleGold, FindRelicId(MechanismType.NobleBadge)))
             {
                 Log($"高贵徽章 +{nobleGold} 金币（总金币 {Run.Gold}）");
             }
@@ -7235,13 +7291,13 @@ namespace App.Game
             if (_roundDamageDealt <= 0)
             {
                 var gold = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.DefeatAllGetGold));
-                if (gold != 0 && AddRelicGold(gold))
+                if (gold != 0 && AddRelicGold(gold, FindRelicId(MechanismType.DefeatAllGetGold)))
                 {
                     Log($"记账本 +{gold} 金币（总金币 {Run.Gold}）");
                 }
             }
 
-            RelicMechanics.ForEachEntry(Run, (_, entry) =>
+            RelicMechanics.ForEachEntry(Run, (relic, entry) =>
             {
                 if (entry.Type != MechanismType.EveryRoundEndingGetGoldPer)
                 {
@@ -7259,7 +7315,7 @@ namespace App.Game
                     return;
                 }
 
-                if (AddRelicGold(gold))
+                if (AddRelicGold(gold, relic != null ? relic.Id : 0))
                 {
                     Log($"幸运草 +{gold} 金币（总金币 {Run.Gold}）");
                 }
@@ -7270,7 +7326,7 @@ namespace App.Game
             if (interestUnit > 0f && interestGold != 0 && Run.Gold > 0)
             {
                 var gain = (int)Math.Floor(Run.Gold / (double)interestUnit) * interestGold;
-                if (gain != 0 && AddRelicGold(gain))
+                if (gain != 0 && AddRelicGold(gain, FindRelicId(MechanismType.Interest)))
                 {
                     Log($"利息 +{gain} 金币（总金币 {Run.Gold}）");
                 }
@@ -7281,7 +7337,7 @@ namespace App.Game
             if (peekUnit > 0f && peekGold != 0 && Run.PeekGoodCharges > 0)
             {
                 var gain = (int)Math.Floor(Run.PeekGoodCharges / peekUnit) * peekGold;
-                if (gain != 0 && AddRelicGold(gain))
+                if (gain != 0 && AddRelicGold(gain, FindRelicId(MechanismType.Abacus)))
                 {
                     Log($"小算盘 +{gain} 金币（总金币 {Run.Gold}）");
                 }
@@ -7291,7 +7347,7 @@ namespace App.Game
             if (potRatio > 0f && _roundDamageDealt > 0)
             {
                 var gain = (int)Math.Floor(_roundDamageDealt * (double)potRatio);
-                if (gain != 0 && AddRelicGold(gain))
+                if (gain != 0 && AddRelicGold(gain, FindRelicId(MechanismType.DamageTurnToGold)))
                 {
                     Log($"聚宝盆 +{gain} 金币（总金币 {Run.Gold}）");
                 }
@@ -8397,7 +8453,8 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 局内玩家面板：天赋底值再叠圣物、层数，以及窃取/脆弱之躯等已写入座位的 debuff。
+        /// 局内玩家面板：天赋底值再叠圣物提供的暴击率、闪避率（含拳套/运动鞋层数）、
+        /// 以及窃取/脆弱之躯等已写入座位的攻血。英雄属性详情读这份结果。
         /// </summary>
         public HeroPanelStats ResolveLivePlayerPanel()
         {

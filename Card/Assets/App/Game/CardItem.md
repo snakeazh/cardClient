@@ -163,6 +163,19 @@ item.PunchScale(0.22f, 0.32f);                 // DOTween 缩放抖动
 
 ---
 
+## 回收（技能替换）
+
+```csharp
+var exitLength = item.PlayExit();       // aini_card_exit，原速，返回片段时长（0.5s）
+var slowLength = item.PlayExit(0.7f);   // 0.7 倍速，返回实际播放时长
+var dealLength = item.PlayDeal();       // aini_card_deal，返回片段时长
+```
+
+`PlayExit` 会把 `TweenTarget` 姿势归零后播回收翻转；替换技能由 `CardTableAnimator.PlayHandReplace`
+编排：旧牌 `PlayExit` 翻面过程中就开始向右抛物线飞出，再复位到牌堆位置逐张 `PlayDeal` 飞回手牌。
+
+---
+
 ## 发牌点
 
 叠牌、52 张牌堆、X/Y 偏移、洗牌与飞牌见 [CardDealPoint.md](CardDealPoint.md)。在场景 `dealpoint` 节点上挂 `CardDealPoint` 即可。

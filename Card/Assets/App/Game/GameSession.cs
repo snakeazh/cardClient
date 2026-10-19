@@ -151,7 +151,12 @@ namespace App.Game
 
         public bool IsRevealPlaying => _revealKind != RevealKind.None;
 
+        /// <summary>替换手牌的回收/发牌动画正在播；期间禁用替换技能，避免连点打断。</summary>
+        public bool HandReplacePlaying { get; private set; }
+
         private bool _pvpHandLocked;
+        private bool _pendingPvpReplacePlay;
+        private int _pvpReplaceSerialBefore;
 
         /// <summary>本局服务端 runId。未开局或未登录为空。</summary>
         public string ServerRunId => _serverRunId;
@@ -168,6 +173,8 @@ namespace App.Game
         public string LastResult { get; private set; } = string.Empty;
         public bool CardsRevealed { get; private set; }
         public int DealSerial { get; private set; }
+        /// <summary>替换技能换手序号；牌桌据此播旧牌回收 + 新牌发牌动画。</summary>
+        public int ReplacePlaySerial { get; private set; }
         public int BettingRound => _bettingRound;
         /// <summary>本关第几手，从 1 起。</summary>
         public int StageRoundIndex => _stageBetRound < 1 ? 1 : _stageBetRound;
@@ -396,6 +403,7 @@ namespace App.Game
         /// <summary>开牌阶段且还有搓牌次数时，可点选手牌搓牌。</summary>
         public bool PlayerMayHoldRub =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             Player.Looked &&
             Phase == GamePhase.WaitingOpen &&
@@ -420,6 +428,7 @@ namespace App.Game
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
         public bool PlayerMayCompare =>
             !AiActing &&
+            !HandReplacePlaying &&
             Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
             AnyEnemyAlive() &&
@@ -964,6 +973,7 @@ namespace App.Game
 
         public bool PlayerMayAllIn =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             Player.Hp > 0 &&
             Player.Courage > 0 &&
@@ -971,6 +981,7 @@ namespace App.Game
 
         public bool PlayerMayRaise =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
 
@@ -978,13 +989,14 @@ namespace App.Game
 
         private bool PlayerMayUseItems =>
             !Player.Folded &&
+            !HandReplacePlaying &&
             !(IsPvp && _pvpHandLocked) &&
             (Phase == GamePhase.WaitingOpen ||
              Phase == GamePhase.WaitingRub);
 
         private bool PlayerMayUseConsumable(bool thisHand)
         {
-            if (Player == null || Player.Folded || AiActing)
+            if (Player == null || Player.Folded || AiActing || HandReplacePlaying)
             {
                 return false;
             }
@@ -1014,6 +1026,7 @@ namespace App.Game
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
+            !HandReplacePlaying &&
             Run.TiHuanGoodCharges > 0 &&
             (_deck != null || IsPvp) &&
             !BossMechanics.SkillsDisabled(Run) &&
@@ -1136,6 +1149,7 @@ namespace App.Game
 
             SelectingRubTarget = false;
             SelectingXRayTarget = false;
+            _pendingRubIndex = -1;
             SyncDeckWithTable();
             var nextCards = new Card[PlayerDealCount];
             for (var i = 0; i < nextCards.Length; i++)
@@ -1170,7 +1184,47 @@ namespace App.Game
                 Log("替换手牌（未看牌）");
             }
 
+            HandReplacePlaying = true;
+            ReplacePlaySerial++;
             Notify();
+        }
+
+        /// <summary>PVP 替换请求已发出：下一次快照写入新手牌时抬换手序号，播回收/发牌动画。</summary>
+        public void BeginPvpReplaceRequest()
+        {
+            _pendingPvpReplacePlay = true;
+            _pvpReplaceSerialBefore = ReplacePlaySerial;
+            HandReplacePlaying = true;
+            Notify();
+        }
+
+        public void CancelPvpReplaceRequest()
+        {
+            _pendingPvpReplacePlay = false;
+            // 序号没抬说明动画没开始（超时/被拒）：解除禁用；已开始则交给牌桌播完再清。
+            if (ReplacePlaySerial == _pvpReplaceSerialBefore && HandReplacePlaying)
+            {
+                HandReplacePlaying = false;
+                Notify();
+            }
+        }
+
+        /// <summary>牌桌换手动效播完：解除替换技能禁用并刷新按钮。</summary>
+        public void FinishHandReplacePlay()
+        {
+            if (!HandReplacePlaying)
+            {
+                return;
+            }
+
+            HandReplacePlaying = false;
+            Notify();
+        }
+
+        /// <summary>换手动效被发牌/退局打断：只清状态，不触发刷新，避免重入。</summary>
+        public void CancelHandReplacePlay()
+        {
+            HandReplacePlaying = false;
         }
 
         private void TryXRaySeat(SeatState seat)
@@ -4511,6 +4565,9 @@ namespace App.Game
             Run.PendingLevelHpMaxBonus = 0;
             ClearThisHandConsumables();
             _stageBetRound = 0;
+            HandReplacePlaying = false;
+            _pendingPvpReplacePlay = false;
+            ReplacePlaySerial = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
             _stageDamageDealt = 0;
@@ -9499,6 +9556,8 @@ namespace App.Game
 
             IsPvp = false;
             _pvpHandLocked = false;
+            HandReplacePlaying = false;
+            _pendingPvpReplacePlay = false;
             for (var i = 0; i < Enemies.Length; i++)
             {
                 Enemies[i].DisplayAsHero = false;
@@ -10054,7 +10113,23 @@ namespace App.Game
             var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
             // 重连进商店：先按摊牌结果展示，不立刻切 Shop（否则只剩牌型文案、牌桌 DealSerial=0 无牌）。
             var showcaseResult = catchUpResult && showdown && (shopPhase || settlePhase);
+            var handBefore = _pendingPvpReplacePlay && Player.Hand != null
+                ? (Card[])Player.Hand.Clone()
+                : null;
             CopyPvpHand(Player, mine, true);
+            if (_pendingPvpReplacePlay && mine != null && mine.Cards != null && mine.Cards.Count > 0)
+            {
+                // 无关快照不会改手牌：只在己方 5 张真的变了时才播回收/发牌，避免别的玩家动作误触发。
+                if (PvpHandChanged(handBefore, Player))
+                {
+                    _pendingPvpReplacePlay = false;
+                    _pendingRubIndex = -1;
+                    SelectingRubTarget = false;
+                    HandReplacePlaying = true;
+                    ReplacePlaySerial++;
+                }
+            }
+
             Player.ShowCards = true;
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
@@ -10219,6 +10294,25 @@ namespace App.Game
             }
 
             return "第 " + self.Rank + " 名";
+        }
+
+        private static bool PvpHandChanged(Card[] before, SeatState seat)
+        {
+            if (before == null || seat?.Hand == null)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < seat.Hand.Length; i++)
+            {
+                var oldCard = i < before.Length ? before[i] : default;
+                if (!oldCard.Equals(seat.Hand[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void CopyPvpHand(SeatState seat, BattleSeatDto dto, bool applySelected)

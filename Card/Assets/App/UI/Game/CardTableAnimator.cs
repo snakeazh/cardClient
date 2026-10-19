@@ -38,6 +38,24 @@ namespace App.UI
         private const float SelectLift = 0.28f;
         private const float SelectLiftDuration = 0.12f;
         private const float RubReplaceRevealDelay = 1.5f;
+        /// <summary>替换手牌：旧牌回收播放速度（1 = 原速，越小越慢）。</summary>
+        private const float ReplaceExitSpeed = 0.7f;
+        /// <summary>替换手牌：翻面进度到多少时开始飞出（0~1，边翻边飞）。</summary>
+        private const float ReplaceFlyStartRatio = 0.4f;
+        /// <summary>替换手牌：旧牌抛物线飞出时长（秒）。</summary>
+        private const float ReplaceFlyDuration = 0.38f;
+        /// <summary>替换手牌：旧牌逐张起飞的间隔（秒）。</summary>
+        private const float ReplaceFlyStagger = 0.03f;
+        /// <summary>替换手牌：旧牌抛物线拱高（世界单位）。</summary>
+        private const float ReplaceFlyArcHeight = 2f;
+        /// <summary>替换手牌：旧牌全部飞出后，等一帧再重置到牌堆，避免和最后一帧飞行抢位置。</summary>
+        private const float ReplaceResetDelay = 0.02f;
+        /// <summary>替换手牌：旧牌飞到牌堆后到第一张新牌起飞的间隔（秒）。</summary>
+        private const float ReplaceDeckGap = 0.08f;
+        /// <summary>替换手牌：最后一张新牌落位后到翻面的缓冲（秒）。</summary>
+        private const float ReplaceDealSettle = 0.04f;
+        /// <summary>aini_card_deal 片段长度（秒），用于替换发牌时等待最后一张落位。</summary>
+        private const float ReplaceDealClipDuration = 0.24f;
 
         private IResourceService _resources;
         private GameObject _prefab;
@@ -55,14 +73,19 @@ namespace App.UI
         private Sequence _dealSeq;
         private Sequence _revealSeq;
         private Sequence _rubSeq;
+        private Sequence _replaceSeq;
+        private Sequence _replaceDealSeq;
         private int _shownDeal = -1;
         private int _shownEnemyId = int.MinValue;
         private int _shownReveal;
+        private int _shownReplace;
         private int _dealToken;
         private int _revealToken;
+        private int _replaceToken;
         private int _seeThroughToken;
         private bool _dealing;
         private bool _revealing;
+        private bool _replacing;
         private GameSession _session;
         private int _rubLockIndex = -1;
         private bool _rubShakeReady;
@@ -81,7 +104,7 @@ namespace App.UI
         public const float MinRubDuration = 0.5f;
 
         public bool IsDealing => _dealing;
-        public bool IsBusy => _dealing || _revealing || _rubPlaying;
+        public bool IsBusy => _dealing || _revealing || _rubPlaying || _replacing;
         public bool IsRubPlaying => _rubPlaying;
         public bool IsRubPreviewActive => _rubLockIndex >= 0;
         public bool IsRubShakeReady => _rubShakeReady;
@@ -264,9 +287,11 @@ namespace App.UI
             ApplySeatVisibility(session);
             if (session.DealSerial <= 0)
             {
+                StopHandReplace(cancelSession: true);
                 ClearAllItems();
                 HideDealPile();
                 _shownDeal = 0;
+                _shownReplace = session.ReplacePlaySerial;
                 return;
             }
 
@@ -284,13 +309,19 @@ namespace App.UI
                 return;
             }
 
-            if (_dealing || _revealing)
+            if (_dealing || _revealing || _replacing)
             {
-                if (!_dealing)
+                if (!_dealing && !_replacing)
                 {
                     SyncRubSelectFx(session);
                 }
 
+                return;
+            }
+
+            if (session.ReplacePlaySerial > 0 && session.ReplacePlaySerial != _shownReplace)
+            {
+                PlayHandReplace(session);
                 return;
             }
 
@@ -352,12 +383,15 @@ namespace App.UI
             }
 
             ApplySeatVisibility(session);
+            StopHandReplace(cancelSession: true);
             ClearAllItems();
             HideDealPile();
             if (session.DealSerial <= 0)
             {
                 _shownDeal = 0;
             }
+
+            _shownReplace = session.ReplacePlaySerial;
         }
 
         public int HitPlayerCard(Camera camera)
@@ -896,6 +930,7 @@ namespace App.UI
         public void Dispose()
         {
             StopRubReplace(restore: false);
+            StopHandReplace(cancelSession: true);
             _dealSeq?.Kill();
             _revealSeq?.Kill();
             _dealToken++;
@@ -941,6 +976,7 @@ namespace App.UI
         private void SnapPresentHands(GameSession session)
         {
             StopRubReplace(restore: false);
+            StopHandReplace(cancelSession: true);
             _dealSeq?.Kill();
             _revealSeq?.Kill();
             _revealing = false;
@@ -950,6 +986,7 @@ namespace App.UI
             _shownDeal = session.DealSerial;
             _shownEnemyId = session.DisplayedEnemy != null ? session.DisplayedEnemy.Id : int.MinValue;
             _shownReveal = session.RevealPlaySerial;
+            _shownReplace = session.ReplacePlaySerial;
             _dealToken++;
             _seeThroughToken++;
             ClearAllItems();
@@ -1008,6 +1045,7 @@ namespace App.UI
         private void PlayDeal(GameSession session)
         {
             StopRubReplace(restore: false);
+            StopHandReplace(cancelSession: true);
             _dealSeq?.Kill();
             _revealSeq?.Kill();
             _revealing = false;
@@ -1016,6 +1054,7 @@ namespace App.UI
             _shownDeal = session.DealSerial;
             _shownEnemyId = session.DisplayedEnemy != null ? session.DisplayedEnemy.Id : int.MinValue;
             _shownReveal = session.RevealPlaySerial;
+            _shownReplace = session.ReplacePlaySerial;
             var token = ++_dealToken;
             _seeThroughToken++;
             _dealing = true;
@@ -1165,6 +1204,7 @@ namespace App.UI
 
         private void PlayReveal(GameSession session)
         {
+            StopHandReplace(cancelSession: true);
             _revealSeq?.Kill();
             _shownReveal = session.RevealPlaySerial;
             var token = ++_revealToken;
@@ -1638,6 +1678,321 @@ namespace App.UI
             if (_rubLockIndex >= 0)
             {
                 CancelRubPreview();
+            }
+        }
+
+        /// <summary>
+        /// 替换技能：旧牌翻面（aini_card_exit）后向右侧抛物线飞出屏幕，
+        /// 再从牌堆位置重新发 5 张（aini_card_deal），最后翻回正面。
+        /// 换牌数据此时已写入 Session，旧牌飞出阶段仍显示旧 CardItem 贴图。
+        /// </summary>
+        private void PlayHandReplace(GameSession session)
+        {
+            if (_player == null || session?.Player == null)
+            {
+                if (session != null)
+                {
+                    _shownReplace = session.ReplacePlaySerial;
+                    session.CancelHandReplacePlay();
+                }
+
+                return;
+            }
+
+            StopRubReplace(restore: false);
+            StopHandReplace(cancelSession: false);
+            var token = ++_replaceToken;
+            _replacing = true;
+            _shownReplace = session.ReplacePlaySerial;
+            _rubLockIndex = -1;
+            _rubShakeReady = false;
+            SetPlayerChangeSelectFx(false);
+
+            var count = Mathf.Clamp(session.PlayerDealCount, 1, CardsPerHand);
+            for (var i = 0; i < _player.Items.Length; i++)
+            {
+                _shadows.Return(ref _player.Shadows[i]);
+            }
+
+            // 1) 旧牌翻面：所有牌同时起播，等待最长的一张播完。
+            var exitDuration = 0.05f;
+            for (var i = 0; i < count; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null || !_player.Landed[i])
+                {
+                    continue;
+                }
+
+                item.StopMove();
+                item.StopTweenAnimation();
+                // 终止可能还在进行的根节点翻面，避免与 TweenTarget 的回收旋转叠加。
+                item.SetFace(item.FaceState);
+                item.SetIdleFloat(false);
+                item.HideDragEffects();
+                item.SetDragEffectVisible(false);
+                exitDuration = Mathf.Max(exitDuration, item.PlayExit(ReplaceExitSpeed));
+            }
+
+            var seq = DOTween.Sequence();
+            var camera = Camera.main;
+            var flyStart = exitDuration * ReplaceFlyStartRatio;
+            var flySortingBase = PlayerHandMaxSorting() + 20;
+
+            // 2) 翻面还没结束时就开始往右侧抛物线飞出，翻飞同时进行。
+            for (var i = 0; i < count; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null || !_player.Landed[i])
+                {
+                    continue;
+                }
+
+                item.SetSortingOrder(flySortingBase + i);
+                var start = item.transform.position;
+                var end = GetReplaceFlyEnd(camera, start);
+                var control = (start + end) * 0.5f + Vector3.up * ReplaceFlyArcHeight;
+                var fly = CreateReplaceFlyTween(item.transform, start, control, end, ReplaceFlyDuration);
+                if (fly != null)
+                {
+                    seq.Insert(flyStart + i * ReplaceFlyStagger, fly);
+                }
+
+                var spinTarget = item.transform.eulerAngles + new Vector3(0f, 0f, -360f);
+                var spin = item.transform
+                    .DORotate(spinTarget, ReplaceFlyDuration, RotateMode.FastBeyond360)
+                    .SetEase(Ease.Linear);
+                seq.Insert(flyStart + i * ReplaceFlyStagger, spin);
+            }
+
+            var flyEnd = flyStart + Mathf.Max(0, count - 1) * ReplaceFlyStagger + ReplaceFlyDuration;
+            // 翻面和飞行可能同时结束：等两者都播完再重置到牌堆。
+            var oldFlyEnd = Mathf.Max(exitDuration, flyEnd);
+            var resetAt = oldFlyEnd + ReplaceResetDelay;
+
+            // 3) 旧牌全部飞出后，把同一批 CardItem 重置到牌堆位置，然后进入发牌阶段。
+            seq.InsertCallback(resetAt, () =>
+            {
+                if (token != _replaceToken)
+                {
+                    return;
+                }
+
+                ResetReplaceDeckCards(session, count);
+                StartReplaceDeal(session, count, token);
+            });
+
+            _replaceSeq = seq;
+        }
+
+        /// <summary>从牌堆逐张飞回手牌：牌已在 ResetReplaceDeckCards 中摆成一叠。</summary>
+        private void StartReplaceDeal(GameSession session, int count, int token)
+        {
+            var seq = DOTween.Sequence();
+            var dealSfxPlayed = false;
+            for (var i = 0; i < count; i++)
+            {
+                var cardSeq = CreateReplaceDealSequence(i, token, () =>
+                {
+                    if (!dealSfxPlayed)
+                    {
+                        dealSfxPlayed = true;
+                        PlayDealSfx();
+                    }
+                });
+                if (cardSeq != null)
+                {
+                    seq.Insert(ReplaceDeckGap + i * DealStagger, cardSeq);
+                }
+            }
+
+            var dealEnd = ReplaceDeckGap
+                          + Mathf.Max(0, count - 1) * DealStagger
+                          + Mathf.Max(DealMoveDuration, ReplaceDealClipDuration)
+                          + ReplaceDealSettle;
+
+            // 4) 全部落位后统一翻正面。
+            seq.InsertCallback(dealEnd, () =>
+            {
+                if (token != _replaceToken || _player == null || session.Player == null)
+                {
+                    return;
+                }
+
+                SyncSeatFaces(_player, session.Player, true, session);
+            });
+
+            // 5) 收尾。
+            seq.InsertCallback(dealEnd + FlipDuration, () =>
+            {
+                if (token != _replaceToken)
+                {
+                    return;
+                }
+
+                _replacing = false;
+                _replaceSeq = null;
+                _replaceDealSeq = null;
+                session.FinishHandReplacePlay();
+            });
+
+            _replaceDealSeq = seq;
+        }
+
+        private static Vector3 GetReplaceFlyEnd(Camera camera, Vector3 start)
+        {
+            if (camera == null)
+            {
+                return start + new Vector3(14f, 2f, 0f);
+            }
+
+            var z = Mathf.Abs(camera.transform.position.z - start.z);
+            var end = camera.ViewportToWorldPoint(new Vector3(1.35f, 0.55f, z));
+            end.z = start.z;
+            end.y = Mathf.Max(end.y, start.y + 1.5f);
+            return end;
+        }
+
+        private static Tween CreateReplaceFlyTween(
+            Transform target,
+            Vector3 start,
+            Vector3 control,
+            Vector3 end,
+            float duration)
+        {
+            if (target == null)
+            {
+                return null;
+            }
+
+            return DOTween.To(
+                () => 0f,
+                t =>
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
+
+                    var inv = 1f - t;
+                    target.position = inv * inv * start + 2f * inv * t * control + t * t * end;
+                },
+                1f,
+                duration).SetEase(Ease.Linear);
+        }
+
+        /// <summary>旧牌飞出后：同一批 CardItem 重置到牌堆位置，等下一阶段逐张发牌。</summary>
+        private void ResetReplaceDeckCards(GameSession session, int count)
+        {
+            if (_player == null || session?.Player == null)
+            {
+                return;
+            }
+
+            var deckPosition = _dealPoint != null
+                ? _dealPoint.position
+                : (_hud != null ? _hud.position : Vector3.zero);
+            var deckRotation = _dealPoint != null ? _dealPoint.rotation : Quaternion.identity;
+            var sortingBase = PlayerHandMaxSorting() + 20;
+            var hand = session.Player.Hand;
+            for (var i = 0; i < count; i++)
+            {
+                var item = _player.Items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.StopMove();
+                item.StopTweenAnimation();
+                item.transform.SetParent(null, true);
+                var card = hand != null && i < hand.Length ? hand[i] : default;
+                var position = deckPosition + new Vector3(i * 0.03f, i * -0.02f, 0f);
+                item.Initialize(card, CardFaceState.Back, position, deckRotation, Vector3.one);
+                item.SetSpritesVisible(true);
+                item.SetSortingOrder(sortingBase + i);
+                item.SetIdleFloat(false);
+                EnsureCollider(item);
+                _player.Landed[i] = false;
+            }
+        }
+
+        /// <summary>从牌堆位置飞到第 index 个卡位，飞行期间播 aini_card_deal。</summary>
+        private Sequence CreateReplaceDealSequence(
+            int index,
+            int token,
+            Action onStart)
+        {
+            if (_player == null || index < 0 || index >= CardsPerHand)
+            {
+                return null;
+            }
+
+            var item = _player.Items[index];
+            var point = _player.Points[index];
+            if (item == null || point == null)
+            {
+                return null;
+            }
+
+            var seq = DOTween.Sequence();
+            seq.AppendCallback(() =>
+            {
+                if (token != _replaceToken)
+                {
+                    return;
+                }
+
+                onStart?.Invoke();
+                item.PlayDeal();
+            });
+            // 让 PlayDeal 先执行，再抓取飞行起点。
+            seq.AppendInterval(0.001f);
+            seq.Append(item.transform.DOMove(point.position, DealMoveDuration).SetEase(Ease.OutCubic));
+            seq.Join(item.transform
+                .DORotateQuaternion(point.rotation * CardItem.FaceYaw(CardFaceState.Back), DealMoveDuration)
+                .SetEase(Ease.OutCubic));
+            seq.Join(item.transform
+                .DOScale(point.lossyScale, DealMoveDuration)
+                .SetEase(Ease.OutQuad));
+            seq.OnComplete(() =>
+            {
+                if (token != _replaceToken || _player == null || item == null)
+                {
+                    return;
+                }
+
+                SnapToPoint(item, point);
+                _player.Landed[index] = true;
+                item.SetIdleFloat(false);
+                var sr = item.CurrentRenderer;
+                if (sr != null)
+                {
+                    sr.color = Color.white;
+                }
+            });
+            return seq;
+        }
+
+        private void StopHandReplace(bool cancelSession)
+        {
+            _replaceToken++;
+            if (_replaceSeq != null && _replaceSeq.IsActive())
+            {
+                _replaceSeq.Kill();
+            }
+
+            if (_replaceDealSeq != null && _replaceDealSeq.IsActive())
+            {
+                _replaceDealSeq.Kill();
+            }
+
+            _replaceSeq = null;
+            _replaceDealSeq = null;
+            _replacing = false;
+            if (cancelSession)
+            {
+                _session?.CancelHandReplacePlay();
             }
         }
 

@@ -72,9 +72,18 @@ namespace App.Game
             _lastInBattle = inBattle;
 
             bool useHeightFit = inBattle || currentAspect > designAspect;
-            _camera.orthographicSize = useHeightFit
+            float targetSize = useHeightFit
                 ? designOrthographicSize
                 : designOrthographicSize * (designAspect / currentAspect);
+
+            // 编辑器里 OnEnable / OnValidate 会强制走 Apply，写相机属性不比较新旧值：
+            // 尺寸没变也赋值会把场景标脏，于是每次打开/切换场景都弹保存。值相同就不写。
+            if (Mathf.Approximately(_camera.orthographicSize, targetSize))
+            {
+                return;
+            }
+
+            _camera.orthographicSize = targetSize;
         }
 
         private bool IsInBattleFit()

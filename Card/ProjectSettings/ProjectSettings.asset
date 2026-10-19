@@ -866,7 +866,7 @@ PlayerSettings:
     Stadia: DOTWEEN
     Standalone: DOTWEEN
     VisionOS: DOTWEEN
-    WebGL: DOTWEEN;ENABLE_APP_LOG;WEIXINMINIGAME
+    WebGL: DOTWEEN;ENABLE_APP_LOG;DOUYINMINIGAME
     Windows Store Apps: DOTWEEN
     XboxOne: DOTWEEN
     iPhone: DOTWEEN

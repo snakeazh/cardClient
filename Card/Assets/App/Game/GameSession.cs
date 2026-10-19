@@ -2953,17 +2953,18 @@ namespace App.Game
             }
         }
 
-        public async Task<bool> TryBuyAndUseShopRelicAsync(int relicId)
+        public async Task<bool> TryBuyAndUseShopRelicAsync(int relicId, bool watchAd = false)
         {
             if (IsPvp)
             {
-                // PVP 圣物即买即生效，不支持购买并使用。
+                // PVP 圣物即买即生效，不支持购买并使用，也无广告免费买。
                 return false;
             }
 
-            if (!HasServerRun)
+            if (watchAd || !HasServerRun)
             {
-                return TryBuyAndUseShopRelic(relicId);
+                // 看广告与无服务端局都走本地：广告当前为模拟发放，不扣金币、不走付费购买接口。
+                return TryBuyAndUseShopRelic(relicId, watchAd);
             }
 
             if (Phase != GamePhase.Shop || !Run.ShopOfferIds.Contains(relicId))
@@ -3049,8 +3050,9 @@ namespace App.Game
 
         /// <summary>
         /// 商店货架购买并立刻使用消耗品。不占携带上限：到手后马上消耗，因此遗物已满时仍可买用。
+        /// <paramref name="watchAd"/> 为真时不扣金币（广告当前为模拟发放）。
         /// </summary>
-        public bool TryBuyAndUseShopRelic(int relicId)
+        public bool TryBuyAndUseShopRelic(int relicId, bool watchAd = false)
         {
             if (Phase != GamePhase.Shop || !Run.ShopOfferIds.Contains(relicId))
             {
@@ -3070,14 +3072,17 @@ namespace App.Game
                 return false;
             }
 
-            var price = EffectiveBuyPrice(relicId);
-            if (!RelicMechanics.CanAfford(Run, price))
+            if (!watchAd)
             {
-                Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
-                    ? "超出白条额度"
-                    : "金币不足";
-                Notify();
-                return false;
+                var price = EffectiveBuyPrice(relicId);
+                if (!RelicMechanics.CanAfford(Run, price))
+                {
+                    Hint = RelicMechanics.HasMechanism(Run, MechanismType.Liability)
+                        ? "超出白条额度"
+                        : "金币不足";
+                    Notify();
+                    return false;
+                }
             }
 
             if (TryGetRelicUseFailHint(relicId, requireOwned: false, out var failHint))
@@ -3087,13 +3092,17 @@ namespace App.Game
                 return false;
             }
 
-            SpendGold(price);
+            if (!watchAd)
+            {
+                SpendGold(EffectiveBuyPrice(relicId));
+            }
+
             Run.RelicConfigIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
             ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
             ApplyConsumableUseCore(relicId);
-            Log($"购入并使用遗物 {relic.Name}");
-            Hint = $"已购买并使用 {relic.Name}";
+            Log(watchAd ? $"观看广告购入并使用遗物 {relic.Name}" : $"购入并使用遗物 {relic.Name}");
+            Hint = watchAd ? $"已免费获得并使用 {relic.Name}" : $"已购买并使用 {relic.Name}";
             Notify();
             return true;
         }

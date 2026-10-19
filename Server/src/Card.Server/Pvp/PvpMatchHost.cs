@@ -401,6 +401,15 @@ public sealed class PvpMatchHost
         }
     }
 
+    /// <summary>该用户当前映射的是这一局，而不是后来新开的另一局。</summary>
+    public bool IsBoundTo(Guid userId, PvpMatch match)
+    {
+        lock (_gate)
+        {
+            return match != null && _byUser.TryGetValue(userId, out var bound) && ReferenceEquals(bound, match);
+        }
+    }
+
     /// <summary>仅解除 user→match 映射，不 Abandon（用于已淘汰玩家停推/禁重连）。</summary>
     public void Unbind(Guid userId)
     {
@@ -430,7 +439,10 @@ public sealed class PvpMatchHost
                     continue;
                 }
 
-                _byUser.Remove(userId);
+                if (_byUser.TryGetValue(userId, out var bound) && ReferenceEquals(bound, match))
+                {
+                    _byUser.Remove(userId);
+                }
             }
         }
     }

@@ -24,6 +24,7 @@ namespace App.Net
         private TaskCompletionSource<bool> _synced;
         private TaskCompletionSource<bool> _updateWaiter;
         private long _lastVersion;
+        private string _ignoredRoomId;
         private bool _acceptAnySnapshot;
         private bool _catchUpSnap;
         private bool _probing;
@@ -127,6 +128,11 @@ namespace App.Net
             CancelProbe();
 
             _players.Clear();
+            // 先记住要丢掉的房间，再清状态。清掉 IsActive 后房间过滤会失效，
+            // 断线让出主线程时，收件箱里上一把的 match_update 不能被当成这一把。
+            RememberIgnoredRoom();
+            IsActive = false;
+            State = null;
             _lastVersion = 0;
             _acceptAnySnapshot = false;
             _authed = new TaskCompletionSource<bool>();
@@ -140,7 +146,11 @@ namespace App.Net
             var waitMs = timeoutMs > 0 ? (int)Math.Min(timeoutMs + 5000, 300000) : 60000;
             var state = await Wait(_opened.Task, waitMs, "匹配超时");
             IsActive = true;
-            State = state;
+            // OnMessage 已经写下更新的快照时不要退回第一张，否则会把新局盖成旧内容。
+            if (State == null)
+            {
+                State = state;
+            }
         }
 
         /// <summary>
@@ -414,6 +424,7 @@ namespace App.Net
 
         public async Task StopAsync()
         {
+            RememberIgnoredRoom();
             IsActive = false;
             State = null;
             _players.Clear();
@@ -581,8 +592,27 @@ namespace App.Net
                     return;
                 }
 
+                // 重开后旧连接收尾、收件箱里残留的上一把快照。这时 IsActive 已是 false，下面的房间过滤不会拦。
+                if (IsIgnoredRoom(state.RoomId))
+                {
+                    return;
+                }
+
+                if (!string.IsNullOrEmpty(state.RoomId))
+                {
+                    _ignoredRoomId = null;
+                }
+
                 // 收到快照即说明已开房：解锁排队等待（机器人补房/第4人入队时服务端不发 queued）。
                 _queued?.TrySetResult(DefaultQueueTimeoutMs);
+
+                // 已经在另一局里时，丢掉旧局迟到的结算/推进，避免下一把被上一把的 finished 弹窗卡住。
+                if (IsActive && State != null && !string.IsNullOrEmpty(State.RoomId)
+                    && !string.IsNullOrEmpty(state.RoomId)
+                    && !string.Equals(State.RoomId, state.RoomId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
 
                 // 版本过滤：乱序/重复快照丢弃；sync 回包（重连后第一个快照）无条件接受。
                 var catchUp = _acceptAnySnapshot;
@@ -647,6 +677,23 @@ namespace App.Net
                     Finished?.Invoke();
                 }
             }
+        }
+
+        /// <summary>离开或重开前记下当前房间。这个房间后续的快照一律丢掉，直到出现另一个房间。</summary>
+        private void RememberIgnoredRoom()
+        {
+            var roomId = State != null ? State.RoomId : null;
+            if (!string.IsNullOrEmpty(roomId))
+            {
+                _ignoredRoomId = roomId;
+            }
+        }
+
+        private bool IsIgnoredRoom(string roomId)
+        {
+            return !string.IsNullOrEmpty(_ignoredRoomId)
+                && !string.IsNullOrEmpty(roomId)
+                && string.Equals(_ignoredRoomId, roomId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>match_update 的一行摘要：轮次/阶段/伤害/倒计时 + 各家血量和攻击，Info 级正式包也可见。</summary>

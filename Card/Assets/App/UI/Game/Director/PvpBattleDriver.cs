@@ -73,9 +73,10 @@ namespace App.UI.Game.Director
             {
                 _pending = match;
                 _pendingUserId = userId;
-                // 发牌/比牌演出期间技能快照不能卡在 pending：手牌与次数立刻写入，
+                // 发牌演出期间技能快照不能卡在 pending：手牌与次数立刻写入，
                 // 否则搓牌/替换等 WaitNextUpdate 返回时 Session 仍是旧牌。
-                if (!IsShowdown(match))
+                // 比牌已经入队时不能在这里写 HP：settle/finished 快照会把人写成死亡，攻击还没播完。
+                if (!IsShowdown(match) && !_compareEnqueued)
                 {
                     _session.ApplyPvpState(match, userId);
                     _lastMatch = match;
@@ -229,16 +230,19 @@ namespace App.UI.Game.Director
             _lastUserId = userId;
             var showdown = IsShowdown(match);
             var fightPhase = string.Equals(match.Phase, PvpPhases.Fight, StringComparison.OrdinalIgnoreCase);
+            var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
+            var finishedPhase = string.Equals(match.Phase, PvpPhases.Finished, StringComparison.OrdinalIgnoreCase);
             if (showdown && _compareEnqueued)
             {
-                // 同一桌比牌的后续快照（settle/shop/finished）：状态已在比牌序列末尾应用，这里只同步。
+                // 攻击命令已经播完（队列空才会进到这里）：这时才把扣血/淘汰写上。
                 _session.ApplyPvpState(match, userId);
                 _lastRound = match.Round;
                 return;
             }
 
-            // 仅 fight 期内首次摊牌才从快照兜底比牌；settle/shop 残留 Showdown Duel 不能重播。
-            if (showdown && fightPhase)
+            // 全桌打完会在同一拍从 fight 进 settle/finished，快照已经带 Hp=0。
+            // 这一拍也要先播攻击，不能直接 Apply。shop 上残留的 Showdown 不重播。
+            if (showdown && (fightPhase || settlePhase || finishedPhase))
             {
                 EnqueueCompare(match, userId);
                 _lastRound = match.Round;
@@ -256,11 +260,18 @@ namespace App.UI.Game.Director
             _lastRound = match.Round;
         }
 
-        /// <summary>比牌序列：状态（扣血延后）→ 翻牌 → 攻击力跳动 → 撞击 → 应用真实 HP。</summary>
+        /// <summary>比牌序列：状态（扣血延后）→ 必要时补发牌 → 翻牌 → 攻击力跳动 → 撞击 → 应用真实 HP。</summary>
         private void EnqueueCompare(PvpMatchStateDto match, string userId)
         {
             _compareEnqueued = true;
             _session.ApplyPvpState(match, userId, deferHp: true);
+            // 进桌时手里已经是摊牌/结算快照：这一轮没发过牌就直接翻牌，DealSerial 仍是 0，牌桌什么都不画。
+            if (match.Round > 0 && match.Round != _dealtRound)
+            {
+                _dealtRound = match.Round;
+                _director.Enqueue(new DealCommand());
+            }
+
             SplitSeats(match, userId, out var mine, out var foe, out var viewer);
             var playerWon = ResolvePlayerWon(match, mine, foe, viewer);
             var winScore = _session.EvaluateSeat(playerWon ? _session.Player : _session.Enemies[0]);

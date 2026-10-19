@@ -30,6 +30,12 @@ namespace CardShare.Battle
 
         public bool Alive { get; set; } = true;
 
+        /// <summary>死亡瞬间的战斗座位。轮空镜像机器人用它，不随后续清背包而丢掉圣物。</summary>
+        public SeatSetup? DeathMirror { get; set; }
+
+        /// <summary>死亡瞬间的持有圣物（未展开）。给快照和圣物列表用。</summary>
+        public int[]? DeathRelicIds { get; set; }
+
         public int Rank { get; set; }
 
         public int RubLeft { get; set; }

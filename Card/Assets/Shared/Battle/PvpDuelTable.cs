@@ -15,11 +15,12 @@ namespace CardShare.Battle
         private readonly bool[] _locked = new bool[2];
         private readonly long[] _lockDueUtcMs = new long[2];
 
-        private PvpDuelTable(BattleEngine engine, PlayerPublic[] publics, bool vsMonster, string monsterName)
+        private PvpDuelTable(BattleEngine engine, PlayerPublic[] publics, bool vsMonster, bool vsMirror, string monsterName)
         {
             Engine = engine;
             _publics = publics;
             VsMonster = vsMonster;
+            VsMirror = vsMirror;
             MonsterName = monsterName;
         }
 
@@ -29,6 +30,9 @@ namespace CardShare.Battle
         public Action<int, SeatSetup>? BeforeCompare { get; set; }
 
         public bool VsMonster { get; }
+
+        /// <summary>对手是死亡玩家的镜像机器人，不是野怪，也不是仍在局里的座位。</summary>
+        public bool VsMirror { get; }
 
         public string MonsterName { get; }
 
@@ -53,11 +57,12 @@ namespace CardShare.Battle
             IGameTables tables,
             bool vsPlayer,
             bool lockLeftNow,
-            bool lockRightNow)
+            bool lockRightNow,
+            bool vsMirror = false)
         {
             left.SeatId = 0;
             right.SeatId = 1;
-            var mode = vsPlayer ? (BattleMode)new PvpMode() : new PveMode();
+            var mode = vsPlayer || vsMirror ? (BattleMode)new PvpMode() : new PveMode();
             var engine = new BattleEngine(mode, seed, new[] { left, right }, tables);
             engine.Apply(new BattleCommand { Type = BattleCommandType.DealHole });
             var publics = new[]
@@ -65,7 +70,12 @@ namespace CardShare.Battle
                 new PlayerPublic { UserId = left.UserId, NickName = left.NickName },
                 new PlayerPublic { UserId = right.UserId, NickName = right.NickName }
             };
-            var table = new PvpDuelTable(engine, publics, !vsPlayer, vsPlayer ? string.Empty : right.NickName);
+            var table = new PvpDuelTable(
+                engine,
+                publics,
+                vsMonster: !vsPlayer && !vsMirror,
+                vsMirror,
+                vsPlayer || vsMirror ? string.Empty : right.NickName);
             table._locked[0] = lockLeftNow;
             table._locked[1] = lockRightNow;
             if (table._locked[0] && table._locked[1])
@@ -121,7 +131,7 @@ namespace CardShare.Battle
 
         public bool Involves(string userId)
             => PvpBattleTable.SameUser(LeftUserId, userId)
-               || (!VsMonster && PvpBattleTable.SameUser(RightUserId, userId));
+               || (!VsMonster && !VsMirror && PvpBattleTable.SameUser(RightUserId, userId));
 
         public int ViewerSeat(string userId)
         {

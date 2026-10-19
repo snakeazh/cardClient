@@ -178,6 +178,15 @@ namespace CardShare.Contracts
         public float? Multiplier { get; set; }
 
         public int? Damage { get; set; }
+
+        /// <summary>该座当前血量。镜像机器人没有活人座位，客户端用这个，不用死者名册上的 0。</summary>
+        public int Hp { get; set; }
+
+        public int MaxHp { get; set; }
+
+        public int HeroId { get; set; }
+
+        public int Attack { get; set; }
     }
 
     public sealed class BattleStateDto

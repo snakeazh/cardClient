@@ -9534,6 +9534,9 @@ namespace App.Game
             ApplyPvpState(match, userId, deferHp: false, catchUpResult: false);
         }
 
+        /// <summary>比牌演出还没把伤害落到座位上。侧栏头像继续用座位上的旧血，不要跟快照一起提前显示死亡。</summary>
+        public bool PvpHpDeferred { get; private set; }
+
         /// <param name="deferHp">比牌快照先不同双方座位的 HP/攻击（含对方，淘汰/死亡动画由座位 Hp=0 触发）：等攻击命令播完再应用，避免提前剧透结果。</param>
         /// <param name="catchUpResult">重连进 shop/settle：先按摊牌结果展示（牌面+牌型），稍后再切商店。</param>
         public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp, bool catchUpResult = false)
@@ -9542,6 +9545,8 @@ namespace App.Game
             {
                 return;
             }
+
+            PvpHpDeferred = deferHp;
 
             var showdown = !deferHp && match.Duel != null &&
                            string.Equals(match.Duel.Phase, BattlePhaseNames.Showdown, StringComparison.OrdinalIgnoreCase);
@@ -9974,6 +9979,53 @@ namespace App.Game
             seat.IsBoss = monster.Type == MonsterType.Boss;
         }
 
+        /// <summary>
+        /// 野怪没有名册血量。座位快照带血就用座位；没带到时用和立绘同一行的怪物表，
+        /// 避免沿用上一名玩家留在面板上的血。
+        /// </summary>
+        private static void ApplyPvpMonsterPanel(SeatState enemy, BattleSeatDto foe, int round, bool fullHp, bool allowConfig)
+        {
+            if (foe != null && foe.MaxHp > 0)
+            {
+                enemy.MaxHp = Math.Max(1, foe.MaxHp);
+                enemy.Hp = fullHp ? enemy.MaxHp : Math.Max(0, foe.Hp);
+                enemy.Courage = enemy.Hp;
+                if (foe.Attack > 0)
+                {
+                    enemy.Attack = foe.Attack;
+                }
+
+                enemy.Status = string.Empty;
+                return;
+            }
+
+            if (!allowConfig)
+            {
+                return;
+            }
+
+            var tables = UnityGameConfigLoader.Current;
+            if (tables == null)
+            {
+                return;
+            }
+
+            var groupId = CardShare.Battle.PvpSchedule.MonsterGroup(tables, round);
+            if (!tables.TryGetMonsterGroup(groupId, out var group) ||
+                !tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster) ||
+                monster == null)
+            {
+                return;
+            }
+
+            var hp = Math.Max(1, monster.MonsterHp);
+            enemy.MaxHp = hp;
+            enemy.Hp = hp;
+            enemy.Courage = hp;
+            enemy.Attack = Math.Max(1, monster.MonsterDamage);
+            enemy.Status = string.Empty;
+        }
+
         private void ApplyPvpTable(
             PvpMatchStateDto match,
             string userId,
@@ -9991,29 +10043,60 @@ namespace App.Game
             Player.ShowCards = true;
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
+            var monsterRound = string.Equals(match.FightKind, "monster", StringComparison.OrdinalIgnoreCase);
+            // 立绘切换前记下：上一场还是玩家/镜像时，这一轮必须立刻换成野怪血，不能留着旧血等攻击结束。
+            var switchingToMonster = monsterRound && (enemy.DisplayAsHero || enemy.MonsterId == 0);
             ApplyPvpOpponentLook(match, foe, enemy);
             if (foe != null)
             {
                 enemy.Name = string.IsNullOrEmpty(foe.NickName) ? enemy.Name : foe.NickName;
-                var foeFighter = FindPvpSelf(match, foe.UserId);
-                if (foeFighter != null)
+                if (monsterRound)
                 {
-                    // deferHp：比牌演出播完前不写对方面板——服务端快照已扣血/淘汰（Hp=0、Alive=false），
-                    // 提前应用会让座位立刻判死：RefreshEnemies 隐藏座位（牌消失）+ 头像播死亡溶解。
-                    if (!deferHp)
+                    if (!deferHp || switchingToMonster)
                     {
-                        enemy.Hp = Math.Max(0, foeFighter.Hp);
-                        enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
-                        enemy.Courage = enemy.Hp;
-                        enemy.Attack = Math.Max(0, foeFighter.Attack);
+                        ApplyPvpMonsterPanel(
+                            enemy,
+                            foe,
+                            match.Round,
+                            fullHp: deferHp && switchingToMonster,
+                            allowConfig: switchingToMonster);
                     }
-
-                    enemy.Status = foeFighter.Disconnected ? "离线" : string.Empty;
                 }
                 else
                 {
-                    enemy.Hp = Math.Max(1, enemy.Hp);
-                    enemy.MaxHp = Math.Max(1, enemy.MaxHp);
+                    var foeFighter = FindPvpSelf(match, foe.UserId);
+                    if (foeFighter != null && foeFighter.Alive)
+                    {
+                        // deferHp：比牌演出播完前不写对方面板——服务端快照已扣血/淘汰（Hp=0、Alive=false），
+                        // 提前应用会让座位立刻判死：RefreshEnemies 隐藏座位（牌消失）+ 头像播死亡溶解。
+                        if (!deferHp)
+                        {
+                            enemy.Hp = Math.Max(0, foeFighter.Hp);
+                            enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
+                            enemy.Courage = enemy.Hp;
+                            enemy.Attack = Math.Max(0, foeFighter.Attack);
+                        }
+
+                        enemy.Status = foeFighter.Disconnected ? "离线" : string.Empty;
+                    }
+                    else if (!deferHp && foe.MaxHp > 0)
+                    {
+                        // 对手是死亡玩家的镜像：名册上的人已经是 0 血，面板以这一桌的座位血量为准。
+                        enemy.Hp = Math.Max(0, foe.Hp);
+                        enemy.MaxHp = Math.Max(1, foe.MaxHp);
+                        enemy.Courage = enemy.Hp;
+                        if (foe.Attack > 0)
+                        {
+                            enemy.Attack = foe.Attack;
+                        }
+
+                        enemy.Status = string.Empty;
+                    }
+                    else if (!deferHp)
+                    {
+                        enemy.Hp = Math.Max(1, enemy.Hp);
+                        enemy.MaxHp = Math.Max(1, enemy.MaxHp);
+                    }
                 }
 
                 enemy.ShowCards = showdown || foe.Cards != null;

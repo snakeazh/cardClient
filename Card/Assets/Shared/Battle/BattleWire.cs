@@ -38,7 +38,11 @@ namespace CardShare.Battle
                     Label = scored ? score.Label : null,
                     Level = scored ? score.Level : (int?)null,
                     Multiplier = scored ? score.Multiplier : (float?)null,
-                    Damage = snapshot.Phase == BattlePhase.Showdown ? snapshot.Damages[i] : (int?)null
+                    Damage = snapshot.Phase == BattlePhase.Showdown ? snapshot.Damages[i] : (int?)null,
+                    Hp = Math.Max(0, setup.Hp),
+                    MaxHp = Math.Max(0, setup.MaxHp),
+                    HeroId = setup.HeroId,
+                    Attack = Math.Max(0, setup.Attack)
                 };
             }
 
@@ -88,7 +92,11 @@ namespace CardShare.Battle
                     Label = scored ? score.Label : null,
                     Level = scored ? score.Level : (int?)null,
                     Multiplier = scored ? score.Multiplier : (float?)null,
-                    Damage = snapshot.Phase == BattlePhase.Showdown ? snapshot.Damages[i] : (int?)null
+                    Damage = snapshot.Phase == BattlePhase.Showdown ? snapshot.Damages[i] : (int?)null,
+                    Hp = Math.Max(0, setup.Hp),
+                    MaxHp = Math.Max(0, setup.MaxHp),
+                    HeroId = setup.HeroId,
+                    Attack = Math.Max(0, setup.Attack)
                 };
             }
 

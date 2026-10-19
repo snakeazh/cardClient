@@ -523,10 +523,7 @@ namespace App.UI
             }
 
             _pvpLeaving = true;
-            for (var i = 0; i < 180 && _pvpDriver != null && _pvpDriver.IsBusy; i++)
-            {
-                await Task.Yield();
-            }
+            await WaitPvpAttackPresentationAsync();
 
             await ShowPvpResultAsync();
             await StopPvpAndLeave();
@@ -709,15 +706,32 @@ namespace App.UI
                 return;
             }
 
-            // 服务端在 settle 演出窗结束后才发 finished，演出必然已排空，直接结算。
             _pvpLeaving = true;
             await LeaveAfterPvpFinished();
         }
 
         private async Task LeaveAfterPvpFinished()
         {
+            await WaitPvpAttackPresentationAsync();
             await ShowPvpResultAsync();
             await StopPvpAndLeave();
+        }
+
+        /// <summary>攻击命令还在播、或扣血还挂着时先等。不用 Task.Delay，WebGL 只 Yield。</summary>
+        private async Task WaitPvpAttackPresentationAsync()
+        {
+            for (var i = 0; i < 1200; i++)
+            {
+                var driving = _pvpDriver != null && _pvpDriver.IsBusy;
+                var attacking = Session != null && Session.AttackPlaying;
+                var hpHeld = Session != null && Session.PvpHpDeferred;
+                if (!driving && !attacking && !hpHeld)
+                {
+                    return;
+                }
+
+                await Task.Yield();
+            }
         }
 
         /// <summary>PVP 结算：名次图、获得分数、局外分加减。闯关明细和汇总隐藏。</summary>
@@ -1048,6 +1062,8 @@ namespace App.UI
             if (_pvp != null)
             {
                 _pvpLeaving = false;
+                // 单例桌面：上一把的已发轮次不带走，否则新局第 1 轮被当成发过牌，牌不会再摆出来。
+                _pvpDriver.Reset();
                 _pvp.Updated += OnPvpUpdated;
                 _pvp.Finished += OnPvpFinished;
                 _pvp.Failed += OnPvpFailed;

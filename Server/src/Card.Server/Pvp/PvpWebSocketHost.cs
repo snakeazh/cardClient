@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using CardShare.Battle;
 using CardShare.Contracts;
 using CardShare.Domain;
 using CardShare.Domain.Pvp;
@@ -10,14 +11,35 @@ namespace CardShare.Server.Pvp;
 
 public sealed class PvpConnectionHub
 {
+    private readonly object _gate = new object();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, WebSocket> _sockets =
         new System.Collections.Concurrent.ConcurrentDictionary<Guid, WebSocket>();
 
-    public void Add(Guid userId, WebSocket socket) => _sockets[userId] = socket;
-
-    public void Remove(Guid userId)
+    public void Add(Guid userId, WebSocket socket)
     {
-        _sockets.TryRemove(userId, out _);
+        lock (_gate)
+        {
+            _sockets[userId] = socket;
+        }
+    }
+
+    /// <summary>
+    /// 只有这条连接仍是该用户当前连接时才摘掉。
+    /// 认输后立刻开下一把时，旧连接的收尾不能把新连接删掉。
+    /// </summary>
+    public bool CloseIfCurrent(Guid userId, WebSocket socket, Action onClose)
+    {
+        lock (_gate)
+        {
+            if (!_sockets.TryGetValue(userId, out var current) || !ReferenceEquals(current, socket))
+            {
+                return false;
+            }
+
+            onClose?.Invoke();
+            _sockets.TryRemove(userId, out _);
+            return true;
+        }
     }
 
     public bool Contains(Guid userId)
@@ -206,19 +228,27 @@ public static class PvpWebSocketHost
             if (userId != null)
             {
                 // WS 断开 = 代管出牌，不退赛；手动 leave 才逃跑判负。重连发 sync 恢复。
-                if (matches.SetConnected(userId.Value, false, out var left) && left != null)
+                // 旧连接晚到的收尾不能把已经接上的新连接标掉线、也不能把它从队列里取消。
+                PvpMatch? left = null;
+                var changed = false;
+                CardShare.Domain.Pvp.MatchEvent? queued = null;
+                var owned = hub.CloseIfCurrent(userId.Value, socket, () =>
+                {
+                    changed = matches.SetConnected(userId.Value, false, out left);
+                    queued = matchmaker.Cancel(userId.Value);
+                });
+                // 新连接已经接上就不要再广播：否则掉线快照会打进下一把。
+                if (owned && changed && left != null && !hub.Contains(userId.Value))
                 {
                     await dispatcher.BroadcastMatchAsync(left, 0, cancellationToken);
                 }
 
-                var evt = matchmaker.Cancel(userId.Value);
-                hub.Remove(userId.Value);
-                if (evt != null)
+                if (owned && queued != null)
                 {
                     await dispatcher.BroadcastRosterAsync(
-                        evt.Recipients,
+                        queued.Recipients,
                         WsMessageTypes.QueueUpdate,
-                        evt.Players,
+                        queued.Players,
                         0,
                         cancellationToken);
                 }

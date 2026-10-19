@@ -34,6 +34,7 @@ namespace App.UI
             public int RelicId;
             public bool IsAttack;
             public string BeilvText;
+            public string AttackTipText;
             public string CardTypeText;
             public int AttackValue;
         }
@@ -51,6 +52,8 @@ namespace App.UI
         private int _playToken;
         private readonly List<GameObject> _spawned = new List<GameObject>(8);
         private readonly List<BonusBeat> _beats = new List<BonusBeat>(8);
+        private readonly List<BonusBeat> _cardBeats = new List<BonusBeat>(8);
+        private readonly List<int> _cardBeatCounts = new List<int>(5);
         private Vector2 _beilvHome;
         private RectTransform _beilvRt;
         private Animator _beilvAnimator;
@@ -133,6 +136,8 @@ namespace App.UI
             Transform cardTypeNum,
             IAtlasService atlas,
             IReadOnlyList<BonusBeat> bonusBeats,
+            IReadOnlyList<BonusBeat> cardBeats,
+            IReadOnlyList<int> cardBeatCounts,
             int baseAttack,
             int finalDamage,
             Action<int> onAttackNumber,
@@ -149,6 +154,24 @@ namespace App.UI
                 for (var i = 0; i < bonusBeats.Count; i++)
                 {
                     _beats.Add(bonusBeats[i]);
+                }
+            }
+
+            _cardBeats.Clear();
+            _cardBeatCounts.Clear();
+            if (cardBeats != null)
+            {
+                for (var i = 0; i < cardBeats.Count; i++)
+                {
+                    _cardBeats.Add(cardBeats[i]);
+                }
+            }
+
+            if (cardBeatCounts != null)
+            {
+                for (var i = 0; i < cardBeatCounts.Count; i++)
+                {
+                    _cardBeatCounts.Add(cardBeatCounts[i]);
                 }
             }
 
@@ -171,40 +194,15 @@ namespace App.UI
 
             _seq = DOTween.Sequence();
             _seq.Pause();
-            _seq.AppendCallback(() =>
+            if (HasCardBeats())
             {
-                if (token != _playToken)
-                {
-                    return;
-                }
-
-                SpawnFx01(cards);
-            });
-            _seq.AppendInterval(Fx01Duration);
-            _seq.AppendCallback(() =>
+                AppendCardPasses(cards, token, targetPos, attackItem, cardTypeNum, atlas, onAttackNumber);
+            }
+            else
             {
-                if (token != _playToken)
-                {
-                    return;
-                }
+                AppendParallelCardFx(cards, token, targetPos, attackItem);
+            }
 
-                HideSpawned();
-                SpawnFx02(cards, targetPos);
-            });
-            _seq.AppendInterval(Fx02MoveDuration);
-            _seq.AppendCallback(() =>
-            {
-                if (token != _playToken)
-                {
-                    return;
-                }
-
-                HideSpawned();
-                if (attackItem != null)
-                {
-                    attackItem.PlayAttackNumberShake(true, false);
-                }
-            });
             _seq.AppendInterval(AttackLowDuration);
             for (var i = 0; i < _beats.Count; i++)
             {
@@ -318,18 +316,13 @@ namespace App.UI
         {
             PlayNumberShake(beat.EquipAnimator, true, false);
             ShowBeilv(beat, atlas);
-            if (beat.IsAttack)
+            if ((beat.IsAttack || !string.IsNullOrEmpty(beat.AttackTipText)) && attackItem != null)
             {
-                if (attackItem != null)
-                {
-                    SetAttackNumber(attackItem, Mathf.Max(0, beat.AttackValue), onAttackNumber);
-                    attackItem.PlayAttackNumberShake(true, false);
-                }
-
-                return;
+                SetAttackNumber(attackItem, Mathf.Max(0, beat.AttackValue), onAttackNumber);
+                attackItem.PlayAttackNumberShake(true, false);
             }
 
-            if (cardTypeNum != null && !string.IsNullOrEmpty(beat.CardTypeText))
+            if (!beat.IsAttack && cardTypeNum != null && !string.IsNullOrEmpty(beat.CardTypeText))
             {
                 CardTypeValueSprites.Apply(atlas, cardTypeNum, beat.CardTypeText);
                 PlayNumberShake(cardTypeNum.GetComponent<Animator>(), true, false);
@@ -341,6 +334,11 @@ namespace App.UI
             for (var i = 0; i < _beats.Count; i++)
             {
                 PlayNumberShake(_beats[i].EquipAnimator, false, false);
+            }
+
+            for (var i = 0; i < _cardBeats.Count; i++)
+            {
+                PlayNumberShake(_cardBeats[i].EquipAnimator, false, false);
             }
         }
 
@@ -374,6 +372,151 @@ namespace App.UI
             {
                 animator.SetBool("high", false);
             }
+        }
+
+        private bool HasCardBeats()
+        {
+            for (var i = 0; i < _cardBeatCounts.Count; i++)
+            {
+                if (_cardBeatCounts[i] > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void AppendParallelCardFx(IReadOnlyList<CardItem> cards, int token, Vector3 targetPos, PlayerItem attackItem)
+        {
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                SpawnFx01(cards);
+            });
+            _seq.AppendInterval(Fx01Duration);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                HideSpawned();
+                SpawnFx02(cards, targetPos);
+            });
+            _seq.AppendInterval(Fx02MoveDuration);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                HideSpawned();
+                if (attackItem != null)
+                {
+                    attackItem.PlayAttackNumberShake(true, false);
+                }
+            });
+        }
+
+        private void AppendCardPasses(
+            IReadOnlyList<CardItem> cards,
+            int token,
+            Vector3 targetPos,
+            PlayerItem attackItem,
+            Transform cardTypeNum,
+            IAtlasService atlas,
+            Action<int> onAttackNumber)
+        {
+            var cursor = 0;
+            var count = cards != null ? cards.Count : 0;
+            for (var i = 0; i < count; i++)
+            {
+                var card = cards[i];
+                var beats = i < _cardBeatCounts.Count ? _cardBeatCounts[i] : 0;
+                var start = cursor;
+                cursor += beats;
+                _seq.AppendCallback(() =>
+                {
+                    if (token != _playToken)
+                    {
+                        return;
+                    }
+
+                    HideSpawned();
+                    SpawnOnCard(_fx01Prefab, card);
+                });
+                if (beats == 0)
+                {
+                    _seq.AppendInterval(Fx01Duration);
+                }
+
+                for (var b = 0; b < beats; b++)
+                {
+                    var index = start + b;
+                    _seq.AppendCallback(() =>
+                    {
+                        if (token != _playToken || index >= _cardBeats.Count)
+                        {
+                            return;
+                        }
+
+                        ApplyBonusBeat(_cardBeats[index], attackItem, cardTypeNum, atlas, onAttackNumber);
+                    });
+                    _seq.AppendInterval(BonusStepDuration);
+                }
+
+                _seq.AppendCallback(() =>
+                {
+                    if (token != _playToken)
+                    {
+                        return;
+                    }
+
+                    HideSpawned();
+                    SpawnFx02One(card, targetPos);
+                });
+                _seq.AppendInterval(Fx02MoveDuration);
+            }
+
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                HideSpawned();
+                if (attackItem != null)
+                {
+                    attackItem.PlayAttackNumberShake(true, false);
+                }
+            });
+        }
+
+        private void SpawnFx02One(CardItem card, Vector3 targetPos)
+        {
+            if (_fx02Prefab == null || card == null)
+            {
+                return;
+            }
+
+            var anchor = card.FxAnchor != null ? card.FxAnchor : card.transform;
+            var start = CardWorldToUiWorld(anchor.position, targetPos);
+            var go = SpawnOnUi(_fx02Prefab, start);
+            if (go == null)
+            {
+                return;
+            }
+
+            UiFx.ClearTrails(go);
+            go.transform.DOMove(targetPos, Fx02MoveDuration).SetEase(Ease.InQuad);
         }
 
         private void SpawnFx01(IReadOnlyList<CardItem> cards)
@@ -517,14 +660,15 @@ namespace App.UI
             }
 
             ApplyRelicIcon(beat.RelicId, atlas);
-            var showAttack = beat.IsAttack && !string.IsNullOrEmpty(beat.BeilvText);
+            var attackText = beat.IsAttack ? beat.BeilvText : beat.AttackTipText;
+            var showAttack = !string.IsNullOrEmpty(attackText);
             var showBeilv = !beat.IsAttack && !string.IsNullOrEmpty(beat.BeilvText);
             if (_attackNum != null)
             {
                 _attackNum.gameObject.SetActive(showAttack);
                 if (showAttack)
                 {
-                    _attackNum.text = "攻击" + beat.BeilvText;
+                    _attackNum.text = "攻击" + attackText;
                 }
             }
 

@@ -1643,10 +1643,52 @@ namespace App.UI
             return GameSession.TableVisualSlot(enemyIndex, activeCount);
         }
 
+        private bool _settledCardTypeMagRevealed;
+        private bool _settledHandTypeRevealed;
+
+        /// <summary>结算动画已结束，牌型图标可以显示顺位改写后的牌型。</summary>
+        public bool SettledHandTypeRevealed => IsHandSettling && _settledHandTypeRevealed;
+
+        /// <summary>结算跳动开始：顶上倍率先回到牌型基础值，牌型图标先留改写前的顺位。</summary>
+        public void BeginSettleCardTypePresentation()
+        {
+            _settledCardTypeMagRevealed = false;
+            _settledHandTypeRevealed = false;
+            RefreshCardInfo();
+        }
+
+        /// <summary>结算跳动播完：顶上倍率换成实际倍率，牌型图标换成顺位改写后的牌型。</summary>
+        public void FinishSettleCardTypePresentation()
+        {
+            _settledCardTypeMagRevealed = true;
+            _settledHandTypeRevealed = true;
+            RefreshCardInfo();
+        }
+
+        /// <summary>敌人出手的结算动画开始：牌型图标先留改写前的顺位。</summary>
+        public void BeginSettleHandTypePresentation()
+        {
+            _settledHandTypeRevealed = false;
+            RefreshCardInfo();
+        }
+
+        /// <summary>敌人出手的结算动画结束：牌型图标换成顺位改写后的牌型。</summary>
+        public void FinishSettleHandTypePresentation()
+        {
+            _settledHandTypeRevealed = true;
+            RefreshCardInfo();
+        }
+
         private void RefreshCardInfo()
         {
             IsHandSettling = ShouldShowCardInfo(Session);
             var preview = ShouldShowPlayerHandPreview(Session);
+            if (!IsHandSettling)
+            {
+                _settledCardTypeMagRevealed = false;
+                _settledHandTypeRevealed = false;
+            }
+
             if ((!IsHandSettling && !preview) || Session.Player == null)
             {
                 ShowCardInfo.Value = false;
@@ -1658,11 +1700,14 @@ namespace App.UI
                 return;
             }
 
-            var score = Session.EvaluateSeat(Session.Player);
+            var showRankShift = IsHandSettling && _settledHandTypeRevealed;
+            var score = Session.EvaluateSeat(Session.Player, showRankShift);
             ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, null);
-            // 亮牌结算显示与伤害一致的总倍率；选牌预览仍只显示牌型基础倍率。
-            CardTypeNum.Value = IsHandSettling
-                ? FormatMultiplier(Session.ResolveAttackMagnification(Session.Player, score))
+            // 开战到结算跳动播完之前只显示当前展示牌型的基础倍率；播完后才显示含圣物结算加成的实际倍率。
+            var showSettledMag = IsHandSettling && _settledCardTypeMagRevealed;
+            var magScore = showSettledMag ? Session.EvaluateSeat(Session.Player, true) : score;
+            CardTypeNum.Value = showSettledMag
+                ? FormatMultiplier(Session.ResolveAttackMagnification(Session.Player, magScore))
                 : FormatMultiplier(GameSession.HandTypeMagnification(score.Type));
             ShowCardInfo.Value = true;
         }

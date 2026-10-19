@@ -122,7 +122,7 @@ namespace App.UI
             {
                 _heldGold = Math.Max(0, _session.ShopGoldGranted);
             }
-            else if (phase != GamePhase.Shop)
+            else if (_lastPhase == GamePhase.Shop && phase != GamePhase.Shop)
             {
                 _heldGold = 0;
             }

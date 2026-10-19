@@ -67,6 +67,11 @@ namespace App.UI
         private readonly List<int> _equipRelicIds = new List<int>(GameBalance.MaxRelics);
         private readonly List<RelicBonusPart> _relicBonuses = new List<RelicBonusPart>(GameBalance.MaxRelics);
         private readonly List<SettlePointCutscene.BonusBeat> _bonusBeats = new List<SettlePointCutscene.BonusBeat>(GameBalance.MaxRelics * 2);
+        private readonly List<SettlePointCutscene.BonusBeat> _cardBeats = new List<SettlePointCutscene.BonusBeat>(8);
+        private readonly List<int> _cardBeatCounts = new List<int>(GameBalance.OpenHandSize);
+        private readonly List<CardRelicGain> _cardGains = new List<CardRelicGain>(4);
+        private readonly Dictionary<int, float> _shownMagByRelic = new Dictionary<int, float>();
+        private readonly Dictionary<int, float> _shownAttackByRelic = new Dictionary<int, float>();
         private GameObject _equipTip;
         private TMP_Text _equipTipTitle;
         private TMP_Text _equipTipText;
@@ -235,6 +240,8 @@ namespace App.UI
             if (ViewModel?.Session != null)
             {
                 ViewModel.Session.Changed += OnSessionChanged;
+                ViewModel.Session.RelicGoldGranted += OnRelicGoldGranted;
+                ViewModel.Session.HandTypeMagRevealed += OnHandTypeMagRevealed;
             }
 
             BattleTrace.Log("GameUI.OnViewOpen end");
@@ -401,6 +408,15 @@ namespace App.UI
             if (ViewModel != null)
             {
                 ViewModel.Session.Changed -= OnSessionChanged;
+                ViewModel.Session.RelicGoldGranted -= OnRelicGoldGranted;
+                ViewModel.Session.HandTypeMagRevealed -= OnHandTypeMagRevealed;
+            }
+
+            if (_coinPrefabOwned)
+            {
+                ViewModel?.Resources?.Release(ResResourcePaths.CoinItem);
+                _coinPrefabOwned = false;
+                _coinPrefab = null;
             }
 
             GameTableViewModel.RestorePlaybackSpeed();
@@ -535,6 +551,7 @@ namespace App.UI
             RefreshEquips();
             RefreshRoundBuffs();
             RefreshPvpSide();
+            ApplySkillLockVisual();
             TryStartOpening();
             TryPlayAttack();
             TryScheduleAiDelay();
@@ -731,11 +748,19 @@ namespace App.UI
             _heldAttackValue = baseAttack;
             HideBeilvInfo();
 
-            // 结算跳动从牌型基础倍率起算，避免 Refresh 已写入总倍率时动画倒跳。
-            if (attacker != null && attacker.IsPlayer && ViewModel != null)
+            // 开战时倍率回到基础值，牌型图标先留顺位改写前的牌型。
+            if (ViewModel != null)
             {
-                ViewModel.CardTypeNum.Value = GameTableViewModel.FormatMultiplier(
-                    GameSession.HandTypeMagnification(score.Type));
+                if (attacker != null && attacker.IsPlayer)
+                {
+                    ViewModel.BeginSettleCardTypePresentation();
+                }
+                else
+                {
+                    ViewModel.BeginSettleHandTypePresentation();
+                }
+
+                RefreshCardInfos();
             }
 
             if (_board != null)
@@ -759,6 +784,8 @@ namespace App.UI
                 cardTypeNum,
                 ViewModel.Atlas,
                 _bonusBeats,
+                _cardBeats,
+                _cardBeatCounts,
                 baseAttack,
                 Math.Max(1, session.AttackDamage),
                 value => { _heldAttackValue = value; },
@@ -772,9 +799,14 @@ namespace App.UI
 
                     if (attacker != null && attacker.IsPlayer)
                     {
-                        ViewModel.CardTypeNum.Value = GameTableViewModel.FormatMultiplier(
-                            session.ResolveAttackMagnification(attacker, score));
+                        ViewModel.FinishSettleCardTypePresentation();
                     }
+                    else
+                    {
+                        ViewModel.FinishSettleHandTypePresentation();
+                    }
+
+                    RefreshCardInfos();
 
                     _heldAttackValue = Math.Max(1, session.AttackDamage);
                     PlayAttackCutscene(session, session.ExtraAttackPending ? ExtraAttackTimeScale : 1f);
@@ -785,6 +817,8 @@ namespace App.UI
         {
             _relicBonuses.Clear();
             _bonusBeats.Clear();
+            _cardBeats.Clear();
+            _cardBeatCounts.Clear();
             if (attacker == null || !attacker.IsPlayer || session == null)
             {
                 return;
@@ -801,6 +835,10 @@ namespace App.UI
 
             // SumMultiplierExtra 含卖掉后仍生效的永久倍率（牌型/练习卷/老牌等），装备列表收不到。
             var orphanExtra = extra - relicPartsSum;
+            var mag = GameSession.HandTypeMagnification(score.Type);
+            var attackValue = Math.Max(0, baseAttack);
+            CollectCardBeats(session, score, flint, ref mag, ref attackValue);
+
             if (_relicBonuses.Count == 0 &&
                 extra <= 0f &&
                 Math.Abs(talentMag) < 0.001f &&
@@ -809,35 +847,46 @@ namespace App.UI
                 return;
             }
 
-            var mag = GameSession.HandTypeMagnification(score.Type);
-            var attackValue = Math.Max(0, baseAttack);
             for (var i = 0; i < _relicBonuses.Count; i++)
             {
                 var part = _relicBonuses[i];
                 var equip = FindEquipAnimator(part.RelicId);
-                if (part.MultiplierAdd != 0f)
+                var magAdd = part.MultiplierAdd;
+                if (_shownMagByRelic.TryGetValue(part.RelicId, out var cardMag))
                 {
-                    mag += part.MultiplierAdd;
+                    magAdd -= cardMag;
+                }
+
+                var attackAdd = part.AttackAdd;
+                if (_shownAttackByRelic.TryGetValue(part.RelicId, out var cardAttack))
+                {
+                    attackAdd -= cardAttack;
+                }
+
+                if (Math.Abs(magAdd) >= 0.001f)
+                {
+                    mag += magAdd;
                     _bonusBeats.Add(new SettlePointCutscene.BonusBeat
                     {
                         EquipAnimator = equip,
                         RelicId = part.RelicId,
                         IsAttack = false,
-                        BeilvText = GameTableViewModel.FormatMultiplier(part.MultiplierAdd),
+                        BeilvText = GameTableViewModel.FormatMultiplier(magAdd),
                         CardTypeText = GameTableViewModel.FormatMultiplier(mag * flint),
                         AttackValue = attackValue
                     });
                 }
 
-                if (part.AttackAdd != 0f)
+                if (Math.Abs(attackAdd) >= 0.001f)
                 {
-                    attackValue += (int)Math.Round(part.AttackAdd);
+                    AddShownAttack(part.RelicId, attackAdd);
+                    attackValue = Math.Max(0, baseAttack) + SumRoundedShownAttack();
                     _bonusBeats.Add(new SettlePointCutscene.BonusBeat
                     {
                         EquipAnimator = equip,
                         RelicId = part.RelicId,
                         IsAttack = true,
-                        BeilvText = GameTableViewModel.FormatBonus(part.AttackAdd),
+                        BeilvText = GameTableViewModel.FormatBonus(attackAdd),
                         CardTypeText = null,
                         AttackValue = attackValue
                     });
@@ -872,7 +921,7 @@ namespace App.UI
                 });
             }
 
-            if (_bonusBeats.Count == 0 && Math.Abs(flint - 1f) >= 0.001f)
+            if (_bonusBeats.Count == 0 && _cardBeats.Count == 0 && Math.Abs(flint - 1f) >= 0.001f)
             {
                 _bonusBeats.Add(new SettlePointCutscene.BonusBeat
                 {
@@ -884,6 +933,82 @@ namespace App.UI
                     AttackValue = attackValue
                 });
             }
+        }
+
+        private void CollectCardBeats(GameSession session, HandScore score, float flint, ref float mag, ref int attackValue)
+        {
+            _cardBeats.Clear();
+            _cardBeatCounts.Clear();
+            _shownMagByRelic.Clear();
+            _shownAttackByRelic.Clear();
+            var floor = attackValue;
+            for (var c = 0; c < _settleCards.Count; c++)
+            {
+                var item = _settleCards[c];
+                var card = item != null ? item.Card : default;
+                RelicMechanics.CollectShownCardGains(session.Run, score, card, c, _cardGains);
+                var added = 0;
+                for (var g = 0; g < _cardGains.Count; g++)
+                {
+                    var gain = _cardGains[g];
+                    if (gain.MagAdd == 0f && gain.AttackAdd == 0f)
+                    {
+                        continue;
+                    }
+
+                    if (gain.MagAdd != 0f)
+                    {
+                        AddShown(_shownMagByRelic, gain.RelicId, gain.MagAdd);
+                        mag += gain.MagAdd;
+                    }
+
+                    if (gain.AttackAdd != 0f)
+                    {
+                        AddShownAttack(gain.RelicId, gain.AttackAdd);
+                        attackValue = floor + SumRoundedShownAttack();
+                    }
+
+                    var attackOnly = gain.AttackAdd != 0f && gain.MagAdd == 0f;
+                    var both = gain.MagAdd != 0f && gain.AttackAdd != 0f;
+                    _cardBeats.Add(new SettlePointCutscene.BonusBeat
+                    {
+                        EquipAnimator = FindEquipAnimator(gain.RelicId),
+                        RelicId = gain.RelicId,
+                        IsAttack = attackOnly,
+                        BeilvText = attackOnly
+                            ? GameTableViewModel.FormatBonus(gain.AttackAdd)
+                            : gain.MagAdd != 0f ? GameTableViewModel.FormatMultiplier(gain.MagAdd) : null,
+                        AttackTipText = both ? GameTableViewModel.FormatBonus(gain.AttackAdd) : null,
+                        CardTypeText = attackOnly ? null : GameTableViewModel.FormatMultiplier(mag * flint),
+                        AttackValue = attackValue
+                    });
+                    added++;
+                }
+
+                _cardBeatCounts.Add(added);
+            }
+        }
+
+        private void AddShownAttack(int relicId, float add)
+        {
+            AddShown(_shownAttackByRelic, relicId, add);
+        }
+
+        private static void AddShown(Dictionary<int, float> dest, int relicId, float add)
+        {
+            dest.TryGetValue(relicId, out var had);
+            dest[relicId] = had + add;
+        }
+
+        private int SumRoundedShownAttack()
+        {
+            var sum = 0;
+            foreach (var pair in _shownAttackByRelic)
+            {
+                sum += (int)Math.Round(pair.Value);
+            }
+
+            return sum;
         }
 
         private Transform AttackerCardTypeNum(GameSession session, SeatState attacker)
@@ -899,6 +1024,89 @@ namespace App.UI
             }
 
             return _enemyCardTypeNum;
+        }
+
+        private GameObject _coinPrefab;
+        private bool _coinPrefabOwned;
+
+        private void OnRelicGoldGranted(int relicId, int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            var bar = GameResourceView.FindOpen()?.ViewModel;
+            bar?.HoldGold(amount, refresh: false);
+            _ = PlayRelicGoldFly(relicId, amount, bar);
+        }
+
+        private async Task PlayRelicGoldFly(int relicId, int amount, GameResourceViewModel bar)
+        {
+            await EnsureCoinPrefab();
+            if (this == null)
+            {
+                bar?.ReleaseHeldGold(amount);
+                return;
+            }
+
+            var from = RelicGoldOrigin(relicId);
+            var to = CoinFlyFx.FindGoldIcon();
+            var parent = transform as RectTransform;
+            if (_coinPrefab == null || from == null || to == null || parent == null || bar == null)
+            {
+                bar?.ReleaseHeldGold(amount);
+                return;
+            }
+
+            var seq = CoinFlyFx.PlayAndCredit(
+                _coinPrefab,
+                parent,
+                from.position,
+                to.position,
+                bar,
+                amount);
+            if (seq == null)
+            {
+                bar.ReleaseHeldGold(amount);
+            }
+        }
+
+        private RectTransform RelicGoldOrigin(int relicId)
+        {
+            for (var i = 0; i < _equipSlots.Count && i < _equipRelicIds.Count; i++)
+            {
+                if (relicId <= 0 || _equipRelicIds[i] != relicId || _equipSlots[i] == null)
+                {
+                    continue;
+                }
+
+                return _equipSlots[i] as RectTransform;
+            }
+
+            if (_equipSlots.Count > 0 && _equipSlots[0] != null)
+            {
+                return _equipSlots[0].parent as RectTransform;
+            }
+
+            return null;
+        }
+
+        private async Task EnsureCoinPrefab()
+        {
+            if (_coinPrefab != null || ViewModel?.Resources == null)
+            {
+                return;
+            }
+
+            if (ViewModel.Resources.TryGetCached<GameObject>(ResResourcePaths.CoinItem, out var cached) && cached != null)
+            {
+                _coinPrefab = cached;
+                return;
+            }
+
+            _coinPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CoinItem);
+            _coinPrefabOwned = _coinPrefab != null;
         }
 
         private Animator FindEquipAnimator(int relicId)
@@ -2202,7 +2410,8 @@ namespace App.UI
                 _playerCardInfo.SetActive(true);
                 if (session.Player != null)
                 {
-                    ApplyCardInfoFx(_playerCardInfo, session.EvaluateSeat(session.Player).Level);
+                    var shown = session.EvaluateSeat(session.Player, ViewModel.SettledHandTypeRevealed);
+                    ApplyCardInfoFx(_playerCardInfo, shown.Level);
                 }
             }
 
@@ -2219,7 +2428,7 @@ namespace App.UI
             var displayed = session.DisplayedEnemy;
             if (displayed != null && displayed.Alive)
             {
-                ApplyEnemyCardInfo(session.EvaluateSeat(displayed));
+                ApplyEnemyCardInfo(session.EvaluateSeat(displayed, ViewModel.SettledHandTypeRevealed));
             }
             else if (_enemyCardInfo != null)
             {
@@ -2368,6 +2577,7 @@ namespace App.UI
             var template = FindBtn("BlindBtn");
             if (template == null)
             {
+                ApplySkillLockVisual();
                 RegisterGuideTargets();
                 return;
             }
@@ -2378,6 +2588,7 @@ namespace App.UI
             BindBtnLabel("ChaKanGood", ViewModel.ChaKanGoodLabel);
             BindBtnLabel("TiHuanGood", ViewModel.TiHuanGoodLabel);
             OrderActionButtons();
+            ApplySkillLockVisual();
             RegisterGuideTargets();
         }
 
@@ -3223,7 +3434,13 @@ namespace App.UI
             }
 
             HideEquipTip();
-            _ = ShowWinTip();
+            _ = ShowWinTip(overPopups: false);
+        }
+
+        private void OnHandTypeMagRevealed()
+        {
+            DismissItemTipForWinTip();
+            _ = ShowWinTip(overPopups: true);
         }
 
         private async Task ShowRoundBuffTip(Transform slot, BossEntryConfig entry)
@@ -3248,10 +3465,10 @@ namespace App.UI
             await PresentItemTip(slot, name, desc, showUse: false, placeRight: false);
         }
 
-        private async Task ShowWinTip()
+        private async Task ShowWinTip(bool overPopups)
         {
             await EnsureWinTip();
-            if (_winTip == null)
+            if (_winTip == null || ViewModel == null)
             {
                 return;
             }
@@ -3259,6 +3476,15 @@ namespace App.UI
             FillWinTipRows();
             _shownWinTip = true;
             EnsureEquipTipCatcher();
+            if (overPopups)
+            {
+                AttachWinTipOverPopups();
+            }
+            else
+            {
+                RestoreWinTipHome();
+            }
+
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(true);
@@ -3491,7 +3717,12 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
-            await PresentItemTip(slot, relic.Name, relic.Desc, RelicMechanics.IsConsumable(relic), placeRight: false);
+            await PresentItemTip(
+                slot,
+                relic.Name,
+                RelicMechanics.FormatDisplayDesc(ViewModel?.Session?.Run, relic),
+                RelicMechanics.IsConsumable(relic),
+                placeRight: false);
         }
 
         private async Task ShowPlayerTip()
@@ -3593,9 +3824,67 @@ namespace App.UI
             }
         }
 
+        private void DismissItemTipForWinTip()
+        {
+            _shownEquipRelicId = 0;
+            _shownRoundBuffId = 0;
+            _shownPlayerTip = false;
+            _shownEnemySlot = -1;
+            _shownPeekGoodTip = false;
+            _equipTipAnchor = null;
+            if (_equipTip != null)
+            {
+                _equipTip.SetActive(false);
+            }
+        }
+
+        private void AttachWinTipOverPopups()
+        {
+            var layer = ResolvePopupLayer();
+            if (layer == null)
+            {
+                return;
+            }
+
+            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != layer)
+            {
+                _equipTipCatcher.transform.SetParent(layer, false);
+            }
+
+            if (_winTip != null && _winTip.transform.parent != layer)
+            {
+                _winTip.transform.SetParent(layer, false);
+            }
+        }
+
+        private void RestoreWinTipHome()
+        {
+            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != transform)
+            {
+                _equipTipCatcher.transform.SetParent(transform, false);
+            }
+
+            if (_winTip != null && _winTip.transform.parent != transform)
+            {
+                _winTip.transform.SetParent(transform, false);
+            }
+        }
+
+        private RectTransform ResolvePopupLayer()
+        {
+            var root = GetComponentInParent<UIRoot>(true);
+            if (root == null)
+            {
+                root = FindObjectOfType<UIRoot>();
+            }
+
+            return root != null ? root.GetLayer(UILayer.Popup) : null;
+        }
+
         private void HideWinTip()
         {
             _shownWinTip = false;
+            RestoreWinTipHome();
             if (_winTip != null)
             {
                 _winTip.SetActive(false);
@@ -3630,7 +3919,12 @@ namespace App.UI
         {
             var tipRt = tip != null ? tip.GetComponent<RectTransform>() : null;
             var itemRt = slot != null ? slot.transform as RectTransform : null;
-            var parent = transform as RectTransform;
+            var parent = tipRt != null ? tipRt.parent as RectTransform : null;
+            if (parent == null)
+            {
+                parent = transform as RectTransform;
+            }
+
             if (tipRt == null || itemRt == null || parent == null)
             {
                 return;
@@ -3925,6 +4219,7 @@ namespace App.UI
                 }
 
                 var icon = FindUiImage(slot, "icon");
+                var disabled = relic != null && RelicMechanics.IsDisabled(ViewModel.Session.Run, relic.Id);
                 if (icon != null)
                 {
                     if (sprite != null)
@@ -3933,6 +4228,7 @@ namespace App.UI
                     }
 
                     icon.enabled = sprite != null;
+                    icon.color = disabled ? SkillIconLockedColor : Color.white;
                 }
 
                 var bg = FindUiImage(slot, "bgcolor") ?? FindUiImage(slot, "Image (1)");
@@ -3965,6 +4261,37 @@ namespace App.UI
             }
 
             return child != null ? child.GetComponent<Image>() : null;
+        }
+
+        private static readonly Color SkillIconLockedColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+
+        private void ApplySkillLockVisual()
+        {
+            var locked = ViewModel?.Session != null && ViewModel.Session.PlayerSkillsLocked;
+            ApplySkillButtonLock("PeekGood", locked);
+            ApplySkillButtonLock("ChaKanGood", locked);
+            ApplySkillButtonLock("TiHuanGood", locked);
+        }
+
+        private void ApplySkillButtonLock(string name, bool locked)
+        {
+            var button = FindBtn(name);
+            if (button == null)
+            {
+                return;
+            }
+
+            var icon = button.transform.Find("icon");
+            var image = icon != null ? icon.GetComponent<Image>() : null;
+            if (image != null)
+            {
+                image.color = locked ? SkillIconLockedColor : Color.white;
+            }
+
+            if (locked)
+            {
+                button.interactable = false;
+            }
         }
 
         private void BindBtn(string name, IRelayCommand command)
@@ -4049,7 +4376,7 @@ namespace App.UI
 
         private void OnPeekGoodPointerDown(BaseEventData _)
         {
-            if (IsGuidePeekClickOnly())
+            if (IsGuidePeekClickOnly() || (ViewModel?.Session != null && ViewModel.Session.PlayerSkillsLocked))
             {
                 return;
             }

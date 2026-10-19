@@ -389,7 +389,7 @@ namespace App.UI.Popup
 
             _shownRelicId = relic.Id;
             _tipAnchor = card;
-            SetTipTexts(relic.Name, relic.Desc);
+            SetTipTexts(relic.Name, RelicMechanics.FormatDisplayDesc(ViewModel.Session.Run, relic));
             var canUse = RelicMechanics.IsConsumable(relic)
                 && !RelicMechanics.IsDisabled(ViewModel.Session.Run, relic.Id);
             SetTipUseVisible(canUse);

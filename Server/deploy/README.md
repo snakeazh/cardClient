@@ -100,6 +100,8 @@ systemctl restart card-server       # 重启应用
 curl http://127.0.0.1:5254/v1/health
 ```
 
+- **飞书告警**：`watchdog.sh` 每 2 分钟探活一次，挂了就推飞书群机器人、恢复再推一条（故障期间不刷屏）。部署方式：脚本放 `/opt/card-server/watchdog.sh`，webhook 地址写入 `/opt/card-server/feishu-webhook`（单行文本），crontab 加 `*/2 * * * * /opt/card-server/watchdog.sh`。webhook 文件不存在时脚本静默退出。
+
 - **备份**：核心是 PG 的 `card` 库。配 crontab 每日 `pg_dump`：
   `0 4 * * * sudo -u postgres pg_dump card | gzip > /data/backup/card-$(date +\%F).sql.gz`，
   并定期拷到 OSS。Redis 里只有 token/锁/PVP 队列，丢了最多玩家重新登录，可不备。

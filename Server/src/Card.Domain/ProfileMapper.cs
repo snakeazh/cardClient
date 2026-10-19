@@ -34,6 +34,14 @@ public static class ProfileMapper
                         HighestClearedLevel = e.HighestClearedLevel
                     })
                     .ToArray(),
+                HeroProgress = profile.Level.HeroProgress
+                    .Select(e => new HeroProgressDto
+                    {
+                        HeroId = e.HeroId,
+                        Difficulty = e.Difficulty,
+                        HighestClearedLevel = e.HighestClearedLevel
+                    })
+                    .ToArray(),
                 LastHeroId = profile.Level.LastHeroId,
                 LastLevelId = profile.Level.LastLevelId,
                 LastDifficulty = profile.Level.LastDifficulty,

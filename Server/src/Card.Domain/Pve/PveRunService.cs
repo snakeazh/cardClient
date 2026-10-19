@@ -376,7 +376,7 @@ public sealed class PveRunService
                 throw DomainException.Invalid($"Unknown level {run.HighestClearedLevelId}.");
             }
 
-            profile.MarkCleared(clearedLevel, _config);
+            profile.MarkCleared(clearedLevel, run.HeroId, _config);
         }
 
         var stats = new PveSettleStats

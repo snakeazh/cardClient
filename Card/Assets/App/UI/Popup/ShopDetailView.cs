@@ -12,8 +12,9 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 商店商品详情。注册在 TopMost 层：叠加在 Popup 层的商店之上。
-    /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一，购买时另显示 VideoBuyBtn 看广告免费拿；
-    /// 消耗品货架另显示 buyUseBtn（购买并立刻使用，不播飞入），已购栏另显示 useBtn。
+    /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一。
+    /// buyvideoClick 看广告购买；消耗品货架另显示 buyUseBtn（金币购买并立刻使用，不播飞入），
+    /// buyusevideoClick 看广告购买并立刻使用；已购栏另显示 useBtn。
     /// 金币不足时 BuyNum 变红；失败弹 Toast，不改底部 Tip。点 Mask 关闭。
     /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar，页面立刻关闭，数字等飞币到位再涨。
     /// </summary>
@@ -24,6 +25,7 @@ namespace App.UI.Popup
         private Button _buyBtn;
         private Button _videoBuyBtn;
         private Button _buyUseBtn;
+        private Button _buyUseVideoBtn;
         private Button _sellBtn;
         private Button _useBtn;
         private GameObject _coinPrefab;
@@ -51,6 +53,7 @@ namespace App.UI.Popup
             BindSellButton();
             BindVideoBuyButton();
             BindBuyUseButton();
+            BindBuyUseVideoButton();
             BindUseButton();
             BindMaskClose();
             _ = EnsureCoinPrefab();
@@ -74,6 +77,11 @@ namespace App.UI.Popup
             if (_buyUseBtn != null)
             {
                 _buyUseBtn.onClick.RemoveListener(OnBuyUseClicked);
+            }
+
+            if (_buyUseVideoBtn != null)
+            {
+                _buyUseVideoBtn.onClick.RemoveListener(OnBuyUseVideoClicked);
             }
 
             if (_sellBtn != null)
@@ -144,7 +152,7 @@ namespace App.UI.Popup
 
         private void BindVideoBuyButton()
         {
-            var go = UI.GetGameObject("VideoBuyBtn");
+            var go = UI.GetGameObject("buyvideoClick");
             Binding.BindActive(go, ViewModel.ShowVideoBuy);
             _videoBuyBtn = go.GetComponent<Button>();
             if (_videoBuyBtn != null)
@@ -163,6 +171,18 @@ namespace App.UI.Popup
             {
                 _buyUseBtn.onClick.AddListener(OnBuyUseClicked);
                 Binding.BindInteractable(_buyUseBtn, ViewModel.ButtonsEnabled);
+            }
+        }
+
+        private void BindBuyUseVideoButton()
+        {
+            var go = UI.GetGameObject("buyusevideoClick");
+            Binding.BindActive(go, ViewModel.ShowBuyUseVideo);
+            _buyUseVideoBtn = go.GetComponent<Button>();
+            if (_buyUseVideoBtn != null)
+            {
+                _buyUseVideoBtn.onClick.AddListener(OnBuyUseVideoClicked);
+                Binding.BindInteractable(_buyUseVideoBtn, ViewModel.ButtonsEnabled);
             }
         }
 
@@ -225,7 +245,17 @@ namespace App.UI.Popup
             BeginBuy(watchAd: true);
         }
 
-        private async void OnBuyUseClicked()
+        private void OnBuyUseClicked()
+        {
+            BeginBuyAndUse(watchAd: false);
+        }
+
+        private void OnBuyUseVideoClicked()
+        {
+            BeginBuyAndUse(watchAd: true);
+        }
+
+        private async void BeginBuyAndUse(bool watchAd)
         {
             if (ViewModel == null || !ViewModel.ButtonsEnabled.Value)
             {
@@ -233,7 +263,7 @@ namespace App.UI.Popup
             }
 
             ViewModel.SetBusy(true);
-            if (!await ViewModel.TryBeginBuyAndUseAsync())
+            if (!await ViewModel.TryBeginBuyAndUseAsync(watchAd))
             {
                 ViewModel.SetBusy(false);
                 return;

@@ -3778,7 +3778,8 @@ namespace App.UI
             var stats = session != null
                 ? session.ResolveLivePlayerPanel()
                 : TalentBonusManager.EvaluateBase(hero);
-            return TalentBonusManager.AppendPanelLines(desc, stats);
+            // 局内提示与选角面板统一成两行两列（ItemTip 宽 500，列距按 <pos=45%> 定位）。
+            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats);
         }
 
         private string BuildEnemyTipBody(SeatState enemy)
@@ -3803,7 +3804,7 @@ namespace App.UI
             var stats = session != null
                 ? session.ResolveLiveEnemyPanel(enemy)
                 : new HeroPanelStats(enemy.Attack, 0f, 0f, enemy.MaxHp);
-            return TalentBonusManager.AppendPanelLines(desc, stats);
+            return TalentBonusManager.AppendPanelLinesTwoColumns(desc, stats);
         }
 
         private static MonsterConfig FindMonster(int monsterId)

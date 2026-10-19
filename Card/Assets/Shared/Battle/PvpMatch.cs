@@ -340,6 +340,7 @@ namespace CardShare.Battle
                 }
 
                 fighter.Hp = 0;
+                CaptureDeathMirror(fighter);
                 fighter.Alive = false;
                 fighter.Disconnected = true;
                 ReleaseRelics(fighter);
@@ -559,14 +560,15 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                var rightFighter = slot.IsMonster ? null : _fighters[slot.RightSeat!.Value];
+                var rightFighter = slot.RightSeat is int rightIndex ? _fighters[rightIndex] : null;
                 if (rightFighter != null && !rightFighter.Alive)
                 {
                     continue;
                 }
 
                 SeatSetup right;
-                var vsPlayer = !slot.IsMonster;
+                var vsPlayer = rightFighter != null;
+                var vsMirror = false;
                 if (vsPlayer)
                 {
                     ApplyOpeningHolyLight(leftFighter, rightFighter!, openingDeaths);
@@ -595,6 +597,29 @@ namespace CardShare.Battle
 
                     right = ToPlayerSeat(rightFighter, 1);
                 }
+                else if (TryMirrorSeat(slot, out right))
+                {
+                    vsPlayer = true;
+                    vsMirror = true;
+                    ApplyOpeningHolyLightToMonster(leftFighter, right);
+                    if (!leftFighter.Alive)
+                    {
+                        continue;
+                    }
+
+                    if (right.Hp <= 0)
+                    {
+                        GrantHeroKill(leftFighter);
+                        PayRoundGold(leftFighter, PvpSettlementRules.SkillGoldUnit(_tables.GameConst), countStreak: true, won: true);
+                        continue;
+                    }
+
+                    RunBotConsumables(leftFighter);
+                    if (!leftFighter.Alive)
+                    {
+                        continue;
+                    }
+                }
                 else
                 {
                     right = ToMonsterSeat(monsterGroup);
@@ -621,15 +646,15 @@ namespace CardShare.Battle
                 var left = ToPlayerSeat(leftFighter, 0);
                 var duelSeed = unchecked(Seed * 397 ^ Round * 911 ^ i * 17);
                 var lockLeftNow = !leftFighter.IsBot && !left.IsHuman;
-                var lockRightNow = !vsPlayer || (rightFighter != null && !rightFighter.IsBot && !right.IsHuman);
-                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer, lockLeftNow, lockRightNow);
+                var lockRightNow = !vsMirror && (!vsPlayer || (rightFighter != null && !rightFighter.IsBot && !right.IsHuman));
+                var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer, lockLeftNow, lockRightNow, vsMirror);
                 var thinkBase = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.DealAnimMs;
                 if (leftFighter.IsBot)
                 {
                     duel.ScheduleLock(0, thinkBase + BotLockDelayMs());
                 }
 
-                if (vsPlayer && rightFighter != null && rightFighter.IsBot)
+                if (vsMirror || (vsPlayer && rightFighter != null && rightFighter.IsBot))
                 {
                     duel.ScheduleLock(1, thinkBase + BotLockDelayMs());
                 }
@@ -824,6 +849,15 @@ namespace CardShare.Battle
             if (victimAlive && victim != null && !victim.Alive && winnerForKill != null)
             {
                 GrantHeroKill(winnerForKill);
+            }
+
+            if (duel.VsMirror && win == 0 && winnerForKill != null)
+            {
+                var mirrorHp = duel.Engine.MutableSeat(1).Hp;
+                if (mirrorHp > 0 && damage >= mirrorHp)
+                {
+                    GrantHeroKill(winnerForKill);
+                }
             }
 
             if (duel.VsMonster && win == 0 && winnerForKill != null)
@@ -1039,7 +1073,7 @@ namespace CardShare.Battle
                 return FighterAt(duel.LeftUserId);
             }
 
-            if (duel.VsMonster)
+            if (duel.VsMonster || duel.VsMirror)
             {
                 return null;
             }
@@ -1074,13 +1108,14 @@ namespace CardShare.Battle
             var unit = PvpSettlementRules.SkillGoldUnit(_tables.GameConst);
             var countStreak = !duel.VsMonster;
 
-            var winner = win == 0 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
-            if (winner != null)
+            var mirror = duel.VsMonster || duel.VsMirror;
+            var winner = win == 0 ? FighterAt(duel.LeftUserId) : mirror ? null : FighterAt(duel.RightUserId);
+            if (winner != null && winner.Alive)
             {
                 PayRoundGold(winner, unit, countStreak, won: true);
             }
 
-            var loser = win == 1 ? FighterAt(duel.LeftUserId) : duel.VsMonster ? null : FighterAt(duel.RightUserId);
+            var loser = win == 1 ? FighterAt(duel.LeftUserId) : mirror ? null : FighterAt(duel.RightUserId);
             if (loser != null)
             {
                 PayRoundGold(loser, unit, countStreak, won: false);
@@ -1493,7 +1528,7 @@ namespace CardShare.Battle
             {
                 userId = duel.LeftUserId;
             }
-            else if (duel.VsMonster)
+            else if (duel.VsMonster || duel.VsMirror)
             {
                 return;
             }
@@ -1533,6 +1568,7 @@ namespace CardShare.Battle
                 return;
             }
 
+            CaptureDeathMirror(fighter);
             deathHp[fighter.SeatIndex] = fighter.Hp;
             fighter.Alive = false;
             ReleaseRelics(fighter);
@@ -1549,7 +1585,7 @@ namespace CardShare.Battle
                     ApplyHeroChip(left, deathHp);
                 }
 
-                if (slot.IsMonster)
+                if (slot.IsMonster || slot.IsMirror || slot.RightSeat == null)
                 {
                     continue;
                 }
@@ -1824,6 +1860,99 @@ namespace CardShare.Battle
                     _tables, carried, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
                 fighter.ReplaceLeft = replace;
             }
+        }
+
+        /// <summary>在清背包之前记下死亡时的圣物和面板。认输和被击杀都走这里。</summary>
+        private void CaptureDeathMirror(PvpFighter fighter)
+        {
+            if (fighter.DeathMirror != null)
+            {
+                return;
+            }
+
+            fighter.DeathRelicIds = fighter.OwnedRelicIds.ToArray();
+            var mirror = ToPlayerSeat(fighter, 1);
+            mirror.Hp = Math.Max(1, fighter.MaxHp);
+            mirror.MaxHp = Math.Max(1, fighter.MaxHp);
+            mirror.IsHuman = false;
+            mirror.Alive = true;
+            mirror.HolyLightCasts = 0;
+            fighter.DeathMirror = mirror;
+        }
+
+        /// <summary>轮空镜像：死亡座位上留下的面板和圣物，按机器人开一桌，不走野怪。</summary>
+        private bool TryMirrorSeat(PvpPairSlot slot, out SeatSetup seat)
+        {
+            seat = null!;
+            if (slot.MirrorSeat is not int index || index < 0 || index >= _fighters.Length)
+            {
+                return false;
+            }
+
+            var dead = _fighters[index];
+            if (dead.Alive || dead.DeathMirror == null)
+            {
+                return false;
+            }
+
+            seat = CopyMirror(dead.DeathMirror);
+            ApplyMirrorSkills(seat);
+            return true;
+        }
+
+        private static SeatSetup CopyMirror(SeatSetup src)
+        {
+            return new SeatSetup
+            {
+                UserId = src.UserId,
+                NickName = src.NickName,
+                IsHuman = false,
+                Alive = true,
+                Attack = src.Attack,
+                Hp = Math.Max(1, src.MaxHp),
+                MaxHp = Math.Max(1, src.MaxHp),
+                HeroId = src.HeroId,
+                Talents = src.Talents,
+                RelicIds = src.RelicIds,
+                HandTypeShowCounts = src.HandTypeShowCounts,
+                RelicSelfDecayMag = src.RelicSelfDecayMag,
+                RelicShopRefreshCounts = src.RelicShopRefreshCounts,
+                RelicWinLoseMag = src.RelicWinLoseMag,
+                ConsumableUsesThisRun = src.ConsumableUsesThisRun,
+                CopiedRelicId = src.CopiedRelicId,
+                BindingMagForever = src.BindingMagForever,
+                MagicCoinDamageBonus = src.MagicCoinDamageBonus,
+                BindingCritBonus = src.BindingCritBonus
+            };
+        }
+
+        private void ApplyMirrorSkills(SeatSetup seat)
+        {
+            var rub = _tables.GameConst.DefaultSkillShuffleNum;
+            var replace = _tables.GameConst.DefaultSkillReplaceNum;
+            var peek = _tables.GameConst.DefaultSkillPerspectiveNum;
+            if (rub <= 0)
+            {
+                rub = 3;
+            }
+
+            if (replace <= 0)
+            {
+                replace = 1;
+            }
+
+            if (peek <= 0)
+            {
+                peek = 1;
+            }
+
+            var carried = seat.RelicIds;
+            seat.RubLeft = Math.Max(0, rub + CombatBonuses.SumSkillCountBonus(
+                _tables, carried, seat.HeroId, seat.Talents, MechanismType.RubbingCardsNum));
+            seat.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
+                _tables, carried, seat.HeroId, seat.Talents, MechanismType.PerspectiveNum));
+            seat.ReplaceLeft = replace;
+            seat.HolyLightCasts = 0;
         }
 
         private SeatSetup ToPlayerSeat(PvpFighter fighter, int seatId)

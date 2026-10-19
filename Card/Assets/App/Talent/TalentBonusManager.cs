@@ -109,10 +109,30 @@ namespace App.Talent
                 + "生命值：" + stats.Hp;
         }
 
+        /// <summary>
+        /// 两行两列排版：第一行 生命值 / 攻击力，第二行 暴击率 / 闪避率。
+        /// 第二列用 TMP 的 &lt;pos=x%&gt; 定位（按文本控件宽度算）。
+        /// columnPercent 由调用方按各自文本区宽度给：选角面板 472 用 45%（约 212px），
+        /// 局内 ItemTip 撑满后 440 用 52%（约 229px），保证第一列（最长「生命值：1370」≈216px）不压到第二列。
+        /// </summary>
+        public static string FormatPanelLinesTwoColumns(HeroPanelStats stats, int columnPercent = 45)
+        {
+            var column = "<pos=" + columnPercent + "%>";
+            return "生命值：" + stats.Hp + column + "攻击力：" + stats.Attack + "\n"
+                + "暴击率：" + FormatRate(stats.CritRate) + column + "闪避率：" + FormatRate(stats.DodgeRate);
+        }
+
         /// <summary>描述后空一行再拼面板属性；无描述则只显示属性。</summary>
         public static string AppendPanelLines(string desc, HeroPanelStats stats)
         {
             var lines = FormatPanelLines(stats);
+            return string.IsNullOrEmpty(desc) ? lines : desc + "\n\n" + lines;
+        }
+
+        /// <summary>描述后空一行，再接两行两列面板属性；无描述则只显示属性。</summary>
+        public static string AppendPanelLinesTwoColumns(string desc, HeroPanelStats stats, int columnPercent = 45)
+        {
+            var lines = FormatPanelLinesTwoColumns(stats, columnPercent);
             return string.IsNullOrEmpty(desc) ? lines : desc + "\n\n" + lines;
         }
 

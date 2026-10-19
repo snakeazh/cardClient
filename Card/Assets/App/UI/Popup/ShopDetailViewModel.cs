@@ -15,8 +15,9 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 商店详情：货架点进来买，已购点进来卖；Mask 关闭。买卖失败弹 Toast，不改底部 Tip。
-    /// 购买时可点 VideoBuyBtn 看广告免费拿（广告当前为模拟发放）。
-    /// 消耗品在货架显示 buyUseBtn：购买并立刻使用，不播飞入 MineHor；已购栏显示 useBtn。
+    /// 购买时可点 buyvideoClick 看广告免费拿（广告当前为模拟发放）。
+    /// 消耗品在货架显示 buyUseBtn：金币购买并立刻使用，不播飞入 MineHor；
+    /// buyusevideoClick 看广告购买并立刻使用。已购栏显示 useBtn。
     /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售立刻关页，飞币落到金币图标时资源栏数字才涨。
     /// </summary>
     public sealed class ShopDetailViewModel : ViewModelBase
@@ -47,6 +48,7 @@ namespace App.UI.Popup
             ShowSell = new ObservableProperty<bool>(false);
             ShowVideoBuy = new ObservableProperty<bool>(false);
             ShowBuyUse = new ObservableProperty<bool>(false);
+            ShowBuyUseVideo = new ObservableProperty<bool>(false);
             ShowUse = new ObservableProperty<bool>(false);
             CanAffordBuy = new ObservableProperty<bool>(true);
             ButtonsEnabled = new ObservableProperty<bool>(true);
@@ -91,8 +93,11 @@ namespace App.UI.Popup
         /// <summary>看广告免费买：仅 PvE；PVP 无广告入口。</summary>
         public ObservableProperty<bool> ShowVideoBuy { get; }
 
-        /// <summary>货架消耗品：购买并立刻使用。</summary>
+        /// <summary>货架消耗品：金币购买并立刻使用。</summary>
         public ObservableProperty<bool> ShowBuyUse { get; }
+
+        /// <summary>货架消耗品看广告购买并立刻使用：仅 PvE。</summary>
+        public ObservableProperty<bool> ShowBuyUseVideo { get; }
 
         /// <summary>已购消耗品：直接使用。</summary>
         public ObservableProperty<bool> ShowUse { get; }
@@ -238,7 +243,7 @@ namespace App.UI.Popup
             return false;
         }
 
-        public async Task<bool> TryBeginBuyAndUseAsync()
+        public async Task<bool> TryBeginBuyAndUseAsync(bool watchAd)
         {
             if (!Buying || RelicId <= 0)
             {
@@ -246,7 +251,7 @@ namespace App.UI.Popup
             }
 
             _awaitingBuyFx = true;
-            if (await Session.TryBuyAndUseShopRelicAsync(RelicId))
+            if (await Session.TryBuyAndUseShopRelicAsync(RelicId, watchAd))
             {
                 return true;
             }
@@ -312,12 +317,13 @@ namespace App.UI.Popup
             var relic = RelicConfig.Get(RelicId);
             Quality.Value = relic != null ? relic.Type : QualityType.Ordinary;
             NameText.Value = relic != null ? relic.Name : string.Empty;
-            DescText.Value = relic != null ? relic.Desc ?? string.Empty : string.Empty;
+            DescText.Value = RelicMechanics.FormatDisplayDesc(Session.Run, relic);
             IconSprite.Value = GetRelicIcon(relic);
             ShowBuy.Value = Buying;
             ShowSell.Value = !Buying;
             ShowVideoBuy.Value = Buying && !Session.IsPvp;
             ShowBuyUse.Value = Buying && Session.CanUseRelicNow(RelicId, requireOwned: false);
+            ShowBuyUseVideo.Value = ShowBuyUse.Value && !Session.IsPvp;
             ShowUse.Value = !Buying && Session.CanUseRelicNow(RelicId, requireOwned: true);
             TipText.Value = DefaultTip;
             var price = RelicId <= 0
@@ -348,12 +354,12 @@ namespace App.UI.Popup
 
         private void ConfirmVideoBuy()
         {
-            // View 拦截 VideoBuyBtn 点击并播飞入；命令仅用于 CanExecute。
+            // View 拦截 buyvideoClick 点击并播飞入；命令仅用于 CanExecute。
         }
 
         private void ConfirmBuyUse()
         {
-            // View 拦截 buyUseBtn：购买并立刻使用，不播飞入。
+            // View 拦截 buyUseBtn / buyusevideoClick：购买并立刻使用，不播飞入。
         }
 
         private void ConfirmSell()

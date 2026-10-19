@@ -63,7 +63,7 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 
 - WS 断开**不再退赛**：座位标 `Disconnected`，当前桌未锁定则自动锁定结算；后续轮该座位发牌即自动锁定代打（选最大牌型，不等机器人的 3～5 秒）；房间内广播 `player_offline`
 - 重连：重连 WS → `auth` → 发 `sync` → 服务端回 `match_update` 全量快照（按 userId 找局）并广播 `player_online`；`error(not_in_battle)` 表示对局已不在
-- 死者留局观战（`duel=null`），名次奖励照发；`leave` 仍可用（对局索引清人）
+- 死者淘汰快照推送后即从本局解绑，不再收这一局的后续推送。若已去开下一把，旧局结束也不会把结算推到新连接上
 
 ## 协议增量（在 [`pvp.md`](pvp.md) 基础上）
 

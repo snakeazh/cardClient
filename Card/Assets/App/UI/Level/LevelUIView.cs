@@ -288,6 +288,8 @@ namespace App.UI
                 var stage = stages[i];
                 item.SetUnlocked(ViewModel.IsLevelUnlocked(stage));
                 item.SetDifficulty(stage.Difficulty);
+                // 难度按钮上显示"当前选中英雄"对该难度的通关状态（已通关则把固定的「难度」小字换掉）。
+                item.SetClearStatus(ViewModel.IsHeroDifficultyCleared(ViewModel.SelectedHeroId.Value, stage.Difficulty));
                 var isSelected = stage.Id == selected;
                 item.SetSelected(isSelected, forceSelect);
                 if (isSelected)

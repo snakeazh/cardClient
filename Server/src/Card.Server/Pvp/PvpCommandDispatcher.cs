@@ -105,7 +105,8 @@ public sealed class PvpCommandDispatcher
 
     /// <summary>
     /// 逐人发 match_update（先 DrainEvents 拿增量），再把事件逐条包 match_event 发给真人。
-    /// 已淘汰且已解绑的不推；本批刚淘汰的仍推一次（仍在映射里），推完后 UnbindEliminated。
+    /// 只发给当前仍映射到这一局的真人。本批刚淘汰、尚未解绑的会收到最后一次快照，推完后 UnbindEliminated。
+    /// 已去开下一把的人映射在新局上，旧局不再推送，也不拆掉新局映射。
     /// </summary>
     public async Task BroadcastMatchAsync(PvpMatch match, long seq, CancellationToken cancellationToken)
     {
@@ -117,8 +118,8 @@ public sealed class PvpCommandDispatcher
                 continue;
             }
 
-            // 已死且已解绑：后续对局不再推；仍绑定则本批是淘汰快照，再推最后一次。
-            if (!fighter.Alive && !_matches.IsBound(id))
+            // 只推仍挂在这一局上的人。淘汰解绑后若已去开下一把，IsBound 会变成 true，但不能把旧局结算推过去。
+            if (!_matches.IsBoundTo(id, match))
             {
                 continue;
             }
@@ -141,7 +142,7 @@ public sealed class PvpCommandDispatcher
                     continue;
                 }
 
-                if (!fighter.Alive && !_matches.IsBound(id))
+                if (!_matches.IsBoundTo(id, match))
                 {
                     continue;
                 }

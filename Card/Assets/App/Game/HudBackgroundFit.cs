@@ -126,6 +126,14 @@ namespace App.Game
             float viewWidth = viewHeight * camera.aspect;
             float uniform = Mathf.Max(viewWidth / spriteSize.x, viewHeight / spriteSize.y);
             var scale = transform.localScale;
+
+            // 编辑器里 OnEnable / OnValidate 会带 force=true 走到这里；值没变也写 Transform
+            // 会把场景标脏，所以先比较再赋值。
+            if (Mathf.Approximately(scale.x, uniform) && Mathf.Approximately(scale.y, uniform))
+            {
+                return;
+            }
+
             scale.x = uniform;
             scale.y = uniform;
             transform.localScale = scale;

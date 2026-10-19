@@ -83,7 +83,8 @@ namespace App.UI
             CapturePoseHomes(player, playerLayoutHome);
             ApplyPoseIn();
             var token = ++_playToken;
-            var seq = DOTween.Sequence().SetUpdate(true);
+            // 跟随 Time.timeScale：2 倍速时对白/VS/回位同步加速（内部 PlayDialog 本来就走缩放时间）。
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -136,7 +137,7 @@ namespace App.UI
                 return;
             }
 
-            var seq = DOTween.Sequence().SetUpdate(true);
+            var seq = DOTween.Sequence();
             if (link != null)
             {
                 seq.SetLink(link, LinkBehaviour.KillOnDestroy);
@@ -283,7 +284,6 @@ namespace App.UI
                 rt.DOKill();
                 rt.DOAnchorPos(_poseHomes[i], PoseOutDuration)
                     .SetEase(Ease.OutCubic)
-                    .SetUpdate(true)
                     .SetLink(rt.gameObject, LinkBehaviour.KillOnDestroy);
             }
         }
@@ -332,11 +332,11 @@ namespace App.UI
             }
 
             seq.AppendCallback(PrepareVs);
-            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
-            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack).SetUpdate(true));
+            seq.Append(_vs.DOAnchorPos(_vsHome, VsFlyDuration).SetEase(Ease.OutBack));
+            seq.Join(_vs.DOScale(1f, VsFlyDuration).SetEase(Ease.OutBack));
             if (_vsGroup != null)
             {
-                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f).SetUpdate(true));
+                seq.Join(_vsGroup.DOFade(1f, VsFlyDuration * 0.5f));
             }
 
             seq.AppendInterval(VsHold);
@@ -351,7 +351,7 @@ namespace App.UI
 
             if (_vsGroup != null)
             {
-                seq.Append(_vsGroup.DOFade(0f, VsFade).SetUpdate(true));
+                seq.Append(_vsGroup.DOFade(0f, VsFade));
             }
 
             seq.AppendCallback(HideVs);

@@ -56,7 +56,7 @@ namespace CardShare.Battle
                     RewardScore = f.RewardScore,
                     WinStreak = f.WinStreak,
                     LoseStreak = f.LoseStreak,
-                    RelicIds = f.OwnedRelicIds.ToArray(),
+                    RelicIds = f.Alive || f.DeathRelicIds == null ? f.OwnedRelicIds.ToArray() : f.DeathRelicIds,
                     RelicPower = f.OwnedRelicPower.ToArray(),
                     RelicSlots = f.RelicSlots,
                     NullifyDamage = f.NullifyDamageNextHit

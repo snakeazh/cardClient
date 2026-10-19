@@ -254,16 +254,90 @@ namespace App.UI
 
         private void AddPlayerRole(PvpFighterDto player)
         {
+            var hp = player.Hp;
+            var maxHp = player.MaxHp;
+            var alive = player.Alive && player.Hp > 0;
+            if (!player.Alive && TryMirrorSeatHp(player.UserId, out var mirrorHp, out var mirrorMaxHp))
+            {
+                hp = mirrorHp;
+                maxHp = mirrorMaxHp;
+                alive = mirrorHp > 0;
+            }
+
+            if (TryDeferredFoeHp(player.UserId, out var deferredHp, out var deferredAlive))
+            {
+                hp = deferredHp;
+                alive = deferredAlive;
+            }
+
             _pvpRoleEntries.Add(new PvpRoleEntry
             {
                 UserId = player.UserId,
                 Icon = HeroIconOf(player.HeroId),
                 Monster = false,
-                Hp = player.Hp,
-                MaxHp = player.MaxHp,
-                Alive = player.Alive && player.Hp > 0,
+                Hp = hp,
+                MaxHp = maxHp,
+                Alive = alive,
                 RelicIds = player.RelicIds ?? Array.Empty<int>()
             });
+        }
+
+        /// <summary>当前对手是死亡玩家的镜像时，头像血量用这一桌的座位，不用名册上的 0。</summary>
+        private bool TryMirrorSeatHp(string userId, out int hp, out int maxHp)
+        {
+            hp = 0;
+            maxHp = 0;
+            var state = ViewModel?.PvpState;
+            var duel = state != null ? state.Duel : null;
+            var seats = duel != null ? duel.Seats : null;
+            if (seats == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < seats.Count; i++)
+            {
+                var seat = seats[i];
+                if (seat == null || seat.MaxHp <= 0 || !PvpMatchSession.SameUser(seat.UserId, userId))
+                {
+                    continue;
+                }
+
+                hp = seat.Hp;
+                maxHp = seat.MaxHp;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>这场比牌的伤害还没落到座位上时，对手头像沿用座位旧血。</summary>
+        private bool TryDeferredFoeHp(string userId, out int hp, out bool alive)
+        {
+            hp = 0;
+            alive = true;
+            var session = ViewModel?.Session;
+            var state = ViewModel?.PvpState;
+            if (session == null || !session.PvpHpDeferred || state == null)
+            {
+                return false;
+            }
+
+            var foeId = CurrentFoeUserId(state, ViewModel.PvpUserId);
+            if (string.IsNullOrEmpty(foeId) || !PvpMatchSession.SameUser(userId, foeId))
+            {
+                return false;
+            }
+
+            var enemy = session.Enemies != null && session.Enemies.Length > 0 ? session.Enemies[0] : null;
+            if (enemy == null)
+            {
+                return false;
+            }
+
+            hp = enemy.Hp;
+            alive = enemy.Alive && enemy.Hp > 0;
+            return true;
         }
 
         private void RebuildBonds()
@@ -1208,7 +1282,12 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
-            await PresentItemTip(slot, relic.Name, relic.Desc ?? string.Empty, showUse: false, placeRight: false);
+            await PresentItemTip(
+                slot,
+                relic.Name,
+                RelicMechanics.FormatDisplayDesc(ViewModel?.Session?.Run, relic),
+                showUse: false,
+                placeRight: false);
             if (!_pvpSideAlive || _hasTip == null || !_hasTip.activeSelf || _equipTip == null)
             {
                 return;

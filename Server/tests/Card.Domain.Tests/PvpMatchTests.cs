@@ -56,11 +56,11 @@ public class PvpPairingTests
     }
 
     [Fact]
-    public void ThreeAliveByeGoesToMonster()
+    public void ThreeAliveByeMirrorsTheDeadSeat()
     {
         var slots = PvpPairing.ForPvp(new[] { 0, 1, 2 }, 0);
-        Assert.Contains(slots, s => !s.IsMonster && s.LeftSeat == 0 && s.RightSeat == 1);
-        Assert.Contains(slots, s => s.IsMonster && s.LeftSeat == 2);
+        Assert.Contains(slots, s => !s.IsMonster && !s.IsMirror && s.LeftSeat == 0 && s.RightSeat == 1);
+        Assert.Contains(slots, s => s.IsMirror && !s.IsMonster && s.LeftSeat == 2 && s.MirrorSeat == 3);
     }
 
     [Fact]
@@ -1230,6 +1230,42 @@ public class PvpMatchTests
 
         Assert.True(match.TryMarkRewardsGranted());
         Assert.False(match.TryMarkRewardsGranted());
+    }
+
+    [Fact]
+    public void ByeAfterDeathFightsMirrorBotWithRelicsNotMonster()
+    {
+        var match = OpenClassic();
+        var dead = match.Fighters[0];
+        match.Act(dead.UserId, "debug_grant", 1, Array.Empty<int>());
+        Assert.True(match.Abandon(dead.UserId));
+        Assert.Contains(1, dead.DeathRelicIds);
+        Assert.NotNull(dead.DeathMirror);
+        Assert.Contains(1, dead.DeathMirror.RelicIds);
+
+        foreach (var fighter in match.Fighters)
+        {
+            if (fighter.Alive)
+            {
+                match.Showdown(fighter.UserId);
+            }
+        }
+
+        AdvanceThrough(match);
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(PvpFightKind.Pvp, match.FightKind);
+        Assert.DoesNotContain(match.Duels, d => d.VsMonster);
+        var mirror = Assert.Single(match.Duels, d => d.VsMirror);
+        Assert.Equal(dead.UserId, mirror.RightUserId);
+        Assert.False(mirror.Involves(dead.UserId));
+        var view = match.ViewFor(mirror.LeftUserId);
+        Assert.Equal("pvp", view.FightKind);
+        Assert.Contains(view.Players, p => p.UserId == dead.UserId && p.RelicIds.Contains(1));
+        var foe = view.Duel.Seats[1];
+        Assert.Equal(dead.UserId, foe.UserId);
+        Assert.True(foe.MaxHp > 0);
+        Assert.True(foe.Hp > 0);
     }
 
     [Fact]

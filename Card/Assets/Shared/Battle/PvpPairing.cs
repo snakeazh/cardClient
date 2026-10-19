@@ -7,17 +7,23 @@ namespace CardShare.Battle
 {
     public readonly struct PvpPairSlot
     {
-        public PvpPairSlot(int leftSeat, int? rightSeat)
+        public PvpPairSlot(int leftSeat, int? rightSeat, int? mirrorSeat = null)
         {
             LeftSeat = leftSeat;
             RightSeat = rightSeat;
+            MirrorSeat = mirrorSeat;
         }
 
         public int LeftSeat { get; }
 
         public int? RightSeat { get; }
 
-        public bool IsMonster => RightSeat == null;
+        /// <summary>PVP 轮轮空时，用来生成镜像机器人的死亡座位。不是野怪。</summary>
+        public int? MirrorSeat { get; }
+
+        public bool IsMirror => MirrorSeat != null;
+
+        public bool IsMonster => RightSeat == null && MirrorSeat == null;
     }
 
     public static class PvpPairing
@@ -68,12 +74,13 @@ namespace CardShare.Battle
                 }
                 else if (leftAlive)
                 {
-                    slots.Add(new PvpPairSlot(pair.A, null));
+                    // 原对手已死：轮空者打这个死亡座位的镜像，不打野怪。
+                    slots.Add(new PvpPairSlot(pair.A, null, pair.B));
                     used.Add(pair.A);
                 }
                 else if (rightAlive)
                 {
-                    slots.Add(new PvpPairSlot(pair.B, null));
+                    slots.Add(new PvpPairSlot(pair.B, null, pair.A));
                     used.Add(pair.B);
                 }
             }

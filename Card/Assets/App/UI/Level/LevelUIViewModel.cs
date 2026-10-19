@@ -192,7 +192,41 @@ namespace App.UI
         private string FormatUnlockedSkillInfo(HeroConfig hero)
         {
             var desc = hero != null && !string.IsNullOrEmpty(hero.Desc) ? hero.Desc : string.Empty;
-            return TalentBonusManager.AppendPanelLines(desc, GetHeroPanelStats(hero));
+            // 选角面板按两行两列显示（生命值/攻击力、暴击率/闪避率），下面再接该英雄的最高纪录。
+            var lines = TalentBonusManager.AppendPanelLinesTwoColumns(desc, GetHeroPanelStats(hero));
+            return hero == null ? lines : lines + "\n" + GetHeroRecordText(hero.Id);
+        }
+
+        /// <summary>该英雄是否已打完全部关卡、通关指定难度。</summary>
+        public bool IsHeroDifficultyCleared(int heroId, int difficulty)
+        {
+            var max = _levels.GetMaxLevel(difficulty);
+            return max > 0 && _progress.GetHeroHighestCleared(heroId, difficulty) >= max;
+        }
+
+        /// <summary>该英雄的最高纪录：进度最深的难度 + 该难度已通关的最高关。</summary>
+        public string GetHeroRecordText(int heroId)
+        {
+            var bestDifficulty = 0;
+            var bestLevel = 0;
+            var diffs = _levels.GetDifficulties();
+            if (diffs != null)
+            {
+                for (var i = 0; i < diffs.Count; i++)
+                {
+                    var difficulty = diffs[i];
+                    var level = _progress.GetHeroHighestCleared(heroId, difficulty);
+                    if (level > 0 && difficulty > bestDifficulty)
+                    {
+                        bestDifficulty = difficulty;
+                        bestLevel = level;
+                    }
+                }
+            }
+
+            return bestDifficulty > 0
+                ? $"最高纪录 难度{bestDifficulty} 关卡{bestLevel}"
+                : "最高纪录 暂无";
         }
 
         public bool IsLevelUnlocked(LevelSnapshot snapshot)
@@ -496,8 +530,13 @@ namespace App.UI
                         return;
                     }
                 }
+                else
+                {
+                    // 只有不连服务器才在这里复位本地局。连服务器时上面已经 StartNewRun + BindServerRun，
+                    // 这里再调一次会把 _serverRunId 清空，导致整局不上报进度、不结算（存档也就不会被服务端记录）。
+                    _session.StartNewRun();
+                }
 
-                _session.StartNewRun();
                 _tableVm.ResetOpeningGate();
                 BattleTrace.Log($"StartGame open GameUI under LevelUI (level={SelectedLevelId.Value})");
                 // 先 Open GameUI（选关先当遮罩盖住加载），等 OnViewOpen/预加载完成后再拆掉选关，避免露底闪一下。

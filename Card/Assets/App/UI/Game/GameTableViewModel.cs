@@ -112,7 +112,18 @@ namespace App.UI
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
             PeekGoodCommand = new RelayCommand(
-                () => Session.UsePeekGood(),
+                () =>
+                {
+                    if (!Session.SelectingRubTarget &&
+                        Session.PlayerMayPressPeekGood &&
+                        !BossMechanics.CanAffordRub(Session.Run))
+                    {
+                        Toast.Show("金币不足，无法使用");
+                        return;
+                    }
+
+                    Session.UsePeekGood();
+                },
                 () => Session.PlayerMayTogglePeekGood);
             ChaKanGoodCommand = new RelayCommand(
                 () =>

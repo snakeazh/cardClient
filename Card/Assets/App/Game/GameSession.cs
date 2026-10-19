@@ -128,9 +128,6 @@ namespace App.Game
         /// <summary>圣物效果加了金币。参数是来源圣物 Id（消耗后已不在栏上则为 0）和数量。UI 用来从圣物列表飞币。</summary>
         public event Action<int, int> RelicGoldGranted;
 
-        /// <summary>消耗品刚写入牌型永久倍率。UI 打开 WinTip，展示每个牌型加成后的倍率。</summary>
-        public event Action HandTypeMagRevealed;
-
         public bool IsPvp { get; private set; }
 
         /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
@@ -338,6 +335,9 @@ namespace App.Game
         public int AttackDamage { get; private set; }
         /// <summary>命中飘字用的伤害（计算值，不按剩余血量截断）。挨打时已含玩家减伤；闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
+
+        /// <summary>玩家这一击是否暴击。暴击伤害字用 Crithptextdi。</summary>
+        public bool LastPlayerAttackCrit => _lastPlayerAttackCrit;
         /// <summary>主目标本波因闪避未扣血，HUD 飘字显示 MISS。旁路溅射闪避不改这个值。</summary>
         public bool LastAttackMissed { get; private set; }
         /// <summary>本轮已掷中追击，两波攻击演出都加速，等第一波结束后再打第二轮。</summary>
@@ -1006,12 +1006,15 @@ namespace App.Game
         public bool PlayerSkillsLocked =>
             BossMechanics.SkillsDisabled(Run) || BindingSkillsDisabled();
 
-        public bool PlayerMayUsePeekGood =>
+        public bool PlayerMayPressPeekGood =>
             PlayerMayUseItems &&
             Player.Looked &&
             Run.PeekGoodCharges > 0 &&
             Phase != GamePhase.WaitingRub &&
-            !PlayerSkillsLocked &&
+            !PlayerSkillsLocked;
+
+        public bool PlayerMayUsePeekGood =>
+            PlayerMayPressPeekGood &&
             BossMechanics.CanAffordRub(Run);
 
         public bool PlayerMayUseChaKanGood =>
@@ -1053,8 +1056,8 @@ namespace App.Game
             ResolveAiStreet();
         }
 
-        /// <summary>可点搓牌按钮：有次数可进入，或已在点选中可取消（次数用尽时仍须能退出）。</summary>
-        public bool PlayerMayTogglePeekGood => SelectingRubTarget || PlayerMayUsePeekGood;
+        /// <summary>可点搓牌按钮：有次数可进入，金币不足时仍可点以提示，或已在点选中可取消。</summary>
+        public bool PlayerMayTogglePeekGood => SelectingRubTarget || PlayerMayPressPeekGood;
 
         /// <summary>点击搓牌按钮：进入或取消点选手牌替换。</summary>
         public void UsePeekGood()
@@ -3324,19 +3327,12 @@ namespace App.Game
             return !CanApplyConsumable(relic, out failHint);
         }
 
-        private bool _pendingHandTypeMagReveal;
-
         private void ApplyConsumableUseCore(int relicId)
         {
-            _pendingHandTypeMagReveal = false;
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             RelicMechanics.OnConsumableUsed(Run);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
-            if (_pendingHandTypeMagReveal)
-            {
-                HandTypeMagRevealed?.Invoke();
-            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)
@@ -3386,22 +3382,13 @@ namespace App.Game
                     var handType = HandEvaluator.FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
                     var mag = RelicMechanics.ValueAt(entry, 1);
                     Run.AddHandTypeMagBonus(handType, mag);
-                    if (mag != 0f)
-                    {
-                        _pendingHandTypeMagReveal = true;
-                    }
-
                     Log($"消耗品：{HandEvaluator.TypeName(handType)} 倍率永久 +{mag}");
                     break;
                 }
                 case MechanismType.RandomHandTypeMagUp:
-                    if (ApplyRandomHandTypeMagUp(
+                    ApplyRandomHandTypeMagUp(
                         RelicMechanics.ValueAt(entry, 0),
-                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1))))
-                    {
-                        _pendingHandTypeMagReveal = true;
-                    }
-
+                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1)));
                     break;
                 case MechanismType.HealHpPercent:
                 {
@@ -3476,7 +3463,7 @@ namespace App.Game
             }
         }
 
-        private bool ApplyRandomHandTypeMagUp(float mag, int count)
+        private void ApplyRandomHandTypeMagUp(float mag, int count)
         {
             var types = new[]
             {
@@ -3489,7 +3476,6 @@ namespace App.Game
             };
             var remain = types.Length;
             var take = Math.Min(Math.Max(0, count), remain);
-            var applied = false;
             for (var i = 0; i < take; i++)
             {
                 var pick = _rng.Next(i, remain);
@@ -3497,11 +3483,8 @@ namespace App.Game
                 types[i] = types[pick];
                 types[pick] = tmp;
                 Run.AddHandTypeMagBonus(types[i], mag);
-                applied |= mag != 0f;
                 Log($"消耗品：{HandEvaluator.TypeName(types[i])} 倍率永久 +{mag}");
             }
-
-            return applied;
         }
 
         private void ClearThisHandConsumables()

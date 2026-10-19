@@ -101,6 +101,8 @@ namespace App.Resources
         public const string TalentAtlas = "Altas/Talent";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>
         public const string ShopNumAtlas = "Altas/ShopNum";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/Critdamage.spriteatlasv2（暴击伤害数字）。</summary>
+        public const string CritDamageAtlas = "Altas/Critdamage";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 

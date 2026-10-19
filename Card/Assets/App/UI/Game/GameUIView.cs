@@ -118,6 +118,9 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
+        private RectTransform _critHpRt;
+        private Transform _critNumShow;
+        private Animation _critHpAnim;
         private readonly List<RectTransform> _splashHpClones = new List<RectTransform>(2);
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
@@ -241,7 +244,6 @@ namespace App.UI
             {
                 ViewModel.Session.Changed += OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted += OnRelicGoldGranted;
-                ViewModel.Session.HandTypeMagRevealed += OnHandTypeMagRevealed;
             }
 
             BattleTrace.Log("GameUI.OnViewOpen end");
@@ -409,7 +411,6 @@ namespace App.UI
             {
                 ViewModel.Session.Changed -= OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted -= OnRelicGoldGranted;
-                ViewModel.Session.HandTypeMagRevealed -= OnHandTypeMagRevealed;
             }
 
             if (_coinPrefabOwned)
@@ -612,6 +613,7 @@ namespace App.UI
 
         private void BindAttackHud()
         {
+            BindCritHp();
             var mask = ResolveSlot("mask");
             if (mask != null)
             {
@@ -641,6 +643,21 @@ namespace App.UI
             }
 
             Binding.BindActive(hpRoot.gameObject, ViewModel.ShowHpText);
+        }
+
+        private void BindCritHp()
+        {
+            var crit = FindDeep(transform, "Crithptextdi");
+            _critHpRt = crit as RectTransform ?? (crit != null ? crit.GetComponent<RectTransform>() : null);
+            if (_critHpRt == null)
+            {
+                return;
+            }
+
+            _critHpRt.gameObject.SetActive(false);
+            _critNumShow = _critHpRt.Find("NumShow") ?? FindDeep(_critHpRt, "NumShow");
+            var animRoot = _critHpRt.Find("ani_hptextdi") ?? FindDeep(_critHpRt, "ani_hptextdi");
+            _critHpAnim = animRoot != null ? animRoot.GetComponent<Animation>() : null;
         }
 
         private void BindAttackFx()
@@ -1635,6 +1652,7 @@ namespace App.UI
             RestoreSplashHpClones();
             if (session.IncomingAttack)
             {
+                HideCritHp();
                 var missed = session.LastAttackMissed;
                 ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
                 ViewModel.ShowHpText.Value = true;
@@ -1643,11 +1661,21 @@ namespace App.UI
             }
 
             var mainSlot = session.AttackVisualSlot;
-            var mainShown = ShowMainHpText(session);
-            ViewModel.ShowHpText.Value = mainShown;
-            if (mainShown)
+            var critMain = session.LastPlayerAttackCrit && session.TakenDamage > 0;
+            if (critMain)
             {
-                PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+                ViewModel.ShowHpText.Value = false;
+                ShowCritHp(mainSlot, session.TakenDamage);
+            }
+            else
+            {
+                HideCritHp();
+                var mainShown = ShowMainHpText(session);
+                ViewModel.ShowHpText.Value = mainShown;
+                if (mainShown)
+                {
+                    PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+                }
             }
 
             for (var slot = 0; slot < _enemyItems.Length; slot++)
@@ -1803,6 +1831,49 @@ namespace App.UI
 
             _hpTextRt.anchoredPosition = _hpTextHome;
             _hpTextRt.localScale = Vector3.one;
+            HideCritHp();
+        }
+
+        private void ShowCritHp(int slot, int damage)
+        {
+            if (_critHpRt == null)
+            {
+                return;
+            }
+
+            var hit = _attackFx.HitPosition(slot);
+            if (hit == Vector3.zero)
+            {
+                return;
+            }
+
+            if (_critHpRt.parent != null)
+            {
+                _critHpRt.parent.SetAsLastSibling();
+            }
+
+            _critHpRt.SetAsLastSibling();
+            _critHpRt.position = hit;
+            _critHpRt.gameObject.SetActive(true);
+            CritDamageSprites.Apply(ViewModel != null ? ViewModel.Atlas : null, _critNumShow, damage);
+            if (_critHpAnim != null)
+            {
+                _critHpAnim.Rewind();
+                _critHpAnim.Play();
+            }
+        }
+
+        private void HideCritHp()
+        {
+            if (_critHpAnim != null)
+            {
+                _critHpAnim.Stop();
+            }
+
+            if (_critHpRt != null)
+            {
+                _critHpRt.gameObject.SetActive(false);
+            }
         }
 
         private void BindPlayerInfo()
@@ -3434,13 +3505,7 @@ namespace App.UI
             }
 
             HideEquipTip();
-            _ = ShowWinTip(overPopups: false);
-        }
-
-        private void OnHandTypeMagRevealed()
-        {
-            DismissItemTipForWinTip();
-            _ = ShowWinTip(overPopups: true);
+            _ = ShowWinTip();
         }
 
         private async Task ShowRoundBuffTip(Transform slot, BossEntryConfig entry)
@@ -3465,7 +3530,7 @@ namespace App.UI
             await PresentItemTip(slot, name, desc, showUse: false, placeRight: false);
         }
 
-        private async Task ShowWinTip(bool overPopups)
+        private async Task ShowWinTip()
         {
             await EnsureWinTip();
             if (_winTip == null || ViewModel == null)
@@ -3476,15 +3541,6 @@ namespace App.UI
             FillWinTipRows();
             _shownWinTip = true;
             EnsureEquipTipCatcher();
-            if (overPopups)
-            {
-                AttachWinTipOverPopups();
-            }
-            else
-            {
-                RestoreWinTipHome();
-            }
-
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(true);
@@ -3832,67 +3888,9 @@ namespace App.UI
             }
         }
 
-        private void DismissItemTipForWinTip()
-        {
-            _shownEquipRelicId = 0;
-            _shownRoundBuffId = 0;
-            _shownPlayerTip = false;
-            _shownEnemySlot = -1;
-            _shownPeekGoodTip = false;
-            _equipTipAnchor = null;
-            if (_equipTip != null)
-            {
-                _equipTip.SetActive(false);
-            }
-        }
-
-        private void AttachWinTipOverPopups()
-        {
-            var layer = ResolvePopupLayer();
-            if (layer == null)
-            {
-                return;
-            }
-
-            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != layer)
-            {
-                _equipTipCatcher.transform.SetParent(layer, false);
-            }
-
-            if (_winTip != null && _winTip.transform.parent != layer)
-            {
-                _winTip.transform.SetParent(layer, false);
-            }
-        }
-
-        private void RestoreWinTipHome()
-        {
-            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != transform)
-            {
-                _equipTipCatcher.transform.SetParent(transform, false);
-            }
-
-            if (_winTip != null && _winTip.transform.parent != transform)
-            {
-                _winTip.transform.SetParent(transform, false);
-            }
-        }
-
-        private RectTransform ResolvePopupLayer()
-        {
-            var root = GetComponentInParent<UIRoot>(true);
-            if (root == null)
-            {
-                root = FindObjectOfType<UIRoot>();
-            }
-
-            return root != null ? root.GetLayer(UILayer.Popup) : null;
-        }
-
         private void HideWinTip()
         {
             _shownWinTip = false;
-            RestoreWinTipHome();
             if (_winTip != null)
             {
                 _winTip.SetActive(false);
@@ -3927,12 +3925,7 @@ namespace App.UI
         {
             var tipRt = tip != null ? tip.GetComponent<RectTransform>() : null;
             var itemRt = slot != null ? slot.transform as RectTransform : null;
-            var parent = tipRt != null ? tipRt.parent as RectTransform : null;
-            if (parent == null)
-            {
-                parent = transform as RectTransform;
-            }
-
+            var parent = transform as RectTransform;
             if (tipRt == null || itemRt == null || parent == null)
             {
                 return;
@@ -4276,10 +4269,12 @@ namespace App.UI
 
         private void ApplySkillLockVisual()
         {
-            var locked = ViewModel?.Session != null && ViewModel.Session.PlayerSkillsLocked;
+            var session = ViewModel?.Session;
+            var locked = session != null && session.PlayerSkillsLocked;
+            var replaceLocked = locked || (session?.Run != null && BossMechanics.SwapLocked(session.Run));
             ApplySkillButtonLock("PeekGood", locked);
             ApplySkillButtonLock("ChaKanGood", locked);
-            ApplySkillButtonLock("TiHuanGood", locked);
+            ApplySkillButtonLock("TiHuanGood", replaceLocked);
         }
 
         private void ApplySkillButtonLock(string name, bool locked)

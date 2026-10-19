@@ -974,6 +974,11 @@ namespace App.UI
             }
 
             var count = GameBalance.CardsDealt(player, session != null ? session.Run : null);
+            if (player)
+            {
+                LayoutPlayerHandPoints(count);
+            }
+
             for (var i = 0; i < count && i < view.Points.Length; i++)
             {
                 var point = view.Points[i];
@@ -1021,6 +1026,7 @@ namespace App.UI
             _dealing = true;
             ClearAllItems();
             ShowDealPile();
+            LayoutPlayerHandPoints(session.PlayerDealCount);
 
             var seats = CollectDealSeats(session);
             var seq = DOTween.Sequence();
@@ -2110,6 +2116,79 @@ namespace App.UI
         private void BindEnemySlots(Transform hud)
         {
             _other = BuildSeat(FindChild(hud, "otherNode"), false);
+        }
+
+        private Vector3[] _playerPointHomes;
+
+        /// <summary>手牌不足 5 张时，把用到的落点平移到整手中心，避免 4 张靠左。</summary>
+        private void LayoutPlayerHandPoints(int dealt)
+        {
+            if (_player == null)
+            {
+                return;
+            }
+
+            var points = _player.Points;
+            if (_playerPointHomes == null)
+            {
+                _playerPointHomes = new Vector3[points.Length];
+                for (var i = 0; i < points.Length; i++)
+                {
+                    if (points[i] != null)
+                    {
+                        _playerPointHomes[i] = points[i].localPosition;
+                    }
+                }
+            }
+
+            var total = 0;
+            var full = Vector3.zero;
+            for (var i = 0; i < points.Length; i++)
+            {
+                if (points[i] == null)
+                {
+                    continue;
+                }
+
+                points[i].localPosition = _playerPointHomes[i];
+                full += _playerPointHomes[i];
+                total++;
+            }
+
+            if (dealt <= 0 || dealt >= total || total == 0)
+            {
+                return;
+            }
+
+            var used = 0;
+            var usedCenter = Vector3.zero;
+            var take = Math.Min(dealt, points.Length);
+            for (var i = 0; i < take; i++)
+            {
+                if (points[i] == null)
+                {
+                    continue;
+                }
+
+                usedCenter += _playerPointHomes[i];
+                used++;
+            }
+
+            if (used == 0)
+            {
+                return;
+            }
+
+            var shift = full / total - usedCenter / used;
+            for (var i = 0; i < points.Length; i++)
+            {
+                if (points[i] == null)
+                {
+                    continue;
+                }
+
+                points[i].localPosition = _playerPointHomes[i] + shift;
+            }
         }
 
         private static SeatView BuildSeat(Transform node, bool player)

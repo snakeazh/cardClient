@@ -99,6 +99,7 @@ namespace App.Game
         private const string DealHighlightClip = "aini_card_back";
         private const string SettleClip = "aini_card_settle";
         private const string ChangeClip = "aini_card_change";
+        private const string ExitClip = "aini_card_exit";
         private const float ChangeClipFallback = 0.6f;
 
         /// <param name="card">牌面数据。</param>
@@ -430,11 +431,20 @@ namespace App.Game
             _backFadeTween = back.DOFade(alpha, duration);
         }
 
-        /// <summary>发牌：堆顶飞出播 aini_card_deal。</summary>
-        public void PlayDeal()
+        /// <summary>发牌：堆顶飞出播 aini_card_deal，返回片段时长。</summary>
+        public float PlayDeal()
         {
             SetFace(CardFaceState.Back);
             PlayTweenClip(DealClip);
+            return GetTweenClipLength(DealClip);
+        }
+
+        /// <summary>回收：播放 aini_card_exit 翻出，返回实际播放时长；speed 小于 1 会放慢。</summary>
+        public float PlayExit(float speed = 1f)
+        {
+            ResetTweenTargetPose();
+            PlayTweenClip(ExitClip, speed);
+            return GetTweenClipLength(ExitClip) / Mathf.Max(0.01f, speed);
         }
 
         /// <summary>发牌后新堆顶高亮：播 aini_card_back。</summary>
@@ -932,7 +942,7 @@ namespace App.Game
             return node != null ? node.gameObject : null;
         }
 
-        private void PlayTweenClip(string clipName)
+        private void PlayTweenClip(string clipName, float speed = 1f)
         {
             gameObject.SetActive(true);
             var animator = ResolveTweenAnimator();
@@ -952,6 +962,7 @@ namespace App.Game
 
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.enabled = true;
+            animator.speed = Mathf.Max(0.01f, speed);
             if (!animator.isInitialized)
             {
                 animator.Rebind();

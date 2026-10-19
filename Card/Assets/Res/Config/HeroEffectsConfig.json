@@ -32,6 +32,94 @@
     "Time": 0.4
   },
   {
+    "Id": 105,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "KuangZhanShi01",
+    "Time": 1
+  },
+  {
+    "Id": 106,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "KuangZhanShi02",
+    "Time": 1
+  },
+  {
+    "Id": 107,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "KuangZhanShi03",
+    "Time": 1
+  },
+  {
+    "Id": 108,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "KuangZhanShi04",
+    "Time": 1
+  },
+  {
+    "Id": 109,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "KuangZhanShi05",
+    "Time": 1
+  },
+  {
+    "Id": 110,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "HeroAttackTianliu01",
+    "Time": 1
+  },
+  {
+    "Id": 111,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "HeroAttackTianliu02",
+    "Time": 1
+  },
+  {
+    "Id": 112,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "HeroAttackHuoqiu01",
+    "Time": 1
+  },
+  {
+    "Id": 113,
+    "Type": 2,
+    "IsProjectile": 1,
+    "rolepoint": 1,
+    "Effects": "SaManJiSiAttack01",
+    "Time": 1
+  },
+  {
+    "Id": 114,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "WuSengAttack01",
+    "Time": 1.5
+  },
+  {
+    "Id": 115,
+    "Type": 2,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "ShengQiShiAttack01",
+    "Time": 1.5
+  },
+  {
     "Id": 201,
     "Type": 1,
     "IsProjectile": 0,
@@ -46,5 +134,37 @@
     "rolepoint": 0,
     "Effects": "Aoshufeidan04",
     "Time": 0.45
+  },
+  {
+    "Id": 203,
+    "Type": 1,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "KuangZhanShi06",
+    "Time": 0.4
+  },
+  {
+    "Id": 204,
+    "Type": 1,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "HeroAttackHuoqiu02",
+    "Time": 0.4
+  },
+  {
+    "Id": 205,
+    "Type": 1,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "SaManJiSiAttack02",
+    "Time": 0.3
+  },
+  {
+    "Id": 206,
+    "Type": 1,
+    "IsProjectile": 0,
+    "rolepoint": 0,
+    "Effects": "ShengQiShiAttack02",
+    "Time": 0.3
   }
 ]

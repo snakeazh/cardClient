@@ -140,3 +140,42 @@ public class UnlockRulesTests
         Assert.Equal(90, unlock.GetAmount(1));
     }
 }
+
+public class HeroProgressTests
+{
+    [Fact]
+    public void MarkClearedRecordsAccountAndHeroProgressSeparately()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+
+        profile.MarkCleared(new LevelConfig { Id = 1003, Difficulty = 1, Level = 3 }, 2, config);
+        profile.MarkCleared(new LevelConfig { Id = 2004, Difficulty = 2, Level = 4 }, 2, config);
+        profile.MarkCleared(new LevelConfig { Id = 1003, Difficulty = 1, Level = 3 }, 3, config);
+
+        // 账号级进度与原来一致：取所有英雄里的最高关。
+        Assert.Equal(3, profile.Level.GetHighestCleared(1));
+        Assert.Equal(4, profile.Level.GetHighestCleared(2));
+
+        // 每个英雄单独记：英雄 3 没打过难度 2。
+        Assert.Equal(3, profile.Level.GetHeroHighestCleared(2, 1));
+        Assert.Equal(4, profile.Level.GetHeroHighestCleared(2, 2));
+        Assert.Equal(3, profile.Level.GetHeroHighestCleared(3, 1));
+        Assert.Equal(0, profile.Level.GetHeroHighestCleared(3, 2));
+        Assert.Equal(0, profile.Level.GetHeroHighestCleared(4, 1));
+    }
+
+    [Fact]
+    public void LowerClearDoesNotOverwriteHeroRecord()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+
+        profile.MarkCleared(new LevelConfig { Id = 1007, Difficulty = 1, Level = 7 }, 2, config);
+        profile.MarkCleared(new LevelConfig { Id = 1002, Difficulty = 1, Level = 2 }, 2, config);
+
+        Assert.Equal(7, profile.Level.GetHeroHighestCleared(2, 1));
+        Assert.Equal(7, profile.Level.GetHighestCleared(1));
+    }
+}
+

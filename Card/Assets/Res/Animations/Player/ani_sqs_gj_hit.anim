@@ -209,7 +209,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: cardFrame/enemycard
+    path: cardFrame
   m_PositionCurves: []
   m_ScaleCurves:
   - curve:
@@ -272,7 +272,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: cardFrame/enemycard
+    path: cardFrame
   m_FloatCurves:
   - serializedVersion: 2
     curve:
@@ -280,7 +280,7 @@ AnimationClip:
       m_Curve:
       - serializedVersion: 3
         time: 1.3333334
-        value: 5.9
+        value: 0
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -290,8 +290,8 @@ AnimationClip:
       - serializedVersion: 3
         time: 1.5666667
         value: 50
-        inSlope: 47.999992
-        outSlope: 47.999992
+        inSlope: 47.999996
+        outSlope: 47.999996
         tangentMode: 136
         weightedMode: 0
         inWeight: 0.33333334
@@ -307,7 +307,7 @@ AnimationClip:
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 2.2666667
-        value: 5.9
+        value: 0
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -318,7 +318,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_AnchoredPosition.y
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 224
     script: {fileID: 0}
     flags: 0
@@ -331,7 +331,7 @@ AnimationClip:
   m_ClipBindingConstant:
     genericBindings:
     - serializedVersion: 2
-      path: 589114455
+      path: 3308216688
       attribute: 4
       script: {fileID: 0}
       typeID: 4
@@ -340,7 +340,7 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     - serializedVersion: 2
-      path: 589114455
+      path: 3308216688
       attribute: 3
       script: {fileID: 0}
       typeID: 4
@@ -349,7 +349,7 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     - serializedVersion: 2
-      path: 589114455
+      path: 3308216688
       attribute: 538195251
       script: {fileID: 0}
       typeID: 224
@@ -576,7 +576,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.x
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -777,7 +777,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.y
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -978,7 +978,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: localEulerAnglesRaw.z
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1044,7 +1044,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalScale.x
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1110,7 +1110,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalScale.y
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1176,7 +1176,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalScale.z
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1186,7 +1186,7 @@ AnimationClip:
       m_Curve:
       - serializedVersion: 3
         time: 1.3333334
-        value: 5.9
+        value: 0
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -1196,8 +1196,8 @@ AnimationClip:
       - serializedVersion: 3
         time: 1.5666667
         value: 50
-        inSlope: 47.999992
-        outSlope: 47.999992
+        inSlope: 47.999996
+        outSlope: 47.999996
         tangentMode: 136
         weightedMode: 0
         inWeight: 0.33333334
@@ -1213,7 +1213,7 @@ AnimationClip:
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 2.2666667
-        value: 5.9
+        value: 0
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -1224,7 +1224,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_AnchoredPosition.y
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 224
     script: {fileID: 0}
     flags: 0
@@ -1237,7 +1237,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.x
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1249,7 +1249,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.y
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0
@@ -1261,7 +1261,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalEulerAngles.z
-    path: cardFrame/enemycard
+    path: cardFrame
     classID: 4
     script: {fileID: 0}
     flags: 0

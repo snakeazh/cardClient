@@ -615,7 +615,7 @@ namespace App.UI
         /// </summary>
         /// <param name="onHit">命中瞬间结算（扣血/溶解），不要在这里出伤害字。</param>
         /// <param name="onHitDamageText">与受击动画同帧显示伤害数字。</param>
-        /// <param name="hitAnimation">配置了 <c>HeroConfig.hitAnimation</c> 时，命中瞬间给被打的敌人播这个动画（替代 ani_atk_lvXX_hit）。</param>
+        /// <param name="hitAnimation">配置了 <c>HeroConfig.hitAnimation</c> 时，与释放特效同帧给被打的敌人开播（替代命中瞬间的 ani_atk_lvXX_hit）。</param>
         public bool PlayHeroSkill(
             int visualSlot,
             int level,
@@ -670,13 +670,16 @@ namespace App.UI
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
 
+            // hitAnimation：与释放特效同帧开播，命中帧不再重开（MISS 仍会打断成闪避）。
+            var hitAnimAtCast = TryBeginHitAnimationAtCast(targetAnim, hitAnimation);
+
             AppLog.Info(
                 LogChannel.UI,
                 $"[HeroSkill][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} " +
                 $"attack={attackFx.Effects} attackTime={configuredWait:0.###} castTime={castTime:0.###} " +
                 $"hitDelay={hitDelay:0.###} projectile={projectile} rolepoint={rolePoint} " +
-                $"hit={hitFx.Effects} hitShow={hitLife:0.###} tail={tail:0.###} " +
-                $"actionEnd={actionEnd:0.###} hpHold={tuning.HpTextHoldDuration:0.###}");
+                $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? hitAnimation : "命中帧")} " +
+                $"tail={tail:0.###} actionEnd={actionEnd:0.###} hpHold={tuning.HpTextHoldDuration:0.###}");
 
             // 释放特效：投射物飞向目标；非投射物按 rolepoint 落点，各自按自己的时长回池。
             // 命中早于释放结束时，释放特效照常演完，不再命中当帧掐断。
@@ -711,7 +714,7 @@ namespace App.UI
                 _seq.AppendInterval(hitDelay);
             }
 
-            // 命中瞬间：结算 + 受击特效 + 受击动画 + 伤害字（不等释放特效演完、不等 Hit.Time）。
+            // 命中瞬间：结算 + 受击特效 + 伤害字（hitAnimation 已在释放时开播则不再重开）。
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -720,7 +723,8 @@ namespace App.UI
                 }
 
                 AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2-命中开始");
-                var missed = PlayHeroSkillImpact(targetAnim, level, hitAnimation, onHit, beat, homeUi);
+                var missed = PlayHeroSkillImpact(
+                    targetAnim, level, hitAnimation, onHit, beat, homeUi, hitAnimAtCast);
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroSkill][t={Elapsed():0.000}] 阶段2a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : (_victimHitClip ?? Clip(level, "hit")))}）");
@@ -904,13 +908,17 @@ namespace App.UI
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
 
+            // hitAnimation：与齐射起手（01/02）同帧开播，主弹落地不再重开。
+            var hitAnimAtCast = TryBeginHitAnimationAtCast(targetAnim, hitAnimation);
+
             AppLog.Info(
                 LogChannel.UI,
                 $"[HeroVolley][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} " +
                 $"channel={channelFx.Effects}({channelTime:0.###}s) main={mainFx.Effects}" +
                 $"({chargeTime:0.###}+{mainFlight:0.###}s) " +
                 $"splash={splashFx?.Effects}({splashSlots?.Count ?? 0}发 delay={splashDelay:0.###}+{splashFlight:0.###}s) " +
-                $"hit={hitFx.Effects} hitShow={hitLife:0.###} actionEnd={actionEnd:0.###}");
+                $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? hitAnimation : "命中帧")} " +
+                $"actionEnd={actionEnd:0.###}");
 
             // 阶段1：01 法阵在人物处持续播放；02 也在人物处，先演蓄力不动（都不转、都拉到 UI 层）。
             var spawnOrigin = (IsRolePoint(channelFx) ? homeUi : hitUi) + new Vector3(0f, spawnOffsetY, 0f);
@@ -985,7 +993,8 @@ namespace App.UI
                 }
 
                 AppLog.Info(LogChannel.UI, $"[HeroVolley][t={Elapsed():0.000}] 阶段3-主弹命中");
-                var missed = PlayHeroSkillImpact(targetAnim, level, hitAnimation, onHit, beat, homeUi);
+                var missed = PlayHeroSkillImpact(
+                    targetAnim, level, hitAnimation, onHit, beat, homeUi, hitAnimAtCast);
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroVolley][t={Elapsed():0.000}] 阶段3a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : (_victimHitClip ?? Clip(level, "hit")))}）");
@@ -1431,19 +1440,52 @@ namespace App.UI
             return false;
         }
 
-        /// <summary>特效攻击命中：结算；MISS 播闪避；命中播受击动画（与特效/伤害字同帧）。无击退。</summary>
+        /// <summary>
+        /// 释放开始时开播 <see cref="HeroConfig.hitAnimation"/>。
+        /// 片段在控制器里找不到时返回 false，命中帧再走通用 hit。
+        /// </summary>
+        private bool TryBeginHitAnimationAtCast(Animator victim, string hitAnimation)
+        {
+            if (victim == null || string.IsNullOrEmpty(hitAnimation))
+            {
+                return false;
+            }
+
+            if (ClipLength(victim, hitAnimation) <= 0f)
+            {
+                AppLog.Warn(
+                    LogChannel.UI,
+                    $"[AttackCutscene] hitAnimation 缺失 anim={hitAnimation}，改在命中帧播通用 hit");
+                return false;
+            }
+
+            _victimHitClip = hitAnimation;
+            PlayClip(victim, hitAnimation);
+            HoldVictimClipUntilDone(victim, hitAnimation);
+            return true;
+        }
+
+        /// <summary>
+        /// 特效攻击命中：结算；MISS 播闪避；未在释放时开播的受击动画在这一帧播（与特效/伤害字同帧）。无击退。
+        /// </summary>
+        /// <param name="hitAnimStartedAtCast">释放时已播过 hitAnimation 时为 true，命中帧不再重开。</param>
         private bool PlayHeroSkillImpact(
             Animator victim,
             int level,
             string hitAnimation,
             Func<bool> onHit,
             AttackTuningConfig.LevelTuning beat,
-            Vector3 attackerWorldPos)
+            Vector3 attackerWorldPos,
+            bool hitAnimStartedAtCast = false)
         {
             _impactLevel = level;
             _impactBeat = beat;
             _impactAttackerPos = attackerWorldPos;
-            _victimHitClip = null;
+            if (!hitAnimStartedAtCast)
+            {
+                _victimHitClip = null;
+            }
+
             PlayImpactSfx();
             var missed = onHit != null && onHit();
             if (missed)
@@ -1451,6 +1493,13 @@ namespace App.UI
                 PlayClip(victim, MissClip);
                 HoldVictimClipUntilDone(victim, MissClip);
                 return true;
+            }
+
+            // 释放时已开播 hitAnimation：只保留标记给溅射 ReactSlot，不再 Play 以免从头重来。
+            if (hitAnimStartedAtCast && !string.IsNullOrEmpty(hitAnimation))
+            {
+                _victimHitClip = hitAnimation;
+                return false;
             }
 
             // HeroConfig.hitAnimation 配了就用它，否则用按牌型档位的通用受击片段。

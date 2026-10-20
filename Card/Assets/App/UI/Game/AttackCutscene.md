@@ -183,7 +183,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `back` | 退回 |
 | `ani_default` | 复位 |
 
-英雄配了 `HeroConfig.hitAnimation` 时，特效出刀命中那一刻**用它替代** `ani_atk_lvXX_hit`（主目标和溅射目标都播，播完再回 `ani_default`）。值填 `PlayerRoot.controller` 里的状态名，例如圣骑士的 `ani_sqs_gj_hit`；留空就还是按牌型档位播通用 `hit`。受击动画与受击特效、伤害字同帧开始。
+英雄配了 `HeroConfig.hitAnimation` 时，**释放特效开播那一帧**就给主目标播它（替代命中瞬间的 `ani_atk_lvXX_hit`），命中帧只结算/出受击特效/伤害字，不再把动画从头重开；MISS 仍打断成闪避。溅射目标在各自挨打时才播（`ReactSlot`）。值填 `PlayerRoot.controller` 里的状态名，例如圣骑士的 `ani_sqs_gj_hit`；留空或控制器里找不到，就还是命中帧播通用 `hit`。
 
 位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。闪避成功（`LastAttackMissed`）时 `hptext` 显示 `MISS`，不播 `ani_hptextdi`。
 

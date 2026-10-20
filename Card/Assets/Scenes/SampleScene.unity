@@ -378,11 +378,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71606c5a5e1c969458f5badb42ba6b33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableServerConnection: 1
+  enableServerConnection: 0
   serverEndpoint: 2
   customServerHost: 192.168.1.109
   customServerPort: 5254
-  allowIosHighFrameRate: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

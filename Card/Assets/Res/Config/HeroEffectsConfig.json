@@ -7,7 +7,7 @@
     "rolepoint": 0,
     "Effects": "HeroAttackArrow01",
     "Time": 1.5,
-    "hitTime": 0
+    "hitTime": 0.7
   },
   {
     "Id": 102,
@@ -42,9 +42,9 @@
   {
     "Id": 105,
     "Type": 2,
-    "IsProjectile": 1,
+    "IsProjectile": 0,
     "moveSpecial": 0,
-    "rolepoint": 1,
+    "rolepoint": 0,
     "Effects": "KuangZhanShi01",
     "Time": 1,
     "hitTime": 0
@@ -52,9 +52,9 @@
   {
     "Id": 106,
     "Type": 2,
-    "IsProjectile": 1,
+    "IsProjectile": 0,
     "moveSpecial": 0,
-    "rolepoint": 1,
+    "rolepoint": 0,
     "Effects": "KuangZhanShi02",
     "Time": 1,
     "hitTime": 0
@@ -62,9 +62,9 @@
   {
     "Id": 107,
     "Type": 2,
-    "IsProjectile": 1,
+    "IsProjectile": 0,
     "moveSpecial": 0,
-    "rolepoint": 1,
+    "rolepoint": 0,
     "Effects": "KuangZhanShi03",
     "Time": 1,
     "hitTime": 0
@@ -145,8 +145,8 @@
     "IsProjectile": 0,
     "moveSpecial": 0,
     "rolepoint": 0,
-    "Effects": "HeroAttackFenlie01",
-    "Time": 0.4,
+    "Effects": "HeroAttackArrow02",
+    "Time": 0.7,
     "hitTime": 0
   },
   {

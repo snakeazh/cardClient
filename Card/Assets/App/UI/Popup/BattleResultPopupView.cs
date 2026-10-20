@@ -35,6 +35,7 @@ namespace App.UI.Popup
         private RectTransform _contentRect;
         private PaperRevealAnim _entrance;
         private bool _entrancePlayed;
+        private UiClickCatcher _skipCatcher;
 
         protected override void OnBind()
         {
@@ -58,6 +59,9 @@ namespace App.UI.Popup
                 RefreshStageList();
                 PlayEntranceOnce();
             }, emitCurrent: false));
+
+            // 全屏透明点击层：入场期间吃任意点击，跳过动画；播完/跳过后关闭。
+            _skipCatcher = UiClickCatcher.Create(transform as RectTransform, SkipEntrance);
         }
 
         private void BindResultMode()
@@ -89,6 +93,7 @@ namespace App.UI.Popup
 
         protected override Task OnViewClose()
         {
+            HideSkipCatcher();
             _entrance?.Kill();
             ClearStageRows();
             return Task.CompletedTask;
@@ -115,6 +120,46 @@ namespace App.UI.Popup
 
             CollectEntranceSteps();
             _entrance.Play(_entranceSteps);
+            ShowSkipCatcher();
+        }
+
+        private void ShowSkipCatcher()
+        {
+            if (_skipCatcher == null)
+            {
+                return;
+            }
+
+            _skipCatcher.transform.SetAsLastSibling();
+            _skipCatcher.gameObject.SetActive(true);
+        }
+
+        private void HideSkipCatcher()
+        {
+            if (_skipCatcher != null)
+            {
+                _skipCatcher.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>点击任意处：中断入场并复位到全部内容可见的最终态。</summary>
+        private void SkipEntrance()
+        {
+            _entrance?.Kill();
+            HideSkipCatcher();
+        }
+
+        private void TickSkipCatcher()
+        {
+            if (_skipCatcher == null || !_skipCatcher.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            if (_entrance == null || !_entrance.IsPlaying)
+            {
+                HideSkipCatcher();
+            }
         }
 
         // 按 Content 的兄弟顺序（即布局显示顺序）收集入场显现步骤；
@@ -268,6 +313,7 @@ namespace App.UI.Popup
         private void LateUpdate()
         {
             FitBgHeight();
+            TickSkipCatcher();
         }
 
         private void FitBgHeight()

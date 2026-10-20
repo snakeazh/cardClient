@@ -52,6 +52,51 @@ namespace CardShare.Contracts.Config
         public int[] HeroEffects;
 
         /// <summary>
+        /// 施法动作
+        /// </summary>
+        public int CastEffect;
+
+        /// <summary>
+        /// 特殊攻击
+        /// </summary>
+        public int[] SpecialEffect;
+
+        /// <summary>
+        /// 受击动画
+        /// </summary>
+        public string hitAnimation;
+
+        /// <summary>
+        /// 闪避后的攻击(特殊处理)
+        /// </summary>
+        public int[] MissAttackEffect;
+
+        /// <summary>
+        /// 普通怪受击特效
+        /// </summary>
+        public int[] HeroEffectsCommon;
+
+        /// <summary>
+        /// 精英受击特效
+        /// </summary>
+        public int[] HeroEffectsElite;
+
+        /// <summary>
+        /// 弱档特效Id(释放|命中)，留空回退HeroEffects
+        /// </summary>
+        public int[] HeroEffectsWeak;
+
+        /// <summary>
+        /// 中档特效Id(释放|命中)
+        /// </summary>
+        public int[] HeroEffectsMid;
+
+        /// <summary>
+        /// 强档特效Id(释放|命中)
+        /// </summary>
+        public int[] HeroEffectsStrong;
+
+        /// <summary>
         /// 解锁难度条件
         /// </summary>
         public int UnlockCondition;

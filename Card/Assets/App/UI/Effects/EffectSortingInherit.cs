@@ -38,6 +38,12 @@ namespace App.UI
             Apply();
         }
 
+        /// <summary>换父 / 改偏移后手动重算（生成路径在 SetActive 之后再调一次保底）。</summary>
+        public void Refresh()
+        {
+            Apply();
+        }
+
         private void Apply()
         {
             var inherited = GetInheritedOrder(transform);

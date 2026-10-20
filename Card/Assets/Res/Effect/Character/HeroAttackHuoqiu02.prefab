@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7400029415001143947}
   - component: {fileID: 4867133945611432836}
   - component: {fileID: 4166818895086168038}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_bao03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4899,7 +4899,7 @@ GameObject:
   - component: {fileID: 7647152195530578545}
   - component: {fileID: 5314733794505191843}
   - component: {fileID: 5969215639861887110}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_ci02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9845,7 +9845,7 @@ GameObject:
   - component: {fileID: 4258345058839797253}
   - component: {fileID: 5682383882025737156}
   - component: {fileID: 4870758167837415807}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_smoke05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14849,7 +14849,7 @@ GameObject:
   - component: {fileID: 6362343854622734438}
   - component: {fileID: 3805632392432639490}
   - component: {fileID: 8418790896866276611}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_dilie01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19782,7 +19782,7 @@ GameObject:
   - component: {fileID: 3343807710466862573}
   - component: {fileID: 4309990098981119413}
   - component: {fileID: 8211779593254959198}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_shitou01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24737,7 +24737,7 @@ GameObject:
   - component: {fileID: 550400586161014422}
   - component: {fileID: 4776507619222251257}
   - component: {fileID: 8853127435332826692}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_bao05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29739,7 +29739,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3201553606654067315}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_gj_hq_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29782,7 +29782,7 @@ GameObject:
   - component: {fileID: 8191240424510253056}
   - component: {fileID: 7983895920550747343}
   - component: {fileID: 1451777053517858277}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_bao04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34728,7 +34728,7 @@ GameObject:
   - component: {fileID: 7419997629754123361}
   - component: {fileID: 77107677510675626}
   - component: {fileID: 47345717661763573}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_ci03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39625,7 +39625,7 @@ GameObject:
   - component: {fileID: 6909488927666055604}
   - component: {fileID: 7776715414839075633}
   - component: {fileID: 5193445066751641722}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_smoke04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44520,7 +44520,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3013828648023576708}
-  m_Layer: 0
+  - component: {fileID: 5920329440814137930}
+  m_Layer: 5
   m_Name: HeroAttackHuoqiu02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44543,6 +44544,19 @@ Transform:
   - {fileID: 3201553606654067315}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5920329440814137930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8640558767095920052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &8679655936405065428
 GameObject:
   m_ObjectHideFlags: 0
@@ -44554,7 +44568,7 @@ GameObject:
   - component: {fileID: 497727573359480036}
   - component: {fileID: 2235049542286474989}
   - component: {fileID: 4866757763490390943}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_dilie02
   m_TagString: Untagged
   m_Icon: {fileID: 0}

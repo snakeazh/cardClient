@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2346678589132919019}
   - component: {fileID: 5046924854987532333}
   - component: {fileID: 6718185111812904327}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_glow02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5256,7 +5256,7 @@ GameObject:
   - component: {fileID: 5759761962700397665}
   - component: {fileID: 5286902413547325045}
   - component: {fileID: 6355796904878829487}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_di01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10143,7 +10143,7 @@ GameObject:
   m_Component:
   - component: {fileID: 131765627515337052}
   - component: {fileID: 6025220904571269855}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_sqs_gj_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10199,7 +10199,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 494393234813421868}
-  m_Layer: 0
+  - component: {fileID: 2050455721063517481}
+  m_Layer: 5
   m_Name: ShengQiShiAttack01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10222,6 +10223,19 @@ Transform:
   - {fileID: 131765627515337052}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2050455721063517481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6439627542737344421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: -10
 --- !u!1 &8428755461069083627
 GameObject:
   m_ObjectHideFlags: 0
@@ -10233,7 +10247,7 @@ GameObject:
   - component: {fileID: 5294560468004485414}
   - component: {fileID: 1320534230607270920}
   - component: {fileID: 8683363518169216418}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15121,7 +15135,7 @@ GameObject:
   - component: {fileID: 6629853281304761787}
   - component: {fileID: 6002502328404778494}
   - component: {fileID: 8904955772305038812}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_dilie01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -22,6 +22,11 @@ namespace CardShare.Contracts.Config
         public int IsProjectile;
 
         /// <summary>
+        /// 运动方式(1为曲线)
+        /// </summary>
+        public int moveSpecial;
+
+        /// <summary>
         /// 人物位置点
         /// </summary>
         public int rolepoint;
@@ -35,6 +40,11 @@ namespace CardShare.Contracts.Config
         /// 效果时长
         /// </summary>
         public float Time;
+
+        /// <summary>
+        /// 命中时长
+        /// </summary>
+        public float hitTime;
 
     }
 }

@@ -32,7 +32,141 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 点数飞入（`SettlePointCutscene`）结束后才进攻击。将死台词插在点数飞入之后、冲锋之前。
 
+### 闪避反击（武僧）
+
+敌人冲过来打人、玩家闪避成功（MISS）时，如果英雄配了 `HeroConfig.MissAttackEffect`（反击特效）或 `hitAnimation`（敌人受击动画），`PlayIncoming` 里会改走 `StartDodgeCounter`（不再接原来的回位序列，避免抢 `AttackFlight`）：
+
+1. **先把怪物退到屏幕中心 (0,0) 受击**——播 `back`，把 `AttackFlight` 补间到 `anchoredPosition = (0,0)`（`AttackFlight` 挂在 HUD 居中锚点上，所以 0,0 就是屏幕中心），清掉挂到 Flight 时留下的 local 偏移，`BackDuration` 走完；
+2. **反击特效播在人物身上**（`_playerRoot`），过 `HeroEffectsConfig` 该行的 `hitTime`（武僧 114 = 0.5s）给中心的敌人播受击动画、出反击伤害字。特效走 `SpawnSkillFxAt(..., forceUiLayer: true)`，用人物卡的 UI 世界坐标；
+3. 特效和动画都演完（取较长的）→ 把卡退回自己的格子（`homeAnchored`）→ `RestoreIncoming` 交回父节点 → `onCollisionDone` → `onReturned` → 伤害字停留 → `onDone`。
+
+- 参数全部来自表：`MissAttackEffect` 取第一条 Attack 行的 `Effects` / `Time`（特效时长）/ `hitTime`（到中心后多久挨打），敌人受击动画取 `hitAnimation`（值要能在 `PlayerRoot.controller` 里找到）。
+- 特效和受击动画**至少有一个真的存在**才走这套；都缺就退回普通受击流程。受击动画在控制器里找不到时只跳过动画并打 Warning，不会让 Animator 报错。
+- 反击伤害本身仍由 `GameSession.ApplyDodgeCounter` 在命中时结算，这里只负责演出。
+- 反击伤害字走 `onDodgeCounterHit`：走反击演出时在「敌人到中心后挨打那一帧」出，没走演出（没配或资源缺失）时就在闪避这一帧出。数值读 `GameSession.DodgeCounterDamage`（`ApplyDodgeCounter` 里遗物 `武林秘籍` + 英雄 `MissGetDamage` 实际打出的伤害之和），用 `PlaceSplashHpAt` 贴在敌人卡当前位置（中心点）。
+
+| 例子 | 配置 |
+|------|------|
+| 武僧 | `MissAttackEffect = 114`（`WuSengAttack01`，Time 1.5 / hitTime 0.5），`hitAnimation = ani_ws_gj_hit` → 敌人退到屏幕中心（~0.3s）→ 人物处播 1.5s 特效，第 0.5s 起敌人受击 1s → 退回格子 |
+
 `visualSlot` 是敌人在桌面上的视觉槽 0/1/2。`level` 为 1 低 / 2 中 / 3 高，由牌型映射。
+
+玩家出刀若英雄配齐了攻击特效和命中特效，并且进桌时已经预载成功，走 `PlayHeroSkill`，不再冲刺。缺任一条、资源名为空、或预制体没进缓存，回退上面的 `Play`。每档 `HeroEffects*` 里必须 `Type = Attack` 和 `Type = Hit` **各一条**——只配多条 Attack（盗贼原本就是 110、111 两条 Attack）会解析失败、静默回退近战，进桌时的 `英雄特效未解析` 警告会点名。**例外：暗灵法师**（`HeroMechanics.ShadowMageHeroId`）在 `TryResolveEffects` 之前就被 `GameUIView.TryPlayHeroVolley` 截走，它的 `HeroEffects` 本来就是「3 条 Attack + 1 条 Hit」，走下面「齐射」一节。敌人来袭始终走 `PlayIncoming`。配置从哪来见 [`HeroMechanics.md`](../../Game/HeroMechanics.md)。
+
+---
+
+## 英雄攻击特效
+
+资源在 `Assets/Res/Effect/Character/{Effects}.prefab`，路径 `ResResourcePaths.HeroEffect`。`HeroConfig.HeroEffects` 指向 `HeroEffectsConfig`。`TryResolveEffects` 取第一条 `Type = Attack` 和第一条 `Type = Hit`。
+
+### 普通怪 / 精英 与 弱 / 中 / 强
+
+`HeroConfig` 里每条英雄有六组 Id，每组都是 `释放|命中` 混排，解析规则一样：取第一条 `Type = Attack` 和第一条 `Type = Hit`。
+
+| 维度 | 组 | 选中条件 |
+|------|----|----------|
+| 目标类型·普通 | `HeroEffectsCommon` | 目标 `MonsterType = Normal` |
+| 目标类型·精英 | `HeroEffectsElite` | 目标 `MonsterType = Elite / Boss`（领主算精英档） |
+| 档位·弱 | `HeroEffectsWeak` | 档位 1 |
+| 档位·中 | `HeroEffectsMid` | 档位 2 |
+| 档位·强 | `HeroEffectsStrong` | 档位 3 |
+| 默认 | `HeroEffects` | 兜底 |
+
+**优先级：目标类型 → 档位 → 默认档 → 近战。** 每一层只要凑不齐 Attack + Hit 就继续往下落，所以老数据、只配一组的英雄都不用改表。
+
+- 档位默认取 `AttackLevel`（1 低 / 2 中 / 3 高，由牌型映射，和卡牌动作、震屏同一套档）。想让「伤害高就出强特效」而不是按牌型，把 `AttackTuning` 的 `heroFxMidDamage` / `heroFxStrongDamage` 填上伤害阈值即可，填了以后按这一刀的 `AttackDamage` 分档。
+- 选档在 `AttackTuningConfig.ResolveHeroFxLevel`，目标类型在 `GameUIView.PlayAttackCharge` 里按 `session.EnemyAtVisualSlot(AttackVisualSlot).MonsterType` 判定，日志里有 `fxLevel=` 和 `elite=`。
+- 例：萨满祭司 普通怪 = `116|207`（SaManJiSiAttack03/04），精英 = `113|205`，默认也是 `113|205`。
+
+| 字段 | 含义 |
+|------|------|
+| `Type` | `Attack = 2` 释放，`Hit = 1` 命中 |
+| `IsProjectile` | 非 0 时从人物位置飞向目标 |
+| `rolepoint` | 非投射物：非 0 落在人物，0 落在目标 |
+| `Effects` | 预制体名，不含目录 |
+| `Time` | 特效自身时长。释放行＝这个特效演多久（投射物＝飞行时长），到点自己回池；命中行＝命中特效演多久。非投射物的释放行在特效自身动画更短时按动画收（`clampCastTimeToClip`） |
+| `hitTime` | 攻击行＝**命中延迟**：释放特效开始后多久命中，0 表示释放演完那一刻命中；命中行＝命中特效显示时长覆盖（0＝按 `Time`）。投射物按飞行时间命中，不读攻击行这个值 |
+
+萨满普通怪 `116|207` 就是这套的样板：116 演 1.5s，`hitTime = 0.3` 所以 0.3s 时命中并在目标处出 207，207 演满 1.2s，两者在 1.5s 一起收。精英 `113|205` 是 0.1 + 1.4 = 1.5。
+
+进桌 `PreloadHeroEffectsAsync` 把默认档、普通/精英、弱/中/强里用到的预制体**全部**预载（按名字去重），每份各实例化一份放进 `HeroFxPool`（池根节点保持关闭）。出刀 `RentHeroFx` 取出，播完停粒子、清拖尾、关节点再放回。同一份同时只出一份；池里那份还在播时才再补一份。离开战斗 `Dispose` 销毁池子并释放资源句柄。WebGL 不再在出刀当帧同步加载。
+
+一次出刀：
+
+1. 取出释放特效。投射物从人物飞向目标，飞行时长 `Attack.Time`（＝命中延迟）；定点按 `rolepoint` 放下，按 `castTime` 自己演完回池——默认就是 `Attack.Time`，但特效自身动画比它短时取动画长度（`ResolveCastDuration`）。
+2. `hitDelay`（攻击行 `hitTime`，没配就是释放演完）到点结算：没命中播闪避、不放命中特效；命中才在目标处出命中特效（定点按 `rolepoint`，投射物再飞一段 `Hit.Time`），同时受击动画 + 伤害字。**命中可以早于释放特效演完**，释放特效不打断、继续演到自己的 `Time`。
+3. 两条特效各自按自己的时长回池：释放 = `castTime`，命中 = `hitDelay + 命中行 Time`。整段动作取两者较长的那个（`actionEnd`），到点 `ClearSkillFx` 兜底清一次再 `onReturned`。
+4. 伤害字仍按攻击等级停留（`HpTextHoldDuration`），然后 `onDone`。
+
+所以萨满普通怪是：0 秒出 116 → 0.3 秒命中、出 207 并结算扣血/受击/伤害字 → 1.2 秒时 207 演完 → 1.5 秒 116 演完、一起回池 → 再停 `HpTextHoldDuration` 进下一个对手。
+
+特效命中不播卡牌击退。溅射目标只播受击或闪避动画。
+
+### 齐射（暗灵法师，代码特判）
+
+`HeroMechanics.ShadowMageHeroId`（= 3）不走上面的"一条释放 + 一条命中"，改用 `AttackCutscene.PlayVolleySkill`。解析见 `HeroMechanics.TryResolveVolleyEffects`，表字段分工：
+
+| 字段 | 内容 |
+|------|------|
+| `CastEffect` | 01 法阵（非投射物 Attack，`Aoshufeidan01`） |
+| `HeroEffects` | 02 主弹 + 04 受击（`Aoshufeidan02` + `Aoshufeidan04`） |
+| `SpecialEffect` | 03 溅射弹（可再带一份 04；`Aoshufeidan03`） |
+
+兼容旧数据：四个 Id 全塞在 `HeroEffects` 里也能凑齐。档位（弱/中/强）对这套不生效，`hitAnimation` 照样对主目标生效。
+
+时间与抛物线参数在 `Assets/Res/SO/AttackTuning.asset` 的「暗灵法师齐射」段（`AttackTuningConfig`），**不读特效表的 `Time`**：
+
+| 时刻 | 内容 |
+|------|------|
+| 0s | `Aoshufeidan01` 在人物处持续播放 1.5s；`Aoshufeidan02` 在人物处蓄力 |
+| 1.0s | 02 直线飞向主目标（0.3s）；同时两侧每个存活敌人各起飞一发 03（0.4s：先反向再回零再飞向怪） |
+| 1.3s | 主弹落地：统一结算扣血/受击动画/伤害字，主目标出 04 |
+| 1.4s | 每发 03 各自落地：只在该槽位补 04（伤害已在 1.3s 结算） |
+| 1.85s | 最后一发 04（1.4 + 命中行 `Time`）播完 → `ClearSkillFx` + `onReturned` → 再停 `HpTextHoldDuration` → `onDone` |
+
+03 用**三次贝塞尔**（先反向勾再拐向怪，像 S/J）：P0 起点 → P1 反方向勾住（可略下沉）→ P2 抬起拐向怪 → P3 怪物。右怪先往左、左怪先往右。勾的大小看 `volleyJumpReverseXRatio/Min`，下沉看 `volleyJumpReverseXAt`，拐弯点看 `volleyJumpXZeroAt`。
+
+"两侧" = 主目标之外的存活敌人槽，有几个飞几发；没有别的敌人时只打主目标。弹丸落地计时用独立的 `DelayedCall`（带 `_playToken` 校验），不挂在弹丸自己的 tween 上——弹丸回池时 tween 会被清掉。进桌预载会把 `CastEffect` / `SpecialEffect` 一并收进池子。
+
+**齐射的四个特效强制走 UI 层**（`SpawnSkillFxAt(forceUiLayer: true)`）：`Aoshufeidan01` 曾经是 Default 层，那样会被主相机画在 UI 后面、法阵等于看不见，位置还落在主相机平面 `y≈-5.8`；现在整棵子树 `UiFx.ApplyUiLayer` + UI 世界坐标 + `sortingOrder = HeroFxSortingOrder(230)`，和卡面同一空间。受击 04 走 `SpawnVolleyHitFx`（也是强制 UI + 齐射缩放），不吃普通路径里 `SpawnHitFx` 的投射物分支。可调字段（Inspector → AttackTuning →「暗灵法师齐射」）：
+
+| 字段 | 含义 |
+|------|------|
+| `volleyFxScale` | 在 UI 层基准缩放（约 0.52）之上再乘的倍率，1 = 跟萨满/圣骑士那套一样大 |
+| `volleySpawnOffsetY` | 01/02/03 相对人物卡纵向偏移，正数往上 |
+| `volleyJumpHeightRatio` / `volleyMinJumpPower` | 溅射弹弧高 |
+| `volleyJumpReverseXAt` | P1 下沉比例（0~1），越大反向勾越往下 |
+| `volleyJumpXZeroAt` | P2 沿起点→怪的位置（0~1），推荐 0.55~0.7 |
+| `volleyJumpReverseXRatio` / `Min` | 反向勾横向幅度，越大先甩得越开 |
+| `volleySpawnDelay` | 03 比主弹晚多少秒生成，默认 0.1 |
+
+弹丸**不做朝向旋转**（保持预制体原始朝向）：尾焰/剑光是按固定朝向做的，按飞行方向转会把它们拧歪。
+
+看不见特效时看这条自检日志（生成后 0.12s 打一次）：
+
+```
+[HeroVolley] 法阵01 自检 layer=5 active=True pos=... scale=0.52 renderers=6 boundsCenter=... boundsSize=... particles=3
+```
+
+`particles=0` = 预制体没发射（美术问题）；`boundsSize` 接近 0 或 `pos` 在屏幕外 = 位置/尺寸问题；都正常还看不见才是排序/遮挡。
+
+摆放看生成时用的那个 `SpawnSkillFxAt(...)`：它按 `forceUiLayer` 和实例 Layer 决定走哪套坐标与缩放。
+
+| 情况 | 坐标 | 缩放 | 排序 |
+|------|------|------|------|
+| UI 层（预制体根节点 Layer = UI，或 `forceUiLayer: true`） | 直接用卡牌的 UI 世界坐标 | `UI 相机正交尺寸 ÷ 主相机正交尺寸`（当前约 5 / 9.6 ≈ 0.52），再乘 `scaleMultiplier` | 见下 |
+| Default 等其它 Layer 且没强制 | 换成主相机前方 `Z = 0` 平面的世界坐标（`UiToFxWorld`） | 保持 1 | 不动（`sortingOrder` 还是预制体原值） |
+
+排序两条路，**不要叠用**：
+
+| 预制体 | 生成时 | 怎么压到人物下面 |
+|--------|--------|------------------|
+| 挂了 `EffectSortingInherit` | 挂到 HUD 下，**不**再 `ApplySorting(230)`，按「原值 + 父 Canvas + `OrderOffset`」 | `OrderOffset` 填负数（如 `-10`） |
+| 没挂 | `UiFx.ApplySorting(go, 230)`，一律压在卡面之上 | 改不了相对层级；要自己控就挂 Inherit |
+
+`SpawnSkillFx(prefab, pos, life)` 是「不强制层、倍率 1、无 Inherit 时排序 230」的简写；齐射走 `SpawnSkillFxAt(..., forceUiLayer: true, scaleMultiplier: tuning.VolleyFxScale, sortingOrder: HeroFxSortingOrder)`。Default 层的特效会被主相机画在 UI 后面，法阵那种贴在人物卡上的东西会直接看不见——所以齐射一律强制 UI 层。
+
+旋转：生成时 `rotation = Quaternion.identity`，即保持预制体原始朝向；只有旧的投射物路径（`FaceToward`）会按飞行方向绕 Z 转，齐射不再转。
 
 ---
 
@@ -48,6 +182,8 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `hit` | 被打一方受击，同时卡被击退再回位 |
 | `back` | 退回 |
 | `ani_default` | 复位 |
+
+英雄配了 `HeroConfig.hitAnimation` 时，特效出刀命中那一刻**用它替代** `ani_atk_lvXX_hit`（主目标和溅射目标都播，播完再回 `ani_default`）。值填 `PlayerRoot.controller` 里的状态名，例如圣骑士的 `ani_sqs_gj_hit`；留空就还是按牌型档位播通用 `hit`。受击动画与受击特效、伤害字同帧开始。
 
 位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。闪避成功（`LastAttackMissed`）时 `hptext` 显示 `MISS`，不播 `ani_hptextdi`。
 
@@ -102,11 +238,15 @@ if (_deathDissolves.ContainsKey(item))
 | `HitKnockbackDuration` | 受击方被击退的时长 |
 | `HitRecoverDuration` | 受击方从击退位置回原位的时长 |
 | `HpTextHoldDuration` | 退回后伤害数字继续停留，过完才扣血 |
+| `clampCastTimeToClip` | 释放特效（非投射物）按自身动画时长收手，`Time` 只当上限。默认开 |
+| `heroFxMidDamage` | 英雄特效分档：这一刀伤害 ≥ 此值用「中」档。填 0 = 按牌型档位 |
+| `heroFxStrongDamage` | 英雄特效分档：这一刀伤害 ≥ 此值用「强」档，要连「中」档一起填 |
 | `deathDissolveDelay` | 致死后等多久才开始溶解和播致死特效 |
 | `deathEffect` | 致死时在被打者位置播的特效 prefab，留空不播 |
 | `deathEffectDuration` | 致死特效的存活时长，到点销毁 |
+| `volley*`（暗灵法师齐射） | 法阵/蓄力/飞行时长、溅射抛物线、生成高度、缩放，见「齐射」一节 |
 
-前八项低 / 中 / 高三档各一组，对应 `AttackLevel` 的 1 / 2 / 3；后四项在“通用”段，不分档。
+前八项低 / 中 / 高三档各一组，对应 `AttackLevel` 的 1 / 2 / 3；其余在“通用 / 齐射”段，不分档。
 
 加载：`AppBootstrap` 启动时 `await AttackTuningConfig.PreloadAsync(resources)` 预热一次，和 `CardShadowPool.PreloadAsync` 同级；`AttackCutscene` 直接读 `AttackTuningConfig.Instance`，不再逐次开界面加载。编辑器下走 AssetDatabase，改完重进游戏生效；出包要先跑一次 `Res/Build AssetBundles`。资产丢了或预热失败只打 Warning，`Instance` 退回字段默认值继续演出。
 
@@ -139,4 +279,9 @@ if (_deathDissolves.ContainsKey(item))
 - 击退 + 回位的总时长若超过 `HitHoldDuration + BackDuration + HpTextHoldDuration`，整段会被拉长，`onDone` 跟着延后。
 - 致死特效不要 `Insert` 进攻击序列：致死是 `onHit` 运行时才知道的，序列早已建好；独立计时销毁即可。
 - 改致死溶解的时机时，`BindEnemyVisible` 那条数据驱动的溶解路径要一起看，它比延迟更早触发。
-- 粒子特效挂到 UI 下必须走 `UiFx.ApplySorting`，否则会被 UI 盖掉。
+- 粒子特效挂到 UI 下必须走 `UiFx.ApplySorting`，否则会被 UI 盖掉；同时**不要依赖预制体自带 Layer**——Default 层会被主相机画在 UI 后面（法阵就是这么"消失"的）。要么把预制体整棵改成 UI 层，要么像齐射那样用 `SpawnSkillFxAt(forceUiLayer: true)`。
+- 释放特效按自己的 `Time` 回池，命中特效按 `hitDelay + Time` 回池，两者互不打断；整段动作取较长的那个（`actionEnd`）再 `onReturned` → 伤害字停留 → `onDone`。别再改回「命中当帧掐断释放特效」或「把两条特效都绑到命中特效的显示时长上」。
+- 命中延迟只认攻击行的 `hitTime`，且会被夹在 `[0, castTime]` 之间（投射物不读，直接按飞行时间命中）。想让命中晚于释放演完，得加大攻击行的 `Time`，不是加大 `hitTime`。
+- 齐射的时间、抛物线、缩放、生成高度都在 `AttackTuning.asset` 的「暗灵法师齐射」段；改完进 Play 即生效（编辑器下改完重进游戏）。
+- `HeroConfig` 每组特效 Id（默认档 / 普通 / 精英 / 弱 / 中 / 强）里 Attack / Hit 两种 `Type` 各要一条，缺一种就整组回退（目标类型 → 档位 → 默认档 → 近战）。同一组里多条 Attack 只有第一条生效。**暗灵法师例外**：走 `CastEffect` + `HeroEffects` + `SpecialEffect` 齐射（见「齐射」），缺 `Aoshufeidan01`（Id 102）会整段解析失败、静默回退近战。
+- 新加一个英雄特效：先在 `HeroEffectsConfig.xlsx` 加 Attack + Hit 两行，再把 Id 填进 `HeroConfig.xlsx` 对应列（`释放|命中`）：普通怪 `HeroEffectsCommon`、精英/领主 `HeroEffectsElite`、牌型档 `HeroEffectsWeak/Mid/Strong`。不用改代码，进桌会一起预载。

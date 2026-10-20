@@ -127,6 +127,18 @@ namespace App.UI
         [SerializeField]
         private float hpTextHoldDuration = 0.85f;
 
+        [Tooltip("释放特效（非投射物）按自身动画时长收手，配置表里的 Time 只当上限。关掉则完全按 Time 等。")]
+        [SerializeField]
+        private bool clampCastTimeToClip = true;
+
+        [Tooltip("英雄特效分档：这一刀伤害 ≥ 此值用「中」档。填 0 表示不按伤害分档，直接按牌型档位（低/中/高）。")]
+        [SerializeField]
+        private int heroFxMidDamage;
+
+        [Tooltip("英雄特效分档：这一刀伤害 ≥ 此值用「强」档，要连「中」档一起填。填 0 表示按牌型档位。")]
+        [SerializeField]
+        private int heroFxStrongDamage;
+
         [Tooltip("这一击致死后，等多久才开始播溶解（秒）。致死时等溶解结束才结算下一个对手，被打死的卡会先站着不动。")]
         [SerializeField]
         private float deathDissolveDelay = 2f;
@@ -139,13 +151,119 @@ namespace App.UI
         [SerializeField]
         private float deathEffectDuration = 0.6f;
 
+        [Header("暗灵法师齐射")]
+        [Tooltip("01 法阵持续时长（秒）。")]
+        [SerializeField]
+        private float volleyChannelTime = 1.5f;
+
+        [Tooltip("02 主弹蓄力时长（秒），蓄满才起飞。")]
+        [SerializeField]
+        private float volleyChargeTime = 1f;
+
+        [Tooltip("02 主弹直线飞向主目标的时长（秒）。")]
+        [SerializeField]
+        private float volleyMainFlightTime = 0.3f;
+
+        [Tooltip("03 溅射弹飞向两侧的时长（秒）。")]
+        [SerializeField]
+        private float volleySplashFlightTime = 0.4f;
+
+        [Tooltip("03 抛物线弧高 = 飞行距离 × 此比例。")]
+        [SerializeField]
+        private float volleyJumpHeightRatio = 0.45f;
+
+        [Tooltip("03 抛物线弧高下限（UI 世界单位）。")]
+        [SerializeField]
+        private float volleyMinJumpPower = 0.8f;
+
+        [Tooltip("03 贝塞尔 P1 下沉比例（0~1）：越大反向勾越往下沉。0=不沉只横甩。")]
+        [SerializeField]
+        private float volleyJumpReverseXAt = 0.35f;
+
+        [Tooltip("03 贝塞尔 P2 沿「起点→怪」的位置（0~1）。越大越早拐向怪；推荐 0.55~0.7。")]
+        [SerializeField]
+        private float volleyJumpXZeroAt = 0.6f;
+
+        [Tooltip("03 反向勾的横向幅度 = max(下限, |Δx| × 此比例)。越大先甩得越开。")]
+        [SerializeField]
+        private float volleyJumpReverseXRatio = 1.5f;
+
+        [Tooltip("03 反向勾横向幅度下限（UI 世界单位）。勾太小就看不见反向弯。")]
+        [SerializeField]
+        private float volleyJumpReverseXMin = 3f;
+
+        [Tooltip("03 溅射弹相对主弹起飞再晚多少秒生成。默认 0.1。")]
+        [SerializeField]
+        private float volleySpawnDelay = 0.1f;
+
+        [Tooltip("01/02/03 相对人物卡的纵向偏移（UI 世界单位）。正数往上抬。")]
+        [SerializeField]
+        private float volleySpawnOffsetY = 0.25f;
+
+        [Tooltip("齐射特效在 UI 层基准缩放之上再乘的倍率。1 = 跟萨满那套一样大。")]
+        [SerializeField]
+        private float volleyFxScale = 1f;
+
         public float HpTextHoldDuration => Mathf.Max(0f, hpTextHoldDuration);
+
+        public bool ClampCastTimeToClip => clampCastTimeToClip;
+
+        public int HeroFxMidDamage => Mathf.Max(0, heroFxMidDamage);
+
+        public int HeroFxStrongDamage => Mathf.Max(0, heroFxStrongDamage);
+
+        /// <summary>
+        /// 选英雄特效档位：配了强档伤害阈值就按这一刀的伤害分（1 弱 / 2 中 / 3 强），
+        /// 否则直接用牌型档位（AttackLevel 1/2/3）——它跟卡牌动作、震屏用的是同一套档。
+        /// </summary>
+        public int ResolveHeroFxLevel(int attackLevel, int damage)
+        {
+            var strong = HeroFxStrongDamage;
+            if (strong <= 0)
+            {
+                return Mathf.Clamp(attackLevel, 1, 3);
+            }
+
+            if (damage >= strong)
+            {
+                return 3;
+            }
+
+            var mid = HeroFxMidDamage;
+            return mid > 0 && damage >= mid ? 2 : 1;
+        }
 
         public float DeathDissolveDelay => Mathf.Max(0f, deathDissolveDelay);
 
         public GameObject DeathEffect => deathEffect;
 
         public float DeathEffectDuration => Mathf.Max(0f, deathEffectDuration);
+
+        public float VolleyChannelTime => Mathf.Max(0.01f, volleyChannelTime);
+
+        public float VolleyChargeTime => Mathf.Max(0f, volleyChargeTime);
+
+        public float VolleyMainFlightTime => Mathf.Max(0.01f, volleyMainFlightTime);
+
+        public float VolleySplashFlightTime => Mathf.Max(0.01f, volleySplashFlightTime);
+
+        public float VolleyJumpHeightRatio => Mathf.Max(0f, volleyJumpHeightRatio);
+
+        public float VolleyMinJumpPower => Mathf.Max(0f, volleyMinJumpPower);
+
+        public float VolleyJumpReverseXAt => Mathf.Clamp(volleyJumpReverseXAt, 0.01f, 0.98f);
+
+        public float VolleyJumpXZeroAt => Mathf.Clamp(volleyJumpXZeroAt, 0.02f, 0.99f);
+
+        public float VolleyJumpReverseXRatio => Mathf.Max(0f, volleyJumpReverseXRatio);
+
+        public float VolleyJumpReverseXMin => Mathf.Max(0f, volleyJumpReverseXMin);
+
+        public float VolleySpawnDelay => Mathf.Max(0f, volleySpawnDelay);
+
+        public float VolleySpawnOffsetY => volleySpawnOffsetY;
+
+        public float VolleyFxScale => Mathf.Max(0.01f, volleyFxScale);
 
         /// <summary>取一档参数，level 为 1 低 / 2 中 / 3 高，越界按低档处理。</summary>
         public LevelTuning Level(int level)

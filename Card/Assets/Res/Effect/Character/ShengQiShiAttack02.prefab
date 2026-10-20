@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5893126039802968556}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 3256603434059635650}
   - component: {fileID: 8899634977498765889}
   - component: {fileID: 4313001011633481763}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_baodian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4933,7 +4933,7 @@ GameObject:
   - component: {fileID: 5213287700142644340}
   - component: {fileID: 9021259727764767167}
   - component: {fileID: 8728831817559236838}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_lizi01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9953,7 +9953,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7062763320640020661}
-  m_Layer: 0
+  - component: {fileID: -2926245249260227339}
+  m_Layer: 5
   m_Name: ShengQiShiAttack02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9976,6 +9977,19 @@ Transform:
   - {fileID: 5893126039802968556}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-2926245249260227339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911900159249049541}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &7778303763724906402
 GameObject:
   m_ObjectHideFlags: 0
@@ -9987,7 +10001,7 @@ GameObject:
   - component: {fileID: 4216319906386220702}
   - component: {fileID: 6644548941288673045}
   - component: {fileID: 7715679115578657116}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_sqs_gj_baodian02
   m_TagString: Untagged
   m_Icon: {fileID: 0}

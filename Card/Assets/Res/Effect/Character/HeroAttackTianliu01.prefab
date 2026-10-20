@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4326519310276897606}
   - component: {fileID: 275553134052382472}
   - component: {fileID: 7242603417005151394}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_jian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5030,7 +5030,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6963322981470052683}
   - component: {fileID: 4399533610530967048}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_yx_gj_tianliu_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5090,7 +5090,7 @@ GameObject:
   - component: {fileID: 7249936726801700575}
   - component: {fileID: 8864809063496450015}
   - component: {fileID: 2078934172636168951}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_bg01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9996,7 +9996,7 @@ GameObject:
   - component: {fileID: 8921450400159236088}
   - component: {fileID: 3162713701288412966}
   - component: {fileID: 4764286286780509350}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_xian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14902,7 +14902,7 @@ GameObject:
   - component: {fileID: 7332187254345915273}
   - component: {fileID: 425658154734517773}
   - component: {fileID: 5248084926503110895}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_liu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19808,7 +19808,7 @@ GameObject:
   - component: {fileID: 8337992103656352479}
   - component: {fileID: 6946655510691353526}
   - component: {fileID: 851072806580566401}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_bg01_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24714,7 +24714,7 @@ GameObject:
   - component: {fileID: 2878938255518818575}
   - component: {fileID: 38898123567432055}
   - component: {fileID: 2450409439098565680}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_tl_tian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29618,7 +29618,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1447555943345399346}
-  m_Layer: 0
+  - component: {fileID: 2957003581018233782}
+  m_Layer: 5
   m_Name: HeroAttackTianliu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29641,3 +29642,16 @@ Transform:
   - {fileID: 6963322981470052683}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2957003581018233782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8091990210553813438}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249

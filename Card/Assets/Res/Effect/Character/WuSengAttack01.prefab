@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6714874330981265950}
   - component: {fileID: 8658565702343413277}
   - component: {fileID: 4996566400056115740}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_di01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4917,7 +4917,7 @@ GameObject:
   - component: {fileID: 5177024823917999739}
   - component: {fileID: 4531107257687360422}
   - component: {fileID: 4728536494829909381}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_baodian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9814,7 +9814,7 @@ GameObject:
   - component: {fileID: 6800735006957422612}
   - component: {fileID: 3018033186984339996}
   - component: {fileID: 2936055626248718434}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_quan03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14718,7 +14718,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7292310382696273165}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14757,7 +14757,7 @@ GameObject:
   - component: {fileID: 139192711729104709}
   - component: {fileID: 6041941381925087740}
   - component: {fileID: 3054434351205955645}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_quan01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19663,7 +19663,7 @@ GameObject:
   - component: {fileID: 608660482766836760}
   - component: {fileID: 8978503867578161821}
   - component: {fileID: 1348106216045001583}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_quan02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24569,7 +24569,7 @@ GameObject:
   - component: {fileID: 1084340679899334401}
   - component: {fileID: 2895691208263781285}
   - component: {fileID: 4249577035596861533}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_ws_gj_ci01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29464,7 +29464,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8124266760723174288}
-  m_Layer: 0
+  - component: {fileID: -3314980271259630522}
+  m_Layer: 5
   m_Name: WuSengAttack01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29487,3 +29488,16 @@ Transform:
   - {fileID: 7292310382696273165}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-3314980271259630522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9216070089800492401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249

@@ -272,7 +272,7 @@ namespace App.UI
             {
                 var hero = HeroMechanics.Resolve(run);
                 await _attackFx.PreloadHeroEffectsAsync(resources, hero);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                if (HeroMechanics.TryResolveAnyEffects(hero, out var attackFx, out var hitFx) &&
                     !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
                 {
                     AppLog.Warn(
@@ -1286,26 +1286,57 @@ namespace App.UI
                 _attackCutsceneDone = true;
                 FinishAttackIfReady();
             };
+            var hero = HeroMechanics.Resolve(session.Run);
+            // 闪避反击的伤害字：贴在被打的敌人头上，跟闪避的 MISS 字分开。
+            Action onDodgeCounterHit = () =>
+            {
+                var counterDamage = session.DodgeCounterDamage;
+                if (counterDamage <= 0)
+                {
+                    return;
+                }
+
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[DodgeCounter] 反击伤害字 -{counterDamage} slot={session.AttackVisualSlot}");
+                PlaceSplashHpAt(session.AttackVisualSlot, $"-{Math.Max(1, counterDamage)}", true);
+            };
             if (session.IncomingAttack)
             {
+                // 闪避反击：HeroConfig.MissAttackEffect 配了特效就演一段（武僧），否则走原来的受击流程。
+                // PVP 的闪避与反击都在服务端算，不走这套演出。
+                var dodgeCounter = session.IsPvp ? null : _attackFx.BuildDodgeCounter(hero);
                 _attackFx.PlayIncoming(
                     session.AttackVisualSlot,
                     session.AttackLevel,
                     onHit,
                     onCollisionDone,
                     onReturned,
-                    onDone);
+                    onDone,
+                    dodgeCounter,
+                    onDodgeCounterHit);
             }
             else
             {
-                var hero = HeroMechanics.Resolve(session.Run);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                // 暗灵法师：齐射（01 持续 + 02 蓄力主弹 + 03 两侧抛物线弹 + 04 受击），档位对这套不生效。
+                if (TryPlayHeroVolley(session, hero, onHeroSkillHit, onHeroSkillDamageText, onCollisionDone, onReturned, onDone, timeScale))
+                {
+                    return;
+                }
+
+                // 弱/中/强：默认按牌型档位；AttackTuning 里配了伤害阈值后改按这一刀的伤害分档。
+                var fxLevel = AttackTuningConfig.Instance.ResolveHeroFxLevel(session.AttackLevel, session.AttackDamage);
+                // 目标类型：普通怪走 HeroEffectsCommon，精英/领主走 HeroEffectsElite（没配就退回档位/默认档）。
+                var fxTarget = session.EnemyAtVisualSlot(session.AttackVisualSlot);
+                var eliteTarget = fxTarget != null && fxTarget.MonsterType != MonsterType.Normal;
+                if (HeroMechanics.TryResolveEffects(hero, fxLevel, eliteTarget, out var attackFx, out var hitFx) &&
                     _attackFx.CanPlayHeroSkill(attackFx, hitFx) &&
                     _attackFx.PlayHeroSkill(
                         session.AttackVisualSlot,
                         session.AttackLevel,
                         attackFx,
                         hitFx,
+                        hero != null ? hero.hitAnimation : null,
                         onHeroSkillHit,
                         onHeroSkillDamageText,
                         onCollisionDone,
@@ -1313,13 +1344,16 @@ namespace App.UI
                         onDone,
                         timeScale))
                 {
-                    AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] 走特效出刀路径");
+                    AppLog.Info(
+                        LogChannel.UI,
+                        $"[HeroSkill][GameUI] 走特效出刀路径 fxLevel={fxLevel} elite={eliteTarget} " +
+                        $"attack={attackFx.Effects} hit={hitFx.Effects} hitAnim={hero?.hitAnimation}");
                     return;
                 }
 
                 AppLog.Warn(
                     LogChannel.UI,
-                    $"[HeroSkill][GameUI] 回退近战 resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                    $"[HeroSkill][GameUI] 回退近战 fxLevel={fxLevel} elite={eliteTarget} resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
 
                 _attackFx.Play(
                     session.AttackVisualSlot,
@@ -1330,6 +1364,67 @@ namespace App.UI
                     onDone,
                     timeScale);
             }
+        }
+
+        /// <summary>
+        /// 暗灵法师齐射演出：解析 01/02/03/04 四个特效，收集两侧还活着的敌人槽，交给 <see cref="AttackCutscene.PlayVolleySkill"/>。
+        /// 返回 false 表示这个英雄不走齐射（或特效没预载），继续走普通英雄特效 / 近战。
+        /// </summary>
+        private bool TryPlayHeroVolley(
+            GameSession session,
+            HeroConfig hero,
+            Func<bool> onHit,
+            Action onHitDamageText,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone,
+            float timeScale)
+        {
+            if (!HeroMechanics.TryResolveVolleyEffects(hero, out var channel, out var main, out var splash, out var hit))
+            {
+                return false;
+            }
+
+            // 主目标之外的存活敌人各吃一发 03；中间的（被点选的那个）永远是 02 主目标。
+            var splashSlots = new List<int>(2);
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            {
+                if (slot == session.AttackVisualSlot)
+                {
+                    continue;
+                }
+
+                var seat = session.EnemyAtVisualSlot(slot);
+                if (seat != null && seat.Alive)
+                {
+                    splashSlots.Add(slot);
+                }
+            }
+
+            if (!_attackFx.PlayVolleySkill(
+                    session.AttackVisualSlot,
+                    session.AttackLevel,
+                    channel,
+                    main,
+                    splash,
+                    hit,
+                    splashSlots,
+                    hero != null ? hero.hitAnimation : null,
+                    onHit,
+                    onHitDamageText,
+                    onCollisionDone,
+                    onReturned,
+                    onDone,
+                    timeScale))
+            {
+                return false;
+            }
+
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroVolley][GameUI] 走齐射出刀 hero={hero?.Name} main={session.AttackVisualSlot} " +
+                $"splash={splashSlots.Count} channel={channel.Effects} main={main.Effects} hit={hit.Effects}");
+            return true;
         }
 
         private void FinishAttackAfterDodgeReply()

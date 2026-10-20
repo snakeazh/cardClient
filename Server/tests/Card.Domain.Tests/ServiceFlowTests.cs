@@ -116,12 +116,11 @@ public class PveFlowTests
     }
 
     [Fact]
-    public async Task UnlockHeroRequiresServerDifficultyClear()
+    public async Task UnlockHeroGrantsImmediately()
     {
         var (pve, meta, userId) = await CreateApp();
-        var denied = await Assert.ThrowsAsync<DomainException>(() =>
-            meta.UnlockHeroAsync(userId, 2, CancellationToken.None));
-        Assert.Equal(ErrorCodes.HeroLocked, denied.Code);
+        var claimed = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
+        Assert.Contains(2, claimed.Level.UnlockedHeroIds);
 
         var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
         await pve.ReportProgressAsync(
@@ -132,11 +131,7 @@ public class PveFlowTests
             userId,
             new PveSettleRequest { RunId = started.RunId, Cleared = true, TotalScore = 10 },
             CancellationToken.None);
-        Assert.DoesNotContain(2, partial.Profile.Level.UnlockedHeroIds);
-
-        var stillDenied = await Assert.ThrowsAsync<DomainException>(() =>
-            meta.UnlockHeroAsync(userId, 2, CancellationToken.None));
-        Assert.Equal(ErrorCodes.HeroLocked, stillDenied.Code);
+        Assert.Contains(2, partial.Profile.Level.UnlockedHeroIds);
 
         var second = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1002, HeroId = 1 }, CancellationToken.None);
         await pve.ReportProgressAsync(
@@ -148,9 +143,6 @@ public class PveFlowTests
             new PveSettleRequest { RunId = second.RunId, Cleared = true, TotalScore = 10 },
             CancellationToken.None);
         Assert.Contains(2, cleared.Profile.Level.UnlockedHeroIds);
-
-        var claimed = await meta.UnlockHeroAsync(userId, 2, CancellationToken.None);
-        Assert.Contains(2, claimed.Level.UnlockedHeroIds);
 
         var withHero = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 2 }, CancellationToken.None);
         Assert.False(string.IsNullOrEmpty(withHero.RunId));

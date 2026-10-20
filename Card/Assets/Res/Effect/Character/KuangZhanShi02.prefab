@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 795215869740396227}
   - component: {fileID: 5172986784917991864}
   - component: {fileID: 8970069987216193882}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4899,7 +4899,7 @@ GameObject:
   - component: {fileID: 8382837773914152254}
   - component: {fileID: 3086466816526461103}
   - component: {fileID: 6344582202219009335}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_fuzi01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9785,7 +9785,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2018432788131675880}
-  m_Layer: 0
+  - component: {fileID: -4102816905244594380}
+  m_Layer: 5
   m_Name: KuangZhanShi02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9808,6 +9809,19 @@ Transform:
   - {fileID: 1428501177518969708}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-4102816905244594380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 591555025903207238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &2163739221298630958
 GameObject:
   m_ObjectHideFlags: 0
@@ -9818,7 +9832,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1428501177518969708}
   - component: {fileID: 4085908547628313268}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_kzs_fuzi_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9874,7 +9888,7 @@ GameObject:
   - component: {fileID: 6591751124988166860}
   - component: {fileID: 4591267195478425141}
   - component: {fileID: 4667358908707276036}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_fuzi_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14707,7 +14721,7 @@ GameObject:
   - component: {fileID: 7805497695717487335}
   - component: {fileID: 4550207442057374062}
   - component: {fileID: 510649165871588218}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19595,7 +19609,7 @@ GameObject:
   - component: {fileID: 8851947104857897260}
   - component: {fileID: 4204668164608491488}
   - component: {fileID: 2627794569319072711}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg03
   m_TagString: Untagged
   m_Icon: {fileID: 0}

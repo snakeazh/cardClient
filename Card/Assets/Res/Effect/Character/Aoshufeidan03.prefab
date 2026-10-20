@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1112201126419234571}
   - component: {fileID: 7282594712030639940}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_trail06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -156,7 +156,7 @@ GameObject:
   - component: {fileID: 8883619552518227770}
   - component: {fileID: 5291141046847568978}
   - component: {fileID: 2703606900234985019}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_qiu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5042,7 +5042,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6413136858223625301}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5080,7 +5080,7 @@ GameObject:
   - component: {fileID: 9108148853007974080}
   - component: {fileID: 2153382452561564668}
   - component: {fileID: 4429517220708231904}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_lizi02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9918,7 +9918,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1820489282939918204}
   - component: {fileID: -8609968964208806892}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Aoshufeidan03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9964,7 +9964,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7400276109610101334}
   - component: {fileID: 2414450824245334279}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_trail05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10109,7 +10109,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4968969860460945825}
   - component: {fileID: 1417888371660845898}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_trail01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

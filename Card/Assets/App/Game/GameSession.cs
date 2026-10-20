@@ -343,6 +343,9 @@ namespace App.Game
         /// <summary>命中飘字用的伤害（计算值，不按剩余血量截断）。挨打时已含玩家减伤；闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
 
+        /// <summary>这一刀闪避后反击打出的总伤害（遗物 + 英雄词条），给 UI 在敌人头上出反击伤害字用。</summary>
+        public int DodgeCounterDamage { get; private set; }
+
         /// <summary>玩家这一击是否暴击。暴击伤害字用 Crithptextdi。</summary>
         public bool LastPlayerAttackCrit => _lastPlayerAttackCrit;
         /// <summary>主目标本波因闪避未扣血，HUD 飘字显示 MISS。旁路溅射闪避不改这个值。</summary>
@@ -1820,6 +1823,7 @@ namespace App.Game
             TakenDamage = IsPvp
                 ? AttackDamage
                 : IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
+            DodgeCounterDamage = 0;
             LastAttackMissed = false;
             ResetAttackWaves();
             if (AttackLevel < 1 || AttackLevel > 3)
@@ -4570,12 +4574,20 @@ namespace App.Game
             var rubDelta = (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
                 HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
+            var rubBossDelta = BossMechanics.RubChargeDelta(Run);
             Run.PeekGoodCharges = Math.Max(
                 0,
-                GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - BossMechanics.RubChargeDelta(Run));
+                GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - rubBossDelta);
             var xrayDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum));
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges + xrayDelta;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
+
+            AppLog.Info(
+                LogChannel.Game,
+                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {GameBalance.SkillRubUses} + 奖励 {Run.BonusRubCharges} " +
+                $"+ 词条 {rubDelta}（圣物 {RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###} / " +
+                $"英雄 {HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###}） - 词缀 {rubBossDelta}；" +
+                $"透视 {Run.ChaKanGoodCharges}，替换 {Run.TiHuanGoodCharges}（hero={Run.HeroId}）");
         }
 
         /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。按 <c>LevelEntryNum</c> 随机机制。</summary>
@@ -6794,14 +6806,27 @@ namespace App.Game
                 }
 
                 var miss = ResolveLivePlayerPanel().DodgeRate;
-                if (miss > 0f && _rng.NextDouble() < miss)
+                if (miss > 0f)
                 {
-                    Log($"闪避：{target.Name} 免疫 {damage} 伤害");
-                    target.Banner = "闪避";
-                    LastAttackMissed = true;
-                    TakenDamage = 0;
-                    ApplyDodgeCounter(attacker);
-                    return 0;
+                    // 只闪避率 > 0 时才掷骰，保持和原来一样的随机消耗。
+                    var roll = _rng.NextDouble();
+                    if (roll < miss)
+                    {
+                        AppLog.Info(
+                            LogChannel.Game,
+                            $"[Dodge] {target.Name} 闪避成功：闪避率 {miss:P1} 掷 {roll:0.###} → 免疫 {damage} 伤害" +
+                            $"（hero={Run.HeroId}）");
+                        Log($"闪避：{target.Name} 免疫 {damage} 伤害");
+                        target.Banner = "闪避";
+                        LastAttackMissed = true;
+                        TakenDamage = 0;
+                        ApplyDodgeCounter(attacker);
+                        return 0;
+                    }
+
+                    AppLog.Info(
+                        LogChannel.Game,
+                        $"[Dodge] {target.Name} 未闪避：闪避率 {miss:P1} 掷 {roll:0.###} → 吃 {damage} 伤害");
                 }
 
                 if (!_amuletUsedThisRound && RelicMechanics.HasMechanism(Run, MechanismType.MissFirstDamage))
@@ -7010,8 +7035,13 @@ namespace App.Game
                     return;
                 }
 
-                Log($"武林秘籍：闪避反击 {dmg}");
-                ApplyDamage(attacker, dmg, false, Player);
+                var dealt = ApplyDamage(attacker, dmg, false, Player);
+                DodgeCounterDamage += dealt;
+                AppLog.Info(
+                    LogChannel.Game,
+                    $"[DodgeCounter] 遗物词条({entry.Id}) 反击 {attacker.Name}：攻击 {Player.Attack} → 原始 {dmg}，实际 {dealt}，" +
+                    $"累计 {DodgeCounterDamage}（剩余HP {attacker.Hp}）");
+                Log($"武林秘籍：闪避反击 {dealt}");
             });
             HeroMechanics.ForEachEntry(ResolveHero(), entry =>
             {
@@ -7026,8 +7056,14 @@ namespace App.Game
                     return;
                 }
 
-                Log($"闪避反击 {dmg}");
-                ApplyDamage(attacker, dmg, false, Player);
+                var dealt = ApplyDamage(attacker, dmg, false, Player);
+                DodgeCounterDamage += dealt;
+                AppLog.Info(
+                    LogChannel.Game,
+                    $"[DodgeCounter] 英雄词条({entry.Id}) 反击 {attacker.Name}：攻击 {Player.Attack} × 倍率 " +
+                    $"{HeroMechanics.ValueAt(entry, 1):0.###} × 次数 {HeroMechanics.ValueAt(entry):0.###} → 原始 {dmg}，" +
+                    $"实际 {dealt}，累计 {DodgeCounterDamage}（剩余HP {attacker.Hp}）");
+                Log($"闪避反击 {dealt}");
             });
         }
 

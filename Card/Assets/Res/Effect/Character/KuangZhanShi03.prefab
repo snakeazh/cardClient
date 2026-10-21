@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1752241942023161741}
   - component: {fileID: 8147635787822993223}
   - component: {fileID: 3280257857130955702}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4899,7 +4899,7 @@ GameObject:
   - component: {fileID: 4421718459440352000}
   - component: {fileID: 2641613192068524153}
   - component: {fileID: 2197309757943792529}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9845,7 +9845,7 @@ GameObject:
   - component: {fileID: 9030487826003926764}
   - component: {fileID: 848960299528738276}
   - component: {fileID: 1264783754835498428}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_fuzi_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14676,7 +14676,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7165915235600209966}
-  m_Layer: 0
+  - component: {fileID: -5384750904852669801}
+  m_Layer: 5
   m_Name: KuangZhanShi03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14699,6 +14700,19 @@ Transform:
   - {fileID: 4178258569135101169}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-5384750904852669801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671197889992577333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &3594919614753094951
 GameObject:
   m_ObjectHideFlags: 0
@@ -14709,7 +14723,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4178258569135101169}
   - component: {fileID: 3281634869604662549}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_kzs_fuzi_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14767,7 +14781,7 @@ GameObject:
   - component: {fileID: 8139671944836664604}
   - component: {fileID: 1018324006407532663}
   - component: {fileID: 243764530640548049}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_fuzi01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19655,7 +19669,7 @@ GameObject:
   - component: {fileID: 9121331491065082621}
   - component: {fileID: 8051176000103296169}
   - component: {fileID: 1394935972099425580}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24543,7 +24557,7 @@ GameObject:
   - component: {fileID: 3307068920943439439}
   - component: {fileID: 6462110818809170808}
   - component: {fileID: 5456519151791742828}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_di01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29431,7 +29445,7 @@ GameObject:
   - component: {fileID: 9110037734694796041}
   - component: {fileID: 1532469844417075529}
   - component: {fileID: 6150746492115322249}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg02
   m_TagString: Untagged
   m_Icon: {fileID: 0}

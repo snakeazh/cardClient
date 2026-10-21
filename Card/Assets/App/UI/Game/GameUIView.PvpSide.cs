@@ -519,18 +519,61 @@ namespace App.UI
             }
 
             _bondsTip.SetActive(true);
+            if (_bondsTipBody != null)
+            {
+                _bondsTipBody.ForceMeshUpdate();
+            }
+
             Canvas.ForceUpdateCanvases();
             var tipRt = _bondsTip.GetComponent<RectTransform>();
             if (tipRt != null)
             {
+                // 嵌套 VLG + Grid，单次 rebuild 时高度常偏小，定位后再长高会顶出屏幕。
+                LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
+                Canvas.ForceUpdateCanvases();
                 LayoutRebuilder.ForceRebuildLayoutImmediate(tipRt);
             }
 
             _bondsTip.transform.SetAsLastSibling();
             if (anchor != null)
             {
-                PositionTip(_bondsTip, anchor, placeRight: false);
+                PositionBondsTip(anchor);
             }
+        }
+
+        /// <summary>
+        /// 羁绊图标在右上，弹窗较高；竖直跟图标居中会对齐到屏幕外。X 贴图标左侧，Y 相对 GameUI 居中后再夹边。
+        /// </summary>
+        private void PositionBondsTip(Transform slot)
+        {
+            var tipRt = _bondsTip != null ? _bondsTip.GetComponent<RectTransform>() : null;
+            var itemRt = slot as RectTransform;
+            var parent = transform as RectTransform;
+            if (tipRt == null || itemRt == null || parent == null)
+            {
+                return;
+            }
+
+            if (_hudCanvas == null)
+            {
+                _hudCanvas = GetComponentInParent<Canvas>();
+            }
+
+            var cam = _hudCanvas != null ? _hudCanvas.worldCamera : null;
+            itemRt.GetWorldCorners(_equipTipCorners);
+            var edge = (_equipTipCorners[0] + _equipTipCorners[1]) * 0.5f;
+            var screen = RectTransformUtility.WorldToScreenPoint(cam, edge);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local))
+            {
+                return;
+            }
+
+            var tipWidth = tipRt.rect.width;
+            var tipHeight = tipRt.rect.height;
+            tipRt.anchoredPosition = new Vector2(
+                local.x - 8f - (1f - tipRt.pivot.x) * tipWidth,
+                (0.5f - tipRt.pivot.y) * tipHeight);
+            ItemTipPlacement.ClampToParent(tipRt, parent);
         }
 
         private Task EnsureBondsTip()

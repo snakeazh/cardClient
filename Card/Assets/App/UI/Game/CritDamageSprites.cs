@@ -6,10 +6,15 @@ using UnityEngine.UI;
 
 namespace App.UI
 {
-    /// <summary>暴击伤害数字：用 Critdamage 图集的减号和 Zero–Nine，每张图比模板高 5 像素。</summary>
+    /// <summary>
+    /// 暴击伤害数字：用 Critdamage 图集的减号和 Zero–Nine。
+    /// 整体比模板高 RaiseY；字间距比贴图宽少 SpacingShrink；从第二位起每位再抬 StepRaiseY。
+    /// </summary>
     public static class CritDamageSprites
     {
         public const float RaiseY = 5f;
+        public const float SpacingShrink = 40f;
+        public const float StepRaiseY = 5f;
 
         private static readonly string[] DigitNames =
         {
@@ -51,7 +56,8 @@ namespace App.UI
                     continue;
                 }
 
-                var token = written == 0 ? "MinusSign" : DigitNames[text[written - 1] - '0'];
+                var index = written;
+                var token = index == 0 ? "MinusSign" : DigitNames[text[index - 1] - '0'];
                 written++;
                 Sprite sprite = null;
                 atlas?.TryGetSprite(ResResourcePaths.CritDamageAtlas, token, out sprite);
@@ -69,9 +75,11 @@ namespace App.UI
                     image.SetNativeSize();
                 }
 
-                rect.anchoredPosition = new Vector2(x, y);
+                // 首位贴模板基线；后续每位再抬 5px，形成轻微上扬。
+                rect.anchoredPosition = new Vector2(x, y + index * StepRaiseY);
                 child.gameObject.SetActive(sprite != null);
-                x += rect.rect.width;
+                // 字距相对贴图宽收缩 40，避免暴击数字排得过开。
+                x += rect.rect.width - SpacingShrink;
             }
         }
 

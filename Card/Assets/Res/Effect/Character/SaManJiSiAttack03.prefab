@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3975491508917884294}
   - component: {fileID: 3955353679741936942}
   - component: {fileID: 5443850711434756211}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_qiu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4899,7 +4899,7 @@ GameObject:
   - component: {fileID: 8037603607700183167}
   - component: {fileID: 3174563350819658471}
   - component: {fileID: 9206996140011204690}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9727,7 +9727,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8942559848228441525}
-  m_Layer: 0
+  - component: {fileID: 4398381279749799143}
+  m_Layer: 5
   m_Name: SaManJiSiAttack03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9750,6 +9751,19 @@ Transform:
   - {fileID: 2717444748371956479}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4398381279749799143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571454192287763338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &3940520801772418362
 GameObject:
   m_ObjectHideFlags: 0
@@ -9761,7 +9775,7 @@ GameObject:
   - component: {fileID: 6141964898912237719}
   - component: {fileID: 8946344950066229390}
   - component: {fileID: 2514784007865457200}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14765,7 +14779,7 @@ GameObject:
   - component: {fileID: 159900367327884476}
   - component: {fileID: 8766230414225696560}
   - component: {fileID: 106748840277116550}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19651,7 +19665,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2717444748371956479}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gongji_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19689,7 +19703,7 @@ GameObject:
   - component: {fileID: 4785411023680228357}
   - component: {fileID: 831459539030185392}
   - component: {fileID: 3345072921786852661}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei02
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -6,10 +6,21 @@ namespace App.Game
 {
     /// <summary>
     /// 按当前英雄 <see cref="HeroConfig.HeroEntryId"/> 结算局内技能；
-    /// <see cref="HeroConfig.HeroEffects"/> 只解析出刀演出用。收藏禁用不禁用英雄词条。
+    /// <see cref="HeroConfig.HeroEffects"/>（及弱/中/强三档）只解析出刀演出用。收藏禁用不禁用英雄词条。
     /// </summary>
     public static class HeroMechanics
     {
+        /// <summary>
+        /// 暗灵法师（HeroConfig.Id）。它的出刀是「齐射」，跟其他英雄的一条释放 + 一条命中不同，代码里特判：
+        /// CastEffect=Aoshufeidan01 持续 1.5s、HeroEffects 主弹 02 蓄力 1s 后飞向主目标 0.3s、
+        /// SpecialEffect 两侧各飞一发 03（0.4s DOJump 抛物线）、所有命中点都出 04。
+        /// 时间与抛物线见 <c>AttackTuning.asset</c>「暗灵法师齐射」段。
+        /// </summary>
+        public const int ShadowMageHeroId = 3;
+
+        /// <summary>圣骑士（HeroConfig.Id）。圣光燃烧读 <see cref="HeroConfig.SpecialEffect"/>；对子先圣光再近战，非对子只近战。</summary>
+        public const int PaladinHeroId = 8;
+
         public static HeroConfig Resolve(RunState run)
         {
             return run != null && run.HeroId > 0 ? HeroConfig.Get(run.HeroId) : null;
@@ -202,16 +213,24 @@ namespace App.Game
             return found;
         }
 
-        /// <summary>当前这一发用发动前的层数：攻击 × 比例 × (1 + 已发动次数 × 每层加成)。</summary>
+        /// <summary>
+        /// 当前这一发用发动前的层数：攻击 × (基础比例 + 已发动次数 × 每次加点)。
+        /// 例：0.5 / 0.1 → 第 1 发 50%、第 2 发 60%、第 3 发 70%。
+        /// </summary>
         public static int HolyLightDamage(int attack, float ratio, int casts, float perCast)
         {
-            if (attack <= 0 || ratio == 0f)
+            if (attack <= 0)
             {
                 return 0;
             }
 
-            var mul = 1f + Math.Max(0, casts) * perCast;
-            return Math.Max(0, (int)Math.Round(attack * ratio * mul));
+            var percent = ratio + Math.Max(0, casts) * perCast;
+            if (percent <= 0f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(attack * percent));
         }
 
         /// <summary>已发动次数带来的后续出手加成。</summary>
@@ -367,24 +386,231 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 从 <see cref="HeroConfig.HeroEffects"/> 解析释放（Attack）与命中（Hit）各一条。
-        /// 缺任一类型、资源名为空或不存在时返回 false（出刀回退近战）。
+        /// 按档位取这一刀用哪组英雄特效 Id：1 弱 / 2 中 / 3 强。
+        /// 该档没配（空数组）时回退到 <see cref="HeroConfig.HeroEffects"/>，老数据不用改。
+        /// </summary>
+        public static int[] HeroEffectsForLevel(HeroConfig hero, int level)
+        {
+            if (hero == null)
+            {
+                return null;
+            }
+
+            var tier = level >= 3
+                ? hero.HeroEffectsStrong
+                : level == 2 ? hero.HeroEffectsMid : hero.HeroEffectsWeak;
+            return tier != null && tier.Length > 0 ? tier : hero.HeroEffects;
+        }
+
+        /// <summary>
+        /// 按目标类型取整套特效 Id：普通怪用 <see cref="HeroConfig.HeroEffectsCommon"/>，
+        /// 精英/领主用 <see cref="HeroConfig.HeroEffectsElite"/>；没配返回 null，交给档位/默认档。
+        /// </summary>
+        public static int[] HeroEffectsForTarget(HeroConfig hero, bool eliteTarget)
+        {
+            if (hero == null)
+            {
+                return null;
+            }
+
+            var ids = eliteTarget ? hero.HeroEffectsElite : hero.HeroEffectsCommon;
+            return ids != null && ids.Length > 0 ? ids : null;
+        }
+
+        /// <summary>
+        /// 按目标类型 + 档位解析整套特效：目标类型（普通/精英）优先，其次弱/中/强档位，最后默认档。
+        /// 任一层凑不齐 Attack + Hit 就往下落，全落空返回 false（出刀回退近战）。
         /// </summary>
         public static bool TryResolveEffects(
             HeroConfig hero,
+            int level,
+            bool eliteTarget,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            if (TryResolveEffects(HeroEffectsForTarget(hero, eliteTarget), out attack, out hit))
+            {
+                return true;
+            }
+
+            return TryResolveEffects(hero, level, out attack, out hit);
+        }
+
+        /// <summary>
+        /// 按档位解析释放（Attack）与命中（Hit）各一条；该档缺一条时退回默认 <see cref="HeroConfig.HeroEffects"/>。
+        /// 仍缺任一类型、资源名为空或不存在时返回 false（出刀回退近战）。
+        /// </summary>
+        public static bool TryResolveEffects(
+            HeroConfig hero,
+            int level,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            if (TryResolveEffects(HeroEffectsForLevel(hero, level), out attack, out hit))
+            {
+                return true;
+            }
+
+            return hero != null &&
+                   !ReferenceEquals(HeroEffectsForLevel(hero, level), hero.HeroEffects) &&
+                   TryResolveEffects(hero.HeroEffects, out attack, out hit);
+        }
+
+        /// <summary>目标类型、档位、默认档、SpecialEffect 里只要有一组能解析出成套特效就返回 true（进桌预载自检用）。</summary>
+        public static bool TryResolveAnyEffects(
+            HeroConfig hero,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            for (var elite = 0; elite < 2; elite++)
+            {
+                for (var level = 1; level <= 3; level++)
+                {
+                    if (TryResolveEffects(hero, level, elite == 1, out attack, out hit))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (TryResolveSpecialEffects(hero, out attack, out hit))
+            {
+                return true;
+            }
+
+            attack = null;
+            hit = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 解析 <see cref="HeroConfig.SpecialEffect"/> 里第一条 Attack + 第一条 Hit。
+        /// 圣骑士：圣光燃烧专用；暗灵法师的 SpecialEffect 仍只参与齐射解析。
+        /// </summary>
+        public static bool TryResolveSpecialEffects(
+            HeroConfig hero,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            return TryResolveEffects(hero?.SpecialEffect, out attack, out hit);
+        }
+
+        /// <summary>
+        /// 暗灵法师的齐射套件（01 持续 / 02 主弹 / 03 溅射弹 / 04 受击）。
+        /// 表结构：<see cref="HeroConfig.CastEffect"/> = 01 法阵，
+        /// <see cref="HeroConfig.HeroEffects"/> = 02 主弹 + 04 受击，
+        /// <see cref="HeroConfig.SpecialEffect"/> = 03 溅射弹（可再带一份 04）。
+        /// 兼容旧数据：四个 Id 全塞在 <c>HeroEffects</c> 里也能凑齐。
+        /// 别的英雄一律返回 false。档位（弱/中/强）对这套不生效。
+        /// </summary>
+        public static bool TryResolveVolleyEffects(
+            HeroConfig hero,
+            out HeroEffectsConfig channel,
+            out HeroEffectsConfig main,
+            out HeroEffectsConfig splash,
+            out HeroEffectsConfig hit)
+        {
+            channel = null;
+            main = null;
+            splash = null;
+            hit = null;
+            if (hero == null || hero.Id != ShadowMageHeroId)
+            {
+                return false;
+            }
+
+            // CastEffect：施法法阵（非投射物 Attack）。
+            AbsorbVolleyFx(HeroEffectsConfig.Get(hero.CastEffect), ref channel, ref main, ref splash, ref hit);
+            // HeroEffects：主弹 + 受击（旧表也可能含 01/03）。
+            AbsorbVolleyIds(hero.HeroEffects, ref channel, ref main, ref splash, ref hit);
+            // SpecialEffect：溅射弹（及可选的受击）。
+            AbsorbVolleyIds(hero.SpecialEffect, ref channel, ref main, ref splash, ref hit);
+
+            return channel != null && main != null && splash != null && hit != null;
+        }
+
+        private static void AbsorbVolleyIds(
+            int[] ids,
+            ref HeroEffectsConfig channel,
+            ref HeroEffectsConfig main,
+            ref HeroEffectsConfig splash,
+            ref HeroEffectsConfig hit)
+        {
+            if (ids == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < ids.Length; i++)
+            {
+                AbsorbVolleyFx(HeroEffectsConfig.Get(ids[i]), ref channel, ref main, ref splash, ref hit);
+            }
+        }
+
+        private static void AbsorbVolleyFx(
+            HeroEffectsConfig fx,
+            ref HeroEffectsConfig channel,
+            ref HeroEffectsConfig main,
+            ref HeroEffectsConfig splash,
+            ref HeroEffectsConfig hit)
+        {
+            if (fx == null || string.IsNullOrEmpty(fx.Effects))
+            {
+                return;
+            }
+
+            if (fx.Type == EffectsType.Hit)
+            {
+                if (hit == null)
+                {
+                    hit = fx;
+                }
+
+                return;
+            }
+
+            if (fx.Type != EffectsType.Attack)
+            {
+                return;
+            }
+
+            if (fx.IsProjectile == 0)
+            {
+                if (channel == null)
+                {
+                    channel = fx;
+                }
+
+                return;
+            }
+
+            // 投射物：先主弹、再溅射；SpecialEffect 里若主弹已有，自然落到溅射槽。
+            if (main == null)
+            {
+                main = fx;
+            }
+            else if (splash == null)
+            {
+                splash = fx;
+            }
+        }
+
+        /// <summary>从一组 HeroEffectsConfig Id 里取第一条 Attack 和第一条 Hit。</summary>
+        private static bool TryResolveEffects(
+            int[] effectIds,
             out HeroEffectsConfig attack,
             out HeroEffectsConfig hit)
         {
             attack = null;
             hit = null;
-            if (hero?.HeroEffects == null)
+            if (effectIds == null)
             {
                 return false;
             }
 
-            for (var i = 0; i < hero.HeroEffects.Length; i++)
+            for (var i = 0; i < effectIds.Length; i++)
             {
-                var fx = HeroEffectsConfig.Get(hero.HeroEffects[i]);
+                var fx = HeroEffectsConfig.Get(effectIds[i]);
                 if (fx == null || string.IsNullOrEmpty(fx.Effects))
                 {
                     continue;

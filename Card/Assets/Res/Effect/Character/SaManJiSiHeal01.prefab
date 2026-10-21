@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1498100756738923061}
   - component: {fileID: 8206800802560373482}
   - component: {fileID: 8474052611161945607}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lizi02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5033,7 +5033,7 @@ GameObject:
   - component: {fileID: 198304704655073495}
   - component: {fileID: 3666686068793580060}
   - component: {fileID: 9168862682495228079}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_di02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9921,7 +9921,7 @@ GameObject:
   - component: {fileID: 6526404594976109052}
   - component: {fileID: 3292456443001343666}
   - component: {fileID: 1892312183730834818}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lizi01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14941,7 +14941,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5076862825680706505}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_huixue_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14976,7 +14976,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4833840972493802933}
-  m_Layer: 0
+  - component: {fileID: -1395333787457624237}
+  m_Layer: 5
   m_Name: SaManJiSiHeal01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14999,6 +15000,19 @@ Transform:
   - {fileID: 5076862825680706505}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-1395333787457624237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5165231475916327706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &6327522202605469556
 GameObject:
   m_ObjectHideFlags: 0
@@ -15010,7 +15024,7 @@ GameObject:
   - component: {fileID: 2828722658898015202}
   - component: {fileID: 5345571514611500886}
   - component: {fileID: 6599012210971355095}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow06
   m_TagString: Untagged
   m_Icon: {fileID: 0}

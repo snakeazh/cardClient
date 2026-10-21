@@ -386,12 +386,6 @@ namespace App.UI
                 return;
             }
 
-            if (!MeetsDifficultyUnlock(hero))
-            {
-                Toast.Show(UnlockDeniedText(hero));
-                return;
-            }
-
             if (!_progress.TryUnlockHero(hero.Id))
             {
                 return;
@@ -443,16 +437,6 @@ namespace App.UI
 
             var hero = HeroConfig.Get(SelectedHeroId.Value);
             return hero != null && !IsHeroUnlocked(hero);
-        }
-
-        private bool MeetsDifficultyUnlock(HeroConfig hero)
-        {
-            if (hero == null || hero.UnlockCondition <= 0)
-            {
-                return true;
-            }
-
-            return _progress.IsCleared(hero.UnlockCondition);
         }
 
         private string UnlockDeniedText(HeroConfig hero)

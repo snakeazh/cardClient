@@ -135,7 +135,7 @@ public static class BackendStartup
         }
     }
 
-    private static async Task EnsureRedisAsync(WebApplication app, string connectionString)
+    private static async Task EnsureRedisAsync(WebApplication app, string? connectionString)
     {
         var log = app.Logger;
         var target = Redact(connectionString);

@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9133181839640616463}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 3898195851878508977}
   - component: {fileID: 692558452372942385}
   - component: {fileID: 4965139222358511068}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_glow02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4934,7 +4934,7 @@ GameObject:
   - component: {fileID: 2659318717107396762}
   - component: {fileID: 6133952555661577940}
   - component: {fileID: 3986198839318305785}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_bao02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9822,7 +9822,7 @@ GameObject:
   - component: {fileID: 5414567637206206874}
   - component: {fileID: 7681906869157155583}
   - component: {fileID: 4446847324008374881}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14710,7 +14710,7 @@ GameObject:
   - component: {fileID: 7153529885606017094}
   - component: {fileID: 4211119113099321672}
   - component: {fileID: 5457854645638892827}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_asfd_bao01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19597,7 +19597,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7019805165248785317}
   - component: {fileID: 9023957216126100504}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Aoshufeidan04
   m_TagString: Untagged
   m_Icon: {fileID: 0}

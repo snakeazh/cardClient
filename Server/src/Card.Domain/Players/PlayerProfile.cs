@@ -1,5 +1,6 @@
 using CardShare.Contracts;
 using CardShare.Contracts.Config;
+using CardShare.Domain.Ads;
 using CardShare.Domain.Config;
 
 namespace CardShare.Domain.Players;
@@ -31,6 +32,22 @@ public sealed class PlayerProfile
     public BagState Bag { get; set; } = new BagState();
 
     public int[] GuideCompletedGroupIds { get; set; } = Array.Empty<int>();
+
+    /// <summary>巨量广告点击归因（转化回传用），登录时按最新启动参数覆盖。</summary>
+    public AdAttributionState AdAttribution { get; set; } = new AdAttributionState();
+
+    /// <summary>登录时上报的广告点击归因；callback 为空不覆盖（保留历史点击）。</summary>
+    public void ApplyAdAttribution(string? callback, int os, DateTimeOffset utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(callback))
+        {
+            return;
+        }
+
+        AdAttribution.Callback = callback.Trim();
+        AdAttribution.Os = os;
+        AdAttribution.ReceivedAtUtc = utcNow;
+    }
 
     public static PlayerProfile CreateNew(Guid userId, IGameConfig config, DateTimeOffset utcNow)
     {
@@ -302,8 +319,8 @@ public sealed class PlayerProfile
     }
 
     /// <summary>
-    /// 选英雄界面点解锁。已在存档里则保持原样。
-    /// 有通关难度条件时只认服务器自己的关卡进度，不满足则拒绝。
+    /// 选英雄界面点视频解锁。广告当前为模拟发放，点击即写入解锁列表。
+    /// 已在存档里则保持原样。通关难度仍由 <see cref="SyncUnlockedHeroes"/> 自动写入。
     /// </summary>
     public void UnlockHero(int heroId, IGameConfig config)
     {
@@ -316,16 +333,6 @@ public sealed class PlayerProfile
         if (hero == null)
         {
             throw DomainException.Invalid($"Unknown hero {heroId}.");
-        }
-
-        if (Level.UnlockedHeroIds.Contains(heroId))
-        {
-            return;
-        }
-
-        if (hero.UnlockCondition > 0 && !IsDifficultyCleared(hero.UnlockCondition, config))
-        {
-            throw new DomainException(ErrorCodes.HeroLocked, "Hero unlock condition is not met.");
         }
 
         Level.TryUnlockHero(heroId);

@@ -9,7 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1897639024213772931}
-  m_Layer: 0
+  - component: {fileID: 7167599138257802187}
+  m_Layer: 5
   m_Name: SaManJiSiAttack01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -32,6 +33,19 @@ Transform:
   - {fileID: 6105440548873360274}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7167599138257802187
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627191262703293310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &933356588412653021
 GameObject:
   m_ObjectHideFlags: 0
@@ -43,7 +57,7 @@ GameObject:
   - component: {fileID: 6793750111151178265}
   - component: {fileID: 2313068661529341898}
   - component: {fileID: 6386444465587084128}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4873,7 +4887,7 @@ GameObject:
   - component: {fileID: 979904316802709235}
   - component: {fileID: 4436241632959702617}
   - component: {fileID: 652099779592967351}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9806,7 +9820,7 @@ GameObject:
   - component: {fileID: 5646539438842742723}
   - component: {fileID: 371908730499822686}
   - component: {fileID: 3527998243682989303}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14810,7 +14824,7 @@ GameObject:
   - component: {fileID: 6851622987835377495}
   - component: {fileID: 6982215887488586462}
   - component: {fileID: 5146204120288371812}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19756,7 +19770,7 @@ GameObject:
   - component: {fileID: 4363684551206889239}
   - component: {fileID: 4338743236948561661}
   - component: {fileID: 5397691708962410775}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24758,7 +24772,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6105440548873360274}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gongji_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24801,7 +24815,7 @@ GameObject:
   - component: {fileID: 1723290640393322387}
   - component: {fileID: 8814117891888715488}
   - component: {fileID: 5153194296662947628}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29747,7 +29761,7 @@ GameObject:
   - component: {fileID: 4049639425862747641}
   - component: {fileID: 2374713978105806843}
   - component: {fileID: 2709131781968008391}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_qiu02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34635,7 +34649,7 @@ GameObject:
   - component: {fileID: 5637704538272246910}
   - component: {fileID: 6999196232952438065}
   - component: {fileID: 6757838654518938984}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_qiu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39523,7 +39537,7 @@ GameObject:
   - component: {fileID: 3821410190180971848}
   - component: {fileID: 1418093951224607571}
   - component: {fileID: 1919523459133068099}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_glow02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44411,7 +44425,7 @@ GameObject:
   - component: {fileID: 2302635899849105208}
   - component: {fileID: 1878401570616833620}
   - component: {fileID: 85682319653568540}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_smjs_gj_lei04
   m_TagString: Untagged
   m_Icon: {fileID: 0}

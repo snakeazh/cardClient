@@ -92,12 +92,6 @@ namespace App.UI
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
         private bool _shownPeekGoodTip;
-#if UNITY_EDITOR
-        private string _debugRelicIdText = string.Empty;
-        private string _debugRelicPreview = string.Empty;
-        private string _debugEntryIdText = "104";
-        private string _debugEntryPreview = string.Empty;
-#endif
         private Coroutine _peekHoldCo;
         private bool _peekHoldFired;
         private Canvas _hudCanvas;
@@ -106,6 +100,7 @@ namespace App.UI
         private PlayerItem _playerItem;
         private int _portraitLoadSerial;
         private int _playedAttack;
+        private int _playedHolyLight;
         private Transform _playerCardTypeNum;
         private RectTransform _beilvInfo;
         private Image _beilvIcon;
@@ -272,7 +267,7 @@ namespace App.UI
             {
                 var hero = HeroMechanics.Resolve(run);
                 await _attackFx.PreloadHeroEffectsAsync(resources, hero);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                if (HeroMechanics.TryResolveAnyEffects(hero, out var attackFx, out var hitFx) &&
                     !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
                 {
                     AppLog.Warn(
@@ -329,80 +324,6 @@ namespace App.UI
             }
 #endif
         }
-
-#if UNITY_EDITOR
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加圣物（仅编辑器；PVP 走服务端）");
-            GUILayout.BeginHorizontal();
-            var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
-            if (next != _debugRelicIdText)
-            {
-                _debugRelicIdText = next;
-                RefreshDebugRelicPreview();
-            }
-
-            var canGrant = int.TryParse(_debugRelicIdText, out var relicId) && relicId > 0;
-            var wasEnabled = GUI.enabled;
-            GUI.enabled = canGrant;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrant)
-            {
-                ViewModel?.Session?.DebugGrantRelic(relicId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugRelicPreview) ? "输入 RelicConfig.Id" : _debugRelicPreview);
-            GUILayout.EndArea();
-
-            GUILayout.BeginArea(new Rect(8f, 90f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加关卡词缀（仅编辑器）");
-            GUILayout.BeginHorizontal();
-            var entryNext = GUILayout.TextField(_debugEntryIdText ?? string.Empty, GUILayout.Width(88f));
-            if (entryNext != _debugEntryIdText)
-            {
-                _debugEntryIdText = entryNext;
-                RefreshDebugEntryPreview();
-            }
-
-            var canGrantEntry = int.TryParse(_debugEntryIdText, out var entryId) && entryId > 0;
-            GUI.enabled = canGrantEntry;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrantEntry)
-            {
-                ViewModel?.Session?.DebugGrantBossEntry(entryId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugEntryPreview) ? "输入 BossEntryConfig.Id" : _debugEntryPreview);
-            GUILayout.EndArea();
-        }
-
-        private void RefreshDebugRelicPreview()
-        {
-            if (!int.TryParse(_debugRelicIdText, out var relicId) || relicId <= 0)
-            {
-                _debugRelicPreview = string.Empty;
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            _debugRelicPreview = relic != null ? $"{relic.Name}  {relic.Desc}" : $"没有 Id={relicId}";
-        }
-
-        private void RefreshDebugEntryPreview()
-        {
-            if (!int.TryParse(_debugEntryIdText, out var entryId) || entryId <= 0)
-            {
-                _debugEntryPreview = string.Empty;
-                return;
-            }
-
-            var entry = BossEntryConfig.Get(entryId);
-            _debugEntryPreview = entry != null ? $"{entry.Name}  {entry.Desc}" : $"没有 Id={entryId}";
-        }
-#endif
 
         protected override Task OnViewClose()
         {
@@ -554,16 +475,31 @@ namespace App.UI
             RefreshPvpSide();
             ApplySkillLockVisual();
             TryStartOpening();
+            TryPlayHolyLight();
             TryPlayAttack();
             TryScheduleAiDelay();
         }
 
         private void LateUpdate()
         {
+            var session = ViewModel != null ? ViewModel.Session : null;
+            if (session == null)
+            {
+                return;
+            }
+
             // PVP 翻牌回调里启攻击时，偶发同一帧订阅未刷到；兜底轮询。
-            if (ViewModel != null && ViewModel.Session != null && ViewModel.Session.IsPvp)
+            if (session.IsPvp)
             {
                 TryPlayAttack();
+            }
+
+            // 发牌后圣光：Notify 偶发未刷到时兜底，避免卡在 PendingHolyLightCasts。
+            if (session.PendingHolyLightCasts > 0 &&
+                session.HolyLightPlaySerial > 0 &&
+                session.HolyLightPlaySerial != _playedHolyLight)
+            {
+                TryPlayHolyLight();
             }
         }
 
@@ -578,6 +514,7 @@ namespace App.UI
             }
 
             RefreshPlayerItems();
+            TryPlayHolyLight();
             TryStartOpening();
         }
 
@@ -665,6 +602,11 @@ namespace App.UI
             _attackFx.Bind(transform, _playerItem, _enemyItems);
             _cameraShake = Camera.main != null ? Camera.main.GetComponent<CameraShakeAnimator>() : null;
             _playedAttack = ViewModel != null ? ViewModel.Session.AttackPlaySerial : 0;
+            // 勿把已排队未播的圣光标成已播，否则会永远卡住不开场/不飞牌。
+            var session = ViewModel != null ? ViewModel.Session : null;
+            _playedHolyLight = session != null && session.PendingHolyLightCasts <= 0
+                ? session.HolyLightPlaySerial
+                : 0;
         }
 
         private void BindSettleFx()
@@ -701,6 +643,106 @@ namespace App.UI
             {
                 CardTypeValueSprites.Prepare(_beilvNumRoot);
             }
+        }
+
+        /// <summary>
+        /// 回合开始 / 对子收尾的圣光燃烧：跟 <see cref="GameSession.HolyLightPlaySerial"/> 播 SpecialEffect。
+        /// </summary>
+        private void TryPlayHolyLight()
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var session = ViewModel.Session;
+            if (session.HolyLightPlaySerial <= 0 ||
+                session.HolyLightPlaySerial == _playedHolyLight ||
+                session.PendingHolyLightCasts <= 0)
+            {
+                return;
+            }
+
+            _playedHolyLight = session.HolyLightPlaySerial;
+            PlayHolyLightCutscene(session);
+        }
+
+        private void PlayHolyLightCutscene(GameSession session)
+        {
+            var hero = HeroMechanics.Resolve(session.Run);
+            HeroEffectsConfig attackFx = null;
+            HeroEffectsConfig hitFx = null;
+            if (hero == null ||
+                !HeroMechanics.TryResolveSpecialEffects(hero, out attackFx, out hitFx) ||
+                !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
+            {
+                AppLog.Warn(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] 圣光燃烧 SpecialEffect 未就绪，静默结算 attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                session.ApplyPendingHolyLightHit();
+                TryDissolveIfLethal(session);
+                session.CompleteHolyLightPlay();
+                return;
+            }
+
+            var hitAnimSlots = CollectAliveEnemyVisualSlots(session);
+            var mainSlot = hitAnimSlots != null && hitAnimSlots.Count > 0
+                ? hitAnimSlots[0]
+                : 0;
+            Func<int, bool> shouldSpawnHitFx = slot =>
+                session.LastAttackHitApplied(slot) && !session.LastAttackHitMissed(slot);
+
+            var mask = ResolveSlot("mask");
+            if (mask != null)
+            {
+                mask.SetAsLastSibling();
+            }
+
+            ViewModel.ShowMask.Value = true;
+            ViewModel.ShowHpText.Value = false;
+            RestoreSplashHpClones();
+
+            if (!_attackFx.PlayHeroSkill(
+                    mainSlot,
+                    Math.Max(1, session.AttackLevel),
+                    attackFx,
+                    hitFx,
+                    hero.hitAnimation,
+                    () =>
+                    {
+                        _cameraShake?.PlayByLevel(Math.Max(1, session.AttackLevel));
+                        session.ApplyPendingHolyLightHit();
+                        TryDissolveIfLethal(session);
+                        ShowAttackHpTexts(session);
+                        return false;
+                    },
+                    () => ShowAttackHpTexts(session),
+                    null,
+                    null,
+                    () =>
+                    {
+                        if (ViewModel == null || ViewModel.Session != session)
+                        {
+                            return;
+                        }
+
+                        ViewModel.ShowMask.Value = false;
+                        session.CompleteHolyLightPlay();
+                    },
+                    1f,
+                    hitAnimSlots,
+                    shouldSpawnHitFx))
+            {
+                session.ApplyPendingHolyLightHit();
+                TryDissolveIfLethal(session);
+                session.CompleteHolyLightPlay();
+                return;
+            }
+
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroSkill][GameUI] 圣光燃烧 SpecialEffect attack={attackFx.Effects} hit={hitFx.Effects} " +
+                $"hitAnim={hero.hitAnimation} slots={hitAnimSlots?.Count ?? 0}");
         }
 
         private void TryPlayAttack()
@@ -1286,40 +1328,83 @@ namespace App.UI
                 _attackCutsceneDone = true;
                 FinishAttackIfReady();
             };
+            var hero = HeroMechanics.Resolve(session.Run);
+            // 闪避反击的伤害字：贴在被打的敌人头上，跟闪避的 MISS 字分开。
+            Action onDodgeCounterHit = () =>
+            {
+                var counterDamage = session.DodgeCounterDamage;
+                if (counterDamage <= 0)
+                {
+                    return;
+                }
+
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[DodgeCounter] 反击伤害字 -{counterDamage} slot={session.AttackVisualSlot}");
+                PlaceSplashHpAt(session.AttackVisualSlot, $"-{Math.Max(1, counterDamage)}", true);
+            };
             if (session.IncomingAttack)
             {
+                // 闪避反击：HeroConfig.MissAttackEffect 配了特效就演一段（武僧），否则走原来的受击流程。
+                // PVP 的闪避与反击都在服务端算，不走这套演出。
+                var dodgeCounter = session.IsPvp ? null : _attackFx.BuildDodgeCounter(hero);
                 _attackFx.PlayIncoming(
                     session.AttackVisualSlot,
                     session.AttackLevel,
                     onHit,
                     onCollisionDone,
                     onReturned,
-                    onDone);
+                    onDone,
+                    dodgeCounter,
+                    onDodgeCounterHit);
             }
             else
             {
-                var hero = HeroMechanics.Resolve(session.Run);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                // 暗灵法师：齐射（01 持续 + 02 蓄力主弹 + 03 两侧抛物线弹 + 04 受击），档位对这套不生效。
+                if (TryPlayHeroVolley(session, hero, onHeroSkillHit, onHeroSkillDamageText, onCollisionDone, onReturned, onDone, timeScale))
+                {
+                    return;
+                }
+
+                // 圣骑士：对子先走圣光 SpecialEffect（TryPlayHolyLight），再进这里打通用近战；HeroEffects 为空。
+                // 弱/中/强：默认按牌型档位；AttackTuning 里配了伤害阈值后改按这一刀的伤害分档。
+                var fxLevel = AttackTuningConfig.Instance.ResolveHeroFxLevel(session.AttackLevel, session.AttackDamage);
+                // 目标类型：普通怪走 HeroEffectsCommon，精英/领主走 HeroEffectsElite（没配就退回档位/默认档）。
+                var fxTarget = session.EnemyAtVisualSlot(session.AttackVisualSlot);
+                var eliteTarget = fxTarget != null && fxTarget.MonsterType != MonsterType.Normal;
+                // 群体结算（盗贼≥150 / 灰烬 AOE）时全员飞起；与扣血范围一致。
+                var hitAnimSlots = CollectAoeEnemyVisualSlots(session, hero);
+                // 受击特效按本波结算：盗贼攻≥150 / 灰烬 AOE / 溅射等，凡挨打且未闪避的槽都出。
+                Func<int, bool> shouldSpawnHitFx = slot =>
+                    session.LastAttackHitApplied(slot) && !session.LastAttackHitMissed(slot);
+                if (HeroMechanics.TryResolveEffects(hero, fxLevel, eliteTarget, out var attackFx, out var hitFx) &&
                     _attackFx.CanPlayHeroSkill(attackFx, hitFx) &&
                     _attackFx.PlayHeroSkill(
                         session.AttackVisualSlot,
                         session.AttackLevel,
                         attackFx,
                         hitFx,
+                        hero != null ? hero.hitAnimation : null,
                         onHeroSkillHit,
                         onHeroSkillDamageText,
                         onCollisionDone,
                         onReturned,
                         onDone,
-                        timeScale))
+                        timeScale,
+                        hitAnimSlots,
+                        shouldSpawnHitFx))
                 {
-                    AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] 走特效出刀路径");
+                    AppLog.Info(
+                        LogChannel.UI,
+                        $"[HeroSkill][GameUI] 走特效出刀路径 fxLevel={fxLevel} elite={eliteTarget} " +
+                        $"attack={attackFx.Effects} hit={hitFx.Effects} hitAnim={hero?.hitAnimation} " +
+                        $"hitAnimSlots={hitAnimSlots?.Count ?? 0} multiHitFx=1");
                     return;
                 }
 
                 AppLog.Warn(
                     LogChannel.UI,
-                    $"[HeroSkill][GameUI] 回退近战 resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                    $"[HeroSkill][GameUI] 回退近战 fxLevel={fxLevel} elite={eliteTarget} resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
 
                 _attackFx.Play(
                     session.AttackVisualSlot,
@@ -1330,6 +1415,106 @@ namespace App.UI
                     onDone,
                     timeScale);
             }
+        }
+
+        /// <summary>
+        /// 本次出手是群体伤害时，收集全部存活敌人视觉槽（飞起 / 与扣血同范围）。
+        /// 单体则返回 null，只打主目标。
+        /// </summary>
+        private List<int> CollectAoeEnemyVisualSlots(GameSession session, HeroConfig hero)
+        {
+            if (session?.Player == null || hero == null)
+            {
+                return null;
+            }
+
+            var attack = Math.Max(0, session.Player.Attack);
+            var isAoe = HeroMechanics.SumValue(hero, MechanismType.AoeDamage) > 0f
+                        || HeroMechanics.AttackBecomesFullAoe(hero, attack);
+            if (!isAoe)
+            {
+                return null;
+            }
+
+            return CollectAliveEnemyVisualSlots(session);
+        }
+
+        /// <summary>场上全部存活敌人视觉槽；没有则 null。</summary>
+        private List<int> CollectAliveEnemyVisualSlots(GameSession session)
+        {
+            if (session == null)
+            {
+                return null;
+            }
+
+            var slots = new List<int>(3);
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            {
+                var seat = session.EnemyAtVisualSlot(slot);
+                if (seat != null && seat.Alive)
+                {
+                    slots.Add(slot);
+                }
+            }
+
+            return slots.Count > 0 ? slots : null;
+        }
+
+        private bool TryPlayHeroVolley(
+            GameSession session,
+            HeroConfig hero,
+            Func<bool> onHit,
+            Action onHitDamageText,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone,
+            float timeScale)
+        {
+            if (!HeroMechanics.TryResolveVolleyEffects(hero, out var channel, out var main, out var splash, out var hit))
+            {
+                return false;
+            }
+
+            // 主目标之外的存活敌人各吃一发 03；中间的（被点选的那个）永远是 02 主目标。
+            var splashSlots = new List<int>(2);
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            {
+                if (slot == session.AttackVisualSlot)
+                {
+                    continue;
+                }
+
+                var seat = session.EnemyAtVisualSlot(slot);
+                if (seat != null && seat.Alive)
+                {
+                    splashSlots.Add(slot);
+                }
+            }
+
+            if (!_attackFx.PlayVolleySkill(
+                    session.AttackVisualSlot,
+                    session.AttackLevel,
+                    channel,
+                    main,
+                    splash,
+                    hit,
+                    splashSlots,
+                    hero != null ? hero.hitAnimation : null,
+                    onHit,
+                    onHitDamageText,
+                    onCollisionDone,
+                    onReturned,
+                    onDone,
+                    timeScale))
+            {
+                return false;
+            }
+
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroVolley][GameUI] 走齐射出刀 hero={hero?.Name} main={session.AttackVisualSlot} " +
+                $"splash={splashSlots.Count} channel={channel.Effects} main={main.Effects} hit={hit.Effects}");
+            return true;
         }
 
         private void FinishAttackAfterDodgeReply()
@@ -1707,6 +1892,14 @@ namespace App.UI
             if (session.TakenDamage > 0)
             {
                 ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage)}";
+                return true;
+            }
+
+            // 圣光等全场结算：主槽也可能只记在 LastAttackHitDealt 里。
+            var mainDealt = session.LastAttackHitDealt(session.AttackVisualSlot);
+            if (mainDealt > 0)
+            {
+                ViewModel.HpText.Value = $"-{Math.Max(1, mainDealt)}";
                 return true;
             }
 

@@ -53,6 +53,24 @@ namespace CardShare.Battle
         public int ReplaceLeft { get; set; }
 
         public int LuckySevenHits { get; set; }
+
+        /// <summary>防守方当前攻击（以下犯上）。</summary>
+        public int DefenderAttack { get; set; }
+
+        /// <summary>进攻方金币。</summary>
+        public int AttackerGold { get; set; }
+
+        /// <summary>空圣物栏位。</summary>
+        public int EmptyRelicSlots { get; set; }
+
+        /// <summary>本回合是否用过搓/透/替。</summary>
+        public bool UsedSkillThisRound { get; set; }
+
+        /// <summary>本回合已完成比牌次数；0 表示本手是本回合首次。</summary>
+        public int RoundCompareCount { get; set; }
+
+        /// <summary>防守方牌型（王牌对王牌）。</summary>
+        public HandType DefenderHandType { get; set; }
     }
 
     public readonly struct CombatPanelStats
@@ -189,6 +207,7 @@ namespace CardShare.Battle
             var attackerMaxHp = situation.AttackerMaxHp > 0 ? situation.AttackerMaxHp : seat.MaxHp;
             TryResolveHero(tables, seat.HeroId, out var hero);
             var relic = RelicCombat.Evaluate(tables, SnapshotFromSeat(seat, situation), score);
+            var relicIds = seat.RelicIds ?? Array.Empty<int>();
 
             return new CombatDamageInput
             {
@@ -209,9 +228,12 @@ namespace CardShare.Battle
                           + PvpHeroRuntime.HolyLightOutgoingPercent(tables, hero.Id, situation.HolyLightCasts)
                           + PvpHeroRuntime.AttackBossDamagePercent(tables, hero.Id, situation.DefenderMonsterType)
                         : 0f)
-                    + seat.MagicCoinDamageBonus,
+                    + seat.MagicCoinDamageBonus
+                    + SumRelicOutgoingPercent(tables, relicIds, situation, score, attack),
                 CritRate = panel.CritRate + seat.BindingCritBonus,
-                CritMultiplier = panel.CritMultiplier,
+                CritMultiplier = panel.CritMultiplier
+                    + SumRelicEntry(tables, relicIds, MechanismType.CritDamageUp),
+                FlatDamageAdd = (int)Math.Round(SumRelicEntry(tables, relicIds, MechanismType.FlatDamage)),
                 // 追击概率 = 天赋 ProOfExtraAttack + 英雄 ExtraAttackOneTime，求和后由 CombatDamage 掷一次（PVE RollCombined 语义）。
                 ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack)
                     + (hero != null ? PvpHeroRuntime.ExtraAttackChance(tables, hero) : 0f),
@@ -222,6 +244,199 @@ namespace CardShare.Battle
                 ExecuteChance = SumTalent(tables, talents, MechanismType.KillingProbabilityTen),
                 DefenderHp = situation.DefenderHp
             };
+        }
+
+        /// <summary>新圣物出伤%（对齐 PVE RelicOutgoingDamagePercent）。</summary>
+        public static float SumRelicOutgoingPercent(
+            IGameTables tables,
+            IReadOnlyList<int> relicIds,
+            CombatSituation situation,
+            HandScore score,
+            int attackerAttack)
+        {
+            var percent = 0f;
+            if (situation.RoundCompareCount <= 0)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.RoundFirstFightDamageUp);
+            }
+
+            percent += SumRelicEntry(tables, relicIds, MechanismType.AllInDamage);
+            if (situation.AttackerGold <= 0)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.NoGoldDamageUp);
+            }
+
+            if (!situation.UsedSkillThisRound)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.UnusedSkillDamageUp);
+            }
+
+            if (situation.EmptyRelicSlots > 0)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.EmptySlotDamageUp) * situation.EmptyRelicSlots;
+            }
+
+            if (situation.DefenderAttack > attackerAttack)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.UnderdogDamageUp);
+            }
+
+            if (AreSameColor(situation.Shown))
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.SameColorDamageUp);
+            }
+
+            if (HandEvaluator.TypeLevel(score.Type) == HandEvaluator.TypeLevel(situation.DefenderHandType))
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.SameTypeDamageUp);
+            }
+
+            if (situation.DefenderMonsterType == MonsterType.Elite ||
+                situation.DefenderMonsterType == MonsterType.Boss)
+            {
+                percent += SumRelicEntry(tables, relicIds, MechanismType.AttackBossDamage);
+            }
+
+            ForEachRelicEntry(tables, relicIds, entry =>
+            {
+                if (entry.Type == MechanismType.HighHpDamageUp)
+                {
+                    var ratio = ValueAt(entry);
+                    if (situation.AttackerMaxHp > 0 &&
+                        (float)situation.AttackerHp / situation.AttackerMaxHp >= ratio)
+                    {
+                        percent += ValueAt(entry, 1);
+                    }
+                }
+                else if (entry.Type == MechanismType.LowHpEnemyDamageUp)
+                {
+                    var ratio = ValueAt(entry);
+                    if (situation.DefenderMaxHp > 0 &&
+                        (float)situation.DefenderHp / situation.DefenderMaxHp < ratio)
+                    {
+                        percent += ValueAt(entry, 1);
+                    }
+                }
+            });
+
+            return percent;
+        }
+
+        /// <summary>新圣物承伤：固定减伤 + 条件百分比（对齐 PVE IncomingDamageAfterMitigation 圣物侧）。</summary>
+        public static int MitigateIncomingWithRelics(
+            IGameTables tables,
+            IReadOnlyList<int> relicIds,
+            int damage,
+            int gold,
+            int aliveEnemies)
+        {
+            if (damage <= 0)
+            {
+                return 0;
+            }
+
+            damage = Math.Max(0, damage + (int)Math.Round(SumRelicEntry(tables, relicIds, MechanismType.FlatDamageReduce)));
+            var takePer = 0f;
+            ForEachRelicEntry(tables, relicIds, entry =>
+            {
+                if (entry.Type == MechanismType.GoldDamageReduce)
+                {
+                    if (gold >= (int)Math.Round(ValueAt(entry)))
+                    {
+                        takePer += ValueAt(entry, 1);
+                    }
+                }
+                else if (entry.Type == MechanismType.ManyEnemyDamageReduce)
+                {
+                    if (aliveEnemies >= (int)Math.Round(ValueAt(entry)))
+                    {
+                        takePer += ValueAt(entry, 1);
+                    }
+                }
+                else if (entry.Type == MechanismType.AllInDamage)
+                {
+                    takePer += ValueAt(entry, 1);
+                }
+                else if (entry.Type == MechanismType.HeroTakeDamage ||
+                         entry.Type == MechanismType.HeroTakeDamagePer)
+                {
+                    takePer += ValueAt(entry);
+                }
+            });
+            if (takePer != 0f)
+            {
+                damage = Math.Max(0, (int)Math.Round(damage * (1f + takePer)));
+            }
+
+            return damage <= 0 ? 0 : Math.Max(1, damage);
+        }
+
+        private static bool AreSameColor(IReadOnlyList<Card> shown)
+        {
+            if (shown == null || shown.Count < 3)
+            {
+                return false;
+            }
+
+            var red = 0;
+            var black = 0;
+            var n = 0;
+            for (var i = 0; i < shown.Count; i++)
+            {
+                if (!shown[i].IsValid)
+                {
+                    continue;
+                }
+
+                n++;
+                if (shown[i].Suit == Suit.Heart || shown[i].Suit == Suit.Diamond)
+                {
+                    red++;
+                }
+                else
+                {
+                    black++;
+                }
+            }
+
+            return n >= 3 && (red == n || black == n);
+        }
+
+        private static void ForEachRelicEntry(
+            IGameTables tables,
+            IReadOnlyList<int> relicIds,
+            Action<RelicEntryConfig> action)
+        {
+            if (relicIds == null || action == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < relicIds.Count; i++)
+            {
+                if (!tables.TryGetRelic(relicIds[i], out var relic) || relic.MechanismId == null)
+                {
+                    continue;
+                }
+
+                for (var j = 0; j < relic.MechanismId.Length; j++)
+                {
+                    if (tables.TryGetRelicEntry(relic.MechanismId[j], out var entry))
+                    {
+                        action(entry);
+                    }
+                }
+            }
+        }
+
+        private static float ValueAt(RelicEntryConfig entry, int index = 0)
+        {
+            if (entry?.Value == null || index < 0 || index >= entry.Value.Length)
+            {
+                return 0f;
+            }
+
+            return entry.Value[index];
         }
 
         /// <summary>每回合技能次数加成（搓牌 RubbingCardsNum / 透视 PerspectiveNum）：圣物 + 英雄 + 天赋词条求和，口径同 PvE ResetSkillCharges。</summary>

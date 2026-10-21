@@ -12,9 +12,14 @@ namespace CardShare.Battle
     {
         public const int OfferCount = 4;
 
-        public static int RefreshCost(PvpFighter fighter, GameConst gameConst)
+        public static int RefreshCost(PvpFighter fighter, GameConst gameConst, IGameTables? tables = null)
         {
             var first = gameConst.ShopRefreshFirst > 0 ? gameConst.ShopRefreshFirst : 5;
+            if (tables != null && PvpRelicRuntime.HasMechanism(tables, fighter, MechanismType.RefreshPriceFixed))
+            {
+                return first;
+            }
+
             var after = Math.Max(0, gameConst.ShopRefreshAfter);
             var maxUp = gameConst.ShopRefreshGoldUpNumMax > 0 ? gameConst.ShopRefreshGoldUpNumMax : int.MaxValue;
             var ups = Math.Min(Math.Max(0, fighter.ShopRefreshCount), maxUp);
@@ -40,6 +45,75 @@ namespace CardShare.Battle
 
                 offers.Add(pick.Id);
             }
+
+            TryApplyShopRareGuarantee(fighter, tables, rng, stock);
+        }
+
+        /// <summary>捡漏：概率把货架一件抬到稀有+。</summary>
+        private static void TryApplyShopRareGuarantee(
+            PvpFighter fighter,
+            IGameTables tables,
+            Random rng,
+            PvpRelicStock stock)
+        {
+            if (rng == null || fighter.ShopOfferIds.Count == 0)
+            {
+                return;
+            }
+
+            var chance = 0f;
+            for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
+            {
+                if (!tables.TryGetRelic(fighter.OwnedRelicIds[i], out var owned) || owned.MechanismId == null)
+                {
+                    continue;
+                }
+
+                for (var j = 0; j < owned.MechanismId.Length; j++)
+                {
+                    if (tables.TryGetRelicEntry(owned.MechanismId[j], out var entry) &&
+                        entry.Type == MechanismType.ShopRareGuarantee &&
+                        entry.Value != null &&
+                        entry.Value.Length > 0)
+                    {
+                        chance += entry.Value[0];
+                    }
+                }
+            }
+
+            if (chance <= 0f || rng.NextDouble() >= chance)
+            {
+                return;
+            }
+
+            for (var i = 0; i < fighter.ShopOfferIds.Count; i++)
+            {
+                if (tables.TryGetRelic(fighter.ShopOfferIds[i], out var onShelf) &&
+                    onShelf.Type >= QualityType.Rare)
+                {
+                    return;
+                }
+            }
+
+            var pool = BuildPool(fighter, tables, stock);
+            RelicConfig? rare = null;
+            for (var i = 0; i < pool.Count; i++)
+            {
+                if (pool[i].Type >= QualityType.Rare)
+                {
+                    rare = pool[i];
+                    break;
+                }
+            }
+
+            if (rare == null || !stock.TryReserve(rare.Id))
+            {
+                return;
+            }
+
+            var oldId = fighter.ShopOfferIds[0];
+            fighter.ShopOfferIds[0] = rare.Id;
+            stock.Return(oldId, 1);
         }
 
         public static void RerollOffers(PvpFighter fighter, IGameTables tables, Random rng, PvpRelicStock stock)

@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using App.Ad;
 using CardShare.Contracts;
 using Framework.Log;
 using Framework.Save;
@@ -202,6 +203,8 @@ namespace App.Net
                     Provider = AuthProviders.WeChat,
                     Code = code ?? string.Empty,
                     UserInfo = userInfo,
+                    AdCallback = AdAttribution.HasCallback ? AdAttribution.Callback : null,
+                    AdOs = AdAttribution.Os,
                     PendingSettle = LoadPendingSettle()
                 },
                 auth: false);

@@ -1,4 +1,5 @@
 using CardShare.Contracts;
+using CardShare.Domain.Ads;
 using CardShare.Domain.Config;
 using CardShare.Domain.Players;
 
@@ -12,13 +13,15 @@ public sealed class PlayerMetaService
     private readonly PlayerSession _session;
     private readonly IGameConfig _config;
     private readonly IAvatarStore _avatars;
+    private readonly IAdConversionReporter _conversions;
     private readonly Random _random = new Random();
 
-    public PlayerMetaService(PlayerSession session, IGameConfig config, IAvatarStore avatars)
+    public PlayerMetaService(PlayerSession session, IGameConfig config, IAvatarStore avatars, IAdConversionReporter conversions)
     {
         _session = session;
         _config = config;
         _avatars = avatars;
+        _conversions = conversions;
     }
 
     public Task<PlayerProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken)
@@ -39,19 +42,31 @@ public sealed class PlayerMetaService
             };
         }, cancellationToken);
 
-    public Task<EnergyRefillResponse> RefillEnergyByAdAsync(Guid userId, CancellationToken cancellationToken)
-        => _session.MutateAsync(userId, profile =>
+    public async Task<EnergyRefillResponse> RefillEnergyByAdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var attribution = new AdAttributionState();
+        var response = await _session.MutateAsync(userId, profile =>
         {
             profile.RefillEnergyByAd(_config);
+            attribution = profile.AdAttribution.Snapshot();
             return new EnergyRefillResponse { Profile = ProfileMapper.ToDto(profile) };
         }, cancellationToken);
+        _conversions.ReportAdWatched(attribution, "energy_refill_ad");
+        return response;
+    }
 
-    public Task<AdShopClaimResponse> ClaimAdShopAsync(Guid userId, string kind, CancellationToken cancellationToken)
-        => _session.MutateAsync(userId, profile =>
+    public async Task<AdShopClaimResponse> ClaimAdShopAsync(Guid userId, string kind, CancellationToken cancellationToken)
+    {
+        var attribution = new AdAttributionState();
+        var response = await _session.MutateAsync(userId, profile =>
         {
             profile.ClaimAdShop(kind, _config);
+            attribution = profile.AdAttribution.Snapshot();
             return new AdShopClaimResponse { Profile = ProfileMapper.ToDto(profile) };
         }, cancellationToken);
+        _conversions.ReportAdWatched(attribution, "adshop_" + kind);
+        return response;
+    }
 
     public Task<PlayerProfileDto> GrantBagAsync(Guid userId, int itemId, int amount, CancellationToken cancellationToken)
         => _session.MutateAsync(userId, profile =>

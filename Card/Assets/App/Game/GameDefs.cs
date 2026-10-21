@@ -498,6 +498,12 @@ namespace App.Game
         public int ConsumableUsesThisRun;
         /// <summary>复制：本回合随机选中的其它圣物 Id；0 表示未复制。</summary>
         public int RoundCopiedRelicId;
+        /// <summary>战鼓等：本回合临时攻击，回合结束清零。</summary>
+        public int RoundTempAttack;
+        /// <summary>雇佣兵：本回合付不起金币而失效的圣物 Id。</summary>
+        public readonly HashSet<int> RoundPayDisabledRelicIds = new HashSet<int>();
+        /// <summary>牌型图鉴：本局已拿过首次牌型攻击奖励的牌型（HandType 整型）。</summary>
+        public readonly HashSet<int> FirstTypeAttackKinds = new HashSet<int>();
         public readonly List<string> Log = new List<string>();
 
         public void ClearRunProgress()
@@ -547,6 +553,9 @@ namespace App.Game
             WinLoseRelicMag.Clear();
             ConsumableUsesThisRun = 0;
             RoundCopiedRelicId = 0;
+            RoundTempAttack = 0;
+            RoundPayDisabledRelicIds.Clear();
+            FirstTypeAttackKinds.Clear();
         }
 
         public bool LostToMonster(int monsterId)

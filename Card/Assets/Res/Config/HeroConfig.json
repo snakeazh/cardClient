@@ -9,6 +9,15 @@
     "Icon": "People1",
     "HeroEntryId": [],
     "HeroEffects": [],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 0,
     "Desc": "平平无奇之人"
   },
@@ -28,6 +37,15 @@
       101,
       201
     ],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 1,
     "Desc": "拥有10%暴击率,且攻击时有35%概率追加1次攻击;但受到的伤害+15%"
   },
@@ -45,11 +63,21 @@
       303
     ],
     "HeroEffects": [
-      102,
       103,
+      202
+    ],
+    "CastEffect": 102,
+    "SpecialEffect": [
       104,
       202
     ],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 2,
     "Desc": "攻击会对其他人造成10%的分裂伤害,每击杀1名敌人该效果就提高3%(精英/领主提高6%);但无法暴击"
   },
@@ -74,6 +102,24 @@
       109,
       203
     ],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [
+      105,
+      203
+    ],
+    "HeroEffectsMid": [
+      106,
+      208
+    ],
+    "HeroEffectsStrong": [
+      107,
+      209
+    ],
     "UnlockCondition": 3,
     "Desc": "每降低80血量都会使伤害提高5%,最多叠加20层,且攻击时附带8%的吸血;但无法通过圣物回复血量"
   },
@@ -94,6 +140,15 @@
       110,
       111
     ],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 4,
     "Desc": "拥有20%暴击率,每击杀1名敌人永久获得3点攻击力,攻击力＞150后,攻击变化为群体伤害;但对领主/精英敌人伤害-25%"
   },
@@ -112,6 +167,15 @@
       112,
       204
     ],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 5,
     "Desc": "拥有15%暴击率,攻击时对所有人造成50%的群体伤害;但暴击伤害-50%"
   },
@@ -132,6 +196,21 @@
       113,
       205
     ],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [
+      116,
+      207
+    ],
+    "HeroEffectsElite": [
+      113,
+      205
+    ],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 6,
     "Desc": "通过圣物获得的生命回复效果+50%,对精英/领主伤害+50%;但每回合开始时会受到场上当前敌人数量x2的伤害"
   },
@@ -148,10 +227,19 @@
       802,
       803
     ],
-    "HeroEffects": [
+    "HeroEffects": [],
+    "CastEffect": 0,
+    "SpecialEffect": [
       115,
       206
     ],
+    "hitAnimation": "ani_sqs_gj_hit",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 7,
     "Desc": "受到伤害-25%,每回合开始会发动1次[圣光燃烧],比牌时若是对子且获得胜利,也会发动[圣光燃烧];但无法闪避(圣光燃烧:对场上所有敌人造成1次当前攻击力50%的伤害,每发动1次会使后续给予伤害+10%)"
   },
@@ -169,6 +257,15 @@
       903
     ],
     "HeroEffects": [],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "",
+    "MissAttackEffect": [],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 8,
     "Desc": "商店中的所有圣物的购买价格-20%,每击杀1名敌人会获得50金币;但无法通过圣物获得金币"
   },
@@ -185,9 +282,18 @@
       1002,
       1003
     ],
-    "HeroEffects": [
+    "HeroEffects": [],
+    "CastEffect": 0,
+    "SpecialEffect": [],
+    "hitAnimation": "ani_ws_gj_hit",
+    "MissAttackEffect": [
       114
     ],
+    "HeroEffectsCommon": [],
+    "HeroEffectsElite": [],
+    "HeroEffectsWeak": [],
+    "HeroEffectsMid": [],
+    "HeroEffectsStrong": [],
     "UnlockCondition": 9,
     "Desc": "拥有25%闪避率,且闪避后会对该敌人进行1次反击,反击伤害为自身攻击力的200%;但每关[搓牌]使用次数-1"
   }

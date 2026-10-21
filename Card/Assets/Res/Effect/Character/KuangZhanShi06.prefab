@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1093530068049000321}
   - component: {fileID: 3181905508121601944}
   - component: {fileID: 7514311833613646011}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_glow02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4917,7 +4917,7 @@ GameObject:
   - component: {fileID: 2459743900196231089}
   - component: {fileID: 5195500919380335777}
   - component: {fileID: 2114377396219025358}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_ci01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9939,7 +9939,7 @@ GameObject:
   - component: {fileID: 6696084481052104085}
   - component: {fileID: 2917292745408085801}
   - component: {fileID: 1526211839021477849}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_baodian01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14836,7 +14836,7 @@ GameObject:
   - component: {fileID: 8460181314447598239}
   - component: {fileID: 4514936386495926593}
   - component: {fileID: 6744930981670928587}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_dg05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19740,7 +19740,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 680760466677524233}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_kzs_fuzi_06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19775,7 +19775,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2629376801220340223}
-  m_Layer: 0
+  - component: {fileID: 8465507923345868381}
+  m_Layer: 5
   m_Name: KuangZhanShi06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19798,3 +19799,16 @@ Transform:
   - {fileID: 680760466677524233}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8465507923345868381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7590307526768161852}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249

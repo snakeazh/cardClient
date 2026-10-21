@@ -380,6 +380,98 @@ public class RelicCombatTests
         Assert.True(wild.Type == CardShare.Battle.HandType.Flush ||
                     wild.Type == CardShare.Battle.HandType.StraightFlush);
     }
+
+    [Fact]
+    public void FlatDamageAddStacksAfterPercentAndCrit()
+    {
+        // 攻击 10、倍率 1 → 公式 10；+15 固定伤 → 25（铁砂掌口径）
+        var result = CombatDamage.Resolve(new CombatDamageInput
+        {
+            IsPlayer = true,
+            Attack = 10,
+            HandTypeMag = 1f,
+            CritRate = 0f,
+            FlatDamageAdd = 15
+        });
+        Assert.Equal(25, result.Damage);
+    }
+
+    [Fact]
+    public void RelicOutgoingPercentAddsAllInAndNoGold()
+    {
+        var tables = new GameTables(
+            GameTables.Fallback().GameConst,
+            GameTables.Fallback().HandScores,
+            GameTables.Fallback().Levels,
+            GameTables.Fallback().Heroes,
+            new[]
+            {
+                new RelicConfig { Id = 1, Name = "allin", MechanismId = new[] { 1 } }
+            },
+            GameTables.Fallback().UnlockConditions,
+            GameTables.Fallback().TalentRows,
+            GameTables.Fallback().Monsters,
+            GameTables.Fallback().Items,
+            "outgoing",
+            GameTables.Fallback().HeroEntries,
+            GameTables.Fallback().TalentEntries,
+            new[]
+            {
+                new RelicEntryConfig
+                {
+                    Id = 1,
+                    Name = "allin",
+                    Type = MechanismType.AllInDamage,
+                    Value = new[] { 0.25f, 0.15f }
+                }
+            });
+        var score = HandEvaluator.Evaluate(new[]
+        {
+            new PlayingCard(Suit.Heart, Rank.Ace),
+            new PlayingCard(Suit.Heart, Rank.King),
+            new PlayingCard(Suit.Heart, Rank.Queen)
+        });
+        var percent = CombatBonuses.SumRelicOutgoingPercent(
+            tables,
+            new[] { 1 },
+            new CombatSituation { AttackerGold = 0, RoundCompareCount = 1 },
+            score,
+            attackerAttack: 10);
+        Assert.Equal(0.25f, percent);
+    }
+
+    [Fact]
+    public void MitigateIncomingWithRelicsAppliesFlatReduce()
+    {
+        var tables = new GameTables(
+            GameTables.Fallback().GameConst,
+            GameTables.Fallback().HandScores,
+            GameTables.Fallback().Levels,
+            GameTables.Fallback().Heroes,
+            new[]
+            {
+                new RelicConfig { Id = 1, Name = "coat", MechanismId = new[] { 1 } }
+            },
+            GameTables.Fallback().UnlockConditions,
+            GameTables.Fallback().TalentRows,
+            GameTables.Fallback().Monsters,
+            GameTables.Fallback().Items,
+            "incoming",
+            GameTables.Fallback().HeroEntries,
+            GameTables.Fallback().TalentEntries,
+            new[]
+            {
+                new RelicEntryConfig
+                {
+                    Id = 1,
+                    Name = "coat",
+                    Type = MechanismType.FlatDamageReduce,
+                    Value = new[] { -3f }
+                }
+            });
+        var dmg = CombatBonuses.MitigateIncomingWithRelics(tables, new[] { 1 }, damage: 10, gold: 0, aliveEnemies: 1);
+        Assert.Equal(7, dmg);
+    }
 }
 
 public class PvpRelicRuntimeTests

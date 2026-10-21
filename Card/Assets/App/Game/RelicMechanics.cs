@@ -54,7 +54,17 @@ namespace App.Game
     {
         public static bool IsDisabled(RunState run, int relicId)
         {
-            return run != null && relicId > 0 && run.DisabledRelicIds != null && run.DisabledRelicIds.Contains(relicId);
+            if (run == null || relicId <= 0)
+            {
+                return false;
+            }
+
+            if (run.DisabledRelicIds != null && run.DisabledRelicIds.Contains(relicId))
+            {
+                return true;
+            }
+
+            return run.RoundPayDisabledRelicIds != null && run.RoundPayDisabledRelicIds.Contains(relicId);
         }
 
         public static float SumMultiplierExtra(RunState run, HandScore score, RelicCombatContext ctx = default)
@@ -555,6 +565,50 @@ namespace App.Game
 
             var ranks = TypeGap(playerType, enemyType) / unit;
             return (outgoing ? ranks : -ranks) * per;
+        }
+
+        /// <summary>亮出牌是否全红（方片/红心）或全黑（黑桃/梅花）。不足 3 张无效。</summary>
+        public static bool AreSameColor(Card[] shown)
+        {
+            if (shown == null || shown.Length < 3)
+            {
+                return false;
+            }
+
+            var red = 0;
+            var black = 0;
+            var n = 0;
+            for (var i = 0; i < shown.Length; i++)
+            {
+                if (!shown[i].IsValid)
+                {
+                    continue;
+                }
+
+                n++;
+                if (shown[i].Suit == Suit.Heart || shown[i].Suit == Suit.Diamond)
+                {
+                    red++;
+                }
+                else
+                {
+                    black++;
+                }
+            }
+
+            return n >= 3 && (red == n || black == n);
+        }
+
+        /// <summary>血量是否达到或高于阈值（Value 为 0.7 表示 70%）。</summary>
+        public static bool IsAtOrAboveHpRatio(SeatState seat, float ratio)
+        {
+            return seat != null && seat.MaxHp > 0 && (float)seat.Hp / seat.MaxHp >= ratio;
+        }
+
+        /// <summary>持有中的固定攻击合计（血祭/雇佣兵 FlatAttack）。</summary>
+        public static int FlatAttackTotal(RunState run)
+        {
+            return (int)Math.Round(SumValue(run, MechanismType.FlatAttack));
         }
 
         /// <summary>贪欲之冠：floor(金币 / Value[0]) × Value[1]，层数上限 Value[2]。</summary>

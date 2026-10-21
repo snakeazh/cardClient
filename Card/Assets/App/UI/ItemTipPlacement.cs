@@ -48,11 +48,18 @@ namespace App.UI
             }
 
             var dy = 0f;
-            if (localMin.y < minY)
+            var overflowBottom = localMin.y < minY;
+            var overflowTop = localMax.y > maxY;
+            if (overflowBottom && overflowTop)
+            {
+                // 比可视区更高时优先保住顶部（标题），避免只贴底把抬头裁掉。
+                dy = maxY - localMax.y;
+            }
+            else if (overflowBottom)
             {
                 dy = minY - localMin.y;
             }
-            else if (localMax.y > maxY)
+            else if (overflowTop)
             {
                 dy = maxY - localMax.y;
             }

@@ -277,6 +277,13 @@ namespace CardShare.Battle
 
                 var rules = SeatHandRules(i);
                 scores[i] = HandEvaluator.Evaluate(open, rules: rules);
+                var down = _seats[i].TypeDowngradeSteps;
+                if (down > 0)
+                {
+                    // 心理战：只降比牌顺位，不改出伤牌型/倍率（对齐 PVE ReduceLevel / CompareLevelBonus）。
+                    scores[i] = scores[i].WithCompareLevelBonus(scores[i].CompareLevelBonus - down);
+                }
+
                 if (best == null || scores[i].CompareTo(best.Value) > 0)
                 {
                     best = scores[i];
@@ -316,6 +323,16 @@ namespace CardShare.Battle
                 CombatDamageInput input;
                 if (seat.HeroId > 0)
                 {
+                    var defenderIndex = -1;
+                    for (var d = 0; d < _seats.Count; d++)
+                    {
+                        if (d != i && IsSeatActive(d))
+                        {
+                            defenderIndex = d;
+                            break;
+                        }
+                    }
+
                     input = CombatBonuses.BuildPlayerInput(
                         _tables,
                         seat,
@@ -337,6 +354,14 @@ namespace CardShare.Battle
                             DefenderMonsterType = defender != null ? defender.MonsterType : MonsterType.Normal,
                             DefenderHp = defender != null ? defender.Hp : 0,
                             DefenderMaxHp = defender != null ? defender.MaxHp : 0,
+                            DefenderAttack = defender != null ? defender.Attack : 0,
+                            DefenderHandType = defenderIndex >= 0 && defenderIndex < scores.Length
+                                ? scores[defenderIndex].Type
+                                : HandType.HighCard,
+                            AttackerGold = seat.Gold,
+                            EmptyRelicSlots = seat.EmptyRelicSlots,
+                            UsedSkillThisRound = seat.UsedSkillThisRound,
+                            RoundCompareCount = seat.RoundCompareCount,
                             HolyLightCasts = seat.HolyLightCasts,
                             Shown = open,
                             Unshown = UnshownCards(i)

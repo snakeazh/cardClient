@@ -36,7 +36,9 @@ namespace CardShare.Battle
             bool? won,
             Random rng)
         {
+            ApplyFirstTypeGetAttack(tables, fighter, shownType);
             AddHandTypeShowCount(fighter, shownType);
+            fighter.RoundCompareCount++;
             if (won.HasValue)
             {
                 OnCompareResult(tables, fighter, won.Value);
@@ -44,6 +46,42 @@ namespace CardShare.Battle
 
             TickSelfDecay(tables, fighter);
             TrySummonConsumable(tables, fighter, shownType, rng);
+        }
+
+        private static void ApplyFirstTypeGetAttack(IGameTables tables, PvpFighter fighter, HandType type)
+        {
+            var key = (int)type;
+            if (key < 0 || key >= fighter.HandTypeShowCounts.Length || fighter.HandTypeShowCounts[key] > 0)
+            {
+                return;
+            }
+
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.FirstTypeGetAttack)
+                {
+                    return;
+                }
+
+                var atk = (int)Math.Round(ValueAt(entry));
+                var cap = (int)Math.Round(ValueAt(entry, 1));
+                if (atk == 0)
+                {
+                    return;
+                }
+
+                if (cap > 0 && fighter.FirstTypeAttackKinds.Count >= cap)
+                {
+                    return;
+                }
+
+                if (!fighter.FirstTypeAttackKinds.Add(key))
+                {
+                    return;
+                }
+
+                fighter.PermanentAttackBonus += atk;
+            });
         }
 
         public static void OnShopRefreshed(IGameTables tables, PvpFighter fighter)
@@ -202,17 +240,54 @@ namespace CardShare.Battle
         /// <summary>写入比牌用 SeatSetup 追踪字段（含甜品加攻与当前持有圣物列表）。</summary>
         public static void ApplyTrackersToSeat(IGameTables tables, PvpFighter fighter, SeatSetup setup)
         {
-            setup.RelicIds = PvpRelicBag.Expand(fighter);
+            setup.RelicIds = ExpandActiveRelics(fighter);
             setup.HandTypeShowCounts = (int[])fighter.HandTypeShowCounts.Clone();
             setup.RelicSelfDecayMag = CloneFloatDict(fighter.RelicSelfDecayMag);
             setup.RelicShopRefreshCounts = CloneIntDict(fighter.RelicShopRefreshCounts);
             setup.RelicWinLoseMag = CloneFloatDict(fighter.RelicWinLoseMag);
             setup.ConsumableUsesThisRun = fighter.ConsumableUsesThisRun;
             setup.CopiedRelicId = fighter.CopiedRelicId;
-            setup.Attack = Math.Max(0, fighter.Combat.Attack + SelfDecayAttackTotal(tables, fighter));
+            setup.Attack = Math.Max(
+                0,
+                fighter.Combat.Attack
+                + fighter.PermanentAttackBonus
+                + fighter.RoundTempAttack
+                + SelfDecayAttackTotal(tables, fighter)
+                + FlatAttackTotal(tables, fighter));
             setup.BindingMagForever = fighter.BindingMagForever;
             setup.MagicCoinDamageBonus = fighter.MagicCoinDamageBonus;
             setup.BindingCritBonus = fighter.BindingCritBonus;
+            setup.Gold = fighter.Gold;
+            setup.EmptyRelicSlots = Math.Max(0, fighter.RelicSlots - fighter.OwnedRelicIds.Count);
+            setup.UsedSkillThisRound = fighter.UsedSkillThisRound;
+            setup.RoundCompareCount = fighter.RoundCompareCount;
+            setup.TypeDowngradeSteps = fighter.RoundTypeDowngrade;
+        }
+
+        public static int FlatAttackTotal(IGameTables tables, PvpFighter fighter)
+        {
+            return SumOwnedInt(tables, fighter, MechanismType.FlatAttack);
+        }
+
+        /// <summary>展开持有圣物，跳过本回合付费失效件。</summary>
+        public static List<int> ExpandActiveRelics(PvpFighter fighter)
+        {
+            var expanded = PvpRelicBag.Expand(fighter);
+            if (fighter.RoundPayDisabledRelicIds == null || fighter.RoundPayDisabledRelicIds.Count == 0)
+            {
+                return expanded;
+            }
+
+            var list = new List<int>(expanded.Count);
+            for (var i = 0; i < expanded.Count; i++)
+            {
+                if (!fighter.RoundPayDisabledRelicIds.Contains(expanded[i]))
+                {
+                    list.Add(expanded[i]);
+                }
+            }
+
+            return list;
         }
 
         // ——— 治疗与血量上限：PVP 服务端权威结算，口径对齐 PVE GameSession（ApplyRelicMaxHpDelta / HealPlayer） ———
@@ -229,10 +304,17 @@ namespace CardShare.Battle
             ApplyMaxHpDelta(fighter, -SumRelicInt(tables, relicId, MechanismType.HeroHpMax));
         }
 
-        /// <summary>回合开始：绷带/小精灵回血（HeroHpReplyEveryRoundEnding）、永恒之心上限成长（EveryRoundGetHpMax）、
-        /// 保温杯低血回复（ThermosCup，语义"回合结束后"，在此按结算窗口等效判定）。</summary>
+        /// <summary>回合开始：绷带/小精灵回血、永恒之心、保温杯；以及新圣物回合效果。</summary>
         public static void ApplyRoundStart(IGameTables tables, PvpFighter fighter)
         {
+            // 先结算上回合「未受伤获金」，再清回合旗。
+            ApplyNoHurtGetGold(tables, fighter);
+            ClearRoundFlags(fighter);
+            ApplyRoundPayGold(tables, fighter);
+            ApplyRoundTempAttack(tables, fighter);
+            ApplyLowGoldGetGold(tables, fighter);
+            ApplyHealMissingHp(tables, fighter);
+
             HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.HeroHpReplyEveryRoundEnding));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.EveryRoundGetHpMax));
             ForEachEntry(tables, fighter, (_, entry) =>
@@ -250,6 +332,116 @@ namespace CardShare.Battle
             });
             ApplyBronzeBook(tables, fighter);
             ArmCurseSilenceRevive(tables, fighter);
+        }
+
+        /// <summary>上回合末：未受伤获金在清旗前结算；ClearRoundFlags 会清 TookDamage。</summary>
+        private static void ApplyNoHurtGetGold(IGameTables tables, PvpFighter fighter)
+        {
+            // 首回合 TookDamage 默认 false 会误发；用 RoundCompareCount：上回合打过才结算。
+            if (fighter.TookDamageThisRound || fighter.RoundCompareCount <= 0)
+            {
+                return;
+            }
+
+            var gold = SumOwnedInt(tables, fighter, MechanismType.NoHurtGetGold);
+            if (gold != 0 && !PvpHeroRuntime.BlocksRelicGold(tables, fighter.Combat.HeroId))
+            {
+                fighter.Gold += gold;
+            }
+        }
+
+        private static void ClearRoundFlags(PvpFighter fighter)
+        {
+            fighter.UsedSkillThisRound = false;
+            fighter.TookDamageThisRound = false;
+            fighter.RoundCompareCount = 0;
+            fighter.RoundKills = 0;
+            fighter.RoundTypeDowngrade = 0;
+            if (fighter.RoundTempAttack != 0)
+            {
+                fighter.RoundTempAttack = 0;
+            }
+
+            fighter.RoundPayDisabledRelicIds.Clear();
+        }
+
+        private static void ApplyRoundPayGold(IGameTables tables, PvpFighter fighter)
+        {
+            ForEachEntry(tables, fighter, (relic, entry) =>
+            {
+                if (entry.Type != MechanismType.RoundPayGold)
+                {
+                    return;
+                }
+
+                var cost = (int)Math.Round(Math.Abs(ValueAt(entry)));
+                if (cost <= 0)
+                {
+                    return;
+                }
+
+                if (fighter.Gold >= cost)
+                {
+                    fighter.Gold -= cost;
+                    OnGoldSpent(tables, fighter);
+                    return;
+                }
+
+                fighter.RoundPayDisabledRelicIds.Add(relic.Id);
+            });
+        }
+
+        private static void ApplyRoundTempAttack(IGameTables tables, PvpFighter fighter)
+        {
+            fighter.RoundTempAttack = SumOwnedInt(tables, fighter, MechanismType.RoundTempAttack);
+        }
+
+        private static void ApplyLowGoldGetGold(IGameTables tables, PvpFighter fighter)
+        {
+            if (PvpHeroRuntime.BlocksRelicGold(tables, fighter.Combat.HeroId))
+            {
+                return;
+            }
+
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.LowGoldGetGold)
+                {
+                    return;
+                }
+
+                var threshold = (int)Math.Round(ValueAt(entry));
+                var gain = (int)Math.Round(ValueAt(entry, 1));
+                if (gain != 0 && fighter.Gold < threshold)
+                {
+                    fighter.Gold += gain;
+                }
+            });
+        }
+
+        private static void ApplyHealMissingHp(IGameTables tables, PvpFighter fighter)
+        {
+            var ratio = SumOwnedFloat(tables, fighter, MechanismType.HealMissingHp);
+            if (ratio <= 0f || fighter.MaxHp <= 0)
+            {
+                return;
+            }
+
+            var missing = Math.Max(0, fighter.MaxHp - fighter.Hp);
+            HealFromRelic(tables, fighter, (int)Math.Round(missing * ratio));
+        }
+
+        private static float SumOwnedFloat(IGameTables tables, PvpFighter fighter, MechanismType type)
+        {
+            var total = 0f;
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type == type)
+                {
+                    total += ValueAt(entry);
+                }
+            });
+            return total;
         }
 
         public static void ApplyBronzeBook(IGameTables tables, PvpFighter fighter)
@@ -577,6 +769,7 @@ namespace CardShare.Battle
             // 技能次数（CombatBonuses / BeforeCompare 注入）
             MechanismType.RubbingCardsNum,
             MechanismType.PerspectiveNum,
+            MechanismType.ReplaceCardsNum,
             // 本文件：回合/概率
             MechanismType.ReverseResult,
             MechanismType.SelfDestroyPerRound,
@@ -592,6 +785,47 @@ namespace CardShare.Battle
             MechanismType.HealHpPercent,
             MechanismType.MaxHpUpAndHeal,
             MechanismType.UseRoundNullify,
+            MechanismType.RelicReplyHp,
+            // 新圣物 174/179–215
+            MechanismType.CritDamageUp,
+            MechanismType.RoundFirstFightDamageUp,
+            MechanismType.FlatDamage,
+            MechanismType.FlatDamageReduce,
+            MechanismType.GoldDamageReduce,
+            MechanismType.NoHurtGetGold,
+            MechanismType.HighHpDamageUp,
+            MechanismType.SameColorDamageUp,
+            MechanismType.LowGoldGetGold,
+            MechanismType.CriticalHealHp,
+            MechanismType.KillDropConsumable,
+            MechanismType.ShopRareGuarantee,
+            MechanismType.RefreshPriceFixed,
+            MechanismType.UnderdogDamageUp,
+            MechanismType.UnusedSkillDamageUp,
+            MechanismType.MissGetGold,
+            MechanismType.FirstTypeGetAttack,
+            MechanismType.LowHpEnemyDamageUp,
+            MechanismType.FlatAttack,
+            MechanismType.RoundPayGold,
+            MechanismType.GoldBlockDamage,
+            MechanismType.WinStrongTypeGold,
+            MechanismType.SellGetAttack,
+            MechanismType.KeepConsumablePer,
+            MechanismType.ExtraKillGold,
+            MechanismType.EmptySlotDamageUp,
+            MechanismType.NoGoldDamageUp,
+            MechanismType.RoundTempAttack,
+            MechanismType.ManyEnemyDamageReduce,
+            MechanismType.LoseFightAttack,
+            MechanismType.KillGoldUp,
+            MechanismType.RubbingPayGold,
+            MechanismType.PeekDownGrade,
+            MechanismType.SameTypeDamageUp,
+            MechanismType.HealMissingHp,
+            MechanismType.AllInDamage,
+            MechanismType.AttackBossDamage,
+            MechanismType.HeroTakeDamage,
+            MechanismType.HeroTakeDamagePer,
         };
 
         /// <summary>比牌获胜：月光酒回血（WinHeal）+ 激励徽章上限成长（DefeatGetHpMax）。</summary>
@@ -599,6 +833,174 @@ namespace CardShare.Battle
         {
             HealFromRelic(tables, fighter, SumOwnedInt(tables, fighter, MechanismType.WinHeal));
             ApplyMaxHpDelta(fighter, SumOwnedInt(tables, fighter, MechanismType.DefeatGetHpMax));
+        }
+
+        /// <summary>悬赏令：战胜不低于指定牌型的敌人获得金币。</summary>
+        public static void ApplyWinStrongTypeGold(IGameTables tables, PvpFighter fighter, HandType enemyType)
+        {
+            if (PvpHeroRuntime.BlocksRelicGold(tables, fighter.Combat.HeroId))
+            {
+                return;
+            }
+
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.WinStrongTypeGold)
+                {
+                    return;
+                }
+
+                var need = (int)Math.Round(ValueAt(entry));
+                var gold = (int)Math.Round(ValueAt(entry, 1));
+                if (gold != 0 && HandEvaluator.TypeLevel(enemyType) >= need)
+                {
+                    fighter.Gold += gold;
+                }
+            });
+        }
+
+        /// <summary>败者之咬：比牌失败仍造成攻击力伤害。</summary>
+        public static int LoseFightAttackDamage(IGameTables tables, PvpFighter fighter)
+        {
+            var hits = SumOwnedInt(tables, fighter, MechanismType.LoseFightAttack);
+            if (hits <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Max(1, fighter.Combat.Attack + fighter.PermanentAttackBonus + fighter.RoundTempAttack) * hits;
+        }
+
+        public static int CriticalHealAmount(IGameTables tables, PvpFighter fighter)
+        {
+            return SumOwnedInt(tables, fighter, MechanismType.CriticalHealHp);
+        }
+
+        public static int MissGetGoldAmount(IGameTables tables, PvpFighter fighter)
+        {
+            return SumOwnedInt(tables, fighter, MechanismType.MissGetGold);
+        }
+
+        public static int GoldBlockCost(IGameTables tables, PvpFighter fighter)
+        {
+            return SumOwnedInt(tables, fighter, MechanismType.GoldBlockDamage);
+        }
+
+        public static void ApplySellGetAttack(IGameTables tables, PvpFighter fighter, int soldRelicId)
+        {
+            var selfSell = SumRelicInt(tables, soldRelicId, MechanismType.SellGetAttack);
+            if (selfSell != 0)
+            {
+                return;
+            }
+
+            fighter.PermanentAttackBonus += SumOwnedInt(tables, fighter, MechanismType.SellGetAttack);
+        }
+
+        public static bool RollKeepConsumable(IGameTables tables, PvpFighter fighter, Random rng)
+        {
+            if (rng == null)
+            {
+                return false;
+            }
+
+            var keep = false;
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (keep || entry.Type != MechanismType.KeepConsumablePer)
+                {
+                    return;
+                }
+
+                if (rng.NextDouble() < ProbabilityValue(tables, fighter, entry))
+                {
+                    keep = true;
+                }
+            });
+            return keep;
+        }
+
+        public static void ApplyPeekDownGrade(IGameTables tables, PvpFighter peeker, PvpFighter? target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            var steps = SumOwnedInt(tables, peeker, MechanismType.PeekDownGrade);
+            if (steps > 0)
+            {
+                target.RoundTypeDowngrade += steps;
+            }
+        }
+
+        public static void ApplyKillRewards(IGameTables tables, PvpFighter killer, Random rng)
+        {
+            killer.RoundKills++;
+            if (PvpHeroRuntime.BlocksRelicGold(tables, killer.Combat.HeroId))
+            {
+                return;
+            }
+
+            if (killer.RoundKills > 1)
+            {
+                killer.Gold += SumOwnedInt(tables, killer, MechanismType.ExtraKillGold);
+            }
+
+            var killUp = SumOwnedFloat(tables, killer, MechanismType.KillGoldUp);
+            if (killUp != 0f)
+            {
+                var baseGold = PvpHeroRuntime.KillGold(tables, killer.Combat.HeroId);
+                killer.Gold += (int)Math.Round(baseGold * killUp);
+            }
+
+            TryKillDropConsumable(tables, killer, rng);
+        }
+
+        private static void TryKillDropConsumable(IGameTables tables, PvpFighter fighter, Random rng)
+        {
+            if (rng == null || fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            {
+                return;
+            }
+
+            ForEachEntry(tables, fighter, (_, entry) =>
+            {
+                if (entry.Type != MechanismType.KillDropConsumable)
+                {
+                    return;
+                }
+
+                if (rng.NextDouble() >= ProbabilityValue(tables, fighter, entry))
+                {
+                    return;
+                }
+
+                if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+                {
+                    return;
+                }
+
+                var pool = new List<int>();
+                for (var i = 0; i < tables.Relics.Count; i++)
+                {
+                    var relic = tables.Relics[i];
+                    if (relic != null && IsConsumable(relic) && !fighter.OwnedRelicIds.Contains(relic.Id))
+                    {
+                        pool.Add(relic.Id);
+                    }
+                }
+
+                if (pool.Count > 0)
+                {
+                    PvpRelicBag.Add(fighter, pool[rng.Next(pool.Count)]);
+                }
+            });
+        }
+
+        public static int RubPayGold(IGameTables tables, PvpFighter fighter)
+        {
+            return SumOwnedInt(tables, fighter, MechanismType.RubbingPayGold);
         }
 
         private static void ApplyMaxHpDelta(PvpFighter fighter, int delta)
@@ -621,7 +1023,24 @@ namespace CardShare.Battle
 
         private static int HealFromRelic(IGameTables tables, PvpFighter fighter, int amount)
         {
-            return Heal(fighter, PvpHeroRuntime.ScaleRelicHeal(tables, fighter.Combat.HeroId, amount));
+            if (amount <= 0)
+            {
+                return 0;
+            }
+
+            if (PvpHeroRuntime.HasMechanism(tables, fighter.Combat.HeroId, MechanismType.UnableReplyHp))
+            {
+                return 0;
+            }
+
+            var per = PvpHeroRuntime.SumValue(tables, fighter.Combat.HeroId, MechanismType.RelicReplyHp)
+                + SumOwnedFloat(tables, fighter, MechanismType.RelicReplyHp);
+            if (per != 0f)
+            {
+                amount = (int)Math.Round(amount * (1f + per));
+            }
+
+            return Heal(fighter, Math.Max(0, amount));
         }
 
         private static int Heal(PvpFighter fighter, int amount)
@@ -825,6 +1244,9 @@ namespace CardShare.Battle
             {
                 case MechanismType.ReverseResult:
                 case MechanismType.SelfDestroyPerRound:
+                case MechanismType.KillDropConsumable:
+                case MechanismType.KeepConsumablePer:
+                case MechanismType.ShopRareGuarantee:
                     return true;
                 default:
                     return false;
@@ -854,6 +1276,11 @@ namespace CardShare.Battle
             {
                 var relicId = fighter.OwnedRelicIds[i];
                 if (relicId <= 0 || !seen.Add(relicId) || !tables.TryGetRelic(relicId, out var relic))
+                {
+                    continue;
+                }
+
+                if (fighter.RoundPayDisabledRelicIds != null && fighter.RoundPayDisabledRelicIds.Contains(relicId))
                 {
                     continue;
                 }

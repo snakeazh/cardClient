@@ -115,7 +115,7 @@ namespace CardShare.Battle
             {
                 OfferIds = fighter.ShopOfferIds.ToArray(),
                 OfferPrices = offerPrices,
-                RefreshCost = PvpShopRules.RefreshCost(fighter, tables.GameConst),
+                RefreshCost = PvpShopRules.RefreshCost(fighter, tables.GameConst, tables),
                 FreeRefreshLeft = fighter.FreeShopRefreshLeft,
                 OwnedRelicIds = fighter.OwnedRelicIds.ToArray(),
                 OwnedRelicPower = ownedPower,

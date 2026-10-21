@@ -118,6 +118,21 @@ namespace CardShare.Contracts
 
         /// <summary>属性强化羁绊永久暴击率加成。</summary>
         public float BindingCritBonus { get; set; }
+
+        /// <summary>当前金币（新圣物出伤条件用）。</summary>
+        public int Gold { get; set; }
+
+        /// <summary>空圣物栏位数。</summary>
+        public int EmptyRelicSlots { get; set; }
+
+        /// <summary>本回合是否用过技能。</summary>
+        public bool UsedSkillThisRound { get; set; }
+
+        /// <summary>本回合已完成比牌次数。</summary>
+        public int RoundCompareCount { get; set; }
+
+        /// <summary>牌型降级步数（心理战等，作用于本座位）。</summary>
+        public int TypeDowngradeSteps { get; set; }
     }
 
     public enum BattleModeKind

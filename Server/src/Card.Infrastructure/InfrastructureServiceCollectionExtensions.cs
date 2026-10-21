@@ -1,7 +1,9 @@
 using CardShare.Contracts;
 using CardShare.Domain;
+using CardShare.Domain.Ads;
 using CardShare.Domain.Config;
 using CardShare.Domain.Pvp;
+using CardShare.Infrastructure.Ads;
 using CardShare.Infrastructure.Auth;
 using CardShare.Infrastructure.Config;
 using CardShare.Infrastructure.Postgres;
@@ -95,6 +97,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<ICodeSessionClient, GuestCodeSessionClient>();
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<WeChatCodeSessionClient>());
         services.AddTransient<ICodeSessionClient>(sp => sp.GetRequiredService<DouyinCodeSessionClient>());
+
+        services.Configure<OceanEngineOptions>(configuration.GetSection("OceanEngine"));
+        services.AddHttpClient(OceanEngineHttp.ClientName);
+        services.AddSingleton<IAdConversionReporter, OceanEngineConversionReporter>();
         return services;
     }
 

@@ -6,6 +6,7 @@ using CardShare.Contracts.Config;
 using App.Game;
 using App.Item;
 using App.Resources;
+using App.UI.Effects;
 using App.UI.List;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
@@ -56,6 +57,9 @@ namespace App.UI.Popup
         private CardRowRecycler<IllustratedBookEntry> _collectRecycler;
         private CardRowRecycler<IllustratedBookEntry> _relicRecycler;
         private CardRowRecycler<IllustratedBookEntry> _monsterRecycler;
+        // 弹窗根入场（0.25s 缩放）未播完前挂起的交错入场槽位快照
+        private List<Component> _pendingStagger;
+        private bool _presented;
         private bool _tipLoading;
         private GameObject _itemPrefab;
         private GameObject _monsterPrefab;
@@ -100,8 +104,24 @@ namespace App.UI.Popup
             Binding.Add(ViewModel.TipText.Subscribe(OnTipText, emitCurrent: true));
         }
 
+        /// <summary>
+        /// 弹窗根入场播完后放行挂起的交错入场：首次打开时 StartBuildTab 是异步的，
+        /// 若在根缩放动画（scale 从 0 起步）期间填充完成，交错弹入会被整体盖住，须等这里放行。
+        /// </summary>
+        public override void OnPresented()
+        {
+            base.OnPresented();
+            _presented = true;
+            if (_pendingStagger != null)
+            {
+                StaggerReveal.Play(_pendingStagger);
+                _pendingStagger = null;
+            }
+        }
+
         protected override Task OnViewClose()
         {
+            _pendingStagger = null;
             if (_tipCatcher != null)
             {
                 _tipCatcher.SetActive(false);
@@ -194,6 +214,8 @@ namespace App.UI.Popup
             var go = card.gameObject;
             go.name = "CardSlot";
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            // 池化复用：清掉上一任视图交错入场的残留（alpha 遗留 <1 会让卡槽半透明）
+            StaggerReveal.ResetSlot(card);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
             {
@@ -396,6 +418,8 @@ namespace App.UI.Popup
             var go = card.gameObject;
             go.name = "MonsterSlot";
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            // 池化复用：清掉上一任视图交错入场的残留（alpha 遗留 <1 会让卡槽半透明）
+            StaggerReveal.ResetSlot(card);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
             {
@@ -598,15 +622,18 @@ namespace App.UI.Popup
                         await EnsureItemPrefab();
                         await LoadEntryIcons(ViewModel.CollectEntries);
                         BuildCollectPage();
+                        PlayStaggerEntrance(_collectRecycler);
                         break;
                     case IllustratedBookTab.Monster:
                         await EnsureMonsterPrefab();
                         BuildMonsterPage();
+                        PlayStaggerEntrance(_monsterRecycler);
                         break;
                     default:
                         await EnsureItemPrefab();
                         await LoadEntryIcons(ViewModel.RelicEntries);
                         BuildRelicPage();
+                        PlayStaggerEntrance(_relicRecycler);
                         break;
                 }
             }
@@ -614,6 +641,39 @@ namespace App.UI.Popup
             {
                 AppLog.Exception(LogChannel.UI, ex);
             }
+        }
+
+        /// <summary>视口内卡槽交错弹入；根入场未完成时先挂起，等 OnPresented 放行。
+        /// 首次切到某页签时弹窗早已全开（_presented 为真），Build 完成立即播。</summary>
+        private void PlayStaggerEntrance(CardRowRecycler<IllustratedBookEntry> recycler)
+        {
+            if (recycler == null)
+            {
+                return;
+            }
+
+            recycler.CollectActiveSlots(_activeSlots);
+            if (_activeSlots.Count == 0)
+            {
+                return;
+            }
+
+            if (_presented)
+            {
+                StaggerReveal.Play(_activeSlots);
+                return;
+            }
+
+            if (_pendingStagger == null)
+            {
+                _pendingStagger = new List<Component>(_activeSlots.Count);
+            }
+            else
+            {
+                _pendingStagger.Clear();
+            }
+
+            _pendingStagger.AddRange(_activeSlots);
         }
 
         private async Task LoadEntryIcons(IReadOnlyList<IllustratedBookEntry> entries)

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CardShare.Domain.Ads;
 using CardShare.Domain.Players;
 using Xunit;
@@ -35,33 +36,41 @@ public class AdAttributionTests
     }
 }
 
-public class AdConversionUrlBuilderTests
+public class AdConversionPayloadBuilderTests
 {
     [Fact]
-    public void BuildsTrackActivateFormatWithEncodedProps()
+    public void BuildsActivePayBodyWithAndroidPlatform()
     {
-        var url = AdConversionUrlBuilder.BuildPaidConversionUrl(
-            "https://ad.toutiao.com/track/activate/",
+        var json = AdConversionPayloadBuilder.BuildPaidConversionBody(
             "CLeghfjf8_ICEIO4pYnh8",
             0,
             1290,
-            null);
+            1604888786102L);
 
-        Assert.Equal(
-            "https://ad.toutiao.com/track/activate/?callback=CLeghfjf8_ICEIO4pYnh8&os=0&event_type=2&props=%7B%22pay_amount%22%3A1290%7D",
-            url);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        Assert.Equal("active_pay", root.GetProperty("event_type").GetString());
+        Assert.Equal("CLeghfjf8_ICEIO4pYnh8", root.GetProperty("context").GetProperty("ad").GetProperty("callback").GetString());
+        Assert.Equal("android", root.GetProperty("context").GetProperty("device").GetProperty("platform").GetString());
+        Assert.Equal(1290, root.GetProperty("properties").GetProperty("pay_amount").GetInt32());
+        Assert.Equal(1604888786102L, root.GetProperty("timestamp").GetInt64());
     }
 
     [Fact]
-    public void AppendsAccessTokenWhenProvided()
+    public void MapsIosPlatform()
     {
-        var url = AdConversionUrlBuilder.BuildPaidConversionUrl(
-            "https://ad.toutiao.com/track/activate/",
-            "cb",
-            1,
-            5,
-            "token abc");
+        var json = AdConversionPayloadBuilder.BuildPaidConversionBody("cb", 1, 5, 1L);
 
-        Assert.EndsWith("&access_token=token%20abc", url);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("ios", doc.RootElement.GetProperty("context").GetProperty("device").GetProperty("platform").GetString());
+    }
+
+    [Fact]
+    public void OmitsDeviceWhenOsUnknown()
+    {
+        var json = AdConversionPayloadBuilder.BuildPaidConversionBody("cb", -1, 5, 1L);
+
+        using var doc = JsonDocument.Parse(json);
+        Assert.False(doc.RootElement.GetProperty("context").TryGetProperty("device", out _));
     }
 }

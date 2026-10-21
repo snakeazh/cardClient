@@ -60,10 +60,4 @@ namespace CardShare.Contracts
     {
         public int Amount { get; set; }
     }
-
-    /// <summary>巨量 Marketing API 首次授权：OAuth 回调拿到的 auth_code（10 分钟有效、一次性）。</summary>
-    public sealed class OceanEngineAuthorizeRequest
-    {
-        public string AuthCode { get; set; } = string.Empty;
-    }
 }

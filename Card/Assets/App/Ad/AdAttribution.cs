@@ -8,8 +8,9 @@ using WeChatWASM;
 namespace App.Ad
 {
     /// <summary>
-    /// 巨量点击归因采集：广告点击进入小游戏时启动 query 携带 callback，
-    /// 首次访问时捕获一次，登录时随 LoginRequest.AdCallback/AdOs 上报，服务端据此回传转化。
+    /// 巨量点击归因采集：广告点击进入小游戏时启动 query 携带 clickid（新版 clickid 归因链路，
+    /// 兼容老监测链接的 callback），首次访问时捕获一次，登录时随 LoginRequest.AdCallback/AdOs 上报，
+    /// 服务端据此回传转化。官方文档：https://event-manager.oceanengine.com/docs/8650/5bltdv1c
     /// </summary>
     public static class AdAttribution
     {
@@ -54,10 +55,10 @@ namespace App.Ad
             {
                 var options = WX.GetLaunchOptionsSync();
                 var query = options != null ? options.query : null;
-                if (query != null && query.TryGetValue("callback", out var callback) && !string.IsNullOrWhiteSpace(callback))
+                if (query != null && TryReadClickId(query, out var clickId))
                 {
-                    _callback = callback.Trim();
-                    AppLog.Info(LogChannel.Net, "Ad attribution callback captured.");
+                    _callback = clickId.Trim();
+                    AppLog.Info(LogChannel.Net, "Ad attribution clickid captured.");
                 }
             }
             catch (Exception ex)
@@ -66,6 +67,25 @@ namespace App.Ad
             }
 #endif
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        /// <summary>clickid 归因链路优先读 clickid，兼容老监测链接下发的 callback。</summary>
+        private static bool TryReadClickId(System.Collections.Generic.IDictionary<string, string> query, out string clickId)
+        {
+            if (query.TryGetValue("clickid", out clickId) && !string.IsNullOrWhiteSpace(clickId))
+            {
+                return true;
+            }
+
+            if (query.TryGetValue("callback", out clickId) && !string.IsNullOrWhiteSpace(clickId))
+            {
+                return true;
+            }
+
+            clickId = string.Empty;
+            return false;
+        }
+#endif
 
         private static int CurrentOs()
         {

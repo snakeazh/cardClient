@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using CardShare.Domain.Ads;
 using Microsoft.Extensions.Logging;
@@ -5,27 +6,42 @@ using Microsoft.Extensions.Options;
 
 namespace CardShare.Infrastructure.Ads;
 
+public sealed class OceanEngineOptions
+{
+    /// <summary>总开关：false 时完全不回传。</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>单次广告观看的回传金额（分，int）；&lt;=0 时不回传。平台无单次价格 API，按运营折算配置。</summary>
+    public int PayAmountFen { get; set; }
+
+    /// <summary>转化回传地址，新版事件管理接口。</summary>
+    public string ConversionUrl { get; set; } = "https://analytics.oceanengine.com/api/v2/conversion";
+}
+
+internal static class OceanEngineHttp
+{
+    public const string ClientName = "OceanEngine";
+}
+
 /// <summary>
-/// 巨量转化回传：广告观看完成后按"付费"事件 GET 回传 URL。
-/// 跳过条件：未启用、单价未配置、玩家无 callback、OS 未知、（开启时）无可用 access_token。
+/// 巨量转化回传（新版事件管理接口）：广告观看完成后以 active_pay 事件 POST JSON 回传。
+/// 跳过条件：未启用、单价未配置、玩家无 clickid。官方文档：
+/// https://event-manager.oceanengine.com/docs/8650/5bltdv1c
 /// </summary>
 public sealed class OceanEngineConversionReporter : IAdConversionReporter
 {
     private const int MaxBodyLogLength = 200;
 
     private readonly IHttpClientFactory _httpFactory;
-    private readonly IOceanEngineTokenProvider _tokens;
     private readonly OceanEngineOptions _options;
     private readonly ILogger<OceanEngineConversionReporter> _logger;
 
     public OceanEngineConversionReporter(
         IHttpClientFactory httpFactory,
-        IOceanEngineTokenProvider tokens,
         IOptions<OceanEngineOptions> options,
         ILogger<OceanEngineConversionReporter> logger)
     {
         _httpFactory = httpFactory;
-        _tokens = tokens;
         _options = options.Value;
         _logger = logger;
     }
@@ -37,7 +53,7 @@ public sealed class OceanEngineConversionReporter : IAdConversionReporter
             return;
         }
 
-        if (attribution == null || !attribution.HasCallback || attribution.Os < 0)
+        if (attribution == null || !attribution.HasCallback)
         {
             _logger.LogDebug("OceanEngine conversion skipped ({Scene}): no usable attribution.", scene);
             return;
@@ -50,34 +66,22 @@ public sealed class OceanEngineConversionReporter : IAdConversionReporter
     {
         try
         {
-            string? accessToken = null;
-            if (_options.AttachAccessToken)
-            {
-                accessToken = await _tokens.GetAccessTokenAsync(CancellationToken.None);
-                if (accessToken == null)
-                {
-                    _logger.LogWarning("OceanEngine conversion skipped ({Scene}): no access token; authorize first.", scene);
-                    return;
-                }
-            }
-
-            var url = AdConversionUrlBuilder.BuildPaidConversionUrl(
-                _options.ConversionUrl,
+            var body = AdConversionPayloadBuilder.BuildPaidConversionBody(
                 attribution.Callback,
                 attribution.Os,
                 _options.PayAmountFen,
-                accessToken);
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             using var response = await _httpFactory.CreateClient(OceanEngineHttp.ClientName)
-                .GetAsync(url, CancellationToken.None);
-            var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-            var code = TryReadCode(body);
+                .PostAsync(_options.ConversionUrl, new StringContent(body, Encoding.UTF8, "application/json"), CancellationToken.None);
+            var responseBody = await response.Content.ReadAsStringAsync(CancellationToken.None);
+            var code = TryReadCode(responseBody);
             if (!response.IsSuccessStatusCode || (code.HasValue && code.Value != 0))
             {
                 _logger.LogWarning(
                     "OceanEngine conversion failed ({Scene}): status={Status} body={Body}",
                     scene,
                     (int)response.StatusCode,
-                    Truncate(body));
+                    Truncate(responseBody));
                 return;
             }
 

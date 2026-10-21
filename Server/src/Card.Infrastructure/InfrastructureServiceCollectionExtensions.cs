@@ -100,7 +100,6 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.Configure<OceanEngineOptions>(configuration.GetSection("OceanEngine"));
         services.AddHttpClient(OceanEngineHttp.ClientName);
-        services.AddSingleton<IOceanEngineTokenProvider, OceanEngineTokenProvider>();
         services.AddSingleton<IAdConversionReporter, OceanEngineConversionReporter>();
         return services;
     }

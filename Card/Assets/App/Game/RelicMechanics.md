@@ -193,7 +193,7 @@
 | ReplaceCardsNum | `ResetSkillCharges` | 替换次数 +Value |
 | LowGoldGetGold | `StartRound` | Gold&lt;Value[0] → +Value[1] 金币 |
 | CriticalHealHp | 暴击后 | `HealFromRelic(Value)` |
-| KillDropConsumable | 击杀 | 概率塞随机消耗品（需空栏） |
+| KillDropConsumable | 攻击敌人后 | 概率塞随机消耗品（需空栏） |
 | ShopRareGuarantee | 生成货架 | 概率保证一件稀有+ |
 | RefreshPriceFixed | `ShopRefreshCost` | 刷新价不再随次数上涨 |
 | UnderdogDamageUp | 出伤% | 敌 Attack &gt; 己 Attack |

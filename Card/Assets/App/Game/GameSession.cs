@@ -1782,6 +1782,10 @@ namespace App.Game
                         shown: damage,
                         killed: before > 0 && target.Hp <= 0,
                         main: allowExtra);
+                    if (!target.IsPlayer)
+                    {
+                        TryAttackDropConsumable();
+                    }
                 }
 
                 return;
@@ -1792,6 +1796,7 @@ namespace App.Game
             {
                 _roundDamageDealt += scoreDamage;
                 ApplyBloodSucking(dealt);
+                TryAttackDropConsumable();
             }
         }
 
@@ -8791,11 +8796,10 @@ namespace App.Game
                     Log($"招财猫：击杀金币 +{bonus}（总金币 {Run.Gold}）");
                 }
             }
-
-            TryKillDropConsumable();
         }
 
-        private void TryKillDropConsumable()
+        /// <summary>KillDropConsumable（藏宝图）：攻击敌人后概率掉落随机消耗品。</summary>
+        private void TryAttackDropConsumable()
         {
             if (Run.RelicConfigIds != null && Run.RelicConfigIds.Count >= RelicCarryMax)
             {

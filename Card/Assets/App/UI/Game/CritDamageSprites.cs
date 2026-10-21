@@ -8,13 +8,13 @@ namespace App.UI
 {
     /// <summary>
     /// 暴击伤害数字：用 Critdamage 图集的减号和 Zero–Nine。
-    /// 整体比模板高 RaiseY；字间距比贴图宽少 SpacingShrink；从第二位起每位再抬 StepRaiseY。
+    /// 整体比模板高 RaiseY；字间距比贴图宽少 20；从第二位起每位再抬 2。
     /// </summary>
     public static class CritDamageSprites
     {
         public const float RaiseY = 5f;
-        public const float SpacingShrink = 40f;
-        public const float StepRaiseY = 5f;
+        public const float SpacingShrink = 20f;
+        public const float StepRaiseY = 2f;
 
         private static readonly string[] DigitNames =
         {
@@ -75,10 +75,10 @@ namespace App.UI
                     image.SetNativeSize();
                 }
 
-                // 首位贴模板基线；后续每位再抬 5px，形成轻微上扬。
+                // 首位贴模板基线；后续每位再抬 2px，形成轻微上扬。
                 rect.anchoredPosition = new Vector2(x, y + index * StepRaiseY);
                 child.gameObject.SetActive(sprite != null);
-                // 字距相对贴图宽收缩 40，避免暴击数字排得过开。
+                // 字距相对贴图宽少 20。
                 x += rect.rect.width - SpacingShrink;
             }
         }

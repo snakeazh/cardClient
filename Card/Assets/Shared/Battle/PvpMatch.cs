@@ -877,6 +877,12 @@ namespace CardShare.Battle
                 }
             }
 
+            // 藏宝图：比牌胜方视为攻击敌人，与击杀解耦。
+            if (winnerFighter != null && winnerFighter.Alive)
+            {
+                PvpRelicRuntime.TryAttackDropConsumable(_tables, winnerFighter, _shopRandom);
+            }
+
             var victimAlive = victim != null && victim.Alive;
             ApplyToSeat(duel, 1 - win, damage, deathHp);
             if (damage > 0 && victim != null)

@@ -92,12 +92,6 @@ namespace App.UI
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
         private bool _shownPeekGoodTip;
-#if UNITY_EDITOR
-        private string _debugRelicIdText = string.Empty;
-        private string _debugRelicPreview = string.Empty;
-        private string _debugEntryIdText = "104";
-        private string _debugEntryPreview = string.Empty;
-#endif
         private Coroutine _peekHoldCo;
         private bool _peekHoldFired;
         private Canvas _hudCanvas;
@@ -329,80 +323,6 @@ namespace App.UI
             }
 #endif
         }
-
-#if UNITY_EDITOR
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加圣物（仅编辑器；PVP 走服务端）");
-            GUILayout.BeginHorizontal();
-            var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
-            if (next != _debugRelicIdText)
-            {
-                _debugRelicIdText = next;
-                RefreshDebugRelicPreview();
-            }
-
-            var canGrant = int.TryParse(_debugRelicIdText, out var relicId) && relicId > 0;
-            var wasEnabled = GUI.enabled;
-            GUI.enabled = canGrant;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrant)
-            {
-                ViewModel?.Session?.DebugGrantRelic(relicId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugRelicPreview) ? "输入 RelicConfig.Id" : _debugRelicPreview);
-            GUILayout.EndArea();
-
-            GUILayout.BeginArea(new Rect(8f, 90f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加关卡词缀（仅编辑器）");
-            GUILayout.BeginHorizontal();
-            var entryNext = GUILayout.TextField(_debugEntryIdText ?? string.Empty, GUILayout.Width(88f));
-            if (entryNext != _debugEntryIdText)
-            {
-                _debugEntryIdText = entryNext;
-                RefreshDebugEntryPreview();
-            }
-
-            var canGrantEntry = int.TryParse(_debugEntryIdText, out var entryId) && entryId > 0;
-            GUI.enabled = canGrantEntry;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrantEntry)
-            {
-                ViewModel?.Session?.DebugGrantBossEntry(entryId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugEntryPreview) ? "输入 BossEntryConfig.Id" : _debugEntryPreview);
-            GUILayout.EndArea();
-        }
-
-        private void RefreshDebugRelicPreview()
-        {
-            if (!int.TryParse(_debugRelicIdText, out var relicId) || relicId <= 0)
-            {
-                _debugRelicPreview = string.Empty;
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            _debugRelicPreview = relic != null ? $"{relic.Name}  {relic.Desc}" : $"没有 Id={relicId}";
-        }
-
-        private void RefreshDebugEntryPreview()
-        {
-            if (!int.TryParse(_debugEntryIdText, out var entryId) || entryId <= 0)
-            {
-                _debugEntryPreview = string.Empty;
-                return;
-            }
-
-            var entry = BossEntryConfig.Get(entryId);
-            _debugEntryPreview = entry != null ? $"{entry.Name}  {entry.Desc}" : $"没有 Id={entryId}";
-        }
-#endif
 
         protected override Task OnViewClose()
         {

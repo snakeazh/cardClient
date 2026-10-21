@@ -1,5 +1,6 @@
 using CardShare.Contracts;
 using CardShare.Contracts.Config;
+using CardShare.Domain.Ads;
 using CardShare.Domain.Config;
 
 namespace CardShare.Domain.Players;
@@ -31,6 +32,22 @@ public sealed class PlayerProfile
     public BagState Bag { get; set; } = new BagState();
 
     public int[] GuideCompletedGroupIds { get; set; } = Array.Empty<int>();
+
+    /// <summary>巨量广告点击归因（转化回传用），登录时按最新启动参数覆盖。</summary>
+    public AdAttributionState AdAttribution { get; set; } = new AdAttributionState();
+
+    /// <summary>登录时上报的广告点击归因；callback 为空不覆盖（保留历史点击）。</summary>
+    public void ApplyAdAttribution(string? callback, int os, DateTimeOffset utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(callback))
+        {
+            return;
+        }
+
+        AdAttribution.Callback = callback.Trim();
+        AdAttribution.Os = os;
+        AdAttribution.ReceivedAtUtc = utcNow;
+    }
 
     public static PlayerProfile CreateNew(Guid userId, IGameConfig config, DateTimeOffset utcNow)
     {

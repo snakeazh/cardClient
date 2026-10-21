@@ -76,6 +76,7 @@ public sealed class AuthService
 
         profile.ApplyDailyReset(_config, _clock.UtcNow);
         profile.ApplyUserInfo(request.UserInfo);
+        profile.ApplyAdAttribution(request.AdCallback, request.AdOs, _clock.UtcNow);
         await _players.SaveAsync(profile, cancellationToken);
 
         var profileDto = await _runs.ResolveRunsOnLoginAsync(userId.Value, request.PendingSettle, cancellationToken);

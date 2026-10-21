@@ -302,8 +302,8 @@ public sealed class PlayerProfile
     }
 
     /// <summary>
-    /// 选英雄界面点解锁。已在存档里则保持原样。
-    /// 有通关难度条件时只认服务器自己的关卡进度，不满足则拒绝。
+    /// 选英雄界面点视频解锁。广告当前为模拟发放，点击即写入解锁列表。
+    /// 已在存档里则保持原样。通关难度仍由 <see cref="SyncUnlockedHeroes"/> 自动写入。
     /// </summary>
     public void UnlockHero(int heroId, IGameConfig config)
     {
@@ -316,16 +316,6 @@ public sealed class PlayerProfile
         if (hero == null)
         {
             throw DomainException.Invalid($"Unknown hero {heroId}.");
-        }
-
-        if (Level.UnlockedHeroIds.Contains(heroId))
-        {
-            return;
-        }
-
-        if (hero.UnlockCondition > 0 && !IsDifficultyCleared(hero.UnlockCondition, config))
-        {
-            throw new DomainException(ErrorCodes.HeroLocked, "Hero unlock condition is not met.");
         }
 
         Level.TryUnlockHero(heroId);

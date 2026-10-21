@@ -25,6 +25,7 @@
 | `Run` | 整次闯关：金币、遗物、技能次数、透视标记、`LevelEntryIds` |
 | `Phase` | 当前阶段 |
 | `DealSerial` | 发牌序号，牌桌动画用来重播发牌 |
+| `ReplacePlaySerial` | 替换技能换手序号，牌桌据此播旧牌回收 + 新牌发牌 |
 | `RevealPlaySerial` | 亮牌演出序号 |
 | `SelectingXRayTarget` | 已点透视、等待点选角色 |
 | `AttackVisualSlot` | 当前攻击/比牌敌人的视觉槽 |

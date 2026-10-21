@@ -65,6 +65,7 @@ namespace App.UI.Popup
         private Button _withdrawBtn;
         private Button _doubleBtn;
         private GameObject _coinPrefab;
+        private UiClickCatcher _skipCatcher;
 
         protected override void OnBind()
         {
@@ -99,6 +100,9 @@ namespace App.UI.Popup
                 RefreshRoundList();
                 PlayEntranceOnce();
             }, emitCurrent: false));
+
+            // 全屏透明点击层：入场期间吃任意点击，跳过动画；播完/跳过后关闭。
+            _skipCatcher = UiClickCatcher.Create(transform as RectTransform, SkipEntrance);
             _ = EnsureCoinPrefab();
         }
 
@@ -305,7 +309,10 @@ namespace App.UI.Popup
                 }
 
                 _suppressBgFit = false;
+                HideSkipCatcher();
             });
+
+            ShowSkipCatcher();
         }
 
         // 按 Content 的兄弟顺序（即布局显示顺序）收集要逐块显现的块；
@@ -423,6 +430,62 @@ namespace App.UI.Popup
             }
 
             _blockGroups.Clear();
+            HideSkipCatcher();
+        }
+
+        private void ShowSkipCatcher()
+        {
+            if (_skipCatcher == null)
+            {
+                return;
+            }
+
+            _skipCatcher.transform.SetAsLastSibling();
+            _skipCatcher.gameObject.SetActive(true);
+        }
+
+        private void HideSkipCatcher()
+        {
+            if (_skipCatcher != null)
+            {
+                _skipCatcher.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>点击任意处：中断入场、复位全部块，并把四个结算数字直接跳到目标值。</summary>
+        private void SkipEntrance()
+        {
+            if (_entranceSeq == null || !_entranceSeq.IsActive())
+            {
+                HideSkipCatcher();
+                return;
+            }
+
+            KillEntrance();
+            SkipRollingNumbers();
+            HideSkipCatcher();
+        }
+
+        private void SkipRollingNumbers()
+        {
+            _rollMonsterCount?.SkipToTarget();
+            _rollTotalDamage?.SkipToTarget();
+            _rollReward?.SkipToTarget();
+            _rollWithdraw?.SkipToTarget();
+        }
+
+        private void TickSkipCatcher()
+        {
+            if (_skipCatcher == null || !_skipCatcher.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            // OnComplete 在 WebGL/微信下可能不触发，这里用 sequence 是否还活着兜底。
+            if (_entranceSeq == null || !_entranceSeq.IsActive())
+            {
+                HideSkipCatcher();
+            }
         }
 
         private static CanvasGroup GetOrAddCanvasGroup(RectTransform rect)
@@ -596,6 +659,7 @@ namespace App.UI.Popup
         private void LateUpdate()
         {
             FitBgHeight();
+            TickSkipCatcher();
         }
 
         private void FitBgHeight()
@@ -730,6 +794,7 @@ namespace App.UI.Popup
 
             private long _target;
             private bool _revealed;
+            private bool _skipNextTarget;
 
             public RollingNumber(TMP_Text text)
             {
@@ -744,10 +809,19 @@ namespace App.UI.Popup
             public void SetTarget(long target)
             {
                 _target = target;
-                if (_revealed)
+                if (!_revealed)
                 {
-                    Roller.RollTo(_target);
+                    return;
                 }
+
+                if (_skipNextTarget)
+                {
+                    _skipNextTarget = false;
+                    Roller.Set(target);
+                    return;
+                }
+
+                Roller.RollTo(_target);
             }
 
             public void Reveal()
@@ -759,6 +833,14 @@ namespace App.UI.Popup
 
                 _revealed = true;
                 Roller.RollTo(_target);
+            }
+
+            /// <summary>跳过入场时直接显示目标值；之后若目标再变，第一笔也直接落值。</summary>
+            public void SkipToTarget()
+            {
+                _revealed = true;
+                _skipNextTarget = true;
+                Roller.Set(_target);
             }
         }
     }

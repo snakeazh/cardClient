@@ -9,7 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5106347948440070846}
-  m_Layer: 0
+  - component: {fileID: 4388423560923764562}
+  m_Layer: 5
   m_Name: HeroAttackHuoqiu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -32,6 +33,19 @@ Transform:
   - {fileID: 5796096077297978181}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4388423560923764562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 343617368310359083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderOffset: 249
 --- !u!1 &3208780615234904880
 GameObject:
   m_ObjectHideFlags: 0
@@ -42,7 +56,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5796096077297978181}
   - component: {fileID: 5220332254219831131}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_yx_gj_hq_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,7 +111,7 @@ GameObject:
   - component: {fileID: 3070042861091653503}
   - component: {fileID: 6585955693189086596}
   - component: {fileID: 7153188107434718663}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_smoke03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4972,7 +4986,7 @@ GameObject:
   - component: {fileID: 5250239877222987788}
   - component: {fileID: 8384554017330814778}
   - component: {fileID: 3974861326137045665}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_huo01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9847,7 +9861,7 @@ GameObject:
   - component: {fileID: 987684210093072784}
   - component: {fileID: 3679019630783799626}
   - component: {fileID: 881624228973074470}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_qiu02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14722,7 +14736,7 @@ GameObject:
   - component: {fileID: 8466192690538923982}
   - component: {fileID: 8840638659330103772}
   - component: {fileID: 5060033851520961604}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_yx_hq_qiu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

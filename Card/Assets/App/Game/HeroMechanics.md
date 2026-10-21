@@ -7,7 +7,7 @@
 
 对局规则总览：[`GameLogic.md`](GameLogic.md)。状态机：[`GameSession.md`](GameSession.md)。遗物：[`RelicMechanics.md`](RelicMechanics.md)。天赋：[`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
 
-PVP 不走这套多目标结算。暗灵攻击特效多段播放未接，资源也不在 `Res/Effect/Character/`。
+PVP 不走这套多目标结算。暗灵法师的攻击特效是齐射（多段播放），属代码特判：`ShadowMageHeroId` + `TryResolveVolleyEffects`，时间与抛物线在 `AttackTuning.asset`「暗灵法师齐射」段。
 
 ---
 
@@ -15,11 +15,11 @@ PVP 不走这套多目标结算。暗灵攻击特效多段播放未接，资源�
 
 | 表 | 路径 | 用途 |
 |----|------|------|
-| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、暴击伤害、`HeroEntryId[]`、`HeroEffects[]` |
+| HeroConfig | `Res/Config/HeroConfig.json` | 英雄：血、攻、暴击、暴击伤害、`HeroEntryId[]`、`HeroEffects*[]`、`hitAnimation` |
 | HeroEntryConfig | `Res/Config/HeroEntryConfig.json` | 词条：`Type` + `Value` |
-| HeroEffectsConfig | `Res/Config/HeroEffectsConfig.json` | 出刀演出：`Type` + `IsProjectile` + `rolepoint` + `Effects` + `Time` |
+| HeroEffectsConfig | `Res/Config/HeroEffectsConfig.json` | 出刀演出：`Type` + `IsProjectile` + `rolepoint` + `Effects` + `Time` + `hitTime` |
 
-`HeroEffects` 只驱动玩家出刀演出，不改数值。`TryResolveEffects` 取第一条 Attack 和第一条 Hit；解析不出或预制体未就绪时回退近战。
+`HeroEffects` 只驱动玩家出刀演出，不改数值。`HeroConfig` 有六组 Id：默认档 `HeroEffects`、目标类型 `HeroEffectsCommon`（普通怪）/ `HeroEffectsElite`（精英+领主）、档位 `HeroEffectsWeak/Mid/Strong`。`TryResolveEffects(hero, level, eliteTarget, …)` 按 **目标类型 → 档位 → 默认档** 依次尝试（每层凑不齐 Attack + Hit 就往下落），在这组里取第一条 Attack（`Type = 2`）和第一条 Hit（`Type = 1`）；`HeroEffectsForTarget` / `HeroEffectsForLevel` 分别取单组。档位默认用 `AttackLevel`，`AttackTuning` 里填了伤害阈值后改按这一刀伤害分档（`AttackTuningConfig.ResolveHeroFxLevel`）。`Time` 是特效自身时长（释放行＝演多久/飞多久，命中行＝命中特效演多久）；`hitTime` 在攻击行是**命中延迟**（释放开始后多久命中，0＝释放演完才命中），在命中行是命中特效显示时长的覆盖。释放特效与命中特效各按自己的时长回池，互不打断，整段动作取较长的那个。`hitAnimation` 是英雄专属受击动画：非空时与释放特效同帧开播（播在被打的敌人卡上，替代命中瞬间的 `ani_atk_lvXX_hit`；溅射目标仍在各自挨打时播），值取 `PlayerRoot.controller` 的状态名；闪避反击时也用它当敌人受击动画。`MissAttackEffect` 是闪避反击特效：闪避成功后先把敌人退到屏幕中心受击，反击特效播在人物身上（`Time` = 特效时长，`hitTime` = 到中心后多久挨打），见 `AttackCutscene.StartDodgeCounter`；反击伤害字读 `GameSession.DodgeCounterDamage`（遗物 + 英雄 `MissGetDamage` 之和），出在敌人挨打那一帧。解析不出或预制体未预载时回退近战。暗灵法师例外，走齐射：`TryResolveVolleyEffects` 从默认档里凑 1 条非投射物 Attack（01 持续）+ 2 条投射物 Attack（02 主弹 / 03 溅射弹）+ 1 条 Hit（04 受击），播放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 的「齐射」一节。播放、对象池和相机缩放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
 
 ---
 
@@ -53,6 +53,8 @@ PVP 不走这套多目标结算。暗灵攻击特效多段播放未接，资源�
 | 武僧 | MissDamagePer | 面板 / 挨打 | 加进闪避率 |
 | 武僧 | MissGetDamage | 闪避成功 | 次数 `Value[0]`、倍率 `Value[1]`，伤害 = `round(攻击 × 倍率 × 次数)` |
 | 武僧 | RubbingCardsNum | 技能次数 | 与遗物相加，`ResetSkillCharges` 夹到不低于 0 |
+
+暗灵法师的**出手演出**是齐射：`CastEffect`=01 法阵持续、`HeroEffects`=02 主弹+04 受击、`SpecialEffect`=03 抛物线打两侧（可再带 04）。它只是表现，不改上面 `VersatilePerson` 的结算；解析和播放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 的「齐射」一节。
 
 面板血、攻、暴击率、暴击伤害来自 `HeroConfig`，再加天赋。实战暴击率和闪避率再加圣物与层数，最后才套「无法暴击 / 无法闪避」。
 

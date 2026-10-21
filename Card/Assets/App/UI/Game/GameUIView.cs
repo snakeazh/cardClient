@@ -92,12 +92,6 @@ namespace App.UI
         private readonly List<GameObject> _winTipRows = new List<GameObject>(6);
         private bool _shownWinTip;
         private bool _shownPeekGoodTip;
-#if UNITY_EDITOR
-        private string _debugRelicIdText = string.Empty;
-        private string _debugRelicPreview = string.Empty;
-        private string _debugEntryIdText = "104";
-        private string _debugEntryPreview = string.Empty;
-#endif
         private Coroutine _peekHoldCo;
         private bool _peekHoldFired;
         private Canvas _hudCanvas;
@@ -118,6 +112,9 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
+        private RectTransform _critHpRt;
+        private Transform _critNumShow;
+        private Animation _critHpAnim;
         private readonly List<RectTransform> _splashHpClones = new List<RectTransform>(2);
         private Coroutine _aiDelay;
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
@@ -241,7 +238,6 @@ namespace App.UI
             {
                 ViewModel.Session.Changed += OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted += OnRelicGoldGranted;
-                ViewModel.Session.HandTypeMagRevealed += OnHandTypeMagRevealed;
             }
 
             BattleTrace.Log("GameUI.OnViewOpen end");
@@ -270,7 +266,7 @@ namespace App.UI
             {
                 var hero = HeroMechanics.Resolve(run);
                 await _attackFx.PreloadHeroEffectsAsync(resources, hero);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                if (HeroMechanics.TryResolveAnyEffects(hero, out var attackFx, out var hitFx) &&
                     !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
                 {
                     AppLog.Warn(
@@ -328,80 +324,6 @@ namespace App.UI
 #endif
         }
 
-#if UNITY_EDITOR
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(new Rect(8f, 8f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加圣物（仅编辑器；PVP 走服务端）");
-            GUILayout.BeginHorizontal();
-            var next = GUILayout.TextField(_debugRelicIdText ?? string.Empty, GUILayout.Width(88f));
-            if (next != _debugRelicIdText)
-            {
-                _debugRelicIdText = next;
-                RefreshDebugRelicPreview();
-            }
-
-            var canGrant = int.TryParse(_debugRelicIdText, out var relicId) && relicId > 0;
-            var wasEnabled = GUI.enabled;
-            GUI.enabled = canGrant;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrant)
-            {
-                ViewModel?.Session?.DebugGrantRelic(relicId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugRelicPreview) ? "输入 RelicConfig.Id" : _debugRelicPreview);
-            GUILayout.EndArea();
-
-            GUILayout.BeginArea(new Rect(8f, 90f, 260f, 78f), GUI.skin.box);
-            GUILayout.Label("测试加关卡词缀（仅编辑器）");
-            GUILayout.BeginHorizontal();
-            var entryNext = GUILayout.TextField(_debugEntryIdText ?? string.Empty, GUILayout.Width(88f));
-            if (entryNext != _debugEntryIdText)
-            {
-                _debugEntryIdText = entryNext;
-                RefreshDebugEntryPreview();
-            }
-
-            var canGrantEntry = int.TryParse(_debugEntryIdText, out var entryId) && entryId > 0;
-            GUI.enabled = canGrantEntry;
-            if (GUILayout.Button("添加", GUILayout.Width(56f)) && canGrantEntry)
-            {
-                ViewModel?.Session?.DebugGrantBossEntry(entryId);
-            }
-
-            GUI.enabled = wasEnabled;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(string.IsNullOrEmpty(_debugEntryPreview) ? "输入 BossEntryConfig.Id" : _debugEntryPreview);
-            GUILayout.EndArea();
-        }
-
-        private void RefreshDebugRelicPreview()
-        {
-            if (!int.TryParse(_debugRelicIdText, out var relicId) || relicId <= 0)
-            {
-                _debugRelicPreview = string.Empty;
-                return;
-            }
-
-            var relic = RelicConfig.Get(relicId);
-            _debugRelicPreview = relic != null ? $"{relic.Name}  {relic.Desc}" : $"没有 Id={relicId}";
-        }
-
-        private void RefreshDebugEntryPreview()
-        {
-            if (!int.TryParse(_debugEntryIdText, out var entryId) || entryId <= 0)
-            {
-                _debugEntryPreview = string.Empty;
-                return;
-            }
-
-            var entry = BossEntryConfig.Get(entryId);
-            _debugEntryPreview = entry != null ? $"{entry.Name}  {entry.Desc}" : $"没有 Id={entryId}";
-        }
-#endif
-
         protected override Task OnViewClose()
         {
             SetInBattleFit(false);
@@ -409,7 +331,6 @@ namespace App.UI
             {
                 ViewModel.Session.Changed -= OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted -= OnRelicGoldGranted;
-                ViewModel.Session.HandTypeMagRevealed -= OnHandTypeMagRevealed;
             }
 
             if (_coinPrefabOwned)
@@ -612,6 +533,7 @@ namespace App.UI
 
         private void BindAttackHud()
         {
+            BindCritHp();
             var mask = ResolveSlot("mask");
             if (mask != null)
             {
@@ -641,6 +563,21 @@ namespace App.UI
             }
 
             Binding.BindActive(hpRoot.gameObject, ViewModel.ShowHpText);
+        }
+
+        private void BindCritHp()
+        {
+            var crit = FindDeep(transform, "Crithptextdi");
+            _critHpRt = crit as RectTransform ?? (crit != null ? crit.GetComponent<RectTransform>() : null);
+            if (_critHpRt == null)
+            {
+                return;
+            }
+
+            _critHpRt.gameObject.SetActive(false);
+            _critNumShow = _critHpRt.Find("NumShow") ?? FindDeep(_critHpRt, "NumShow");
+            var animRoot = _critHpRt.Find("ani_hptextdi") ?? FindDeep(_critHpRt, "ani_hptextdi");
+            _critHpAnim = animRoot != null ? animRoot.GetComponent<Animation>() : null;
         }
 
         private void BindAttackFx()
@@ -1269,26 +1206,57 @@ namespace App.UI
                 _attackCutsceneDone = true;
                 FinishAttackIfReady();
             };
+            var hero = HeroMechanics.Resolve(session.Run);
+            // 闪避反击的伤害字：贴在被打的敌人头上，跟闪避的 MISS 字分开。
+            Action onDodgeCounterHit = () =>
+            {
+                var counterDamage = session.DodgeCounterDamage;
+                if (counterDamage <= 0)
+                {
+                    return;
+                }
+
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[DodgeCounter] 反击伤害字 -{counterDamage} slot={session.AttackVisualSlot}");
+                PlaceSplashHpAt(session.AttackVisualSlot, $"-{Math.Max(1, counterDamage)}", true);
+            };
             if (session.IncomingAttack)
             {
+                // 闪避反击：HeroConfig.MissAttackEffect 配了特效就演一段（武僧），否则走原来的受击流程。
+                // PVP 的闪避与反击都在服务端算，不走这套演出。
+                var dodgeCounter = session.IsPvp ? null : _attackFx.BuildDodgeCounter(hero);
                 _attackFx.PlayIncoming(
                     session.AttackVisualSlot,
                     session.AttackLevel,
                     onHit,
                     onCollisionDone,
                     onReturned,
-                    onDone);
+                    onDone,
+                    dodgeCounter,
+                    onDodgeCounterHit);
             }
             else
             {
-                var hero = HeroMechanics.Resolve(session.Run);
-                if (HeroMechanics.TryResolveEffects(hero, out var attackFx, out var hitFx) &&
+                // 暗灵法师：齐射（01 持续 + 02 蓄力主弹 + 03 两侧抛物线弹 + 04 受击），档位对这套不生效。
+                if (TryPlayHeroVolley(session, hero, onHeroSkillHit, onHeroSkillDamageText, onCollisionDone, onReturned, onDone, timeScale))
+                {
+                    return;
+                }
+
+                // 弱/中/强：默认按牌型档位；AttackTuning 里配了伤害阈值后改按这一刀的伤害分档。
+                var fxLevel = AttackTuningConfig.Instance.ResolveHeroFxLevel(session.AttackLevel, session.AttackDamage);
+                // 目标类型：普通怪走 HeroEffectsCommon，精英/领主走 HeroEffectsElite（没配就退回档位/默认档）。
+                var fxTarget = session.EnemyAtVisualSlot(session.AttackVisualSlot);
+                var eliteTarget = fxTarget != null && fxTarget.MonsterType != MonsterType.Normal;
+                if (HeroMechanics.TryResolveEffects(hero, fxLevel, eliteTarget, out var attackFx, out var hitFx) &&
                     _attackFx.CanPlayHeroSkill(attackFx, hitFx) &&
                     _attackFx.PlayHeroSkill(
                         session.AttackVisualSlot,
                         session.AttackLevel,
                         attackFx,
                         hitFx,
+                        hero != null ? hero.hitAnimation : null,
                         onHeroSkillHit,
                         onHeroSkillDamageText,
                         onCollisionDone,
@@ -1296,13 +1264,16 @@ namespace App.UI
                         onDone,
                         timeScale))
                 {
-                    AppLog.Info(LogChannel.UI, "[HeroSkill][GameUI] 走特效出刀路径");
+                    AppLog.Info(
+                        LogChannel.UI,
+                        $"[HeroSkill][GameUI] 走特效出刀路径 fxLevel={fxLevel} elite={eliteTarget} " +
+                        $"attack={attackFx.Effects} hit={hitFx.Effects} hitAnim={hero?.hitAnimation}");
                     return;
                 }
 
                 AppLog.Warn(
                     LogChannel.UI,
-                    $"[HeroSkill][GameUI] 回退近战 resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                    $"[HeroSkill][GameUI] 回退近战 fxLevel={fxLevel} elite={eliteTarget} resolve={attackFx != null} canPlay={attackFx != null && hitFx != null && _attackFx.CanPlayHeroSkill(attackFx, hitFx)} attack={attackFx?.Effects} hit={hitFx?.Effects}");
 
                 _attackFx.Play(
                     session.AttackVisualSlot,
@@ -1313,6 +1284,67 @@ namespace App.UI
                     onDone,
                     timeScale);
             }
+        }
+
+        /// <summary>
+        /// 暗灵法师齐射演出：解析 01/02/03/04 四个特效，收集两侧还活着的敌人槽，交给 <see cref="AttackCutscene.PlayVolleySkill"/>。
+        /// 返回 false 表示这个英雄不走齐射（或特效没预载），继续走普通英雄特效 / 近战。
+        /// </summary>
+        private bool TryPlayHeroVolley(
+            GameSession session,
+            HeroConfig hero,
+            Func<bool> onHit,
+            Action onHitDamageText,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone,
+            float timeScale)
+        {
+            if (!HeroMechanics.TryResolveVolleyEffects(hero, out var channel, out var main, out var splash, out var hit))
+            {
+                return false;
+            }
+
+            // 主目标之外的存活敌人各吃一发 03；中间的（被点选的那个）永远是 02 主目标。
+            var splashSlots = new List<int>(2);
+            for (var slot = 0; slot < _enemyItems.Length; slot++)
+            {
+                if (slot == session.AttackVisualSlot)
+                {
+                    continue;
+                }
+
+                var seat = session.EnemyAtVisualSlot(slot);
+                if (seat != null && seat.Alive)
+                {
+                    splashSlots.Add(slot);
+                }
+            }
+
+            if (!_attackFx.PlayVolleySkill(
+                    session.AttackVisualSlot,
+                    session.AttackLevel,
+                    channel,
+                    main,
+                    splash,
+                    hit,
+                    splashSlots,
+                    hero != null ? hero.hitAnimation : null,
+                    onHit,
+                    onHitDamageText,
+                    onCollisionDone,
+                    onReturned,
+                    onDone,
+                    timeScale))
+            {
+                return false;
+            }
+
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroVolley][GameUI] 走齐射出刀 hero={hero?.Name} main={session.AttackVisualSlot} " +
+                $"splash={splashSlots.Count} channel={channel.Effects} main={main.Effects} hit={hit.Effects}");
+            return true;
         }
 
         private void FinishAttackAfterDodgeReply()
@@ -1635,6 +1667,7 @@ namespace App.UI
             RestoreSplashHpClones();
             if (session.IncomingAttack)
             {
+                HideCritHp();
                 var missed = session.LastAttackMissed;
                 ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
                 ViewModel.ShowHpText.Value = true;
@@ -1643,11 +1676,21 @@ namespace App.UI
             }
 
             var mainSlot = session.AttackVisualSlot;
-            var mainShown = ShowMainHpText(session);
-            ViewModel.ShowHpText.Value = mainShown;
-            if (mainShown)
+            var critMain = session.LastPlayerAttackCrit && session.TakenDamage > 0;
+            if (critMain)
             {
-                PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+                ViewModel.ShowHpText.Value = false;
+                ShowCritHp(mainSlot, session.TakenDamage);
+            }
+            else
+            {
+                HideCritHp();
+                var mainShown = ShowMainHpText(session);
+                ViewModel.ShowHpText.Value = mainShown;
+                if (mainShown)
+                {
+                    PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+                }
             }
 
             for (var slot = 0; slot < _enemyItems.Length; slot++)
@@ -1803,6 +1846,49 @@ namespace App.UI
 
             _hpTextRt.anchoredPosition = _hpTextHome;
             _hpTextRt.localScale = Vector3.one;
+            HideCritHp();
+        }
+
+        private void ShowCritHp(int slot, int damage)
+        {
+            if (_critHpRt == null)
+            {
+                return;
+            }
+
+            var hit = _attackFx.HitPosition(slot);
+            if (hit == Vector3.zero)
+            {
+                return;
+            }
+
+            if (_critHpRt.parent != null)
+            {
+                _critHpRt.parent.SetAsLastSibling();
+            }
+
+            _critHpRt.SetAsLastSibling();
+            _critHpRt.position = hit;
+            _critHpRt.gameObject.SetActive(true);
+            CritDamageSprites.Apply(ViewModel != null ? ViewModel.Atlas : null, _critNumShow, damage);
+            if (_critHpAnim != null)
+            {
+                _critHpAnim.Rewind();
+                _critHpAnim.Play();
+            }
+        }
+
+        private void HideCritHp()
+        {
+            if (_critHpAnim != null)
+            {
+                _critHpAnim.Stop();
+            }
+
+            if (_critHpRt != null)
+            {
+                _critHpRt.gameObject.SetActive(false);
+            }
         }
 
         private void BindPlayerInfo()
@@ -3434,13 +3520,7 @@ namespace App.UI
             }
 
             HideEquipTip();
-            _ = ShowWinTip(overPopups: false);
-        }
-
-        private void OnHandTypeMagRevealed()
-        {
-            DismissItemTipForWinTip();
-            _ = ShowWinTip(overPopups: true);
+            _ = ShowWinTip();
         }
 
         private async Task ShowRoundBuffTip(Transform slot, BossEntryConfig entry)
@@ -3465,7 +3545,7 @@ namespace App.UI
             await PresentItemTip(slot, name, desc, showUse: false, placeRight: false);
         }
 
-        private async Task ShowWinTip(bool overPopups)
+        private async Task ShowWinTip()
         {
             await EnsureWinTip();
             if (_winTip == null || ViewModel == null)
@@ -3476,15 +3556,6 @@ namespace App.UI
             FillWinTipRows();
             _shownWinTip = true;
             EnsureEquipTipCatcher();
-            if (overPopups)
-            {
-                AttachWinTipOverPopups();
-            }
-            else
-            {
-                RestoreWinTipHome();
-            }
-
             if (_equipTipCatcher != null)
             {
                 _equipTipCatcher.SetActive(true);
@@ -3832,67 +3903,9 @@ namespace App.UI
             }
         }
 
-        private void DismissItemTipForWinTip()
-        {
-            _shownEquipRelicId = 0;
-            _shownRoundBuffId = 0;
-            _shownPlayerTip = false;
-            _shownEnemySlot = -1;
-            _shownPeekGoodTip = false;
-            _equipTipAnchor = null;
-            if (_equipTip != null)
-            {
-                _equipTip.SetActive(false);
-            }
-        }
-
-        private void AttachWinTipOverPopups()
-        {
-            var layer = ResolvePopupLayer();
-            if (layer == null)
-            {
-                return;
-            }
-
-            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != layer)
-            {
-                _equipTipCatcher.transform.SetParent(layer, false);
-            }
-
-            if (_winTip != null && _winTip.transform.parent != layer)
-            {
-                _winTip.transform.SetParent(layer, false);
-            }
-        }
-
-        private void RestoreWinTipHome()
-        {
-            if (_equipTipCatcher != null && _equipTipCatcher.transform.parent != transform)
-            {
-                _equipTipCatcher.transform.SetParent(transform, false);
-            }
-
-            if (_winTip != null && _winTip.transform.parent != transform)
-            {
-                _winTip.transform.SetParent(transform, false);
-            }
-        }
-
-        private RectTransform ResolvePopupLayer()
-        {
-            var root = GetComponentInParent<UIRoot>(true);
-            if (root == null)
-            {
-                root = FindObjectOfType<UIRoot>();
-            }
-
-            return root != null ? root.GetLayer(UILayer.Popup) : null;
-        }
-
         private void HideWinTip()
         {
             _shownWinTip = false;
-            RestoreWinTipHome();
             if (_winTip != null)
             {
                 _winTip.SetActive(false);
@@ -3927,12 +3940,7 @@ namespace App.UI
         {
             var tipRt = tip != null ? tip.GetComponent<RectTransform>() : null;
             var itemRt = slot != null ? slot.transform as RectTransform : null;
-            var parent = tipRt != null ? tipRt.parent as RectTransform : null;
-            if (parent == null)
-            {
-                parent = transform as RectTransform;
-            }
-
+            var parent = transform as RectTransform;
             if (tipRt == null || itemRt == null || parent == null)
             {
                 return;
@@ -4276,10 +4284,12 @@ namespace App.UI
 
         private void ApplySkillLockVisual()
         {
-            var locked = ViewModel?.Session != null && ViewModel.Session.PlayerSkillsLocked;
+            var session = ViewModel?.Session;
+            var locked = session != null && session.PlayerSkillsLocked;
+            var replaceLocked = locked || (session?.Run != null && BossMechanics.SwapLocked(session.Run));
             ApplySkillButtonLock("PeekGood", locked);
             ApplySkillButtonLock("ChaKanGood", locked);
-            ApplySkillButtonLock("TiHuanGood", locked);
+            ApplySkillButtonLock("TiHuanGood", replaceLocked);
         }
 
         private void ApplySkillButtonLock(string name, bool locked)

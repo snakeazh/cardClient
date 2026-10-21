@@ -40,6 +40,22 @@ MonoBehaviour:
     HitKnockbackDuration: 0.2
     HitRecoverDuration: 0.5
   hpTextHoldDuration: 0.85
+  clampCastTimeToClip: 1
+  heroFxMidDamage: 0
+  heroFxStrongDamage: 0
   deathDissolveDelay: 2
   deathEffect: {fileID: 4988058555448458962, guid: 960f2c25212a01e468e1a655f350f30b, type: 3}
   deathEffectDuration: 0.6
+  volleyChannelTime: 1.5
+  volleyChargeTime: 1
+  volleyMainFlightTime: 0.3
+  volleySplashFlightTime: 0.4
+  volleyJumpHeightRatio: 0.45
+  volleyMinJumpPower: 0.8
+  volleyJumpReverseXAt: 0.35
+  volleyJumpXZeroAt: 0.6
+  volleyJumpReverseXRatio: 1.5
+  volleyJumpReverseXMin: 3
+  volleySpawnDelay: 0.1
+  volleySpawnOffsetY: 0.25
+  volleyFxScale: 1

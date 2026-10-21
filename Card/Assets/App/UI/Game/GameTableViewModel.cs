@@ -112,7 +112,18 @@ namespace App.UI
                 () => Session.PlayerMayCompare);
             AllInCommand = new RelayCommand(() => Session.AllIn(), () => Session.PlayerMayAllIn);
             PeekGoodCommand = new RelayCommand(
-                () => Session.UsePeekGood(),
+                () =>
+                {
+                    if (!Session.SelectingRubTarget &&
+                        Session.PlayerMayPressPeekGood &&
+                        !BossMechanics.CanAffordRub(Session.Run))
+                    {
+                        Toast.Show("金币不足，无法使用");
+                        return;
+                    }
+
+                    Session.UsePeekGood();
+                },
                 () => Session.PlayerMayTogglePeekGood);
             ChaKanGoodCommand = new RelayCommand(
                 () =>
@@ -132,9 +143,15 @@ namespace App.UI
             TiHuanGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.PlayerMayUseTiHuanGood)
+                    {
+                        return;
+                    }
+
                     if (Session.IsPvp)
                     {
                         Session.ClearPvpSelection();
+                        Session.BeginPvpReplaceRequest();
                         SendPvpSkill(() => _pvp.Invoker.EnqueueReplace());
                         return;
                     }
@@ -420,6 +437,7 @@ namespace App.UI
         {
             if (_pvp == null || send == null)
             {
+                Session.CancelPvpReplaceRequest();
                 return;
             }
 
@@ -428,12 +446,19 @@ namespace App.UI
                 var ok = await _pvp.BattleAndWaitAsync(send);
                 if (!ok)
                 {
+                    Session.CancelPvpReplaceRequest();
                     Toast.Error("操作超时，请重试");
                 }
             }
             catch (GameApiException ex)
             {
+                Session.CancelPvpReplaceRequest();
                 Toast.Error(GameApi.Describe(ex));
+            }
+            finally
+            {
+                // 超时/异常时清掉待播标记；成功时快照已消费，这里再清一次无副作用。
+                Session.CancelPvpReplaceRequest();
             }
         }
 

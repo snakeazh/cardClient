@@ -128,9 +128,6 @@ namespace App.Game
         /// <summary>圣物效果加了金币。参数是来源圣物 Id（消耗后已不在栏上则为 0）和数量。UI 用来从圣物列表飞币。</summary>
         public event Action<int, int> RelicGoldGranted;
 
-        /// <summary>消耗品刚写入牌型永久倍率。UI 打开 WinTip，展示每个牌型加成后的倍率。</summary>
-        public event Action HandTypeMagRevealed;
-
         public bool IsPvp { get; private set; }
 
         /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
@@ -157,7 +154,12 @@ namespace App.Game
 
         public bool IsRevealPlaying => _revealKind != RevealKind.None;
 
+        /// <summary>替换手牌的回收/发牌动画正在播；期间禁用替换技能，避免连点打断。</summary>
+        public bool HandReplacePlaying { get; private set; }
+
         private bool _pvpHandLocked;
+        private bool _pendingPvpReplacePlay;
+        private int _pvpReplaceSerialBefore;
 
         /// <summary>本局服务端 runId。未开局或未登录为空。</summary>
         public string ServerRunId => _serverRunId;
@@ -174,6 +176,8 @@ namespace App.Game
         public string LastResult { get; private set; } = string.Empty;
         public bool CardsRevealed { get; private set; }
         public int DealSerial { get; private set; }
+        /// <summary>替换技能换手序号；牌桌据此播旧牌回收 + 新牌发牌动画。</summary>
+        public int ReplacePlaySerial { get; private set; }
         public int BettingRound => _bettingRound;
         /// <summary>本关第几手，从 1 起。</summary>
         public int StageRoundIndex => _stageBetRound < 1 ? 1 : _stageBetRound;
@@ -338,6 +342,12 @@ namespace App.Game
         public int AttackDamage { get; private set; }
         /// <summary>命中飘字用的伤害（计算值，不按剩余血量截断）。挨打时已含玩家减伤；闪避成功时为 0。</summary>
         public int TakenDamage { get; private set; }
+
+        /// <summary>这一刀闪避后反击打出的总伤害（遗物 + 英雄词条），给 UI 在敌人头上出反击伤害字用。</summary>
+        public int DodgeCounterDamage { get; private set; }
+
+        /// <summary>玩家这一击是否暴击。暴击伤害字用 Crithptextdi。</summary>
+        public bool LastPlayerAttackCrit => _lastPlayerAttackCrit;
         /// <summary>主目标本波因闪避未扣血，HUD 飘字显示 MISS。旁路溅射闪避不改这个值。</summary>
         public bool LastAttackMissed { get; private set; }
         /// <summary>本轮已掷中追击，两波攻击演出都加速，等第一波结束后再打第二轮。</summary>
@@ -402,6 +412,7 @@ namespace App.Game
         /// <summary>开牌阶段且还有搓牌次数时，可点选手牌搓牌。</summary>
         public bool PlayerMayHoldRub =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             Player.Looked &&
             Phase == GamePhase.WaitingOpen &&
@@ -426,6 +437,7 @@ namespace App.Game
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
         public bool PlayerMayCompare =>
             !AiActing &&
+            !HandReplacePlaying &&
             Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
             AnyEnemyAlive() &&
@@ -970,6 +982,7 @@ namespace App.Game
 
         public bool PlayerMayAllIn =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             Player.Hp > 0 &&
             Player.Courage > 0 &&
@@ -977,6 +990,7 @@ namespace App.Game
 
         public bool PlayerMayRaise =>
             !AiActing &&
+            !HandReplacePlaying &&
             !Player.Folded &&
             (Phase == GamePhase.Betting || Phase == GamePhase.WaitingRub);
 
@@ -984,13 +998,14 @@ namespace App.Game
 
         private bool PlayerMayUseItems =>
             !Player.Folded &&
+            !HandReplacePlaying &&
             !(IsPvp && _pvpHandLocked) &&
             (Phase == GamePhase.WaitingOpen ||
              Phase == GamePhase.WaitingRub);
 
         private bool PlayerMayUseConsumable(bool thisHand)
         {
-            if (Player == null || Player.Folded || AiActing)
+            if (Player == null || Player.Folded || AiActing || HandReplacePlaying)
             {
                 return false;
             }
@@ -1006,12 +1021,15 @@ namespace App.Game
         public bool PlayerSkillsLocked =>
             BossMechanics.SkillsDisabled(Run) || BindingSkillsDisabled();
 
-        public bool PlayerMayUsePeekGood =>
+        public bool PlayerMayPressPeekGood =>
             PlayerMayUseItems &&
             Player.Looked &&
             Run.PeekGoodCharges > 0 &&
             Phase != GamePhase.WaitingRub &&
-            !PlayerSkillsLocked &&
+            !PlayerSkillsLocked;
+
+        public bool PlayerMayUsePeekGood =>
+            PlayerMayPressPeekGood &&
             BossMechanics.CanAffordRub(Run);
 
         public bool PlayerMayUseChaKanGood =>
@@ -1021,6 +1039,7 @@ namespace App.Game
 
         public bool PlayerMayUseTiHuanGood =>
             PlayerMayUseItems &&
+            !HandReplacePlaying &&
             Run.TiHuanGoodCharges > 0 &&
             (_deck != null || IsPvp) &&
             !PlayerSkillsLocked &&
@@ -1053,8 +1072,8 @@ namespace App.Game
             ResolveAiStreet();
         }
 
-        /// <summary>可点搓牌按钮：有次数可进入，或已在点选中可取消（次数用尽时仍须能退出）。</summary>
-        public bool PlayerMayTogglePeekGood => SelectingRubTarget || PlayerMayUsePeekGood;
+        /// <summary>可点搓牌按钮：有次数可进入，金币不足时仍可点以提示，或已在点选中可取消。</summary>
+        public bool PlayerMayTogglePeekGood => SelectingRubTarget || PlayerMayPressPeekGood;
 
         /// <summary>点击搓牌按钮：进入或取消点选手牌替换。</summary>
         public void UsePeekGood()
@@ -1142,6 +1161,7 @@ namespace App.Game
 
             SelectingRubTarget = false;
             SelectingXRayTarget = false;
+            _pendingRubIndex = -1;
             SyncDeckWithTable();
             var nextCards = new Card[PlayerDealCount];
             for (var i = 0; i < nextCards.Length; i++)
@@ -1176,7 +1196,47 @@ namespace App.Game
                 Log("替换手牌（未看牌）");
             }
 
+            HandReplacePlaying = true;
+            ReplacePlaySerial++;
             Notify();
+        }
+
+        /// <summary>PVP 替换请求已发出：下一次快照写入新手牌时抬换手序号，播回收/发牌动画。</summary>
+        public void BeginPvpReplaceRequest()
+        {
+            _pendingPvpReplacePlay = true;
+            _pvpReplaceSerialBefore = ReplacePlaySerial;
+            HandReplacePlaying = true;
+            Notify();
+        }
+
+        public void CancelPvpReplaceRequest()
+        {
+            _pendingPvpReplacePlay = false;
+            // 序号没抬说明动画没开始（超时/被拒）：解除禁用；已开始则交给牌桌播完再清。
+            if (ReplacePlaySerial == _pvpReplaceSerialBefore && HandReplacePlaying)
+            {
+                HandReplacePlaying = false;
+                Notify();
+            }
+        }
+
+        /// <summary>牌桌换手动效播完：解除替换技能禁用并刷新按钮。</summary>
+        public void FinishHandReplacePlay()
+        {
+            if (!HandReplacePlaying)
+            {
+                return;
+            }
+
+            HandReplacePlaying = false;
+            Notify();
+        }
+
+        /// <summary>换手动效被发牌/退局打断：只清状态，不触发刷新，避免重入。</summary>
+        public void CancelHandReplacePlay()
+        {
+            HandReplacePlaying = false;
         }
 
         private void TryXRaySeat(SeatState seat)
@@ -1763,6 +1823,7 @@ namespace App.Game
             TakenDamage = IsPvp
                 ? AttackDamage
                 : IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
+            DodgeCounterDamage = 0;
             LastAttackMissed = false;
             ResetAttackWaves();
             if (AttackLevel < 1 || AttackLevel > 3)
@@ -3324,19 +3385,12 @@ namespace App.Game
             return !CanApplyConsumable(relic, out failHint);
         }
 
-        private bool _pendingHandTypeMagReveal;
-
         private void ApplyConsumableUseCore(int relicId)
         {
-            _pendingHandTypeMagReveal = false;
             var relic = RelicConfig.Get(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             RelicMechanics.OnConsumableUsed(Run);
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
-            if (_pendingHandTypeMagReveal)
-            {
-                HandTypeMagRevealed?.Invoke();
-            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)
@@ -3386,22 +3440,13 @@ namespace App.Game
                     var handType = HandEvaluator.FromConfigHandType((int)Math.Round(RelicMechanics.ValueAt(entry, 0)));
                     var mag = RelicMechanics.ValueAt(entry, 1);
                     Run.AddHandTypeMagBonus(handType, mag);
-                    if (mag != 0f)
-                    {
-                        _pendingHandTypeMagReveal = true;
-                    }
-
                     Log($"消耗品：{HandEvaluator.TypeName(handType)} 倍率永久 +{mag}");
                     break;
                 }
                 case MechanismType.RandomHandTypeMagUp:
-                    if (ApplyRandomHandTypeMagUp(
+                    ApplyRandomHandTypeMagUp(
                         RelicMechanics.ValueAt(entry, 0),
-                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1))))
-                    {
-                        _pendingHandTypeMagReveal = true;
-                    }
-
+                        (int)Math.Round(RelicMechanics.ValueAt(entry, 1)));
                     break;
                 case MechanismType.HealHpPercent:
                 {
@@ -3476,7 +3521,7 @@ namespace App.Game
             }
         }
 
-        private bool ApplyRandomHandTypeMagUp(float mag, int count)
+        private void ApplyRandomHandTypeMagUp(float mag, int count)
         {
             var types = new[]
             {
@@ -3489,7 +3534,6 @@ namespace App.Game
             };
             var remain = types.Length;
             var take = Math.Min(Math.Max(0, count), remain);
-            var applied = false;
             for (var i = 0; i < take; i++)
             {
                 var pick = _rng.Next(i, remain);
@@ -3497,11 +3541,8 @@ namespace App.Game
                 types[i] = types[pick];
                 types[pick] = tmp;
                 Run.AddHandTypeMagBonus(types[i], mag);
-                applied |= mag != 0f;
                 Log($"消耗品：{HandEvaluator.TypeName(types[i])} 倍率永久 +{mag}");
             }
-
-            return applied;
         }
 
         private void ClearThisHandConsumables()
@@ -4533,12 +4574,20 @@ namespace App.Game
             var rubDelta = (int)Math.Round(
                 RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
                 HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
+            var rubBossDelta = BossMechanics.RubChargeDelta(Run);
             Run.PeekGoodCharges = Math.Max(
                 0,
-                GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - BossMechanics.RubChargeDelta(Run));
+                GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - rubBossDelta);
             var xrayDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum));
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges + xrayDelta;
             Run.TiHuanGoodCharges = GameBalance.SkillReplaceUses + Run.BonusReplaceCharges;
+
+            AppLog.Info(
+                LogChannel.Game,
+                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {GameBalance.SkillRubUses} + 奖励 {Run.BonusRubCharges} " +
+                $"+ 词条 {rubDelta}（圣物 {RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###} / " +
+                $"英雄 {HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###}） - 词缀 {rubBossDelta}；" +
+                $"透视 {Run.ChaKanGoodCharges}，替换 {Run.TiHuanGoodCharges}（hero={Run.HeroId}）");
         }
 
         /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。按 <c>LevelEntryNum</c> 随机机制。</summary>
@@ -4566,6 +4615,9 @@ namespace App.Game
             Run.PendingLevelHpMaxBonus = 0;
             ClearThisHandConsumables();
             _stageBetRound = 0;
+            HandReplacePlaying = false;
+            _pendingPvpReplacePlay = false;
+            ReplacePlaySerial = 0;
             _loanCourageBonus = 0;
             _shopGoldGranted = 0;
             _stageDamageDealt = 0;
@@ -6754,14 +6806,27 @@ namespace App.Game
                 }
 
                 var miss = ResolveLivePlayerPanel().DodgeRate;
-                if (miss > 0f && _rng.NextDouble() < miss)
+                if (miss > 0f)
                 {
-                    Log($"闪避：{target.Name} 免疫 {damage} 伤害");
-                    target.Banner = "闪避";
-                    LastAttackMissed = true;
-                    TakenDamage = 0;
-                    ApplyDodgeCounter(attacker);
-                    return 0;
+                    // 只闪避率 > 0 时才掷骰，保持和原来一样的随机消耗。
+                    var roll = _rng.NextDouble();
+                    if (roll < miss)
+                    {
+                        AppLog.Info(
+                            LogChannel.Game,
+                            $"[Dodge] {target.Name} 闪避成功：闪避率 {miss:P1} 掷 {roll:0.###} → 免疫 {damage} 伤害" +
+                            $"（hero={Run.HeroId}）");
+                        Log($"闪避：{target.Name} 免疫 {damage} 伤害");
+                        target.Banner = "闪避";
+                        LastAttackMissed = true;
+                        TakenDamage = 0;
+                        ApplyDodgeCounter(attacker);
+                        return 0;
+                    }
+
+                    AppLog.Info(
+                        LogChannel.Game,
+                        $"[Dodge] {target.Name} 未闪避：闪避率 {miss:P1} 掷 {roll:0.###} → 吃 {damage} 伤害");
                 }
 
                 if (!_amuletUsedThisRound && RelicMechanics.HasMechanism(Run, MechanismType.MissFirstDamage))
@@ -6970,8 +7035,13 @@ namespace App.Game
                     return;
                 }
 
-                Log($"武林秘籍：闪避反击 {dmg}");
-                ApplyDamage(attacker, dmg, false, Player);
+                var dealt = ApplyDamage(attacker, dmg, false, Player);
+                DodgeCounterDamage += dealt;
+                AppLog.Info(
+                    LogChannel.Game,
+                    $"[DodgeCounter] 遗物词条({entry.Id}) 反击 {attacker.Name}：攻击 {Player.Attack} → 原始 {dmg}，实际 {dealt}，" +
+                    $"累计 {DodgeCounterDamage}（剩余HP {attacker.Hp}）");
+                Log($"武林秘籍：闪避反击 {dealt}");
             });
             HeroMechanics.ForEachEntry(ResolveHero(), entry =>
             {
@@ -6986,8 +7056,14 @@ namespace App.Game
                     return;
                 }
 
-                Log($"闪避反击 {dmg}");
-                ApplyDamage(attacker, dmg, false, Player);
+                var dealt = ApplyDamage(attacker, dmg, false, Player);
+                DodgeCounterDamage += dealt;
+                AppLog.Info(
+                    LogChannel.Game,
+                    $"[DodgeCounter] 英雄词条({entry.Id}) 反击 {attacker.Name}：攻击 {Player.Attack} × 倍率 " +
+                    $"{HeroMechanics.ValueAt(entry, 1):0.###} × 次数 {HeroMechanics.ValueAt(entry):0.###} → 原始 {dmg}，" +
+                    $"实际 {dealt}，累计 {DodgeCounterDamage}（剩余HP {attacker.Hp}）");
+                Log($"闪避反击 {dealt}");
             });
         }
 
@@ -9556,6 +9632,8 @@ namespace App.Game
 
             IsPvp = false;
             _pvpHandLocked = false;
+            HandReplacePlaying = false;
+            _pendingPvpReplacePlay = false;
             for (var i = 0; i < Enemies.Length; i++)
             {
                 Enemies[i].DisplayAsHero = false;
@@ -10111,7 +10189,23 @@ namespace App.Game
             var settlePhase = string.Equals(match.Phase, PvpPhases.Settle, StringComparison.OrdinalIgnoreCase);
             // 重连进商店：先按摊牌结果展示，不立刻切 Shop（否则只剩牌型文案、牌桌 DealSerial=0 无牌）。
             var showcaseResult = catchUpResult && showdown && (shopPhase || settlePhase);
+            var handBefore = _pendingPvpReplacePlay && Player.Hand != null
+                ? (Card[])Player.Hand.Clone()
+                : null;
             CopyPvpHand(Player, mine, true);
+            if (_pendingPvpReplacePlay && mine != null && mine.Cards != null && mine.Cards.Count > 0)
+            {
+                // 无关快照不会改手牌：只在己方 5 张真的变了时才播回收/发牌，避免别的玩家动作误触发。
+                if (PvpHandChanged(handBefore, Player))
+                {
+                    _pendingPvpReplacePlay = false;
+                    _pendingRubIndex = -1;
+                    SelectingRubTarget = false;
+                    HandReplacePlaying = true;
+                    ReplacePlaySerial++;
+                }
+            }
+
             Player.ShowCards = true;
             var enemy = Enemies[0];
             enemy.ActiveInStage = true;
@@ -10276,6 +10370,25 @@ namespace App.Game
             }
 
             return "第 " + self.Rank + " 名";
+        }
+
+        private static bool PvpHandChanged(Card[] before, SeatState seat)
+        {
+            if (before == null || seat?.Hand == null)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < seat.Hand.Length; i++)
+            {
+                var oldCard = i < before.Length ? before[i] : default;
+                if (!oldCard.Equals(seat.Hand[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void CopyPvpHand(SeatState seat, BattleSeatDto dto, bool applySelected)

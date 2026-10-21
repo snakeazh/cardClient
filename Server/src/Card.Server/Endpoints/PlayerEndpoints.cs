@@ -40,6 +40,11 @@ public static class PlayerEndpoints
             => Results.Json(await meta.RefillEnergyByAdAsync(http.RequireUserId(), ct)));
         v1.MapPost("/adshop/claim", async (HttpContext http, AdShopClaimRequest request, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.ClaimAdShopAsync(http.RequireUserId(), request.Kind, ct)));
+        v1.MapPost("/ad/watch", async (HttpContext http, AdWatchReportRequest request, PlayerMetaService meta, CancellationToken ct) =>
+        {
+            await meta.ReportAdWatchAsync(http.RequireUserId(), request.Scene, ct);
+            return Results.Ok();
+        });
         v1.MapPost("/bag/grant", async (HttpContext http, BagMutateRequest request, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.GrantBagAsync(http.RequireUserId(), request.ItemId, request.Amount, ct)));
         v1.MapPost("/bag/consume", async (HttpContext http, BagMutateRequest request, PlayerMetaService meta, CancellationToken ct)

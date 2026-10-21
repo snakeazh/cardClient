@@ -276,6 +276,10 @@ namespace App.Net
         public Task<AdShopClaimResponse> ClaimAdShopAsync(string kind)
             => SendAsync<AdShopClaimResponse>("POST", "/v1/adshop/claim", new AdShopClaimRequest { Kind = kind });
 
+        /// <summary>看完一次广告后的场景上报（fire-and-forget 调用方自管）。energy_refill_ad / adshop_* 由发奖接口自动统计，不要重复上报。</summary>
+        public Task<object> ReportAdWatchAsync(string scene)
+            => SendAsync<object>("POST", "/v1/ad/watch", new AdWatchReportRequest { Scene = scene });
+
         public Task<PlayerProfileDto> GrantBagAsync(int itemId, int amount)
             => SendAsync<PlayerProfileDto>("POST", "/v1/bag/grant", new BagMutateRequest { ItemId = itemId, Amount = amount });
 

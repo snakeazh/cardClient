@@ -17,15 +17,17 @@ internal static class TestApp
         IClock? clock = null,
         IPlayerLock? locks = null,
         IAvatarStore? avatars = null,
-        IAdConversionReporter? conversions = null)
+        IAdConversionReporter? conversions = null,
+        IAdWatchStats? adStats = null)
     {
         config ??= TestConfig.Create();
         clock ??= new TestClock();
         runs ??= new MemoryPveRunRepository();
         avatars ??= new FakeAvatarStore();
         conversions ??= new FakeAdConversionReporter();
+        adStats ??= new FakeAdWatchStats();
         var session = new PlayerSession(players, config, clock, locks ?? new MemoryPlayerLock());
-        return (new PveRunService(session, runs, config, clock), new PlayerMetaService(session, config, avatars, conversions));
+        return (new PveRunService(session, runs, config, clock), new PlayerMetaService(session, config, avatars, conversions, adStats));
     }
 
     private sealed class FakeAvatarStore : IAvatarStore
@@ -34,10 +36,23 @@ internal static class TestApp
             => Task.FromResult($"https://fake.cos.test/avatars/{userId:N}/fake.{extension}");
     }
 
-    private sealed class FakeAdConversionReporter : IAdConversionReporter
+    internal sealed class FakeAdConversionReporter : IAdConversionReporter
     {
+        public List<string> Scenes { get; } = new List<string>();
+
         public void ReportAdWatched(AdAttributionState attribution, string scene)
         {
+            Scenes.Add(scene);
+        }
+    }
+
+    internal sealed class FakeAdWatchStats : IAdWatchStats
+    {
+        public List<string> Scenes { get; } = new List<string>();
+
+        public void RecordWatch(string scene)
+        {
+            Scenes.Add(scene);
         }
     }
 }

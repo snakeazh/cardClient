@@ -772,12 +772,16 @@ namespace App.UI
                     _enemyItems[slot].ResetDissolve();
                 }
 
-                _holdAttackDisplay = true;
-                _heldAttackItem = AttackItemAtSlot(slot);
-                _heldAttackValue = Math.Max(1, session.AttackDamage);
-                if (_heldAttackItem != null)
+                // 闪避成功时不要把对手攻击力改成 1（AttackDamage==0 时 Math.Max 的副作用）。
+                if (!session.LastAttackMissed)
                 {
-                    _heldAttackItem.SetAttack(_heldAttackValue);
+                    _holdAttackDisplay = true;
+                    _heldAttackItem = AttackItemAtSlot(slot);
+                    _heldAttackValue = Math.Max(1, session.AttackDamage);
+                    if (_heldAttackItem != null)
+                    {
+                        _heldAttackItem.SetAttack(_heldAttackValue);
+                    }
                 }
 
                 HideBeilvInfo();
@@ -1841,7 +1845,8 @@ namespace App.UI
                 var missed = session.LastAttackMissed;
                 ViewModel.HpText.Value = missed ? "MISS" : $"-{Math.Max(1, session.TakenDamage)}";
                 ViewModel.ShowHpText.Value = true;
-                PlaceHpAtPlayer(!missed);
+                // MISS 也要播弹出动画，否则静止字容易被同帧的反击伤害字盖住/看不出已变成 MISS。
+                PlaceHpAtPlayer(true);
                 return;
             }
 
@@ -1859,7 +1864,10 @@ namespace App.UI
                 ViewModel.ShowHpText.Value = mainShown;
                 if (mainShown)
                 {
-                    PlaceHpAtTarget(mainSlot, !session.LastAttackMissed && session.LastAttackHitDealt(mainSlot) > 0);
+                    // MISS 与有效伤害一样播弹出；dealt==0 的非 MISS（免疫等）仍不出动画。
+                    PlaceHpAtTarget(
+                        mainSlot,
+                        session.LastAttackMissed || session.LastAttackHitDealt(mainSlot) > 0);
                 }
             }
 
@@ -1877,7 +1885,7 @@ namespace App.UI
                     continue;
                 }
 
-                PlaceSplashHpAt(slot, missed ? "MISS" : $"-{Math.Max(1, dealt)}", !missed);
+                PlaceSplashHpAt(slot, missed ? "MISS" : $"-{Math.Max(1, dealt)}", playAnim: true);
             }
         }
 

@@ -277,11 +277,12 @@ namespace App.UI.Game.Director
             var winScore = _session.EvaluateSeat(playerWon ? _session.Player : _session.Enemies[0]);
             var loseScore = _session.EvaluateSeat(playerWon ? _session.Enemies[0] : _session.Player);
             var damage = ResolveDamage(match, mine, foe, playerWon, winScore);
-            var foeDamage = foe != null && foe.Damage != null ? Math.Max(1, foe.Damage.Value) : 0;
+            // 挨打展示用：用权威 DuelDamage（可为 0），不要再用对手座位 Damage 把闪避盖成有伤。
+            var foeDamage = !playerWon ? damage : 0;
 
             _director.Enqueue(new RevealCommand(playerWon));
             // 出伤方不要在结算链前把攻击数字改成最终伤害，否则圣物分项演出会从终值起跳。
-            // 挨打时对手攻击跳到服务端伤害即可。
+            // 挨打时对手攻击跳到服务端伤害即可（闪避为 0 则不改，避免露出假伤害）。
             if (!playerWon && foeDamage > 0)
             {
                 _director.Enqueue(new SetAttackCommand(false, foeDamage));
@@ -310,7 +311,10 @@ namespace App.UI.Game.Director
             return playerScore.CompareTo(enemyScore) >= 0;
         }
 
-        /// <summary>伤害纯信服务端状态同步（DuelDamage = 含轮次系数的实际扣血）；缺失时才本地兜底，保证撞击能播。</summary>
+        /// <summary>
+        /// 伤害纯信服务端状态同步（DuelDamage = 含轮次系数的实际扣血，含 0 = 闪避/免疫）。
+        /// 仅摊牌前或未带权威值时才本地兜底，保证撞击能播。
+        /// </summary>
         private int ResolveDamage(
             PvpMatchStateDto match,
             BattleSeatDto mine,
@@ -318,6 +322,12 @@ namespace App.UI.Game.Director
             bool playerWon,
             HandScore winScore)
         {
+            // 摊牌快照里 DuelDamage 已是权威（闪避成功时为 0），不能再走本地公式把 MISS 盖成伤害字。
+            if (IsShowdown(match))
+            {
+                return Math.Max(0, match.DuelDamage);
+            }
+
             if (match.DuelDamage > 0)
             {
                 return match.DuelDamage;

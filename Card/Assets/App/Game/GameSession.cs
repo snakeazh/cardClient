@@ -1766,22 +1766,35 @@ namespace App.Game
             var damage = Math.Max(1, PendingAttackDamage);
             if (IsPvp)
             {
+                // PVP 闪避/伤害以 BeginPvpAttack（服务端快照）为准，这里只驱动受击演出用的本地预览血，
+                // 禁止再掷闪避、禁止把 LastAttackMissed / TakenDamage 盖成有伤。
                 if (IncomingAttack)
                 {
-                    ApplyDamage(Player, damage, true, _pendingDamageSource);
-                    LastAttackMissed = false;
-                    TakenDamage = damage;
+                    if (!LastAttackMissed)
+                    {
+                        ApplyDamage(Player, damage, true, _pendingDamageSource);
+                        TakenDamage = damage;
+                    }
                 }
                 else if (target != null)
                 {
+                    var missed = LastAttackMissed;
                     var before = target.Hp;
-                    ApplyDamage(target, damage, true, Player);
+                    if (!missed)
+                    {
+                        ApplyDamage(target, damage, true, Player);
+                    }
+
                     RecordEnemyHit(
                         target,
-                        missed: false,
-                        shown: damage,
-                        killed: before > 0 && target.Hp <= 0,
+                        missed: missed,
+                        shown: missed ? 0 : damage,
+                        killed: !missed && before > 0 && target.Hp <= 0,
                         main: allowExtra);
+                    if (!missed && !target.IsPlayer)
+                    {
+                        TryAttackDropConsumable();
+                    }
                 }
 
                 return;
@@ -1792,6 +1805,7 @@ namespace App.Game
             {
                 _roundDamageDealt += scoreDamage;
                 ApplyBloodSucking(dealt);
+                TryAttackDropConsumable();
             }
         }
 
@@ -7113,28 +7127,32 @@ namespace App.Game
                     return 0;
                 }
 
-                var miss = ResolveLivePlayerPanel().DodgeRate;
-                if (miss > 0f)
+                // PVP 闪避由服务端掷完写进 BeginPvpAttack；客户端再掷会和权威结果打架，且会被 ResolveAttackWave 盖掉 MISS。
+                if (!IsPvp)
                 {
-                    // 只闪避率 > 0 时才掷骰，保持和原来一样的随机消耗。
-                    var roll = _rng.NextDouble();
-                    if (roll < miss)
+                    var miss = ResolveLivePlayerPanel().DodgeRate;
+                    if (miss > 0f)
                     {
+                        // 只闪避率 > 0 时才掷骰，保持和原来一样的随机消耗。
+                        var roll = _rng.NextDouble();
+                        if (roll < miss)
+                        {
+                            AppLog.Info(
+                                LogChannel.Game,
+                                $"[Dodge] {target.Name} 闪避成功：闪避率 {miss:P1} 掷 {roll:0.###} → 免疫 {damage} 伤害" +
+                                $"（hero={Run.HeroId}）");
+                            Log($"闪避：{target.Name} 免疫 {damage} 伤害");
+                            target.Banner = "闪避";
+                            LastAttackMissed = true;
+                            TakenDamage = 0;
+                            ApplyDodgeCounter(attacker);
+                            return 0;
+                        }
+
                         AppLog.Info(
                             LogChannel.Game,
-                            $"[Dodge] {target.Name} 闪避成功：闪避率 {miss:P1} 掷 {roll:0.###} → 免疫 {damage} 伤害" +
-                            $"（hero={Run.HeroId}）");
-                        Log($"闪避：{target.Name} 免疫 {damage} 伤害");
-                        target.Banner = "闪避";
-                        LastAttackMissed = true;
-                        TakenDamage = 0;
-                        ApplyDodgeCounter(attacker);
-                        return 0;
+                            $"[Dodge] {target.Name} 未闪避：闪避率 {miss:P1} 掷 {roll:0.###} → 吃 {damage} 伤害");
                     }
-
-                    AppLog.Info(
-                        LogChannel.Game,
-                        $"[Dodge] {target.Name} 未闪避：闪避率 {miss:P1} 掷 {roll:0.###} → 吃 {damage} 伤害");
                 }
 
                 if (!_amuletUsedThisRound && RelicMechanics.HasMechanism(Run, MechanismType.MissFirstDamage))
@@ -8791,11 +8809,10 @@ namespace App.Game
                     Log($"招财猫：击杀金币 +{bonus}（总金币 {Run.Gold}）");
                 }
             }
-
-            TryKillDropConsumable();
         }
 
-        private void TryKillDropConsumable()
+        /// <summary>KillDropConsumable（藏宝图）：攻击敌人后概率掉落随机消耗品。</summary>
+        private void TryAttackDropConsumable()
         {
             if (Run.RelicConfigIds != null && Run.RelicConfigIds.Count >= RelicCarryMax)
             {
@@ -10633,7 +10650,7 @@ namespace App.Game
             Notify();
         }
 
-        /// <summary>攻击撞击（Director.AttackCommand）：摆状态拨 AttackPlaySerial；伤害数值由驱动器按服务端快照算好传入。</summary>
+        /// <summary>攻击撞击（Director.AttackCommand）：摆状态拨 AttackPlaySerial；伤害数值由驱动器按服务端快照算好传入（0 = 闪避/免疫 → MISS）。</summary>
         public bool BeginPvpAttack(bool incoming, int damage, HandType winType, string winLabel, string loseLabel)
         {
             var enemy = Enemies[0];
@@ -10647,8 +10664,10 @@ namespace App.Game
             Enemies[2].ActiveInStage = false;
             _pendingAttackTarget = null;
             ResetAttackWaves();
-            var scaled = Math.Max(1, damage);
-            PendingAttackDamage = scaled;
+            var missed = damage <= 0;
+            // 撞击演出仍要有档位；MISS 时 Pending 用 1 只为播动画，TakenDamage / AttackDamage 保持 0。
+            var scaled = missed ? 0 : Math.Max(1, damage);
+            PendingAttackDamage = Math.Max(1, scaled);
             AttackLevel = MapAttackLevel(winType);
             if (AttackLevel < 1 || AttackLevel > 3)
             {
@@ -10656,17 +10675,22 @@ namespace App.Game
             }
 
             Phase = GamePhase.WaitingAttack;
-            LastAttackMissed = false;
+            LastAttackMissed = missed;
             AttackDamage = scaled;
             TakenDamage = scaled;
+            DodgeCounterDamage = 0;
             _pendingOpenerWins = !incoming;
             IncomingAttack = incoming;
             _pendingAttackTarget = incoming ? Player : enemy;
             _pendingDamageSource = incoming ? enemy : Player;
             AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
-            LastResult = incoming
-                ? $"{enemy.Name} 的{winLabel}压过你的{loseLabel}，受到 {scaled} 伤害"
-                : $"{HandDrama(winType)}！你的{winLabel}压过 {enemy.Name} 的{loseLabel}，造成 {scaled} 伤害";
+            LastResult = missed
+                ? (incoming
+                    ? $"{enemy.Name} 的{winLabel}压过你的{loseLabel}，闪避成功"
+                    : $"{HandDrama(winType)}！你的{winLabel}压过 {enemy.Name} 的{loseLabel}，对方闪避")
+                : (incoming
+                    ? $"{enemy.Name} 的{winLabel}压过你的{loseLabel}，受到 {scaled} 伤害"
+                    : $"{HandDrama(winType)}！你的{winLabel}压过 {enemy.Name} 的{loseLabel}，造成 {scaled} 伤害");
             Hint = LastResult;
             if (!incoming)
             {

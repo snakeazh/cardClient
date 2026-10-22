@@ -953,13 +953,12 @@ namespace CardShare.Battle
                 var baseGold = PvpHeroRuntime.KillGold(tables, killer.Combat.HeroId);
                 killer.Gold += (int)Math.Round(baseGold * killUp);
             }
-
-            TryKillDropConsumable(tables, killer, rng);
         }
 
-        private static void TryKillDropConsumable(IGameTables tables, PvpFighter fighter, Random rng)
+        /// <summary>KillDropConsumable（藏宝图）：攻击敌人后概率掉落随机消耗品。</summary>
+        public static void TryAttackDropConsumable(IGameTables tables, PvpFighter fighter, Random rng)
         {
-            if (rng == null || fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            if (tables == null || fighter == null || rng == null || fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
             {
                 return;
             }

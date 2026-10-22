@@ -1538,7 +1538,7 @@ namespace CardShare.Contracts.Config
         CriticalHealHp = 189,
 
         /// <summary>
-        /// 击败敌人概率掉落消耗品圣物(参数:概率,需栏位空)
+        /// 攻击敌人概率掉落消耗品圣物(参数:概率,需栏位空)
         /// </summary>
         KillDropConsumable = 190,
 

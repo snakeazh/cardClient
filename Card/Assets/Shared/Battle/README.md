@@ -58,7 +58,8 @@ Unity 的 `App.Game.Card` / `RunState` 不进本库，由客户端 `SharedBattle
 | FlatAttack / RoundTempAttack / RoundPayGold | `ApplyTrackersToSeat` / `ApplyRoundStart` |
 | ReplaceCardsNum / RubbingPayGold / PeekDownGrade | `ResetSkills` / 搓牌付费 / `CompareLevelBonus` |
 | RefreshPriceFixed / ShopRareGuarantee | `PvpShopRules` |
-| SellGetAttack / KeepConsumablePer / 击杀金与掉落 | `SellRelic` / `UseRelic` / `GrantHeroKill` |
+| SellGetAttack / KeepConsumablePer / 击杀金 | `SellRelic` / `UseRelic` / `GrantHeroKill` |
+| KillDropConsumable（藏宝图） | `ApplyDuelDamage` 胜方攻击后 |
 
 不支持（配了也不生效）：PVE 英雄侧未实现/死代码的（AttackBossDamage、ManyMonsterDamage、OneMonsterDamage、HpUnderDamage、FirstShowCardEveryLevel、KillingGetGold、KillingGetAttack、UnableReplyHp、GainDamageUpWhenHpDecreases、UnableCritical、RelicReplyHp、HolyLightBurning、UnableMissing、UnableReplyGetGold、MonsterNumDamage、HeroHpReplyEveryLevelEnding、RelicNumMax、KillingProbabilityTen 等）；PVP 1v1 无多目标概念的（AoeDamage、VersatilePerson、VersatilePersonUp、AoeDamageWhenAttack）。完整理由见 `PvpHeroRuntime.cs` 头注释。
 

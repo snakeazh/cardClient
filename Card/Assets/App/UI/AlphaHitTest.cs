@@ -10,7 +10,7 @@ namespace App.UI
     /// 挂在带 Image 的节点上（通常是按钮根节点），Button/Toggle 不用替换，onClick 与过渡全部保留。
     /// 默认对子节点所有 Image 一并生效：本工程按钮常是“本体图 + 底框 + 文字图”多张叠在子节点，
     /// 子图 raycastTarget 未关时，最终命中区域 = 各图不透明像素的并集（与视觉一致）。
-    /// 前提：贴图须开启 Read/Write，否则 UGUI 读不到像素会静默退回整矩形命中——
+    /// 前提：贴图须开启 Read/Write 且不使用 Crunch 压缩，否则 UGUI 读不到像素会静默退回整矩形命中——
     /// 散图在导入设置勾选 Read/Write Enabled；打进图集的图须在 SpriteAtlas 的平台设置开启。
     /// 注意 Read/Write 会额外保留一份贴图 CPU 内存，只给真正需要异形点击的图开。
     /// </summary>
@@ -53,6 +53,14 @@ namespace App.UI
                 : new[] { GetComponent<Image>() };
         }
 
+        private static bool IsCrunchFormat(TextureFormat format)
+        {
+            return format == TextureFormat.DXT1Crunched
+                || format == TextureFormat.DXT5Crunched
+                || format == TextureFormat.ETC_RGB4Crunched
+                || format == TextureFormat.ETC2_RGBA8Crunched;
+        }
+
         private void Apply()
         {
             foreach (var image in _targets)
@@ -61,19 +69,28 @@ namespace App.UI
                 {
                     continue;
                 }
-                image.alphaHitTestMinimumThreshold = alphaThreshold;
 
                 var sprite = image.sprite;
                 if (sprite == null)
                 {
-                    continue; // 无 Sprite 时 UGUI 视为整矩形命中
+                    image.alphaHitTestMinimumThreshold = alphaThreshold; // 无 Sprite 时 UGUI 视为整矩形命中
+                    continue;
                 }
-                if (sprite.texture is Texture2D tex && !tex.isReadable && LoggedUnreadable.Add(tex.GetInstanceID()))
+
+                // uGUI 的 setter 在贴图不可读或 Crunch 压缩时对任何赋值（包括 0）都抛异常，此时完全不赋值
+                var tex = sprite.texture;
+                if (tex == null || !tex.isReadable || IsCrunchFormat(tex.format))
                 {
-                    Debug.LogError(
-                        $"[AlphaHitTest] 贴图 {tex.name} 未开启 Read/Write，alpha 命中不生效，已退回整矩形可点。" +
-                        "散图请在贴图导入设置勾选 Read/Write Enabled；图集请在 SpriteAtlas 平台设置开启。", image);
+                    if (tex != null && !tex.isReadable && LoggedUnreadable.Add(tex.GetInstanceID()))
+                    {
+                        Debug.LogError(
+                            $"[AlphaHitTest] 贴图 {tex.name} 未开启 Read/Write，alpha 命中不生效，已退回整矩形可点。" +
+                            "散图请在贴图导入设置勾选 Read/Write Enabled；图集请在 SpriteAtlas 平台设置开启。", image);
+                    }
+                    continue;
                 }
+
+                image.alphaHitTestMinimumThreshold = alphaThreshold;
             }
         }
     }

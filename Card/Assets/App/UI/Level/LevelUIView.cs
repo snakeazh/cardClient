@@ -27,6 +27,15 @@ namespace App.UI
         private const float LevelCardSpacingX = 55f;
         private const float LevelRowTopOffset = 200f;
 
+        // 技能描述区（skillinfo）：预制体给的是 472×190 的固定框、字号固定 36，
+        // 而 SkillInfo 的行数随英雄配置变化（描述若干行 + 空行 + 属性两行 + 最高纪录一行）。
+        // 描述一长就会顶出框外，直接压到下方「难度X 关卡Y」大标签上，两层字叠在一起。
+        // 这里把文本区顶边钉住、底边撑到难度标签上方，再交给 TMP 自动缩放兜底，
+        // 任意长度的描述都收在可用区域内，不再和标签叠字。
+        private const float SkillInfoMaxFontSize = 36f;
+        private const float SkillInfoMinFontSize = 20f;
+        private const float SkillInfoToStageLabelGap = 12f;
+
         private readonly List<HeroItem> _heroItems = new List<HeroItem>();
         private readonly List<LevelItemCard> _levelItems = new List<LevelItemCard>();
         private PlayerItem _playerItem;
@@ -53,6 +62,9 @@ namespace App.UI
             Binding.BindText(GetNode<TMP_Text>("stageNum"), ViewModel.StageNum);
             Binding.BindText(GetNode<TMP_Text>("stageInfoText"), ViewModel.StageInfoText);
             Binding.BindText(GetNode<TMP_Text>("stageInfotip"), ViewModel.DifficultyText);
+
+            // 描述区先按最终文字量把可用高度算好，再走 TMP 自动缩放（见 FitSkillInfoArea）。
+            FitSkillInfoArea();
 
             // heroSelect / stageInfo / levelSelect 的显隐改由 LevelUITransition 做动画，
             // 见下方订阅；这里不再用 BindActive 瞬切。
@@ -349,6 +361,52 @@ namespace App.UI
         private T GetNode<T>(string key) where T : Component
         {
             return UI.GetGameObject(key).GetComponent<T>();
+        }
+
+        /// <summary>
+        /// 技能描述区自适应：顶边保持预制体位置不动，底边向下撑到「难度X 关卡Y」大标签上方，
+        /// 再打开 TMP 自动缩放。描述短时仍是原字号（36），描述长时按可用高度等比缩字，
+        /// 不会再溢出框外压到大标签上。重复调用结果一致（高度只增不减、顶边不动）。
+        /// </summary>
+        private void FitSkillInfoArea()
+        {
+            var info = GetNode<TMP_Text>("skillinfo");
+            var rect = info != null ? info.rectTransform : null;
+            var parent = rect != null ? rect.parent as RectTransform : null;
+            if (parent == null)
+            {
+                return;
+            }
+
+            var size = rect.sizeDelta;
+            var height = size.y;
+            // 文本区顶边（相对锚点）：锚点居中，anchoredPosition 即框中心
+            var top = rect.anchoredPosition.y + height * (1f - rect.pivot.y);
+
+            var stageLabel = GetNode<TMP_Text>("stageNum");
+            if (stageLabel != null)
+            {
+                // 难度标签的顶边按世界坐标换算到文本区父级，再折算成相对锚点（父级 rect 中心）的距离
+                var labelRect = stageLabel.rectTransform;
+                var labelTopWorld = labelRect.TransformPoint(new Vector3(0f, labelRect.rect.yMax, 0f));
+                var anchorFromParentCenter = (0.5f - parent.pivot.y) * parent.rect.height;
+                var labelTop = parent.InverseTransformPoint(labelTopWorld).y - anchorFromParentCenter;
+                height = Mathf.Max(height, top - labelTop - SkillInfoToStageLabelGap);
+            }
+
+            if (!Mathf.Approximately(height, size.y))
+            {
+                size.y = height;
+                rect.sizeDelta = size;
+            }
+
+            var position = rect.anchoredPosition;
+            position.y = top - height * (1f - rect.pivot.y);
+            rect.anchoredPosition = position;
+
+            info.enableAutoSizing = true;
+            info.fontSizeMax = SkillInfoMaxFontSize;
+            info.fontSizeMin = SkillInfoMinFontSize;
         }
 
         private void SpawnHeroItems()

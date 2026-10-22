@@ -19,7 +19,7 @@ PVP 不走这套多目标结算。暗灵法师的攻击特效是齐射（多段�
 | HeroEntryConfig | `Res/Config/HeroEntryConfig.json` | 词条：`Type` + `Value` |
 | HeroEffectsConfig | `Res/Config/HeroEffectsConfig.json` | 出刀演出：`Type` + `IsProjectile` + `rolepoint` + `Effects` + `Time` + `hitTime` |
 
-`HeroEffects` 只驱动玩家出刀演出，不改数值。`HeroConfig` 有六组 Id：默认档 `HeroEffects`、目标类型 `HeroEffectsCommon`（普通怪）/ `HeroEffectsElite`（精英+领主）、档位 `HeroEffectsWeak/Mid/Strong`。`TryResolveEffects(hero, level, eliteTarget, …)` 按 **目标类型 → 档位 → 默认档** 依次尝试（每层凑不齐 Attack + Hit 就往下落），在这组里取第一条 Attack（`Type = 2`）和第一条 Hit（`Type = 1`）；`HeroEffectsForTarget` / `HeroEffectsForLevel` 分别取单组。档位默认用 `AttackLevel`，`AttackTuning` 里填了伤害阈值后改按这一刀伤害分档（`AttackTuningConfig.ResolveHeroFxLevel`）。`Time` 是特效自身时长（释放行＝演多久/飞多久，命中行＝命中特效演多久）；`hitTime` 在攻击行是**命中延迟**（释放开始后多久命中，0＝释放演完才命中），在命中行是命中特效显示时长的覆盖。释放特效与命中特效各按自己的时长回池，互不打断，整段动作取较长的那个。`hitAnimation` 是英雄专属受击动画：非空时与释放特效同帧开播（播在被打的敌人卡上，替代命中瞬间的 `ani_atk_lvXX_hit`；溅射目标仍在各自挨打时播），值取 `PlayerRoot.controller` 的状态名；闪避反击时也用它当敌人受击动画。`MissAttackEffect` 是闪避反击特效：闪避成功后先把敌人退到屏幕中心受击，反击特效播在人物身上（`Time` = 特效时长，`hitTime` = 到中心后多久挨打），见 `AttackCutscene.StartDodgeCounter`；反击伤害字读 `GameSession.DodgeCounterDamage`（遗物 + 英雄 `MissGetDamage` 之和），出在敌人挨打那一帧。解析不出或预制体未预载时回退近战。暗灵法师例外，走齐射：`TryResolveVolleyEffects` 从默认档里凑 1 条非投射物 Attack（01 持续）+ 2 条投射物 Attack（02 主弹 / 03 溅射弹）+ 1 条 Hit（04 受击），播放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 的「齐射」一节。播放、对象池和相机缩放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
+`HeroEffects` 只驱动玩家出刀演出，不改数值。`HeroConfig` 有六组 Id：默认档 `HeroEffects`、目标类型 `HeroEffectsCommon`（普通怪）/ `HeroEffectsElite`（精英+领主）、档位 `HeroEffectsWeak/Mid/Strong`。`TryResolveEffects(hero, level, eliteTarget, …)` 按 **目标类型 → 档位 → 默认档** 依次尝试（每层凑不齐 Attack + Hit 就往下落），在这组里取第一条 Attack（`Type = 2`）和第一条 Hit（`Type = 1`）；`HeroEffectsForTarget` / `HeroEffectsForLevel` 分别取单组。档位默认用 `AttackLevel`，`AttackTuning` 里填了伤害阈值后改按这一刀伤害分档（`AttackTuningConfig.ResolveHeroFxLevel`）。`Time` 是特效自身时长（释放行＝演多久/飞多久，命中行＝命中特效演多久）；`hitTime` 在攻击行是**命中延迟**（释放开始后多久命中，0＝释放演完才命中），在命中行是命中特效显示时长的覆盖。释放特效与命中特效各按自己的时长回池，互不打断，整段动作取较长的那个。`hitAnimation` 是英雄专属受击动画：非空时与释放特效同帧开播（`PlayHeroSkill` 对场上全部存活敌人一起播，替代命中瞬间的 `ani_atk_lvXX_hit`；齐射仍只提前播主目标），值取 `PlayerRoot.controller` 的状态名；闪避反击时也用它当敌人受击动画。`MissAttackEffect` 是闪避反击特效：闪避成功后先把敌人退到屏幕中心受击，反击特效播在人物身上（`Time` = 特效时长，`hitTime` = 到中心后多久挨打），见 `AttackCutscene.StartDodgeCounter`；反击伤害字读 `GameSession.DodgeCounterDamage`（遗物 + 英雄 `MissGetDamage` 之和），出在敌人挨打那一帧。解析不出或预制体未预载时回退近战。暗灵法师例外，走齐射：`TryResolveVolleyEffects` 从默认档里凑 1 条非投射物 Attack（01 持续）+ 2 条投射物 Attack（02 主弹 / 03 溅射弹）+ 1 条 Hit（04 受击），播放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md) 的「齐射」一节。播放、对象池和相机缩放见 [`AttackCutscene.md`](../UI/Game/AttackCutscene.md)。
 
 ---
 
@@ -58,12 +58,15 @@ PVP 不走这套多目标结算。暗灵法师的攻击特效是齐射（多段�
 
 面板血、攻、暴击率、暴击伤害来自 `HeroConfig`，再加天赋。实战暴击率和闪避率再加圣物与层数，最后才套「无法暴击 / 无法闪避」。
 
-圣光燃烧 `Value` = 每手开始次数、攻击力比例、每次之后的加成：
+圣光燃烧 `Value` = 每手开始次数、基础比例、每次加点：
 
-- 发牌前发动 `Value[0]` 次。把敌人清光则不再发牌，进入本关结算。
-- 玩家亮牌是对子并且这场比牌获胜时，致胜攻击（含追击）打完后再发动 1 次。主目标先吃正常伤害。
-- 当前这一发伤害 = `round(当前攻击 × Value[1] × (1 + 已发动次数 × Value[2]))`，然后次数 +1。
-- 已发动次数 × `Value[2]` 加进后续出手的伤害百分比。
+- 每手发牌后发动 `Value[0]` 次。把敌人清光则进入本关结算（不再开牌）。
+- 对子获胜：先发动 1 次圣光（面板攻击比例伤），再通用近战打**牌型伤害**。
+- 当前这一发伤害 = `round(当前攻击 × (Value[1] + 已发动次数 × Value[2]))`，然后次数 +1。例：0.5 / 0.1 → 50%、60%、70%。
+- 已发动次数 × `Value[2]` 同时加进后续出手的伤害百分比。
+- **演出**：圣光都走 `SpecialEffect`。回合开始：飞牌落定后再播；对子：先 SpecialEffect，再近战。
+
+**出刀演出**：`HeroEffects` 留空。非对子 / 对子的第二刀都走近战；`SpecialEffect` 只给圣光燃烧用。
 
 精英/领主判定读进关时写入的 `SeatState.MonsterType`。
 
@@ -83,7 +86,9 @@ PVP 不走这套多目标结算。暗灵法师的攻击特效是齐射（多段�
 | 圣物加金币 | `AddRelicGold` |
 | 击杀金币 / 击杀加攻 / 分裂成长 | `ApplyDamage` → `ApplyHeroKillRewards` |
 | 闪避反击 | `ApplyDodgeCounter` |
-| 发牌前受伤 / 回合开始圣光燃烧 | `StartRound` → `ApplyRoundStartHeroMechanics` |
-| 对子获胜后的圣光燃烧 | `FinishPlayerAttack` → `TryCastPendingHolyLight` |
+| 发牌前受伤 / 回合开始圣光排队 | `StartRound` → `ApplyRoundStartHeroMechanics` |
+| 飞牌后启圣光 | `NotifyDealReady` → `NotifyDealVisualReady` → `HolyLightPlaySerial` |
+| 圣光命中 / 演完 | `ApplyPendingHolyLightHit` / `CompleteHolyLightPlay` |
+| 对子获胜先圣光再近战 | `BeginPlayerAttack` → `TryQueuePairHolyLightBeforeAttack` → `CompleteHolyLightPlay` → 近战 |
 | 购买价 | `BuyShopRelic` / `HeroMechanics.BuyPrice` |
 | 搓牌次数 | `ResetSkillCharges` |

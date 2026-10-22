@@ -51,7 +51,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 `visualSlot` 是敌人在桌面上的视觉槽 0/1/2。`level` 为 1 低 / 2 中 / 3 高，由牌型映射。
 
-玩家出刀若英雄配齐了攻击特效和命中特效，并且进桌时已经预载成功，走 `PlayHeroSkill`，不再冲刺。缺任一条、资源名为空、或预制体没进缓存，回退上面的 `Play`。每档 `HeroEffects*` 里必须 `Type = Attack` 和 `Type = Hit` **各一条**——只配多条 Attack（盗贼原本就是 110、111 两条 Attack）会解析失败、静默回退近战，进桌时的 `英雄特效未解析` 警告会点名。**例外：暗灵法师**（`HeroMechanics.ShadowMageHeroId`）在 `TryResolveEffects` 之前就被 `GameUIView.TryPlayHeroVolley` 截走，它的 `HeroEffects` 本来就是「3 条 Attack + 1 条 Hit」，走下面「齐射」一节。敌人来袭始终走 `PlayIncoming`。配置从哪来见 [`HeroMechanics.md`](../../Game/HeroMechanics.md)。
+玩家出刀若英雄配齐了攻击特效和命中特效，并且进桌时已经预载成功，走 `PlayHeroSkill`，不再冲刺。缺任一条、资源名为空、或预制体没进缓存，回退上面的 `Play`。每档 `HeroEffects*` 里必须 `Type = Attack` 和 `Type = Hit` **各一条**——只配多条 Attack（盗贼原本就是 110、111 两条 Attack）会解析失败、静默回退近战，进桌时的 `英雄特效未解析` 警告会点名。**例外：暗灵法师**（`HeroMechanics.ShadowMageHeroId`）在 `TryResolveEffects` 之前就被 `GameUIView.TryPlayHeroVolley` 截走，走「齐射」一节。**例外：圣骑士**（`PaladinHeroId`）`HeroEffects` 留空属正常：`SpecialEffect` 只给圣光燃烧；对子先圣光再通用近战。进桌预载只校验 SpecialEffect。敌人来袭始终走 `PlayIncoming`。配置从哪来见 [`HeroMechanics.md`](../../Game/HeroMechanics.md)。
 
 ---
 
@@ -82,7 +82,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 |------|------|
 | `Type` | `Attack = 2` 释放，`Hit = 1` 命中 |
 | `IsProjectile` | 非 0 时从人物位置飞向目标 |
-| `rolepoint` | 非投射物：非 0 落在人物，0 落在目标 |
+| `rolepoint` | 非投射物落点：`0`=目标，`1`=人物，`2`=屏幕中心 |
 | `Effects` | 预制体名，不含目录 |
 | `Time` | 特效自身时长。释放行＝这个特效演多久（投射物＝飞行时长），到点自己回池；命中行＝命中特效演多久。非投射物的释放行在特效自身动画更短时按动画收（`clampCastTimeToClip`） |
 | `hitTime` | 攻击行＝**命中延迟**：释放特效开始后多久命中，0 表示释放演完那一刻命中；命中行＝命中特效显示时长覆盖（0＝按 `Time`）。投射物按飞行时间命中，不读攻击行这个值 |
@@ -93,14 +93,14 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 一次出刀：
 
-1. 取出释放特效。投射物从人物飞向目标，飞行时长 `Attack.Time`（＝命中延迟）；定点按 `rolepoint` 放下，按 `castTime` 自己演完回池——默认就是 `Attack.Time`，但特效自身动画比它短时取动画长度（`ResolveCastDuration`）。
-2. `hitDelay`（攻击行 `hitTime`，没配就是释放演完）到点结算：没命中播闪避、不放命中特效；命中才在目标处出命中特效（定点按 `rolepoint`，投射物再飞一段 `Hit.Time`），同时受击动画 + 伤害字。**命中可以早于释放特效演完**，释放特效不打断、继续演到自己的 `Time`。
+1. 取出释放特效。投射物从人物飞向目标，飞行时长 `Attack.Time`（＝命中延迟）；定点按 `rolepoint`（0 目标 / 1 人物 / 2 屏幕中心）放下，按 `castTime` 自己演完回池——默认就是 `Attack.Time`，但特效自身动画比它短时取动画长度（`ResolveCastDuration`）。
+2. `hitDelay`（攻击行 `hitTime`，没配就是释放演完）到点结算：没命中播闪避、不放命中特效；命中才出命中特效（定点同样按 `rolepoint`，投射物再飞一段 `Hit.Time`），同时受击动画 + 伤害字。**命中可以早于释放特效演完**，释放特效不打断、继续演到自己的 `Time`。
 3. 两条特效各自按自己的时长回池：释放 = `castTime`，命中 = `hitDelay + 命中行 Time`。整段动作取两者较长的那个（`actionEnd`），到点 `ClearSkillFx` 兜底清一次再 `onReturned`。
 4. 伤害字仍按攻击等级停留（`HpTextHoldDuration`），然后 `onDone`。
 
 所以萨满普通怪是：0 秒出 116 → 0.3 秒命中、出 207 并结算扣血/受击/伤害字 → 1.2 秒时 207 演完 → 1.5 秒 116 演完、一起回池 → 再停 `HpTextHoldDuration` 进下一个对手。
 
-特效命中不播卡牌击退。溅射目标只播受击或闪避动画。
+特效命中不播卡牌击退。溅射/群体目标：结算后凡 `LastAttackHitApplied && !Missed` 的槽都出受击特效（盗贼攻≥150 变群体、灰烬 AOE、多面手溅射等同理）；动画仍走 `ReactSlot`。命中行 `rolepoint=2` 在多人时改按各目标点出，避免全叠在屏幕中心。
 
 ### 齐射（暗灵法师，代码特判）
 
@@ -183,7 +183,7 @@ Animator 片段名：`ani_atk_lv{等级:D2}_{阶段}`，例如 `ani_atk_lv01_sta
 | `back` | 退回 |
 | `ani_default` | 复位 |
 
-英雄配了 `HeroConfig.hitAnimation` 时，**释放特效开播那一帧**就给主目标播它（替代命中瞬间的 `ani_atk_lvXX_hit`），命中帧只结算/出受击特效/伤害字，不再把动画从头重开；MISS 仍打断成闪避。溅射目标在各自挨打时才播（`ReactSlot`）。值填 `PlayerRoot.controller` 里的状态名，例如圣骑士的 `ani_sqs_gj_hit`；留空或控制器里找不到，就还是命中帧播通用 `hit`。
+英雄配了 `HeroConfig.hitAnimation` 时，**释放特效开播那一帧**就播（替代命中瞬间的 `ani_atk_lvXX_hit`）。群体出手（`AoeDamage` / `AoeDamageWhenAttack`）时 `PlayHeroSkill` 传入全部存活敌人槽一起飞，与扣血范围一致；命中帧只结算/出受击特效/伤害字，`ReactSlot` 不再把已开播的动画从头重开；MISS 仍打断成闪避。齐射仍只给主目标提前开播。值填 `PlayerRoot.controller` 里的状态名，例如圣骑士的 `ani_sqs_gj_hit`；留空或控制器里找不到，就还是命中帧播通用 `hit`。
 
 位移由 DOTween 驱动，不靠根节点动画位移。命中时显示 `-{TakenDamage}`：打怪贴在敌人卡上，挨打贴在玩家卡上。闪避成功（`LastAttackMissed`）时 `hptext` 显示 `MISS`，不播 `ani_hptextdi`。
 

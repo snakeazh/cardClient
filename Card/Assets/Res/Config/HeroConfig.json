@@ -227,12 +227,12 @@
       802,
       803
     ],
-    "HeroEffects": [
+    "HeroEffects": [],
+    "CastEffect": 0,
+    "SpecialEffect": [
       115,
       206
     ],
-    "CastEffect": 0,
-    "SpecialEffect": [],
     "hitAnimation": "ani_sqs_gj_hit",
     "MissAttackEffect": [],
     "HeroEffectsCommon": [],

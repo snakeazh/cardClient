@@ -7,6 +7,7 @@ using CardShare.Contracts.Config;
 using App.Guide;
 using App.Item;
 using App.Resources;
+using App.UI.Effects;
 using App.UI.List;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
@@ -42,6 +43,11 @@ namespace App.UI.Popup
             new Dictionary<ItemCard, TalentItem>();
         // 本视图创建的全部卡槽（含行池里隐藏中的）：关闭时回收到 UiCardPool 供下次打开复用
         private readonly List<ItemCard> _ownedSlots = new List<ItemCard>();
+        // 交错入场用：当前视口内已生成的卡槽快照（同图鉴口径）
+        private readonly List<Component> _activeSlots = new List<Component>();
+        // 弹窗根入场（0.25s 缩放）未播完前挂起的交错入场槽位快照
+        private List<Component> _pendingStagger;
+        private bool _presented;
         private GameObject _template;
         private CardRowRecycler<TalentItem> _recycler;
         private GuideTargetRegistry _guideTargets;
@@ -51,6 +57,21 @@ namespace App.UI.Popup
         {
             GuideSignals.NotifyTalentPopupOpen();
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 弹窗根入场播完后放行挂起的交错入场：FillList 在 OnBind（早于根缩放动画）就跑完了，
+        /// 那时播会被根的 scale=0 起步整个盖住，须等 OnPresented 再放行。
+        /// </summary>
+        public override void OnPresented()
+        {
+            base.OnPresented();
+            _presented = true;
+            if (_pendingStagger != null)
+            {
+                StaggerReveal.Play(_pendingStagger);
+                _pendingStagger = null;
+            }
         }
 
         protected override void OnBind()
@@ -169,6 +190,40 @@ namespace App.UI.Popup
             _recycler.SetSections(sections);
             // 终极区横幅被 recycler 克隆显示（原件隐藏），规则按钮到克隆件上重绑
             BindRulesOpen(content);
+            // 首次填充与购买后刷新（ListVersion）都重播一次交错入场
+            PlayStaggerEntrance();
+        }
+
+        /// <summary>视口内卡槽交错弹入；根入场未完成时先挂起，等 OnPresented 放行。</summary>
+        private void PlayStaggerEntrance()
+        {
+            if (_recycler == null)
+            {
+                return;
+            }
+
+            _recycler.CollectActiveSlots(_activeSlots);
+            if (_activeSlots.Count == 0)
+            {
+                return;
+            }
+
+            if (_presented)
+            {
+                StaggerReveal.Play(_activeSlots);
+                return;
+            }
+
+            if (_pendingStagger == null)
+            {
+                _pendingStagger = new List<Component>(_activeSlots.Count);
+            }
+            else
+            {
+                _pendingStagger.Clear();
+            }
+
+            _pendingStagger.AddRange(_activeSlots);
         }
 
         private static bool IsUltimate(TalentItem item)
@@ -261,6 +316,8 @@ namespace App.UI.Popup
             go.name = "Talent_" + go.GetInstanceID();
             // 池化复用：上一任视图可能改过缩放，天赋页每次租用都设回 0.9
             go.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            // 池化复用：清掉上一任交错入场的残留（alpha 遗留 <1 会让卡槽半透明）
+            StaggerReveal.ResetSlot(card);
             var bind = go.GetComponent<UIBind>();
             if (bind != null)
             {

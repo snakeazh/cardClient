@@ -119,6 +119,33 @@ namespace CardShare.Battle
         /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
         public HashSet<int> LuckyEnhancedRanks { get; } = new HashSet<int>();
 
+        /// <summary>断舍离 / 牌型图鉴等永久攻击。</summary>
+        public int PermanentAttackBonus { get; set; }
+
+        /// <summary>战鼓：本回合临时攻击。</summary>
+        public int RoundTempAttack { get; set; }
+
+        /// <summary>雇佣兵：本回合付不起而失效的圣物 Id。</summary>
+        public HashSet<int> RoundPayDisabledRelicIds { get; } = new HashSet<int>();
+
+        /// <summary>牌型图鉴：已拿过首次牌型攻击奖励的牌型。</summary>
+        public HashSet<int> FirstTypeAttackKinds { get; } = new HashSet<int>();
+
+        /// <summary>本回合用过搓/透/替。</summary>
+        public bool UsedSkillThisRound { get; set; }
+
+        /// <summary>本回合实际扣过血。</summary>
+        public bool TookDamageThisRound { get; set; }
+
+        /// <summary>本回合已完成的比牌次数（出伤前用于首次比牌判定）。</summary>
+        public int RoundCompareCount { get; set; }
+
+        /// <summary>本回合击杀数。</summary>
+        public int RoundKills { get; set; }
+
+        /// <summary>心理战等：本回合自身牌型降级步数。</summary>
+        public int RoundTypeDowngrade { get; set; }
+
         /// <summary>沉默诅咒：下一次比牌对该座位强制判负。</summary>
         public bool SilencedNextCompare { get; set; }
     }

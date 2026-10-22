@@ -74,7 +74,7 @@
     "Type": 2,
     "IsProjectile": 0,
     "moveSpecial": 0,
-    "rolepoint": 0,
+    "rolepoint": 2,
     "Effects": "HeroAttackTianliu01",
     "Time": 1,
     "hitTime": 0

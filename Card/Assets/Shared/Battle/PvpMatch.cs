@@ -444,14 +444,33 @@ namespace CardShare.Battle
                             throw new InvalidOperationException("Skills disabled by binding.");
                         }
 
-                        if (fighter.RubLeft <= 0)
                         {
-                            throw new InvalidOperationException("No rub left.");
+                            var rubPay = PvpRelicRuntime.RubPayGold(_tables, fighter);
+                            if (rubPay > 0)
+                            {
+                                if (fighter.Gold < rubPay)
+                                {
+                                    throw new InvalidOperationException("Not enough gold.");
+                                }
+
+                                fighter.Gold -= rubPay;
+                                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+                            }
+                            else if (fighter.RubLeft <= 0)
+                            {
+                                throw new InvalidOperationException("No rub left.");
+                            }
+
+                            duel.Rub(seat, index);
+                            if (rubPay <= 0)
+                            {
+                                fighter.RubLeft--;
+                            }
+
+                            fighter.UsedSkillThisRound = true;
+                            PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         }
 
-                        duel.Rub(seat, index);
-                        fighter.RubLeft--;
-                        PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         break;
                     case PvpActions.Replace:
                         if (PvpRelicBindings.DisableSkillActive(_tables, fighter.OwnedRelicIds))
@@ -466,6 +485,7 @@ namespace CardShare.Battle
 
                         duel.Replace(seat);
                         fighter.ReplaceLeft--;
+                        fighter.UsedSkillThisRound = true;
                         PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         break;
                     case PvpActions.Peek:
@@ -481,10 +501,16 @@ namespace CardShare.Battle
 
                         duel.Peek(seat);
                         fighter.PeekLeft--;
+                        fighter.UsedSkillThisRound = true;
                         PvpRelicRuntime.OnSkillUsed(_tables, fighter, _shopRandom);
                         if (PvpRelicRuntime.HasMechanism(_tables, fighter, MechanismType.PeekSteal))
                         {
                             duel.TryPeekSteal(seat, _shopRandom);
+                        }
+
+                        {
+                            var opponent = FighterOfDuelSeat(duel, 1 - seat);
+                            PvpRelicRuntime.ApplyPeekDownGrade(_tables, fighter, opponent);
                         }
 
                         break;
@@ -760,10 +786,17 @@ namespace CardShare.Battle
             if (damage > 0 && victim != null)
             {
                 var victimHeroId = victim.Combat.HeroId;
+                var victimRelics = PvpRelicRuntime.ExpandActiveRelics(victim);
                 // 英雄闪避（MissDamagePer）：掷中本次伤害为 0，并按 MissGetDamage 反击攻击方。
                 if (PvpHeroRuntime.RollDodge(_tables, victimHeroId, _shopRandom))
                 {
                     dodged = true;
+                    var missGold = PvpRelicRuntime.MissGetGoldAmount(_tables, victim);
+                    if (missGold != 0 && !PvpHeroRuntime.BlocksRelicGold(_tables, victimHeroId))
+                    {
+                        victim.Gold += missGold;
+                    }
+
                     var counter = PvpHeroRuntime.DodgeCounterDamage(_tables, victimHeroId, Math.Max(0, victim.Combat.Attack));
                     counter += PvpRelicBindings.BonusDamage(
                         _tables,
@@ -786,12 +819,34 @@ namespace CardShare.Battle
                 }
                 else
                 {
-                    // 英雄承伤减免（HeroTakeDamagePer）：对齐 PVE IncomingDamageAfterMitigation 的乘区与保底。
+                    // 英雄承伤减免 + 圣物承伤（旧棉袄/存钱罐/全下等）。
                     damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, victimHeroId, damage);
+                    damage = CombatBonuses.MitigateIncomingWithRelics(
+                        _tables,
+                        victimRelics,
+                        damage,
+                        victim.Gold,
+                        aliveEnemies: 1);
+                    var blockCost = PvpRelicRuntime.GoldBlockCost(_tables, victim);
+                    if (damage > 0 && blockCost > 0 && victim.Gold >= blockCost)
+                    {
+                        victim.Gold -= blockCost;
+                        PvpRelicRuntime.OnGoldSpent(_tables, victim);
+                        damage = 0;
+                    }
                 }
             }
 
             var isCrit = snap.Crits != null && win < snap.Crits.Count && snap.Crits[win];
+            if (isCrit && winnerFighter != null)
+            {
+                var critHeal = PvpRelicRuntime.CriticalHealAmount(_tables, winnerFighter);
+                if (critHeal > 0)
+                {
+                    PvpRelicRuntime.HealWithBloodCeremony(_tables, winnerFighter, critHeal, victim);
+                }
+            }
+
             if (!nullified && !dodged && thunderBase > 0 && winnerFighter != null)
             {
                 damage += PvpRelicBindings.BonusDamage(
@@ -822,11 +877,33 @@ namespace CardShare.Battle
                 }
             }
 
+            // 藏宝图：比牌胜方视为攻击敌人，与击杀解耦。
+            if (winnerFighter != null && winnerFighter.Alive)
+            {
+                PvpRelicRuntime.TryAttackDropConsumable(_tables, winnerFighter, _shopRandom);
+            }
+
             var victimAlive = victim != null && victim.Alive;
             ApplyToSeat(duel, 1 - win, damage, deathHp);
             if (damage > 0 && victim != null)
             {
+                victim.TookDamageThisRound = true;
                 ApplyCurseSilenceAfterHit(victim, winnerFighter);
+            }
+
+            // 败者之咬：败方仍对胜方打一段攻击力伤害。
+            if (victim != null && winnerFighter != null)
+            {
+                var bite = PvpRelicRuntime.LoseFightAttackDamage(_tables, victim);
+                if (bite > 0 && winnerFighter.Alive)
+                {
+                    var winnerAlive = winnerFighter.Alive;
+                    ApplyToSeat(duel, win, bite, deathHp);
+                    if (winnerAlive && !winnerFighter.Alive)
+                    {
+                        GrantHeroKill(victim);
+                    }
+                }
             }
 
             // 夺命追击：必追加一段缩放伤害。
@@ -1047,6 +1124,11 @@ namespace CardShare.Battle
                     {
                         PvpRelicRuntime.ApplyBloodCeremony(_tables, fighter, opponent, healed);
                     }
+
+                    var enemyType = 1 - seat < snap.Scores.Length
+                        ? snap.Scores[1 - seat].Type
+                        : HandType.HighCard;
+                    PvpRelicRuntime.ApplyWinStrongTypeGold(_tables, fighter, enemyType);
                 }
 
                 PvpRelicRuntime.ApplySelfDestroy(_tables, fighter, _shopRandom, _relicStock.Return);
@@ -1389,10 +1471,14 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic has no pvp effect.");
             }
 
-            var spent = PvpRelicBag.RemoveOne(fighter, relicId);
-            for (var i = 1; i < spent; i++)
+            var keep = PvpRelicRuntime.RollKeepConsumable(_tables, fighter, _shopRandom);
+            if (!keep)
             {
-                PvpRelicRuntime.TryApplyConsumable(_tables, fighter, relic);
+                var spent = PvpRelicBag.RemoveOne(fighter, relicId);
+                for (var i = 1; i < spent; i++)
+                {
+                    PvpRelicRuntime.TryApplyConsumable(_tables, fighter, relic);
+                }
             }
 
             fighter.ConsumableUsesThisRun++;
@@ -1465,12 +1551,12 @@ namespace CardShare.Battle
 
             fighter.Gold += PvpShopRules.SellPrice(relic) * copies;
             _relicStock.Return(relicId, copies);
-            for (var i = 1; i < copies; i++)
+            for (var i = 0; i < copies; i++)
             {
+                PvpRelicRuntime.ApplySellGetAttack(_tables, fighter, relicId);
                 PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
             }
-            // 血量上限类反向回收（当前血夹到新上限，不低于 1）。
-            PvpRelicRuntime.ApplySellStats(_tables, fighter, relicId);
+
             PvpRelicRuntime.CleanupTrackers(fighter);
         }
 
@@ -1482,7 +1568,7 @@ namespace CardShare.Battle
             }
             else
             {
-                var cost = PvpShopRules.RefreshCost(fighter, _tables.GameConst);
+                var cost = PvpShopRules.RefreshCost(fighter, _tables.GameConst, _tables);
                 if (fighter.Gold < cost)
                 {
                     throw new InvalidOperationException("Not enough gold.");
@@ -1683,6 +1769,8 @@ namespace CardShare.Battle
             {
                 killer.Combat.Attack = Math.Max(0, killer.Combat.Attack + attack);
             }
+
+            PvpRelicRuntime.ApplyKillRewards(_tables, killer, _shopRandom);
         }
 
         private static bool IsPairWin(BattleSnapshot snap, int win)
@@ -1858,7 +1946,8 @@ namespace CardShare.Battle
                     _tables, carried, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
                 fighter.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
                     _tables, carried, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
-                fighter.ReplaceLeft = replace;
+                fighter.ReplaceLeft = Math.Max(0, replace + CombatBonuses.SumSkillCountBonus(
+                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.ReplaceCardsNum));
             }
         }
 

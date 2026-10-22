@@ -346,6 +346,11 @@ namespace App.UI
             {
                 Session.NotifyPvpDealFinished();
             }
+            else
+            {
+                // PVE：飞牌落定后再播回合开始的圣光燃烧。
+                Session?.NotifyDealVisualReady();
+            }
 
             Refresh();
         }

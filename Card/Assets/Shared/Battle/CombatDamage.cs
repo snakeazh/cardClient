@@ -46,6 +46,9 @@ namespace CardShare.Battle
 
         public int GoldThornExtra { get; set; }
 
+        /// <summary>玩家侧固定伤害加值（铁砂掌等），在百分比/暴击之后加法叠加；与 UseDamageFixed（替换）不同。</summary>
+        public int FlatDamageAdd { get; set; }
+
         public int UseDamageFixed { get; set; }
 
         public float PeaceChance { get; set; }
@@ -149,6 +152,11 @@ namespace CardShare.Battle
                 }
 
                 damage += Math.Max(0, input.GoldThornExtra);
+            }
+
+            if (input.IsPlayer && input.FlatDamageAdd != 0 && damage > 0)
+            {
+                damage = Math.Max(1, damage + input.FlatDamageAdd);
             }
 
             if (input.IsPlayer && input.UseDamageFixed > 0)

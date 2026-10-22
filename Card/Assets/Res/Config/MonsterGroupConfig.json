@@ -1461,13 +1461,13 @@
   },
   {
     "Id": 140102,
-    "MonsterId": 1012,
-    "MonsterLevel": 14
+    "MonsterId": 3006,
+    "MonsterLevel": 56
   },
   {
     "Id": 140103,
-    "MonsterId": 1012,
-    "MonsterLevel": 14
+    "MonsterId": 1009,
+    "MonsterLevel": 56
   },
   {
     "Id": 150011,
@@ -2301,13 +2301,13 @@
   },
   {
     "Id": 220102,
-    "MonsterId": 1012,
-    "MonsterLevel": 22
+    "MonsterId": 3006,
+    "MonsterLevel": 88
   },
   {
     "Id": 220103,
-    "MonsterId": 1012,
-    "MonsterLevel": 22
+    "MonsterId": 1011,
+    "MonsterLevel": 88
   },
   {
     "Id": 230011,
@@ -3141,12 +3141,12 @@
   },
   {
     "Id": 300102,
-    "MonsterId": 1012,
-    "MonsterLevel": 30
+    "MonsterId": 3006,
+    "MonsterLevel": 120
   },
   {
     "Id": 300103,
-    "MonsterId": 1012,
-    "MonsterLevel": 30
+    "MonsterId": 1002,
+    "MonsterLevel": 120
   }
 ]

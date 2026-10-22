@@ -37,6 +37,8 @@ namespace App.UI
     {
         private const float CardStagger = 0.035f;
         private const float LevelCardStagger = 0.05f;
+        private const float CardExitStagger = 0.03f;
+        private const float LevelCardExitStagger = 0.04f;
         private const float PanelFade = 0.20f;
         private const float StageInfoFade = 0.18f;
         private const float ButtonFade = 0.18f;
@@ -76,7 +78,7 @@ namespace App.UI
         public float EntranceDuration => 0.65f;
 
         /// <summary>退场总时长；LevelUIView 在这个时长后再执行真正的关闭。</summary>
-        public float ExitDuration => 0.26f;
+        public float ExitDuration => 0.40f;
 
         /// <summary>缓存静止姿态、建 CanvasGroup、按当前阶段摆好初始显隐。</summary>
         public void Prepare(bool showHero, bool showStage, bool showLevel)
@@ -114,6 +116,12 @@ namespace App.UI
             if (_t.HeroCard != null)
             {
                 _t.HeroCard.localScale = _cardRestScale;
+                // 退场会把大卡 CanvasGroup 淡到 0，这里补回可见。
+                var cardGroup = Group(_t.HeroCard);
+                if (cardGroup != null)
+                {
+                    cardGroup.alpha = 1f;
+                }
             }
 
             if (_t.RoleInfo != null)
@@ -158,6 +166,11 @@ namespace App.UI
             if (_t.HeroCard != null)
             {
                 _t.HeroCard.localScale = _cardRestScale * 0.88f;
+                var cardGroup = Group(_t.HeroCard);
+                if (cardGroup != null)
+                {
+                    cardGroup.alpha = 1f;
+                }
             }
 
             if (_t.RoleInfo != null)
@@ -267,8 +280,10 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 返回主页面前的退场：按钮先淡出，底部列表/中间面板向下收，背景轻微推近。
-        /// 背景不淡出，避免露出 UIRoot 底色；真正的页面关闭由 View 延时执行。
+        /// 返回主页面前的退场，按入场编排的反序收场：按钮先走，面板卡片逐张收走，
+        /// 纸面/底部列表随后下移，大卡压场到较晚才退，背景最后才暗——
+        /// 避免一开场就整页变暗的压抑感，并缩短黑场时间衔接 Home 的淡入。
+        /// 真正的页面关闭由 View 延时执行。
         /// </summary>
         public void PlayExit()
         {
@@ -284,44 +299,63 @@ namespace App.UI
 
             _exitSeq = seq;
 
-            if (_bgImage != null)
+            // 按钮最先走。
+            AppendButtonFadeOut(seq, 0f, _t.LastBtn, _t.UseHeroBtn, _t.UnlockHeroBtn, _t.StartGameBtn);
+
+            // 面板里的卡逐张收走，与入场 stagger 呼应，形成"收牌"的节奏。
+            if (_t.HeroPanel != null && _t.HeroPanel.gameObject.activeSelf)
             {
-                seq.Insert(0.02f, _bgImage.DOFade(0f, 0.22f).SetEase(Ease.InQuad));
+                AppendItemsFadeOut(seq, 0.05f, _t.HeroItems, CardExitStagger, 6);
             }
 
+            if (_t.LevelPanel != null && _t.LevelPanel.gameObject.activeSelf)
+            {
+                AppendItemsFadeOut(seq, 0.05f, _t.LevelItems, LevelCardExitStagger, 5);
+            }
+
+            if (_t.StageInfo != null && _t.StageInfo.gameObject.activeSelf)
+            {
+                var infoGroup = Group(_t.StageInfo);
+                if (infoGroup != null)
+                {
+                    seq.Insert(0.08f, infoGroup.DOFade(0f, 0.14f));
+                }
+
+                seq.Insert(0.08f, _t.StageInfo.DOScale(_stageRestScale * 0.92f, 0.14f).SetEase(Ease.InQuad));
+            }
+
+            // 纸面与底部列表随后收走。
             if (_t.Hor != null)
             {
                 var group = Group(_t.Hor);
                 if (group != null)
                 {
-                    seq.Insert(0.02f, group.DOFade(0f, 0.20f));
+                    seq.Insert(0.10f, group.DOFade(0f, 0.18f));
                 }
 
-                seq.Insert(0.02f,
-                    _t.Hor.DOAnchorPos(_horRestPos + new Vector2(0f, -60f), 0.24f).SetEase(Ease.InCubic));
-                seq.Insert(0.02f, _t.Hor.DOScale(_horRestScale * 0.97f, 0.24f).SetEase(Ease.InCubic));
+                seq.Insert(0.10f,
+                    _t.Hor.DOAnchorPos(_horRestPos + new Vector2(0f, -60f), 0.22f).SetEase(Ease.InCubic));
             }
 
-            if (_t.HeroCard != null)
+            if (_t.RoleInfo != null)
             {
-                // 换英雄的 punch 是独立 tween，先清掉再写退场缩放，避免两个 tween 抢 localScale。
-                _t.HeroCard.DOKill();
-                seq.Insert(0.02f,
-                    _t.HeroCard.DOScale(_cardRestScale * 0.95f, 0.22f).SetEase(Ease.InCubic));
+                var roleGroup = Group(_t.RoleInfo);
+                if (roleGroup != null)
+                {
+                    seq.Insert(0.10f, roleGroup.DOFade(0f, 0.15f));
+                }
             }
-
-            AppendButtonFadeOut(seq, 0f, _t.LastBtn, _t.UseHeroBtn, _t.UnlockHeroBtn, _t.StartGameBtn);
 
             if (_t.HeroPanel != null && _t.HeroPanel.gameObject.activeSelf)
             {
                 var group = Group(_t.HeroPanel);
                 if (group != null)
                 {
-                    seq.Insert(0f, group.DOFade(0f, 0.16f));
+                    seq.Insert(0.10f, group.DOFade(0f, 0.18f));
                 }
 
-                seq.Insert(0f,
-                    _t.HeroPanel.DOAnchorPos(_heroPanelRestPos + new Vector2(0f, -40f), 0.20f)
+                seq.Insert(0.10f,
+                    _t.HeroPanel.DOAnchorPos(_heroPanelRestPos + new Vector2(0f, -40f), 0.22f)
                         .SetEase(Ease.InCubic));
             }
 
@@ -330,23 +364,33 @@ namespace App.UI
                 var group = Group(_t.LevelPanel);
                 if (group != null)
                 {
-                    seq.Insert(0f, group.DOFade(0f, 0.14f));
+                    seq.Insert(0.10f, group.DOFade(0f, 0.16f));
                 }
 
-                seq.Insert(0f,
-                    _t.LevelPanel.DOAnchorPos(_levelPanelRestPos + new Vector2(0f, -32f), 0.18f)
+                seq.Insert(0.10f,
+                    _t.LevelPanel.DOAnchorPos(_levelPanelRestPos + new Vector2(0f, -32f), 0.20f)
                         .SetEase(Ease.InCubic));
             }
 
-            if (_t.StageInfo != null && _t.StageInfo.gameObject.activeSelf)
+            // 大卡压场：主视觉较晚退场，先快后慢地缩小并淡出。
+            if (_t.HeroCard != null)
             {
-                var group = Group(_t.StageInfo);
-                if (group != null)
+                // 换英雄的 punch 是独立 tween，先清掉再写退场缩放，避免两个 tween 抢 localScale。
+                _t.HeroCard.DOKill();
+                var cardGroup = Group(_t.HeroCard);
+                if (cardGroup != null)
                 {
-                    seq.Insert(0f, group.DOFade(0f, 0.12f));
+                    seq.Insert(0.14f, cardGroup.DOFade(0f, 0.20f));
                 }
 
-                seq.Insert(0f, _t.StageInfo.DOScale(_stageRestScale * 0.94f, 0.12f).SetEase(Ease.InQuad));
+                seq.Insert(0.14f,
+                    _t.HeroCard.DOScale(_cardRestScale * 0.88f, 0.22f).SetEase(Ease.OutQuad));
+            }
+
+            // 背景最后才暗：等 UI 全部收走后再淡，黑场只留收尾一小段。
+            if (_bgImage != null)
+            {
+                seq.Insert(0.20f, _bgImage.DOFade(0f, 0.16f).SetEase(Ease.InQuad));
             }
         }
 
@@ -1181,7 +1225,35 @@ namespace App.UI
                 }
 
                 group.DOKill();
-                seq.Insert(at, group.DOFade(0f, 0.12f));
+                seq.Insert(at, group.DOFade(0f, 0.15f));
+            }
+        }
+
+        /// <summary>退场时面板内的卡逐张收走：缩到 0.90 并淡出，间隔与入场 stagger 呼应。</summary>
+        private void AppendItemsFadeOut(
+            Sequence seq, float at, List<RectTransform> items, float stagger, int staggerCap)
+        {
+            if (items == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var rt = items[i];
+                if (rt == null || !rt.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                var delay = at + Mathf.Min(i, staggerCap) * stagger;
+                var itemGroup = Group(rt);
+                if (itemGroup != null)
+                {
+                    seq.Insert(delay, itemGroup.DOFade(0f, 0.15f));
+                }
+
+                seq.Insert(delay, rt.DOScale(Vector3.one * 0.90f, 0.15f).SetEase(Ease.InQuad));
             }
         }
 

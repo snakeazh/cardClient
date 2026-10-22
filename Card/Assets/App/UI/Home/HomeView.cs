@@ -4,6 +4,7 @@ using App.Bootstrap;
 using App.Game;
 using App.Guide;
 using App.Resources;
+using DG.Tweening;
 using Framework.UI.Navigation;
 using Framework.UI.View;
 using TMPro;
@@ -109,6 +110,29 @@ namespace App.UI
         public override void OnPresented()
         {
             ViewModel.OnPresented();
+            PlayPresentFade();
+        }
+
+        /// <summary>
+        /// 页面露出时整体淡入：从上级页面（如 LevelUI）返回时，对方退场末尾背景已暗下去，
+        /// 这里从暗到亮接力，避免 Home 硬切闪现；首次启动同理从加载画面柔和浮现。
+        /// </summary>
+        private void PlayPresentFade()
+        {
+            var group = GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            group.DOKill();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+            group.DOFade(1f, 0.18f)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .OnComplete(() => group.blocksRaycasts = true)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
 
         private void BindHero()

@@ -56,6 +56,8 @@ namespace App.UI
         private int _impactLevel = 1;
         /// <summary>本次命中用的自定义受击动画（HeroConfig.hitAnimation），空则用 ani_atk_lvXX_hit。</summary>
         private string _victimHitClip;
+        /// <summary>释放时已开播 hitAnimation 的视觉槽（群体技能全场一起飞，命中帧 ReactSlot 不再重开）。</summary>
+        private readonly HashSet<int> _hitAnimAtCastSlots = new HashSet<int>();
         private AttackTuningConfig.LevelTuning _impactBeat;
         private Vector3 _impactAttackerPos;
         private AudioClip _impactSfx;
@@ -590,6 +592,19 @@ namespace App.UI
                 return;
             }
 
+            // 释放时已全场开播 hitAnimation：不要从头重开，否则刚飞起来又被打断。
+            if (_hitAnimAtCastSlots.Contains(visualSlot) && !string.IsNullOrEmpty(_victimHitClip))
+            {
+                if (_skillHitNoKnockback)
+                {
+                    return;
+                }
+
+                var earlyHitPos = _enemyRoots[visualSlot] != null ? _enemyRoots[visualSlot].position : Vector3.zero;
+                InsertHitKnockback(_impactBeat, _enemyCardRects[visualSlot], _impactAttackerPos, earlyHitPos);
+                return;
+            }
+
             var hitClip = _victimHitClip ?? Clip(_impactLevel, "hit");
             PlayClip(victim, hitClip);
             if (_victimHitClip != null)
@@ -615,7 +630,9 @@ namespace App.UI
         /// </summary>
         /// <param name="onHit">命中瞬间结算（扣血/溶解），不要在这里出伤害字。</param>
         /// <param name="onHitDamageText">与受击动画同帧显示伤害数字。</param>
-        /// <param name="hitAnimation">配置了 <c>HeroConfig.hitAnimation</c> 时，与释放特效同帧给被打的敌人开播（替代命中瞬间的 ani_atk_lvXX_hit）。</param>
+        /// <param name="hitAnimation">配置了 <c>HeroConfig.hitAnimation</c> 时，与释放特效同帧开播（替代命中瞬间的 ani_atk_lvXX_hit）。</param>
+        /// <param name="hitAnimSlots">要一起播 hitAnimation 的视觉槽；空则只播主目标。圣骑士等群体表现传全部存活敌人。</param>
+        /// <param name="shouldSpawnHitFx">结算后按槽位决定是否出受击特效；盗贼攻≥150 群体等会多人。空则只给主目标（且未闪避）出。</param>
         public bool PlayHeroSkill(
             int visualSlot,
             int level,
@@ -627,7 +644,9 @@ namespace App.UI
             Action onCollisionDone,
             Action onReturned,
             Action onDone,
-            float timeScale = 1f)
+            float timeScale = 1f,
+            IList<int> hitAnimSlots = null,
+            Func<int, bool> shouldSpawnHitFx = null)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -651,7 +670,6 @@ namespace App.UI
             var homeUi = _playerRoot.position;
             var hitUi = _enemyRoots[visualSlot].position;
             var projectile = IsProjectile(attackFx);
-            var rolePoint = IsRolePoint(attackFx);
             var configuredWait = Mathf.Max(0f, attackFx.Time);
             var castClip = projectile ? 0f : LongestClipLength(attackPrefab);
             var castTime = ResolveCastDuration(configuredWait, castClip, projectile, tuning);
@@ -670,15 +688,15 @@ namespace App.UI
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
 
-            // hitAnimation：与释放特效同帧开播，命中帧不再重开（MISS 仍会打断成闪避）。
-            var hitAnimAtCast = TryBeginHitAnimationAtCast(targetAnim, hitAnimation);
+            // hitAnimation：与释放特效同帧开播（可全场存活敌人一起飞），命中帧不再重开（MISS 仍会打断成闪避）。
+            var hitAnimAtCast = TryBeginHitAnimationAtCast(visualSlot, hitAnimation, hitAnimSlots);
 
             AppLog.Info(
                 LogChannel.UI,
                 $"[HeroSkill][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} " +
                 $"attack={attackFx.Effects} attackTime={configuredWait:0.###} castTime={castTime:0.###} " +
-                $"hitDelay={hitDelay:0.###} projectile={projectile} rolepoint={rolePoint} " +
-                $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? hitAnimation : "命中帧")} " +
+                $"hitDelay={hitDelay:0.###} projectile={projectile} rolepoint={attackFx.rolepoint} " +
+                $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? $"{hitAnimation}x{_hitAnimAtCastSlots.Count}" : "命中帧")} " +
                 $"tail={tail:0.###} actionEnd={actionEnd:0.###} hpHold={tuning.HpTextHoldDuration:0.###}");
 
             // 释放特效：投射物飞向目标；非投射物按 rolepoint 落点，各自按自己的时长回池。
@@ -704,11 +722,11 @@ namespace App.UI
             }
             else
             {
-                var castUi = rolePoint ? homeUi : hitUi;
+                var castUi = ResolveRolePointUi(attackFx, homeUi, hitUi);
                 SpawnSkillFx(attackPrefab, castUi, life: castTime);
                 AppLog.Info(
                     LogChannel.UI,
-                    $"[HeroSkill][t={Elapsed():0.000}] 阶段1-释放(定点) pos={(rolePoint ? "人物" : "目标")} " +
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段1-释放(定点) pos={RolePointLabel(attackFx)} " +
                     $"演完 castTime={castTime:0.###}s（配置 {configuredWait:0.###}，动画 {castClip:0.###}），" +
                     $"命中延迟={hitDelay:0.###}s");
                 _seq.AppendInterval(hitDelay);
@@ -728,13 +746,12 @@ namespace App.UI
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroSkill][t={Elapsed():0.000}] 阶段2a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : (_victimHitClip ?? Clip(level, "hit")))}）");
-                if (!missed)
-                {
-                    SpawnHitFx(hitPrefab, hitFx, homeUi, hitUi, hitLife);
-                    AppLog.Info(
-                        LogChannel.UI,
-                        $"[HeroSkill][t={Elapsed():0.000}] 阶段2b-受击特效 hit={hitFx.Effects} show={hitLife:0.###}");
-                }
+                // 受击特效：有 shouldSpawnHitFx 时按结算结果多人出（盗贼≥150 群体 / 灰烬 AOE / 溅射）；否则只出主目标。
+                var hitFxCount = SpawnHitFxForWave(
+                    hitPrefab, hitFx, homeUi, visualSlot, hitUi, hitLife, missed, shouldSpawnHitFx);
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][t={Elapsed():0.000}] 阶段2b-受击特效 hit={hitFx.Effects} show={hitLife:0.###} count={hitFxCount}");
 
                 AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2c-出伤害字");
                 onHitDamageText?.Invoke();
@@ -920,9 +937,9 @@ namespace App.UI
                 $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? hitAnimation : "命中帧")} " +
                 $"actionEnd={actionEnd:0.###}");
 
-            // 阶段1：01 法阵在人物处持续播放；02 也在人物处，先演蓄力不动（都不转、都拉到 UI 层）。
-            var spawnOrigin = (IsRolePoint(channelFx) ? homeUi : hitUi) + new Vector3(0f, spawnOffsetY, 0f);
-            var mainOrigin = (IsRolePoint(mainFx) ? homeUi : hitUi) + new Vector3(0f, spawnOffsetY, 0f);
+            // 阶段1：01/02 按 rolepoint 落点（0 目标 / 1 人物 / 2 屏幕中心），先演蓄力不动（都不转、都拉到 UI 层）。
+            var spawnOrigin = ResolveRolePointUi(channelFx, homeUi, hitUi) + new Vector3(0f, spawnOffsetY, 0f);
+            var mainOrigin = ResolveRolePointUi(mainFx, homeUi, hitUi) + new Vector3(0f, spawnOffsetY, 0f);
             var channelGo = SpawnSkillFxAt(
                 channelPrefab,
                 spawnOrigin,
@@ -1144,6 +1161,18 @@ namespace App.UI
                 return;
             }
 
+            // 圣骑士：HeroEffects 留空，对子/圣光走 SpecialEffect；不算「出刀回退近战」失败。
+            if (hero.Id == HeroMechanics.PaladinHeroId &&
+                HeroMechanics.TryResolveSpecialEffects(hero, out var specialAtk, out var specialHit) &&
+                CanPlayHeroSkill(specialAtk, specialHit))
+            {
+                AppLog.Info(
+                    LogChannel.Assets,
+                    $"[AttackCutscene] 英雄特效已预载（{preloaded} 份）hero={hero.Name} " +
+                    $"SpecialEffect={specialAtk.Effects}/{specialHit.Effects}（圣光燃烧；近战无 HeroEffects）");
+                return;
+            }
+
             var parts = new List<string>(5);
             var ready = 0;
             for (var level = 1; level <= 3; level++)
@@ -1177,6 +1206,16 @@ namespace App.UI
                 AppLog.Info(
                     LogChannel.Assets,
                     $"[AttackCutscene] 英雄特效已预载（{preloaded} 份）hero={hero.Name} {summary}");
+                return;
+            }
+
+            if (HeroMechanics.TryResolveSpecialEffects(hero, out var onlySpecialAtk, out var onlySpecialHit) &&
+                CanPlayHeroSkill(onlySpecialAtk, onlySpecialHit))
+            {
+                AppLog.Info(
+                    LogChannel.Assets,
+                    $"[AttackCutscene] 英雄特效已预载（{preloaded} 份）hero={hero.Name} " +
+                    $"SpecialEffect={onlySpecialAtk.Effects}/{onlySpecialHit.Effects}");
                 return;
             }
 
@@ -1442,10 +1481,60 @@ namespace App.UI
 
         /// <summary>
         /// 释放开始时开播 <see cref="HeroConfig.hitAnimation"/>。
-        /// 片段在控制器里找不到时返回 false，命中帧再走通用 hit。
+        /// <paramref name="hitAnimSlots"/> 有值时播这些槽，否则只播主目标；片段找不到时返回 false，命中帧再走通用 hit。
         /// </summary>
+        private bool TryBeginHitAnimationAtCast(int mainSlot, string hitAnimation, IList<int> hitAnimSlots)
+        {
+            _hitAnimAtCastSlots.Clear();
+            if (string.IsNullOrEmpty(hitAnimation))
+            {
+                return false;
+            }
+
+            var slots = hitAnimSlots != null && hitAnimSlots.Count > 0
+                ? hitAnimSlots
+                : new[] { mainSlot };
+            var any = false;
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                if (slot < 0 || slot >= _enemyAnims.Length)
+                {
+                    continue;
+                }
+
+                var victim = _enemyAnims[slot];
+                if (victim == null)
+                {
+                    continue;
+                }
+
+                if (ClipLength(victim, hitAnimation) <= 0f)
+                {
+                    if (slot == mainSlot)
+                    {
+                        AppLog.Warn(
+                            LogChannel.UI,
+                            $"[AttackCutscene] hitAnimation 缺失 anim={hitAnimation}，改在命中帧播通用 hit");
+                    }
+
+                    continue;
+                }
+
+                _victimHitClip = hitAnimation;
+                PlayClip(victim, hitAnimation);
+                HoldVictimClipUntilDone(victim, hitAnimation);
+                _hitAnimAtCastSlots.Add(slot);
+                any = true;
+            }
+
+            return any;
+        }
+
+        /// <summary>齐射等只打主目标：释放时只给主目标开播 hitAnimation。</summary>
         private bool TryBeginHitAnimationAtCast(Animator victim, string hitAnimation)
         {
+            _hitAnimAtCastSlots.Clear();
             if (victim == null || string.IsNullOrEmpty(hitAnimation))
             {
                 return false;
@@ -1462,6 +1551,15 @@ namespace App.UI
             _victimHitClip = hitAnimation;
             PlayClip(victim, hitAnimation);
             HoldVictimClipUntilDone(victim, hitAnimation);
+            for (var i = 0; i < _enemyAnims.Length; i++)
+            {
+                if (_enemyAnims[i] == victim)
+                {
+                    _hitAnimAtCastSlots.Add(i);
+                    break;
+                }
+            }
+
             return true;
         }
 
@@ -1683,6 +1781,51 @@ namespace App.UI
             return longest;
         }
 
+        /// <summary>
+        /// 本波受击特效：<paramref name="shouldSpawnHitFx"/> 非空时遍历视觉槽（群体/溅射多人）；
+        /// 否则仅主目标未闪避时出一次。
+        /// </summary>
+        private int SpawnHitFxForWave(
+            GameObject prefab,
+            HeroEffectsConfig hitFx,
+            Vector3 attackerUi,
+            int mainSlot,
+            Vector3 mainUi,
+            float life,
+            bool mainMissed,
+            Func<int, bool> shouldSpawnHitFx)
+        {
+            if (prefab == null || hitFx == null)
+            {
+                return 0;
+            }
+
+            if (shouldSpawnHitFx == null)
+            {
+                if (mainMissed)
+                {
+                    return 0;
+                }
+
+                SpawnHitFx(prefab, hitFx, attackerUi, mainUi, life);
+                return 1;
+            }
+
+            var count = 0;
+            for (var slot = 0; slot < _enemyRoots.Length; slot++)
+            {
+                if (_enemyRoots[slot] == null || !shouldSpawnHitFx(slot))
+                {
+                    continue;
+                }
+
+                SpawnHitFx(prefab, hitFx, attackerUi, _enemyRoots[slot].position, life);
+                count++;
+            }
+
+            return count;
+        }
+
         private void SpawnHitFx(
             GameObject prefab,
             HeroEffectsConfig hitFx,
@@ -1711,13 +1854,14 @@ namespace App.UI
                 return;
             }
 
-            // 非投射物：rolepoint=1 落在人物点，否则落在目标，显示满自身的 hitTime（否则 Time）后回池。
-            var spawnUi = IsRolePoint(hitFx) ? attackerUi : targetUi;
+            // 非投射物：按 rolepoint 落点，显示满自身的 hitTime（否则 Time）后回池。
+            // 多人同帧出时 rolepoint=2（屏幕中心）会叠在同一点，仍按目标点出以免糊成一团。
+            var spawnUi = hitFx.rolepoint == 2 ? targetUi : ResolveRolePointUi(hitFx, attackerUi, targetUi);
             SpawnSkillFx(prefab, spawnUi, life);
         }
 
         /// <summary>
-        /// 齐射用的受击特效：强制 UI 层 + 齐射缩放，位置按 rolepoint 落在目标或人物。
+        /// 齐射用的受击特效：强制 UI 层 + 齐射缩放，位置按 rolepoint（0 目标 / 1 人物 / 2 屏幕中心）。
         /// 不用 <see cref="SpawnHitFx"/> 是因为那条路径会被投射物分支带到主相机平面。
         /// </summary>
         private void SpawnVolleyHitFx(
@@ -1733,7 +1877,7 @@ namespace App.UI
                 return;
             }
 
-            var spawnUi = IsRolePoint(hitFx) ? attackerUi : targetUi;
+            var spawnUi = ResolveRolePointUi(hitFx, attackerUi, targetUi);
             SpawnSkillFxAt(
                 prefab,
                 spawnUi,
@@ -1884,9 +2028,67 @@ namespace App.UI
             return fx != null && fx.IsProjectile != 0;
         }
 
-        private static bool IsRolePoint(HeroEffectsConfig fx)
+        /// <summary>rolepoint：0=目标，1=人物，2=屏幕中心。</summary>
+        private Vector3 ResolveRolePointUi(HeroEffectsConfig fx, Vector3 attackerUi, Vector3 targetUi)
         {
-            return fx != null && fx.rolepoint != 0;
+            if (fx == null)
+            {
+                return targetUi;
+            }
+
+            switch (fx.rolepoint)
+            {
+                case 1:
+                    return attackerUi;
+                case 2:
+                    return ScreenCenterUiWorld();
+                default:
+                    return targetUi;
+            }
+        }
+
+        private static string RolePointLabel(HeroEffectsConfig fx)
+        {
+            if (fx == null)
+            {
+                return "目标";
+            }
+
+            switch (fx.rolepoint)
+            {
+                case 1:
+                    return "人物";
+                case 2:
+                    return "屏幕中心";
+                default:
+                    return "目标";
+            }
+        }
+
+        /// <summary>HUD 屏幕中心的 UI 世界坐标（与 AttackFlight anchored (0,0) 同一点）。</summary>
+        private Vector3 ScreenCenterUiWorld()
+        {
+            var parent = (_flight != null ? _flight.parent : null) as RectTransform
+                         ?? _hud as RectTransform;
+            if (parent == null)
+            {
+                return _playerRoot != null ? _playerRoot.position : Vector3.zero;
+            }
+
+            var canvas = parent.GetComponentInParent<Canvas>();
+            Camera cam = null;
+            if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            {
+                cam = canvas.worldCamera;
+            }
+
+            var screen = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, screen, cam, out var world))
+            {
+                return world;
+            }
+
+            return parent.TransformPoint(Vector3.zero);
         }
 
         private static void FaceToward(Transform t, Vector3 from, Vector3 to)
@@ -2396,6 +2598,7 @@ namespace App.UI
             _playTimeScale = 1f;
             _skillHitNoKnockback = false;
             _victimHitClip = null;
+            _hitAnimAtCastSlots.Clear();
         }
 
         private void BeginPlay(float timeScale)

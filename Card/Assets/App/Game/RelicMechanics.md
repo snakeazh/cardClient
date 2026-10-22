@@ -181,6 +181,45 @@
 | FirstLeopardGold | 消耗品使用后本局 | 每次亮出豹子 +Value 金币 |
 | LevelWinDamageUp | 消耗品使用 | 本关出伤百分比 +Value |
 | UseRoundNullify | 消耗品使用 | 本次比牌免疫承伤，并立即回复最大生命 × Value[1] |
+| RelicReplyHp | 圣物治疗 | 与英雄词条相加：治疗量 `× (1 + Value)`（医疗手册） |
+| CritDamageUp | `ComputeAttackDamage` | 暴击倍率 `+= Value`（狼牙棒） |
+| RoundFirstFightDamageUp | 出伤% | 本回合首次比牌（RecordCompare 后合计为 1） |
+| FlatDamage | 公式后加法 | 固定伤害 +Value（铁砂掌；非 UseDamageFixed 替换） |
+| FlatDamageReduce | 承伤固定加减 | 与天赋 HeroTakeDamage 同路（旧棉袄 Value 为负） |
+| GoldDamageReduce | 承伤% | Gold≥Value[0] 时 takePer += Value[1] |
+| NoHurtGetGold | `AfterRound` | 本回合未扣到玩家血 → +Value 金币 |
+| HighHpDamageUp | 出伤% | HP/MaxHp≥Value[0] 时 +Value[1] |
+| SameColorDamageUp | 出伤% | 亮出三张同红/同黑 |
+| ReplaceCardsNum | `ResetSkillCharges` | 替换次数 +Value |
+| LowGoldGetGold | `StartRound` | Gold&lt;Value[0] → +Value[1] 金币 |
+| CriticalHealHp | 暴击后 | `HealFromRelic(Value)` |
+| KillDropConsumable | 攻击敌人后 | 概率塞随机消耗品（需空栏） |
+| ShopRareGuarantee | 生成货架 | 概率保证一件稀有+ |
+| RefreshPriceFixed | `ShopRefreshCost` | 刷新价不再随次数上涨 |
+| UnderdogDamageUp | 出伤% | 敌 Attack &gt; 己 Attack |
+| UnusedSkillDamageUp | 出伤% | 本回合未用搓/透/替 |
+| MissGetGold | 闪避成功 | +Value 金币 |
+| FirstTypeGetAttack | 首次亮牌型 | 永久攻击 +Value[0]，种数上限 Value[1] |
+| LowHpEnemyDamageUp | 出伤% | 敌 HP 比例 &lt; Value[0] 时 +Value[1] |
+| FlatAttack | `ApplyHeroToPlayer` 面板 | 持有期间攻击 +Value（血祭/雇佣兵） |
+| RoundPayGold | `StartRound` | 扣 \|Value\| 金币；付不起则本件本回合失效 |
+| GoldBlockDamage | `ApplyDamage` | 扣 Value 金币抵挡本次伤害 |
+| WinStrongTypeGold | 比牌战胜 | 敌牌型 Level≥Value[0] → +Value[1] 金币 |
+| SellGetAttack | 出售其它圣物 | 永久攻击 +Value（断舍离） |
+| KeepConsumablePer | 使用消耗品 | 概率不移除 |
+| ExtraKillGold | 击杀 | 同回合第 2+ 次击杀 +Value 金币 |
+| EmptySlotDamageUp | 出伤% | 空栏位数 × Value |
+| NoGoldDamageUp | 出伤% | Gold≤0 |
+| RoundTempAttack | `StartRound` / `AfterRound` | 本回合临时攻击，结束清零 |
+| ManyEnemyDamageReduce | 承伤% | 存活敌≥Value[0] 时 takePer += Value[1] |
+| LoseFightAttack | 比牌失败 | 仍对敌打 Attack×Value |
+| KillGoldUp | 击杀 | 击杀掉金 ×(1+Value) 的额外部分 |
+| RubbingPayGold | 搓牌 | 耗金币不耗次数 |
+| PeekDownGrade | 透视成功 | 本回合敌人牌型 -Value |
+| SameTypeDamageUp | 出伤% | 双方牌型 Level 相同 |
+| HealMissingHp | 进关 | 回已损生命 × Value |
+| AllInDamage | 出伤%/承伤% | Value[0] 出伤，Value[1] 承伤 |
+| AttackBossDamage | 出伤%（圣物侧） | 对精英/领主（猎龙者） |
 
 永久存在 `RunState`、只在 `StartNewRun` 清：训练点数攻击、天使牌型倍率、老搓家倍率、工资卡售价加成、投资累计花费、老千各牌型次数、暴击/闪避层数、复盘/小强/复仇之刺层数、练习卷倍率、输过的 MonsterId、永久攻击/血上限、本局是否用过技能。
 

@@ -18,6 +18,9 @@ namespace App.Game
         /// </summary>
         public const int ShadowMageHeroId = 3;
 
+        /// <summary>圣骑士（HeroConfig.Id）。圣光燃烧读 <see cref="HeroConfig.SpecialEffect"/>；对子先圣光再近战，非对子只近战。</summary>
+        public const int PaladinHeroId = 8;
+
         public static HeroConfig Resolve(RunState run)
         {
             return run != null && run.HeroId > 0 ? HeroConfig.Get(run.HeroId) : null;
@@ -210,16 +213,24 @@ namespace App.Game
             return found;
         }
 
-        /// <summary>当前这一发用发动前的层数：攻击 × 比例 × (1 + 已发动次数 × 每层加成)。</summary>
+        /// <summary>
+        /// 当前这一发用发动前的层数：攻击 × (基础比例 + 已发动次数 × 每次加点)。
+        /// 例：0.5 / 0.1 → 第 1 发 50%、第 2 发 60%、第 3 发 70%。
+        /// </summary>
         public static int HolyLightDamage(int attack, float ratio, int casts, float perCast)
         {
-            if (attack <= 0 || ratio == 0f)
+            if (attack <= 0)
             {
                 return 0;
             }
 
-            var mul = 1f + Math.Max(0, casts) * perCast;
-            return Math.Max(0, (int)Math.Round(attack * ratio * mul));
+            var percent = ratio + Math.Max(0, casts) * perCast;
+            if (percent <= 0f)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, (int)Math.Round(attack * percent));
         }
 
         /// <summary>已发动次数带来的后续出手加成。</summary>
@@ -445,7 +456,7 @@ namespace App.Game
                    TryResolveEffects(hero.HeroEffects, out attack, out hit);
         }
 
-        /// <summary>目标类型、档位、默认档里只要有一组能解析出成套特效就返回 true（进桌预载自检用）。</summary>
+        /// <summary>目标类型、档位、默认档、SpecialEffect 里只要有一组能解析出成套特效就返回 true（进桌预载自检用）。</summary>
         public static bool TryResolveAnyEffects(
             HeroConfig hero,
             out HeroEffectsConfig attack,
@@ -462,9 +473,26 @@ namespace App.Game
                 }
             }
 
+            if (TryResolveSpecialEffects(hero, out attack, out hit))
+            {
+                return true;
+            }
+
             attack = null;
             hit = null;
             return false;
+        }
+
+        /// <summary>
+        /// 解析 <see cref="HeroConfig.SpecialEffect"/> 里第一条 Attack + 第一条 Hit。
+        /// 圣骑士：圣光燃烧专用；暗灵法师的 SpecialEffect 仍只参与齐射解析。
+        /// </summary>
+        public static bool TryResolveSpecialEffects(
+            HeroConfig hero,
+            out HeroEffectsConfig attack,
+            out HeroEffectsConfig hit)
+        {
+            return TryResolveEffects(hero?.SpecialEffect, out attack, out hit);
         }
 
         /// <summary>

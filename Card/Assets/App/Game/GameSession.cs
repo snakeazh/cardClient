@@ -754,7 +754,7 @@ namespace App.Game
             }
 
             // DrawRubCard 成功后会清掉该标记，先记下以便退出点选模式，方便引导接着选 AAA。
-            var exitGuideRubSelect = _forceGuideRubAce;
+            var exitGuideRubSelect = ShouldForceGuideRubAce();
             if (!ApplyRubReplace(index, out var message))
             {
                 return false;
@@ -792,13 +792,26 @@ namespace App.Game
                 return false;
             }
 
-            // FirstBattle：只允许搓掉固定下标（「2」），避免点到其他牌浪费次数。
-            if (_forceGuideRubAce && index != GuideDealScript.RubTargetIndex)
+            // FirstSkill：只允许搓掉固定下标（中间「2」），避免点到其他牌浪费次数。
+            if (ShouldForceGuideRubAce() && index != GuideDealScript.RubTargetIndex)
             {
                 return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 搓牌引导强制换 A。标记可能被弱引导 Clear 掉，故 FirstSkill 未完成时再兜底。
+        /// </summary>
+        private bool ShouldForceGuideRubAce()
+        {
+            if (_forceGuideRubAce)
+            {
+                return true;
+            }
+
+            return IsFirstSkillGuideDeal() && SelectingRubTarget;
         }
 
         /// <summary>黄金手指：有 RubbingPayGold 时用金币代替次数；否则仍要剩余搓牌次数。</summary>
@@ -5123,6 +5136,7 @@ namespace App.Game
 
             SyncDeckWithTable();
             var forceGuideHand = ShouldApplyFirstBattleDeal();
+            var skillGuideDeal = forceGuideHand && IsFirstSkillGuideDeal();
             foreach (var seat in AllSeats())
             {
                 if (!seat.IsPlayer && !seat.Alive)
@@ -5130,9 +5144,19 @@ namespace App.Game
                     continue;
                 }
 
-                if (forceGuideHand && seat.IsPlayer && TryDealGuidePlayerHand(seat))
+                if (forceGuideHand &&
+                    seat.IsPlayer &&
+                    TryDealGuidePlayerHand(seat, out var forceRubAce))
                 {
-                    _forceGuideRubAce = true;
+                    _forceGuideRubAce = forceRubAce;
+                    SyncDeckWithTable();
+                    continue;
+                }
+
+                if (skillGuideDeal &&
+                    !seat.IsPlayer &&
+                    TryDealGuideEnemyHand(seat))
+                {
                     SyncDeckWithTable();
                     continue;
                 }
@@ -5162,7 +5186,7 @@ namespace App.Game
         }
 
         /// <summary>
-        /// FirstBattle / FirstSkill 未完成时强制 QKA23，保证搓牌引导有固定「2」。
+        /// FirstBattle / FirstSkill 未完成时强制脚本发牌。
         /// </summary>
         private bool ShouldApplyFirstBattleDeal()
         {
@@ -5182,7 +5206,7 @@ namespace App.Game
             _forceGuideRubAce = false;
         }
 
-        /// <summary>FirstBattle 选牌步骤只允许点选 Q/K/A（RevealTargetIndices）。</summary>
+        /// <summary>选牌步骤只允许点选 RevealTargetIndices。</summary>
         private bool IsGuideRevealIndexLocked(int index)
         {
             if (!AppServices.IsReady)
@@ -5211,9 +5235,76 @@ namespace App.Game
             return true;
         }
 
-        private bool TryDealGuidePlayerHand(SeatState seat)
+        /// <summary>
+        /// FirstBattle→QKA23；FirstSkill→AA223 并锁定搓中间 2。
+        /// </summary>
+        private bool TryDealGuidePlayerHand(SeatState seat, out bool forceRubAce)
         {
-            var script = GuideDealScript.PlayerHand;
+            forceRubAce = false;
+            var script = ResolveGuideDealHand(out forceRubAce);
+            if (script == null)
+            {
+                return false;
+            }
+
+            var count = CardsDealtFor(seat);
+            if (count != script.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < seat.Hand.Length; i++)
+            {
+                seat.Hand[i] = i < count ? script[i] : default;
+            }
+
+            return true;
+        }
+
+        private bool IsFirstSkillGuideDeal()
+        {
+            if (AppServices.IsReady)
+            {
+                var guide = AppServices.Resolve<IGuideService>();
+                if (guide != null && guide.IsRunning && guide.CurrentGroupId == GuideDealScript.FirstSkillGroupId)
+                {
+                    return true;
+                }
+            }
+
+            var progress = GuideProgressSvc();
+            return progress != null &&
+                   progress.IsGroupCompleted(GuideDealScript.FirstBattleGroupId) &&
+                   !progress.IsGroupCompleted(GuideDealScript.FirstSkillGroupId);
+        }
+
+        private Card[] ResolveGuideDealHand(out bool forceRubAce)
+        {
+            forceRubAce = false;
+            var progress = GuideProgressSvc();
+            if (progress == null)
+            {
+                return null;
+            }
+
+            // 搓牌引导局：必须 AA223（勿用 QKA23，否则 index2 是 A）。
+            if (IsFirstSkillGuideDeal())
+            {
+                forceRubAce = true;
+                return GuideDealScript.FirstSkillHand;
+            }
+
+            if (!progress.IsGroupCompleted(GuideDealScript.FirstBattleGroupId))
+            {
+                return GuideDealScript.FirstBattleHand;
+            }
+
+            return null;
+        }
+
+        private bool TryDealGuideEnemyHand(SeatState seat)
+        {
+            var script = GuideDealScript.FirstSkillEnemyHand;
             var count = CardsDealtFor(seat);
             if (script == null || count != script.Length)
             {
@@ -5252,13 +5343,28 @@ namespace App.Game
         private Card DrawRubCard(Card original)
         {
             SyncDeckWithTable();
-            if (_forceGuideRubAce &&
-                _deck.TryDrawMatching(
-                    card => card.Rank == Rank.Ace && RubCardAllowed(card, original, false),
-                    out var guided))
+            if (ShouldForceGuideRubAce())
             {
+                // 引导必须换成 A；牌堆若已无可用 A（桌上已有），仍强制给出一张 A，避免 Rub 等待卡死。
+                if (_deck.TryDrawMatching(
+                        card => card.Rank == Rank.Ace && RubCardAllowed(card, original, false),
+                        out var guided))
+                {
+                    _forceGuideRubAce = false;
+                    return guided;
+                }
+
                 _forceGuideRubAce = false;
-                return guided;
+                for (var s = 0; s < 4; s++)
+                {
+                    var ace = new Card((Suit)s, Rank.Ace);
+                    if (!ace.Equals(original))
+                    {
+                        return ace;
+                    }
+                }
+
+                return new Card(Suit.Spade, Rank.Ace);
             }
 
             if (_deck.TryDrawMatching(card => RubCardAllowed(card, original, false), out var next))

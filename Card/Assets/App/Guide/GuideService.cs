@@ -58,6 +58,7 @@ namespace App.Guide
                 [GuideWaitIds.ShopOfferClicked] = new ShopOfferClickedWaitHandler(),
                 [GuideWaitIds.ShopBought] = new ShopBoughtWaitHandler(),
                 [GuideWaitIds.ShopMineClicked] = new ShopMineClickedWaitHandler(),
+                [GuideWaitIds.RemainListClosed] = new RemainListClosedWaitHandler(),
                 [GuideWaitIds.Delay] = new DelayWaitHandler()
             };
 
@@ -119,9 +120,17 @@ namespace App.Guide
 
         public void StartGroup(int groupId, int fromOrder)
         {
+            // FirstBond 是弱引导：其它组要开时直接让路，不占住 IsRunning。
             if (IsRunning)
             {
-                return;
+                if (CurrentGroupId == GuideGroupIds.FirstBond && groupId != GuideGroupIds.FirstBond)
+                {
+                    PreemptFirstBondIfRunning();
+                }
+                else
+                {
+                    return;
+                }
             }
 
             var group = GuideGroupConfig.Get(groupId);
@@ -300,7 +309,12 @@ namespace App.Guide
             _step = null;
             _steps.Clear();
 
-            _session.ClearGuideDealLocks();
+            // FirstBond 是弱引导，结束/让路时不能清搓牌强制 A（可能已为 FirstSkill 发过牌）。
+            if (groupId != GuideGroupIds.FirstBond)
+            {
+                _session.ClearGuideDealLocks();
+            }
+
             GuideSignals.NotifyGuideEnded();
 
             // 先关 Overlay，再清 IsRunning：避免商店等接档引导在旧层未关时抢开。
@@ -321,13 +335,62 @@ namespace App.Guide
             IsRunning = false;
             CurrentGroupId = 0;
 
-            if (!completed || groupId <= 0)
+            if (completed && groupId > 0)
+            {
+                // 不通信 / 请求失败时也必须落本地，否则 FirstBattle 强制牌型会一直生效、引导会反复弹出。
+                await SyncGuideCompletedAsync(groupId);
+            }
+
+            if (completed && groupId == GuideGroupIds.FirstBond)
+            {
+                GuideSignals.ClearBondGuidePending();
+            }
+
+            // FirstBond 被 Abort/让路时保留 pending，本帧不立刻重开，避免顶住紧接着的其它引导。
+            if (!(groupId == GuideGroupIds.FirstBond && !completed))
+            {
+                TryStartFirstBondIfNeeded();
+            }
+        }
+
+        /// <summary>
+        /// 让出 FirstBond：不记完成、保留 BondGuidePending，其它引导可立刻 StartGroup。
+        /// </summary>
+        private void PreemptFirstBondIfRunning()
+        {
+            if (!IsRunning || CurrentGroupId != GuideGroupIds.FirstBond)
             {
                 return;
             }
 
-            // 不通信 / 请求失败时也必须落本地，否则 FirstBattle 强制牌型会一直生效、引导会反复弹出。
-            await SyncGuideCompletedAsync(groupId);
+            AppLog.Info(LogChannel.UI, "[Guide] preempt FirstBond for other guide");
+            ClearStepRuntime();
+            _stepIndex = -1;
+            _step = null;
+            _steps.Clear();
+            GuideSignals.NotifyGuideEnded();
+
+            var overlay = _overlay;
+            _overlay = null;
+            IsRunning = false;
+            CurrentGroupId = 0;
+
+            if (overlay != null && _ui.HasScreen(UILayer.Guide))
+            {
+                _ = CloseOverlayQuietAsync(overlay);
+            }
+        }
+
+        private async Task CloseOverlayQuietAsync(GuideOverlayViewModel overlay)
+        {
+            try
+            {
+                await _ui.Close(overlay);
+            }
+            catch (Exception e)
+            {
+                AppLog.Exception(LogChannel.UI, e);
+            }
         }
 
         private async Task SyncGuideCompletedAsync(int groupId)
@@ -508,6 +571,7 @@ namespace App.Guide
             if (!IsRunning)
             {
                 TryStart(GuideTriggerType.GamePhase, _session.Phase.ToString());
+                TryStartFirstBondIfNeeded();
             }
         }
 
@@ -515,6 +579,7 @@ namespace App.Guide
         /// FirstBattle 只覆盖首局选牌；清场进商店后 FirstBattle 结束。
         /// 下一局/下一关发牌完成后启动 FirstSkill（搓牌引导）。
         /// 商店购买详情未买就关掉时，回到「点货架」步。
+        /// 买过可凑羁绊圣物并离开商店后启动 FirstBond。
         /// </summary>
         private void OnGuideSignal(string id)
         {
@@ -537,7 +602,7 @@ namespace App.Guide
                 return;
             }
 
-            if (id != GuideWaitIds.DealFinished || IsRunning || _session.IsPvp)
+            if (id != GuideWaitIds.DealFinished || _session.IsPvp)
             {
                 return;
             }
@@ -545,10 +610,47 @@ namespace App.Guide
             if (!_progress.IsGroupCompleted(GuideGroupIds.FirstBattle) ||
                 _progress.IsGroupCompleted(GuideGroupIds.FirstSkill))
             {
+                if (!IsRunning)
+                {
+                    TryStartFirstBondIfNeeded();
+                }
+
                 return;
             }
 
+            // FirstSkill 优先：若正显示羁绊弱引导则让路。
             StartGroup(GuideGroupIds.FirstSkill);
+        }
+
+        /// <summary>
+        /// 购买带 BindingID 的圣物后 pending；空闲且局内羁绊图标已出现时启动。
+        /// 不阻挡其它引导：其它组 StartGroup 会 preempt 本引导，pending 保留至真正点完。
+        /// </summary>
+        private void TryStartFirstBondIfNeeded()
+        {
+            if (IsRunning || _session.IsPvp || !GuideSignals.BondGuidePending)
+            {
+                return;
+            }
+
+            if (_progress.IsGroupCompleted(GuideGroupIds.FirstBond))
+            {
+                GuideSignals.ClearBondGuidePending();
+                return;
+            }
+
+            if (_session.Phase == GamePhase.Shop)
+            {
+                return;
+            }
+
+            // 羁绊图标尚未登记（ApplyBonds 未出）则等下一轮 Session/Targets 变化。
+            if (!_targets.HasTarget(GuideTargetIds.Bonds))
+            {
+                return;
+            }
+
+            StartGroup(GuideGroupIds.FirstBond);
         }
 
         private async Task RestartCurrentGroupFromOrderAsync(int fromOrder)
@@ -587,6 +689,11 @@ namespace App.Guide
                 _clickToggle == null)
             {
                 TryBindClickTarget();
+            }
+
+            if (!IsRunning)
+            {
+                TryStartFirstBondIfNeeded();
             }
         }
 

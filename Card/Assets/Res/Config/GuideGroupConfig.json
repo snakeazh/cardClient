@@ -30,5 +30,13 @@
     "TriggerParam": "",
     "Skipable": true,
     "Enabled": true
+  },
+  {
+    "Id": 5,
+    "Name": "FirstBond",
+    "TriggerType": 3,
+    "TriggerParam": "",
+    "Skipable": true,
+    "Enabled": true
   }
 ]

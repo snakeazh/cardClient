@@ -323,7 +323,9 @@ namespace App.Guide
             }
 
             var card = hand[_index];
-            if (card.Rank == _targetRank && card.Rank != _startRank)
+            // 该槽相对开始已变化即过（优先认目标点数；引导强制搓完也会清 SelectingRubTarget）。
+            if (card.Rank != _startRank &&
+                (card.Rank == _targetRank || !_session.SelectingRubTarget))
             {
                 Complete();
             }
@@ -1026,6 +1028,82 @@ namespace App.Guide
             }
 
             if (!_armed || token != _token)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待圣物列表弹窗关闭后再继续（搓牌提示）。</summary>
+    public sealed class RemainListClosedWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+        private int _token;
+
+        public string Id => GuideWaitIds.RemainListClosed;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            var token = ++_token;
+            // 等一帧：Click 推进与 OpenRemainList 同帧，Opened 可能稍晚置位。
+            _ = ArmAsync(token);
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _token++;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private async System.Threading.Tasks.Task ArmAsync(int token)
+        {
+            try
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!_armed || token != _token)
+            {
+                return;
+            }
+
+            if (!GuideSignals.RemainListOpen)
+            {
+                Complete();
+            }
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.RemainListClosed)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
             {
                 return;
             }

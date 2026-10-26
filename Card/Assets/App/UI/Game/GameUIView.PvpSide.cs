@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Config;
 using App.Game;
+using App.Guide;
 using App.Item;
 using App.Net;
 using App.Resources;
@@ -404,6 +406,7 @@ namespace App.UI
 
             if (_bondIconTemplate == null)
             {
+                RegisterBondsGuideTarget();
                 return;
             }
 
@@ -441,6 +444,59 @@ namespace App.UI
                 image.sprite = sprite;
                 image.enabled = sprite != null;
                 image.color = tint;
+            }
+
+            RegisterBondsGuideTarget();
+        }
+
+        /// <summary>登记首个可见羁绊图标，供 FirstBond 挖孔。</summary>
+        private void RegisterBondsGuideTarget()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            _guideTargets ??= AppServices.Resolve<GuideTargetRegistry>();
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            RectTransform rect = null;
+            for (var i = 0; i < _bondIcons.Count; i++)
+            {
+                var go = _bondIcons[i];
+                if (go != null && go.activeInHierarchy)
+                {
+                    rect = go.transform as RectTransform;
+                    break;
+                }
+            }
+
+            if (rect == null &&
+                _bondsRoot != null &&
+                _bondsRoot.gameObject.activeInHierarchy &&
+                _bondHolds.Count > 0)
+            {
+                rect = _bondsRoot as RectTransform;
+            }
+
+            if (rect == null)
+            {
+                if (_guideTargetIds.Contains(GuideTargetIds.Bonds))
+                {
+                    _guideTargets.Unregister(GuideTargetIds.Bonds);
+                    _guideTargetIds.Remove(GuideTargetIds.Bonds);
+                }
+
+                return;
+            }
+
+            _guideTargets.RegisterUi(GuideTargetIds.Bonds, rect);
+            if (!_guideTargetIds.Contains(GuideTargetIds.Bonds))
+            {
+                _guideTargetIds.Add(GuideTargetIds.Bonds);
             }
         }
 

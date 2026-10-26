@@ -28,6 +28,8 @@ namespace App.Guide
         private const float ChatHoleGap = 24f;
         /// <summary>商店引导对话框相对默认位置再下移。</summary>
         private const float ShopChatOffsetY = -200f;
+        /// <summary>「点击任意地方关闭」技能 tip 步骤：居中偏下，少挡手牌。</summary>
+        private const float PeekTipCloseChatOffsetY = -150f;
         private static readonly Color MaskTint = new Color(1f, 1f, 1f, MaskAlpha);
 
         private RectTransform _root;
@@ -238,6 +240,11 @@ namespace App.Guide
                 y += ShopChatOffsetY;
                 y = Mathf.Clamp(y, r.yMin + halfH + edgePad, r.yMax - halfH - edgePad);
             }
+            else if (IsPeekTipCloseStep())
+            {
+                y += PeekTipCloseChatOffsetY;
+                y = Mathf.Clamp(y, r.yMin + halfH + edgePad, r.yMax - halfH - edgePad);
+            }
 
             _chatFrame.anchoredPosition = new Vector2(x, y);
             _chatFrame.SetAsLastSibling();
@@ -247,6 +254,14 @@ namespace App.Guide
         {
             return !string.IsNullOrEmpty(targetId) &&
                    targetId.StartsWith("Shop.", StringComparison.Ordinal);
+        }
+
+        private bool IsPeekTipCloseStep()
+        {
+            return string.Equals(
+                ViewModel.WaitHandler.Value,
+                GuideWaitIds.PeekGoodTipClosed,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private bool ChatOverlapsHole(float x, float y, float halfW, float halfH)

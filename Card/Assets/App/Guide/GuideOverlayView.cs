@@ -26,6 +26,8 @@ namespace App.Guide
         private const float ChatMinHeight = 406f;
         /// <summary>提示框与挖孔边缘的间距。</summary>
         private const float ChatHoleGap = 24f;
+        /// <summary>商店引导对话框相对默认位置再下移。</summary>
+        private const float ShopChatOffsetY = -200f;
         private static readonly Color MaskTint = new Color(1f, 1f, 1f, MaskAlpha);
 
         private RectTransform _root;
@@ -231,8 +233,20 @@ namespace App.Guide
                 y = 0f;
             }
 
+            if (IsShopGuideTarget(ViewModel.TargetId.Value))
+            {
+                y += ShopChatOffsetY;
+                y = Mathf.Clamp(y, r.yMin + halfH + edgePad, r.yMax - halfH - edgePad);
+            }
+
             _chatFrame.anchoredPosition = new Vector2(x, y);
             _chatFrame.SetAsLastSibling();
+        }
+
+        private static bool IsShopGuideTarget(string targetId)
+        {
+            return !string.IsNullOrEmpty(targetId) &&
+                   targetId.StartsWith("Shop.", StringComparison.Ordinal);
         }
 
         private bool ChatOverlapsHole(float x, float y, float halfW, float halfH)

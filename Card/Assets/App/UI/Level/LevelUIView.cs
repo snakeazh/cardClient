@@ -18,8 +18,10 @@ namespace App.UI
     /// 选角 / 选关。节点通过 UIReference / UIBind 解析。
     /// heroSelect 是 ScrollRect，列表项生成到 content（网格）上；
     /// levelSelect 换用 IevelItem 难度卡后网格已移除，模板取 content 第一个子节点，行布局由代码排布。
+    /// 注册在 <see cref="UILayer.Popup"/>：从 Home 打开时浮在 Home 上方（Home 留在 Page 栈里不隐藏），
+    /// 遮罩与内容容器由 <see cref="LevelUITransition"/> 在运行时生成。
     /// </summary>
-    [AutoScreen(AppScreenIds.LevelUI, UILayer.Page, ResResourcePaths.LevelUI)]
+    [AutoScreen(AppScreenIds.LevelUI, UILayer.Popup, ResResourcePaths.LevelUI)]
     public sealed class LevelUIView : ViewBase<LevelUIViewModel>
     {
         // 难度卡布局常量（IevelItem 卡面 168×173），需要微调时改这里按差值挪
@@ -99,7 +101,6 @@ namespace App.UI
             _transition = new LevelUITransition(new LevelUITransitionTargets
             {
                 Root = transform as RectTransform,
-                Bg = transform.Find("Bg") as RectTransform,
                 Hor = UI.GetGameObject("hor").transform as RectTransform,
                 HeroCard = UI.GetGameObject("PlayerItem").transform as RectTransform,
                 RoleInfo = roleInfo,

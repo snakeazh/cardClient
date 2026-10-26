@@ -114,8 +114,8 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 页面露出时整体淡入：从上级页面（如 LevelUI）返回时，对方退场末尾背景已暗下去，
-        /// 这里从暗到亮接力，避免 Home 硬切闪现；首次启动同理从加载画面柔和浮现。
+        /// 页面首次露出时整体淡入，避免从加载画面/上一页硬切闪现，从暗到亮柔和浮现。
+        /// 注意：LevelUI 是 Popup，关闭它不会隐藏 Home，这条淡入只在 Home 真正入栈时才会播。
         /// </summary>
         private void PlayPresentFade()
         {

@@ -11,7 +11,6 @@ namespace App.UI
     internal sealed class LevelUITransitionTargets
     {
         public RectTransform Root;
-        public RectTransform Bg;
         public RectTransform Hor;
         public RectTransform HeroCard;
         public RectTransform RoleInfo;
@@ -28,20 +27,34 @@ namespace App.UI
     }
 
     /// <summary>
-    /// LevelUI 的运行时过渡：整页入场、选角/选难度切换、选中反馈。
-    /// 纯运行时实现（CanvasGroup 动态添加），不改预制体；只写 alpha、localScale、localRotation，
-    /// 以及手摆节点的 anchoredPosition。不要动 GridLayoutGroup 子项的 anchoredPosition——
-    /// 布局重算会把它们覆盖掉。
+    /// LevelUI 的运行时过渡：弹窗整体入场/退场、选角/选难度切换、选中反馈。
+    /// 纯运行时实现（CanvasGroup / 遮罩 / 内容容器都在运行时生成），不改预制体；只写 alpha、
+    /// localScale、localRotation，以及手摆节点的 anchoredPosition。不要动 GridLayoutGroup 子项的
+    /// anchoredPosition——布局重算会把它们覆盖掉。
+    /// LevelUI 注册在 Popup 层、浮在 Home 上方，所以入场是"暗幕压暗 Home + 内容整体弹出"，
+    /// 退场是"暗幕撤掉 + 内容整体收起"，而不是此前整页压黑再反序收牌。
     /// </summary>
     internal sealed class LevelUITransition
     {
         private const float CardStagger = 0.035f;
         private const float LevelCardStagger = 0.05f;
-        private const float CardExitStagger = 0.03f;
-        private const float LevelCardExitStagger = 0.04f;
         private const float PanelFade = 0.20f;
         private const float StageInfoFade = 0.18f;
         private const float ButtonFade = 0.18f;
+
+        // 弹窗壳（运行时生成）：遮罩压暗下面的 Home，内容容器只承载原有节点，两者独立动画。
+        private const string MaskNodeName = "LevelUI_PopupMask";
+        private const string BodyNodeName = "LevelUI_PopupBody";
+        // 与其它 Popup（SettingPop / TTRewardPop 的 Mask）保持一致的压暗程度
+        private const float MaskAlpha = 0.627451f;
+        private const float MaskFadeIn = 0.20f;
+        private const float MaskFadeOut = 0.16f;
+        // 入场从略小一档弹出、退场收回略小一档（相对静止缩放的比例）
+        private const float PopScaleFrom = 0.92f;
+        private const float PopScaleTo = 0.96f;
+        private const float PopInDuration = 0.26f;
+        private const float PopOutDuration = 0.18f;
+        private const float BodyFadeIn = 0.16f;
 
         private readonly LevelUITransitionTargets _t;
         private readonly Dictionary<RectTransform, CanvasGroup> _groups =
@@ -54,11 +67,11 @@ namespace App.UI
         private Sequence _stageInfoSeq;
         private Sequence _heroChangedSeq;
         private CanvasGroup _rootGroup;
-        private Image _bgImage;
-        private Image _bgBackdrop;
-        private Color _bgRestColor = Color.white;
+        private CanvasGroup _bodyGroup;
+        private RectTransform _body;
+        private Vector3 _bodyRestScale = Vector3.one;
+        private Image _mask;
 
-        private Vector3 _bgRestScale = Vector3.one;
         private Vector3 _horRestScale = Vector3.one;
         private Vector2 _horRestPos;
         private Vector3 _cardRestScale = Vector3.one;
@@ -78,34 +91,39 @@ namespace App.UI
         public float EntranceDuration => 0.65f;
 
         /// <summary>退场总时长；LevelUIView 在这个时长后再执行真正的关闭。</summary>
-        public float ExitDuration => 0.40f;
+        public float ExitDuration => 0.22f;
 
-        /// <summary>缓存静止姿态、建 CanvasGroup、按当前阶段摆好初始显隐。</summary>
+        /// <summary>缓存静止姿态、建遮罩/内容容器与 CanvasGroup、按当前阶段摆好初始显隐。</summary>
         public void Prepare(bool showHero, bool showStage, bool showLevel)
         {
             CacheRest();
+            EnsurePopupShell();
             EnsureGroups();
-            EnsureBackdrop();
-            if (_bgImage != null)
-            {
-                SetBgAlpha(0f);
-            }
 
             _rootGroup = Group(_t.Root);
             if (_rootGroup != null)
             {
                 _rootGroup.alpha = 1f;
                 _rootGroup.blocksRaycasts = true;
+                _rootGroup.interactable = true;
+            }
+
+            // 首次露出前保持在"暗幕透明 + 内容收起"的起点，交给 OnPresented 的入场动画，
+            // 避免视图激活到入场之间渲染出一帧完整界面。
+            SetMaskAlpha(0f);
+            if (_body != null)
+            {
+                _body.localScale = _bodyRestScale * PopScaleFrom;
+            }
+
+            if (_bodyGroup != null)
+            {
+                _bodyGroup.alpha = 0f;
             }
 
             SetPanelImmediate(_t.HeroPanel, _heroPanelRestPos, showHero);
             SetPanelImmediate(_t.LevelPanel, _levelPanelRestPos, showLevel);
             SetStageImmediate(showStage);
-
-            if (_t.Bg != null)
-            {
-                _t.Bg.localScale = _bgRestScale;
-            }
 
             if (_t.Hor != null)
             {
@@ -116,7 +134,7 @@ namespace App.UI
             if (_t.HeroCard != null)
             {
                 _t.HeroCard.localScale = _cardRestScale;
-                // 退场会把大卡 CanvasGroup 淡到 0，这里补回可见。
+                // 大卡的 CanvasGroup 也会被换英雄等分支改 alpha，入场前先补回可见。
                 var cardGroup = Group(_t.HeroCard);
                 if (cardGroup != null)
                 {
@@ -142,14 +160,19 @@ namespace App.UI
         public void PlayEntrance(bool stagePhase)
         {
             KillSequences();
-            EnsureBackdrop();
+            EnsurePopupShell();
 
-            if (_t.Bg != null)
+            // 弹窗起点：暗幕全透明、内容收小一档且不可见，由下面的序列一起放出来。
+            SetMaskAlpha(0f);
+            if (_body != null)
             {
-                _t.Bg.localScale = _bgRestScale;
+                _body.localScale = _bodyRestScale * PopScaleFrom;
             }
 
-            SetBgAlpha(0f);
+            if (_bodyGroup != null)
+            {
+                _bodyGroup.alpha = 0f;
+            }
 
             if (_t.Hor != null)
             {
@@ -228,9 +251,20 @@ namespace App.UI
             _entranceSeq = seq;
             SetInputBlocked(true);
 
-            if (_bgImage != null)
+            // 弹窗壳先动：Home 上盖一层暗幕，内容整体从略小一档弹出并淡入。
+            if (_mask != null)
             {
-                seq.Insert(0f, _bgImage.DOFade(_bgRestColor.a, 0.40f).SetEase(Ease.OutQuad));
+                seq.Insert(0f, _mask.DOFade(MaskAlpha, MaskFadeIn).SetEase(Ease.OutQuad));
+            }
+
+            if (_body != null)
+            {
+                seq.Insert(0f, _body.DOScale(_bodyRestScale, PopInDuration).SetEase(Ease.OutCubic));
+            }
+
+            if (_bodyGroup != null)
+            {
+                seq.Insert(0f, _bodyGroup.DOFade(1f, BodyFadeIn));
             }
 
             if (_t.Hor != null)
@@ -280,15 +314,14 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 返回主页面前的退场，按入场编排的反序收场：按钮先走，面板卡片逐张收走，
-        /// 纸面/底部列表随后下移，大卡压场到较晚才退，背景最后才暗——
-        /// 避免一开场就整页变暗的压抑感，并缩短黑场时间衔接 Home 的淡入。
-        /// 真正的页面关闭由 View 延时执行。
+        /// 浮在 Home 上方时的退场：暗幕淡掉露出 Home，内容整体收小一档并淡出。
+        /// 不再走此前 Page 层的"逐张收牌 + 背景压黑"反序编排——那套是底下没有页面、
+        /// 靠黑场衔接 Home 淡入时用的，现在 Home 一直在下面，收得越干脆越好。
+        /// 真正的页面关闭由 View 在 <see cref="ExitDuration"/> 之后执行。
         /// </summary>
         public void PlayExit()
         {
             KillSequences();
-            EnsureBackdrop();
             SetInputBlocked(true);
 
             var seq = NewSequence(_t.Root);
@@ -299,98 +332,19 @@ namespace App.UI
 
             _exitSeq = seq;
 
-            // 按钮最先走。
-            AppendButtonFadeOut(seq, 0f, _t.LastBtn, _t.UseHeroBtn, _t.UnlockHeroBtn, _t.StartGameBtn);
-
-            // 面板里的卡逐张收走，与入场 stagger 呼应，形成"收牌"的节奏。
-            if (_t.HeroPanel != null && _t.HeroPanel.gameObject.activeSelf)
+            if (_mask != null)
             {
-                AppendItemsFadeOut(seq, 0.05f, _t.HeroItems, CardExitStagger, 6);
+                seq.Insert(0f, _mask.DOFade(0f, MaskFadeOut).SetEase(Ease.InQuad));
             }
 
-            if (_t.LevelPanel != null && _t.LevelPanel.gameObject.activeSelf)
+            if (_body != null)
             {
-                AppendItemsFadeOut(seq, 0.05f, _t.LevelItems, LevelCardExitStagger, 5);
+                seq.Insert(0f, _body.DOScale(_bodyRestScale * PopScaleTo, PopOutDuration).SetEase(Ease.InCubic));
             }
 
-            if (_t.StageInfo != null && _t.StageInfo.gameObject.activeSelf)
+            if (_bodyGroup != null)
             {
-                var infoGroup = Group(_t.StageInfo);
-                if (infoGroup != null)
-                {
-                    seq.Insert(0.08f, infoGroup.DOFade(0f, 0.14f));
-                }
-
-                seq.Insert(0.08f, _t.StageInfo.DOScale(_stageRestScale * 0.92f, 0.14f).SetEase(Ease.InQuad));
-            }
-
-            // 纸面与底部列表随后收走。
-            if (_t.Hor != null)
-            {
-                var group = Group(_t.Hor);
-                if (group != null)
-                {
-                    seq.Insert(0.10f, group.DOFade(0f, 0.18f));
-                }
-
-                seq.Insert(0.10f,
-                    _t.Hor.DOAnchorPos(_horRestPos + new Vector2(0f, -60f), 0.22f).SetEase(Ease.InCubic));
-            }
-
-            if (_t.RoleInfo != null)
-            {
-                var roleGroup = Group(_t.RoleInfo);
-                if (roleGroup != null)
-                {
-                    seq.Insert(0.10f, roleGroup.DOFade(0f, 0.15f));
-                }
-            }
-
-            if (_t.HeroPanel != null && _t.HeroPanel.gameObject.activeSelf)
-            {
-                var group = Group(_t.HeroPanel);
-                if (group != null)
-                {
-                    seq.Insert(0.10f, group.DOFade(0f, 0.18f));
-                }
-
-                seq.Insert(0.10f,
-                    _t.HeroPanel.DOAnchorPos(_heroPanelRestPos + new Vector2(0f, -40f), 0.22f)
-                        .SetEase(Ease.InCubic));
-            }
-
-            if (_t.LevelPanel != null && _t.LevelPanel.gameObject.activeSelf)
-            {
-                var group = Group(_t.LevelPanel);
-                if (group != null)
-                {
-                    seq.Insert(0.10f, group.DOFade(0f, 0.16f));
-                }
-
-                seq.Insert(0.10f,
-                    _t.LevelPanel.DOAnchorPos(_levelPanelRestPos + new Vector2(0f, -32f), 0.20f)
-                        .SetEase(Ease.InCubic));
-            }
-
-            // 大卡压场：主视觉较晚退场，先快后慢地缩小并淡出。
-            if (_t.HeroCard != null)
-            {
-                // 换英雄的 punch 是独立 tween，先清掉再写退场缩放，避免两个 tween 抢 localScale。
-                _t.HeroCard.DOKill();
-                var cardGroup = Group(_t.HeroCard);
-                if (cardGroup != null)
-                {
-                    seq.Insert(0.14f, cardGroup.DOFade(0f, 0.20f));
-                }
-
-                seq.Insert(0.14f,
-                    _t.HeroCard.DOScale(_cardRestScale * 0.88f, 0.22f).SetEase(Ease.OutQuad));
-            }
-
-            // 背景最后才暗：等 UI 全部收走后再淡，黑场只留收尾一小段。
-            if (_bgImage != null)
-            {
-                seq.Insert(0.20f, _bgImage.DOFade(0f, 0.16f).SetEase(Ease.InQuad));
+                seq.Insert(0f, _bodyGroup.DOFade(0f, PopOutDuration).SetEase(Ease.InQuad));
             }
         }
 
@@ -872,36 +826,32 @@ namespace App.UI
             if (_rootGroup != null)
             {
                 _rootGroup.blocksRaycasts = true;
+                _rootGroup.interactable = true;
             }
 
             ResetItems(_t.HeroItems);
             ResetItems(_t.LevelItems);
         }
 
-        /// <summary>入场期间挡住输入，避免动画中途点按钮/选卡。</summary>
+        /// <summary>
+        /// 入场/退场期间挡住输入，避免动画中途点按钮/选卡。
+        /// 用 CanvasGroup.interactable 而不是 blocksRaycasts：LevelUI 现在浮在 Home 上方，
+        /// 若关掉射线接收，点击会穿透到下面的 Home 按钮上；所以整块界面始终接收射线
+        /// （全屏暗幕兜底），只是动画期间暂时不可交互。
+        /// </summary>
         public void SetInputBlocked(bool blocked)
         {
-            if (_rootGroup != null)
+            if (_rootGroup == null)
             {
-                _rootGroup.blocksRaycasts = !blocked;
+                return;
             }
+
+            _rootGroup.blocksRaycasts = true;
+            _rootGroup.interactable = !blocked;
         }
 
         private void CacheRest()
         {
-            if (_t.Bg != null)
-            {
-                _bgRestScale = _t.Bg.localScale;
-                if (_bgImage == null)
-                {
-                    _bgImage = _t.Bg.GetComponent<Image>();
-                    if (_bgImage != null)
-                    {
-                        _bgRestColor = _bgImage.color;
-                    }
-                }
-            }
-
             if (_t.Hor != null)
             {
                 _horRestScale = _t.Hor.localScale;
@@ -941,46 +891,112 @@ namespace App.UI
         }
 
         /// <summary>
-        /// Bg 后面垫一层全屏纯黑：淡出 Bg 时露黑而不是露 UIRoot 相机底色。
-        /// 只创建一次，随页面一起销毁。
+        /// 搭出"弹窗壳"，只创建一次、随界面一起销毁（预制体只有内容节点，不动预制体）：
+        /// 1）内容容器：把根节点原有的子节点整体收进来，只对它做弹出/收起与整体淡入淡出，
+        ///    这样遮罩不会被内容一起缩放；所有子节点引用都在 OnBind 早期取好，搬父节点不影响绑定。
+        /// 2）全屏暗幕：压暗下面仍然可见的 Home，并把它挡在交互之外（打开时淡入、关闭时撤掉）。
         /// </summary>
-        private void EnsureBackdrop()
+        private void EnsurePopupShell()
         {
-            if (_bgImage == null || _bgBackdrop != null || _t.Root == null)
+            if (_t.Root == null)
             {
                 return;
             }
 
-            var go = new GameObject(
-                "LevelUI_FadeBackdrop",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(_t.Root, false);
-            rect.SetAsFirstSibling();
-            go.layer = _t.Root.gameObject.layer;
+            if (_body == null)
+            {
+                _body = _t.Root.Find(BodyNodeName) as RectTransform;
+            }
+
+            if (_body == null)
+            {
+                var bodyGo = new GameObject(BodyNodeName, typeof(RectTransform));
+                _body = (RectTransform)bodyGo.transform;
+                _body.SetParent(_t.Root, false);
+                _body.gameObject.layer = _t.Root.gameObject.layer;
+                Stretch(_body);
+                _body.SetAsFirstSibling();
+
+                // 先收集再搬，边搬边遍历会让 childCount 变化而漏节点；顺序保持不变。
+                var moving = new List<Transform>(_t.Root.childCount);
+                for (var i = 0; i < _t.Root.childCount; i++)
+                {
+                    var child = _t.Root.GetChild(i);
+                    if (child != _body)
+                    {
+                        moving.Add(child);
+                    }
+                }
+
+                for (var i = 0; i < moving.Count; i++)
+                {
+                    moving[i].SetParent(_body, false);
+                }
+
+                // 只在创建时缓存静止缩放：入场会把容器收小一档，重复调用时不能再拿当前值当静止值。
+                _bodyRestScale = _body.localScale;
+            }
+
+            if (_bodyGroup == null)
+            {
+                _bodyGroup = _body.GetComponent<CanvasGroup>();
+                if (_bodyGroup == null)
+                {
+                    _bodyGroup = _body.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            if (_mask == null)
+            {
+                var maskT = _t.Root.Find(MaskNodeName);
+                _mask = maskT != null ? maskT.GetComponent<Image>() : null;
+                if (_mask == null)
+                {
+                    var maskGo = new GameObject(
+                        MaskNodeName,
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(Image));
+                    var maskRect = (RectTransform)maskGo.transform;
+                    maskRect.SetParent(_t.Root, false);
+                    maskGo.layer = _t.Root.gameObject.layer;
+                    Stretch(maskRect);
+                    _mask = maskGo.GetComponent<Image>();
+                    // 无 sprite 的 Image 画纯色块，和 SettingPop / TTRewardPop 的 Mask 一致；
+                    // raycastTarget 常开：即使暗幕透明也要挡住 Home 的点击。
+                    _mask.raycastTarget = true;
+                    SetMaskAlpha(0f);
+                }
+            }
+
+            // 暗幕永远画在内容容器下面。
+            _mask.rectTransform.SetAsFirstSibling();
+        }
+
+        private static void Stretch(RectTransform rect)
+        {
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+            rect.pivot = new Vector2(0.5f, 0.5f);
             rect.localScale = Vector3.one;
-
-            _bgBackdrop = go.GetComponent<Image>();
-            _bgBackdrop.color = Color.black;
-            _bgBackdrop.raycastTarget = false;
+            rect.localRotation = Quaternion.identity;
         }
 
-        private void SetBgAlpha(float alpha)
+        private void SetMaskAlpha(float alpha)
         {
-            if (_bgImage == null)
+            if (_mask == null)
             {
                 return;
             }
 
-            var color = _bgRestColor;
+            var color = _mask.color;
+            color.r = 0f;
+            color.g = 0f;
+            color.b = 0f;
             color.a = alpha;
-            _bgImage.color = color;
+            _mask.color = color;
         }
 
         private void EnsureGroups()
@@ -1206,55 +1222,6 @@ namespace App.UI
 
             seq.Insert(at + 0.10f, info.DOAnchorPos(_stageRestPos, 0.22f).SetEase(Ease.OutCubic));
             seq.Insert(at + 0.10f, info.DOScale(_stageRestScale, 0.22f).SetEase(Ease.OutBack));
-        }
-
-        private void AppendButtonFadeOut(Sequence seq, float at, params RectTransform[] buttons)
-        {
-            for (var i = 0; i < buttons.Length; i++)
-            {
-                var button = buttons[i];
-                if (button == null || !button.gameObject.activeSelf)
-                {
-                    continue;
-                }
-
-                var group = Group(button);
-                if (group == null)
-                {
-                    continue;
-                }
-
-                group.DOKill();
-                seq.Insert(at, group.DOFade(0f, 0.15f));
-            }
-        }
-
-        /// <summary>退场时面板内的卡逐张收走：缩到 0.90 并淡出，间隔与入场 stagger 呼应。</summary>
-        private void AppendItemsFadeOut(
-            Sequence seq, float at, List<RectTransform> items, float stagger, int staggerCap)
-        {
-            if (items == null)
-            {
-                return;
-            }
-
-            for (var i = 0; i < items.Count; i++)
-            {
-                var rt = items[i];
-                if (rt == null || !rt.gameObject.activeSelf)
-                {
-                    continue;
-                }
-
-                var delay = at + Mathf.Min(i, staggerCap) * stagger;
-                var itemGroup = Group(rt);
-                if (itemGroup != null)
-                {
-                    seq.Insert(delay, itemGroup.DOFade(0f, 0.15f));
-                }
-
-                seq.Insert(delay, rt.DOScale(Vector3.one * 0.90f, 0.15f).SetEase(Ease.InQuad));
-            }
         }
 
         private void SetPanelImmediate(RectTransform panel, Vector2 restPos, bool show)

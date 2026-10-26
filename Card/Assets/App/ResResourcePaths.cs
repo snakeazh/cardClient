@@ -103,6 +103,8 @@ namespace App.Resources
         public const string ShopNumAtlas = "Altas/ShopNum";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Critdamage.spriteatlasv2（暴击伤害数字）。</summary>
         public const string CritDamageAtlas = "Altas/Critdamage";
+        /// <summary>SpriteAtlas under Assets/Res/Altas/guide.spriteatlasv2（源图 Assets/Res/Textures/guide）。</summary>
+        public const string GuideAtlas = "Altas/guide";
 
         public static string RoleAttack(int index) => $"Textures/role/role{index}_attack";
 

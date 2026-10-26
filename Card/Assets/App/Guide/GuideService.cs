@@ -47,17 +47,24 @@ namespace App.Guide
             {
                 [GuideWaitIds.DealFinished] = new DealFinishedWaitHandler(session),
                 [GuideWaitIds.SelectCards] = new SelectCardsWaitHandler(session),
+                [GuideWaitIds.SelectGuideCards] = new SelectGuideCardsWaitHandler(session),
                 [GuideWaitIds.GamePhase] = new GamePhaseWaitHandler(session),
                 [GuideWaitIds.RubCard] = new RubCardWaitHandler(session),
                 [GuideWaitIds.SelectHandType] = new SelectHandTypeWaitHandler(session),
                 [GuideWaitIds.PeekGoodTipShown] = new PeekGoodTipShownWaitHandler(),
                 [GuideWaitIds.PeekGoodTipClosed] = new PeekGoodTipClosedWaitHandler(),
                 [GuideWaitIds.TalentPopupOpen] = new TalentPopupOpenWaitHandler(),
-                [GuideWaitIds.TalentDrawn] = new TalentDrawnWaitHandler()
+                [GuideWaitIds.TalentDrawn] = new TalentDrawnWaitHandler(),
+                [GuideWaitIds.ShopOfferClicked] = new ShopOfferClickedWaitHandler(),
+                [GuideWaitIds.ShopBought] = new ShopBoughtWaitHandler(),
+                [GuideWaitIds.ShopMineClicked] = new ShopMineClickedWaitHandler(),
+                [GuideWaitIds.RemainListClosed] = new RemainListClosedWaitHandler(),
+                [GuideWaitIds.Delay] = new DelayWaitHandler()
             };
 
             _session.Changed += OnSessionChanged;
             _targets.Changed += OnTargetsChanged;
+            GuideSignals.Raised += OnGuideSignal;
         }
 
         public bool IsRunning { get; private set; }
@@ -113,9 +120,17 @@ namespace App.Guide
 
         public void StartGroup(int groupId, int fromOrder)
         {
+            // FirstBond 是弱引导：其它组要开时直接让路，不占住 IsRunning。
             if (IsRunning)
             {
-                return;
+                if (CurrentGroupId == GuideGroupIds.FirstBond && groupId != GuideGroupIds.FirstBond)
+                {
+                    PreemptFirstBondIfRunning();
+                }
+                else
+                {
+                    return;
+                }
             }
 
             var group = GuideGroupConfig.Get(groupId);
@@ -154,6 +169,9 @@ namespace App.Guide
             CurrentGroupId = groupId;
             _stepIndex = startIndex - 1;
             GuideSignals.ResetTalentDrawn();
+            GuideSignals.ResetShopOfferClicked();
+            GuideSignals.ResetShopBought();
+            GuideSignals.ResetShopMineClicked();
             AppLog.Info(LogChannel.UI, $"[Guide] start group {group.Name} ({groupId}) fromOrder={fromOrder}");
             _ = RunGroupAsync(group);
         }
@@ -287,35 +305,19 @@ namespace App.Guide
 
             var groupId = CurrentGroupId;
             ClearStepRuntime();
-            IsRunning = false;
-            CurrentGroupId = 0;
             _stepIndex = -1;
             _step = null;
             _steps.Clear();
 
-            _session.ClearGuideDealLocks();
-            GuideSignals.NotifyGuideEnded();
-
-            if (completed)
+            // FirstBond 是弱引导，结束/让路时不能清搓牌强制 A（可能已为 FirstSkill 发过牌）。
+            if (groupId != GuideGroupIds.FirstBond)
             {
-                if (GameApi.IsReady)
-                {
-                    try
-                    {
-                        var profile = await GameApi.Client.CompleteGuideAsync(groupId);
-                        GameApi.ApplyProfile(profile);
-                    }
-                    catch (GameApiException ex)
-                    {
-                        Toast.Error(GameApi.Describe(ex));
-                    }
-                }
-                else
-                {
-                    _progress.MarkGroupCompleted(groupId);
-                }
+                _session.ClearGuideDealLocks();
             }
 
+            GuideSignals.NotifyGuideEnded();
+
+            // 先关 Overlay，再清 IsRunning：避免商店等接档引导在旧层未关时抢开。
             var overlay = _overlay;
             _overlay = null;
             if (overlay != null && _ui.HasScreen(UILayer.Guide))
@@ -328,6 +330,88 @@ namespace App.Guide
                 {
                     AppLog.Exception(LogChannel.UI, e);
                 }
+            }
+
+            IsRunning = false;
+            CurrentGroupId = 0;
+
+            if (completed && groupId > 0)
+            {
+                // 不通信 / 请求失败时也必须落本地，否则 FirstBattle 强制牌型会一直生效、引导会反复弹出。
+                await SyncGuideCompletedAsync(groupId);
+            }
+
+            if (completed && groupId == GuideGroupIds.FirstBond)
+            {
+                GuideSignals.ClearBondGuidePending();
+            }
+
+            // FirstBond 被 Abort/让路时保留 pending，本帧不立刻重开，避免顶住紧接着的其它引导。
+            if (!(groupId == GuideGroupIds.FirstBond && !completed))
+            {
+                TryStartFirstBondIfNeeded();
+            }
+        }
+
+        /// <summary>
+        /// 让出 FirstBond：不记完成、保留 BondGuidePending，其它引导可立刻 StartGroup。
+        /// </summary>
+        private void PreemptFirstBondIfRunning()
+        {
+            if (!IsRunning || CurrentGroupId != GuideGroupIds.FirstBond)
+            {
+                return;
+            }
+
+            AppLog.Info(LogChannel.UI, "[Guide] preempt FirstBond for other guide");
+            ClearStepRuntime();
+            _stepIndex = -1;
+            _step = null;
+            _steps.Clear();
+            GuideSignals.NotifyGuideEnded();
+
+            var overlay = _overlay;
+            _overlay = null;
+            IsRunning = false;
+            CurrentGroupId = 0;
+
+            if (overlay != null && _ui.HasScreen(UILayer.Guide))
+            {
+                _ = CloseOverlayQuietAsync(overlay);
+            }
+        }
+
+        private async Task CloseOverlayQuietAsync(GuideOverlayViewModel overlay)
+        {
+            try
+            {
+                await _ui.Close(overlay);
+            }
+            catch (Exception e)
+            {
+                AppLog.Exception(LogChannel.UI, e);
+            }
+        }
+
+        private async Task SyncGuideCompletedAsync(int groupId)
+        {
+            if (GameApi.IsReady)
+            {
+                try
+                {
+                    var profile = await GameApi.Client.CompleteGuideAsync(groupId);
+                    GameApi.ApplyProfile(profile);
+                }
+                catch (GameApiException ex)
+                {
+                    AppLog.Warn(LogChannel.UI, $"[Guide] CompleteGuide group={groupId} failed: {ex.Message}");
+                    Toast.Error(GameApi.Describe(ex));
+                }
+            }
+
+            if (!_progress.IsGroupCompleted(groupId))
+            {
+                _progress.MarkGroupCompleted(groupId);
             }
         }
 
@@ -487,7 +571,113 @@ namespace App.Guide
             if (!IsRunning)
             {
                 TryStart(GuideTriggerType.GamePhase, _session.Phase.ToString());
+                TryStartFirstBondIfNeeded();
             }
+        }
+
+        /// <summary>
+        /// FirstBattle 只覆盖首局选牌；清场进商店后 FirstBattle 结束。
+        /// 下一局/下一关发牌完成后启动 FirstSkill（搓牌引导）。
+        /// 商店购买详情未买就关掉时，回到「点货架」步。
+        /// 买过可凑羁绊圣物并离开商店后启动 FirstBond。
+        /// </summary>
+        private void OnGuideSignal(string id)
+        {
+            if (id == GuideWaitIds.ShopBuyAbandoned &&
+                IsRunning &&
+                CurrentGroupId == GuideGroupIds.FirstShop &&
+                _step != null &&
+                string.Equals(_step.WaitHandler, GuideWaitIds.ShopBought, StringComparison.OrdinalIgnoreCase))
+            {
+                GuideSignals.ResetShopOfferClicked();
+                _ = RestartCurrentGroupFromOrderAsync(1);
+                return;
+            }
+
+            if (id == GuideWaitIds.ShopMineUnavailable &&
+                IsRunning &&
+                CurrentGroupId == GuideGroupIds.FirstShop)
+            {
+                _ = FinishAsync(completed: true);
+                return;
+            }
+
+            if (id != GuideWaitIds.DealFinished || _session.IsPvp)
+            {
+                return;
+            }
+
+            if (!_progress.IsGroupCompleted(GuideGroupIds.FirstBattle) ||
+                _progress.IsGroupCompleted(GuideGroupIds.FirstSkill))
+            {
+                if (!IsRunning)
+                {
+                    TryStartFirstBondIfNeeded();
+                }
+
+                return;
+            }
+
+            // FirstSkill 优先：若正显示羁绊弱引导则让路。
+            StartGroup(GuideGroupIds.FirstSkill);
+        }
+
+        /// <summary>
+        /// 购买带 BindingID 的圣物后 pending；空闲且局内羁绊图标已出现时启动。
+        /// 不阻挡其它引导：其它组 StartGroup 会 preempt 本引导，pending 保留至真正点完。
+        /// </summary>
+        private void TryStartFirstBondIfNeeded()
+        {
+            if (IsRunning || _session.IsPvp || !GuideSignals.BondGuidePending)
+            {
+                return;
+            }
+
+            if (_progress.IsGroupCompleted(GuideGroupIds.FirstBond))
+            {
+                GuideSignals.ClearBondGuidePending();
+                return;
+            }
+
+            if (_session.Phase == GamePhase.Shop)
+            {
+                return;
+            }
+
+            // 羁绊图标尚未登记（ApplyBonds 未出）则等下一轮 Session/Targets 变化。
+            if (!_targets.HasTarget(GuideTargetIds.Bonds))
+            {
+                return;
+            }
+
+            StartGroup(GuideGroupIds.FirstBond);
+        }
+
+        private async Task RestartCurrentGroupFromOrderAsync(int fromOrder)
+        {
+            if (!IsRunning || _advancing)
+            {
+                return;
+            }
+
+            var groupId = CurrentGroupId;
+            ClearStepRuntime();
+            CollectSteps(groupId);
+            var startIndex = 0;
+            if (fromOrder > 0)
+            {
+                for (var i = 0; i < _steps.Count; i++)
+                {
+                    if (_steps[i].Order >= fromOrder)
+                    {
+                        startIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            _stepIndex = startIndex - 1;
+            await AdvanceAsync();
         }
 
         private void OnTargetsChanged()
@@ -499,6 +689,11 @@ namespace App.Guide
                 _clickToggle == null)
             {
                 TryBindClickTarget();
+            }
+
+            if (!IsRunning)
+            {
+                TryStartFirstBondIfNeeded();
             }
         }
 

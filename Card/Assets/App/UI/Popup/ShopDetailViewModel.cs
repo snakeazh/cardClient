@@ -3,6 +3,7 @@ using App.Atlas;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
+using App.Guide;
 using App.Resources;
 using App.UI;
 using Framework.Assets;
@@ -264,6 +265,7 @@ namespace App.UI.Popup
         public void CompleteBuy()
         {
             _awaitingBuyFx = false;
+            GuideSignals.NotifyShopBought(RelicId);
             Dismiss();
         }
 

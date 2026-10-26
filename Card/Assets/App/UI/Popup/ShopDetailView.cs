@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using App.Bootstrap;
+using App.Guide;
 using App.Item;
 using App.Resources;
 using DG.Tweening;
@@ -33,6 +35,9 @@ namespace App.UI.Popup
         private CanvasGroup _overlayGroup;
         private int _playToken;
         private int _pendingRevealRelicId;
+        private GuideTargetRegistry _guideTargets;
+        private bool _registeredSellBtn;
+        private bool _buyCompleted;
 
         protected override void OnBind()
         {
@@ -56,6 +61,18 @@ namespace App.UI.Popup
             BindBuyUseVideoButton();
             BindUseButton();
             BindMaskClose();
+            RegisterSellGuideTarget();
+            Binding.Add(ViewModel.ShowSell.Subscribe(show =>
+            {
+                if (show)
+                {
+                    RegisterSellGuideTarget();
+                }
+                else
+                {
+                    UnregisterSellGuideTarget();
+                }
+            }, emitCurrent: true));
             _ = EnsureCoinPrefab();
         }
 
@@ -64,6 +81,15 @@ namespace App.UI.Popup
             KillItemFx();
             RestoreOverlay();
             RevealPendingMine();
+            UnregisterSellGuideTarget();
+            if (ViewModel != null &&
+                ViewModel.Buying &&
+                !_buyCompleted &&
+                !GuideSignals.ShopBought)
+            {
+                GuideSignals.NotifyShopBuyAbandoned();
+            }
+
             if (_buyBtn != null)
             {
                 _buyBtn.onClick.RemoveListener(OnBuyClicked);
@@ -269,6 +295,7 @@ namespace App.UI.Popup
                 return;
             }
 
+            _buyCompleted = true;
             ViewModel.CompleteBuy();
         }
 
@@ -344,6 +371,8 @@ namespace App.UI.Popup
 
         private void FinishBuyFly(BattleShopPopView shop, int relicId)
         {
+            // 先记购买成功，再揭示已购格并登记引导挖孔（Reveal 依赖 LastBoughtShopRelicId）。
+            GuideSignals.NotifyShopBought(relicId);
             shop?.RevealIncomingMine(relicId);
             _pendingRevealRelicId = 0;
             if (ViewModel == null)
@@ -352,7 +381,36 @@ namespace App.UI.Popup
             }
 
             ViewModel.SetBusy(false);
+            _buyCompleted = true;
             ViewModel.CompleteBuy();
+        }
+
+        private void RegisterSellGuideTarget()
+        {
+            if (_sellBtn == null || !AppServices.IsReady)
+            {
+                return;
+            }
+
+            _guideTargets ??= AppServices.Resolve<GuideTargetRegistry>();
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            _guideTargets.RegisterUi(GuideTargetIds.ShopSellBtn, (RectTransform)_sellBtn.transform);
+            _registeredSellBtn = true;
+        }
+
+        private void UnregisterSellGuideTarget()
+        {
+            if (!_registeredSellBtn || _guideTargets == null)
+            {
+                return;
+            }
+
+            _guideTargets.Unregister(GuideTargetIds.ShopSellBtn);
+            _registeredSellBtn = false;
         }
 
         private void HideDetailOverlay()

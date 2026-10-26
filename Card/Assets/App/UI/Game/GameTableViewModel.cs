@@ -1965,6 +1965,7 @@ namespace App.UI
 
             _remainListOpen = true;
             ShowYiwuBtn.Value = false;
+            GuideSignals.NotifyRemainListOpened();
             try
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(RemainListPopViewModel));
@@ -1980,6 +1981,7 @@ namespace App.UI
             {
                 _remainListOpen = false;
                 ShowYiwuBtn.Value = true;
+                GuideSignals.NotifyRemainListClosed();
             }
         }
     }

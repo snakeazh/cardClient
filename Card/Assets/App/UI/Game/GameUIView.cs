@@ -4061,6 +4061,15 @@ namespace App.UI
             }
         }
 
+        /// <summary>引导 Overlay 在上层时代为关闭搓牌 tip，推进 PeekGoodTipClosed 步骤。</summary>
+        public void DismissPeekGoodTipForGuide()
+        {
+            if (_shownPeekGoodTip)
+            {
+                HideEquipTip();
+            }
+        }
+
         private void HideEquipTip()
         {
             var closingPeekTip = _shownPeekGoodTip;
@@ -4892,6 +4901,25 @@ namespace App.UI
             RegisterGuideBtn(GuideTargetIds.CompareBtn, "CompareBtn");
             RegisterGuideBtn(GuideTargetIds.PeekGood, "PeekGood");
             RegisterGuideBtn(GuideTargetIds.NextRoundBtn, "NextRoundBtn");
+            RegisterSkillButtonsGuideTarget();
+            RegisterYiwuGuideTarget();
+        }
+
+        private void RegisterYiwuGuideTarget()
+        {
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            var slot = ResolveSlot("yiwuBtn");
+            if (slot == null)
+            {
+                return;
+            }
+
+            _guideTargets.RegisterUi(GuideTargetIds.YiwuBtn, (RectTransform)slot);
+            _guideTargetIds.Add(GuideTargetIds.YiwuBtn);
         }
 
         private void RegisterGuideBtn(string id, string name)
@@ -4904,6 +4932,36 @@ namespace App.UI
 
             _guideTargets.RegisterUi(id, (RectTransform)button.transform);
             _guideTargetIds.Add(id);
+        }
+
+        /// <summary>搓牌 / 替换 / 透视 三个技能按钮并集挖孔。</summary>
+        private void RegisterSkillButtonsGuideTarget()
+        {
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            var rects = new List<RectTransform>(3);
+            TryAddGuideBtnRect(rects, "PeekGood");
+            TryAddGuideBtnRect(rects, "TiHuanGood");
+            TryAddGuideBtnRect(rects, "ChaKanGood");
+            if (rects.Count == 0)
+            {
+                return;
+            }
+
+            _guideTargets.RegisterUiGroup(GuideTargetIds.SkillButtons, rects);
+            _guideTargetIds.Add(GuideTargetIds.SkillButtons);
+        }
+
+        private void TryAddGuideBtnRect(List<RectTransform> rects, string name)
+        {
+            var button = FindBtn(name);
+            if (button != null)
+            {
+                rects.Add((RectTransform)button.transform);
+            }
         }
 
         private void UnregisterGuideTargets()

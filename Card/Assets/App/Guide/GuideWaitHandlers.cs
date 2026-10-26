@@ -1,7 +1,10 @@
 using System;
+using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
+using UnityEngine;
+using UnityEngine;
 
 namespace App.Guide
 {
@@ -24,7 +27,12 @@ namespace App.Guide
             _onComplete = onComplete;
             _armed = true;
             GuideSignals.Raised += OnRaised;
-            if (_session.DealSerial > 0 && GuideSignals.LastDealSerial == _session.DealSerial)
+            // WaitParam=Fresh：必须等下一次发牌完成（第 2 轮），不吃当前已完成的 DealSerial。
+            var requireFresh = step != null &&
+                               string.Equals(step.WaitParam?.Trim(), "Fresh", StringComparison.OrdinalIgnoreCase);
+            if (!requireFresh &&
+                _session.DealSerial > 0 &&
+                GuideSignals.LastDealSerial == _session.DealSerial)
             {
                 Complete();
             }
@@ -134,7 +142,7 @@ namespace App.Guide
     {
         private readonly GameSession _session;
         private Action _onComplete;
-        private GamePhase _target;
+        private GamePhase[] _targets;
         private bool _armed;
 
         public GamePhaseWaitHandler(GameSession session)
@@ -148,13 +156,7 @@ namespace App.Guide
         {
             Stop();
             _onComplete = onComplete;
-            _target = GamePhase.RoundSettle;
-            if (step != null && !string.IsNullOrWhiteSpace(step.WaitParam) &&
-                Enum.TryParse(step.WaitParam.Trim(), true, out GamePhase parsed))
-            {
-                _target = parsed;
-            }
-
+            _targets = ParseTargets(step?.WaitParam);
             _armed = true;
             _session.Changed += OnChanged;
             OnChanged();
@@ -170,13 +172,24 @@ namespace App.Guide
             _armed = false;
             _session.Changed -= OnChanged;
             _onComplete = null;
+            _targets = null;
         }
 
         private void OnChanged()
         {
-            if (_armed && _session.Phase == _target)
+            if (!_armed || _targets == null)
             {
-                Complete();
+                return;
+            }
+
+            var phase = _session.Phase;
+            for (var i = 0; i < _targets.Length; i++)
+            {
+                if (phase == _targets[i])
+                {
+                    Complete();
+                    return;
+                }
             }
         }
 
@@ -190,6 +203,30 @@ namespace App.Guide
             var done = _onComplete;
             Stop();
             done?.Invoke();
+        }
+
+        /// <summary>
+        /// WaitParam 支持单个阶段，或逗号/竖线分隔的多阶段（如 RoundSettle,Shop）。
+        /// 清场时 RoundSettle 不 Notify 就进 Shop，必须同时认 Shop。
+        /// </summary>
+        private static GamePhase[] ParseTargets(string waitParam)
+        {
+            if (string.IsNullOrWhiteSpace(waitParam))
+            {
+                return new[] { GamePhase.RoundSettle };
+            }
+
+            var parts = waitParam.Split(new[] { ',', '|', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var list = new System.Collections.Generic.List<GamePhase>(parts.Length);
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (Enum.TryParse(parts[i].Trim(), true, out GamePhase parsed))
+                {
+                    list.Add(parsed);
+                }
+            }
+
+            return list.Count > 0 ? list.ToArray() : new[] { GamePhase.RoundSettle };
         }
     }
 
@@ -286,7 +323,9 @@ namespace App.Guide
             }
 
             var card = hand[_index];
-            if (card.Rank == _targetRank && card.Rank != _startRank)
+            // 该槽相对开始已变化即过（优先认目标点数；引导强制搓完也会清 SelectingRubTarget）。
+            if (card.Rank != _startRank &&
+                (card.Rank == _targetRank || !_session.SelectingRubTarget))
             {
                 Complete();
             }
@@ -302,6 +341,113 @@ namespace App.Guide
             var done = _onComplete;
             Stop();
             done?.Invoke();
+        }
+    }
+
+    /// <summary>等待点选引导指定下标手牌。WaitParam：逗号分隔下标，默认 RevealTargetIndices。</summary>
+    public sealed class SelectGuideCardsWaitHandler : IGuideWaitHandler
+    {
+        private readonly GameSession _session;
+        private Action _onComplete;
+        private int[] _indices;
+        private bool _armed;
+
+        public SelectGuideCardsWaitHandler(GameSession session)
+        {
+            _session = session ?? throw new ArgumentNullException(nameof(session));
+        }
+
+        public string Id => GuideWaitIds.SelectGuideCards;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _indices = ParseIndices(step != null ? step.WaitParam : null);
+            _armed = true;
+            _session.Changed += OnChanged;
+            OnChanged();
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _session.Changed -= OnChanged;
+            _onComplete = null;
+        }
+
+        private void OnChanged()
+        {
+            if (!_armed || _session.Player == null || _indices == null || _indices.Length == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _indices.Length; i++)
+            {
+                var index = _indices[i];
+                if (!_session.Player.IsCardSelected(index))
+                {
+                    return;
+                }
+            }
+
+            if (_session.Player.CountSelectedCards() != _indices.Length)
+            {
+                return;
+            }
+
+            Complete();
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+
+        private static int[] ParseIndices(string param)
+        {
+            if (string.IsNullOrWhiteSpace(param))
+            {
+                return GuideDealScript.RevealTargetIndices;
+            }
+
+            var parts = param.Split(',');
+            var list = new int[parts.Length];
+            var count = 0;
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (int.TryParse(parts[i].Trim(), out var idx) && idx >= 0)
+                {
+                    list[count++] = idx;
+                }
+            }
+
+            if (count == 0)
+            {
+                return GuideDealScript.RevealTargetIndices;
+            }
+
+            if (count == list.Length)
+            {
+                return list;
+            }
+
+            var trimmed = new int[count];
+            Array.Copy(list, trimmed, count);
+            return trimmed;
         }
     }
 
@@ -582,6 +728,374 @@ namespace App.Guide
         private void OnRaised(string id)
         {
             if (id == GuideWaitIds.TalentDrawn)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待点击商店货架圣物（打开购买详情）。</summary>
+    public sealed class ShopOfferClickedWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.ShopOfferClicked;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.ShopOfferClicked)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.ShopOfferClicked)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待商店购买成功（详情关闭后）。</summary>
+    public sealed class ShopBoughtWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+
+        public string Id => GuideWaitIds.ShopBought;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.ShopBought)
+            {
+                Complete();
+            }
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.ShopBought)
+            {
+                Complete();
+            }
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待点击已购栏圣物；无已购目标（如买即用）约 1 秒后跳过。</summary>
+    public sealed class ShopMineClickedWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+        private int _token;
+
+        public string Id => GuideWaitIds.ShopMineClicked;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            if (GuideSignals.ShopMineClicked)
+            {
+                Complete();
+                return;
+            }
+
+            var token = ++_token;
+            _ = SkipIfNoMineTargetAsync(token);
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _token++;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.ShopMineClicked)
+            {
+                Complete();
+            }
+        }
+
+        private async System.Threading.Tasks.Task SkipIfNoMineTargetAsync(int token)
+        {
+            try
+            {
+                await System.Threading.Tasks.Task.Delay(1000);
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!_armed || token != _token)
+            {
+                return;
+            }
+
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var targets = AppServices.Resolve<GuideTargetRegistry>();
+            if (targets != null && targets.HasTarget(GuideTargetIds.ShopBoughtMine))
+            {
+                return;
+            }
+
+            // 消耗品买即用等没有已购格：结束商店引导，不再走售出说明。
+            GuideSignals.NotifyShopMineUnavailable();
+        }
+
+        private void Complete()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>WaitParam 秒数后自动推进（售出说明等无需点击的提示）。</summary>
+    public sealed class DelayWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+        private int _token;
+
+        public string Id => GuideWaitIds.Delay;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            var seconds = 2.5f;
+            if (step != null &&
+                !string.IsNullOrWhiteSpace(step.WaitParam) &&
+                float.TryParse(step.WaitParam.Trim(), out var parsed) &&
+                parsed > 0f)
+            {
+                seconds = parsed;
+            }
+
+            var targetId = step != null ? step.TargetId : null;
+            var token = ++_token;
+            _ = RunAsync(seconds, targetId, token);
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _token++;
+            _onComplete = null;
+        }
+
+        private async System.Threading.Tasks.Task RunAsync(float seconds, string targetId, int token)
+        {
+            try
+            {
+                // 点已购后详情异步打开，SellBtn 可能晚一帧才登记：先等目标出现再计时。
+                if (!string.IsNullOrEmpty(targetId))
+                {
+                    var waitUntil = Time.realtimeSinceStartup + 1.5f;
+                    while (_armed && token == _token && Time.realtimeSinceStartup < waitUntil)
+                    {
+                        if (AppServices.IsReady)
+                        {
+                            var targets = AppServices.Resolve<GuideTargetRegistry>();
+                            if (targets != null && targets.HasTarget(targetId))
+                            {
+                                break;
+                            }
+                        }
+
+                        await System.Threading.Tasks.Task.Delay(50);
+                    }
+
+                    if (!_armed || token != _token)
+                    {
+                        return;
+                    }
+
+                    // 目标始终没有（异常路径）：短提示后结束，避免空遮罩挂死。
+                    if (AppServices.IsReady)
+                    {
+                        var targets = AppServices.Resolve<GuideTargetRegistry>();
+                        if (targets == null || !targets.HasTarget(targetId))
+                        {
+                            seconds = 0.4f;
+                        }
+                    }
+                }
+
+                await System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds(seconds));
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!_armed || token != _token)
+            {
+                return;
+            }
+
+            var done = _onComplete;
+            Stop();
+            done?.Invoke();
+        }
+    }
+
+    /// <summary>等待圣物列表弹窗关闭后再继续（搓牌提示）。</summary>
+    public sealed class RemainListClosedWaitHandler : IGuideWaitHandler
+    {
+        private Action _onComplete;
+        private bool _armed;
+        private int _token;
+
+        public string Id => GuideWaitIds.RemainListClosed;
+
+        public void Start(GuideStepConfig step, Action onComplete)
+        {
+            Stop();
+            _onComplete = onComplete;
+            _armed = true;
+            GuideSignals.Raised += OnRaised;
+            var token = ++_token;
+            // 等一帧：Click 推进与 OpenRemainList 同帧，Opened 可能稍晚置位。
+            _ = ArmAsync(token);
+        }
+
+        public void Stop()
+        {
+            if (!_armed)
+            {
+                return;
+            }
+
+            _armed = false;
+            _token++;
+            GuideSignals.Raised -= OnRaised;
+            _onComplete = null;
+        }
+
+        private async System.Threading.Tasks.Task ArmAsync(int token)
+        {
+            try
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!_armed || token != _token)
+            {
+                return;
+            }
+
+            if (!GuideSignals.RemainListOpen)
+            {
+                Complete();
+            }
+        }
+
+        private void OnRaised(string id)
+        {
+            if (id == GuideWaitIds.RemainListClosed)
             {
                 Complete();
             }

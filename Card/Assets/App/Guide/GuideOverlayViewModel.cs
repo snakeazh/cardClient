@@ -28,6 +28,7 @@ namespace App.Guide
         public ObservableProperty<bool> ShowBubble { get; } = new ObservableProperty<bool>();
         public ObservableProperty<int> Padding { get; } = new ObservableProperty<int>();
         public ObservableProperty<GuideStepType> StepType { get; } = new ObservableProperty<GuideStepType>(GuideStepType.Wait);
+        public ObservableProperty<string> WaitHandler { get; } = new ObservableProperty<string>(string.Empty);
         public ObservableProperty<bool> ClickUsesButton { get; } = new ObservableProperty<bool>();
 
         public IRelayCommand SkipCommand { get; }
@@ -46,6 +47,7 @@ namespace App.Guide
                 ShowBubble.Value = false;
                 Padding.Value = 0;
                 StepType.Value = GuideStepType.Wait;
+                WaitHandler.Value = string.Empty;
                 ClickUsesButton.Value = false;
                 NextCommand.RaiseCanExecuteChanged();
                 HoleClickCommand.RaiseCanExecuteChanged();
@@ -60,6 +62,7 @@ namespace App.Guide
             ShowNext.Value = step.StepType == GuideStepType.Dialog;
             Padding.Value = step.Padding;
             StepType.Value = step.StepType;
+            WaitHandler.Value = step.WaitHandler ?? string.Empty;
             ClickUsesButton.Value = false;
             NextCommand.RaiseCanExecuteChanged();
             HoleClickCommand.RaiseCanExecuteChanged();

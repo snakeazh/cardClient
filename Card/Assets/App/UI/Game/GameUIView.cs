@@ -4061,6 +4061,15 @@ namespace App.UI
             }
         }
 
+        /// <summary>引导 Overlay 在上层时代为关闭搓牌 tip，推进 PeekGoodTipClosed 步骤。</summary>
+        public void DismissPeekGoodTipForGuide()
+        {
+            if (_shownPeekGoodTip)
+            {
+                HideEquipTip();
+            }
+        }
+
         private void HideEquipTip()
         {
             var closingPeekTip = _shownPeekGoodTip;

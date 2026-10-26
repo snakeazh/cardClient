@@ -792,7 +792,7 @@ namespace App.Game
                 return false;
             }
 
-            // FirstBattle：只允许搓掉固定的「3」，避免点到其他牌浪费次数。
+            // FirstBattle：只允许搓掉固定下标（「2」），避免点到其他牌浪费次数。
             if (_forceGuideRubAce && index != GuideDealScript.RubTargetIndex)
             {
                 return false;
@@ -948,6 +948,13 @@ namespace App.Game
 
             if (index < 0 || index >= PlayerDealCount)
             {
+                return;
+            }
+
+            if (IsGuideRevealIndexLocked(index))
+            {
+                Hint = "请点选 Q、K、A 三张牌";
+                Notify();
                 return;
             }
 
@@ -5154,16 +5161,54 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// FirstBattle / FirstSkill 未完成时强制 QKA23，保证搓牌引导有固定「2」。
+        /// </summary>
         private bool ShouldApplyFirstBattleDeal()
         {
             var progress = GuideProgressSvc();
-            return progress != null && !progress.IsGroupCompleted(GuideDealScript.FirstBattleGroupId);
+            if (progress == null)
+            {
+                return false;
+            }
+
+            return !progress.IsGroupCompleted(GuideDealScript.FirstBattleGroupId) ||
+                   !progress.IsGroupCompleted(GuideDealScript.FirstSkillGroupId);
         }
 
         /// <summary>引导结束时清除强制搓牌目标等局内限制。</summary>
         public void ClearGuideDealLocks()
         {
             _forceGuideRubAce = false;
+        }
+
+        /// <summary>FirstBattle 选牌步骤只允许点选 Q/K/A（RevealTargetIndices）。</summary>
+        private bool IsGuideRevealIndexLocked(int index)
+        {
+            if (!AppServices.IsReady)
+            {
+                return false;
+            }
+
+            var guide = AppServices.Resolve<IGuideService>();
+            var step = guide != null && guide.IsRunning ? guide.CurrentStep : null;
+            if (step == null ||
+                step.StepType != GuideStepType.Wait ||
+                !string.Equals(step.WaitHandler, GuideWaitIds.SelectGuideCards, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var allowed = GuideDealScript.RevealTargetIndices;
+            for (var i = 0; i < allowed.Length; i++)
+            {
+                if (allowed[i] == index)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private bool TryDealGuidePlayerHand(SeatState seat)

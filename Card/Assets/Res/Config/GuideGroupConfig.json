@@ -14,5 +14,21 @@
     "TriggerParam": "",
     "Skipable": true,
     "Enabled": true
+  },
+  {
+    "Id": 3,
+    "Name": "FirstShop",
+    "TriggerType": 1,
+    "TriggerParam": "App.BattleShopPop",
+    "Skipable": true,
+    "Enabled": true
+  },
+  {
+    "Id": 4,
+    "Name": "FirstSkill",
+    "TriggerType": 3,
+    "TriggerParam": "",
+    "Skipable": true,
+    "Enabled": true
   }
 ]

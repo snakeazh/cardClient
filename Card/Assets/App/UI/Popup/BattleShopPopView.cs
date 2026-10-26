@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
+using App.Guide;
 using App.Item;
 using App.Resources;
 using DG.Tweening;
@@ -27,6 +29,9 @@ namespace App.UI.Popup
         private readonly List<int> _mineRelicIds = new List<int>();
         private readonly List<int> _mineLevels = new List<int>();
         private readonly List<int> _mineCounts = new List<int>();
+        private readonly List<string> _guideTargetIds = new List<string>(4);
+        private readonly List<RectTransform> _guideHoleRects = new List<RectTransform>(16);
+        private GuideTargetRegistry _guideTargets;
         private GameObject _sellTemplate;
         private GameObject _mineTemplate;
         private Transform _mineContent;
@@ -87,6 +92,9 @@ namespace App.UI.Popup
             {
                 PunchSlot(item);
             }
+
+            // 飞入落定后再登记已购挖孔，供「点击刚买的圣物」步使用。
+            RegisterBoughtMineGuideTarget();
         }
 
         protected override void OnBind()
@@ -103,7 +111,87 @@ namespace App.UI.Popup
 
             EnsureSellItems();
             EnsureMineItems();
+            RegisterGuideTargets();
             Binding.Add(ViewModel.ShopRevision.Subscribe(_ => RefreshItems(), emitCurrent: true));
+        }
+
+        private void RegisterGuideTargets()
+        {
+            UnregisterGuideTargets();
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            _guideTargets = AppServices.Resolve<GuideTargetRegistry>();
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            // 货架挖孔：每张卡 + 下方价格，避免遮罩盖住金币价。
+            _guideHoleRects.Clear();
+            for (var i = 0; i < _sellItems.Count; i++)
+            {
+                var item = _sellItems[i];
+                if (item == null || !item.gameObject.activeInHierarchy || item.RelicConfigId <= 0)
+                {
+                    continue;
+                }
+
+                item.CollectGuideHoleRects(_guideHoleRects);
+            }
+
+            if (_guideHoleRects.Count > 0)
+            {
+                _guideTargets.RegisterUiGroup(GuideTargetIds.ShopSellOffers, _guideHoleRects);
+                _guideTargetIds.Add(GuideTargetIds.ShopSellOffers);
+            }
+
+            RegisterBoughtMineGuideTarget();
+        }
+
+        private void RegisterBoughtMineGuideTarget()
+        {
+            if (_guideTargets == null)
+            {
+                return;
+            }
+
+            var relicId = GuideSignals.LastBoughtShopRelicId;
+            if (relicId <= 0)
+            {
+                return;
+            }
+
+            var item = FindMineItem(relicId);
+            if (item == null)
+            {
+                return;
+            }
+
+            _guideHoleRects.Clear();
+            item.CollectGuideHoleRects(_guideHoleRects);
+            if (_guideHoleRects.Count == 0)
+            {
+                return;
+            }
+
+            _guideTargets.RegisterUiGroup(GuideTargetIds.ShopBoughtMine, _guideHoleRects);
+            if (!_guideTargetIds.Contains(GuideTargetIds.ShopBoughtMine))
+            {
+                _guideTargetIds.Add(GuideTargetIds.ShopBoughtMine);
+            }
+        }
+
+        private void UnregisterGuideTargets()
+        {
+            if (_guideTargets != null && _guideTargetIds.Count > 0)
+            {
+                _guideTargets.UnregisterAll(_guideTargetIds);
+            }
+
+            _guideTargetIds.Clear();
         }
 
         private void BindShopTime()
@@ -127,6 +215,18 @@ namespace App.UI.Popup
 
         protected override Task OnViewClose()
         {
+            UnregisterGuideTargets();
+            if (AppServices.IsReady)
+            {
+                var guide = AppServices.Resolve<IGuideService>();
+                if (guide != null &&
+                    guide.IsRunning &&
+                    guide.CurrentGroupId == GuideGroupIds.FirstShop)
+                {
+                    guide.Abort();
+                }
+            }
+
             // 关闭时只做显隐清理，不启动 punch：对象即将销毁，独立 Update 的 Tween 会访问已销毁 RectTransform。
             RevealIncomingMine(_pendingMineRevealId, punch: false);
             return Task.CompletedTask;
@@ -232,6 +332,7 @@ namespace App.UI.Popup
                 return;
             }
 
+            GuideSignals.NotifyShopOfferClicked();
             _ = ViewModel.OpenDetail(item.RelicConfigId, buying: true);
         }
 
@@ -254,6 +355,12 @@ namespace App.UI.Popup
                 return;
             }
 
+            if (GuideSignals.LastBoughtShopRelicId > 0 &&
+                item.RelicConfigId == GuideSignals.LastBoughtShopRelicId)
+            {
+                GuideSignals.NotifyShopMineClicked();
+            }
+
             _ = ViewModel.OpenDetail(item.RelicConfigId, buying: false);
         }
 
@@ -261,6 +368,8 @@ namespace App.UI.Popup
         {
             RefreshSellItems();
             RefreshMineItems();
+            // 货架布局后再登记，避免 sellHor 尚未撑开导致挖孔失败、引导像没生效。
+            RegisterGuideTargets();
         }
 
         private void RefreshSellItems()

@@ -51,6 +51,32 @@ namespace App.Game
 
         public int RelicConfigId => Data != null ? Data.RelicConfigId : 0;
 
+        /// <summary>引导挖孔：卡面 + 下方金币价（价格常溢出父布局高度）。</summary>
+        public void CollectGuideHoleRects(List<RectTransform> into)
+        {
+            if (into == null)
+            {
+                return;
+            }
+
+            var root = transform as RectTransform;
+            if (root != null)
+            {
+                into.Add(root);
+            }
+
+            EnsurePriceText();
+            if (goldNum != null)
+            {
+                into.Add(goldNum.rectTransform);
+            }
+
+            if (gold != null)
+            {
+                into.Add(gold.rectTransform);
+            }
+        }
+
         public event Action<ShopItem> Clicked;
         public event Action<ShopItem, PointerEventData> DragBegan;
         public event Action<ShopItem, PointerEventData> DragMoved;

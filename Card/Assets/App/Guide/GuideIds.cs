@@ -9,6 +9,9 @@ namespace App.Guide
         public const string PlayerHand = "Board.PlayerHand";
         public const string TalentBtn = "Navigation.TalentBtn";
         public const string TalentBuyBtn = "TalentPopup.BuyBtn";
+        public const string ShopSellOffers = "Shop.SellOffers";
+        public const string ShopBoughtMine = "Shop.BoughtMine";
+        public const string ShopSellBtn = "Shop.SellBtn";
 
         public static string PlayerCard(int index) => $"Board.PlayerCard.{index}";
     }
@@ -17,12 +20,15 @@ namespace App.Guide
     {
         public const int FirstBattle = 1;
         public const int FirstTalentDraw = 2;
+        public const int FirstShop = 3;
+        public const int FirstSkill = 4;
     }
 
     public static class GuideWaitIds
     {
         public const string DealFinished = "DealFinished";
         public const string SelectCards = "SelectCards";
+        public const string SelectGuideCards = "SelectGuideCards";
         public const string GamePhase = "GamePhase";
         public const string RubCard = "RubCard";
         public const string SelectHandType = "SelectHandType";
@@ -30,6 +36,12 @@ namespace App.Guide
         public const string PeekGoodTipClosed = "PeekGoodTipClosed";
         public const string TalentPopupOpen = "TalentPopupOpen";
         public const string TalentDrawn = "TalentDrawn";
+        public const string ShopOfferClicked = "ShopOfferClicked";
+        public const string ShopBought = "ShopBought";
+        public const string ShopMineClicked = "ShopMineClicked";
+        public const string ShopBuyAbandoned = "ShopBuyAbandoned";
+        public const string ShopMineUnavailable = "ShopMineUnavailable";
+        public const string Delay = "Delay";
     }
 
     public static class GuideSignals
@@ -44,6 +56,18 @@ namespace App.Guide
 
         /// <summary>本引导周期内是否已成功抽过天赋。</summary>
         public static bool TalentDrawn { get; private set; }
+
+        /// <summary>本引导周期内是否已点击商店货架圣物。</summary>
+        public static bool ShopOfferClicked { get; private set; }
+
+        /// <summary>本引导周期内是否已成功购买圣物。</summary>
+        public static bool ShopBought { get; private set; }
+
+        /// <summary>本引导周期内是否已点击已购栏圣物。</summary>
+        public static bool ShopMineClicked { get; private set; }
+
+        /// <summary>最近一次引导内购买成功的圣物 Id（登记已购挖孔用）。</summary>
+        public static int LastBoughtShopRelicId { get; private set; }
 
         public static event System.Action<string> Raised;
 
@@ -105,11 +129,64 @@ namespace App.Guide
             TalentDrawn = false;
         }
 
+        public static void NotifyShopOfferClicked()
+        {
+            ShopOfferClicked = true;
+            Raised?.Invoke(GuideWaitIds.ShopOfferClicked);
+        }
+
+        public static void ResetShopOfferClicked()
+        {
+            ShopOfferClicked = false;
+        }
+
+        public static void NotifyShopBought(int relicId)
+        {
+            ShopBought = true;
+            if (relicId > 0)
+            {
+                LastBoughtShopRelicId = relicId;
+            }
+
+            Raised?.Invoke(GuideWaitIds.ShopBought);
+        }
+
+        public static void ResetShopBought()
+        {
+            ShopBought = false;
+            LastBoughtShopRelicId = 0;
+        }
+
+        public static void NotifyShopMineClicked()
+        {
+            ShopMineClicked = true;
+            Raised?.Invoke(GuideWaitIds.ShopMineClicked);
+        }
+
+        public static void ResetShopMineClicked()
+        {
+            ShopMineClicked = false;
+        }
+
+        public static void NotifyShopBuyAbandoned()
+        {
+            Raised?.Invoke(GuideWaitIds.ShopBuyAbandoned);
+        }
+
+        public static void NotifyShopMineUnavailable()
+        {
+            Raised?.Invoke(GuideWaitIds.ShopMineUnavailable);
+        }
+
         /// <summary>引导组结束（完成/跳过/中止）时发出，用于清 UI 门控与 tip。</summary>
         public static void NotifyGuideEnded()
         {
             PeekGoodTipVisible = false;
             TalentDrawn = false;
+            ShopOfferClicked = false;
+            ShopBought = false;
+            ShopMineClicked = false;
+            LastBoughtShopRelicId = 0;
             Raised?.Invoke("GuideEnded");
         }
     }

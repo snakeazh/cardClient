@@ -263,9 +263,11 @@ namespace App.UI
                 }
 
                 var id = GuideTargetIds.PlayerCard(i);
-                _guideTargets.RegisterWorld(id, item.transform);
+                // 登记牌面 SpriteRenderer，避免根节点特效 Renderer.bounds 撑大挖孔。
+                var spriteTf = item.CurrentRenderer != null ? item.CurrentRenderer.transform : item.transform;
+                _guideTargets.RegisterWorld(id, spriteTf);
                 _guideTargetIds.Add(id);
-                _playerCardTransforms.Add(item.transform);
+                _playerCardTransforms.Add(spriteTf);
             }
 
             if (_playerCardTransforms.Count > 0)

@@ -4,6 +4,7 @@ using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
+using App.Guide;
 using App.Net;
 using App.Talent;
 using App.UI;
@@ -153,6 +154,28 @@ namespace App.Game.Editor
             }
 
             session.DebugSkipStage();
+        }
+
+        [MenuItem("Debug/引导/重置新手引导进度", false, 30)]
+        public static void ResetGuideProgress()
+        {
+            // 清本地；连服时启动拉档会覆盖，需同步清库（Tools/clear_guide_progress.py）或关服务器。
+            PlayerPrefs.DeleteKey(GuideProgressService.SaveKey);
+            PlayerPrefs.DeleteKey(GameApiClient.AccessTokenKey);
+            PlayerPrefs.DeleteKey(GameApiClient.ProviderKey);
+            PlayerPrefs.DeleteKey(GameApiClient.PendingSettleKey);
+            PlayerPrefs.Save();
+
+            if (Application.isPlaying && AppServices.IsReady)
+            {
+                AppServices.Resolve<IGuideProgressService>()?.ResetAll();
+            }
+
+            Debug.Log(
+                "[引导] 已清除本地 guide.progress / 登录 token。\n" +
+                "若 AppBootstrap 勾了连服务器：请停 Play 后执行\n" +
+                "  python Tools/clear_guide_progress.py\n" +
+                "或临时关掉「连接服务器」，再重新进游戏。");
         }
 
         [MenuItem("Debug/外挂/直接击杀当前怪物 _k", false, 15)]

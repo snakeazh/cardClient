@@ -1,9 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using App.Atlas;
+using App.Bootstrap;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Game;
+using App.Guide;
 using App.Resources;
 using App.UI;
 using Framework.Log;
@@ -142,7 +144,46 @@ namespace App.UI.Popup
             Session.Changed -= OnSessionChanged;
             Session.Changed += OnSessionChanged;
             Refresh();
+            TryStartShopGuide();
             return Task.CompletedTask;
+        }
+
+        private static async void TryStartShopGuide()
+        {
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            // 等一帧让 sellHor / 货架完成布局后再开引导，否则 Target 矩形为空。
+            await Task.Yield();
+            if (!AppServices.IsReady)
+            {
+                return;
+            }
+
+            var guide = AppServices.Resolve<IGuideService>();
+            if (guide == null)
+            {
+                return;
+            }
+
+            // 清场进商店时 FirstBattle 可能仍在关 Overlay（等 RoundSettle/Shop），让出后再开商店引导。
+            for (var i = 0; i < 90 && guide.IsRunning; i++)
+            {
+                await Task.Yield();
+                if (!AppServices.IsReady)
+                {
+                    return;
+                }
+            }
+
+            if (guide.IsRunning)
+            {
+                return;
+            }
+
+            guide.TryStart(GuideTriggerType.ScreenOpen, AppScreenIds.BattleShopPop);
         }
 
         protected override void OnDispose()

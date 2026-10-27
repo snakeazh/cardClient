@@ -15,6 +15,7 @@ namespace App.UI
     /// <summary>
     /// 角色 / 怪物头像。英雄仍按张预热与局内补载；怪物立绘走 <see cref="ResResourcePaths.EnemyAtlas"/>，
     /// 启动图集预载后即可取 _attack / _damage / _dead，不再按张 Load。
+    /// PVP 侧栏另走 <see cref="ResResourcePaths.PvpHeadAtlas"/>（<see cref="GetPvpHead"/>）。
     /// </summary>
     public static class PortraitLoader
     {
@@ -166,6 +167,23 @@ namespace App.UI
         public static Sprite GetEnemy(string icon, string suffix = null)
         {
             return PickEnemy(icon, string.IsNullOrEmpty(suffix) ? ResResourcePaths.PortraitAttack : suffix);
+        }
+
+        /// <summary>
+        /// PVP 侧栏头像：走 <see cref="ResResourcePaths.PvpHeadAtlas"/>。
+        /// 怪物固定 Monster1Avatar；英雄用 {Icon}Avatar。图集启动已预载，无需再按张 Load。
+        /// </summary>
+        public static Sprite GetPvpHead(bool monster, string heroIcon)
+        {
+            var spriteName = ResResourcePaths.PvpHeadSpriteName(monster, heroIcon);
+            if (string.IsNullOrEmpty(spriteName) || _atlas == null)
+            {
+                return null;
+            }
+
+            return _atlas.TryGetSprite(ResResourcePaths.PvpHeadAtlas, spriteName, out var sprite)
+                ? sprite
+                : null;
         }
 
         private static void TryQueueHurt(List<(bool enemy, string icon)> pending, bool enemy, string icon)

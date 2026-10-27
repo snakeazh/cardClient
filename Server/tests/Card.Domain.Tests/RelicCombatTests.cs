@@ -593,18 +593,26 @@ public class PvpRelicRuntimeTests
     private static GameTables MechanicTables()
     {
         var fallback = GameTables.Fallback();
+        var relics = new[]
+        {
+            new RelicConfig { Id = 237, Name = "??", MechanismId = new[] { 20038 } },
+            new RelicConfig { Id = 435, Name = "????", MechanismId = new[] { 40034 } },
+            new RelicConfig { Id = 436, Name = "????", MechanismId = new[] { 40035 } },
+            new RelicConfig { Id = 437, Name = "????", MechanismId = new[] { 40036 } }
+        };
+        var entries = new[]
+        {
+            new RelicEntryConfig { Id = 20038, Name = "??", Type = MechanismType.SelfMultWinLose, Value = new[] { 1f, 1f } },
+            new RelicEntryConfig { Id = 40034, Name = "????", Type = MechanismType.FixedTypeCountMult, Value = new[] { 6f, 10f } },
+            new RelicEntryConfig { Id = 40035, Name = "????", Type = MechanismType.ShopRefreshGetMult, Value = new[] { 1f } },
+            new RelicEntryConfig { Id = 40036, Name = "????", Type = MechanismType.SelfDecayMult, Value = new[] { 20f, 1f } }
+        };
         return new GameTables(
             fallback.GameConst,
             fallback.HandScores,
             fallback.Levels,
             fallback.Heroes,
-            new[]
-            {
-                new RelicConfig { Id = 237, Name = "??", MechanismId = new[] { 20038 } },
-                new RelicConfig { Id = 435, Name = "????", MechanismId = new[] { 40034 } },
-                new RelicConfig { Id = 436, Name = "????", MechanismId = new[] { 40035 } },
-                new RelicConfig { Id = 437, Name = "????", MechanismId = new[] { 40036 } }
-            },
+            relics,
             fallback.UnlockConditions,
             fallback.TalentRows,
             fallback.Monsters,
@@ -612,24 +620,25 @@ public class PvpRelicRuntimeTests
             "pvp-relic-runtime",
             fallback.HeroEntries,
             fallback.TalentEntries,
-            new[]
-            {
-                new RelicEntryConfig { Id = 20038, Name = "??", Type = MechanismType.SelfMultWinLose, Value = new[] { 1f, 1f } },
-                new RelicEntryConfig { Id = 40034, Name = "????", Type = MechanismType.FixedTypeCountMult, Value = new[] { 6f, 10f } },
-                new RelicEntryConfig { Id = 40035, Name = "????", Type = MechanismType.ShopRefreshGetMult, Value = new[] { 1f } },
-                new RelicEntryConfig { Id = 40036, Name = "????", Type = MechanismType.SelfDecayMult, Value = new[] { 20f, 1f } }
-            });
+            entries,
+            pvpRelics: PvpTableHarness.Relics(relics),
+            pvpRelicEntries: PvpTableHarness.Entries(entries));
     }
 
     private static GameTables MechanicTablesWithDessert()
     {
         var fallback = GameTables.Fallback();
+        var relics = new[] { new RelicConfig { Id = 433, Name = "????", MechanismId = new[] { 40032 } } };
+        var entries = new[]
+        {
+            new RelicEntryConfig { Id = 40032, Name = "????", Type = MechanismType.SelfDecayAttack, Value = new[] { 100f, 5f } }
+        };
         return new GameTables(
             fallback.GameConst,
             fallback.HandScores,
             fallback.Levels,
             fallback.Heroes,
-            new[] { new RelicConfig { Id = 433, Name = "????", MechanismId = new[] { 40032 } } },
+            relics,
             fallback.UnlockConditions,
             fallback.TalentRows,
             fallback.Monsters,
@@ -637,10 +646,9 @@ public class PvpRelicRuntimeTests
             "pvp-dessert",
             fallback.HeroEntries,
             fallback.TalentEntries,
-            new[]
-            {
-                new RelicEntryConfig { Id = 40032, Name = "????", Type = MechanismType.SelfDecayAttack, Value = new[] { 100f, 5f } }
-            });
+            entries,
+            pvpRelics: PvpTableHarness.Relics(relics),
+            pvpRelicEntries: PvpTableHarness.Entries(entries));
     }
 
     private static GameTables MechanicTablesWithCopy()
@@ -667,6 +675,8 @@ public class PvpRelicRuntimeTests
             "pvp-copy",
             baseTables.HeroEntries,
             baseTables.TalentEntries,
-            entries.ToArray());
+            entries.ToArray(),
+            pvpRelics: PvpTableHarness.Relics(relics),
+            pvpRelicEntries: PvpTableHarness.Entries(entries));
     }
 }

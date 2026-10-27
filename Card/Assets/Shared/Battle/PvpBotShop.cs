@@ -24,7 +24,7 @@ namespace CardShare.Battle
             for (var i = 0; i < fighter.ShopOfferIds.Count; i++)
             {
                 var relicId = fighter.ShopOfferIds[i];
-                if (!tables.TryGetRelic(relicId, out var relic))
+                if (!tables.TryGetPvpRelic(relicId, out var relic))
                 {
                     continue;
                 }

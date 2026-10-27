@@ -99,6 +99,8 @@ namespace App.UI
         private CameraShakeAnimator _cameraShake;
         private PlayerItem _playerItem;
         private int _portraitLoadSerial;
+        private int _heroFxLoadSerial;
+        private int _preloadedHeroId = int.MinValue;
         private int _playedAttack;
         private int _playedHolyLight;
         private Transform _playerCardTypeNum;
@@ -261,21 +263,10 @@ namespace App.UI
             await PreloadAudioAsync(resources, ResResourcePaths.SfxRubCards02);
             await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
 
-            var run = ViewModel.Session?.Run;
-            // 本局英雄固定：进桌预载释放/命中特效，出刀只走缓存，不再临时 Load。
-            if (run != null)
-            {
-                var hero = HeroMechanics.Resolve(run);
-                await _attackFx.PreloadHeroEffectsAsync(resources, hero);
-                if (HeroMechanics.TryResolveAnyEffects(hero, out var attackFx, out var hitFx) &&
-                    !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
-                {
-                    AppLog.Warn(
-                        LogChannel.UI,
-                        $"[GameUI] 英雄特效预载未就绪 attack={attackFx.Effects} hit={hitFx.Effects}，出刀将回退近战");
-                }
-            }
+            // 本局英雄：进桌预载释放/命中特效；PVP 随机英雄可能晚于进桌，见 EnsureHeroFxPreloaded。
+            await EnsureHeroFxPreloaded();
 
+            var run = ViewModel.Session?.Run;
             if (run != null && run.HasBoss)
             {
                 try
@@ -393,6 +384,8 @@ namespace App.UI
 
             KillEnemySlides();
             _attackFx.Dispose();
+            _preloadedHeroId = int.MinValue;
+            _heroFxLoadSerial++;
             _settleFx.Dispose();
             ClearAttackHold();
             RestoreHpText();
@@ -469,6 +462,7 @@ namespace App.UI
             RefreshShop();
             RefreshPlayerItems();
             _ = EnsureBattlePortraits();
+            _ = EnsureHeroFxPreloaded();
             RefreshCardInfos();
             RefreshEquips();
             RefreshRoundBuffs();
@@ -478,6 +472,98 @@ namespace App.UI
             TryPlayHolyLight();
             TryPlayAttack();
             TryScheduleAiDelay();
+        }
+
+        /// <summary>
+        /// 预载当前 Run.HeroId 的出刀特效。PVP 进房随机英雄可能在进桌预载之后才写入 Run，
+        /// 必须在 HeroId 变化时再预载，否则 CanPlayHeroSkill 失败会静默回退近战。
+        /// </summary>
+        private async Task EnsureHeroFxPreloaded()
+        {
+            var resources = ViewModel?.Resources;
+            var run = ViewModel?.Session?.Run;
+            if (resources == null || run == null)
+            {
+                return;
+            }
+
+            var heroId = run.HeroId;
+            // PVP 还要预载对手英雄 SpecialEffect（对方圣光烧我）。
+            var foeHeroId = 0;
+            if (ViewModel.Session != null && ViewModel.Session.IsPvp && ViewModel.PvpState != null)
+            {
+                var foe = CurrentFoeFighter(ViewModel.PvpState, ViewModel.PvpUserId);
+                foeHeroId = foe != null ? foe.HeroId : 0;
+            }
+
+            var preloadKey = heroId * 1000 + foeHeroId;
+            if (preloadKey == _preloadedHeroId)
+            {
+                return;
+            }
+
+            var serial = ++_heroFxLoadSerial;
+            var hero = HeroMechanics.Resolve(run);
+            await _attackFx.PreloadHeroEffectsAsync(resources, hero);
+            if (foeHeroId > 0 && foeHeroId != heroId)
+            {
+                await _attackFx.PreloadHeroEffectsAsync(resources, HeroConfig.Get(foeHeroId));
+            }
+
+            if (serial != _heroFxLoadSerial || ViewModel == null)
+            {
+                return;
+            }
+
+            _preloadedHeroId = preloadKey;
+            if (HeroMechanics.TryResolveAnyEffects(hero, out var attackFx, out var hitFx) &&
+                !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
+            {
+                AppLog.Warn(
+                    LogChannel.UI,
+                    $"[GameUI] 英雄特效预载未就绪 hero={heroId} attack={attackFx.Effects} hit={hitFx.Effects}，出刀将回退近战");
+            }
+        }
+
+        private static CardShare.Contracts.PvpFighterDto CurrentFoeFighter(
+            CardShare.Contracts.PvpMatchStateDto state,
+            string selfId)
+        {
+            if (state?.Players == null)
+            {
+                return null;
+            }
+
+            var foeId = string.Empty;
+            var duel = state.Duel;
+            if (duel?.Seats != null)
+            {
+                for (var i = 0; i < duel.Seats.Count; i++)
+                {
+                    var seat = duel.Seats[i];
+                    if (seat != null && !App.Net.PvpMatchSession.SameUser(seat.UserId, selfId))
+                    {
+                        foeId = seat.UserId;
+                        break;
+                    }
+                }
+            }
+
+            for (var i = 0; i < state.Players.Length; i++)
+            {
+                var p = state.Players[i];
+                if (p == null || App.Net.PvpMatchSession.SameUser(p.UserId, selfId))
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(foeId) || App.Net.PvpMatchSession.SameUser(p.UserId, foeId))
+                {
+                    return p;
+                }
+            }
+
+            return null;
         }
 
         private void LateUpdate()
@@ -669,7 +755,10 @@ namespace App.UI
 
         private void PlayHolyLightCutscene(GameSession session)
         {
-            var hero = HeroMechanics.Resolve(session.Run);
+            var fromEnemy = session.IsPvp && session.PvpHolyIncoming;
+            var hero = session.IsPvp && session.PvpHolyCasterHeroId > 0
+                ? HeroConfig.Get(session.PvpHolyCasterHeroId)
+                : HeroMechanics.Resolve(session.Run);
             HeroEffectsConfig attackFx = null;
             HeroEffectsConfig hitFx = null;
             if (hero == null ||
@@ -685,12 +774,15 @@ namespace App.UI
                 return;
             }
 
-            var hitAnimSlots = CollectAliveEnemyVisualSlots(session);
-            var mainSlot = hitAnimSlots != null && hitAnimSlots.Count > 0
-                ? hitAnimSlots[0]
-                : 0;
-            Func<int, bool> shouldSpawnHitFx = slot =>
-                session.LastAttackHitApplied(slot) && !session.LastAttackHitMissed(slot);
+            var hitAnimSlots = fromEnemy
+                ? null
+                : CollectAliveEnemyVisualSlots(session);
+            var mainSlot = session.AttackVisualSlot >= 0
+                ? session.AttackVisualSlot
+                : (hitAnimSlots != null && hitAnimSlots.Count > 0 ? hitAnimSlots[0] : 0);
+            Func<int, bool> shouldSpawnHitFx = fromEnemy
+                ? null
+                : (slot => session.LastAttackHitApplied(slot) && !session.LastAttackHitMissed(slot));
 
             var mask = ResolveSlot("mask");
             if (mask != null)
@@ -700,6 +792,19 @@ namespace App.UI
 
             ViewModel.ShowMask.Value = true;
             ViewModel.ShowHpText.Value = false;
+            // 圣光期间强制藏牌型（含炸弹特效），不依赖 Phase 是否已是 WaitingAttack。
+            ViewModel.ShowCardInfo.Value = false;
+            HideBeilvInfo();
+            if (_playerCardInfo != null)
+            {
+                _playerCardInfo.SetActive(false);
+            }
+
+            if (_enemyCardInfo != null)
+            {
+                _enemyCardInfo.SetActive(false);
+            }
+
             RestoreSplashHpClones();
 
             if (!_attackFx.PlayHeroSkill(
@@ -731,7 +836,8 @@ namespace App.UI
                     },
                     1f,
                     hitAnimSlots,
-                    shouldSpawnHitFx))
+                    shouldSpawnHitFx,
+                    fromEnemy))
             {
                 session.ApplyPendingHolyLightHit();
                 TryDissolveIfLethal(session);
@@ -742,7 +848,7 @@ namespace App.UI
             AppLog.Info(
                 LogChannel.UI,
                 $"[HeroSkill][GameUI] 圣光燃烧 SpecialEffect attack={attackFx.Effects} hit={hitFx.Effects} " +
-                $"hitAnim={hero.hitAnimation} slots={hitAnimSlots?.Count ?? 0}");
+                $"hitAnim={hero.hitAnimation} fromEnemy={fromEnemy} slots={hitAnimSlots?.Count ?? 0}");
         }
 
         private void TryPlayAttack()
@@ -2752,17 +2858,21 @@ namespace App.UI
 
         private void BindBeisu()
         {
+            // PlaybackSpeed → Time.timeScale：PVE/PVP 都要接上（PVP 默认 x2 存在属性里，不能再强行 timeScale=1）。
+            Binding.Add(ViewModel.PlaybackSpeed.Subscribe(speed => Time.timeScale = speed));
+            Time.timeScale = ViewModel.PlaybackSpeed.Value;
+
             var slot = ResolveSlot("beisu") ?? transform.Find("beisu") ?? FindDeep(transform, "beisu");
             if (slot == null)
             {
                 return;
             }
 
+            // PVP 暂不露倍速按钮，但仍吃上面的默认 x2。
             var pvp = ViewModel.Session != null && ViewModel.Session.IsPvp;
             slot.gameObject.SetActive(!pvp);
             if (pvp)
             {
-                Time.timeScale = 1f;
                 return;
             }
 
@@ -2778,8 +2888,6 @@ namespace App.UI
             {
                 Binding.BindText(text, ViewModel.SpeedLabel);
             }
-
-            Binding.Add(ViewModel.PlaybackSpeed.Subscribe(speed => Time.timeScale = speed));
         }
 
         private void BindSeatClick(GameObject target, IRelayCommand command)
@@ -2870,7 +2978,8 @@ namespace App.UI
             _hudFlies.Clear();
             BindOpeningVs();
             ParkHudFly("horEquipBtns2", 1f, 0f);
-            ParkHudFly("horBtns2", -1f, 0f);
+            // 技能栏横排贴底：从下方飞入（旧竖排在左侧时从左飞入）。
+            ParkHudFly("horBtns2", 0f, -1f);
             ParkHudFly("stageInfo", 1f, 0f);
             var player = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
             ParkHudFly(player, 0f, -1f, openingPlayerPose: true);
@@ -2979,6 +3088,8 @@ namespace App.UI
             _waitHudForOpening = false;
             StopHudOpeningUnlock();
             SnapHudFliesHome();
+            // 技能栏飞到最终横排位置后再登记挖孔，避免引导仍按入场前坐标画。
+            RegisterGuideTargets();
             TryStartOpening();
         }
 
@@ -4646,12 +4757,18 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
+            // 技能栏横排在底部：tip 放按钮上方，避免旧竖排「左侧」贴边被裁切。
             await PresentItemTip(
                 _peekGoodBtn.transform,
                 "搓牌",
                 "点选一张手牌，将其替换为牌堆中的一张新牌。",
                 showUse: false,
                 placeRight: false);
+            if (_equipTip != null && _peekGoodBtn != null)
+            {
+                PositionTipAbove(_equipTip, _peekGoodBtn.transform);
+            }
+
             _shownPeekGoodTip = true;
             GuideSignals.NotifyPeekGoodTipShown();
         }
@@ -4934,12 +5051,22 @@ namespace App.UI
             _guideTargetIds.Add(id);
         }
 
-        /// <summary>搓牌 / 替换 / 透视 三个技能按钮并集挖孔。</summary>
+        /// <summary>
+        /// 搓牌 / 替换 / 透视横排：强制重建 horBtns2 后，用三个按钮并集挖孔（宽条贴底居中）。
+        /// </summary>
         private void RegisterSkillButtonsGuideTarget()
         {
             if (_guideTargets == null)
             {
                 return;
+            }
+
+            var skills = ResolveSlot("horBtns2") ?? transform.Find("horBtns2");
+            if (skills is RectTransform skillsRt)
+            {
+                // 竖排改横排后子节点位置靠 Layout；挖孔前必须重建，否则仍是 (0,0) 叠在一起。
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(skillsRt);
             }
 
             var rects = new List<RectTransform>(3);
@@ -4948,6 +5075,12 @@ namespace App.UI
             TryAddGuideBtnRect(rects, "ChaKanGood");
             if (rects.Count == 0)
             {
+                if (skills is RectTransform fallback)
+                {
+                    _guideTargets.RegisterUi(GuideTargetIds.SkillButtons, fallback);
+                    _guideTargetIds.Add(GuideTargetIds.SkillButtons);
+                }
+
                 return;
             }
 

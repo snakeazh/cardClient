@@ -40,8 +40,20 @@ namespace CardShare.Battle
 
         public bool HpApplied { get; private set; }
 
-        /// <summary>结算后实际扣血（含模式轮次系数）。0 = 未结算或平局无伤害。客户端只做状态同步，不重算。</summary>
+        /// <summary>结算后实际总扣血（主伤+追击+对子圣光）。0 = 未结算或平局无伤害。</summary>
         public int AppliedDamage { get; private set; }
+
+        /// <summary>比牌主伤。</summary>
+        public int AppliedMainDamage { get; private set; }
+
+        /// <summary>英雄追击第二刀。</summary>
+        public int AppliedChaseDamage { get; private set; }
+
+        /// <summary>对子圣光追加伤。</summary>
+        public int AppliedHolyBurnDamage { get; private set; }
+
+        /// <summary>开局圣光/自伤等节拍（本桌），投影进 HeroFx。</summary>
+        public List<PvpHeroFxDto> OpeningFx { get; } = new List<PvpHeroFxDto>(4);
 
         /// <summary>结算胜方座位（0/1），-1 = 未结算或平局。</summary>
         public int AppliedWinner { get; private set; } = -1;
@@ -309,9 +321,17 @@ namespace CardShare.Battle
 
         public void MarkHpApplied(int winner, int damage)
         {
+            MarkHpApplied(winner, damage, chase: 0, holyBurn: 0);
+        }
+
+        public void MarkHpApplied(int winner, int mainDamage, int chase, int holyBurn)
+        {
             HpApplied = true;
             AppliedWinner = winner;
-            AppliedDamage = damage;
+            AppliedMainDamage = Math.Max(0, mainDamage);
+            AppliedChaseDamage = Math.Max(0, chase);
+            AppliedHolyBurnDamage = Math.Max(0, holyBurn);
+            AppliedDamage = AppliedMainDamage + AppliedChaseDamage + AppliedHolyBurnDamage;
         }
 
         public BattleStateDto ViewFor(string userId, string roomId)

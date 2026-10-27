@@ -646,7 +646,8 @@ namespace App.UI
             Action onDone,
             float timeScale = 1f,
             IList<int> hitAnimSlots = null,
-            Func<int, bool> shouldSpawnHitFx = null)
+            Func<int, bool> shouldSpawnHitFx = null,
+            bool fromEnemy = false)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -666,9 +667,10 @@ namespace App.UI
             _skillHitNoKnockback = true;
             var tuning = AttackTuningConfig.Instance;
             var beat = tuning.Level(level);
-            var targetAnim = _enemyAnims[visualSlot];
-            var homeUi = _playerRoot.position;
-            var hitUi = _enemyRoots[visualSlot].position;
+            var targetAnim = fromEnemy ? _playerAnim : _enemyAnims[visualSlot];
+            // fromEnemy：对方圣光打我，释放点在敌方，命中点在自己。
+            var homeUi = fromEnemy ? _enemyRoots[visualSlot].position : _playerRoot.position;
+            var hitUi = fromEnemy ? _playerRoot.position : _enemyRoots[visualSlot].position;
             var projectile = IsProjectile(attackFx);
             var configuredWait = Mathf.Max(0f, attackFx.Time);
             var castClip = projectile ? 0f : LongestClipLength(attackPrefab);

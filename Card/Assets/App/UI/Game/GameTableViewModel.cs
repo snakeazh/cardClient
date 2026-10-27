@@ -1077,6 +1077,8 @@ namespace App.UI
             BattleTrace.Log(
                 $"GameTableVM.OnOpen begin deal={Session?.DealSerial} stageRound={Session?.StageRoundIndex} hold={ShouldHoldDealVisual()}");
             _shownInfoKey = null;
+            // 构造时可能还没 BeginPvp；进桌再按模式加载（PVP 默认 x2）。
+            LoadPlaybackSpeed();
             Session.Changed -= Refresh;
             Session.Changed += Refresh;
             Refresh();
@@ -1164,6 +1166,13 @@ namespace App.UI
 
         private void LoadPlaybackSpeed()
         {
+            // PVP 固定 x2：不读 PVE 存档，也不另存；避免 PVE 切 x1 后再进 PVP 被带成 1 倍。
+            if (Session != null && Session.IsPvp)
+            {
+                ApplyPlaybackSpeed(MaxPlaybackSpeed);
+                return;
+            }
+
             ApplyPlaybackSpeed(NormalizePlaybackSpeed(_save.GetFloat(PlaybackSpeedSaveKey, MinPlaybackSpeed)));
         }
 
@@ -1171,10 +1180,17 @@ namespace App.UI
         {
             PlaybackSpeed.Value = speed;
             SpeedLabel.Value = FormatPlaybackSpeed(speed);
+            // 离桌会 Restore 成 1；再进同倍速时 Observable 可能不通知，这里直接落 timeScale。
+            Time.timeScale = speed;
         }
 
         private void PersistPlaybackSpeed(float speed)
         {
+            if (Session != null && Session.IsPvp)
+            {
+                return;
+            }
+
             _save.SetFloat(PlaybackSpeedSaveKey, speed);
             _save.Save();
         }
@@ -1730,11 +1746,17 @@ namespace App.UI
 
         public static bool ShouldShowCardInfo(GameSession session)
         {
-            return session != null &&
-                   (session.SequentialCompare ||
-                    session.Phase == GamePhase.Showdown ||
-                    session.Phase == GamePhase.WaitingAttack ||
-                    session.Phase == GamePhase.RoundSettle);
+            // 圣光燃烧（开局 / 对子）：BeginPvpHolyLight 会进 WaitingAttack，
+            // 若不挡掉，牌型面板会提前亮出（豹子甚至直接播 PokerHandBomb01）。
+            if (session == null || session.PendingHolyLightCasts > 0)
+            {
+                return false;
+            }
+
+            return session.SequentialCompare ||
+                   session.Phase == GamePhase.Showdown ||
+                   session.Phase == GamePhase.WaitingAttack ||
+                   session.Phase == GamePhase.RoundSettle;
         }
 
         /// <summary>开牌前选满 3 张时预览玩家牌型；亮牌结算仍走 <see cref="ShouldShowCardInfo"/>。</summary>

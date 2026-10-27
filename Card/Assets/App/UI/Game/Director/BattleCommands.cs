@@ -81,6 +81,56 @@ namespace App.UI.Game.Director
         }
     }
 
+    /// <summary>PVP 圣光燃烧：跟 HolyLightPlaySerial 播 SpecialEffect，等 PvpCombatFinished。</summary>
+    public sealed class HolyLightCommand : BattleCommand
+    {
+        private readonly bool _incoming;
+        private readonly int _damage;
+        private readonly int _casterHeroId;
+
+        public HolyLightCommand(bool incoming, int damage, int casterHeroId)
+        {
+            _incoming = incoming;
+            _damage = damage;
+            _casterHeroId = casterHeroId;
+        }
+
+        public override string Name => "holy_light";
+
+        public override void Execute(IBattleStage stage, Action onComplete)
+        {
+            if (!stage.BeginPvpHolyLight(_incoming, _damage, _casterHeroId))
+            {
+                onComplete();
+                return;
+            }
+
+            AwaitOnce(
+                h => stage.PvpCombatFinished += h,
+                h => stage.PvpCombatFinished -= h,
+                onComplete);
+        }
+    }
+
+    /// <summary>PVP 开局自伤：即时扣血飘字。</summary>
+    public sealed class SelfChipCommand : BattleCommand
+    {
+        private readonly int _damage;
+
+        public SelfChipCommand(int damage)
+        {
+            _damage = damage;
+        }
+
+        public override string Name => "self_chip";
+
+        public override void Execute(IBattleStage stage, Action onComplete)
+        {
+            stage.BeginPvpSelfChip(_damage);
+            onComplete();
+        }
+    }
+
     /// <summary>攻击力数值跳动：即时命令，改座位攻击并刷新（UI 自动播抖动）。</summary>
     public sealed class SetAttackCommand : BattleCommand
     {

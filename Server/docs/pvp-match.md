@@ -56,7 +56,11 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 - 能刷到哪些种类仍按本人 PVE 已解锁圣物（`profile.ShopRelicIds`）。解锁多的人种类更多。这是隐藏规则，协议不下发解锁列表
 - 开局 4 个槽，`unlock_slot` 花金币开到最多 10 个（第 5~10 槽 40/60/80/100/120/150）。同时持有 3 件相同未合成圣物会合成 1 件、效果按 3 倍结算、只占 1 槽
 - 开局不带圣物（已解锁 ≠ 已携带），买到的圣物**下一轮**起进战斗座位生效
-- 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`unlock_slot`、`shop_done`；全员 done 立即进下一轮
+- 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`unlock_slot`、`buy_skill`（index=技能 Id）、`shop_done`；全员 done 立即进下一轮
+- 技能补充（PVP 商店专属，`buy_skill`）：花金币买 1 次技能次数，**只对下一轮生效**（`ResetSkills` 时并入上限后清零，不跨轮累积）。
+  技能 Id：0=搓牌（`RubLeft`）、1=替换（`ReplaceLeft`）、2=透视（`PeekLeft`）。
+  价格 60/80/100 起，本局同一技能每买一次 +20。规则在 `PvpSkillShop.cs`。
+  单价必须高于 `GameConst.EverySkillProvideGold`（未用技能折算金币，缺省 20），否则「买入 → 不用 → 结算返金」可以套利
 - 刷新费用与 PvE 同公式（`GameConst.ShopRefreshFirst` 起递增）；机器人与断线座位进店即自动 done
 
 ## 断线 = 代管，可重连接管
@@ -74,7 +78,7 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 | S | match_update | 一切状态变化广播**全量快照**（逐人视角）。含 `stateVersion`（每次变更单调递增，客户端丢弃 ≤ 上次版本的快照）、`events`（本批增量事件）、`shop`（shop 阶段且本人存活时带货架） |
 | S | match_event | 紧跟 match_update 逐条下发：`round_start` / `settle_start` / `shop_start` / `duel_resolved`（每个真人参与者一条，value=扣血）/ `player_eliminated`（value=名次）/ `player_offline` / `player_online` / `match_finished` |
 | C | sync | 重连后拉全量快照；未在对局返回 `error(not_in_battle)` |
-| C | battle | action：`pick` / `rub` / `replace` / `peek` / `showdown`（`open` 同义）；shop 阶段：`buy` / `sell` / `refresh` / `unlock_slot` / `shop_done` |
+| C | battle | action：`pick` / `rub` / `replace` / `peek` / `showdown`（`open` 同义）；shop 阶段：`buy` / `sell` / `refresh` / `unlock_slot` / `buy_skill` / `shop_done` |
 | S | ~~battle_update~~ | **已停发**（信息全在 match_update.duel 里） |
 
 `match_update` 要点：
@@ -108,7 +112,7 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 ## 代码
 
 - 编排（状态机/经济/商店/代管/事件）：`Card/Assets/Shared/Battle/PvpMatch.cs`（链接进 `src/Card.Battle`）
-- 轮次/配对/商店规则：`PvpSchedule.cs`、`PvpPairing.cs`、`PvpShopRules.cs`（同目录）
+- 轮次/配对/商店规则：`PvpSchedule.cs`、`PvpPairing.cs`、`PvpShopRules.cs`、`PvpSkillShop.cs`（同目录）
 - 1v1 桌：`PvpDuelTable.cs`（`Compare` 前回写两座当前技能剩余，供"技能全空加倍率"类圣物判定）
 - 房间宿主/连接/路由：`Server/src/Card.Server/Pvp/`（`PvpMatchHost`、`PvpWebSocketHost`、`PvpMessageRouter`、`PvpBusSubscriber`、`PvpTimeoutSweeper`、`PvpRewardService`、`PvpCombatSeats`）
 - Redis 队列/总线：`Server/src/Card.Infrastructure/Redis/RedisServices.cs`、`RedisPvpBus.cs`

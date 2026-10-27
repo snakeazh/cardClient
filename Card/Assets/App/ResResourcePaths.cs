@@ -97,6 +97,13 @@ namespace App.Resources
         public const string ItemBgAtlas = PlayItemAtlas;
         /// <summary>SpriteAtlas under Assets/Res/Altas/enemy.spriteatlasv2（源图 Assets/Res/Textures/enemy，sprite 名={Icon}_attack/_damage/_dead）。</summary>
         public const string EnemyAtlas = "Altas/enemy";
+        /// <summary>
+        /// SpriteAtlas under Assets/Res/Altas/pvphead.spriteatlasv2（源图 Assets/Res/Textures/pvphead）。
+        /// 英雄 sprite 名={HeroConfig.Icon}Avatar（如 People1Avatar）；怪物固定 <see cref="PvpMonsterAvatar"/>。
+        /// </summary>
+        public const string PvpHeadAtlas = "Altas/pvphead";
+        /// <summary>PVP 侧栏怪物头像 sprite 名（图集 <see cref="PvpHeadAtlas"/>）。</summary>
+        public const string PvpMonsterAvatar = "Monster1Avatar";
         /// <summary>SpriteAtlas under Assets/Res/Altas/Talent.spriteatlasv2（源图 Assets/Sprites/Talent，sprite 名=TalentConfig.Icon）。</summary>
         public const string TalentAtlas = "Altas/Talent";
         /// <summary>SpriteAtlas under Assets/Res/Altas/ShopNum.spriteatlasv2（源图 Assets/Sprites/shopNum，0-9 与 Slash）。</summary>
@@ -178,6 +185,25 @@ namespace App.Resources
             }
 
             return name + "_" + suffix.Trim();
+        }
+
+        /// <summary>
+        /// PVP 侧栏头像 sprite 名：怪物恒为 <see cref="PvpMonsterAvatar"/>；
+        /// 其余跟英雄 Icon，如 People1 → People1Avatar。
+        /// </summary>
+        public static string PvpHeadSpriteName(bool monster, string heroIcon)
+        {
+            if (monster)
+            {
+                return PvpMonsterAvatar;
+            }
+
+            if (string.IsNullOrWhiteSpace(heroIcon))
+            {
+                return null;
+            }
+
+            return heroIcon.Trim() + "Avatar";
         }
 
         public static string EnemyAttack(int index) => EnemySpriteName("enemy" + index, PortraitAttack);

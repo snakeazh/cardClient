@@ -147,7 +147,7 @@ namespace App.UI.Game.Director
 
             if (evt.Kind == PvpEventKinds.RoundStart)
             {
-                RequestDeal(evt.Round);
+                RequestDeal(evt.Round, _lastMatch, userId);
                 return;
             }
 
@@ -178,7 +178,7 @@ namespace App.UI.Game.Director
             {
                 var round = _dealPendingRound;
                 _dealPendingRound = 0;
-                RequestDeal(round);
+                RequestDeal(round, _lastMatch, _lastUserId);
             }
 
             if (_compareRetryOnDrain)
@@ -189,7 +189,7 @@ namespace App.UI.Game.Director
         }
 
         /// <summary>发牌：队列忙时只记轮次，等 pending 快照重放（新牌先写入座位）后再排 DealCommand，避免发牌动画发到旧牌。</summary>
-        private void RequestDeal(int round)
+        private void RequestDeal(int round, PvpMatchStateDto match = null, string userId = null)
         {
             if (round <= 0 || round == _dealtRound)
             {
@@ -204,7 +204,88 @@ namespace App.UI.Game.Director
 
             _compareEnqueued = false;
             _dealtRound = round;
+            EnqueueDealAndOpeningFx(match ?? _lastMatch, userId ?? _lastUserId);
+        }
+
+        /// <summary>发牌后播开局圣光/自伤（双方都会烧到自己时也要演）。</summary>
+        private void EnqueueDealAndOpeningFx(PvpMatchStateDto match, string userId)
+        {
+            SplitSeats(match, userId, out _, out var foe, out _);
+            var foeId = foe != null ? foe.UserId : string.Empty;
+            var fx = match != null ? match.HeroFx : null;
+            if (fx != null && fx.Length > 0)
+            {
+                _session.RewindPvpOpeningFx(fx, userId, foeId);
+            }
+
             _director.Enqueue(new DealCommand());
+            if (fx == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < fx.Length; i++)
+            {
+                var beat = fx[i];
+                if (beat == null ||
+                    beat.Damage <= 0 ||
+                    !string.Equals(beat.Phase, PvpHeroFxPhases.Opening, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(beat.Kind, PvpHeroFxKinds.MonsterChip, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (App.Net.PvpMatchSession.SameUser(beat.TargetUserId, userId))
+                    {
+                        _director.Enqueue(new SelfChipCommand(beat.Damage));
+                    }
+
+                    continue;
+                }
+
+                if (!string.Equals(beat.Kind, PvpHeroFxKinds.HolyLight, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var incoming = App.Net.PvpMatchSession.SameUser(beat.TargetUserId, userId);
+                var outgoing = App.Net.PvpMatchSession.SameUser(beat.CasterUserId, userId);
+                if (!incoming && !outgoing && !string.IsNullOrEmpty(beat.TargetUserId))
+                {
+                    continue;
+                }
+
+                // 打野怪：Target 为空且自己是施法者 → 出伤。
+                if (string.IsNullOrEmpty(beat.TargetUserId) && !outgoing)
+                {
+                    continue;
+                }
+
+                var heroId = beat.CasterHeroId > 0
+                    ? beat.CasterHeroId
+                    : ResolveHeroId(match, beat.CasterUserId);
+                _director.Enqueue(new HolyLightCommand(incoming, beat.Damage, heroId));
+            }
+        }
+
+        private static int ResolveHeroId(PvpMatchStateDto match, string userId)
+        {
+            var players = match != null ? match.Players : null;
+            if (players == null || string.IsNullOrEmpty(userId))
+            {
+                return 0;
+            }
+
+            for (var i = 0; i < players.Length; i++)
+            {
+                if (App.Net.PvpMatchSession.SameUser(players[i].UserId, userId))
+                {
+                    return players[i].HeroId;
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>比牌入队：最新快照已显示自己这桌摊牌才排；快照还压在 pending 里时等排空重试（settle 窗口内一定补排上）。</summary>
@@ -254,13 +335,13 @@ namespace App.UI.Game.Director
             {
                 _compareEnqueued = false;
                 _dealtRound = match.Round;
-                _director.Enqueue(new DealCommand());
+                EnqueueDealAndOpeningFx(match, userId);
             }
 
             _lastRound = match.Round;
         }
 
-        /// <summary>比牌序列：状态（扣血延后）→ 必要时补发牌 → 翻牌 → 攻击力跳动 → 撞击 → 应用真实 HP。</summary>
+        /// <summary>比牌序列：状态（扣血延后）→ 必要时补发牌 → 翻牌 → 对子圣光 → 主伤 → 追击 → 应用真实 HP。</summary>
         private void EnqueueCompare(PvpMatchStateDto match, string userId)
         {
             _compareEnqueued = true;
@@ -269,27 +350,45 @@ namespace App.UI.Game.Director
             if (match.Round > 0 && match.Round != _dealtRound)
             {
                 _dealtRound = match.Round;
-                _director.Enqueue(new DealCommand());
+                EnqueueDealAndOpeningFx(match, userId);
             }
 
             SplitSeats(match, userId, out var mine, out var foe, out var viewer);
             var playerWon = ResolvePlayerWon(match, mine, foe, viewer);
             var winScore = _session.EvaluateSeat(playerWon ? _session.Player : _session.Enemies[0]);
             var loseScore = _session.EvaluateSeat(playerWon ? _session.Enemies[0] : _session.Player);
-            var damage = ResolveDamage(match, mine, foe, playerWon, winScore);
-            // 挨打展示用：用权威 DuelDamage（可为 0），不要再用对手座位 Damage 把闪避盖成有伤。
-            var foeDamage = !playerWon ? damage : 0;
+            var total = ResolveDamage(match, mine, foe, playerWon, winScore);
+            var chase = Math.Max(0, match.DuelChaseDamage);
+            var holy = Math.Max(0, match.DuelHolyBurnDamage);
+            var main = match.DuelMainDamage > 0
+                ? match.DuelMainDamage
+                : Math.Max(0, total - chase - holy);
+            // 挨打展示用：主伤跳攻击数字（闪避为 0 则不改）。
+            var foeDamage = !playerWon ? main : 0;
 
             _director.Enqueue(new RevealCommand(playerWon));
-            // 出伤方不要在结算链前把攻击数字改成最终伤害，否则圣物分项演出会从终值起跳。
-            // 挨打时对手攻击跳到服务端伤害即可（闪避为 0 则不改，避免露出假伤害）。
             if (!playerWon && foeDamage > 0)
             {
                 _director.Enqueue(new SetAttackCommand(false, foeDamage));
             }
 
             _director.Enqueue(new WaitCommand(0.4f));
-            _director.Enqueue(new AttackCommand(!playerWon, damage, winScore.Type, winScore.Label, loseScore.Label));
+            // 对子圣光对齐 PVE：先燃烧再近战，不能排在 Attack 后面。
+            if (holy > 0)
+            {
+                var casterId = playerWon ? userId : (foe != null ? foe.UserId : string.Empty);
+                var incoming = !playerWon;
+                var heroId = ResolveHeroId(match, casterId);
+                _director.Enqueue(new HolyLightCommand(incoming, holy, heroId));
+            }
+
+            _director.Enqueue(new AttackCommand(!playerWon, main, winScore.Type, winScore.Label, loseScore.Label));
+            if (chase > 0)
+            {
+                _director.Enqueue(new WaitCommand(0.15f));
+                _director.Enqueue(new AttackCommand(!playerWon, chase, winScore.Type, winScore.Label, loseScore.Label));
+            }
+
             _director.Enqueue(new ActionCommand(() => _session.ApplyPvpState(match, userId)));
         }
 

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using App.Atlas;
 using App.Bootstrap;
 using App.Config;
+using CardShare.Contracts;
 using CardShare.Contracts.Config;
 using App.Game;
 using App.Guide;
@@ -72,6 +73,49 @@ namespace App.UI.Popup
 
         /// <summary>买槽格是否显示金币价格：PVP 花金币显示，PVE 看广告解锁隐藏。</summary>
         public bool BuySlotShowsPrice => Session.IsPvp;
+
+        /// <summary>PVP 商店专属技能补充入口是否可用（PVE 没有 PVPShop 变体）。</summary>
+        public bool ShowPvpSkills => Session.IsPvp;
+
+        /// <summary>技能名，下标 = <see cref="PvpSkillIds"/>。</summary>
+        public static string PvpSkillName(int skillId)
+        {
+            switch (skillId)
+            {
+                case PvpSkillIds.Rub:
+                    return "搓牌";
+                case PvpSkillIds.Replace:
+                    return "替换";
+                case PvpSkillIds.Peek:
+                    return "透视";
+                default:
+                    return "技能";
+            }
+        }
+
+        /// <summary>
+        /// PVP 技能按钮文案：名称 + 下一轮次数/上限。商店买到的次数下一轮才生效，
+        /// 所以两个数都按「下一轮开始时」算，买一次两个数一起 +1。
+        /// </summary>
+        public string FormatPvpSkillText(int skillId)
+        {
+            var skill = Session.GetPvpShopSkill(skillId);
+            if (skill == null)
+            {
+                return PvpSkillName(skillId);
+            }
+
+            return $"{PvpSkillName(skillId)}({skill.Max}/{skill.Max})";
+        }
+
+        /// <summary>下一次购买的金币价；非商店阶段为 0。</summary>
+        public int PvpSkillPrice(int skillId)
+        {
+            var skill = Session.GetPvpShopSkill(skillId);
+            return skill != null ? skill.Price : 0;
+        }
+
+        public bool CanBuyPvpSkill(int skillId) => Session.CanBuyPvpSkill(skillId);
 
         /// <summary>PVP 商店剩余秒数，与局内 timeValue 同一倒计时。</summary>
         public GameTableViewModel Table => _ui.FindOpen<GameTableViewModel>();
@@ -148,16 +192,17 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
-        private static async void TryStartShopGuide()
+        private async void TryStartShopGuide()
         {
-            if (!AppServices.IsReady)
+            // PVP 商店不跑 FirstShop。
+            if (Session.IsPvp || !AppServices.IsReady)
             {
                 return;
             }
 
             // 等一帧让 sellHor / 货架完成布局后再开引导，否则 Target 矩形为空。
             await Task.Yield();
-            if (!AppServices.IsReady)
+            if (Session.IsPvp || !AppServices.IsReady)
             {
                 return;
             }
@@ -236,6 +281,34 @@ namespace App.UI.Popup
                 {
                     Toast.Show(Session.Hint);
                 }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+        }
+
+        /// <summary>
+        /// PVP 商店：花金币补充一次技能次数。服务端权威，买到的次数下一轮开始生效，
+        /// 所以店里只改「下一轮上限」的显示，不改当前手上剩余。
+        /// </summary>
+        public async void BuyPvpSkill(int skillId)
+        {
+            try
+            {
+                var name = PvpSkillName(skillId);
+                if (!await Session.TryBuyPvpSkillAsync(skillId))
+                {
+                    if (!string.IsNullOrEmpty(Session.Hint))
+                    {
+                        Toast.Show(Session.Hint);
+                    }
+
+                    return;
+                }
+
+                var skill = Session.GetPvpShopSkill(skillId);
+                Toast.Show(skill != null ? $"下一轮{name} {skill.Max} 次" : $"{name}次数 +1");
             }
             catch (Exception ex)
             {

@@ -64,6 +64,7 @@ namespace CardShare.Battle
             }
 
             var roomId = match.RoomId.ToString("N");
+            var heroFx = ProjectHeroFx(own);
             return new PvpMatchStateDto
             {
                 RoomId = roomId,
@@ -77,12 +78,64 @@ namespace CardShare.Battle
                 Duels = summaries,
                 Duel = own == null ? null : own.ViewFor(userId, roomId),
                 DuelDamage = own == null || !own.HpApplied ? 0 : own.AppliedDamage,
+                DuelMainDamage = own == null || !own.HpApplied ? 0 : own.AppliedMainDamage,
+                DuelChaseDamage = own == null || !own.HpApplied ? 0 : own.AppliedChaseDamage,
+                DuelHolyBurnDamage = own == null || !own.HpApplied ? 0 : own.AppliedHolyBurnDamage,
+                HeroFx = heroFx,
                 PhaseDeadlineUtcMs = match.PhaseDeadlineUtcMs,
                 ServerNowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 StateVersion = match.StateVersion,
                 Events = CopyEvents(match.PendingEvents),
                 Shop = ProjectShop(tables, match.Phase, FighterOf(match, userId))
             };
+        }
+
+        private static PvpHeroFxDto[] ProjectHeroFx(PvpDuelTable? own)
+        {
+            if (own == null)
+            {
+                return Array.Empty<PvpHeroFxDto>();
+            }
+
+            var list = new List<PvpHeroFxDto>(own.OpeningFx.Count + 2);
+            for (var i = 0; i < own.OpeningFx.Count; i++)
+            {
+                list.Add(own.OpeningFx[i]);
+            }
+
+            if (own.HpApplied)
+            {
+                if (own.AppliedChaseDamage > 0)
+                {
+                    list.Add(new PvpHeroFxDto
+                    {
+                        Kind = PvpHeroFxKinds.ExtraAttack,
+                        Phase = PvpHeroFxPhases.Chase,
+                        Damage = own.AppliedChaseDamage
+                    });
+                }
+
+                if (own.AppliedHolyBurnDamage > 0)
+                {
+                    var winner = own.AppliedWinner;
+                    var casterId = winner == 0 ? own.LeftUserId : winner == 1 && !own.VsMonster && !own.VsMirror
+                        ? own.RightUserId
+                        : own.LeftUserId;
+                    var targetId = winner == 0
+                        ? (own.VsMonster || own.VsMirror ? string.Empty : own.RightUserId)
+                        : own.LeftUserId;
+                    list.Add(new PvpHeroFxDto
+                    {
+                        Kind = PvpHeroFxKinds.HolyLight,
+                        Phase = PvpHeroFxPhases.Pair,
+                        CasterUserId = casterId,
+                        TargetUserId = targetId,
+                        Damage = own.AppliedHolyBurnDamage
+                    });
+                }
+            }
+
+            return list.Count == 0 ? Array.Empty<PvpHeroFxDto>() : list.ToArray();
         }
 
         public static PvpShopStateDto? ProjectShop(IGameTables tables, string phase, PvpFighter? fighter)
@@ -95,7 +148,7 @@ namespace CardShare.Battle
             var offerPrices = new int[fighter.ShopOfferIds.Count];
             for (var i = 0; i < offerPrices.Length; i++)
             {
-                offerPrices[i] = tables.TryGetRelic(fighter.ShopOfferIds[i], out var relic)
+                offerPrices[i] = tables.TryGetPvpRelic(fighter.ShopOfferIds[i], out var relic)
                     ? PvpShopRules.BuyPrice(tables, fighter.Combat.HeroId, relic)
                     : 0;
             }
@@ -106,7 +159,7 @@ namespace CardShare.Battle
             {
                 var power = PvpRelicBag.PowerAt(fighter, i);
                 ownedPower[i] = power;
-                ownedSellPrices[i] = tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic)
+                ownedSellPrices[i] = tables.TryGetPvpRelic(fighter.OwnedRelicIds[i], out var relic)
                     ? PvpShopRules.SellPrice(relic) * power
                     : 0;
             }
@@ -122,8 +175,27 @@ namespace CardShare.Battle
                 OwnedSellPrices = ownedSellPrices,
                 RelicSlots = fighter.RelicSlots,
                 NextSlotCost = PvpRelicBag.NextSlotCost(tables.GameConst, fighter.RelicSlots),
+                Skills = ProjectSkills(tables, fighter),
                 Done = fighter.ShopDone
             };
+        }
+
+        /// <summary>三个技能的补充次数入口：下一口价、当前剩余、下一轮上限（含已购）。</summary>
+        private static PvpShopSkillDto[] ProjectSkills(IGameTables tables, PvpFighter fighter)
+        {
+            var skills = new PvpShopSkillDto[PvpSkillIds.Count];
+            for (var i = 0; i < skills.Length; i++)
+            {
+                skills[i] = new PvpShopSkillDto
+                {
+                    Id = i,
+                    Price = PvpSkillShop.Price(fighter, i),
+                    Left = PvpSkillShop.Left(fighter, i),
+                    Max = PvpSkillShop.Max(tables, fighter, i)
+                };
+            }
+
+            return skills;
         }
 
         private static PvpFighter? FighterOf(PvpMatch match, string userId)

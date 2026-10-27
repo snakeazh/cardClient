@@ -21,6 +21,12 @@ namespace App.Game
 
         bool BeginPvpAttack(bool incoming, int damage, HandType winType, string winLabel, string loseLabel);
 
+        /// <summary>PVP 圣光燃烧演出：incoming=对方烧我。伤害为服务端权威值。</summary>
+        bool BeginPvpHolyLight(bool incoming, int damage, int casterHeroId);
+
+        /// <summary>PVP 开局自伤（萨满等）：只飘字扣自己，无施法特效。</summary>
+        bool BeginPvpSelfChip(int damage);
+
         void SetPvpAttackDisplay(bool playerSide, int value);
     }
 }

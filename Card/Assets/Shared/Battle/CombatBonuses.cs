@@ -234,9 +234,9 @@ namespace CardShare.Battle
                 CritMultiplier = panel.CritMultiplier
                     + SumRelicEntry(tables, relicIds, MechanismType.CritDamageUp),
                 FlatDamageAdd = (int)Math.Round(SumRelicEntry(tables, relicIds, MechanismType.FlatDamage)),
-                // 追击概率 = 天赋 ProOfExtraAttack + 英雄 ExtraAttackOneTime，求和后由 CombatDamage 掷一次（PVE RollCombined 语义）。
-                ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack)
-                    + (hero != null ? PvpHeroRuntime.ExtraAttackChance(tables, hero) : 0f),
+                // 天赋追击：出伤公式内 +10%（CombatDamage.ExtraAttackDamageRatio）。
+                // 英雄 ExtraAttackOneTime 在 PvpMatch.ApplyDuelDamage 打完整第二刀，不走这里。
+                ExtraAttackChance = SumTalent(tables, talents, MechanismType.ProOfExtraAttack),
                 ExtraAttackDamageRatio = ExtraAttackDamageRatio,
                 CanExecute = !situation.DefenderIsPlayer &&
                              !situation.DefenderIsBoss &&

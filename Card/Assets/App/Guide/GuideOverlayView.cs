@@ -22,6 +22,9 @@ namespace App.Guide
         private const float BoardCardHoleExpandXy = 40f;
         /// <summary>UI 目标挖孔：宽高各 +10（每边 +5）。</summary>
         private const float UiHoleExpandXy = 10f;
+        /// <summary>横排技能栏挖孔：水平多扩一点，盖住三按钮间距。</summary>
+        private const float SkillBarHoleExpandX = 24f;
+        private const float SkillBarHoleExpandY = 12f;
         private const float ChatWidth = 945f;
         private const float ChatMinHeight = 406f;
         /// <summary>提示框与挖孔边缘的间距。</summary>
@@ -91,28 +94,38 @@ namespace App.Guide
                 return;
             }
 
-            // 局内卡牌 / UI 分开扩边。
-            float expandXy;
-            if (IsBoardCardTarget(targetId))
+            // 局内卡牌 / UI / 横排技能栏分开扩边。
+            if (IsSkillBarGuideTarget(targetId))
             {
-                expandXy = BoardCardHoleExpandXy;
-            }
-            else if (isUi)
-            {
-                expandXy = UiHoleExpandXy;
+                hole.xMin -= SkillBarHoleExpandX * 0.5f;
+                hole.xMax += SkillBarHoleExpandX * 0.5f;
+                hole.yMin -= SkillBarHoleExpandY * 0.5f;
+                hole.yMax += SkillBarHoleExpandY * 0.5f;
             }
             else
             {
-                expandXy = 0f;
-            }
+                float expandXy;
+                if (IsBoardCardTarget(targetId))
+                {
+                    expandXy = BoardCardHoleExpandXy;
+                }
+                else if (isUi)
+                {
+                    expandXy = UiHoleExpandXy;
+                }
+                else
+                {
+                    expandXy = 0f;
+                }
 
-            if (expandXy > 0f)
-            {
-                var half = expandXy * 0.5f;
-                hole.xMin -= half;
-                hole.yMin -= half;
-                hole.xMax += half;
-                hole.yMax += half;
+                if (expandXy > 0f)
+                {
+                    var half = expandXy * 0.5f;
+                    hole.xMin -= half;
+                    hole.yMin -= half;
+                    hole.xMax += half;
+                    hole.yMax += half;
+                }
             }
 
             _hole = hole;
@@ -193,29 +206,32 @@ namespace App.Guide
             if (_hasHole)
             {
                 // 紧贴挖孔：优先上方，放不下再下方；始终挨着挖孔，不要甩到屏幕对侧。
+                // 技能栏横排贴底：强制优先上方，避免旧竖排逻辑把对话框甩到左右。
                 x = Mathf.Clamp(_hole.center.x, r.xMin + halfW + edgePad, r.xMax - halfW - edgePad);
                 var above = _hole.yMax + halfH + ChatHoleGap;
                 var below = _hole.yMin - halfH - ChatHoleGap;
+                var skillBar = IsSkillBarGuideTarget(ViewModel.TargetId.Value);
                 if (above + halfH <= r.yMax - edgePad)
                 {
                     y = above;
                 }
-                else if (below - halfH >= r.yMin + edgePad)
+                else if (!skillBar && below - halfH >= r.yMin + edgePad)
                 {
                     y = below;
                 }
                 else
                 {
                     // 上下都挤：夹在挖孔与屏幕边缘之间，仍靠近挖孔。
+                    // 横排技能栏贴底：只往上夹，不落到按钮下方。
                     y = Mathf.Clamp(above, r.yMin + halfH + edgePad, r.yMax - halfH - edgePad);
-                    if (ChatOverlapsHole(x, y, halfW, halfH))
+                    if (!skillBar && ChatOverlapsHole(x, y, halfW, halfH))
                     {
                         y = Mathf.Clamp(below, r.yMin + halfH + edgePad, r.yMax - halfH - edgePad);
                     }
                 }
 
-                // 仍与挖孔重叠时挪到左右空档。
-                if (ChatOverlapsHole(x, y, halfW, halfH))
+                // 仍与挖孔重叠时挪到左右空档（横排技能栏跳过：左右会挡手牌/操作区）。
+                if (!skillBar && ChatOverlapsHole(x, y, halfW, halfH))
                 {
                     var leftX = _hole.xMin - halfW - ChatHoleGap;
                     var rightX = _hole.xMax + halfW + ChatHoleGap;
@@ -254,6 +270,13 @@ namespace App.Guide
         {
             return !string.IsNullOrEmpty(targetId) &&
                    targetId.StartsWith("Shop.", StringComparison.Ordinal);
+        }
+
+        /// <summary>横排技能栏（整条 / 搓牌按钮）挖孔。</summary>
+        private static bool IsSkillBarGuideTarget(string targetId)
+        {
+            return string.Equals(targetId, GuideTargetIds.SkillButtons, StringComparison.Ordinal) ||
+                   string.Equals(targetId, GuideTargetIds.PeekGood, StringComparison.Ordinal);
         }
 
         private bool IsPeekTipCloseStep()

@@ -810,6 +810,46 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void PvpPoolUsesOnlyPvpRelicTable()
+    {
+        var pveRelic = new RelicConfig
+        {
+            Id = 7,
+            Name = "仅PVE",
+            Type = QualityType.Ordinary,
+            Price = 10,
+            SellingPrice = 4,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>()
+        };
+        var pvpRelic = new PvpRelicConfig
+        {
+            Id = 8,
+            Name = "仅PVP",
+            Type = QualityType.Ordinary,
+            Price = 99,
+            SellingPrice = 40,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>()
+        };
+
+        // 显式空 PVP 表：有 RelicConfig 也不进 PVP 池。
+        var emptyPvp = PvpTestTables.WithPvpRelics(
+            new[] { pveRelic },
+            Array.Empty<PvpRelicConfig>());
+        Assert.Empty(emptyPvp.PvpRelics);
+        Assert.False(emptyPvp.TryGetPvpRelic(7, out _));
+        Assert.Equal(0, PvpRelicStock.Create(emptyPvp).Available(7));
+
+        var onlyPvp = PvpTestTables.WithPvpRelics(new[] { pveRelic }, new[] { pvpRelic });
+        Assert.False(onlyPvp.TryGetPvpRelic(7, out _));
+        Assert.True(onlyPvp.TryGetPvpRelic(8, out var fromPvp));
+        Assert.Equal(99, fromPvp.Price);
+        Assert.Single(onlyPvp.PvpRelics);
+        Assert.Equal(6, PvpRelicStock.Create(onlyPvp).Available(8));
+    }
+
+    [Fact]
     public void SharedStockFollowsQualityAndReturnsOnSell()
     {
         var relic = new RelicConfig
@@ -939,6 +979,55 @@ public class PvpMatchTests
         Assert.Equal(5, match.ViewFor(fighter.UserId).Shop!.RelicSlots);
         match.Act(fighter.UserId, "buy", onSale, Array.Empty<int>());
         Assert.Equal(5, fighter.OwnedRelicIds.Count);
+    }
+
+    [Fact]
+    public void BuySkillChargesGoldAndTakesEffectAtNextRoundStart()
+    {
+        var tables = PvpTestTables.Classic();
+        var match = Open(tables, hp: 5000);
+        var fighter = match.Fighters[0];
+        EnterShopPhase(match);
+
+        var gold = fighter.Gold;
+        var leftBefore = fighter.RubLeft;
+        var price = PvpSkillShop.Price(fighter, PvpSkillIds.Rub);
+        Assert.Equal(PvpSkillShop.RubBaseGold, price);
+
+        match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Rub, Array.Empty<int>());
+        Assert.Equal(gold - price, fighter.Gold);
+        // 商店里不动手上剩余，只记下一轮待生效次数。
+        Assert.Equal(leftBefore, fighter.RubLeft);
+        Assert.Equal(1, fighter.PendingRub);
+
+        var shop = match.ViewFor(fighter.UserId).Shop!;
+        var rub = shop.Skills.Single(s => s.Id == PvpSkillIds.Rub);
+        Assert.Equal(leftBefore, rub.Left);
+        Assert.Equal(PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1, rub.Max);
+        // 第二口涨价。
+        Assert.Equal(price + PvpSkillShop.StepGold, rub.Price);
+
+        // 金币不足 / 技能 Id 非法都由服务端拒绝。
+        fighter.Gold = 0;
+        Assert.Throws<InvalidOperationException>(
+            () => match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Peek, Array.Empty<int>()));
+        Assert.Throws<InvalidOperationException>(
+            () => match.Act(fighter.UserId, "buy_skill", 99, Array.Empty<int>()));
+
+        var expectedRub = PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1;
+        foreach (var f in match.Fighters)
+        {
+            if (!f.ShopDone)
+            {
+                match.Act(f.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(expectedRub, fighter.RubLeft);
+        Assert.Equal(0, fighter.PendingRub);
+        // 已购计数保留，后续商店继续按递增价卖。
+        Assert.Equal(1, fighter.BoughtRub);
     }
 
     private static void EnterShopPhase(PvpMatch match)
@@ -1773,6 +1862,35 @@ internal static class PvpTestTables
             talentEntries: talentEntries);
     }
 
+    /// <summary>圣骑士（Id=8）：承伤-25%、圣光燃烧、无法闪避。与正式表口径一致。</summary>
+    public static GameTables WithPaladin(bool pvpOnly = true)
+    {
+        var heroes = new[]
+        {
+            new HeroConfig { Id = 1, HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = Array.Empty<int>() },
+            new HeroConfig
+            {
+                Id = 8,
+                Name = "圣骑士",
+                HeroDamage = 30,
+                Hp = 260,
+                Critical = 0f,
+                CriticalDamage = 2f,
+                HeroEntryId = new[] { 801, 802, 803 }
+            }
+        };
+        var heroEntries = new[]
+        {
+            new HeroEntryConfig { Id = 801, Type = MechanismType.HeroTakeDamagePer, Value = new[] { -0.25f } },
+            new HeroEntryConfig { Id = 802, Type = MechanismType.HolyLightBurning, Value = new[] { 1f, 0.5f, 0.1f } },
+            new HeroEntryConfig { Id = 803, Type = MechanismType.UnableMissing, Value = Array.Empty<float>() }
+        };
+        var rounds = pvpOnly
+            ? new[] { Round(1, 1, PvpFightKind.Pvp, 0, 15) }
+            : ClassicRounds();
+        return Build(rounds, heroes: heroes, heroEntries: heroEntries);
+    }
+
     /// <summary>带英雄词条的表：2 吸血鬼（承伤-25%）、3 商人（初始金 80 / 买价-20% / 过关金+20%）、
     /// 4 武僧（100% 闪避 + 反击 攻击×200%）、5 狂战士（吸血 50%）、6 射手（追击 35%）；天赋 500 追击 25%。
     /// pvpOnly 时只配一个 PVP 轮，方便直接构造玩家对玩家结算。</summary>
@@ -1850,6 +1968,18 @@ internal static class PvpTestTables
         BindingConfig[]? bindings = null)
         => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries, bindings: bindings);
 
+    public static GameTables WithPvpRelics(
+        RelicConfig[] relics,
+        PvpRelicConfig[] pvpRelics,
+        RelicEntryConfig[]? relicEntries = null,
+        PvpRelicEntryConfig[]? pvpRelicEntries = null)
+        => Build(
+            ClassicRounds(),
+            relics: relics,
+            relicEntries: relicEntries,
+            pvpRelics: pvpRelics,
+            pvpRelicEntries: pvpRelicEntries);
+
     internal static RelicConfig BondRelic(int id)
         => new RelicConfig
         {
@@ -1882,7 +2012,9 @@ internal static class PvpTestTables
         IReadOnlyList<HeroEntryConfig>? heroEntries = null,
         IReadOnlyList<TalentConfig>? talentRows = null,
         IReadOnlyList<TalentEntryConfig>? talentEntries = null,
-        IReadOnlyList<BindingConfig>? bindings = null)
+        IReadOnlyList<BindingConfig>? bindings = null,
+        IReadOnlyList<PvpRelicConfig>? pvpRelics = null,
+        IReadOnlyList<PvpRelicEntryConfig>? pvpRelicEntries = null)
     {
         var fallback = GameTables.Fallback();
         return new GameTables(
@@ -1939,6 +2071,9 @@ internal static class PvpTestTables
                 }
             },
             rounds,
-            bindings: bindings);
+            bindings: bindings,
+            // 测试夹具：未显式给 PvpRelic 时，从本用例的 Relic 行合成进 PVP 通道（生产路径不回落 RelicConfig）。
+            pvpRelics: pvpRelics ?? PvpTableHarness.Relics(relics ?? fallback.Relics),
+            pvpRelicEntries: pvpRelicEntries ?? PvpTableHarness.Entries(relicEntries ?? fallback.RelicEntries));
     }
 }

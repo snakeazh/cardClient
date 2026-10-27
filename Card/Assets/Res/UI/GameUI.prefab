@@ -2748,7 +2748,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2377335564216898382}
   - component: {fileID: 2725516737711971231}
-  - component: {fileID: 8161447917349016247}
+  - component: {fileID: 4376331893601613737}
   m_Layer: 5
   m_Name: horBtns2
   m_TagString: Untagged
@@ -2773,11 +2773,11 @@ RectTransform:
   - {fileID: 4830435037020313601}
   m_Father: {fileID: 7508200855348884929}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 5, y: 77.283}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 32.32}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &2725516737711971231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2792,7 +2792,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 2
---- !u!114 &8161447917349016247
+--- !u!114 &4376331893601613737
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2801,7 +2801,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3333958220923332636}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
@@ -2809,10 +2809,10 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 0
-  m_Spacing: -24.05
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildAlignment: 4
+  m_Spacing: 12
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
@@ -3375,15 +3375,14 @@ RectTransform:
   - {fileID: 2188539619496450751}
   - {fileID: 4804076599835619534}
   - {fileID: 4318337684875131380}
-  - {fileID: 6791805439757419340}
   - {fileID: 2865982226241910373}
   - {fileID: 1705802685180051023}
   - {fileID: 5740750878044241023}
-  - {fileID: 7893528758559148738}
   - {fileID: 8526415928913239330}
   - {fileID: 944001151017332155}
   - {fileID: 2377335564216898382}
   - {fileID: 586121247419418089}
+  - {fileID: 6791805439757419340}
   - {fileID: 4376350362017153905}
   - {fileID: 770622972992532169}
   - {fileID: 8577972264326331579}
@@ -3394,6 +3393,7 @@ RectTransform:
   - {fileID: 2342778043165058413}
   - {fileID: 3827116637919734106}
   - {fileID: 891805050923338551}
+  - {fileID: 7893528758559148738}
   - {fileID: 6872940160032074760}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -7838,7 +7838,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -818}
+  m_AnchoredPosition: {x: 0, y: -625.7}
   m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4606685890903076423

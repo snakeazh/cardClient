@@ -32,7 +32,9 @@ namespace App.Config
                 Rows(PvpModeConfig.All),
                 Rows(PvpRoundConfig.All),
                 Rows(PvpBotConfig.All),
-                Rows(BindingConfig.All));
+                Rows(BindingConfig.All),
+                Rows(PvpRelicConfig.All),
+                Rows(PvpRelicEntryConfig.All));
             Current = tables;
             return tables;
         }

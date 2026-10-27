@@ -64,14 +64,14 @@ namespace CardShare.Battle
             var chance = 0f;
             for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
             {
-                if (!tables.TryGetRelic(fighter.OwnedRelicIds[i], out var owned) || owned.MechanismId == null)
+                if (!tables.TryGetPvpRelic(fighter.OwnedRelicIds[i], out var owned) || owned.MechanismId == null)
                 {
                     continue;
                 }
 
                 for (var j = 0; j < owned.MechanismId.Length; j++)
                 {
-                    if (tables.TryGetRelicEntry(owned.MechanismId[j], out var entry) &&
+                    if (tables.TryGetPvpRelicEntry(owned.MechanismId[j], out var entry) &&
                         entry.Type == MechanismType.ShopRareGuarantee &&
                         entry.Value != null &&
                         entry.Value.Length > 0)
@@ -88,7 +88,7 @@ namespace CardShare.Battle
 
             for (var i = 0; i < fighter.ShopOfferIds.Count; i++)
             {
-                if (tables.TryGetRelic(fighter.ShopOfferIds[i], out var onShelf) &&
+                if (tables.TryGetPvpRelic(fighter.ShopOfferIds[i], out var onShelf) &&
                     onShelf.Type >= QualityType.Rare)
                 {
                     return;
@@ -132,9 +132,10 @@ namespace CardShare.Battle
         {
             var unlocked = new HashSet<int>(fighter.ShopPoolIds);
             var pool = new List<RelicConfig>();
-            for (var i = 0; i < tables.Relics.Count; i++)
+            var relics = tables.PvpRelics;
+            for (var i = 0; i < relics.Count; i++)
             {
-                var relic = tables.Relics[i];
+                var relic = relics[i];
                 if (relic.Id <= 0 || relic.RefreshProbability <= 0f)
                 {
                     continue;

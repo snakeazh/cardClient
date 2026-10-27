@@ -148,7 +148,7 @@ namespace CardShare.Battle
             var offerPrices = new int[fighter.ShopOfferIds.Count];
             for (var i = 0; i < offerPrices.Length; i++)
             {
-                offerPrices[i] = tables.TryGetRelic(fighter.ShopOfferIds[i], out var relic)
+                offerPrices[i] = tables.TryGetPvpRelic(fighter.ShopOfferIds[i], out var relic)
                     ? PvpShopRules.BuyPrice(tables, fighter.Combat.HeroId, relic)
                     : 0;
             }
@@ -159,7 +159,7 @@ namespace CardShare.Battle
             {
                 var power = PvpRelicBag.PowerAt(fighter, i);
                 ownedPower[i] = power;
-                ownedSellPrices[i] = tables.TryGetRelic(fighter.OwnedRelicIds[i], out var relic)
+                ownedSellPrices[i] = tables.TryGetPvpRelic(fighter.OwnedRelicIds[i], out var relic)
                     ? PvpShopRules.SellPrice(relic) * power
                     : 0;
             }

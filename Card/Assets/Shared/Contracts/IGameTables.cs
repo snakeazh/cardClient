@@ -19,6 +19,9 @@ namespace CardShare.Contracts
 
         IReadOnlyList<RelicConfig> Relics { get; }
 
+        /// <summary>PVP 圣物池，只来自 <c>PvpRelicConfig</c>，不回落 <see cref="Relics"/>。</summary>
+        IReadOnlyList<RelicConfig> PvpRelics { get; }
+
         IReadOnlyList<UnlockConditionConfig> UnlockConditions { get; }
 
         IReadOnlyList<TalentConfig> TalentRows { get; }
@@ -32,6 +35,9 @@ namespace CardShare.Contracts
         IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
 
         IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
+
+        /// <summary>PVP 圣物机制条目，只来自 <c>PvpRelicEntryConfig</c>，不回落 <see cref="RelicEntries"/>。</summary>
+        IReadOnlyList<RelicEntryConfig> PvpRelicEntries { get; }
 
         IReadOnlyList<MonsterGroupConfig> MonsterGroups { get; }
 
@@ -51,6 +57,9 @@ namespace CardShare.Contracts
 
         bool TryGetRelic(int id, out RelicConfig relic);
 
+        /// <summary>PVP 专用：只查 <c>PvpRelicConfig</c>。</summary>
+        bool TryGetPvpRelic(int id, out RelicConfig relic);
+
         bool TryGetHero(int id, out HeroConfig hero);
 
         bool TryGetHeroEntry(int id, out HeroEntryConfig entry);
@@ -58,6 +67,9 @@ namespace CardShare.Contracts
         bool TryGetTalentEntry(int id, out TalentEntryConfig entry);
 
         bool TryGetRelicEntry(int id, out RelicEntryConfig entry);
+
+        /// <summary>PVP 专用：只查 <c>PvpRelicEntryConfig</c>。</summary>
+        bool TryGetPvpRelicEntry(int id, out RelicEntryConfig entry);
 
         bool TryGetMonsterGroup(int id, out MonsterGroupConfig group);
 

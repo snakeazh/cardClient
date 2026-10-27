@@ -84,9 +84,9 @@ internal static class PvpCombatSeats
     private static int[] DefaultRelicIds(IGameTables tables)
     {
         var ids = new List<int>();
-        foreach (var relic in tables.Relics)
+        foreach (var relic in tables.PvpRelics)
         {
-            if (relic.Id > 0 && relic.UnlockConditionId <= 0)
+            if (relic.Id > 0)
             {
                 ids.Add(relic.Id);
             }

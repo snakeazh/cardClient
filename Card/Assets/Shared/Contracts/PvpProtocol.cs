@@ -38,6 +38,9 @@ namespace CardShare.Contracts
         public const string PlayerOffline = "player_offline";
         public const string PlayerOnline = "player_online";
         public const string MatchFinished = "match_finished";
+
+        /// <summary>开局英雄特效已结算（圣光/自伤等），Value=本桌节拍数；客户端跟快照 HeroFx 播演出。</summary>
+        public const string HeroFx = "hero_fx";
     }
 
     /// <summary>PvP match_update 的 phase 取值。PvpMatch.PhaseXxx 常量引用此处，保持单一来源。</summary>

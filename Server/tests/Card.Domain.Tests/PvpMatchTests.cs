@@ -1773,6 +1773,35 @@ internal static class PvpTestTables
             talentEntries: talentEntries);
     }
 
+    /// <summary>圣骑士（Id=8）：承伤-25%、圣光燃烧、无法闪避。与正式表口径一致。</summary>
+    public static GameTables WithPaladin(bool pvpOnly = true)
+    {
+        var heroes = new[]
+        {
+            new HeroConfig { Id = 1, HeroDamage = 10, Hp = 100, Critical = 0f, CriticalDamage = 2f, HeroEntryId = Array.Empty<int>() },
+            new HeroConfig
+            {
+                Id = 8,
+                Name = "圣骑士",
+                HeroDamage = 30,
+                Hp = 260,
+                Critical = 0f,
+                CriticalDamage = 2f,
+                HeroEntryId = new[] { 801, 802, 803 }
+            }
+        };
+        var heroEntries = new[]
+        {
+            new HeroEntryConfig { Id = 801, Type = MechanismType.HeroTakeDamagePer, Value = new[] { -0.25f } },
+            new HeroEntryConfig { Id = 802, Type = MechanismType.HolyLightBurning, Value = new[] { 1f, 0.5f, 0.1f } },
+            new HeroEntryConfig { Id = 803, Type = MechanismType.UnableMissing, Value = Array.Empty<float>() }
+        };
+        var rounds = pvpOnly
+            ? new[] { Round(1, 1, PvpFightKind.Pvp, 0, 15) }
+            : ClassicRounds();
+        return Build(rounds, heroes: heroes, heroEntries: heroEntries);
+    }
+
     /// <summary>带英雄词条的表：2 吸血鬼（承伤-25%）、3 商人（初始金 80 / 买价-20% / 过关金+20%）、
     /// 4 武僧（100% 闪避 + 反击 攻击×200%）、5 狂战士（吸血 50%）、6 射手（追击 35%）；天赋 500 追击 25%。
     /// pvpOnly 时只配一个 PVP 轮，方便直接构造玩家对玩家结算。</summary>

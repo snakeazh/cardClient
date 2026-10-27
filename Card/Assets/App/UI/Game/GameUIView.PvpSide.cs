@@ -375,9 +375,7 @@ namespace App.UI
                 }
 
                 var entry = _pvpRoleEntries[i];
-                var portrait = entry.Monster
-                    ? PortraitLoader.GetEnemy(entry.Icon, entry.Hp, entry.MaxHp)
-                    : PortraitLoader.GetRole(entry.Icon, entry.Hp, entry.MaxHp);
+                var portrait = PortraitLoader.GetPvpHead(entry.Monster, entry.Icon);
                 var icon = FindDeep(slot, "icon");
                 var image = icon != null ? icon.GetComponent<Image>() : null;
                 if (image != null)
@@ -821,21 +819,7 @@ namespace App.UI
 
         private async Task LoadPvpSideArt(int serial)
         {
-            var icons = new List<string>(_pvpRoleEntries.Count);
-            for (var i = 0; i < _pvpRoleEntries.Count; i++)
-            {
-                if (!_pvpRoleEntries[i].Monster)
-                {
-                    icons.Add(_pvpRoleEntries[i].Icon);
-                }
-            }
-
-            await PortraitLoader.EnsureRoleStatesAsync(icons);
-            if (!_pvpSideAlive || serial != _pvpSideSerial)
-            {
-                return;
-            }
-
+            // PVP 侧栏头像在 pvphead 图集，启动已预载；这里只刷 UI 并补羁绊 Battle 图标。
             ApplyPvpRoles();
             for (var i = 0; i < _bondHolds.Count; i++)
             {

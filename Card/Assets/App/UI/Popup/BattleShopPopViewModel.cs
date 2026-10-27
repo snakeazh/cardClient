@@ -148,16 +148,17 @@ namespace App.UI.Popup
             return Task.CompletedTask;
         }
 
-        private static async void TryStartShopGuide()
+        private async void TryStartShopGuide()
         {
-            if (!AppServices.IsReady)
+            // PVP 商店不跑 FirstShop。
+            if (Session.IsPvp || !AppServices.IsReady)
             {
                 return;
             }
 
             // 等一帧让 sellHor / 货架完成布局后再开引导，否则 Target 矩形为空。
             await Task.Yield();
-            if (!AppServices.IsReady)
+            if (Session.IsPvp || !AppServices.IsReady)
             {
                 return;
             }

@@ -137,7 +137,7 @@ public class PvpHeroRuntimeTests
     }
 
     [Fact]
-    public void HeroExtraAttackOneTimeStacksWithTalentChance()
+    public void TalentExtraAttackStaysInDamageFormula_HeroExtraAttackIsSeparate()
     {
         var tables = PvpTestTables.WithHeroEntries();
         HandEvaluator.Tables = tables;
@@ -148,18 +148,47 @@ public class PvpHeroRuntimeTests
             new PlayingCard(Suit.Club, Rank.Four)
         });
 
+        // 英雄 ExtraAttackOneTime 不进公式通道（由 ApplyDuelDamage 打第二刀）。
         var heroOnly = CombatBonuses.BuildSeat(0, "u", "n", 6, Array.Empty<CombatTalentCount>(), tables);
         var input = CombatBonuses.BuildPlayerInput(tables, heroOnly, score, new CombatSituation());
-        Assert.Equal(0.35f, input.ExtraAttackChance, 4);
+        Assert.Equal(0f, input.ExtraAttackChance, 4);
+        Assert.True(tables.TryGetHero(6, out var shooter));
+        Assert.Equal(0.35f, PvpHeroRuntime.ExtraAttackChance(tables, shooter!), 4);
 
+        // 天赋 ProOfExtraAttack 仍走公式内 +10% 追击加伤。
         var talents = new[] { new CombatTalentCount { TalentId = 500, Count = 1 } };
         var combined = CombatBonuses.BuildSeat(0, "u", "n", 6, talents, tables);
         input = CombatBonuses.BuildPlayerInput(tables, combined, score, new CombatSituation());
-        Assert.Equal(0.25f + 0.35f, input.ExtraAttackChance, 4);
+        Assert.Equal(0.25f, input.ExtraAttackChance, 4);
 
         var noHero = CombatBonuses.BuildSeat(0, "u", "n", 1, Array.Empty<CombatTalentCount>(), tables);
         input = CombatBonuses.BuildPlayerInput(tables, noHero, score, new CombatSituation());
         Assert.Equal(0f, input.ExtraAttackChance, 4);
+    }
+
+    [Fact]
+    public void PaladinOpeningHolyLightBurnsOpponentAndRaisesCasts()
+    {
+        var match = Open(PvpTestTables.WithPaladin(), heroId: 8, hp: 1000);
+        PvpMatchTests.AdvanceToPvpFight(match);
+        var a = match.Fighters[0];
+        // 开局圣光：攻击 30 × 0.5 = 15，双方互烧；进 fight 时 Casts 至少为 1。
+        Assert.True(a.HolyLightCasts >= 1);
+        Assert.True(a.Hp < a.MaxHp, "开局圣光应对本桌对手扣血");
+    }
+
+    [Fact]
+    public void PaladinHolyLightRuntimeMatchesConfig()
+    {
+        var tables = PvpTestTables.WithPaladin();
+        Assert.Equal(1, PvpHeroRuntime.HolyLightRoundCasts(tables, 8));
+        Assert.True(PvpHeroRuntime.TryHolyLight(tables, 8, out var ratio, out var perCast));
+        Assert.Equal(0.5f, ratio, 4);
+        Assert.Equal(0.1f, perCast, 4);
+        Assert.Equal(15, PvpHeroRuntime.HolyLightDamage(30, ratio, casts: 0, perCast));
+        Assert.Equal(0.1f, PvpHeroRuntime.HolyLightOutgoingPercent(tables, 8, casts: 1), 4);
+        Assert.True(PvpHeroRuntime.HasMechanism(tables, 8, MechanismType.UnableMissing));
+        Assert.Equal(-0.25f, PvpHeroRuntime.SumValue(tables, 8, MechanismType.HeroTakeDamagePer), 4);
     }
 
     [Fact]

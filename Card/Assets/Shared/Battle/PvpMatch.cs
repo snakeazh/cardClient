@@ -595,12 +595,19 @@ namespace CardShare.Battle
                 SeatSetup right;
                 var vsPlayer = rightFighter != null;
                 var vsMirror = false;
+                var openingFx = new List<PvpHeroFxDto>(4);
+                RecordOpeningChipFx(leftFighter, openingFx);
+                if (rightFighter != null)
+                {
+                    RecordOpeningChipFx(rightFighter, openingFx);
+                }
+
                 if (vsPlayer)
                 {
-                    ApplyOpeningHolyLight(leftFighter, rightFighter!, openingDeaths);
+                    ApplyOpeningHolyLight(leftFighter, rightFighter!, openingDeaths, openingFx);
                     if (rightFighter!.Alive && leftFighter.Alive)
                     {
-                        ApplyOpeningHolyLight(rightFighter, leftFighter, openingDeaths);
+                        ApplyOpeningHolyLight(rightFighter, leftFighter, openingDeaths, openingFx);
                     }
 
                     if (!leftFighter.Alive || !rightFighter.Alive)
@@ -627,7 +634,7 @@ namespace CardShare.Battle
                 {
                     vsPlayer = true;
                     vsMirror = true;
-                    ApplyOpeningHolyLightToMonster(leftFighter, right);
+                    ApplyOpeningHolyLightToMonster(leftFighter, right, openingFx);
                     if (!leftFighter.Alive)
                     {
                         continue;
@@ -649,7 +656,7 @@ namespace CardShare.Battle
                 else
                 {
                     right = ToMonsterSeat(monsterGroup);
-                    ApplyOpeningHolyLightToMonster(leftFighter, right);
+                    ApplyOpeningHolyLightToMonster(leftFighter, right, openingFx);
                     if (!leftFighter.Alive)
                     {
                         continue;
@@ -674,6 +681,10 @@ namespace CardShare.Battle
                 var lockLeftNow = !leftFighter.IsBot && !left.IsHuman;
                 var lockRightNow = !vsMirror && (!vsPlayer || (rightFighter != null && !rightFighter.IsBot && !right.IsHuman));
                 var duel = PvpDuelTable.Open(duelSeed, left, right, _tables, vsPlayer, lockLeftNow, lockRightNow, vsMirror);
+                for (var fx = 0; fx < openingFx.Count; fx++)
+                {
+                    duel.OpeningFx.Add(openingFx[fx]);
+                }
                 var thinkBase = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + PvpTiming.DealAnimMs;
                 if (leftFighter.IsBot)
                 {
@@ -937,37 +948,99 @@ namespace CardShare.Battle
                 }
             }
 
-            if (duel.VsMonster && win == 0 && winnerForKill != null)
+            var mainDamage = damage;
+            var chaseDamage = 0;
+            var holyBurnDamage = 0;
+
+            // 英雄追击（ExtraAttackOneTime）：PVE 是完整第二刀；这里打一段等量伤害，
+            // 不走 CombatDamage 里那 10% 天赋追击加伤通道（天赋 ProOfExtraAttack 仍在出伤公式内）。
+            if (!nullified && !dodged && mainDamage > 0 &&
+                winnerForKill != null && winnerForKill.Alive &&
+                PvpHeroRuntime.Roll(_tables, winnerForKill.Combat.HeroId, MechanismType.ExtraAttackOneTime, _shopRandom))
             {
-                var monsterHp = duel.Engine.MutableSeat(1).Hp;
-                var monsterDied = monsterHp > 0 && damage >= monsterHp;
-                if (monsterDied)
+                var chaseTargetAlive = victim != null && victim.Alive;
+                var monsterHpBeforeChase = duel.VsMonster || duel.VsMirror
+                    ? duel.Engine.MutableSeat(1).Hp
+                    : 0;
+                var monsterStillUp = (duel.VsMonster || duel.VsMirror) &&
+                                     monsterHpBeforeChase - mainDamage > 0;
+                if (chaseTargetAlive || monsterStillUp)
                 {
-                    GrantHeroKill(winnerForKill);
-                }
-                else if (IsPairWin(snap, win))
-                {
-                    var burn = NextHolyLightDamage(winnerForKill);
-                    if (burn > 0 && monsterHp - damage > 0 && burn >= monsterHp - damage)
+                    chaseDamage = mainDamage;
+                    if (chaseTargetAlive)
                     {
-                        GrantHeroKill(winnerForKill);
+                        var dealtChase = Math.Min(victim!.Hp, chaseDamage);
+                        ApplyToSeat(duel, 1 - win, chaseDamage, deathHp);
+                        var chaseHeal = PvpHeroRuntime.BloodSuckingHeal(
+                            _tables, winnerForKill.Combat.HeroId, dealtChase);
+                        if (chaseHeal > 0)
+                        {
+                            winnerForKill.Hp = Math.Min(winnerForKill.MaxHp, winnerForKill.Hp + chaseHeal);
+                        }
+
+                        if (!victim.Alive)
+                        {
+                            GrantHeroKill(winnerForKill);
+                        }
                     }
-                }
-            }
-            else if (winnerForKill != null && IsPairWin(snap, win) && victim != null && victim.Alive)
-            {
-                var burn = NextHolyLightDamage(winnerForKill);
-                if (burn > 0)
-                {
-                    ApplyToSeat(duel, 1 - win, burn, deathHp);
-                    if (!victim.Alive)
-                    {
-                        GrantHeroKill(winnerForKill);
-                    }
+
+                    damage += chaseDamage;
                 }
             }
 
-            duel.MarkHpApplied(win, damage);
+            // 对子获胜：圣光燃烧追加一段。野怪/镜像不走 ApplyToSeat，只记 burn 供客户端扣血。
+            if (winnerForKill != null && IsPairWin(snap, win))
+            {
+                if (duel.VsMonster || duel.VsMirror)
+                {
+                    if (win == 0)
+                    {
+                        var monsterHp = duel.Engine.MutableSeat(1).Hp;
+                        var remaining = monsterHp - damage;
+                        if (remaining > 0)
+                        {
+                            var burn = NextHolyLightDamage(winnerForKill);
+                            if (burn > 0)
+                            {
+                                holyBurnDamage = burn;
+                                damage += burn;
+                                if (burn >= remaining)
+                                {
+                                    GrantHeroKill(winnerForKill);
+                                }
+                            }
+                        }
+                        else if (monsterHp > 0 && damage >= monsterHp)
+                        {
+                            GrantHeroKill(winnerForKill);
+                        }
+                    }
+                }
+                else if (victim != null && victim.Alive)
+                {
+                    var burn = NextHolyLightDamage(winnerForKill);
+                    if (burn > 0)
+                    {
+                        ApplyToSeat(duel, 1 - win, burn, deathHp);
+                        holyBurnDamage = burn;
+                        damage += burn;
+                        if (!victim.Alive)
+                        {
+                            GrantHeroKill(winnerForKill);
+                        }
+                    }
+                }
+            }
+            else if (duel.VsMonster && win == 0 && winnerForKill != null)
+            {
+                var monsterHp = duel.Engine.MutableSeat(1).Hp;
+                if (monsterHp > 0 && damage >= monsterHp)
+                {
+                    GrantHeroKill(winnerForKill);
+                }
+            }
+
+            duel.MarkHpApplied(win, mainDamage, chaseDamage, holyBurnDamage);
             ApplyDuelGold(duel, win);
             ApplyMonsterWinHeal(duel, win);
             ApplyShowdownTrackers(duel, snap, win);
@@ -1705,7 +1778,37 @@ namespace CardShare.Battle
             }
         }
 
-        private void ApplyOpeningHolyLight(PvpFighter caster, PvpFighter target, Dictionary<int, int> deathHp)
+        /// <summary>开局自伤已在 ApplyHeroChip 扣过；这里只记节拍，供客户端回放飘字（自伤无施法特效）。</summary>
+        private void RecordOpeningChipFx(PvpFighter fighter, List<PvpHeroFxDto> fx)
+        {
+            var raw = PvpHeroRuntime.MonsterNumChip(_tables, fighter.Combat.HeroId, 1);
+            if (raw <= 0)
+            {
+                return;
+            }
+
+            var damage = PvpHeroRuntime.MitigateIncomingDamage(_tables, fighter.Combat.HeroId, raw);
+            if (damage <= 0)
+            {
+                return;
+            }
+
+            fx.Add(new PvpHeroFxDto
+            {
+                Kind = PvpHeroFxKinds.MonsterChip,
+                Phase = PvpHeroFxPhases.Opening,
+                CasterUserId = fighter.UserId,
+                TargetUserId = fighter.UserId,
+                CasterHeroId = fighter.Combat.HeroId,
+                Damage = damage
+            });
+        }
+
+        private void ApplyOpeningHolyLight(
+            PvpFighter caster,
+            PvpFighter target,
+            Dictionary<int, int> deathHp,
+            List<PvpHeroFxDto> fx)
         {
             var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
             for (var i = 0; i < times && caster.Alive && target.Alive; i++)
@@ -1716,6 +1819,15 @@ namespace CardShare.Battle
                     continue;
                 }
 
+                fx.Add(new PvpHeroFxDto
+                {
+                    Kind = PvpHeroFxKinds.HolyLight,
+                    Phase = PvpHeroFxPhases.Opening,
+                    CasterUserId = caster.UserId,
+                    TargetUserId = target.UserId,
+                    CasterHeroId = caster.Combat.HeroId,
+                    Damage = damage
+                });
                 target.Hp -= damage;
                 if (target.Hp <= 0)
                 {
@@ -1725,7 +1837,10 @@ namespace CardShare.Battle
             }
         }
 
-        private void ApplyOpeningHolyLightToMonster(PvpFighter caster, SeatSetup monster)
+        private void ApplyOpeningHolyLightToMonster(
+            PvpFighter caster,
+            SeatSetup monster,
+            List<PvpHeroFxDto> fx)
         {
             var times = PvpHeroRuntime.HolyLightRoundCasts(_tables, caster.Combat.HeroId);
             for (var i = 0; i < times && caster.Alive && monster.Hp > 0; i++)
@@ -1736,6 +1851,15 @@ namespace CardShare.Battle
                     continue;
                 }
 
+                fx.Add(new PvpHeroFxDto
+                {
+                    Kind = PvpHeroFxKinds.HolyLight,
+                    Phase = PvpHeroFxPhases.Opening,
+                    CasterUserId = caster.UserId,
+                    TargetUserId = string.Empty,
+                    CasterHeroId = caster.Combat.HeroId,
+                    Damage = damage
+                });
                 monster.Hp = Math.Max(0, monster.Hp - damage);
             }
         }

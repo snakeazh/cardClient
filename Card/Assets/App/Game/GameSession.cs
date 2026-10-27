@@ -62,6 +62,10 @@ namespace App.Game
         private bool _pairWinHolyLightArmed;
         /// <summary>对子获胜：圣光演完后再 BeginPlayerAttack（通用近战打牌型伤）。</summary>
         private bool _deferBeginAttackAfterHolyLight;
+        /// <summary>PVP 圣光：对方烧我。</summary>
+        private bool _pvpHolyIncoming;
+        private int _pvpHolyDamage;
+        private int _pvpHolyCasterHeroId;
         private SeatState _holyLightFinishTarget;
 
         /// <summary>待播的圣光燃烧次数；&gt;0 时 UI 跟 <see cref="HolyLightPlaySerial"/> 播 SpecialEffect。</summary>
@@ -69,6 +73,12 @@ namespace App.Game
 
         /// <summary>圣光燃烧演出序号，UI 每加一次播一段 SpecialEffect。</summary>
         public int HolyLightPlaySerial { get; private set; }
+
+        /// <summary>PVP 圣光施法英雄 Id（对方烧我时用敌方英雄特效）。</summary>
+        public int PvpHolyCasterHeroId => _pvpHolyCasterHeroId;
+
+        /// <summary>PVP 圣光是否来袭（对方 → 我）。</summary>
+        public bool PvpHolyIncoming => _pvpHolyIncoming;
         private readonly bool[] _lastHitApplied = new bool[MaxEnemies];
         private readonly bool[] _lastHitMissed = new bool[MaxEnemies];
         private readonly int[] _lastHitDealt = new int[MaxEnemies];
@@ -5190,6 +5200,11 @@ namespace App.Game
         /// </summary>
         private bool ShouldApplyFirstBattleDeal()
         {
+            if (IsPvp)
+            {
+                return false;
+            }
+
             var progress = GuideProgressSvc();
             if (progress == null)
             {
@@ -9556,8 +9571,15 @@ namespace App.Game
         /// <summary>圣光燃烧命中帧：结算一次全场伤害（UI SpecialEffect 回调）。</summary>
         public void ApplyPendingHolyLightHit()
         {
-            if (_pendingHolyLightCasts <= 0 || IsPvp)
+            if (_pendingHolyLightCasts <= 0)
             {
+                return;
+            }
+
+            if (IsPvp)
+            {
+                ApplyPvpHolyLightHit();
+                NotifyUi();
                 return;
             }
 
@@ -9585,6 +9607,21 @@ namespace App.Game
             if (_pendingHolyLightCasts > 0)
             {
                 _pendingHolyLightCasts--;
+            }
+
+            if (IsPvp)
+            {
+                if (_pendingHolyLightCasts > 0)
+                {
+                    HolyLightPlaySerial++;
+                    Notify();
+                    return;
+                }
+
+                _pvpHolyDamage = 0;
+                _pvpHolyCasterHeroId = 0;
+                EndPvpCombat();
+                return;
             }
 
             if (Player != null && Player.Hp <= 0)
@@ -10522,6 +10559,12 @@ namespace App.Game
         public void BeginPvp()
         {
             IsPvp = true;
+            // 进 PVP 立刻掐掉进行中的新手引导，避免 Overlay 盖住对战桌。
+            if (AppServices.IsReady)
+            {
+                AppServices.Resolve<IGuideService>()?.Abort();
+            }
+
             _pvpHandLocked = false;
             Phase = GamePhase.WaitingOpen;
             CardsRevealed = false;
@@ -10531,9 +10574,19 @@ namespace App.Game
             Player.Folded = false;
             Player.ActiveInStage = true;
             Player.ShowCards = true;
-            var hero = ResolveHero();
-            Player.Icon = hero != null ? hero.Icon : Player.Icon;
-            Player.Attack = ResolvePlayerPanel(hero).Attack;
+            // PVP 英雄由服务端进房随机，不走关卡 LastHeroId。快照已到则立刻套上；否则等 BindPvpFighters。
+            var self = _pvpSession != null ? _pvpSession.Self : null;
+            if (self != null && self.HeroId > 0)
+            {
+                ApplyPvpSelfHero(self.HeroId);
+                Player.Attack = Math.Max(0, self.Attack);
+            }
+            else
+            {
+                Player.Icon = null;
+                Player.Attack = 0;
+            }
+
             Player.ClearCardSelected();
             for (var i = 0; i < Enemies.Length; i++)
             {
@@ -10801,6 +10854,159 @@ namespace App.Game
             Notify();
         }
 
+        /// <summary>
+        /// 开局 HeroFx：权威 HP 已是扣完后的值。只回放即将演出的节拍对应血量（圣光双方 + 自己的自伤）。
+        /// </summary>
+        public void RewindPvpOpeningFx(PvpHeroFxDto[] fx, string selfId, string foeId)
+        {
+            if (!IsPvp || fx == null || Player == null)
+            {
+                return;
+            }
+
+            var enemy = Enemies[0];
+            for (var i = 0; i < fx.Length; i++)
+            {
+                var beat = fx[i];
+                if (beat == null ||
+                    beat.Damage <= 0 ||
+                    !string.Equals(beat.Phase, PvpHeroFxPhases.Opening, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(beat.Kind, PvpHeroFxKinds.MonsterChip, StringComparison.OrdinalIgnoreCase))
+                {
+                    // 自伤只演自己；对手自伤保持权威 HP，不回绕。
+                    if (PvpMatchSession.SameUser(beat.TargetUserId, selfId))
+                    {
+                        Player.Hp = Math.Min(Player.MaxHp, Player.Hp + beat.Damage);
+                    }
+
+                    continue;
+                }
+
+                if (!string.Equals(beat.Kind, PvpHeroFxKinds.HolyLight, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (PvpMatchSession.SameUser(beat.TargetUserId, selfId))
+                {
+                    Player.Hp = Math.Min(Player.MaxHp, Player.Hp + beat.Damage);
+                }
+                else if (enemy != null &&
+                         (string.IsNullOrEmpty(beat.TargetUserId) ||
+                          PvpMatchSession.SameUser(beat.TargetUserId, foeId)))
+                {
+                    enemy.Hp = Math.Min(enemy.MaxHp, enemy.Hp + beat.Damage);
+                }
+            }
+
+            Notify();
+        }
+
+        /// <summary>PVP 圣光燃烧：伤害为服务端权威值；incoming 时播对方英雄特效打我。</summary>
+        public bool BeginPvpHolyLight(bool incoming, int damage, int casterHeroId)
+        {
+            var enemy = Enemies[0];
+            if (!IsPvp || Player == null || enemy == null || damage <= 0)
+            {
+                return false;
+            }
+
+            enemy.ActiveInStage = true;
+            _pvpHolyIncoming = incoming;
+            _pvpHolyDamage = damage;
+            _pvpHolyCasterHeroId = casterHeroId;
+            _pendingHolyLightCasts = 1;
+            IncomingAttack = incoming;
+            LastAttackMissed = false;
+            AttackDamage = damage;
+            TakenDamage = damage;
+            PendingAttackDamage = damage;
+            AttackLevel = 1;
+            AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
+            _pendingAttackTarget = incoming ? Player : enemy;
+            _pendingDamageSource = incoming ? enemy : Player;
+            Phase = GamePhase.WaitingAttack;
+            LastResult = incoming
+                ? $"{enemy.Name} 发动圣光燃烧，你受到 {damage} 伤害"
+                : $"圣光燃烧，对 {enemy.Name} 造成 {damage} 伤害";
+            Hint = LastResult;
+            HolyLightPlaySerial++;
+            Notify();
+            return true;
+        }
+
+        /// <summary>PVP 开局自伤：无施法特效，命中帧扣自己并出字。</summary>
+        public bool BeginPvpSelfChip(int damage)
+        {
+            if (!IsPvp || Player == null || damage <= 0)
+            {
+                return false;
+            }
+
+            _pvpHolyIncoming = true;
+            _pvpHolyDamage = damage;
+            _pvpHolyCasterHeroId = 0;
+            _pendingHolyLightCasts = 1;
+            IncomingAttack = true;
+            LastAttackMissed = false;
+            AttackDamage = damage;
+            TakenDamage = damage;
+            PendingAttackDamage = damage;
+            AttackLevel = 1;
+            AttackVisualSlot = -1;
+            _pendingAttackTarget = Player;
+            Phase = GamePhase.WaitingAttack;
+            LastResult = $"回合开始受到 {damage} 伤害";
+            Hint = LastResult;
+            // 无 SpecialEffect：直接结算并结束，UI 仍可刷一次飘字。
+            ApplyPvpHolyLightHit();
+            _pendingHolyLightCasts = 0;
+            EndPvpCombat();
+            return true;
+        }
+
+        private void ApplyPvpHolyLightHit()
+        {
+            ClearLastHitPulse();
+            var dmg = Math.Max(0, _pvpHolyDamage);
+            if (dmg <= 0)
+            {
+                return;
+            }
+
+            if (_pvpHolyIncoming || _pendingAttackTarget == Player)
+            {
+                if (Player == null)
+                {
+                    return;
+                }
+
+                var dealt = Math.Min(Math.Max(0, Player.Hp), dmg);
+                Player.Hp = Math.Max(0, Player.Hp - dealt);
+                Player.Banner = $"-{dmg}";
+                TakenDamage = dmg;
+                AttackDamage = dmg;
+                return;
+            }
+
+            var enemy = Enemies[0];
+            if (enemy == null)
+            {
+                return;
+            }
+
+            var hit = Math.Min(Math.Max(0, enemy.Hp), dmg);
+            enemy.Hp = Math.Max(0, enemy.Hp - hit);
+            enemy.Banner = $"-{dmg}";
+            RecordEnemyHit(enemy, missed: false, shown: hit, killed: enemy.Hp <= 0, main: true);
+            TakenDamage = dmg;
+            AttackDamage = dmg;
+        }
+
         /// <summary>攻击撞击（Director.AttackCommand）：摆状态拨 AttackPlaySerial；伤害数值由驱动器按服务端快照算好传入（0 = 闪避/免疫 → MISS）。</summary>
         public bool BeginPvpAttack(bool incoming, int damage, HandType winType, string winLabel, string loseLabel)
         {
@@ -10937,6 +11143,12 @@ namespace App.Game
             }
 
             Player.Name = string.IsNullOrEmpty(self.NickName) ? Player.Name : self.NickName;
+            // 服务端进房随机的 HeroId → Run + 立绘；出刀特效 / PortraitLoader 都读这里。
+            if (self.HeroId > 0)
+            {
+                ApplyPvpSelfHero(self.HeroId);
+            }
+
             if (applyHp)
             {
                 Player.Hp = Math.Max(0, self.Hp);
@@ -10955,6 +11167,18 @@ namespace App.Game
             Run.TiHuanGoodCharges = self.ReplaceLeft;
             // 已购圣物全阶段镜像：战斗期圣物栏/技能次数标签才能显示（效果由服务端结算，本地只展示）。
             MirrorPvpRelics(self.RelicIds, self.RelicPower);
+        }
+
+        /// <summary>把 PVP 随机到的英雄写进 Run 与自己座位立绘（对手走 <see cref="ApplyPvpHeroLook"/>）。</summary>
+        private void ApplyPvpSelfHero(int heroId)
+        {
+            if (heroId <= 0)
+            {
+                return;
+            }
+
+            Run.HeroId = heroId;
+            ApplyPvpHeroLook(Player, heroId);
         }
 
         private static void SplitPvpSeats(

@@ -15,7 +15,7 @@ namespace CardShare.Battle
     /// - Damage、掉血加伤、圣光层数、精英/领主 AttackBossDamage：出牌伤害百分比，挂在 <see cref="CombatBonuses.BuildPlayerInput"/>。
     /// - HeroCritical / UnableCritical：面板暴击率，挂在 <see cref="CombatBonuses.EvaluatePanel"/>。无法暴击在天赋之后归零。
     /// - RubbingCardsNum / PerspectiveNum：技能次数，挂在 <see cref="CombatBonuses.SumSkillCountBonus"/>。
-    /// - ExtraAttackOneTime：追击概率，与天赋 ProOfExtraAttack 求和后进 <see cref="CombatDamageInput.ExtraAttackChance"/> 掷一次。
+    /// - ExtraAttackOneTime：比牌结算后单独掷，打完整第二刀（并进 DuelDamage）。天赋 ProOfExtraAttack 仍走公式内 +10%。
     /// - InitialFunds：开局金币，<see cref="InitialGold"/>（PVP 无天赋侧，基础 + 英雄）。
     /// - RelicPricePer：商店购买折扣，<see cref="BuyPrice"/>。
     /// - EpicLegendRelicProUp：史诗/传说上架权重，<see cref="ShopWeight"/>。
@@ -139,11 +139,23 @@ namespace CardShare.Battle
             return Math.Max(0f, weight);
         }
 
-        /// <summary>英雄追击概率（ExtraAttackOneTime 求和）。调用方与天赋 ProOfExtraAttack 相加后掷一次，
-        /// 对齐 PVE HeroMechanics.RollCombined 的"求和后掷一次"语义。</summary>
+        /// <summary>英雄追击概率（ExtraAttackOneTime 求和）。PVP 在比牌结算后单独掷，打完整第二刀；
+        /// 不与天赋 ProOfExtraAttack（出伤公式内 +10%）混在同一通道。</summary>
         public static float ExtraAttackChance(IGameTables tables, HeroConfig hero)
         {
             return SumValue(tables, hero, MechanismType.ExtraAttackOneTime);
+        }
+
+        /// <summary>按词条 Value[0] 作为概率掷一次。对齐 PVE HeroMechanics.Roll。</summary>
+        public static bool Roll(IGameTables tables, int heroId, MechanismType type, Random rng)
+        {
+            if (rng == null)
+            {
+                return false;
+            }
+
+            var chance = SumValue(tables, heroId, type);
+            return chance > 0f && rng.NextDouble() < chance;
         }
 
         /// <summary>承伤减免：damage × (1 + HeroTakeDamagePer) 四舍五入、下限 0；大于 0 时保底 1。

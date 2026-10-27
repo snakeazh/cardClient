@@ -64,6 +64,7 @@ namespace CardShare.Battle
             }
 
             var roomId = match.RoomId.ToString("N");
+            var heroFx = ProjectHeroFx(own);
             return new PvpMatchStateDto
             {
                 RoomId = roomId,
@@ -77,12 +78,64 @@ namespace CardShare.Battle
                 Duels = summaries,
                 Duel = own == null ? null : own.ViewFor(userId, roomId),
                 DuelDamage = own == null || !own.HpApplied ? 0 : own.AppliedDamage,
+                DuelMainDamage = own == null || !own.HpApplied ? 0 : own.AppliedMainDamage,
+                DuelChaseDamage = own == null || !own.HpApplied ? 0 : own.AppliedChaseDamage,
+                DuelHolyBurnDamage = own == null || !own.HpApplied ? 0 : own.AppliedHolyBurnDamage,
+                HeroFx = heroFx,
                 PhaseDeadlineUtcMs = match.PhaseDeadlineUtcMs,
                 ServerNowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 StateVersion = match.StateVersion,
                 Events = CopyEvents(match.PendingEvents),
                 Shop = ProjectShop(tables, match.Phase, FighterOf(match, userId))
             };
+        }
+
+        private static PvpHeroFxDto[] ProjectHeroFx(PvpDuelTable? own)
+        {
+            if (own == null)
+            {
+                return Array.Empty<PvpHeroFxDto>();
+            }
+
+            var list = new List<PvpHeroFxDto>(own.OpeningFx.Count + 2);
+            for (var i = 0; i < own.OpeningFx.Count; i++)
+            {
+                list.Add(own.OpeningFx[i]);
+            }
+
+            if (own.HpApplied)
+            {
+                if (own.AppliedChaseDamage > 0)
+                {
+                    list.Add(new PvpHeroFxDto
+                    {
+                        Kind = PvpHeroFxKinds.ExtraAttack,
+                        Phase = PvpHeroFxPhases.Chase,
+                        Damage = own.AppliedChaseDamage
+                    });
+                }
+
+                if (own.AppliedHolyBurnDamage > 0)
+                {
+                    var winner = own.AppliedWinner;
+                    var casterId = winner == 0 ? own.LeftUserId : winner == 1 && !own.VsMonster && !own.VsMirror
+                        ? own.RightUserId
+                        : own.LeftUserId;
+                    var targetId = winner == 0
+                        ? (own.VsMonster || own.VsMirror ? string.Empty : own.RightUserId)
+                        : own.LeftUserId;
+                    list.Add(new PvpHeroFxDto
+                    {
+                        Kind = PvpHeroFxKinds.HolyLight,
+                        Phase = PvpHeroFxPhases.Pair,
+                        CasterUserId = casterId,
+                        TargetUserId = targetId,
+                        Damage = own.AppliedHolyBurnDamage
+                    });
+                }
+            }
+
+            return list.Count == 0 ? Array.Empty<PvpHeroFxDto>() : list.ToArray();
         }
 
         public static PvpShopStateDto? ProjectShop(IGameTables tables, string phase, PvpFighter? fighter)

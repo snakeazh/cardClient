@@ -69,6 +69,39 @@ namespace CardShare.Contracts
         public bool Resolved { get; set; }
     }
 
+    /// <summary>PVP 英雄特效节拍。Kind / Phase 取值见 <see cref="PvpHeroFxKinds"/> / <see cref="PvpHeroFxPhases"/>。</summary>
+    public sealed class PvpHeroFxDto
+    {
+        public string Kind { get; set; } = string.Empty;
+
+        public string Phase { get; set; } = string.Empty;
+
+        public string CasterUserId { get; set; } = string.Empty;
+
+        /// <summary>受伤方 UserId；打野怪时为空。</summary>
+        public string TargetUserId { get; set; } = string.Empty;
+
+        public int CasterHeroId { get; set; }
+
+        public int Damage { get; set; }
+    }
+
+    /// <summary>PvpHeroFxDto.Kind 取值。</summary>
+    public static class PvpHeroFxKinds
+    {
+        public const string HolyLight = "holy_light";
+        public const string ExtraAttack = "extra_attack";
+        public const string MonsterChip = "monster_chip";
+    }
+
+    /// <summary>PvpHeroFxDto.Phase 取值。</summary>
+    public static class PvpHeroFxPhases
+    {
+        public const string Opening = "opening";
+        public const string Pair = "pair";
+        public const string Chase = "chase";
+    }
+
     public sealed class PvpMatchEventDto
     {
         public long Version { get; set; }
@@ -131,8 +164,23 @@ namespace CardShare.Contracts
 
         public BattleStateDto? Duel { get; set; }
 
-        /// <summary>自己这桌结算后的实际伤害（含轮次系数，即扣血量）。0 = 未结算或平局。客户端只做状态同步，不要重算。</summary>
+        /// <summary>自己这桌结算后的实际总伤害（主伤+追击+对子圣光）。0 = 未结算或平局。客户端只做状态同步，不要重算。</summary>
         public int DuelDamage { get; set; }
+
+        /// <summary>比牌主伤（不含追击/对子圣光）。</summary>
+        public int DuelMainDamage { get; set; }
+
+        /// <summary>英雄 ExtraAttackOneTime 第二刀伤害；0 = 未追击。</summary>
+        public int DuelChaseDamage { get; set; }
+
+        /// <summary>对子获胜圣光追加伤害；0 = 无。</summary>
+        public int DuelHolyBurnDamage { get; set; }
+
+        /// <summary>
+        /// 本桌待播的英雄特效节拍（开局圣光/自伤等）。客户端按 Phase 排队演出；
+        /// 权威 HP 已是结算后，开播前需先把对应伤害加回显示血再演。
+        /// </summary>
+        public PvpHeroFxDto[] HeroFx { get; set; } = System.Array.Empty<PvpHeroFxDto>();
 
         /// <summary>当前选牌阶段的服务器截止时刻（UTC 毫秒）。0 = 无倒计时（非选牌阶段或未配置时长）。</summary>
         public long PhaseDeadlineUtcMs { get; set; }

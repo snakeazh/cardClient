@@ -77,7 +77,8 @@ namespace App.Guide
 
         public void TryStart(GuideTriggerType type, string param)
         {
-            if (IsRunning)
+            // PVP 全程不进新手引导（含商店 ScreenOpen / 阶段触发）。
+            if (_session.IsPvp || IsRunning)
             {
                 return;
             }
@@ -120,6 +121,11 @@ namespace App.Guide
 
         public void StartGroup(int groupId, int fromOrder)
         {
+            if (_session.IsPvp)
+            {
+                return;
+            }
+
             // FirstBond 是弱引导：其它组要开时直接让路，不占住 IsRunning。
             if (IsRunning)
             {
@@ -568,11 +574,13 @@ namespace App.Guide
 
         private void OnSessionChanged()
         {
-            if (!IsRunning)
+            if (_session.IsPvp || IsRunning)
             {
-                TryStart(GuideTriggerType.GamePhase, _session.Phase.ToString());
-                TryStartFirstBondIfNeeded();
+                return;
             }
+
+            TryStart(GuideTriggerType.GamePhase, _session.Phase.ToString());
+            TryStartFirstBondIfNeeded();
         }
 
         /// <summary>

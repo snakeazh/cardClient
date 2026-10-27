@@ -167,6 +167,10 @@ namespace App.Game
         private bool _pvpShopDone;
         private bool _pvpShopDoneSent;
 
+        /// <summary>PvpShopStateDto.Skills 的镜像，下标 = PvpSkillIds。离开商店清空。</summary>
+        private readonly PvpShopSkillDto[] _pvpShopSkills = new PvpShopSkillDto[PvpSkillIds.Count];
+        private bool _pvpSkillBuying;
+
         public void AttachPvpSession(PvpMatchSession pvp)
         {
             _pvpSession = pvp;
@@ -2845,6 +2849,31 @@ namespace App.Game
         /// <summary>商店里是否还有可解锁的圣物槽（PVP 看服务端快照价格，PVE 看本地剩余次数）。</summary>
         public bool CanUnlockRelicSlot => IsPvp ? _pvpNextSlotCost > 0 : PveRelicSlotUnlockLeft > 0;
 
+        /// <summary>
+        /// PVP 商店「花金币补充技能次数」的入口状态：下一口价、当前剩余、下一轮上限。
+        /// 非 PVP 商店阶段返回 null（PVE 没有这块 UI）。数据来自服务端快照，客户端只展示。
+        /// </summary>
+        public PvpShopSkillDto GetPvpShopSkill(int skillId)
+        {
+            if (!IsPvp || skillId < 0 || skillId >= _pvpShopSkills.Length)
+            {
+                return null;
+            }
+
+            return _pvpShopSkills[skillId];
+        }
+
+        /// <summary>该技能现在能否买：商店开放、有价格、金币够。</summary>
+        public bool CanBuyPvpSkill(int skillId)
+        {
+            var skill = GetPvpShopSkill(skillId);
+            return skill != null &&
+                   !_pvpShopDone &&
+                   Phase == GamePhase.Shop &&
+                   skill.Price > 0 &&
+                   RelicMechanics.CanAfford(Run, skill.Price);
+        }
+
         public int EffectiveSellPrice(int relicId)
         {
             if (IsPvp)
@@ -2994,6 +3023,60 @@ namespace App.Game
         public async Task<bool> TryUnlockRelicSlotAsync()
         {
             return IsPvp ? await TryUnlockPvpRelicSlotAsync() : WatchAdUnlockRelicSlot();
+        }
+
+        /// <summary>
+        /// PVP 商店专属：花金币补充 1 次技能次数（下一轮生效，服务端权威）。
+        /// 失败（金币不足 / 已离开商店 / 服务端拒绝）返回 false，不抛异常。
+        /// </summary>
+        public async Task<bool> TryBuyPvpSkillAsync(int skillId)
+        {
+            var pvp = _pvpSession;
+            if (pvp == null || !IsPvp || Phase != GamePhase.Shop || _pvpShopDone || _pvpSkillBuying)
+            {
+                return false;
+            }
+
+            var skill = GetPvpShopSkill(skillId);
+            if (skill == null || skill.Price <= 0)
+            {
+                return false;
+            }
+
+            if (Run.Gold < skill.Price)
+            {
+                Hint = "金币不足";
+                Notify();
+                return false;
+            }
+
+            _pvpSkillBuying = true;
+            var maxBefore = skill.Max;
+            try
+            {
+                // 先挂等待再发命令，回包早于等待会漏掉这次快照（同其它商店操作）。
+                await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueBuySkill(skillId));
+                var after = GetPvpShopSkill(skillId);
+                if (after == null || after.Max <= maxBefore)
+                {
+                    // 快照没回来或服务端没受理：报一句，别刷「已补充」误导玩家。
+                    Hint = "购买未完成，请稍后重试";
+                    return false;
+                }
+
+                Hint = "已补充技能次数，下一轮生效";
+                Notify();
+                return true;
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+                return false;
+            }
+            finally
+            {
+                _pvpSkillBuying = false;
+            }
         }
 
         public bool CanRefreshShop =>
@@ -10709,6 +10792,7 @@ namespace App.Game
                 Run.ShopOfferIds.Clear();
                 _pvpOfferPrices.Clear();
                 _pvpSellPrices.Clear();
+                MirrorPvpSkills(null);
                 _pvpShopDone = false;
                 _pvpShopDoneSent = false;
                 return;
@@ -10734,6 +10818,32 @@ namespace App.Game
             }
             _pvpShopDone = shop.Done;
             _pvpShopDoneSent = _pvpShopDoneSent || shop.Done;
+            MirrorPvpSkills(shop.Skills);
+        }
+
+        /// <summary>镜像技能补充入口（价/剩余/下一轮上限）。服务端每次购买都会回快照，这里整份替换。</summary>
+        private void MirrorPvpSkills(PvpShopSkillDto[] skills)
+        {
+            for (var i = 0; i < _pvpShopSkills.Length; i++)
+            {
+                _pvpShopSkills[i] = null;
+            }
+
+            if (skills == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < skills.Length; i++)
+            {
+                var skill = skills[i];
+                if (skill == null || skill.Id < 0 || skill.Id >= _pvpShopSkills.Length)
+                {
+                    continue;
+                }
+
+                _pvpShopSkills[skill.Id] = skill;
+            }
         }
 
         private void MirrorPvpRelics(int[] ids, int[] powers)

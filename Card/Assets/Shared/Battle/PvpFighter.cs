@@ -44,6 +44,24 @@ namespace CardShare.Battle
 
         public int PeekLeft { get; set; }
 
+        /// <summary>本商店买了、下一轮开始才并入的次数（见 <see cref="PvpSkillShop"/>）。</summary>
+        public int PendingRub { get; set; }
+
+        /// <summary>同 <see cref="PendingRub"/>，替换。</summary>
+        public int PendingReplace { get; set; }
+
+        /// <summary>同 <see cref="PendingRub"/>，透视。</summary>
+        public int PendingPeek { get; set; }
+
+        /// <summary>本局各技能累计购买次数（价格递增用）。</summary>
+        public int BoughtRub { get; set; }
+
+        /// <summary>同 <see cref="BoughtRub"/>，替换。</summary>
+        public int BoughtReplace { get; set; }
+
+        /// <summary>同 <see cref="BoughtRub"/>，透视。</summary>
+        public int BoughtPeek { get; set; }
+
         public bool IsBot { get; init; }
 
         public bool Disconnected { get; set; }

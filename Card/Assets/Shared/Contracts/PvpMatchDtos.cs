@@ -117,6 +117,22 @@ namespace CardShare.Contracts
         public int Value { get; set; }
     }
 
+    /// <summary>PVP 商店：某个技能的购买状态（花金币补充次数）。</summary>
+    public sealed class PvpShopSkillDto
+    {
+        /// <summary>技能 Id，见 <see cref="PvpSkillIds"/>。</summary>
+        public int Id { get; set; }
+
+        /// <summary>下一次购买的金币价（本商店已买次数越多越贵）；0 = 不可购买。</summary>
+        public int Price { get; set; }
+
+        /// <summary>当前剩余次数。商店阶段拿到的是上一轮打完剩下的量。</summary>
+        public int Left { get; set; }
+
+        /// <summary>下一轮开始时的次数上限（基础 + 圣物/英雄/天赋 + 本商店已购）。购买后立即 +1。</summary>
+        public int Max { get; set; }
+    }
+
     public sealed class PvpShopStateDto
     {
         public int[] OfferIds { get; set; } = System.Array.Empty<int>();
@@ -138,6 +154,9 @@ namespace CardShare.Contracts
 
         /// <summary>再解锁一槽的金币。已满为 0。</summary>
         public int NextSlotCost { get; set; }
+
+        /// <summary>三个技能的补充次数入口（下标即 <see cref="PvpSkillIds"/>）。</summary>
+        public PvpShopSkillDto[] Skills { get; set; } = System.Array.Empty<PvpShopSkillDto>();
 
         public bool Done { get; set; }
     }

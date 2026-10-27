@@ -1510,6 +1510,9 @@ namespace CardShare.Battle
                 case PvpActions.UnlockSlot:
                     UnlockRelicSlot(fighter);
                     break;
+                case PvpActions.BuySkill:
+                    BuySkill(fighter, index);
+                    break;
                 case PvpActions.ShopDone:
                     fighter.ShopDone = true;
                     if (AllShopDone())
@@ -1672,6 +1675,33 @@ namespace CardShare.Battle
             fighter.Gold -= cost;
             PvpRelicRuntime.OnGoldSpent(_tables, fighter);
             fighter.RelicSlots++;
+        }
+
+        /// <summary>
+        /// PVP 商店专属：花金币补充技能次数。买到的次数下一轮开始才生效（ResetSkills 并入上限），
+        /// 不改变商店阶段手上的剩余次数。
+        /// </summary>
+        private void BuySkill(PvpFighter fighter, int skillId)
+        {
+            if (!PvpSkillShop.IsValid(skillId))
+            {
+                throw new InvalidOperationException("Unknown skill.");
+            }
+
+            var cost = PvpSkillShop.Price(fighter, skillId);
+            if (cost <= 0)
+            {
+                throw new InvalidOperationException("Skill is not for sale.");
+            }
+
+            if (fighter.Gold < cost)
+            {
+                throw new InvalidOperationException("Not enough gold.");
+            }
+
+            fighter.Gold -= cost;
+            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+            PvpSkillShop.AddPending(fighter, skillId);
         }
 
         private void ReleaseRelics(PvpFighter fighter)
@@ -2037,24 +2067,6 @@ namespace CardShare.Battle
 
         private void ResetSkills()
         {
-            var rub = _tables.GameConst.DefaultSkillShuffleNum;
-            var replace = _tables.GameConst.DefaultSkillReplaceNum;
-            var peek = _tables.GameConst.DefaultSkillPerspectiveNum;
-            if (rub <= 0)
-            {
-                rub = 3;
-            }
-
-            if (replace <= 0)
-            {
-                replace = 1;
-            }
-
-            if (peek <= 0)
-            {
-                peek = 1;
-            }
-
             for (var i = 0; i < _fighters.Length; i++)
             {
                 var fighter = _fighters[i];
@@ -2063,15 +2075,11 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                // 词条枚举无换牌次数类型，替换只吃基础值；搓牌/透视叠加持有圣物 + 英雄 + 天赋加成。
-                var combat = fighter.Combat;
-                var carried = PvpRelicBag.Expand(fighter);
-                fighter.RubLeft = Math.Max(0, rub + CombatBonuses.SumSkillCountBonus(
-                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.RubbingCardsNum));
-                fighter.PeekLeft = Math.Max(0, peek + CombatBonuses.SumSkillCountBonus(
-                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.PerspectiveNum));
-                fighter.ReplaceLeft = Math.Max(0, replace + CombatBonuses.SumSkillCountBonus(
-                    _tables, carried, combat.HeroId, combat.Talents, MechanismType.ReplaceCardsNum));
+                // 基础次数 + 圣物/英雄/天赋词条 + 商店买到的次数（一次性：并入上限后清零）。
+                fighter.RubLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Rub);
+                fighter.PeekLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Peek);
+                fighter.ReplaceLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Replace);
+                PvpSkillShop.ClearPending(fighter);
             }
         }
 

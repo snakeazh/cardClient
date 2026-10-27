@@ -138,6 +138,21 @@ namespace App.Net
         public override Task ExecuteAsync(PvpMatchSession session) => session.UnlockRelicSlotAsync();
     }
 
+    /// <summary>PVP 商店补充技能次数：battle 的 index 传技能 Id（PvpSkillIds）。</summary>
+    public sealed class PvpWsBuySkillCommand : PvpWsCommand
+    {
+        private readonly int _skillId;
+
+        public PvpWsBuySkillCommand(int skillId)
+        {
+            _skillId = skillId;
+        }
+
+        public override string Name => "buy_skill";
+
+        public override Task ExecuteAsync(PvpMatchSession session) => session.ShopBuySkillAsync(_skillId);
+    }
+
     public sealed class PvpWsShopDoneCommand : PvpWsCommand
     {
         public override string Name => "shop_done";
@@ -206,6 +221,8 @@ namespace App.Net
         public Task EnqueueShopRefresh() => Enqueue(new PvpWsShopRefreshCommand());
 
         public Task EnqueueUnlockRelicSlot() => Enqueue(new PvpWsUnlockRelicSlotCommand());
+
+        public Task EnqueueBuySkill(int skillId) => Enqueue(new PvpWsBuySkillCommand(skillId));
 
         public Task EnqueueShopDone() => Enqueue(new PvpWsShopDoneCommand());
 

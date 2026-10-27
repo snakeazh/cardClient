@@ -175,8 +175,27 @@ namespace CardShare.Battle
                 OwnedSellPrices = ownedSellPrices,
                 RelicSlots = fighter.RelicSlots,
                 NextSlotCost = PvpRelicBag.NextSlotCost(tables.GameConst, fighter.RelicSlots),
+                Skills = ProjectSkills(tables, fighter),
                 Done = fighter.ShopDone
             };
+        }
+
+        /// <summary>三个技能的补充次数入口：下一口价、当前剩余、下一轮上限（含已购）。</summary>
+        private static PvpShopSkillDto[] ProjectSkills(IGameTables tables, PvpFighter fighter)
+        {
+            var skills = new PvpShopSkillDto[PvpSkillIds.Count];
+            for (var i = 0; i < skills.Length; i++)
+            {
+                skills[i] = new PvpShopSkillDto
+                {
+                    Id = i,
+                    Price = PvpSkillShop.Price(fighter, i),
+                    Left = PvpSkillShop.Left(fighter, i),
+                    Max = PvpSkillShop.Max(tables, fighter, i)
+                };
+            }
+
+            return skills;
         }
 
         private static PvpFighter? FighterOf(PvpMatch match, string userId)

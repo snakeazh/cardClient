@@ -378,7 +378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71606c5a5e1c969458f5badb42ba6b33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableServerConnection: 0
+  enableServerConnection: 1
   serverEndpoint: 2
   customServerHost: 192.168.1.109
   customServerPort: 5254

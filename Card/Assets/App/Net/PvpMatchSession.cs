@@ -328,6 +328,9 @@ namespace App.Net
 
         public Task UnlockRelicSlotAsync() => _ws.BattleAsync(PvpActions.UnlockSlot, 0);
 
+        /// <summary>PVP 商店补充技能次数（index = 技能 Id，见 PvpSkillIds）。</summary>
+        public Task ShopBuySkillAsync(int skillId) => _ws.BattleAsync(PvpActions.BuySkill, skillId);
+
         public Task ShopDoneAsync() => _ws.BattleAsync(PvpActions.ShopDone, 0);
 
         /// <summary>编辑器测试：PVP 向服务端添加圣物（index = relicId）。</summary>

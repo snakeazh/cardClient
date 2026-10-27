@@ -157,6 +157,18 @@ namespace App.Game
 
         public bool IsPvp { get; private set; }
 
+        /// <summary>当前模式圣物行：PVP 只读 <c>PvpRelicConfig</c>（经 IGameTables），PVE 读 <c>RelicConfig</c>。</summary>
+        private RelicConfig LookupRelic(int relicId)
+        {
+            if (!IsPvp)
+            {
+                return RelicConfig.Get(relicId);
+            }
+
+            var tables = UnityGameConfigLoader.Current;
+            return tables != null && tables.TryGetPvpRelic(relicId, out var relic) ? relic : null;
+        }
+
         /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
         private PvpMatchSession _pvpSession;
         private readonly Dictionary<int, int> _pvpOfferPrices = new Dictionary<int, int>();
@@ -2883,7 +2895,7 @@ namespace App.Game
                     return pvpSell;
                 }
 
-                var pvpRelic = RelicConfig.Get(relicId);
+                var pvpRelic = LookupRelic(relicId);
                 return pvpRelic != null ? pvpRelic.SellingPrice : 0;
             }
 
@@ -2899,11 +2911,11 @@ namespace App.Game
                     return pvpPrice;
                 }
 
-                var pvpRelic = RelicConfig.Get(relicId);
+                var pvpRelic = LookupRelic(relicId);
                 return pvpRelic != null ? pvpRelic.Price : 0;
             }
 
-            var price = HeroMechanics.BuyPrice(Run, RelicConfig.Get(relicId));
+            var price = HeroMechanics.BuyPrice(Run, LookupRelic(relicId));
             if (Run.ShopBuyDiscount <= 0f)
             {
                 return price;
@@ -3230,7 +3242,7 @@ namespace App.Game
                     return false;
                 }
 
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Hint = $"已购买 {relic?.Name}";
                 Notify();
                 return true;
@@ -3260,7 +3272,7 @@ namespace App.Game
                     return false;
                 }
 
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Hint = $"已出售 {relic?.Name}";
                 Notify();
                 return true;
@@ -3321,7 +3333,7 @@ namespace App.Game
                     RefreshPlayerAttack();
                 }
 
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Log($"购入遗物 {relic?.Name}");
                 Hint = $"已购买 {relic?.Name}";
                 Notify();
@@ -3374,7 +3386,7 @@ namespace App.Game
 
                 ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
                 ApplyConsumableUseCore(relicId);
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Log($"购入并使用遗物 {relic?.Name}");
                 Hint = $"已购买并使用 {relic?.Name}";
                 Notify();
@@ -3416,7 +3428,7 @@ namespace App.Game
                 var resp = await GameApi.Client.SellShopRelicAsync(_serverRunId, relicId);
                 ApplyPveRun(resp.Run);
                 ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Log($"出售遗物 {relic?.Name}");
                 Hint = $"已出售 {relic?.Name}";
                 Notify();
@@ -3442,7 +3454,7 @@ namespace App.Game
                 return false;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null)
             {
                 return false;
@@ -3518,7 +3530,7 @@ namespace App.Game
                 return false;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null || (relic.UseType != 1 && relic.UseType != 2))
             {
                 return false;
@@ -3545,7 +3557,7 @@ namespace App.Game
                 return;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null)
             {
                 return;
@@ -3617,7 +3629,7 @@ namespace App.Game
                 return;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null)
             {
                 return;
@@ -3663,7 +3675,7 @@ namespace App.Game
                 return;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             ApplyConsumableUseCore(relicId);
             Log($"使用遗物 {relic.Name}");
             Hint = $"已使用 {relic.Name}";
@@ -3681,7 +3693,7 @@ namespace App.Game
                 return;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             var pvp = _pvpSession;
             _ = pvp.Invoker.EnqueueUseRelic(relicId);
             Log($"使用遗物 {relic.Name}");
@@ -3704,7 +3716,7 @@ namespace App.Game
                 return true;
             }
 
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null || !RelicMechanics.IsConsumable(relic))
             {
                 failHint = "该装备无法使用";
@@ -3723,7 +3735,7 @@ namespace App.Game
 
         private void ApplyConsumableUseCore(int relicId)
         {
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             RelicMechanics.ForEachRelicEntry(relic, ApplyConsumableEntry);
             RelicMechanics.OnConsumableUsed(Run);
             var keep = false;
@@ -4195,7 +4207,7 @@ namespace App.Game
                     continue;
                 }
 
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 var name = relic != null ? relic.Name : relicId.ToString();
                 if (IsPvp)
                 {
@@ -4231,7 +4243,7 @@ namespace App.Game
         /// <summary>编辑器外挂：直接加入指定圣物，不扣金币、不占商店货架、不检查携带上限。同件仍不可重复。PVP 走服务端 debug_grant。</summary>
         public bool DebugGrantRelic(int relicId)
         {
-            var relic = RelicConfig.Get(relicId);
+            var relic = LookupRelic(relicId);
             if (relic == null)
             {
                 Hint = $"[编辑器] 没有圣物 Id={relicId}";
@@ -4390,8 +4402,8 @@ namespace App.Game
         }
 #endif
 
-        /// <summary>表里 BindingID 含该羁绊的全部圣物 Id。</summary>
-        public static List<int> CollectBindingMemberRelicIds(int bindingId)
+        /// <summary>表里 BindingID 含该羁绊的全部圣物 Id。PVP 只扫 <c>PvpRelic</c>。</summary>
+        public static List<int> CollectBindingMemberRelicIds(int bindingId, bool pvp = false)
         {
             var result = new List<int>();
             if (bindingId <= 0)
@@ -4399,9 +4411,19 @@ namespace App.Game
                 return result;
             }
 
-            foreach (var pair in RelicConfig.All)
+            IEnumerable<RelicConfig> rows;
+            if (pvp)
             {
-                var relic = pair.Value;
+                var tables = UnityGameConfigLoader.Current;
+                rows = tables != null ? tables.PvpRelics : Array.Empty<RelicConfig>();
+            }
+            else
+            {
+                rows = RelicConfig.All.Values;
+            }
+
+            foreach (var relic in rows)
+            {
                 if (relic?.BindingID == null)
                 {
                     continue;
@@ -7967,7 +7989,7 @@ namespace App.Game
             RelicMechanics.RefreshCopiedRelic(Run, _rng);
             if (Run.RoundCopiedRelicId > 0)
             {
-                var copied = RelicConfig.Get(Run.RoundCopiedRelicId);
+                var copied = LookupRelic(Run.RoundCopiedRelicId);
                 Log($"复制：本回合复制 {(copied != null ? copied.Name : Run.RoundCopiedRelicId.ToString())}");
             }
 
@@ -8233,7 +8255,7 @@ namespace App.Game
             for (var i = 0; i < destroyed.Count; i++)
             {
                 var relicId = destroyed[i];
-                var relic = RelicConfig.Get(relicId);
+                var relic = LookupRelic(relicId);
                 Run.RelicConfigIds.Remove(relicId);
                 ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
                 Log($"{(relic != null ? relic.Name : relicId.ToString())} 被摧毁");
@@ -10071,7 +10093,7 @@ namespace App.Game
                     continue;
                 }
 
-                var relic = RelicConfig.Get(id);
+                var relic = LookupRelic(id);
                 var name = relic != null ? relic.Name : id.ToString();
                 Log($"收藏禁用：本手失效 {name}");
             }
@@ -10461,7 +10483,7 @@ namespace App.Game
 
             for (var i = 0; i < Run.ShopOfferIds.Count; i++)
             {
-                var owned = RelicConfig.Get(Run.ShopOfferIds[i]);
+                var owned = LookupRelic(Run.ShopOfferIds[i]);
                 if (owned != null && owned.Type >= QualityType.Rare)
                 {
                     return;

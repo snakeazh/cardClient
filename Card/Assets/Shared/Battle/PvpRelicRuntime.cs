@@ -110,7 +110,7 @@ namespace CardShare.Battle
             for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
             {
                 var id = fighter.OwnedRelicIds[i];
-                if (id <= 0 || !tables.TryGetRelic(id, out var relic) || IsConsumable(relic))
+                if (id <= 0 || !tables.TryGetPvpRelic(id, out var relic) || IsConsumable(relic))
                 {
                     continue;
                 }
@@ -981,9 +981,9 @@ namespace CardShare.Battle
                 }
 
                 var pool = new List<int>();
-                for (var i = 0; i < tables.Relics.Count; i++)
+                for (var i = 0; i < tables.PvpRelics.Count; i++)
                 {
-                    var relic = tables.Relics[i];
+                    var relic = tables.PvpRelics[i];
                     if (relic != null && IsConsumable(relic) && !fighter.OwnedRelicIds.Contains(relic.Id))
                     {
                         pool.Add(relic.Id);
@@ -1088,7 +1088,7 @@ namespace CardShare.Battle
         private static int SumRelicInt(IGameTables tables, int relicId, MechanismType type)
         {
             var total = 0f;
-            if (tables.TryGetRelic(relicId, out var relic))
+            if (tables.TryGetPvpRelic(relicId, out var relic))
             {
                 ForEachRelicEntry(tables, relic, entry =>
                 {
@@ -1166,9 +1166,9 @@ namespace CardShare.Battle
             }
 
             var pool = new List<int>();
-            for (var i = 0; i < tables.Relics.Count; i++)
+            for (var i = 0; i < tables.PvpRelics.Count; i++)
             {
-                var relic = tables.Relics[i];
+                var relic = tables.PvpRelics[i];
                 if (relic == null || !IsConsumable(relic))
                 {
                     continue;
@@ -1274,7 +1274,7 @@ namespace CardShare.Battle
             for (var i = 0; i < fighter.OwnedRelicIds.Count; i++)
             {
                 var relicId = fighter.OwnedRelicIds[i];
-                if (relicId <= 0 || !seen.Add(relicId) || !tables.TryGetRelic(relicId, out var relic))
+                if (relicId <= 0 || !seen.Add(relicId) || !tables.TryGetPvpRelic(relicId, out var relic))
                 {
                     continue;
                 }
@@ -1297,7 +1297,7 @@ namespace CardShare.Battle
 
             for (var i = 0; i < relic.MechanismId.Length; i++)
             {
-                if (tables.TryGetRelicEntry(relic.MechanismId[i], out var entry))
+                if (tables.TryGetPvpRelicEntry(relic.MechanismId[i], out var entry))
                 {
                     action(entry);
                 }

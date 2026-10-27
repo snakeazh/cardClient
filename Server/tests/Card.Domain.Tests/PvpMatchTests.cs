@@ -810,6 +810,46 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void PvpPoolUsesOnlyPvpRelicTable()
+    {
+        var pveRelic = new RelicConfig
+        {
+            Id = 7,
+            Name = "仅PVE",
+            Type = QualityType.Ordinary,
+            Price = 10,
+            SellingPrice = 4,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>()
+        };
+        var pvpRelic = new PvpRelicConfig
+        {
+            Id = 8,
+            Name = "仅PVP",
+            Type = QualityType.Ordinary,
+            Price = 99,
+            SellingPrice = 40,
+            RefreshProbability = 1f,
+            MechanismId = Array.Empty<int>()
+        };
+
+        // 显式空 PVP 表：有 RelicConfig 也不进 PVP 池。
+        var emptyPvp = PvpTestTables.WithPvpRelics(
+            new[] { pveRelic },
+            Array.Empty<PvpRelicConfig>());
+        Assert.Empty(emptyPvp.PvpRelics);
+        Assert.False(emptyPvp.TryGetPvpRelic(7, out _));
+        Assert.Equal(0, PvpRelicStock.Create(emptyPvp).Available(7));
+
+        var onlyPvp = PvpTestTables.WithPvpRelics(new[] { pveRelic }, new[] { pvpRelic });
+        Assert.False(onlyPvp.TryGetPvpRelic(7, out _));
+        Assert.True(onlyPvp.TryGetPvpRelic(8, out var fromPvp));
+        Assert.Equal(99, fromPvp.Price);
+        Assert.Single(onlyPvp.PvpRelics);
+        Assert.Equal(6, PvpRelicStock.Create(onlyPvp).Available(8));
+    }
+
+    [Fact]
     public void SharedStockFollowsQualityAndReturnsOnSell()
     {
         var relic = new RelicConfig
@@ -1928,6 +1968,18 @@ internal static class PvpTestTables
         BindingConfig[]? bindings = null)
         => Build(ClassicRounds(), relics: relics, relicEntries: relicEntries, bindings: bindings);
 
+    public static GameTables WithPvpRelics(
+        RelicConfig[] relics,
+        PvpRelicConfig[] pvpRelics,
+        RelicEntryConfig[]? relicEntries = null,
+        PvpRelicEntryConfig[]? pvpRelicEntries = null)
+        => Build(
+            ClassicRounds(),
+            relics: relics,
+            relicEntries: relicEntries,
+            pvpRelics: pvpRelics,
+            pvpRelicEntries: pvpRelicEntries);
+
     internal static RelicConfig BondRelic(int id)
         => new RelicConfig
         {
@@ -1960,7 +2012,9 @@ internal static class PvpTestTables
         IReadOnlyList<HeroEntryConfig>? heroEntries = null,
         IReadOnlyList<TalentConfig>? talentRows = null,
         IReadOnlyList<TalentEntryConfig>? talentEntries = null,
-        IReadOnlyList<BindingConfig>? bindings = null)
+        IReadOnlyList<BindingConfig>? bindings = null,
+        IReadOnlyList<PvpRelicConfig>? pvpRelics = null,
+        IReadOnlyList<PvpRelicEntryConfig>? pvpRelicEntries = null)
     {
         var fallback = GameTables.Fallback();
         return new GameTables(
@@ -2017,6 +2071,9 @@ internal static class PvpTestTables
                 }
             },
             rounds,
-            bindings: bindings);
+            bindings: bindings,
+            // 测试夹具：未显式给 PvpRelic 时，从本用例的 Relic 行合成进 PVP 通道（生产路径不回落 RelicConfig）。
+            pvpRelics: pvpRelics ?? PvpTableHarness.Relics(relics ?? fallback.Relics),
+            pvpRelicEntries: pvpRelicEntries ?? PvpTableHarness.Entries(relicEntries ?? fallback.RelicEntries));
     }
 }

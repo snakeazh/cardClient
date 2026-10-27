@@ -16,10 +16,12 @@ namespace CardShare.Contracts
 
         private readonly Dictionary<int, ItemConfig> _items;
         private readonly Dictionary<int, RelicConfig> _relics;
+        private readonly Dictionary<int, RelicConfig> _pvpRelics;
         private readonly Dictionary<int, HeroConfig> _heroes;
         private readonly Dictionary<int, HeroEntryConfig> _heroEntries;
         private readonly Dictionary<int, TalentEntryConfig> _talentEntries;
         private readonly Dictionary<int, RelicEntryConfig> _relicEntries;
+        private readonly Dictionary<int, RelicEntryConfig> _pvpRelicEntries;
         private readonly Dictionary<int, MonsterGroupConfig> _monsterGroups;
         private readonly Dictionary<(int MonsterId, int MonsterLevel), MonsterConfig> _monsters;
         private readonly Dictionary<int, PvpModeConfig> _pvpModes;
@@ -44,7 +46,9 @@ namespace CardShare.Contracts
             IReadOnlyList<PvpModeConfig>? pvpModes = null,
             IReadOnlyList<PvpRoundConfig>? pvpRounds = null,
             IReadOnlyList<PvpBotConfig>? pvpBots = null,
-            IReadOnlyList<BindingConfig>? bindings = null)
+            IReadOnlyList<BindingConfig>? bindings = null,
+            IReadOnlyList<PvpRelicConfig>? pvpRelics = null,
+            IReadOnlyList<PvpRelicEntryConfig>? pvpRelicEntries = null)
         {
             GameConst = gameConst;
             HandScores = handScores;
@@ -86,6 +90,22 @@ namespace CardShare.Contracts
             _pvpModes = PvpModes.Where(m => m.Id > 0).GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First());
             _pvpBots = PvpBots.Where(b => b.Id > 0).GroupBy(b => b.Id).ToDictionary(g => g.Key, g => g.First());
             _bindings = Bindings.Where(b => b.Id > 0).GroupBy(b => b.Id).ToDictionary(g => g.Key, g => g.First());
+
+            // PVP 只认 PvpRelic*，绝不回落 RelicConfig / RelicEntryConfig。
+            var convertedPvpRelics = ConvertPvpRelics(pvpRelics);
+            _pvpRelics = convertedPvpRelics
+                .Where(r => r.Id > 0)
+                .GroupBy(r => r.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+            PvpRelics = convertedPvpRelics;
+
+            var convertedPvpEntries = ConvertPvpRelicEntries(pvpRelicEntries);
+            _pvpRelicEntries = convertedPvpEntries
+                .Where(e => e.Id > 0)
+                .GroupBy(e => e.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+            PvpRelicEntries = convertedPvpEntries;
+
             Difficulties = Levels.Select(l => l.Difficulty).Distinct().OrderBy(d => d).ToArray();
             _maxLevelByDifficulty = Levels
                 .GroupBy(l => l.Difficulty)
@@ -120,6 +140,8 @@ namespace CardShare.Contracts
 
         public IReadOnlyList<RelicConfig> Relics { get; }
 
+        public IReadOnlyList<RelicConfig> PvpRelics { get; }
+
         public IReadOnlyList<UnlockConditionConfig> UnlockConditions { get; }
 
         public IReadOnlyList<TalentConfig> TalentRows { get; }
@@ -133,6 +155,8 @@ namespace CardShare.Contracts
         public IReadOnlyList<TalentEntryConfig> TalentEntries { get; }
 
         public IReadOnlyList<RelicEntryConfig> RelicEntries { get; }
+
+        public IReadOnlyList<RelicEntryConfig> PvpRelicEntries { get; }
 
         public IReadOnlyList<MonsterGroupConfig> MonsterGroups { get; }
 
@@ -152,6 +176,9 @@ namespace CardShare.Contracts
 
         public bool TryGetRelic(int id, out RelicConfig relic) => _relics.TryGetValue(id, out relic!);
 
+        public bool TryGetPvpRelic(int id, out RelicConfig relic)
+            => _pvpRelics.TryGetValue(id, out relic!);
+
         public bool TryGetHero(int id, out HeroConfig hero) => _heroes.TryGetValue(id, out hero!);
 
         public bool TryGetHeroEntry(int id, out HeroEntryConfig entry) => _heroEntries.TryGetValue(id, out entry!);
@@ -159,6 +186,9 @@ namespace CardShare.Contracts
         public bool TryGetTalentEntry(int id, out TalentEntryConfig entry) => _talentEntries.TryGetValue(id, out entry!);
 
         public bool TryGetRelicEntry(int id, out RelicEntryConfig entry) => _relicEntries.TryGetValue(id, out entry!);
+
+        public bool TryGetPvpRelicEntry(int id, out RelicEntryConfig entry)
+            => _pvpRelicEntries.TryGetValue(id, out entry!);
 
         public bool TryGetMonsterGroup(int id, out MonsterGroupConfig group) => _monsterGroups.TryGetValue(id, out group!);
 
@@ -182,6 +212,73 @@ namespace CardShare.Contracts
 
         public int GetTalentMaxLevel(int talentId)
             => _talentMaxLevel.TryGetValue(talentId, out var max) ? max : 0;
+
+        private static IReadOnlyList<RelicConfig> ConvertPvpRelics(IReadOnlyList<PvpRelicConfig>? rows)
+        {
+            if (rows == null || rows.Count == 0)
+            {
+                return Array.Empty<RelicConfig>();
+            }
+
+            var list = new List<RelicConfig>(rows.Count);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var src = rows[i];
+                if (src == null || src.Id <= 0)
+                {
+                    continue;
+                }
+
+                list.Add(new RelicConfig
+                {
+                    Id = src.Id,
+                    Type = src.Type,
+                    RefreshProbability = src.RefreshProbability,
+                    Name = src.Name,
+                    Icon = src.Icon,
+                    Price = src.Price,
+                    SellingPrice = src.SellingPrice,
+                    MechanismId = src.MechanismId,
+                    BindingID = src.BindingID,
+                    PVPDoNotAppear = 0,
+                    UnlockConditionId = 0,
+                    UseType = src.UseType,
+                    SpecialDesc = src.SpecialDesc,
+                    Desc = src.Desc
+                });
+            }
+
+            return list;
+        }
+
+        private static IReadOnlyList<RelicEntryConfig> ConvertPvpRelicEntries(IReadOnlyList<PvpRelicEntryConfig>? rows)
+        {
+            if (rows == null || rows.Count == 0)
+            {
+                return Array.Empty<RelicEntryConfig>();
+            }
+
+            var list = new List<RelicEntryConfig>(rows.Count);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var src = rows[i];
+                if (src == null || src.Id <= 0)
+                {
+                    continue;
+                }
+
+                list.Add(new RelicEntryConfig
+                {
+                    Id = src.Id,
+                    Name = src.Name,
+                    Type = src.Type,
+                    Value = src.Value,
+                    Desc = src.Desc
+                });
+            }
+
+            return list;
+        }
 
         public static GameTables Fallback()
         {
@@ -253,6 +350,11 @@ namespace CardShare.Contracts
                     new PvpBotConfig { Id = 100001, NickName = "机器人甲", AvatarUrl = string.Empty, HeroId = 0, Enabled = true },
                     new PvpBotConfig { Id = 100002, NickName = "机器人乙", AvatarUrl = string.Empty, HeroId = 0, Enabled = true },
                     new PvpBotConfig { Id = 100003, NickName = "机器人丙", AvatarUrl = string.Empty, HeroId = 0, Enabled = true }
+                },
+                pvpRelics: new[]
+                {
+                    new PvpRelicConfig { Id = 1, Price = 10, SellingPrice = 5, RefreshProbability = 1f, MechanismId = Array.Empty<int>() },
+                    new PvpRelicConfig { Id = 2, Price = 20, SellingPrice = 8, RefreshProbability = 1f, MechanismId = Array.Empty<int>() }
                 });
         }
     }

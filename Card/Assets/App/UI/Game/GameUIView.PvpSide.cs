@@ -743,7 +743,7 @@ namespace App.UI
                 return;
             }
 
-            var members = GameSession.CollectBindingMemberRelicIds(hold.Binding.Id);
+            var members = GameSession.CollectBindingMemberRelicIds(hold.Binding.Id, pvp: true);
             var owned = ViewModel.Session != null && ViewModel.Session.Run != null
                 ? ViewModel.Session.Run.RelicConfigIds
                 : null;
@@ -776,7 +776,7 @@ namespace App.UI
                     continue;
                 }
 
-                var relic = RelicConfig.Get(members[i]);
+                var relic = LookupPvpRelic(members[i]);
                 Sprite sprite = null;
                 if (relic != null && atlas != null && !string.IsNullOrWhiteSpace(relic.Icon))
                 {
@@ -1242,7 +1242,7 @@ namespace App.UI
                     continue;
                 }
 
-                var relic = RelicConfig.Get(relics[i]);
+                var relic = LookupPvpRelic(relics[i]);
                 Sprite sprite = null;
                 if (relic != null && atlas != null && !string.IsNullOrWhiteSpace(relic.Icon))
                 {
@@ -1337,7 +1337,7 @@ namespace App.UI
                 return;
             }
 
-            var relic = RelicConfig.Get(_hasTipRelicIds[index]);
+            var relic = LookupPvpRelic(_hasTipRelicIds[index]);
             if (relic == null)
             {
                 return;
@@ -1591,6 +1591,13 @@ namespace App.UI
             }
 
             return false;
+        }
+
+        /// <summary>PVP UI 只读 PvpRelic 表，不回落 RelicConfig。</summary>
+        private static RelicConfig LookupPvpRelic(int relicId)
+        {
+            var tables = UnityGameConfigLoader.Current;
+            return tables != null && tables.TryGetPvpRelic(relicId, out var relic) ? relic : null;
         }
 
     }

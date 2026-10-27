@@ -38,11 +38,12 @@ namespace CardShare.Battle
             RoomId = roomId;
             Seed = seed;
             Players = players;
-            _tables = tables;
+            // RelicCombat / BattleEngine 等共享结算仍走 TryGetRelic；包一层指到 PvpRelic*。
+            _tables = PvpGameTables.Wrap(tables);
             _mode = mode;
             _fighters = fighters;
             _shopRandom = new Random(unchecked(seed ^ 0x5A0F9));
-            _relicStock = PvpRelicStock.Create(tables);
+            _relicStock = PvpRelicStock.Create(_tables);
             ModeId = mode.Id;
             Round = 1;
             Phase = PhaseFight;
@@ -1532,7 +1533,7 @@ namespace CardShare.Battle
         /// 含 PVP 未支持消耗类型的圣物拒绝使用（商店也不会上架）。</summary>
         private void UseRelic(PvpFighter fighter, int relicId)
         {
-            if (!_tables.TryGetRelic(relicId, out var relic) || !fighter.OwnedRelicIds.Contains(relicId))
+            if (!_tables.TryGetPvpRelic(relicId, out var relic) || !fighter.OwnedRelicIds.Contains(relicId))
             {
                 throw new InvalidOperationException("Relic not owned.");
             }
@@ -1564,7 +1565,7 @@ namespace CardShare.Battle
         /// <summary>编辑器测试加圣物：写入 OwnedRelicIds，下一手比牌 / BeforeCompare 生效。</summary>
         private void DebugGrantRelic(PvpFighter fighter, int relicId)
         {
-            if (relicId <= 0 || !_tables.TryGetRelic(relicId, out _))
+            if (relicId <= 0 || !_tables.TryGetPvpRelic(relicId, out _))
             {
                 throw new InvalidOperationException("Unknown relic.");
             }
@@ -1587,7 +1588,7 @@ namespace CardShare.Battle
 
         private void BuyRelic(PvpFighter fighter, int relicId)
         {
-            if (!fighter.ShopOfferIds.Contains(relicId) || !_tables.TryGetRelic(relicId, out var relic))
+            if (!fighter.ShopOfferIds.Contains(relicId) || !_tables.TryGetPvpRelic(relicId, out var relic))
             {
                 throw new InvalidOperationException("Relic is not on sale.");
             }
@@ -1614,7 +1615,7 @@ namespace CardShare.Battle
 
         private void SellRelic(PvpFighter fighter, int relicId)
         {
-            if (!fighter.OwnedRelicIds.Contains(relicId) || !_tables.TryGetRelic(relicId, out var relic))
+            if (!fighter.OwnedRelicIds.Contains(relicId) || !_tables.TryGetPvpRelic(relicId, out var relic))
             {
                 throw new InvalidOperationException("Relic not owned.");
             }

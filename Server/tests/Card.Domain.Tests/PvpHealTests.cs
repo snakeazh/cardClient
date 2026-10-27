@@ -146,7 +146,7 @@ public class PvpHealTests
         fighter.OwnedRelicIds.Add(119);
         fighter.OwnedRelicPower.Add(1);
 
-        Assert.True(PvpRelicRuntime.ConsumableHeals(tables, tables.Relics.First(r => r.Id == 119)));
+        Assert.True(PvpRelicRuntime.ConsumableHeals(tables, tables.PvpRelics.First(r => r.Id == 119)));
         Assert.Null(PvpBotConsumables.PickToUse(fighter, tables));
 
         fighter.Hp = 40;

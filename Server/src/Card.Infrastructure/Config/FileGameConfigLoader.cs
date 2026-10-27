@@ -54,7 +54,9 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
             ReadArray<PvpModeConfig>("PvpModeConfig.json"),
             ReadArray<PvpRoundConfig>("PvpRoundConfig.json"),
             ReadArray<PvpBotConfig>("PvpBotConfig.json"),
-            ReadArray<BindingConfig>("BindingConfig.json"));
+            ReadArray<BindingConfig>("BindingConfig.json"),
+            ReadArray<PvpRelicConfig>("PvpRelicConfig.json"),
+            ReadArray<PvpRelicEntryConfig>("PvpRelicEntryConfig.json"));
         if (tables.Levels.Count == 0)
         {
             return GameTables.Fallback();
@@ -90,7 +92,8 @@ public sealed class FileGameConfigLoader : IGameConfigLoader
         var names = new[]
         {
             "GameConst.json", "HandScoreConfig.json", "LevelConfig.json", "HeroConfig.json",
-            "HeroEntryConfig.json", "RelicConfig.json", "RelicEntryConfig.json", "UnlockConditionConfig.json",
+            "HeroEntryConfig.json", "RelicConfig.json", "RelicEntryConfig.json",
+            "PvpRelicConfig.json", "PvpRelicEntryConfig.json", "UnlockConditionConfig.json",
             "TalentConfig.json", "TalentEntryConfig.json", "MonsterConfig.json",
             "MonsterGroupConfig.json", "PvpModeConfig.json", "PvpRoundConfig.json", "PvpBotConfig.json",
             "BindingConfig.json"

@@ -26,7 +26,7 @@ namespace CardShare.Battle
         public static PvpRelicStock Create(IGameTables tables)
         {
             var stock = new PvpRelicStock();
-            var relics = tables.Relics;
+            var relics = tables.PvpRelics;
             for (var i = 0; i < relics.Count; i++)
             {
                 var relic = relics[i];

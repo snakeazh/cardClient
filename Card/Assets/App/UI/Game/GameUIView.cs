@@ -2978,7 +2978,8 @@ namespace App.UI
             _hudFlies.Clear();
             BindOpeningVs();
             ParkHudFly("horEquipBtns2", 1f, 0f);
-            ParkHudFly("horBtns2", -1f, 0f);
+            // 技能栏横排贴底：从下方飞入（旧竖排在左侧时从左飞入）。
+            ParkHudFly("horBtns2", 0f, -1f);
             ParkHudFly("stageInfo", 1f, 0f);
             var player = ResolveSlot("PlayerItem") ?? transform.Find("PlayerItem");
             ParkHudFly(player, 0f, -1f, openingPlayerPose: true);
@@ -3087,6 +3088,8 @@ namespace App.UI
             _waitHudForOpening = false;
             StopHudOpeningUnlock();
             SnapHudFliesHome();
+            // 技能栏飞到最终横排位置后再登记挖孔，避免引导仍按入场前坐标画。
+            RegisterGuideTargets();
             TryStartOpening();
         }
 
@@ -4754,12 +4757,18 @@ namespace App.UI
             _shownRoundBuffId = 0;
             _shownPlayerTip = false;
             _shownEnemySlot = -1;
+            // 技能栏横排在底部：tip 放按钮上方，避免旧竖排「左侧」贴边被裁切。
             await PresentItemTip(
                 _peekGoodBtn.transform,
                 "搓牌",
                 "点选一张手牌，将其替换为牌堆中的一张新牌。",
                 showUse: false,
                 placeRight: false);
+            if (_equipTip != null && _peekGoodBtn != null)
+            {
+                PositionTipAbove(_equipTip, _peekGoodBtn.transform);
+            }
+
             _shownPeekGoodTip = true;
             GuideSignals.NotifyPeekGoodTipShown();
         }
@@ -5042,12 +5051,22 @@ namespace App.UI
             _guideTargetIds.Add(id);
         }
 
-        /// <summary>搓牌 / 替换 / 透视 三个技能按钮并集挖孔。</summary>
+        /// <summary>
+        /// 搓牌 / 替换 / 透视横排：强制重建 horBtns2 后，用三个按钮并集挖孔（宽条贴底居中）。
+        /// </summary>
         private void RegisterSkillButtonsGuideTarget()
         {
             if (_guideTargets == null)
             {
                 return;
+            }
+
+            var skills = ResolveSlot("horBtns2") ?? transform.Find("horBtns2");
+            if (skills is RectTransform skillsRt)
+            {
+                // 竖排改横排后子节点位置靠 Layout；挖孔前必须重建，否则仍是 (0,0) 叠在一起。
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(skillsRt);
             }
 
             var rects = new List<RectTransform>(3);
@@ -5056,6 +5075,12 @@ namespace App.UI
             TryAddGuideBtnRect(rects, "ChaKanGood");
             if (rects.Count == 0)
             {
+                if (skills is RectTransform fallback)
+                {
+                    _guideTargets.RegisterUi(GuideTargetIds.SkillButtons, fallback);
+                    _guideTargetIds.Add(GuideTargetIds.SkillButtons);
+                }
+
                 return;
             }
 

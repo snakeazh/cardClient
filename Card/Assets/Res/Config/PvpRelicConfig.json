@@ -1,0 +1,2518 @@
+[
+  {
+    "Id": 101,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "冒险证明",
+    "Icon": "AdventureCertificate",
+    "Price": 45,
+    "SellingPrice": 22,
+    "MechanismId": [
+      10001
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算时提供+1倍率"
+  },
+  {
+    "Id": 102,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "青铜项链",
+    "Icon": "BronzeNecklace",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10002
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张方片牌在结算时提供+1攻击力"
+  },
+  {
+    "Id": 103,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "青铜手镯",
+    "Icon": "BronzeBracelet",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10003
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张黑桃牌在结算时提供+1攻击力"
+  },
+  {
+    "Id": 104,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "青铜耳环",
+    "Icon": "BronzeEarrings",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10004
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张红心牌在结算时提供+1攻击力"
+  },
+  {
+    "Id": 105,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "青铜戒指",
+    "Icon": "BronzeRing",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10005
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张梅花牌在结算时提供+1攻击力"
+  },
+  {
+    "Id": 106,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制长剑",
+    "Icon": "WoodenLongSword",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10006
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的对子牌型在结算时提供+3攻击力"
+  },
+  {
+    "Id": 107,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制法杖",
+    "Icon": "WoodenStaff",
+    "Price": 22,
+    "SellingPrice": 11,
+    "MechanismId": [
+      10007
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的顺子牌型在结算时提供+5攻击力"
+  },
+  {
+    "Id": 108,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制长弓",
+    "Icon": "WoodenLongBow",
+    "Price": 35,
+    "SellingPrice": 17,
+    "MechanismId": [
+      10008
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的同花牌型在结算时提供+4攻击力"
+  },
+  {
+    "Id": 109,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制长矛",
+    "Icon": "WoodenSpear",
+    "Price": 16,
+    "SellingPrice": 8,
+    "MechanismId": [
+      10009
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的同花顺牌型在结算时提供+6攻击力"
+  },
+  {
+    "Id": 110,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制长斧",
+    "Icon": "WoodenLongAxe",
+    "Price": 16,
+    "SellingPrice": 8,
+    "MechanismId": [
+      10010
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的炸弹牌型在结算时提供+7攻击力"
+  },
+  {
+    "Id": 111,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "木制圆盾",
+    "Icon": "WoodenRoundShield",
+    "Price": 15,
+    "SellingPrice": 7,
+    "MechanismId": [
+      10011
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次受到的伤害降低5%"
+  },
+  {
+    "Id": 112,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "小钱包",
+    "Icon": "SmallWallet",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10012
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,获得2金币"
+  },
+  {
+    "Id": 113,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "绷带",
+    "Icon": "Bandage",
+    "Price": 35,
+    "SellingPrice": 17,
+    "MechanismId": [
+      10013
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,恢复2点生命"
+  },
+  {
+    "Id": 114,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "幸运草",
+    "Icon": "LuckyClover",
+    "Price": 26,
+    "SellingPrice": 13,
+    "MechanismId": [
+      10014
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合结束后,有25%概率获得8金币"
+  },
+  {
+    "Id": 115,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "暴击拳套",
+    "Icon": "CritGlove",
+    "Price": 22,
+    "SellingPrice": 11,
+    "MechanismId": [
+      10015
+    ],
+    "BindingID": [
+      103
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合结束后,提高1%暴击率,至多叠加20层"
+  },
+  {
+    "Id": 116,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "垫脚石",
+    "Icon": "SteppingStone",
+    "Price": 28,
+    "SellingPrice": 14,
+    "MechanismId": [
+      10016
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌获胜后,有20%概率永久+1攻击力"
+  },
+  {
+    "Id": 117,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "反击拳套",
+    "Icon": "CounterGlove",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10017
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每当你受到伤害时,反弹1%的伤害给对方"
+  },
+  {
+    "Id": 118,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "磨刀石",
+    "Icon": "Whetstone",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10018
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,本次比牌你造成的伤害+25%"
+  },
+  {
+    "Id": 119,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "急救粉",
+    "Icon": "FirstAidPowder",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10019
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,立即恢复20%血量"
+  },
+  {
+    "Id": 120,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "复仇之刺",
+    "Icon": "VengeanceSpike",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10020
+    ],
+    "BindingID": [
+      109
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每输1次比牌,你造成的伤害+10%,至多叠加5层"
+  },
+  {
+    "Id": 121,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "对子心得",
+    "Icon": "PairInsight",
+    "Price": 35,
+    "SellingPrice": 17,
+    "MechanismId": [
+      10021
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,对子牌型提供的倍率永久+1"
+  },
+  {
+    "Id": 122,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "狼牙棒",
+    "Icon": "WolfToothClub",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10022
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "暴击伤害+50%"
+  },
+  {
+    "Id": 123,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "医疗手册",
+    "Icon": "HealingManual",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10023
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "圣物提供的回复效果提高50%"
+  },
+  {
+    "Id": 124,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "开门红",
+    "Icon": "GoodStart",
+    "Price": 22,
+    "SellingPrice": 11,
+    "MechanismId": [
+      10024
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合你的首次比牌,伤害+30%"
+  },
+  {
+    "Id": 125,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "铁砂掌",
+    "Icon": "IronSandPalm",
+    "Price": 20,
+    "SellingPrice": 10,
+    "MechanismId": [
+      10025
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "你造成的伤害+15点"
+  },
+  {
+    "Id": 126,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "旧棉袄",
+    "Icon": "OldCottonJacket",
+    "Price": 30,
+    "SellingPrice": 15,
+    "MechanismId": [
+      10026
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次受到的伤害降低3点"
+  },
+  {
+    "Id": 127,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "存钱罐",
+    "Icon": "PiggyBank",
+    "Price": 25,
+    "SellingPrice": 12,
+    "MechanismId": [
+      10027
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "金币不少于60时,你受到的伤害降低8%"
+  },
+  {
+    "Id": 128,
+    "Type": 1,
+    "RefreshProbability": 0.8,
+    "Name": "旧怀表",
+    "Icon": "OldPocketWatch",
+    "Price": 22,
+    "SellingPrice": 11,
+    "MechanismId": [
+      10028
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "回合结束时,若你本回合未受到伤害,获得3金币"
+  },
+  {
+    "Id": 201,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银项链",
+    "Icon": "SilverNecklace",
+    "Price": 115,
+    "SellingPrice": 57,
+    "MechanismId": [
+      20001
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张方片牌在结算时提供+1倍率"
+  },
+  {
+    "Id": 202,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银手镯",
+    "Icon": "SilverBracelet",
+    "Price": 115,
+    "SellingPrice": 57,
+    "MechanismId": [
+      20002
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
+  },
+  {
+    "Id": 203,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银耳环",
+    "Icon": "SilverEarrings",
+    "Price": 115,
+    "SellingPrice": 57,
+    "MechanismId": [
+      20003
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张红心牌在结算时提供+1倍率"
+  },
+  {
+    "Id": 204,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白银戒指",
+    "Icon": "SilverRing",
+    "Price": 115,
+    "SellingPrice": 57,
+    "MechanismId": [
+      20004
+    ],
+    "BindingID": [
+      102
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
+  },
+  {
+    "Id": 205,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制长剑",
+    "Icon": "IronLongSword",
+    "Price": 120,
+    "SellingPrice": 60,
+    "MechanismId": [
+      20005
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的对子牌型在结算时提供+3倍率"
+  },
+  {
+    "Id": 206,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制法杖",
+    "Icon": "IronStaff",
+    "Price": 100,
+    "SellingPrice": 50,
+    "MechanismId": [
+      20006
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的顺子牌型在结算时提供+5倍率"
+  },
+  {
+    "Id": 207,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制长弓",
+    "Icon": "IronLongBow",
+    "Price": 155,
+    "SellingPrice": 77,
+    "MechanismId": [
+      20007
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的同花牌型在结算时提供+4倍率"
+  },
+  {
+    "Id": 208,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制长矛",
+    "Icon": "IronSpear",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20008
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的同花顺牌型在结算时提供+6倍率"
+  },
+  {
+    "Id": 209,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁制长斧",
+    "Icon": "IronLongAxe",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20009
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的炸弹牌型在结算时提供+7倍率"
+  },
+  {
+    "Id": 210,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "小精灵",
+    "Icon": "Elf",
+    "Price": 140,
+    "SellingPrice": 70,
+    "MechanismId": [
+      20010,
+      200101
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "获得60点生命上限,每回合结束后恢复2点血量"
+  },
+  {
+    "Id": 211,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "白条",
+    "Icon": "WhiteStrip",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      20011
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "可以负债,最多-150金币"
+  },
+  {
+    "Id": 212,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "恐怖面具",
+    "Icon": "HorrorMask",
+    "Price": 135,
+    "SellingPrice": 67,
+    "MechanismId": [
+      20012
+    ],
+    "BindingID": [
+      105
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张人头牌在结算时提供+1倍率"
+  },
+  {
+    "Id": 213,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "黄金面具",
+    "Icon": "GoldMask",
+    "Price": 70,
+    "SellingPrice": 35,
+    "MechanismId": [
+      20013
+    ],
+    "BindingID": [
+      105,
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张人头牌在结算时获得5金币"
+  },
+  {
+    "Id": 214,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "黑白相机",
+    "Icon": "BlackWhiteCamera",
+    "Price": 109,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20014
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+2倍率"
+  },
+  {
+    "Id": 215,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "丘比特",
+    "Icon": "Cupid",
+    "Price": 109,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20015
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+2倍率"
+  },
+  {
+    "Id": 216,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "投资",
+    "Icon": "Investment",
+    "Price": 115,
+    "SellingPrice": 57,
+    "MechanismId": [
+      20016
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每花费60金币,英雄永久+1攻击力"
+  },
+  {
+    "Id": 217,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "补偿金",
+    "Icon": "CompensationFund",
+    "Price": 60,
+    "SellingPrice": 30,
+    "MechanismId": [
+      20017
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次受到伤害时,+10金币"
+  },
+  {
+    "Id": 218,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "和平鸽",
+    "Icon": "PeaceDove",
+    "Price": 85,
+    "SellingPrice": 42,
+    "MechanismId": [
+      20018
+    ],
+    "BindingID": [
+      109
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "有20%概率将自身造成的伤害或受到的伤害降低为0"
+  },
+  {
+    "Id": 219,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "勇气徽章",
+    "Icon": "CourageBadge",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20019
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时,若战胜敌人,则永久+1攻击力"
+  },
+  {
+    "Id": 220,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "激励徽章",
+    "Icon": "InspireBadge",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20020
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时,若战胜敌人,则永久+3生命上限"
+  },
+  {
+    "Id": 221,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "铁饭碗",
+    "Icon": "IronBowl",
+    "Price": 70,
+    "SellingPrice": 35,
+    "MechanismId": [
+      20021
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌后无论胜负,均可获得3金币"
+  },
+  {
+    "Id": 222,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "永恒之心",
+    "Icon": "EternalHeart",
+    "Price": 75,
+    "SellingPrice": 37,
+    "MechanismId": [
+      20022
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,永久+1生命上限"
+  },
+  {
+    "Id": 223,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "幸运顺子",
+    "Icon": "LuckyStraight",
+    "Price": 90,
+    "SellingPrice": 45,
+    "MechanismId": [
+      20023
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,若对方的牌型大于顺子,则会被强行视作顺子(购买后15次比牌内生效)"
+  },
+  {
+    "Id": 224,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "运动鞋",
+    "Icon": "SportsShoes",
+    "Price": 120,
+    "SellingPrice": 60,
+    "MechanismId": [
+      20024
+    ],
+    "BindingID": [
+      109
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合结束后,提高2%闪避率,至多叠加20层"
+  },
+  {
+    "Id": 225,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "保温杯",
+    "Icon": "ThermalMug",
+    "Price": 109,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20025
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "回合结束后,若你的血量低于50%,则恢复6点血量"
+  },
+  {
+    "Id": 226,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "火药",
+    "Icon": "Gunpowder",
+    "Price": 90,
+    "SellingPrice": 45,
+    "MechanismId": [
+      20027
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,本次比牌你造成的伤害+50%"
+  },
+  {
+    "Id": 227,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "急救包",
+    "Icon": "GoldFirstAidKit",
+    "Price": 145,
+    "SellingPrice": 72,
+    "MechanismId": [
+      20028
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,立即恢复40%血量"
+  },
+  {
+    "Id": 228,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "月光酒",
+    "Icon": "MoonlightWine",
+    "Price": 95,
+    "SellingPrice": 47,
+    "MechanismId": [
+      20029
+    ],
+    "BindingID": [
+      108
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次比牌获胜后,恢复3点血量"
+  },
+  {
+    "Id": 229,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "商人票据",
+    "Icon": "MerchantBill",
+    "Price": 109,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20030
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,下次进入商店时所有圣物价格-50%"
+  },
+  {
+    "Id": 230,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "同花心得",
+    "Icon": "SameSuitInsight",
+    "Price": 160,
+    "SellingPrice": 80,
+    "MechanismId": [
+      20031
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,同花牌型提供的倍率永久+2"
+  },
+  {
+    "Id": 231,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "顺子心得",
+    "Icon": "StraightInsight",
+    "Price": 160,
+    "SellingPrice": 80,
+    "MechanismId": [
+      20032
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,顺子牌型提供的倍率永久+2"
+  },
+  {
+    "Id": 232,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第一位",
+    "Icon": "FirstPosition",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      20033
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时的第一张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 233,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第二位",
+    "Icon": "SecondPosition",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      20034
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时的第二张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 234,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "第三位",
+    "Icon": "ThirdPosition",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      20035
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时的第三张牌提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 235,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "疯狂猴子",
+    "Icon": "CrazyMonkey",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20036,
+      20037
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算时提供+8倍率,但回合结束后有18%的概率摧毁此圣物"
+  },
+  {
+    "Id": 236,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "贪婪",
+    "Icon": "Greed",
+    "Price": 109,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20038
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次比牌胜利后,此圣物倍率+0.25;每次失败后-0.25"
+  },
+  {
+    "Id": 237,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "傲慢披风",
+    "Icon": "ArroganceCloak",
+    "Price": 120,
+    "SellingPrice": 60,
+    "MechanismId": [
+      20039
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "生命高于70%时,你造成的伤害+25%"
+  },
+  {
+    "Id": 238,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "纯色西装",
+    "Icon": "SolidColorSuit",
+    "Price": 110,
+    "SellingPrice": 55,
+    "MechanismId": [
+      20040
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的三张牌同色(全红或全黑)时,本次伤害+30%"
+  },
+  {
+    "Id": 239,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "千术手套",
+    "Icon": "CheatGlove",
+    "Price": 80,
+    "SellingPrice": 40,
+    "MechanismId": [
+      20041
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每关[替换]使用次数+1"
+  },
+  {
+    "Id": 240,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "救济金",
+    "Icon": "ReliefFund",
+    "Price": 70,
+    "SellingPrice": 35,
+    "MechanismId": [
+      20042
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,若金币不足20,获得15金币"
+  },
+  {
+    "Id": 241,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "肾上腺素",
+    "Icon": "Adrenaline",
+    "Price": 95,
+    "SellingPrice": 47,
+    "MechanismId": [
+      20043
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "暴击时,回复8点生命"
+  },
+  {
+    "Id": 242,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "藏宝图",
+    "Icon": "TreasureMap",
+    "Price": 120,
+    "SellingPrice": 60,
+    "MechanismId": [
+      20044
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "攻击敌人时,有25%概率获得1件随机消耗性圣物(圣物栏有空位时)"
+  },
+  {
+    "Id": 243,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "捡漏",
+    "Icon": "PickUpBargain",
+    "Price": 150,
+    "SellingPrice": 75,
+    "MechanismId": [
+      20045
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次刷新商店时,有30%概率其中1件圣物为稀有或更高品质"
+  },
+  {
+    "Id": 244,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "老主顾",
+    "Icon": "OldCustomer",
+    "Price": 90,
+    "SellingPrice": 45,
+    "MechanismId": [
+      20046
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "商店刷新价格不再随次数上涨"
+  },
+  {
+    "Id": 245,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "以下犯上",
+    "Icon": "DefySuperior",
+    "Price": 100,
+    "SellingPrice": 50,
+    "MechanismId": [
+      20047
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "对手攻击力高于你时,你造成的伤害+25%"
+  },
+  {
+    "Id": 246,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "养精蓄锐",
+    "Icon": "SaveEnergy",
+    "Price": 95,
+    "SellingPrice": 47,
+    "MechanismId": [
+      20048
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "本回合未使用任何技能时,你造成的伤害+25%"
+  },
+  {
+    "Id": 247,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "残影",
+    "Icon": "Afterimage",
+    "Price": 85,
+    "SellingPrice": 42,
+    "MechanismId": [
+      20049
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "闪避成功时,获得10金币"
+  },
+  {
+    "Id": 248,
+    "Type": 2,
+    "RefreshProbability": 0.4,
+    "Name": "牌型图鉴",
+    "Icon": "CardTypeManual",
+    "Price": 90,
+    "SellingPrice": 45,
+    "MechanismId": [
+      20050
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "本局每首次亮出1种牌型,永久+3攻击力(最多7种)"
+  },
+  {
+    "Id": 301,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "疯狂面具",
+    "Icon": "MadMask",
+    "Price": 210,
+    "SellingPrice": 105,
+    "MechanismId": [
+      30001
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "造成伤害时,获得5%的生命窃取"
+  },
+  {
+    "Id": 302,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "回旋刃",
+    "Icon": "BoomerangBlade",
+    "Price": 265,
+    "SellingPrice": 132,
+    "MechanismId": [
+      30002
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的牌点数提供的攻击力加成翻倍"
+  },
+  {
+    "Id": 303,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "致胜之剑",
+    "Icon": "WinningSword",
+    "Price": 210,
+    "SellingPrice": 105,
+    "MechanismId": [
+      30003
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算伤害时,将留在手牌上最大的牌点数×2转化为额外攻击力"
+  },
+  {
+    "Id": 304,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "搓牌能手",
+    "Icon": "CardMaster",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30004
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每搓1次牌,结算时提供的倍率+1"
+  },
+  {
+    "Id": 305,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "会员卡",
+    "Icon": "MemberCard",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30005
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每次进入商店提供1次免费刷新的机会"
+  },
+  {
+    "Id": 306,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "致命黑八",
+    "Icon": "DeadlyBlackEight",
+    "Price": 245,
+    "SellingPrice": 122,
+    "MechanismId": [
+      30007
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张8在结算时提供+100攻击力"
+  },
+  {
+    "Id": 307,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "偶数韵律",
+    "Icon": "EvenRhythm",
+    "Price": 275,
+    "SellingPrice": 137,
+    "MechanismId": [
+      30008
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张偶数牌[2、4、6、8、10]在结算时提供+2倍率"
+  },
+  {
+    "Id": 308,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "奇数韵律",
+    "Icon": "OddRhythm",
+    "Price": 265,
+    "SellingPrice": 132,
+    "MechanismId": [
+      30009
+    ],
+    "BindingID": [
+      104
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张奇数牌[A、3、5、7、9]在结算时提供+2倍率"
+  },
+  {
+    "Id": 309,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "贵族",
+    "Icon": "Noble",
+    "Price": 270,
+    "SellingPrice": 135,
+    "MechanismId": [
+      30010
+    ],
+    "BindingID": [
+      105
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张人头牌在结算时提供+4倍率"
+  },
+  {
+    "Id": 310,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "训练",
+    "Icon": "Training",
+    "Price": 170,
+    "SellingPrice": 85,
+    "MechanismId": [
+      30012
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "回合首次亮牌时,随机有1张牌提供的攻击力永久+1"
+  },
+  {
+    "Id": 311,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "九霄云外",
+    "Icon": "BeyondTheClouds",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30013
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张9在结算时提供25金币"
+  },
+  {
+    "Id": 312,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "后备计划",
+    "Icon": "BackupPlan",
+    "Price": 165,
+    "SellingPrice": 82,
+    "MechanismId": [
+      30014
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "如果本回合牌型小于所有敌人,则立即获得25金币并回复40点血量"
+  },
+  {
+    "Id": 313,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "复盘笔记",
+    "Icon": "ReviewPlan",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30016
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每输1次敌人,结算时就永久提供+1倍率"
+  },
+  {
+    "Id": 314,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "幸运同花",
+    "Icon": "LuckySameSuit",
+    "Price": 220,
+    "SellingPrice": 109,
+    "MechanismId": [
+      30017
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,若敌人的牌型大于同花,则会被强行视作同花(购买后10次比牌内生效)"
+  },
+  {
+    "Id": 315,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "逆转沙漏",
+    "Icon": "ReverseHourglass",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30018
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "当牌型小于敌人时,有30%概率反转对比结果,但伤害按自身牌型计算"
+  },
+  {
+    "Id": 316,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "小本本",
+    "Icon": "LittleNotebook",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30020
+    ],
+    "BindingID": [
+      109
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "本局内,对自己曾经输过的敌人造成伤害时,伤害+50%"
+  },
+  {
+    "Id": 317,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "陷阱",
+    "Icon": "Trap",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30022
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "本局内,曾经赢过自己的敌人在造成伤害时,伤害-30%"
+  },
+  {
+    "Id": 318,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "好运来",
+    "Icon": "LuckComes",
+    "Price": 210,
+    "SellingPrice": 105,
+    "MechanismId": [
+      30023
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合有25%概率使本回合所有敌人亮出的牌型顺位降1级"
+  },
+  {
+    "Id": 319,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "入场券",
+    "Icon": "AdmissionTicket",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30024
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,对所有敌人造成1次自身攻击力的伤害"
+  },
+  {
+    "Id": 320,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "炸弹精髓",
+    "Icon": "LeopardEssence",
+    "Price": 190,
+    "SellingPrice": 95,
+    "MechanismId": [
+      30026
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,本局内你亮出炸弹时,就会获得300金币"
+  },
+  {
+    "Id": 321,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "巨人药剂",
+    "Icon": "GiantPotion",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30028
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,玩家生命上限+80,并立即恢复80点血量"
+  },
+  {
+    "Id": 322,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "三花聚顶",
+    "Icon": "ThreeFlowersGatherAtTheTop",
+    "Price": 220,
+    "SellingPrice": 109,
+    "MechanismId": [
+      30032
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张牌都提供其点数对应的攻击力加成"
+  },
+  {
+    "Id": 323,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "差距胶囊",
+    "Icon": "GapCapsule",
+    "Price": 285,
+    "SellingPrice": 142,
+    "MechanismId": [
+      40025
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,你的牌型与对方牌型每相隔1级,则造成/承受的伤害对应提高/降低20%"
+  },
+  {
+    "Id": 324,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "倍率叠加",
+    "Icon": "MultiplierStacking",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30033
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每使用过1次消耗类的圣物,此圣物就会在结算时永久提供+0.5倍率"
+  },
+  {
+    "Id": 325,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "力量叠加",
+    "Icon": "PowerStacking",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30034
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每使用过1次消耗类的圣物,此圣物就会永久提供+3攻击力"
+  },
+  {
+    "Id": 326,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "召唤",
+    "Icon": "Summon",
+    "Price": 260,
+    "SellingPrice": 130,
+    "MechanismId": [
+      30035
+    ],
+    "BindingID": [
+      106
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "如果你亮出的牌型为同花顺,则会随机生成一个消耗性圣物,前提是圣物栏有空位"
+  },
+  {
+    "Id": 327,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "国王领域",
+    "Icon": "KingdomDomain",
+    "Price": 255,
+    "SellingPrice": 127,
+    "MechanismId": [
+      30036
+    ],
+    "BindingID": [
+      105
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时留在手牌中的每一张K,都会提供+9倍率"
+  },
+  {
+    "Id": 328,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "皇后领域",
+    "Icon": "QueenDomain",
+    "Price": 255,
+    "SellingPrice": 127,
+    "MechanismId": [
+      30037
+    ],
+    "BindingID": [
+      105
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时留在手牌中的每一张Q,都会提供+9倍率"
+  },
+  {
+    "Id": 329,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "妙手",
+    "Icon": "MagicHand",
+    "Price": 245,
+    "SellingPrice": 122,
+    "MechanismId": [
+      30040
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用透视时,随机抽走该敌人1张手牌,与你手中点数最小的1张交换"
+  },
+  {
+    "Id": 330,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "致命猛击",
+    "Icon": "DeadlyStrike",
+    "Price": 220,
+    "SellingPrice": 110,
+    "MechanismId": [
+      30041
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "敌人生命低于20%时,对其伤害+50%"
+  },
+  {
+    "Id": 331,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "血祭",
+    "Icon": "BloodSacrifice",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30042,
+      30043
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "生命上限-100,攻击力+45"
+  },
+  {
+    "Id": 332,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "雇佣兵",
+    "Icon": "Mercenary",
+    "Price": 250,
+    "SellingPrice": 125,
+    "MechanismId": [
+      30044,
+      30045
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "获得60攻击力,每回合开始支付6金币,付不起则失效"
+  },
+  {
+    "Id": 333,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "金钟罩",
+    "Icon": "GoldenBellShield",
+    "Price": 230,
+    "SellingPrice": 115,
+    "MechanismId": [
+      30046
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "受到伤害时,消耗30金币抵挡该次伤害,金币不足则正常受伤"
+  },
+  {
+    "Id": 334,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "悬赏令",
+    "Icon": "BountyOrder",
+    "Price": 210,
+    "SellingPrice": 105,
+    "MechanismId": [
+      30047
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "战胜的敌人牌型为顺子或更高时,获得30金币"
+  },
+  {
+    "Id": 335,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "断舍离",
+    "Icon": "Declutter",
+    "Price": 220,
+    "SellingPrice": 110,
+    "MechanismId": [
+      30048
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每卖出1件圣物,永久+2攻击力"
+  },
+  {
+    "Id": 336,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "二手商贩",
+    "Icon": "SecondHandMerchant",
+    "Price": 230,
+    "SellingPrice": 115,
+    "MechanismId": [
+      30049
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用消耗性圣物时,有30%概率不消耗"
+  },
+  {
+    "Id": 337,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "破釜沉舟",
+    "Icon": "BurnBoats",
+    "Price": 220,
+    "SellingPrice": 110,
+    "MechanismId": [
+      30053
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "金币为0或以下时,你造成的伤害+30%"
+  },
+  {
+    "Id": 338,
+    "Type": 3,
+    "RefreshProbability": 0.2,
+    "Name": "战鼓",
+    "Icon": "WarDrum",
+    "Price": 200,
+    "SellingPrice": 100,
+    "MechanismId": [
+      30054
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合开始时,本回合内你的攻击+8"
+  },
+  {
+    "Id": 401,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "235",
+    "Icon": "TwoThreeFive",
+    "Price": 660,
+    "SellingPrice": 330,
+    "MechanismId": [
+      40001
+    ],
+    "BindingID": [
+      101
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "高牌235等同于炸弹牌型,并且可以战胜所有牌型"
+  },
+  {
+    "Id": 402,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "奢华沙发",
+    "Icon": "LuxurySofa",
+    "Price": 585,
+    "SellingPrice": 292,
+    "MechanismId": [
+      40002
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "获得240点生命上限"
+  },
+  {
+    "Id": 403,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老花眼",
+    "Icon": "Presbyopia",
+    "Price": 625,
+    "SellingPrice": 312,
+    "MechanismId": [
+      40003
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "红桃和方片视为同一花色,黑桃和梅花视为同一花色"
+  },
+  {
+    "Id": 404,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "穷途末路",
+    "Icon": "DeadEnd",
+    "Price": 520,
+    "SellingPrice": 260,
+    "MechanismId": [
+      40005
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "结算时,若所有技能都无剩余使用次数,则提供+12倍率"
+  },
+  {
+    "Id": 405,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "奢侈品",
+    "Icon": "LuxuryGoods",
+    "Price": 465,
+    "SellingPrice": 232,
+    "MechanismId": [
+      40007
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+3倍率"
+  },
+  {
+    "Id": 406,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "近视眼",
+    "Icon": "Myopia",
+    "Price": 625,
+    "SellingPrice": 312,
+    "MechanismId": [
+      40008
+    ],
+    "BindingID": [
+      105
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "所有牌均视为人头牌"
+  },
+  {
+    "Id": 407,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "顶尖学者",
+    "Icon": "TopScholar",
+    "Price": 395,
+    "SellingPrice": 197,
+    "MechanismId": [
+      40009,
+      400091
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张A在结算伤害时提供+66攻击力和+6倍率"
+  },
+  {
+    "Id": 408,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老千",
+    "Icon": "CheatPlayer",
+    "Price": 405,
+    "SellingPrice": 202,
+    "MechanismId": [
+      40010
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时,该牌型本局内每重复亮出1次就提供+1倍率"
+  },
+  {
+    "Id": 409,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "天使",
+    "Icon": "Angel",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40011
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮牌时,有50%概率将该牌型提供的倍率永久+1"
+  },
+  {
+    "Id": 410,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "双刃剑",
+    "Icon": "DoubleEdgedSword",
+    "Price": 520,
+    "SellingPrice": 260,
+    "MechanismId": [
+      40012,
+      400121
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "失去2次搓牌机会,但结算时提供+15倍率"
+  },
+  {
+    "Id": 411,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "老搓家",
+    "Icon": "OldCardPlayer",
+    "Price": 350,
+    "SellingPrice": 175,
+    "MechanismId": [
+      40013
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每使用1次搓牌,该圣物永久提供+0.1倍率"
+  },
+  {
+    "Id": 412,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "幸运七",
+    "Icon": "LuckySeven",
+    "Price": 395,
+    "SellingPrice": 197,
+    "MechanismId": [
+      40014,
+      400141,
+      400142
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "亮出的每张7结算时必定提供+77攻击力和+7倍率"
+  },
+  {
+    "Id": 413,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "武林秘籍",
+    "Icon": "MartialSecretBook",
+    "Price": 625,
+    "SellingPrice": 312,
+    "MechanismId": [
+      40015,
+      400151
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "获得50%闪避率,且闪避成功时会对敌人造成1次自身攻击力200%的伤害"
+  },
+  {
+    "Id": 414,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "幸运对子",
+    "Icon": "LuckyPair",
+    "Price": 395,
+    "SellingPrice": 197,
+    "MechanismId": [
+      40016
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,若敌人的牌型大于对子,则会被强行视作对子(购买后6次比牌内生效)"
+  },
+  {
+    "Id": 415,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "小强",
+    "Icon": "LittleCockroach",
+    "Price": 405,
+    "SellingPrice": 202,
+    "MechanismId": [
+      40017
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每输1次敌人,后续自身造成的伤害提高10%"
+  },
+  {
+    "Id": 416,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "聚宝盆",
+    "Icon": "TreasurePot",
+    "Price": 585,
+    "SellingPrice": 292,
+    "MechanismId": [
+      40024
+    ],
+    "BindingID": [
+      107
+    ],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每回合结束后,本回合自身总伤害输出的20%转化为金币"
+  },
+  {
+    "Id": 417,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "神之左手",
+    "Icon": "GodsLeftHand",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40026
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,本次比牌你造成的伤害提高200%"
+  },
+  {
+    "Id": 418,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "凤凰羽毛",
+    "Icon": "PhoenixFeather",
+    "Price": 430,
+    "SellingPrice": 215,
+    "MechanismId": [
+      40027
+    ],
+    "BindingID": [],
+    "UseType": 1,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,本次比牌你受到的所有伤害变为0,并恢复30%血量"
+  },
+  {
+    "Id": 419,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "时光宝盒",
+    "Icon": "TimeTreasureBox",
+    "Price": 380,
+    "SellingPrice": 190,
+    "MechanismId": [
+      40028
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,随机3种牌型的提供的倍率永久+5"
+  },
+  {
+    "Id": 420,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "龙心",
+    "Icon": "DragonHeart",
+    "Price": 385,
+    "SellingPrice": 192,
+    "MechanismId": [
+      40029
+    ],
+    "BindingID": [],
+    "UseType": 2,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用后,获得160点生命上限,并立即恢复160点血量"
+  },
+  {
+    "Id": 421,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "贪欲之冠",
+    "Icon": "GreedCrown",
+    "Price": 395,
+    "SellingPrice": 197,
+    "MechanismId": [
+      40030
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每拥有40金币,你造成的伤害+10%,至多叠加20层"
+  },
+  {
+    "Id": 422,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "旗帜",
+    "Icon": "Flag",
+    "Price": 420,
+    "SellingPrice": 210,
+    "MechanismId": [
+      40031
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+12攻击力"
+  },
+  {
+    "Id": 423,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "降低",
+    "Icon": "LowerStatus",
+    "Price": 550,
+    "SellingPrice": 275,
+    "MechanismId": [
+      30029
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,对方的牌型顺位降低1级"
+  },
+  {
+    "Id": 424,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "升职",
+    "Icon": "Promote",
+    "Price": 550,
+    "SellingPrice": 275,
+    "MechanismId": [
+      30030
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,自己的牌型顺位提高1级"
+  },
+  {
+    "Id": 425,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "错峰出行",
+    "Icon": "StaggeredTravel",
+    "Price": 550,
+    "SellingPrice": 275,
+    "MechanismId": [
+      30006
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "顺子牌型可以相隔1点组成[例如:2,4,5]"
+  },
+  {
+    "Id": 426,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "高档甜品",
+    "Icon": "HighGradeDessert",
+    "Price": 395,
+    "SellingPrice": 197,
+    "MechanismId": [
+      40032
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "提供+100攻击力,但每次比牌后此效果会-5攻击力"
+  },
+  {
+    "Id": 427,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "第六感",
+    "Icon": "SixthSense",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40033
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌即使牌型小于对方,也会有10%的概率获胜"
+  },
+  {
+    "Id": 428,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "炸弹恶魔",
+    "Icon": "BombDemon",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40034
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每亮出过1次炸弹,该圣物就会在结算时提供+10倍率"
+  },
+  {
+    "Id": 429,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "消费主义",
+    "Icon": "Consumerism",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40035
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "在商店中每刷新1次,该圣物就会提供+1倍率"
+  },
+  {
+    "Id": 430,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "高档饮品",
+    "Icon": "HighGradeDrink",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40036
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "提供+20倍率,但每次比牌后此效果会-1倍率"
+  },
+  {
+    "Id": 431,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "万能A",
+    "Icon": "UniversalA",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40038
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "你的A可以当作任意花色与任意点数使用"
+  },
+  {
+    "Id": 432,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "败者之咬",
+    "Icon": "LoserBite",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40039
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌失败时,仍对对方造成1次等于自身攻击力的伤害"
+  },
+  {
+    "Id": 433,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "招财猫",
+    "Icon": "FortuneCat",
+    "Price": 400,
+    "SellingPrice": 200,
+    "MechanismId": [
+      40040
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "击败敌人获得的金币+50%"
+  },
+  {
+    "Id": 434,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "黄金手指",
+    "Icon": "GoldenFinger",
+    "Price": 480,
+    "SellingPrice": 240,
+    "MechanismId": [
+      40041
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "[搓牌]不再消耗次数,改为每次支付15金币"
+  },
+  {
+    "Id": 435,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "心理战",
+    "Icon": "PsychologicalWarfare",
+    "Price": 430,
+    "SellingPrice": 215,
+    "MechanismId": [
+      40042
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "使用[透视]时,该敌人牌型顺位-1,持续到本回合结束"
+  },
+  {
+    "Id": 436,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "王牌对王牌",
+    "Icon": "AceVsAce",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40043
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "比牌时,若双方牌型相同,你造成的伤害+50%"
+  },
+  {
+    "Id": 437,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "全下",
+    "Icon": "AllIn",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40045
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "你造成的伤害+25%,受到的伤害+15%"
+  }
+]

@@ -23,6 +23,8 @@ namespace App.Resources
         public const string MonsterLogicConfig = "Config/MonsterLogicConfig";
         public const string PvpBotConfig = "Config/PvpBotConfig";
         public const string PvpModeConfig = "Config/PvpModeConfig";
+        public const string PvpRelicConfig = "Config/PvpRelicConfig";
+        public const string PvpRelicEntryConfig = "Config/PvpRelicEntryConfig";
         public const string PvpRoundConfig = "Config/PvpRoundConfig";
         public const string RelicConfig = "Config/RelicConfig";
         public const string RelicEntryConfig = "Config/RelicEntryConfig";

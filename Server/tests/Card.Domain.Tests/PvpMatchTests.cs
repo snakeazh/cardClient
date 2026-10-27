@@ -941,6 +941,55 @@ public class PvpMatchTests
         Assert.Equal(5, fighter.OwnedRelicIds.Count);
     }
 
+    [Fact]
+    public void BuySkillChargesGoldAndTakesEffectAtNextRoundStart()
+    {
+        var tables = PvpTestTables.Classic();
+        var match = Open(tables, hp: 5000);
+        var fighter = match.Fighters[0];
+        EnterShopPhase(match);
+
+        var gold = fighter.Gold;
+        var leftBefore = fighter.RubLeft;
+        var price = PvpSkillShop.Price(fighter, PvpSkillIds.Rub);
+        Assert.Equal(PvpSkillShop.RubBaseGold, price);
+
+        match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Rub, Array.Empty<int>());
+        Assert.Equal(gold - price, fighter.Gold);
+        // 商店里不动手上剩余，只记下一轮待生效次数。
+        Assert.Equal(leftBefore, fighter.RubLeft);
+        Assert.Equal(1, fighter.PendingRub);
+
+        var shop = match.ViewFor(fighter.UserId).Shop!;
+        var rub = shop.Skills.Single(s => s.Id == PvpSkillIds.Rub);
+        Assert.Equal(leftBefore, rub.Left);
+        Assert.Equal(PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1, rub.Max);
+        // 第二口涨价。
+        Assert.Equal(price + PvpSkillShop.StepGold, rub.Price);
+
+        // 金币不足 / 技能 Id 非法都由服务端拒绝。
+        fighter.Gold = 0;
+        Assert.Throws<InvalidOperationException>(
+            () => match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Peek, Array.Empty<int>()));
+        Assert.Throws<InvalidOperationException>(
+            () => match.Act(fighter.UserId, "buy_skill", 99, Array.Empty<int>()));
+
+        var expectedRub = PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1;
+        foreach (var f in match.Fighters)
+        {
+            if (!f.ShopDone)
+            {
+                match.Act(f.UserId, "shop_done", 0, Array.Empty<int>());
+            }
+        }
+
+        Assert.Equal(2, match.Round);
+        Assert.Equal(expectedRub, fighter.RubLeft);
+        Assert.Equal(0, fighter.PendingRub);
+        // 已购计数保留，后续商店继续按递增价卖。
+        Assert.Equal(1, fighter.BoughtRub);
+    }
+
     private static void EnterShopPhase(PvpMatch match)
     {
         // 机器人桌开局可能已自动结算；全员亮完后 phase 会离开 fight，勿再 Showdown。

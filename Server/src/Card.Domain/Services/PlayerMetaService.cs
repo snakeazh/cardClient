@@ -14,14 +14,16 @@ public sealed class PlayerMetaService
     private readonly IGameConfig _config;
     private readonly IAvatarStore _avatars;
     private readonly IAdConversionReporter _conversions;
+    private readonly IAdWatchStats _adStats;
     private readonly Random _random = new Random();
 
-    public PlayerMetaService(PlayerSession session, IGameConfig config, IAvatarStore avatars, IAdConversionReporter conversions)
+    public PlayerMetaService(PlayerSession session, IGameConfig config, IAvatarStore avatars, IAdConversionReporter conversions, IAdWatchStats adStats)
     {
         _session = session;
         _config = config;
         _avatars = avatars;
         _conversions = conversions;
+        _adStats = adStats;
     }
 
     public Task<PlayerProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken)
@@ -51,7 +53,8 @@ public sealed class PlayerMetaService
             attribution = profile.AdAttribution.Snapshot();
             return new EnergyRefillResponse { Profile = ProfileMapper.ToDto(profile) };
         }, cancellationToken);
-        _conversions.ReportAdWatched(attribution, "energy_refill_ad");
+        _adStats.RecordWatch(AdScenes.EnergyRefillAd);
+        _conversions.ReportAdWatched(attribution, AdScenes.EnergyRefillAd);
         return response;
     }
 
@@ -64,8 +67,23 @@ public sealed class PlayerMetaService
             attribution = profile.AdAttribution.Snapshot();
             return new AdShopClaimResponse { Profile = ProfileMapper.ToDto(profile) };
         }, cancellationToken);
-        _conversions.ReportAdWatched(attribution, "adshop_" + kind);
+        var scene = "adshop_" + kind;
+        _adStats.RecordWatch(scene);
+        _conversions.ReportAdWatched(attribution, scene);
         return response;
+    }
+
+    /// <summary>客户端看完一次广告后的场景上报：按场景计数，并对有 clickid 归因的玩家回传巨量关键行为。</summary>
+    public async Task ReportAdWatchAsync(Guid userId, string scene, CancellationToken cancellationToken)
+    {
+        if (!AdScenes.IsValid(scene))
+        {
+            throw DomainException.Invalid($"Invalid ad watch scene: '{scene}'.");
+        }
+
+        var attribution = await _session.ReadAsync(userId, profile => profile.AdAttribution.Snapshot(), cancellationToken);
+        _adStats.RecordWatch(scene);
+        _conversions.ReportAdWatched(attribution, scene);
     }
 
     public Task<PlayerProfileDto> GrantBagAsync(Guid userId, int itemId, int amount, CancellationToken cancellationToken)

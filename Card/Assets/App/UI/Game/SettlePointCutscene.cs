@@ -186,14 +186,34 @@ namespace App.UI
                 _beilvRt.gameObject.SetActive(false);
             }
 
+            // 先写好基础攻文案，根节点仍隐藏；果冻弹出后再开始牌点/圣物加算。
             if (attackItem != null)
             {
-                SetAttackNumber(attackItem, Mathf.Max(0, baseAttack), onAttackNumber);
-                attackItem.PlayAttackNumberShake(false, false);
+                attackItem.SetAttackValue(Mathf.Max(0, baseAttack));
+                onAttackNumber?.Invoke(Mathf.Max(0, baseAttack));
             }
 
             _seq = DOTween.Sequence();
             _seq.Pause();
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken || attackItem == null)
+                {
+                    return;
+                }
+
+                attackItem.PlayAttackStatPop();
+            });
+            _seq.AppendInterval(PlayerItem.AttackPopDuration);
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken || attackItem == null)
+                {
+                    return;
+                }
+
+                attackItem.PlayAttackNumberShake(false, false);
+            });
             if (HasCardBeats())
             {
                 AppendCardPasses(cards, token, targetPos, attackItem, cardTypeNum, atlas, onAttackNumber);

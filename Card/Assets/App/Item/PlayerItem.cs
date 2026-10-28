@@ -60,6 +60,10 @@ namespace App.Game
         public const float DialogShowDuration = 0.2f / DialogSpeed;
         public const float DialogHideDuration = 0.15f / DialogSpeed;
         public const float DialogCharInterval = 0.08f / DialogSpeed;
+        /// <summary>伤害结算时 attack / enemycardattack 果冻弹出时长。</summary>
+        public const float AttackPopDuration = 0.4f;
+        /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
+        public const float AttackStatLayoutScale = 0.55f;
 
         private bool _stateHidden;
         private bool _enemyVisual;
@@ -70,6 +74,9 @@ namespace App.Game
         private bool _refsResolved;
         private bool _dialogRefsReady;
         private Tween _dialogTween;
+        private Tween _attackPopTween;
+        private Vector3 _attackRestScale = Vector3.one * AttackStatLayoutScale;
+        private Vector3 _enemyAttackRestScale = Vector3.one * AttackStatLayoutScale;
         private GameObject _activeDialog;
         // card / enemycard 节点引用：显隐切换按节点做，不依赖节点上是否挂 Image
         // （预制体 card 节点只有 RectTransform+CanvasRenderer，按 Image 查找会漏）
@@ -554,6 +561,63 @@ namespace App.Game
             SetAttackDisplay(value.ToString(), visible: value > 0);
         }
 
+        /// <summary>只改攻击力文案，不动 attack / enemycardattack 显隐（局内默认隐藏，结算再弹出）。</summary>
+        public void SetAttackValue(int attack)
+        {
+            EnsureRefs();
+            var label = ActiveAttackValue;
+            if (label == null)
+            {
+                return;
+            }
+
+            var value = Mathf.Max(0, attack).ToString();
+            if (label.text != value)
+            {
+                label.text = value;
+            }
+        }
+
+        /// <summary>隐藏人物 <c>attack</c> 与敌人 <c>enemycardattack</c>，并复位到布局缩放。</summary>
+        public void HideAttackStat()
+        {
+            EnsureRefs();
+            KillAttackPopTween();
+            HideAttackRoot(attackRoot, _attackRestScale);
+            HideAttackRoot(enemyAttackRoot, _enemyAttackRestScale);
+        }
+
+        /// <summary>
+        /// 伤害结算：当前形态的攻击整块从 0 果冻弹到布局缩放（预制体 0.55）。
+        /// 调用前用 <see cref="SetAttackValue"/> 写好数字。
+        /// </summary>
+        public Tween PlayAttackStatPop()
+        {
+            EnsureRefs();
+            KillAttackPopTween();
+            var root = ActiveAttackRoot;
+            if (root == null)
+            {
+                var label = ActiveAttackValue;
+                if (label != null && !label.gameObject.activeSelf)
+                {
+                    label.gameObject.SetActive(true);
+                }
+
+                return null;
+            }
+
+            var rest = _enemyVisual ? _enemyAttackRestScale : _attackRestScale;
+            var t = root.transform;
+            t.DOKill();
+            root.SetActive(true);
+            t.localScale = Vector3.zero;
+            _attackPopTween = t.DOScale(rest, AttackPopDuration)
+                .SetEase(Ease.OutElastic)
+                .SetLink(root, LinkBehaviour.KillOnDestroy);
+            return _attackPopTween;
+        }
+
         public void PlayAttackNumberShake(bool low, bool high)
         {
             EnsureRefs();
@@ -663,6 +727,17 @@ namespace App.Game
             var root = ActiveAttackRoot;
             if (root != null)
             {
+                // 显示时一律拉回布局缩放（预制体 0.55）。Hide/弹出曾误写成 1 时，
+                // 只 SetActive 会把 LevelUI/主页攻块留在错误大小。
+                if (visible)
+                {
+                    var rest = _enemyVisual ? _enemyAttackRestScale : _attackRestScale;
+                    if (root.transform.localScale != rest)
+                    {
+                        root.transform.localScale = rest;
+                    }
+                }
+
                 if (root.activeSelf != visible)
                 {
                     root.SetActive(visible);
@@ -739,6 +814,7 @@ namespace App.Game
 
         private void OnDestroy()
         {
+            KillAttackPopTween();
             HideDialogImmediate();
         }
 
@@ -836,6 +912,12 @@ namespace App.Game
                 }
             }
 
+            // 预制体常已序列化 attackRoot+attackBg，不能只在 Find 分支里记缩放，否则会漏抓 0.55。
+            if (attackRoot != null)
+            {
+                CaptureAttackRestScale(attackRoot.transform, ref _attackRestScale);
+            }
+
             if (heartBg == null)
             {
                 heartBg = FindImage("heart");
@@ -895,6 +977,11 @@ namespace App.Game
                 }
             }
 
+            if (enemyAttackRoot != null)
+            {
+                CaptureAttackRestScale(enemyAttackRoot.transform, ref _enemyAttackRestScale);
+            }
+
             if (enemyHeartBg == null)
             {
                 enemyHeartBg = FindImage("enemycardheart");
@@ -933,6 +1020,9 @@ namespace App.Game
             }
 
             HideStateNode();
+            // 局内默认隐藏攻；主页/选角等随后 SetAttack(>0) 会再打开。
+            HideAttackRoot(attackRoot, _attackRestScale);
+            HideAttackRoot(enemyAttackRoot, _enemyAttackRestScale);
             EnsureDialogRefs();
 
             if (playerRoot == null)
@@ -1060,6 +1150,45 @@ namespace App.Game
             }
 
             _dialogTween = null;
+        }
+
+        private void KillAttackPopTween()
+        {
+            if (_attackPopTween != null && _attackPopTween.IsActive())
+            {
+                _attackPopTween.Kill();
+            }
+
+            _attackPopTween = null;
+        }
+
+        private static void CaptureAttackRestScale(Transform node, ref Vector3 restScale)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            var scale = node.localScale;
+            // 预制体布局是 0.55；若曾被误写成 1，不要把 1 当成 rest，保留默认 AttackStatLayoutScale。
+            if (scale.x > 0.01f && !Mathf.Approximately(scale.x, 1f))
+            {
+                restScale = scale;
+            }
+        }
+
+        private static void HideAttackRoot(GameObject root, Vector3 restScale)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            root.transform.localScale = restScale;
+            if (root.activeSelf)
+            {
+                root.SetActive(false);
+            }
         }
 
         private static CanvasGroup EnsureCanvasGroup(GameObject go)

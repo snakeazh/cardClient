@@ -12,13 +12,16 @@ namespace App.UI
     /// 子图 raycastTarget 未关时，最终命中区域 = 各图不透明像素的并集（与视觉一致）。
     /// 前提：贴图须开启 Read/Write 且不使用 Crunch 压缩，否则 UGUI 读不到像素会静默退回整矩形命中——
     /// 散图在导入设置勾选 Read/Write Enabled；打进图集的图须在 SpriteAtlas 的平台设置开启。
+    /// 漏配时只在编辑器 / Development 包打一条 warning（每个贴图一次），正式包静默退回整矩形。
     /// 注意 Read/Write 会额外保留一份贴图 CPU 内存，只给真正需要异形点击的图开。
     /// </summary>
     [RequireComponent(typeof(Image))]
     [DisallowMultipleComponent]
     public class AlphaHitTest : MonoBehaviour
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private static readonly HashSet<int> LoggedUnreadable = new HashSet<int>();
+#endif
 
         [Tooltip("像素 alpha 达到该阈值才算命中；0 = 关闭（整矩形可点）")]
         [SerializeField, Range(0f, 1f)]
@@ -81,12 +84,14 @@ namespace App.UI
                 var tex = sprite.texture;
                 if (tex == null || !tex.isReadable || IsCrunchFormat(tex.format))
                 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     if (tex != null && !tex.isReadable && LoggedUnreadable.Add(tex.GetInstanceID()))
                     {
-                        Debug.LogError(
+                        Debug.LogWarning(
                             $"[AlphaHitTest] 贴图 {tex.name} 未开启 Read/Write，alpha 命中不生效，已退回整矩形可点。" +
                             "散图请在贴图导入设置勾选 Read/Write Enabled；图集请在 SpriteAtlas 平台设置开启。", image);
                     }
+#endif
                     continue;
                 }
 

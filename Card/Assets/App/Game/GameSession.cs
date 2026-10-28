@@ -158,16 +158,7 @@ namespace App.Game
         public bool IsPvp { get; private set; }
 
         /// <summary>当前模式圣物行：PVP 只读 <c>PvpRelicConfig</c>（经 IGameTables），PVE 读 <c>RelicConfig</c>。</summary>
-        private RelicConfig LookupRelic(int relicId)
-        {
-            if (!IsPvp)
-            {
-                return RelicConfig.Get(relicId);
-            }
-
-            var tables = UnityGameConfigLoader.Current;
-            return tables != null && tables.TryGetPvpRelic(relicId, out var relic) ? relic : null;
-        }
+        public RelicConfig LookupRelic(int relicId) => RelicMechanics.ResolveRelic(relicId);
 
         /// <summary>PVP 商店后端会话（买卖/刷新/结束走长链接命令）。由 GameTableViewModel 注入，null 时 PVP 商店操作全部拒绝。</summary>
         private PvpMatchSession _pvpSession;
@@ -3768,17 +3759,17 @@ namespace App.Game
                 return true;
             }
 
-            for (var i = 0; i < relic.MechanismId.Length; i++)
-            {
-                var entry = RelicEntryConfig.Get(relic.MechanismId[i]);
-                if (entry != null &&
-                    entry.Type == MechanismType.RemoveBossEntry &&
-                    Run.LevelEntryIds.Count <= 0)
+                for (var i = 0; i < relic.MechanismId.Length; i++)
                 {
-                    failHint = "本关没有可移除的词缀";
-                    return false;
+                    var entry = RelicMechanics.ResolveEntry(relic.MechanismId[i]);
+                    if (entry != null &&
+                        entry.Type == MechanismType.RemoveBossEntry &&
+                        Run.LevelEntryIds.Count <= 0)
+                    {
+                        failHint = "本关没有可移除的词缀";
+                        return false;
+                    }
                 }
-            }
 
             return true;
         }
@@ -8369,6 +8360,14 @@ namespace App.Game
                 return;
             }
 
+            if (!IsPvp)
+            {
+                // 还有敌人：比完牌直接下一手，不用点「下一局」。
+                Run.MagnifierThisRound = false;
+                StartRound();
+                return;
+            }
+
             Hint = LastResult + "\n点击「下一局」继续";
             Notify();
         }
@@ -9122,9 +9121,9 @@ namespace App.Game
         {
             RelicConfig pick = null;
             var count = 0;
-            foreach (var relic in RelicConfig.All.Values)
+            foreach (var relic in RelicMechanics.AllRelics())
             {
-                if (!RelicMechanics.IsConsumable(relic) || OwnsRelicConfig(relic.Id))
+                if (relic == null || !RelicMechanics.IsConsumable(relic) || OwnsRelicConfig(relic.Id))
                 {
                     continue;
                 }
@@ -10664,12 +10663,14 @@ namespace App.Game
         public void BeginPvp()
         {
             IsPvp = true;
+            RelicMechanics.UsePvpRelicTables = true;
             // 进 PVP 立刻掐掉进行中的新手引导，避免 Overlay 盖住对战桌。
             if (AppServices.IsReady)
             {
                 AppServices.Resolve<IGuideService>()?.Abort();
             }
 
+            _pvpSyncedSkillRound = 0;
             _pvpHandLocked = false;
             Phase = GamePhase.WaitingOpen;
             CardsRevealed = false;
@@ -10723,6 +10724,8 @@ namespace App.Game
             }
 
             IsPvp = false;
+            RelicMechanics.UsePvpRelicTables = false;
+            _pvpSyncedSkillRound = 0;
             _pvpHandLocked = false;
             HandReplacePlaying = false;
             _pendingPvpReplacePlay = false;
@@ -10779,6 +10782,9 @@ namespace App.Game
         /// <summary>比牌演出还没把伤害落到座位上。侧栏头像继续用座位上的旧血，不要跟快照一起提前显示死亡。</summary>
         public bool PvpHpDeferred { get; private set; }
 
+        /// <summary>已写入技能次数的最高轮次。防止比牌收尾的旧快照盖掉新一轮已并入的购买/增量。</summary>
+        private int _pvpSyncedSkillRound;
+
         /// <param name="deferHp">比牌快照先不同双方座位的 HP/攻击（含对方，淘汰/死亡动画由座位 Hp=0 触发）：等攻击命令播完再应用，避免提前剧透结果。</param>
         /// <param name="catchUpResult">重连进 shop/settle：先按摊牌结果展示（牌面+牌型），稍后再切商店。</param>
         public void ApplyPvpState(PvpMatchStateDto match, string userId, bool deferHp, bool catchUpResult = false)
@@ -10800,6 +10806,27 @@ namespace App.Game
             }
 
             ApplyPvpTable(match, userId, mine, foe, showdown, deferHp, catchUpResult);
+            Notify();
+        }
+
+        /// <summary>
+        /// 只镜像搓牌/透视/替换剩余次数。比牌演出还在播、下一轮快照已到时用：
+        /// 不改座位血/手牌，但 HUD 技能次数要立刻跟权威值（跨轮保留 + 购买并入）。
+        /// </summary>
+        public void SyncPvpSkillCharges(PvpMatchStateDto match, string userId)
+        {
+            if (!IsPvp || match == null || match.Round < _pvpSyncedSkillRound)
+            {
+                return;
+            }
+
+            var self = FindPvpSelf(match, userId);
+            if (self == null)
+            {
+                return;
+            }
+
+            ApplyPvpSkillCharges(self, match.Round);
             Notify();
         }
 
@@ -11294,11 +11321,23 @@ namespace App.Game
             {
                 _pvpRelicSlots = self.RelicSlots;
             }
-            Run.PeekGoodCharges = self.RubLeft;
-            Run.ChaKanGoodCharges = self.PeekLeft;
-            Run.TiHuanGoodCharges = self.ReplaceLeft;
+
+            ApplyPvpSkillCharges(self, match.Round);
             // 已购圣物全阶段镜像：战斗期圣物栏/技能次数标签才能显示（效果由服务端结算，本地只展示）。
             MirrorPvpRelics(self.RelicIds, self.RelicPower);
+        }
+
+        private void ApplyPvpSkillCharges(PvpFighterDto self, int round)
+        {
+            if (self == null || round < _pvpSyncedSkillRound)
+            {
+                return;
+            }
+
+            _pvpSyncedSkillRound = round;
+            Run.PeekGoodCharges = Math.Max(0, self.RubLeft);
+            Run.ChaKanGoodCharges = Math.Max(0, self.PeekLeft);
+            Run.TiHuanGoodCharges = Math.Max(0, self.ReplaceLeft);
         }
 
         /// <summary>把 PVP 随机到的英雄写进 Run 与自己座位立绘（对手走 <see cref="ApplyPvpHeroLook"/>）。</summary>
@@ -11509,6 +11548,8 @@ namespace App.Game
             var monsterRound = string.Equals(match.FightKind, "monster", StringComparison.OrdinalIgnoreCase);
             // 立绘切换前记下：上一场还是玩家/镜像时，这一轮必须立刻换成野怪血，不能留着旧血等攻击结束。
             var switchingToMonster = monsterRound && (enemy.DisplayAsHero || enemy.MonsterId == 0);
+            // 反过来：上一场打完野怪座位常是 0 血，进玩家对手必须立刻换名册血，否则人物 healthbar 会一直显示 0。
+            var switchingToHero = !monsterRound && !enemy.DisplayAsHero;
             ApplyPvpOpponentLook(match, foe, enemy);
             if (foe != null)
             {
@@ -11532,7 +11573,8 @@ namespace App.Game
                     {
                         // deferHp：比牌演出播完前不写对方面板——服务端快照已扣血/淘汰（Hp=0、Alive=false），
                         // 提前应用会让座位立刻判死：RefreshEnemies 隐藏座位（牌消失）+ 头像播死亡溶解。
-                        if (!deferHp)
+                        // switchingToHero：刚从野怪切过来时例外，必须先换上对手真实血量。
+                        if (!deferHp || switchingToHero)
                         {
                             enemy.Hp = Math.Max(0, foeFighter.Hp);
                             enemy.MaxHp = Math.Max(1, foeFighter.MaxHp);
@@ -11542,7 +11584,7 @@ namespace App.Game
 
                         enemy.Status = foeFighter.Disconnected ? "离线" : string.Empty;
                     }
-                    else if (!deferHp && foe.MaxHp > 0)
+                    else if ((!deferHp || switchingToHero) && foe.MaxHp > 0)
                     {
                         // 对手是死亡玩家的镜像：名册上的人已经是 0 血，面板以这一桌的座位血量为准。
                         enemy.Hp = Math.Max(0, foe.Hp);
@@ -11555,7 +11597,7 @@ namespace App.Game
 
                         enemy.Status = string.Empty;
                     }
-                    else if (!deferHp)
+                    else if (!deferHp || switchingToHero)
                     {
                         enemy.Hp = Math.Max(1, enemy.Hp);
                         enemy.MaxHp = Math.Max(1, enemy.MaxHp);

@@ -552,7 +552,8 @@ namespace CardShare.Battle
             // 轮次没有上限：1、5、9… 打野怪，其余打玩家，直到只剩一人。
             _kind = PvpSchedule.Kind(_mode, Round, alive.Count);
             _goldBase = PvpSchedule.GoldBase(Round);
-            ResetSkills();
+            // 技能次数按「局」：开局初始化；同局跨轮只并入购买/基数增量，不回满。
+            SyncSkillChargesForRound();
             for (var f = 0; f < _fighters.Length; f++)
             {
                 if (_fighters[f].Alive)
@@ -940,14 +941,8 @@ namespace CardShare.Battle
                 GrantHeroKill(winnerForKill);
             }
 
-            if (duel.VsMirror && win == 0 && winnerForKill != null)
-            {
-                var mirrorHp = duel.Engine.MutableSeat(1).Hp;
-                if (mirrorHp > 0 && damage >= mirrorHp)
-                {
-                    GrantHeroKill(winnerForKill);
-                }
-            }
+            // 野怪/镜像没有名册 Fighter：击杀奖励按决斗座位血量是否归零判定（座位必须真实扣血）。
+            var grantedBoardKill = TryGrantBoardKill(duel, win, winnerForKill);
 
             var mainDamage = damage;
             var chaseDamage = 0;
@@ -960,11 +955,9 @@ namespace CardShare.Battle
                 PvpHeroRuntime.Roll(_tables, winnerForKill.Combat.HeroId, MechanismType.ExtraAttackOneTime, _shopRandom))
             {
                 var chaseTargetAlive = victim != null && victim.Alive;
-                var monsterHpBeforeChase = duel.VsMonster || duel.VsMirror
-                    ? duel.Engine.MutableSeat(1).Hp
-                    : 0;
+                // ApplyToSeat 已把主伤写进野怪/镜像座位，这里直接看剩余血。
                 var monsterStillUp = (duel.VsMonster || duel.VsMirror) &&
-                                     monsterHpBeforeChase - mainDamage > 0;
+                                     duel.Engine.MutableSeat(1).Hp > 0;
                 if (chaseTargetAlive || monsterStillUp)
                 {
                     chaseDamage = mainDamage;
@@ -984,36 +977,36 @@ namespace CardShare.Battle
                             GrantHeroKill(winnerForKill);
                         }
                     }
+                    else if (monsterStillUp && win == 0)
+                    {
+                        ApplyToSeat(duel, 1, chaseDamage, deathHp);
+                        if (!grantedBoardKill)
+                        {
+                            grantedBoardKill = TryGrantBoardKill(duel, win, winnerForKill);
+                        }
+                    }
 
                     damage += chaseDamage;
                 }
             }
 
-            // 对子获胜：圣光燃烧追加一段。野怪/镜像不走 ApplyToSeat，只记 burn 供客户端扣血。
+            // 对子获胜：圣光燃烧追加一段。野怪/镜像同样写回决斗座位，避免客户端本地扣血后被满血快照盖回。
             if (winnerForKill != null && IsPairWin(snap, win))
             {
                 if (duel.VsMonster || duel.VsMirror)
                 {
-                    if (win == 0)
+                    if (win == 0 && duel.Engine.MutableSeat(1).Hp > 0)
                     {
-                        var monsterHp = duel.Engine.MutableSeat(1).Hp;
-                        var remaining = monsterHp - damage;
-                        if (remaining > 0)
+                        var burn = NextHolyLightDamage(winnerForKill);
+                        if (burn > 0)
                         {
-                            var burn = NextHolyLightDamage(winnerForKill);
-                            if (burn > 0)
+                            holyBurnDamage = burn;
+                            ApplyToSeat(duel, 1, burn, deathHp);
+                            damage += burn;
+                            if (!grantedBoardKill)
                             {
-                                holyBurnDamage = burn;
-                                damage += burn;
-                                if (burn >= remaining)
-                                {
-                                    GrantHeroKill(winnerForKill);
-                                }
+                                grantedBoardKill = TryGrantBoardKill(duel, win, winnerForKill);
                             }
-                        }
-                        else if (monsterHp > 0 && damage >= monsterHp)
-                        {
-                            GrantHeroKill(winnerForKill);
                         }
                     }
                 }
@@ -1032,13 +1025,9 @@ namespace CardShare.Battle
                     }
                 }
             }
-            else if (duel.VsMonster && win == 0 && winnerForKill != null)
+            else if (!grantedBoardKill)
             {
-                var monsterHp = duel.Engine.MutableSeat(1).Hp;
-                if (monsterHp > 0 && damage >= monsterHp)
-                {
-                    GrantHeroKill(winnerForKill);
-                }
+                TryGrantBoardKill(duel, win, winnerForKill);
             }
 
             duel.MarkHpApplied(win, mainDamage, chaseDamage, holyBurnDamage);
@@ -1679,7 +1668,7 @@ namespace CardShare.Battle
         }
 
         /// <summary>
-        /// PVP 商店专属：花金币补充技能次数。买到的次数下一轮开始才生效（ResetSkills 并入上限），
+        /// PVP 商店专属：花金币补充技能次数。买到的次数下一轮开局并入剩余（不回满已用次数），
         /// 不改变商店阶段手上的剩余次数。
         /// </summary>
         private void BuySkill(PvpFighter fighter, int skillId)
@@ -1713,6 +1702,19 @@ namespace CardShare.Battle
 
         private void ApplyToSeat(PvpDuelTable duel, int duelSeat, int damage, Dictionary<int, int> deathHp)
         {
+            // 野怪/镜像没有名册条目，伤害必须写进决斗座位；否则快照一直是满血，
+            // 客户端攻击演出本地扣血后一 ApplyPvpState 又被盖回满血。
+            if (duelSeat == 1 && (duel.VsMonster || duel.VsMirror))
+            {
+                if (damage > 0)
+                {
+                    var board = duel.Engine.MutableSeat(1);
+                    board.Hp = Math.Max(0, board.Hp - damage);
+                }
+
+                return;
+            }
+
             string userId;
             if (duelSeat == 0)
             {
@@ -1749,6 +1751,23 @@ namespace CardShare.Battle
 
                 KillFighter(fighter, deathHp);
             }
+        }
+
+        /// <summary>玩家打赢野怪/镜像且对方座位血量已归零时发击杀奖励；已发过则不再发。</summary>
+        private bool TryGrantBoardKill(PvpDuelTable duel, int win, PvpFighter? winnerForKill)
+        {
+            if (winnerForKill == null || win != 0 || (!duel.VsMonster && !duel.VsMirror))
+            {
+                return false;
+            }
+
+            if (duel.Engine.MutableSeat(1).Hp > 0)
+            {
+                return false;
+            }
+
+            GrantHeroKill(winnerForKill);
+            return true;
         }
 
         private void KillFighter(PvpFighter fighter, Dictionary<int, int> deathHp)
@@ -2066,7 +2085,11 @@ namespace CardShare.Battle
             return _fighters[index];
         }
 
-        private void ResetSkills()
+        /// <summary>
+        /// Round==1：新对局，剩余次数拉到基数。
+        /// 之后每轮：保留剩余，只加商店购买与圣物/词条抬高的基数增量。
+        /// </summary>
+        private void SyncSkillChargesForRound()
         {
             for (var i = 0; i < _fighters.Length; i++)
             {
@@ -2076,11 +2099,14 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                // 基础次数 + 圣物/英雄/天赋词条 + 商店买到的次数（一次性：并入上限后清零）。
-                fighter.RubLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Rub);
-                fighter.PeekLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Peek);
-                fighter.ReplaceLeft = PvpSkillShop.Max(_tables, fighter, PvpSkillIds.Replace);
-                PvpSkillShop.ClearPending(fighter);
+                if (Round <= 1)
+                {
+                    PvpSkillShop.ApplyMatchStart(_tables, fighter);
+                }
+                else
+                {
+                    PvpSkillShop.ApplyRoundCarry(_tables, fighter);
+                }
             }
         }
 

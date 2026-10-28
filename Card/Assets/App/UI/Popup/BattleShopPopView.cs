@@ -587,7 +587,7 @@ namespace App.UI.Popup
                     continue;
                 }
 
-                var relic = RelicConfig.Get(offers[i]);
+                var relic = ViewModel.Session.LookupRelic(offers[i]);
                 if (relic == null)
                 {
                     SetSlotActive(item, false);
@@ -669,7 +669,7 @@ namespace App.UI.Popup
         private void BindMineRelic(ShopItem item, int i)
         {
             var relicId = _mineRelicIds[i];
-            var relic = RelicConfig.Get(relicId);
+            var relic = ViewModel.Session.LookupRelic(relicId);
             if (relic == null)
             {
                 SetSlotActive(item, false, _mineContent);

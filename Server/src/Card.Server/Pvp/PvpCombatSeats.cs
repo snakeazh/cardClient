@@ -1,7 +1,6 @@
 using CardShare.Battle;
 using CardShare.Contracts;
 using CardShare.Domain;
-using CardShare.Domain.Config;
 using CardShare.Domain.Players;
 using CardShare.Domain.Pvp;
 
@@ -17,7 +16,6 @@ internal static class PvpCombatSeats
         using var scope = scopes.CreateScope();
         var players = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
         var tables = scope.ServiceProvider.GetRequiredService<IGameTables>();
-        var config = scope.ServiceProvider.GetRequiredService<IGameConfig>();
         var seats = new SeatSetup[room.Players.Count];
         var heroIds = HeroIds(tables);
         var rng = new Random(room.Seed);
@@ -47,7 +45,7 @@ internal static class PvpCombatSeats
                 profile = await players.GetAsync(userId, cancellationToken);
             }
 
-            var shopPoolIds = profile != null ? profile.ShopRelicIds(config) : Array.Empty<int>();
+            // PVP 商店池只认 PvpRelicConfig，不回落 PVE RelicConfig / 解锁列表（两表同 Id 语义不同）。
             seats[i] = CombatBonuses.BuildSeat(
                 i,
                 pub.UserId,
@@ -55,7 +53,7 @@ internal static class PvpCombatSeats
                 heroId,
                 MapTalents(profile),
                 tables);
-            seats[i].ShopPoolIds = shopPoolIds;
+            seats[i].ShopPoolIds = DefaultRelicIds(tables);
         }
 
         foreach (var seat in seats)

@@ -22,7 +22,7 @@
       赢：玩家按 (攻击力 + 遗物/天赋攻击加成) × (牌型倍率 + 遗物加成) 打该怪物
       输：该怪物按 攻击力 × 牌型倍率 打玩家
   → 打完所有存活敌人
-  → 下一局 或 敌人全灭进商店 / 玩家阵亡失败
+  → 自动下一手，或敌人全灭进商店 / 玩家阵亡失败
   → 打完该难度：BattleResultPopup 成功；阵亡：BattleResultPopup 失败（可复活）
 ```
 
@@ -40,7 +40,7 @@
 | `WaitingRub` | 长按手牌进入搓牌拖拽；松手成功换牌或取消 |
 | `Showdown` | 当前这一对亮牌 |
 | `WaitingAttack` | 播放攻击演出（玩家打怪或怪打玩家） |
-| `RoundSettle` | 本手结束，点下一局 |
+| `RoundSettle` | 本手结束（PVE 随即自动下一手或进店，不停留点按钮） |
 | `Shop` | 关卡胜利商店 |
 | `StageFail` | 阵亡，可广告复活或放弃 |
 | `RunComplete` | 通关该难度，弹出 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md) |

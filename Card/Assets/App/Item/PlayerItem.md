@@ -50,8 +50,10 @@
 
 | 调用 | 显示 | 底图 |
 |------|------|------|
-| `ApplyTheme()`、`Bind(玩家)` | `card` 开、`enemycard` 关 | bg/direct/di → `{品质}CardFrameBack{1,2,3}`；attack/heart 保持预制体 |
-| `Bind(敌人)` | `enemycard` 开、`card` 关 | enemycard → `BaseMap`；enemycardattack/heart → `HealthBarBigBaseFrame{Khaki\|Purple\|Red}`（按 `MonsterType`） |
+| `ApplyTheme()`、`Bind(玩家)`、`Bind(PVP 玩家对手 DisplayAsHero)` | `card` 开、`enemycard` 关 | bg/direct/di → `{品质}CardFrameBack{1,2,3}`；attack/heart 与 `heart/frame/healthbar` 用预制体 |
+| `Bind(怪物)` | `enemycard` 开、`card` 关 | enemycard → `BaseMap`；enemycardattack/heart → `HealthBarBigBaseFrame{Khaki\|Purple\|Red}`（按 `MonsterType`） |
+
+`enemycardheart/frame/healthbar` 必须叫 `healthbar`（勿留 `Image (1)`），否则 `SetHp` 改不到可见填充条。满宽只在条宽 &gt; 0 时记入；空条时用父级 `frame` 宽度，避免血条一直显示为 0。
 
 缺配置或缺图保留当前 sprite。显隐切换按 `card` / `enemycard` 节点做（`card` 节点无 Image 组件，不能按 Image 查找切换）。`CardIconRect` / `AttackValueRect` / `AttackValueAnimator` 返回当前可见套，结算抖动挂对节点。`SetSelectLift` 只动人物 `card`（选角）。
 

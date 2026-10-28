@@ -57,7 +57,8 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 - 开局 4 个槽，`unlock_slot` 花金币开到最多 10 个（第 5~10 槽 40/60/80/100/120/150）。同时持有 3 件相同未合成圣物会合成 1 件、效果按 3 倍结算、只占 1 槽
 - 开局不带圣物（已解锁 ≠ 已携带），买到的圣物**下一轮**起进战斗座位生效
 - 操作（`battle` 消息 action）：`buy` / `sell`（index=relicId）、`refresh`、`unlock_slot`、`buy_skill`（index=技能 Id）、`shop_done`；全员 done 立即进下一轮
-- 技能补充（PVP 商店专属，`buy_skill`）：花金币买 1 次技能次数，**只对下一轮生效**（`ResetSkills` 时并入上限后清零，不跨轮累积）。
+- 技能次数按「局」：新对局开局初始化为基数；**同局跨轮不回满**。变化来源只有商店 `buy_skill`、圣物/词条抬高基数，或新开一局。
+- 技能补充（PVP 商店专属，`buy_skill`）：花金币买 1 次，**下一轮开局并入剩余**（商店阶段手上次数不变；并入时不清空已用次数）。
   技能 Id：0=搓牌（`RubLeft`）、1=替换（`ReplaceLeft`）、2=透视（`PeekLeft`）。
   价格 60/80/100 起，本局同一技能每买一次 +20。规则在 `PvpSkillShop.cs`。
   单价必须高于 `GameConst.EverySkillProvideGold`（未用技能折算金币，缺省 20），否则「买入 → 不用 → 结算返金」可以套利

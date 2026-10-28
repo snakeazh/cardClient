@@ -316,7 +316,7 @@ namespace App.UI.Popup
 
         private void Apply()
         {
-            var relic = RelicConfig.Get(RelicId);
+            var relic = Session.LookupRelic(RelicId);
             Quality.Value = relic != null ? relic.Type : QualityType.Ordinary;
             NameText.Value = relic != null ? relic.Name : string.Empty;
             DescText.Value = RelicMechanics.FormatDisplayDesc(Session.Run, relic);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using App.Talent;
 using App.Config;
+using CardShare.Contracts;
 using CardShare.Contracts.Config;
 
 namespace App.Game
@@ -49,9 +50,56 @@ namespace App.Game
 
     /// <summary>
     /// 按 RelicConfig / RelicEntryConfig 结算已购商品效果。收藏禁用的商品整件跳过。
+    /// PVP 对局中由 <see cref="UsePvpRelicTables"/> 切到 PvpRelic*，不回落 PVE 表。
     /// </summary>
     public static class RelicMechanics
     {
+        /// <summary>PVP 对局为 true：圣物/词条只查 <c>PvpRelicConfig</c> / <c>PvpRelicEntryConfig</c>。</summary>
+        public static bool UsePvpRelicTables { get; set; }
+
+        public static RelicConfig ResolveRelic(int relicId)
+        {
+            if (relicId <= 0)
+            {
+                return null;
+            }
+
+            if (UsePvpRelicTables)
+            {
+                var tables = UnityGameConfigLoader.Current;
+                return tables != null && tables.TryGetPvpRelic(relicId, out var relic) ? relic : null;
+            }
+
+            return RelicConfig.Get(relicId);
+        }
+
+        public static RelicEntryConfig ResolveEntry(int entryId)
+        {
+            if (entryId <= 0)
+            {
+                return null;
+            }
+
+            if (UsePvpRelicTables)
+            {
+                var tables = UnityGameConfigLoader.Current;
+                return tables != null && tables.TryGetPvpRelicEntry(entryId, out var entry) ? entry : null;
+            }
+
+            return RelicEntryConfig.Get(entryId);
+        }
+
+        public static IEnumerable<RelicConfig> AllRelics()
+        {
+            if (UsePvpRelicTables)
+            {
+                var tables = UnityGameConfigLoader.Current;
+                return tables != null ? tables.PvpRelics : Array.Empty<RelicConfig>();
+            }
+
+            return RelicConfig.All.Values;
+        }
+
         public static bool IsDisabled(RunState run, int relicId)
         {
             if (run == null || relicId <= 0)
@@ -417,7 +465,7 @@ namespace App.Game
 
         public static float SumValueForRelic(int relicId, MechanismType type, int index = 0)
         {
-            var relic = RelicConfig.Get(relicId);
+            var relic = ResolveRelic(relicId);
             var sum = 0f;
             ForEachRelicEntry(relic, entry =>
             {
@@ -1003,7 +1051,7 @@ namespace App.Game
         /// <summary>高档饮品：某遗物剩余自衰减倍率。缺键懒初始化满值。</summary>
         public static float SelfDecayMagLeftFor(RunState run, int relicId)
         {
-            var relic = RelicConfig.Get(relicId);
+            var relic = ResolveRelic(relicId);
             var left = 0f;
             ForEachRelicEntry(relic, entry =>
             {
@@ -1126,7 +1174,7 @@ namespace App.Game
                     continue;
                 }
 
-                var relic = RelicConfig.Get(id);
+                var relic = ResolveRelic(id);
                 if (relic == null || IsConsumable(relic))
                 {
                     continue;
@@ -1176,9 +1224,8 @@ namespace App.Game
             }
 
             var pool = new List<RelicConfig>();
-            foreach (var kv in RelicConfig.All)
+            foreach (var relic in AllRelics())
             {
-                var relic = kv.Value;
                 if (relic == null || !IsConsumable(relic) || run.RelicConfigIds.Contains(relic.Id))
                 {
                     continue;
@@ -1321,7 +1368,7 @@ namespace App.Game
 
         public static int SellPrice(RunState run, int relicId)
         {
-            var relic = RelicConfig.Get(relicId);
+            var relic = ResolveRelic(relicId);
             if (relic == null)
             {
                 return 0;
@@ -1426,7 +1473,7 @@ namespace App.Game
                     continue;
                 }
 
-                var relic = RelicConfig.Get(relicId);
+                var relic = ResolveRelic(relicId);
                 ForEachRelicEntry(relic, entry => action(relic, entry));
             }
         }
@@ -1481,7 +1528,7 @@ namespace App.Game
 
             for (var i = 0; i < relic.MechanismId.Length; i++)
             {
-                var entry = RelicEntryConfig.Get(relic.MechanismId[i]);
+                var entry = ResolveEntry(relic.MechanismId[i]);
                 if (entry != null)
                 {
                     action(entry);
@@ -1494,8 +1541,14 @@ namespace App.Game
             HandScore score,
             RelicCombatContext ctx)
         {
+            IGameTables tables = UnityGameConfigLoader.Current;
+            if (UsePvpRelicTables && tables != null)
+            {
+                tables = PvpGameTables.Wrap(tables);
+            }
+
             return CardShare.Battle.RelicCombat.Evaluate(
-                UnityGameConfigLoader.Current,
+                tables,
                 ToSnapshot(run, score, ctx),
                 SharedBattleBridge.ToShared(score));
         }

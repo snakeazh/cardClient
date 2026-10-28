@@ -37,7 +37,7 @@ GameUI
 
 开局 HUD 入场：`horEquipBtns2` / `stageInfo` 右侧飞入，`horBtns2` 左侧飞入，`PlayerItem` 自下而上飞入。`horBtns` 按钮随阶段渐显渐隐（开战 / 下一局等）。`roundInfo` 发牌结束显示时渐显，下手发牌时渐隐。`horEquipBtns2` 不跟发牌隐藏。
 
-每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对峙/对话/VS 跟对局倍速；同关点「下一局」不播：
+每关第一手（新局、商店进下一关、重开关）在发牌前先播开场，由 [`OpeningCutscene`](OpeningCutscene.cs) 驱动，对峙/对话/VS 跟对局倍速；同关内比完自动下一手不播：
 
 1. HUD 飞入（仅本次打开 GameUI；下一关 GameUI 已在则跳过）。若本关要播开场，人物直接飞到对峙位（原位上移 360）；怪物一显示就在槽位下移 300，全程不经过原位以免闪一下
 2. 对峙位：开场期间人物/怪物都已在对峙坐标。两人时与平时站位相同——一个在 `player1` 中心、一个在侧槽。敌人卡相对父物体 localScale 与人物 `PlayerItem` 相同（0.9）；侧槽父节点 0.85 所以看起来更小，中心仍是 0.9
@@ -87,7 +87,7 @@ GameUI
 | `yiwuBtn` | 遗物列表 | 点开 `RemainListPop` 时隐藏，弹窗关闭结束再显示 |
 | `ruleBtn` | 规则 | 一直显示，点开 `WinTip` 赔率表 |
 | `beisu` | `x1` / `x2` | 一直显示；点按切换对局倍速，默认 `x1`，最高 `x2` |
-| `NextRoundBtn` | 下一局 | `RoundSettle` |
+| `NextRoundBtn` | 下一局 | PVE 比完自动下一手/清场进店，一般不再停在 `RoundSettle`；遗留路径或调试仍可能显示 |
 
 `n` 为当前剩余次数，`max` 为 `GameBalance.Skill*Uses + Bonus*` 再加遗物/英雄加成。次数配置仍是搓牌 3 / 透视 1 / 替换 1。
 
@@ -139,7 +139,7 @@ GameUI
 
 ## 积分条
 
-`roundInfo`：PVE 为 `第{n}轮`，n 为本关第几手（点「下一局」后递增，进下一关从 1 重计）。PVP 隐藏 `roundInfo`，轮次改写在 `stageInfoText`，只显示 `第{N}轮`（N 为服务端 `State.Round`）。
+`roundInfo`：PVE 为 `第{n}轮`，n 为本关第几手（比完自动下一手后递增，进下一关从 1 重计）。PVP 隐藏 `roundInfo`，轮次改写在 `stageInfoText`，只显示 `第{N}轮`（N 为服务端 `State.Round`）。
 
 PVP 选牌倒计时在 `timeValue`（父节点 `time`）。没有截止时间时整圈隐藏。`GameUIView.Update` 每帧按开快照时换算好的本地截止点减秒，不每帧用过期的 `serverNowUtcMs` 重算。商店弹窗 `BattleShopPop.timeText` 绑同一份 `TimeValue` / `ShowTime`。
 
@@ -147,7 +147,7 @@ PVP 选牌提示：对方已锁定而我未锁定显示 `otherinfoshow`（对方
 
 PVP 终局走 [`BattleResultPopup`](../Popup/BattleResultPopup.md) 的名次页，不走闯关成功/失败页。
 
-PVP 隐藏 `beisu`，对局倍速固定为 1。`winTip` / `winTipText` 显示自己的连胜或连败（`三连胜`、`两连败`）；两边都是 0 时隐藏。PVE 不显示这块。左侧 `PvpRoles` 里其他玩家的 `roleIcon` 点击后在头像右侧弹出 `HasTip`，标题为圣物列表，格子克隆对方当前持有的圣物。点圣物弹出 `ItemTip`（名称和描述，不能使用）；再点同一张圣物只关详情。再点同一头像或点空白关闭列表。野怪头像不弹。
+PVP 隐藏 `beisu`，对局倍速固定为 1。`winTip` / `winTipText` 显示自己的连胜或连败（`三连胜`、`两连败`）；两边都是 0 时隐藏。PVE 不显示这块。左侧 `PvpRoles` 的 `roleIcon`：`valueBox` / `valueNum` 显示该敌人剩余血量（存活绿色、阵亡灰色）；其他玩家头像点击后在右侧弹出 `HasTip`，标题为圣物列表，格子克隆对方当前持有的圣物。点圣物弹出 `ItemTip`（名称和描述，不能使用）；再点同一张圣物只关详情。再点同一头像或点空白关闭列表。野怪头像不弹。
 
 `roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时，开场对话/VS 和发牌都结束后会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 

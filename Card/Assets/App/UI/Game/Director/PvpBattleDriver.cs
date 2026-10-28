@@ -83,6 +83,12 @@ namespace App.UI.Game.Director
                     _lastUserId = userId;
                     _lastRound = match.Round;
                 }
+                else if (!IsShowdown(match) && match.Round > _lastRound)
+                {
+                    // 比牌还在播，下一轮快照已到（可能并入了商店购买）：先把技能次数写上；
+                    // 完整状态仍等队列排空。收尾旧摊牌 Apply 会被 Session 的轮次守卫挡住盖次数。
+                    _session.SyncPvpSkillCharges(match, userId);
+                }
 
                 return;
             }
@@ -389,6 +395,8 @@ namespace App.UI.Game.Director
                 _director.Enqueue(new AttackCommand(!playerWon, chase, winScore.Type, winScore.Label, loseScore.Label));
             }
 
+            // 收尾应用本轮摊牌 HP。若演出期间已 Sync 过更高轮次的技能次数，
+            // Session 轮次守卫会挡住旧 RubLeft/PeekLeft/ReplaceLeft 盖写。
             _director.Enqueue(new ActionCommand(() => _session.ApplyPvpState(match, userId)));
         }
 

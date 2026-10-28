@@ -44,6 +44,15 @@ namespace CardShare.Battle
 
         public int PeekLeft { get; set; }
 
+        /// <summary>已并入 <see cref="RubLeft"/> 的技能基数（英雄/圣物/天赋）。跨轮只加增量，不回满。</summary>
+        public int AppliedSkillBaseRub { get; set; }
+
+        /// <summary>同 <see cref="AppliedSkillBaseRub"/>，替换。</summary>
+        public int AppliedSkillBaseReplace { get; set; }
+
+        /// <summary>同 <see cref="AppliedSkillBaseRub"/>，透视。</summary>
+        public int AppliedSkillBasePeek { get; set; }
+
         /// <summary>本商店买了、下一轮开始才并入的次数（见 <see cref="PvpSkillShop"/>）。</summary>
         public int PendingRub { get; set; }
 

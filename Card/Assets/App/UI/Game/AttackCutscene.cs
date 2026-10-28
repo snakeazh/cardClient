@@ -685,17 +685,24 @@ namespace App.UI
             var t0 = Time.realtimeSinceStartup;
             float Elapsed() => Time.realtimeSinceStartup - t0;
 
-            PlayClip(_playerAnim, DefaultClip);
+            // fromEnemy 时自己是受击方：不要先把自己切成 Default，否则会盖掉下面的 hitAnimation。
+            if (!fromEnemy)
+            {
+                PlayClip(_playerAnim, DefaultClip);
+            }
 
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
 
-            // hitAnimation：与释放特效同帧开播（可全场存活敌人一起飞），命中帧不再重开（MISS 仍会打断成闪避）。
-            var hitAnimAtCast = TryBeginHitAnimationAtCast(visualSlot, hitAnimation, hitAnimSlots);
+            // hitAnimation：与释放特效同帧开播。fromEnemy（对方圣光烧我）播自己；否则播敌方槽。
+            // 若仍按 visualSlot 开播，会出现特效落在我身上、飞起动画却在敌人身上。
+            var hitAnimAtCast = fromEnemy
+                ? TryBeginHitAnimationAtCast(_playerAnim, hitAnimation)
+                : TryBeginHitAnimationAtCast(visualSlot, hitAnimation, hitAnimSlots);
 
             AppLog.Info(
                 LogChannel.UI,
-                $"[HeroSkill][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} " +
+                $"[HeroSkill][t={Elapsed():0.000}] 开始 slot={visualSlot} lv={level} fromEnemy={fromEnemy} " +
                 $"attack={attackFx.Effects} attackTime={configuredWait:0.###} castTime={castTime:0.###} " +
                 $"hitDelay={hitDelay:0.###} projectile={projectile} rolepoint={attackFx.rolepoint} " +
                 $"hit={hitFx.Effects} hitShow={hitLife:0.###} hitAnim={(hitAnimAtCast ? $"{hitAnimation}x{_hitAnimAtCastSlots.Count}" : "命中帧")} " +

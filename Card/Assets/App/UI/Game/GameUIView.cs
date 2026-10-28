@@ -3719,7 +3719,7 @@ namespace App.UI
                 return;
             }
 
-            var relic = RelicConfig.Get(_equipRelicIds[index]);
+            var relic = ViewModel.Session.LookupRelic(_equipRelicIds[index]);
             if (relic == null)
             {
                 HideEquipTip();
@@ -4526,7 +4526,7 @@ namespace App.UI
                 RelicConfig relic = null;
                 if (i < owned.Count)
                 {
-                    relic = RelicConfig.Get(owned[i]);
+                    relic = ViewModel.Session.LookupRelic(owned[i]);
                 }
 
                 _equipRelicIds[i] = relic != null ? relic.Id : 0;

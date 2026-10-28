@@ -24,7 +24,8 @@ Unity 的 `App.Game.Card` / `RunState` 不进本库，由客户端 `SharedBattle
    `HandEvaluator.Evaluate`、`RelicCombat.Evaluate`、`CombatDamage.Resolve` 不读静态 Unity 表、不读磁盘、不读时钟。随机由调用方传入，或写在 `CombatDamageInput` 的强制命中上。PVE 叠层、未亮出牌是快照字段；PVP 不填就是 0。函数里不要写 `if (pvp)`。
 
 3. **配表只走 `IGameTables`**  
-   用 `TryGetRelic` / `TryGetRelicEntry`。不用 Unity 的 `RelicEntryConfig.Get`，也不在这里读 JSON。加载是边界：服务端 `FileGameConfigLoader`，客户端 `UnityGameConfigLoader`。
+   用 `TryGetRelic` / `TryGetRelicEntry`。不用 Unity 的 `RelicEntryConfig.Get`，也不在这里读 JSON。加载是边界：服务端 `FileGameConfigLoader`，客户端 `UnityGameConfigLoader`。  
+   **PVP 圣物只认 `PvpRelicConfig` / `PvpRelicEntryConfig`**（`PvpRelics` / `TryGetPvpRelic*`，或经 `PvpGameTables.Wrap` 把 `Relics` 指过去）；禁止回落 `RelicConfig`（两表同 Id 语义不同）。
 
 4. **调用方保证入参，被调用方直接用**  
    不要 `?.`、`??` 把 null 吞成 0 / 空串 / 空列表。不要 `EnsureXxx`、不要函数开头 `if (x == null) return`。找不到配表用 `TryGet` 跳过。列表在构造时给空。
@@ -56,7 +57,7 @@ Unity 的 `App.Game.Card` / `RunState` 不进本库，由客户端 `SharedBattle
 | CritDamageUp / FlatDamage / 出伤% 新词条 | `CombatBonuses.BuildPlayerInput` + `SumRelicOutgoingPercent` |
 | FlatDamageReduce / GoldDamageReduce / AllIn 承伤 / GoldBlock | `MitigateIncomingWithRelics` / `ApplyDuelDamage` |
 | FlatAttack / RoundTempAttack / RoundPayGold | `ApplyTrackersToSeat` / `ApplyRoundStart` |
-| ReplaceCardsNum / RubbingPayGold / PeekDownGrade | `ResetSkills` / 搓牌付费 / `CompareLevelBonus` |
+| ReplaceCardsNum / RubbingPayGold / PeekDownGrade | `PvpSkillShop` 开局/跨轮并入 / 搓牌付费 / `CompareLevelBonus` |
 | RefreshPriceFixed / ShopRareGuarantee | `PvpShopRules` |
 | SellGetAttack / KeepConsumablePer / 击杀金 | `SellRelic` / `UseRelic` / `GrantHeroKill` |
 | KillDropConsumable（藏宝图） | `ApplyDuelDamage` 胜方攻击后 |

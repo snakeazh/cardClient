@@ -85,10 +85,10 @@ namespace App.Game
         private GameObject ActiveAttackRoot =>
             _enemyVisual && enemyAttackRoot != null ? enemyAttackRoot : attackRoot;
         private Image ActiveHeartBg => _enemyVisual && enemyHeartBg != null ? enemyHeartBg : heartBg;
-        private Image ActiveHealthBar =>
-            _enemyVisual && enemyHealthBar != null ? enemyHealthBar : healthBar;
+        // 敌人形态必须用 enemycardheart 下的条；找不到时不要回落到人物 heart（会改到隐藏节点上）。
+        private Image ActiveHealthBar => _enemyVisual ? enemyHealthBar : healthBar;
         private float ActiveHealthBarFullWidth =>
-            _enemyVisual && enemyHealthBar != null ? _enemyHealthBarFullWidth : _healthBarFullWidth;
+            _enemyVisual ? _enemyHealthBarFullWidth : _healthBarFullWidth;
         private TMP_Text ActiveHeart =>
             _enemyVisual && enemyCardAttackHeart != null ? enemyCardAttackHeart : cardAttackHeart;
 
@@ -367,6 +367,7 @@ namespace App.Game
         public void Bind(SeatState seat, Sprite portrait, int attack = 0)
         {
             EnsureRefs();
+            // 怪物走 enemycard；PVP 玩家对手（DisplayAsHero）走人物 card，攻/血底用预制体 healthbar。
             var asMonster = seat != null && !seat.IsPlayer && !seat.DisplayAsHero;
             SetEnemyVisual(asMonster);
             if (asMonster)
@@ -688,12 +689,17 @@ namespace App.Game
             var bar = ActiveHealthBar;
             if (bar != null)
             {
-                var full = ActiveHealthBarFullWidth;
-                if (full <= 0f)
+                // 满宽记在字段里；若曾被收成 0，禁止再用当前 sizeDelta（已是空条）当满宽。
+                if (_enemyVisual)
                 {
-                    full = bar.rectTransform.sizeDelta.x;
+                    EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
+                }
+                else
+                {
+                    EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
                 }
 
+                var full = ActiveHealthBarFullWidth;
                 var width = full * Mathf.Clamp01(fillRatio);
                 var size = bar.rectTransform.sizeDelta;
                 if (!Mathf.Approximately(size.x, width))
@@ -899,6 +905,26 @@ namespace App.Game
                 enemyHealthBar = FindImageUnder("enemycardheart", "healthbar");
             }
 
+            // 旧预制体曾把敌人填充条误命名为 Image (1)，挂在 enemycardheart/frame 下。
+            if (enemyHealthBar == null)
+            {
+                var enemyHeart = FindDeep(transform, "enemycardheart");
+                var enemyFrame = enemyHeart != null ? FindDeep(enemyHeart, "frame") : null;
+                if (enemyFrame != null)
+                {
+                    for (var i = 0; i < enemyFrame.childCount; i++)
+                    {
+                        var child = enemyFrame.GetChild(i);
+                        var image = child != null ? child.GetComponent<Image>() : null;
+                        if (image != null)
+                        {
+                            enemyHealthBar = image;
+                            break;
+                        }
+                    }
+                }
+            }
+
             EnsureHealthBarSliced(enemyHealthBar, ref _enemyHealthBarFullWidth);
 
             if (enemyCardAttackHeart == null)
@@ -1078,9 +1104,21 @@ namespace App.Game
                 bar.type = Image.Type.Sliced;
             }
 
-            if (fullWidth <= 0f)
+            var current = bar.rectTransform.sizeDelta.x;
+            if (current > fullWidth)
             {
-                fullWidth = Mathf.Max(0f, bar.rectTransform.sizeDelta.x);
+                fullWidth = current;
+            }
+
+            if (fullWidth > 0f)
+            {
+                return;
+            }
+
+            // 条已经是空宽时，用父级 frame 宽度作满宽，避免之后永远画成 0。
+            if (bar.rectTransform.parent is RectTransform parent)
+            {
+                fullWidth = Mathf.Max(0f, parent.sizeDelta.x);
             }
         }
 

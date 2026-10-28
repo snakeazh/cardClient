@@ -180,7 +180,7 @@ namespace CardShare.Battle
             };
         }
 
-        /// <summary>三个技能的补充次数入口：下一口价、当前剩余、下一轮上限（含已购）。</summary>
+        /// <summary>三个技能补充入口：价、分子=剩余+待生效购买、分母=基数。</summary>
         private static PvpShopSkillDto[] ProjectSkills(IGameTables tables, PvpFighter fighter)
         {
             var skills = new PvpShopSkillDto[PvpSkillIds.Count];
@@ -190,7 +190,7 @@ namespace CardShare.Battle
                 {
                     Id = i,
                     Price = PvpSkillShop.Price(fighter, i),
-                    Left = PvpSkillShop.Left(fighter, i),
+                    Left = PvpSkillShop.ShopLeft(fighter, i),
                     Max = PvpSkillShop.Max(tables, fighter, i)
                 };
             }

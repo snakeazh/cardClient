@@ -10,10 +10,11 @@ namespace CardShare.Battle
     /// PvP 商店专属：花金币补充技能使用次数（搓牌 / 替换 / 透视）。
     ///
     /// 规则：
-    /// 1. 一次购买 = 下一轮开始时该技能 +1 次，不改变商店阶段手上剩余的次数；
-    /// 2. 只在下一轮生效（<see cref="PvpMatch"/> 的 ResetSkills 并入上限后清零），不跨轮累积；
-    /// 3. 单价必须高于 <c>EverySkillProvideGold</c>（未用技能折算金币，缺省 20）：
-    ///    否则「买入 → 不用 → 结算返金」就能套利。一次性生效也保证不会每轮白拿返金。
+    /// 1. 次数按「局」走：新对局开局初始化为基数；轮与轮之间不回满，用掉的就少；
+    /// 2. 商店买 1 次 = 待生效 +1，下一轮开局并入剩余（不改变商店阶段手上的剩余）；
+    /// 3. 本局内买到的圣物/词条若抬高技能基数，下一轮开局只把增量加进剩余，不回满；
+    /// 4. 单价必须高于 <c>EverySkillProvideGold</c>（未用技能折算金币，缺省 20）：
+    ///    否则「买入 → 不用 → 结算返金」就能套利。
     ///
     /// 价格与基础次数口径都放在这里，服务端（PvpMatch/ProjectShop）与客户端（展示）同源。
     /// 未配置 GameConst 的 PVPSkillNeedGold 时按下表；将来要进表，照 <see cref="PvpRelicBag"/> 的写法加可选覆盖即可。
@@ -99,7 +100,7 @@ namespace CardShare.Battle
             return Math.Max(0, first + step);
         }
 
-        /// <summary>当前剩余次数。商店阶段是上一轮打完剩下的量。</summary>
+        /// <summary>当前剩余次数（不含待生效购买）。商店阶段是上一轮打完剩下的量。</summary>
         public static int Left(PvpFighter fighter, int skillId)
         {
             if (fighter == null)
@@ -121,8 +122,37 @@ namespace CardShare.Battle
         }
 
         /// <summary>
-        /// 每轮刷新时的基础次数 + 圣物/英雄/天赋词条加成（口径同 <see cref="PvpMatch"/> ResetSkills）。
-        /// 不含本商店已购的部分。
+        /// 商店按钮分子：手上剩余 + 本店已购待生效。
+        /// 用光 0/1 再买一次显示 1/1，而不是 0/2。
+        /// </summary>
+        public static int ShopLeft(PvpFighter fighter, int skillId)
+            => Math.Max(0, Left(fighter, skillId) + Pending(fighter, skillId));
+
+        /// <summary>
+        /// 开局/当前已并入剩余的技能基数（英雄/圣物/天赋）。用于跨轮只加增量、不回满。
+        /// </summary>
+        public static int AppliedBase(PvpFighter fighter, int skillId)
+        {
+            if (fighter == null)
+            {
+                return 0;
+            }
+
+            switch (skillId)
+            {
+                case PvpSkillIds.Rub:
+                    return Math.Max(0, fighter.AppliedSkillBaseRub);
+                case PvpSkillIds.Replace:
+                    return Math.Max(0, fighter.AppliedSkillBaseReplace);
+                case PvpSkillIds.Peek:
+                    return Math.Max(0, fighter.AppliedSkillBasePeek);
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// 技能基数 + 圣物/英雄/天赋词条加成（不含商店已购 pending）。
         /// </summary>
         public static int Base(IGameTables tables, PvpFighter fighter, int skillId)
         {
@@ -139,7 +169,10 @@ namespace CardShare.Battle
             return Math.Max(0, baseCount + bonus);
         }
 
-        /// <summary>下一轮开始时的次数上限 = 基础加成 + 本商店已购。</summary>
+        /// <summary>
+        /// 商店展示分母 = 当前基数（英雄/圣物/天赋），不含已购。
+        /// 用光 0/3；买一次分子 +1（见 <see cref="ShopLeft"/>），分母不变，可出现 2/1。
+        /// </summary>
         public static int Max(IGameTables tables, PvpFighter fighter, int skillId)
         {
             if (fighter == null || !IsValid(skillId))
@@ -147,7 +180,37 @@ namespace CardShare.Battle
                 return 0;
             }
 
-            return Base(tables, fighter, skillId) + Pending(fighter, skillId);
+            return Base(tables, fighter, skillId);
+        }
+
+        /// <summary>新对局开局：剩余次数拉到基数，记已并入基数，清 pending。</summary>
+        public static void ApplyMatchStart(IGameTables tables, PvpFighter fighter)
+        {
+            if (tables == null || fighter == null)
+            {
+                return;
+            }
+
+            SetLeftAndApplied(fighter, PvpSkillIds.Rub, Base(tables, fighter, PvpSkillIds.Rub));
+            SetLeftAndApplied(fighter, PvpSkillIds.Peek, Base(tables, fighter, PvpSkillIds.Peek));
+            SetLeftAndApplied(fighter, PvpSkillIds.Replace, Base(tables, fighter, PvpSkillIds.Replace));
+            ClearPending(fighter);
+        }
+
+        /// <summary>
+        /// 同一局内进入新一轮：只把商店购买与基数增量加进剩余，不把已用次数回满。
+        /// </summary>
+        public static void ApplyRoundCarry(IGameTables tables, PvpFighter fighter)
+        {
+            if (tables == null || fighter == null)
+            {
+                return;
+            }
+
+            CarryOne(tables, fighter, PvpSkillIds.Rub);
+            CarryOne(tables, fighter, PvpSkillIds.Peek);
+            CarryOne(tables, fighter, PvpSkillIds.Replace);
+            ClearPending(fighter);
         }
 
         /// <summary>购买计数 +1（价格递增）与待生效次数 +1。扣金/校验在 PvpMatch 里做。</summary>
@@ -175,7 +238,7 @@ namespace CardShare.Battle
             }
         }
 
-        /// <summary>下一轮开始时把待生效次数并进上限，然后清零。</summary>
+        /// <summary>下一轮开始时把待生效次数并进剩余后清零。</summary>
         public static void ClearPending(PvpFighter fighter)
         {
             if (fighter == null)
@@ -186,6 +249,41 @@ namespace CardShare.Battle
             fighter.PendingRub = 0;
             fighter.PendingReplace = 0;
             fighter.PendingPeek = 0;
+        }
+
+        private static void CarryOne(IGameTables tables, PvpFighter fighter, int skillId)
+        {
+            var nextBase = Base(tables, fighter, skillId);
+            var applied = AppliedBase(fighter, skillId);
+            // 基数升高只加增量；钝手等降基数按差值扣剩余（不回满已用次数）。
+            var growth = nextBase - applied;
+            var pending = Pending(fighter, skillId);
+            var left = Math.Max(0, Left(fighter, skillId) + growth + pending);
+            SetLeftAndApplied(fighter, skillId, left, nextBase);
+        }
+
+        private static void SetLeftAndApplied(PvpFighter fighter, int skillId, int left)
+            => SetLeftAndApplied(fighter, skillId, left, left);
+
+        private static void SetLeftAndApplied(PvpFighter fighter, int skillId, int left, int appliedBase)
+        {
+            left = Math.Max(0, left);
+            appliedBase = Math.Max(0, appliedBase);
+            switch (skillId)
+            {
+                case PvpSkillIds.Rub:
+                    fighter.RubLeft = left;
+                    fighter.AppliedSkillBaseRub = appliedBase;
+                    break;
+                case PvpSkillIds.Replace:
+                    fighter.ReplaceLeft = left;
+                    fighter.AppliedSkillBaseReplace = appliedBase;
+                    break;
+                case PvpSkillIds.Peek:
+                    fighter.PeekLeft = left;
+                    fighter.AppliedSkillBasePeek = appliedBase;
+                    break;
+            }
         }
 
         private static int FirstGold(int skillId)

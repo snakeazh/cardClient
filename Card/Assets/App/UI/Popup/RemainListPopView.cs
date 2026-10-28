@@ -286,7 +286,7 @@ namespace App.UI.Popup
             var needed = 0;
             for (var i = 0; i < owned.Count; i++)
             {
-                if (RelicConfig.Get(owned[i]) != null)
+                if (ViewModel.Session.LookupRelic(owned[i]) != null)
                 {
                     needed++;
                 }
@@ -297,7 +297,7 @@ namespace App.UI.Popup
             var slot = 0;
             for (var i = 0; i < owned.Count; i++)
             {
-                var relic = RelicConfig.Get(owned[i]);
+                var relic = ViewModel.Session.LookupRelic(owned[i]);
                 if (relic == null)
                 {
                     continue;

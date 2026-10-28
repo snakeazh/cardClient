@@ -69,7 +69,7 @@ BattleShopPop
 
 规则与价格在 `Card/Assets/Shared/Battle/PvpSkillShop.cs`（双端同源）：
 
-- 一次购买 = 待生效次数 +1（`fighter.PendingXxx`）。`ResetSkills` 只在**下一轮开局**把待生效并入上限，然后清零，不跨轮累积；
+- 次数按「局」：新对局开局初始化；同局跨轮**不回满**。商店买 1 次 = 待生效 +1（`PendingXxx`），**下一轮开局并入剩余**；
 - 本局同一个技能每买一次，价格 +20（`BoughtXxx` 计数），与圣物槽解锁同一套递增思路；
 - 单价必须高于 `GameConst.EverySkillProvideGold`（未用技能折算金币，缺省 20），否则「买入 → 不用 → 结算返金」能套利；
 - 扣金走 `PvpRelicRuntime.OnGoldSpent`（注魔硬币等「消费加伤」圣物照常生效）。
@@ -80,12 +80,12 @@ BattleShopPop
 
 | 节点 | 内容 |
 |------|------|
-| `Text (TMP)` | `搓牌(4/4)`：下一轮次数 / 下一轮上限（`PvpShopSkillDto.Max`）。买一次两个数一起 +1 |
+| `Text (TMP)` | `透视(1/1)`：剩余+待生效购买 / 基数。用光 0/1，买一次 1/1，再买 2/1；真实次数下一轮开局并入 |
 | `PriceBar/Num` | `PvpShopSkillDto.Price`，买不起变红（`ThemeColors.ShopPriceUnaffordable`） |
 
-买不起不置灰：点了走 Toast「金币不足」，与买槽格一致。成功后 Light Toast「下一轮搓牌 4 次」。
+买不起不置灰：点了走 Toast「金币不足」，与买槽格一致。成功后 Toast 带当前剩余与可达上限。
 
-数据链路：服务端 `PvpMatchViewProjector.ProjectShop` 投影 `PvpShopStateDto.Skills`（价 / 剩余 / 下一轮上限）→ 客户端
+数据链路：服务端 `PvpMatchViewProjector.ProjectShop` 投影 `PvpShopStateDto.Skills`（价 / 剩余 / 上限）→ 客户端
 `GameSession.ApplyPvpShop` 镜像到 `_pvpShopSkills` → `BattleShopPopViewModel.GetPvpShopSkill*` → View 在 `ShopRevision` 上刷新。
 PVE 不绑这三个按钮（`_pvpShop == null` 或非 PVP 直接跳过）。
 

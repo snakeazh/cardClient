@@ -201,7 +201,7 @@ public class PvpMatchTests
     }
 
     [Fact]
-    public void RubReplaceConsumeAndResetNextRound()
+    public void RubReplacePersistAcrossRoundsUntilShopOrNewMatch()
     {
         var match = OpenClassic();
         var a = match.Fighters[0].UserId;
@@ -221,8 +221,9 @@ public class PvpMatchTests
         AdvanceThrough(match);
 
         Assert.Equal(2, match.Round);
-        Assert.Equal(3, match.Fighters[0].RubLeft);
-        Assert.Equal(1, match.Fighters[0].ReplaceLeft);
+        // 同局跨轮不回满：搓牌/替换保持用后剩余，透视未用仍为 1。
+        Assert.Equal(2, match.Fighters[0].RubLeft);
+        Assert.Equal(0, match.Fighters[0].ReplaceLeft);
         Assert.Equal(1, match.Fighters[0].PeekLeft);
     }
 
@@ -847,6 +848,17 @@ public class PvpMatchTests
         Assert.Equal(99, fromPvp.Price);
         Assert.Single(onlyPvp.PvpRelics);
         Assert.Equal(6, PvpRelicStock.Create(onlyPvp).Available(8));
+
+        // 商店池即便误塞 PVE Id，BuildPool 也只扫 PvpRelics，不会上架 7。
+        var fighter = new PvpFighter
+        {
+            ShopPoolIds = new[] { 7, 8 },
+            Combat = new SeatSetup { HeroId = 1 }
+        };
+        var stock = PvpRelicStock.Create(onlyPvp);
+        PvpShopRules.FillOffers(fighter, onlyPvp, new Random(1), stock);
+        Assert.DoesNotContain(7, fighter.ShopOfferIds);
+        Assert.All(fighter.ShopOfferIds, id => Assert.Equal(8, id));
     }
 
     [Fact]
@@ -1002,8 +1014,9 @@ public class PvpMatchTests
 
         var shop = match.ViewFor(fighter.UserId).Shop!;
         var rub = shop.Skills.Single(s => s.Id == PvpSkillIds.Rub);
-        Assert.Equal(leftBefore, rub.Left);
-        Assert.Equal(PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1, rub.Max);
+        // 展示分子含 pending：0/1 买一次 → 1/1；分母始终是基数。
+        Assert.Equal(leftBefore + 1, rub.Left);
+        Assert.Equal(PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub), rub.Max);
         // 第二口涨价。
         Assert.Equal(price + PvpSkillShop.StepGold, rub.Price);
 
@@ -1014,7 +1027,8 @@ public class PvpMatchTests
         Assert.Throws<InvalidOperationException>(
             () => match.Act(fighter.UserId, "buy_skill", 99, Array.Empty<int>()));
 
-        var expectedRub = PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub) + 1;
+        // 下一轮只把购买并入剩余，不回满。
+        var expectedRub = leftBefore + 1;
         foreach (var f in match.Fighters)
         {
             if (!f.ShopDone)
@@ -1584,6 +1598,42 @@ public class PvpMatchTests
         // 每剩余 1 搓牌 +2 攻击：攻击 10 + 3×2。
         var expected = Math.Max(1, (int)Math.Round((10 + 3 * 2) * snap.Scores[seat].Multiplier));
         Assert.Equal(expected, snap.Damages[seat]);
+    }
+
+    [Fact]
+    public void MonsterSeatHpIsReducedWhenPlayerWins()
+    {
+        var sawWin = false;
+        foreach (var seed in new[] { 42, 7, 1001, 2024, 9 })
+        {
+            var match = OpenClassic(seed);
+            foreach (var fighter in match.Fighters)
+            {
+                match.Showdown(fighter.UserId);
+            }
+
+            foreach (var duel in match.Duels)
+            {
+                Assert.True(duel.VsMonster);
+                Assert.True(duel.HpApplied);
+                var snap = duel.Engine.Snapshot;
+                if (snap.Winners == null || snap.Winners.Count != 1 || snap.Winners[0] != 0)
+                {
+                    continue;
+                }
+
+                sawWin = true;
+                var maxHp = duel.Engine.MutableSeat(1).MaxHp;
+                var hp = duel.Engine.MutableSeat(1).Hp;
+                Assert.True(maxHp > 0);
+                Assert.Equal(Math.Max(0, maxHp - duel.AppliedDamage), hp);
+                var view = match.ViewFor(duel.LeftUserId);
+                var foe = view.Duel!.Seats.First(s => s.SeatId == 1);
+                Assert.Equal(hp, foe.Hp);
+            }
+        }
+
+        Assert.True(sawWin);
     }
 
     [Fact]

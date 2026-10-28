@@ -1,6 +1,5 @@
 using System;
 using App.Atlas;
-using App.Config;
 using CardShare.Contracts.Config;
 using App.UI;
 using DG.Tweening;
@@ -12,9 +11,11 @@ namespace App.Game
 {
     /// <summary>
     /// 局内角色/敌人信息卡。人物用 card，敌人用 enemycard，头像与数值在 <see cref="Bind"/> 时赋值。
-    /// 玩家 attack/heart 底图取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame，
+    /// 人物 attack / heart 底图用预制体；敌人 enemycardattack / enemycardheart 按 MonsterType
+    /// 取 HealthBarBigBaseFrameKhaki / Purple / Red。
     /// card 下 bg/direct/di 三层卡背取 Altas/playitem 的 {品质}CardFrameBack{1,2,3}（稀有为 Blue 系列）；
-    /// 怪物头像取 Altas/enemy（{Icon}_attack/_damage/_dead）；enemycard 底图 BaseMap、attack/heart 取 HealthBar，贴图在 Altas/playitem。
+    /// 怪物头像取 Altas/enemy（{Icon}_attack/_damage/_dead）；enemycard 卡面底图取 BaseMap。
+    /// heart 文案为当前/上限，healthbar 按百分比改 width。
     /// 卡面/标题底等其余节点颜色以预制体为准，代码不染色。
     /// </summary>
     public sealed class PlayerItem : MonoBehaviour
@@ -37,6 +38,7 @@ namespace App.Game
         [SerializeField] private GameObject attackRoot;
         [SerializeField] private Image attackBg;
         [SerializeField] private Image heartBg;
+        [SerializeField] private Image healthBar;
         [SerializeField] private TMP_Text enemyCardName;
         [SerializeField] private Image enemyCardIcon;
         [SerializeField] private Image enemyCardBg;
@@ -46,6 +48,7 @@ namespace App.Game
         [SerializeField] private GameObject enemyAttackRoot;
         [SerializeField] private Image enemyAttackBg;
         [SerializeField] private Image enemyHeartBg;
+        [SerializeField] private Image enemyHealthBar;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
         [SerializeField] private GameObject topDialog;
@@ -82,8 +85,16 @@ namespace App.Game
         private GameObject ActiveAttackRoot =>
             _enemyVisual && enemyAttackRoot != null ? enemyAttackRoot : attackRoot;
         private Image ActiveHeartBg => _enemyVisual && enemyHeartBg != null ? enemyHeartBg : heartBg;
+        // 敌人形态必须用 enemycardheart 下的条；找不到时不要回落到人物 heart（会改到隐藏节点上）。
+        private Image ActiveHealthBar => _enemyVisual ? enemyHealthBar : healthBar;
+        private float ActiveHealthBarFullWidth =>
+            _enemyVisual ? _enemyHealthBarFullWidth : _healthBarFullWidth;
         private TMP_Text ActiveHeart =>
             _enemyVisual && enemyCardAttackHeart != null ? enemyCardAttackHeart : cardAttackHeart;
+
+        // healthbar 满宽（Sliced + 改 width）；EnsureRefs 时从预制体 sizeDelta.x 记下
+        private float _healthBarFullWidth;
+        private float _enemyHealthBarFullWidth;
 
         public RectTransform CardIconRect
         {
@@ -356,6 +367,7 @@ namespace App.Game
         public void Bind(SeatState seat, Sprite portrait, int attack = 0)
         {
             EnsureRefs();
+            // 怪物走 enemycard；PVP 玩家对手（DisplayAsHero）走人物 card，攻/血底用预制体 healthbar。
             var asMonster = seat != null && !seat.IsPlayer && !seat.DisplayAsHero;
             SetEnemyVisual(asMonster);
             if (asMonster)
@@ -369,7 +381,10 @@ namespace App.Game
 
             SetName(seat != null ? seat.Name : string.Empty);
             SetAttack(attack);
-            SetHp(seat != null ? seat.Hp : 0, hideWhenZero: false);
+            SetHp(
+                seat != null ? seat.Hp : 0,
+                seat != null ? seat.MaxHp : 0,
+                hideWhenZero: false);
             SetPortrait(portrait);
             SetCardMaskVisible(false);
         }
@@ -378,12 +393,11 @@ namespace App.Game
         {
             EnsureRefs();
             SetEnemyVisual(false);
-            ApplyStatFrame(quality);
             ApplyQualityCardBack(quality);
             SetCardMaskVisible(false);
         }
 
-        /// <summary>敌人形态：启用 enemycard 并按 MonsterId 取 BaseMap/HealthBar 底图。图鉴等非对局场景使用。</summary>
+        /// <summary>敌人形态：启用 enemycard 并按 MonsterId 取 BaseMap。图鉴等非对局场景使用。</summary>
         public void ApplyEnemyTheme(int monsterId)
         {
             EnsureRefs();
@@ -408,35 +422,6 @@ namespace App.Game
             if (_enemyCardRoot != null && _enemyCardRoot.activeSelf != enemy)
             {
                 _enemyCardRoot.SetActive(enemy);
-            }
-        }
-
-        /// <summary>
-        /// attack/heart 数值底图按品质取 Altas/playitem 的 Yellow/Blue/Purple/Red RectangleFrame
-        /// （预制体默认直引，运行时统一以图集 sprite 为准）。目标品质缺图时回退
-        /// 普通品质，图集整体不可用时保留当前图。
-        /// </summary>
-        private void ApplyStatFrame(QualityType quality)
-        {
-            var frame = ItemBgSpriteLibrary.GetRectangleFrame(quality);
-            if (frame == null && quality != QualityType.Ordinary)
-            {
-                frame = ItemBgSpriteLibrary.GetRectangleFrame(QualityType.Ordinary);
-            }
-
-            if (frame == null)
-            {
-                return;
-            }
-
-            if (attackBg != null)
-            {
-                attackBg.sprite = frame;
-            }
-
-            if (heartBg != null)
-            {
-                heartBg.sprite = frame;
             }
         }
 
@@ -472,9 +457,9 @@ namespace App.Game
         }
 
         /// <summary>
-        /// 怪物 enemycard 底图用 BaseMap，enemycardattack/heart 用 HealthBar。贴图在
-        /// Altas/playitem（源图 Assets/Sprites/playeritem 的 {颜色}MonsterBaseFrame 系列）。
-        /// 缺配置或缺图保留当前 sprite。
+        /// 怪物 enemycard 卡面底图用 BaseMap；enemycardattack / enemycardheart 底图按
+        /// MonsterType 取 HealthBarBigBaseFrameKhaki（普通）/ Purple（精英）/ Red（Boss）。
+        /// 贴图在 Altas/playitem。缺配置或缺图保留当前 sprite。
         /// </summary>
         private void ApplyMonsterFrames(int monsterId)
         {
@@ -490,20 +475,36 @@ namespace App.Game
                 enemyCardBg.sprite = baseMap;
             }
 
-            var healthBar = PlayItemSpriteLibrary.Get(row.HealthBar);
-            if (healthBar == null)
+            var statFrame = PlayItemSpriteLibrary.Get(EnemyStatFrameSpriteName(row.Type));
+            if (statFrame == null)
             {
                 return;
             }
 
             if (enemyAttackBg != null)
             {
-                enemyAttackBg.sprite = healthBar;
+                enemyAttackBg.sprite = statFrame;
             }
 
             if (enemyHeartBg != null)
             {
-                enemyHeartBg.sprite = healthBar;
+                enemyHeartBg.sprite = statFrame;
+            }
+        }
+
+        /// <summary>
+        /// 敌人攻/血底图：普通 Khaki、精英 Purple、Boss Red（与 BaseMap 色系一致）。
+        /// </summary>
+        private static string EnemyStatFrameSpriteName(MonsterType type)
+        {
+            switch (type)
+            {
+                case MonsterType.Elite:
+                    return "HealthBarBigBaseFramePurple";
+                case MonsterType.Boss:
+                    return "HealthBarBigBaseFrameRed";
+                default:
+                    return "HealthBarBigBaseFrameKhaki";
             }
         }
 
@@ -585,11 +586,28 @@ namespace App.Game
             }
         }
 
-        public void SetHp(int hp, bool hideWhenZero = true)
+        /// <summary>
+        /// 血量文案为 <c>当前/上限</c>，healthbar（Sliced）按百分比改 width。
+        /// <paramref name="maxHp"/> &lt; 0 时按满血处理（局外面板只有上限时传当前值即可）。
+        /// </summary>
+        public void SetHp(int hp, int maxHp = -1, bool hideWhenZero = true)
         {
             EnsureRefs();
             var value = Mathf.Max(0, hp);
-            SetHpDisplay(value.ToString(), visible: value > 0 || !hideWhenZero);
+            var max = maxHp < 0 ? value : Mathf.Max(0, maxHp);
+            if (max < value)
+            {
+                max = value;
+            }
+
+            var visible = value > 0 || max > 0 || !hideWhenZero;
+            if (hideWhenZero && value <= 0 && max <= 0)
+            {
+                visible = false;
+            }
+
+            var ratio = max > 0 ? Mathf.Clamp01((float)value / max) : 0f;
+            SetHpDisplay($"{value}/{max}", visible, ratio);
         }
 
         /// <summary>
@@ -606,7 +624,7 @@ namespace App.Game
             }
 
             SetAttackDisplay(LockedStatText, visible: true);
-            SetHpDisplay(LockedStatText, visible: true);
+            SetHpDisplay(LockedStatText, visible: true, fillRatio: 1f);
         }
 
         public void SetPortrait(Sprite portrait, bool locked = false)
@@ -656,7 +674,7 @@ namespace App.Game
             }
         }
 
-        private void SetHpDisplay(string text, bool visible)
+        private void SetHpDisplay(string text, bool visible, float fillRatio = 1f)
         {
             var label = ActiveHeart;
             if (label != null)
@@ -665,6 +683,29 @@ namespace App.Game
                 if (label.text != value)
                 {
                     label.text = value;
+                }
+            }
+
+            var bar = ActiveHealthBar;
+            if (bar != null)
+            {
+                // 满宽记在字段里；若曾被收成 0，禁止再用当前 sizeDelta（已是空条）当满宽。
+                if (_enemyVisual)
+                {
+                    EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
+                }
+                else
+                {
+                    EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
+                }
+
+                var full = ActiveHealthBarFullWidth;
+                var width = full * Mathf.Clamp01(fillRatio);
+                var size = bar.rectTransform.sizeDelta;
+                if (!Mathf.Approximately(size.x, width))
+                {
+                    size.x = width;
+                    bar.rectTransform.sizeDelta = size;
                 }
             }
 
@@ -800,6 +841,13 @@ namespace App.Game
                 heartBg = FindImage("heart");
             }
 
+            if (healthBar == null)
+            {
+                healthBar = FindImageUnder("heart", "healthbar");
+            }
+
+            EnsureHealthBarSliced(healthBar, ref _healthBarFullWidth);
+
             if (cardAttackHeart == null)
             {
                 cardAttackHeart = FindText("card_attackHeart");
@@ -851,6 +899,33 @@ namespace App.Game
             {
                 enemyHeartBg = FindImage("enemycardheart");
             }
+
+            if (enemyHealthBar == null)
+            {
+                enemyHealthBar = FindImageUnder("enemycardheart", "healthbar");
+            }
+
+            // 旧预制体曾把敌人填充条误命名为 Image (1)，挂在 enemycardheart/frame 下。
+            if (enemyHealthBar == null)
+            {
+                var enemyHeart = FindDeep(transform, "enemycardheart");
+                var enemyFrame = enemyHeart != null ? FindDeep(enemyHeart, "frame") : null;
+                if (enemyFrame != null)
+                {
+                    for (var i = 0; i < enemyFrame.childCount; i++)
+                    {
+                        var child = enemyFrame.GetChild(i);
+                        var image = child != null ? child.GetComponent<Image>() : null;
+                        if (image != null)
+                        {
+                            enemyHealthBar = image;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            EnsureHealthBarSliced(enemyHealthBar, ref _enemyHealthBarFullWidth);
 
             if (enemyCardAttackHeart == null)
             {
@@ -1003,6 +1078,48 @@ namespace App.Game
         {
             var node = FindDeep(transform, nodeName);
             return node != null ? node.GetComponent<Image>() : null;
+        }
+
+        private Image FindImageUnder(string parentName, string nodeName)
+        {
+            var parent = FindDeep(transform, parentName);
+            if (parent == null)
+            {
+                return null;
+            }
+
+            var node = FindDeep(parent, nodeName);
+            return node != null ? node.GetComponent<Image>() : null;
+        }
+
+        private static void EnsureHealthBarSliced(Image bar, ref float fullWidth)
+        {
+            if (bar == null)
+            {
+                return;
+            }
+
+            if (bar.type != Image.Type.Sliced)
+            {
+                bar.type = Image.Type.Sliced;
+            }
+
+            var current = bar.rectTransform.sizeDelta.x;
+            if (current > fullWidth)
+            {
+                fullWidth = current;
+            }
+
+            if (fullWidth > 0f)
+            {
+                return;
+            }
+
+            // 条已经是空宽时，用父级 frame 宽度作满宽，避免之后永远画成 0。
+            if (bar.rectTransform.parent is RectTransform parent)
+            {
+                fullWidth = Mathf.Max(0f, parent.sizeDelta.x);
+            }
         }
 
         private void HideStateNode()

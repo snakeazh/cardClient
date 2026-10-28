@@ -385,11 +385,18 @@ namespace App.UI
                     image.color = Color.white;
                 }
 
+                var valueBox = FindDeep(slot, "valueBox");
+                if (valueBox != null)
+                {
+                    valueBox.gameObject.SetActive(true);
+                }
+
                 var num = FindDeep(slot, "valueNum");
                 var text = num != null ? num.GetComponent<TMP_Text>() : null;
                 if (text != null)
                 {
-                    text.text = Math.Max(0, entry.Hp).ToString();
+                    // 阵亡一律显示 0；名册可能仍残留非 0 Hp。镜像对决中 Alive 会被抬回 true。
+                    text.text = entry.Alive ? Math.Max(0, entry.Hp).ToString() : "0";
                     text.color = entry.Alive ? RoleHpAlive : RoleHpDead;
                 }
             }

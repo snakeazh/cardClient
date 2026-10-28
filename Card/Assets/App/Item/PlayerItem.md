@@ -24,16 +24,18 @@
 | `card_icon` | 人物头像 |
 | `card_Name` | 人物名字 |
 | `card_attackValue` | 人物攻击力数字 |
-| `card_attackHeart` | 人物当前血量 |
-| `attack` | 人物攻击力整块；值为 0 时隐藏。底图按品质取 `Altas/playitem` 的 Yellow/Blue/Purple/Red `RectangleFrame` |
-| `heart` | 人物血量整块。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 0 |
+| `card_attackHeart` | 人物血量文案，格式 `当前/上限` |
+| `attack` | 人物攻击力整块；值为 0 时隐藏。底图用预制体，代码不改 |
+| `heart` | 人物血量整块。底图用预制体。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 `0/上限` |
+| `heart/frame/healthbar` | 人物血量百分比条（`Image` Sliced，按 `hp/maxHp` 改 width；左 pivot） |
 | `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap`（贴图在 `Altas/playitem`，如 `KhakiMonsterBaseFrame`） |
 | `enemycard_icon` | 敌人头像 |
 | `enemycard_Name` | 敌人名字 |
 | `enemycard_attackValue` | 敌人攻击力数字 |
-| `enemycard_attackHeart` | 敌人当前血量 |
-| `enemycardattack` | 敌人攻击力整块；值为 0 时隐藏。底图取 `MonsterConfig.HealthBar` |
-| `enemycardheart` | 敌人血量整块。局内阵亡仍显示 0。底图与 `enemycardattack` 相同 |
+| `enemycard_attackHeart` | 敌人血量文案，格式 `当前/上限` |
+| `enemycardattack` | 敌人攻击力整块；值为 0 时隐藏。底图按 `MonsterType`：普通 `HealthBarBigBaseFrameKhaki` / 精英 `…Purple` / Boss `…Red` |
+| `enemycardheart` | 敌人血量整块。底图同上。局内阵亡仍显示 `0/上限` |
+| `enemycardheart/frame/healthbar` | 敌人血量百分比条，口径同人物 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
 | `TopDialog` | 开场对白气泡（卡上方）；敌人开场用。默认隐藏。子节点 `DialogText` |
 | `BottomDialog` | 开场对白气泡（卡下方，预制体已翻转）；人物开场用。默认隐藏。子节点 `DialogText` |
@@ -48,8 +50,10 @@
 
 | 调用 | 显示 | 底图 |
 |------|------|------|
-| `ApplyTheme()`、`Bind(玩家)` | `card` 开、`enemycard` 关 | attack/heart → `{品质}RectangleFrame`；bg/direct/di → `{品质}CardFrameBack{1,2,3}` |
-| `Bind(敌人)` | `enemycard` 开、`card` 关 | enemycard → `BaseMap`；enemycardattack/heart → `HealthBar` |
+| `ApplyTheme()`、`Bind(玩家)`、`Bind(PVP 玩家对手 DisplayAsHero)` | `card` 开、`enemycard` 关 | bg/direct/di → `{品质}CardFrameBack{1,2,3}`；attack/heart 与 `heart/frame/healthbar` 用预制体 |
+| `Bind(怪物)` | `enemycard` 开、`card` 关 | enemycard → `BaseMap`；enemycardattack/heart → `HealthBarBigBaseFrame{Khaki\|Purple\|Red}`（按 `MonsterType`） |
+
+`enemycardheart/frame/healthbar` 必须叫 `healthbar`（勿留 `Image (1)`），否则 `SetHp` 改不到可见填充条。满宽只在条宽 &gt; 0 时记入；空条时用父级 `frame` 宽度，避免血条一直显示为 0。
 
 缺配置或缺图保留当前 sprite。显隐切换按 `card` / `enemycard` 节点做（`card` 节点无 Image 组件，不能按 Image 查找切换）。`CardIconRect` / `AttackValueRect` / `AttackValueAnimator` 返回当前可见套，结算抖动挂对节点。`SetSelectLift` 只动人物 `card`（选角）。
 
@@ -65,7 +69,7 @@
 | 局内玩家 | `SeatState.Attack` ← `HeroConfig.HeroDamage` | `SeatState.Hp` |
 | 局内敌人 | `SeatState.Attack` ← `MonsterConfig.MonsterDamage` | `SeatState.Hp` |
 
-`SetAttack(0)` 会关掉当前可见的攻击整块。`SetHp(0)` 默认关掉血量整块（局外未解锁 / 空英雄用这个）。局内 `Bind` 走 `SetHp(..., hideWhenZero: false)`，血量为 0 仍显示框和数字 0。
+`SetAttack(0)` 会关掉当前可见的攻击整块。`SetHp(0)` 默认关掉血量整块（局外未解锁 / 空英雄用这个）。局内 `Bind` 走 `SetHp(hp, maxHp, hideWhenZero: false)`，文案 `当前/上限`，`healthbar` width = 满宽 × `hp/maxHp`；阵亡仍显示框和 `0/上限`。局外只传一个血量时按满血（`hp/hp`、条满）处理。
 
 ---
 
@@ -104,10 +108,10 @@ _enemyItems[slot].Bind(enemy, PortraitLoader.Get(enemy), enemy.Attack);
 ## API
 
 ```csharp
-item.ApplyTheme();                      // 切到人物 card；attack/heart 切 {品质}RectangleFrame
+item.ApplyTheme();                      // 切到人物 card；品质只改卡背三层
 item.SetName("平凡之人");
-item.SetHp(1000);                       // 默认 hp=0 隐藏血量框
-item.SetHp(0, hideWhenZero: false);     // 局内阵亡：框留下，数字 0
+item.SetHp(1000);                       // 局外满血：1000/1000，条满；hp=0 隐藏血量框
+item.SetHp(0, 1000, hideWhenZero: false); // 局内阵亡：框留下，文案 0/1000，条空
 item.SetAttack(10);
 item.SetPortrait(sprite);               // null 则关掉 Image
 item.SetPortrait(sprite, locked: true); // 未解锁：头像变黑

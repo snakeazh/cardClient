@@ -94,8 +94,8 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// PVP 技能按钮文案：名称 + 下一轮次数/上限。商店买到的次数下一轮才生效，
-        /// 所以两个数都按「下一轮开始时」算，买一次两个数一起 +1。
+        /// PVP 技能按钮文案：名称 +（剩余+待生效购买）/ 基数。
+        /// 用光 0/1，买一次 1/1，再买 2/1；真实次数仍下一轮开局并入。
         /// </summary>
         public string FormatPvpSkillText(int skillId)
         {
@@ -105,7 +105,7 @@ namespace App.UI.Popup
                 return PvpSkillName(skillId);
             }
 
-            return $"{PvpSkillName(skillId)}({skill.Max}/{skill.Max})";
+            return $"{PvpSkillName(skillId)}({skill.Left}/{skill.Max})";
         }
 
         /// <summary>下一次购买的金币价；非商店阶段为 0。</summary>
@@ -308,7 +308,9 @@ namespace App.UI.Popup
                 }
 
                 var skill = Session.GetPvpShopSkill(skillId);
-                Toast.Show(skill != null ? $"下一轮{name} {skill.Max} 次" : $"{name}次数 +1");
+                Toast.Show(skill != null
+                    ? $"已购{name}（{skill.Left}/{skill.Max}，下轮生效）"
+                    : $"{name}次数 +1");
             }
             catch (Exception ex)
             {

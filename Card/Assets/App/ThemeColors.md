@@ -68,7 +68,7 @@ bgcolor.color = ThemeColors.EquipSlot(relic != null, relic != null ? relic.Type 
 |------|------|------|
 | `EquipShopIcon` | `bgcolor` | `EquipSlot`（品质底 / 空槽黑） |
 | `ShopItem` | `IconBG` / `IconTitleBG` / `card_Circle` | `RelicConfig.Type` |
-| `PlayerItem` | 不染色 | 人物 `card` + 品质框；敌人 `enemycard` + BaseMap/HealthBar |
+| `PlayerItem` | 不染色 | 人物 `card` + 品质卡背；敌人 `enemycard` + BaseMap；enemycardattack/heart 按 `MonsterType` 换 `HealthBarBigBaseFrame*` |
 | `GameUIView` 装备栏 | `equipN/bgcolor` | 品质底 / 空槽黑 |
 
 图鉴 `ItemCard` 目前还用选中橙，没有接这张表。

@@ -510,6 +510,11 @@ public class PvpMatchTests
         var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
         var goldA = a.Gold;
         var goldB = b.Gold;
+        // 野怪轮同样改连胜/连败次数（只是不发连胜金），进 PvP 时可能已是 1。
+        var winStreakA = a.WinStreak;
+        var winStreakB = b.WinStreak;
+        var loseStreakA = a.LoseStreak;
+        var loseStreakB = b.LoseStreak;
 
         match.Showdown(a.UserId);
         match.Showdown(b.UserId);
@@ -517,25 +522,28 @@ public class PvpMatchTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        // 第 2 轮是 PvP：基础 15 + 20×未用技能(5) + 连胜 1(0) + 按发奖前金币算的利息。
-        var winBody = 15 + 20 * (3 + 1 + 1);
-        var loseBody = winBody / 2;
+        // 第 2 轮是 PvP：基础 15 + 20×未用技能(5) + 连胜/连败奖（承接野怪轮次数）+ 利息。
+        var core = 15 + 20 * (3 + 1 + 1);
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
-            Assert.Equal(goldA + winBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
-            Assert.Equal(goldB + loseBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
-            Assert.Equal(1, a.WinStreak);
+            var winPay = core + PvpSettlementRules.StreakGold(winStreakA + 1);
+            var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakB + 1);
+            Assert.Equal(goldA + winPay + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldB + losePay + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(winStreakA + 1, a.WinStreak);
             Assert.Equal(0, a.LoseStreak);
-            Assert.Equal(1, b.LoseStreak);
+            Assert.Equal(loseStreakB + 1, b.LoseStreak);
             Assert.Equal(0, b.WinStreak);
         }
         else
         {
-            Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
-            Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
-            Assert.Equal(1, b.WinStreak);
-            Assert.Equal(1, a.LoseStreak);
+            var winPay = core + PvpSettlementRules.StreakGold(winStreakB + 1);
+            var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakA + 1);
+            Assert.Equal(goldB + winPay + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldA + losePay + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(winStreakB + 1, b.WinStreak);
+            Assert.Equal(loseStreakA + 1, a.LoseStreak);
         }
     }
 
@@ -548,8 +556,11 @@ public class PvpMatchTests
         var duel = match.Duels.First(d => d.Involves(a.UserId));
         var bId = PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? duel.RightUserId : duel.LeftUserId;
         var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
+        // 清掉野怪轮留下的连败，只验证「已有 1 连胜 → 再胜到 2」与「从 0 连败」。
         a.WinStreak = 1;
+        a.LoseStreak = 0;
         b.WinStreak = 1;
+        b.LoseStreak = 0;
         var goldA = a.Gold;
         var goldB = b.Gold;
 

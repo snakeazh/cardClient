@@ -202,6 +202,11 @@ public class PvpHeroRuntimeTests
         var b = match.Fighters.First(f => PvpBattleTable.SameUser(f.UserId, bId));
         var goldA = a.Gold;
         var goldB = b.Gold;
+        // 野怪轮同样改连胜/连败次数，进 PvP 时可能已是 1。
+        var winStreakA = a.WinStreak;
+        var winStreakB = b.WinStreak;
+        var loseStreakA = a.LoseStreak;
+        var loseStreakB = b.LoseStreak;
 
         match.Showdown(a.UserId);
         match.Showdown(bId);
@@ -209,19 +214,22 @@ public class PvpHeroRuntimeTests
         Assert.True(duel.Resolved);
         var snap = duel.Engine.Snapshot;
         Assert.Single(snap.Winners);
-        // 基础金 15 × (1 + 0.2) = 18，只放大基础项。连胜 1 不加奖。利息按发奖前金币。
-        var winBody = 18 + 20 * (3 + 1 + 1);
-        var loseBody = winBody / 2;
+        // 基础金 15 × (1 + 0.2) = 18，只放大基础项。连胜/连败奖承接野怪轮次数。利息按发奖前金币。
+        var core = 18 + 20 * (3 + 1 + 1);
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
         if (aWon)
         {
-            Assert.Equal(goldA + winBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
-            Assert.Equal(goldB + loseBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            var winPay = core + PvpSettlementRules.StreakGold(winStreakA + 1);
+            var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakB + 1);
+            Assert.Equal(goldA + winPay + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldB + losePay + PvpSettlementRules.InterestGold(goldB), b.Gold);
         }
         else
         {
-            Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
-            Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            var winPay = core + PvpSettlementRules.StreakGold(winStreakB + 1);
+            var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakA + 1);
+            Assert.Equal(goldB + winPay + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldA + losePay + PvpSettlementRules.InterestGold(goldA), a.Gold);
         }
     }
 

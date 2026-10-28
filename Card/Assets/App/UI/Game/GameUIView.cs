@@ -879,6 +879,8 @@ namespace App.UI
                 }
 
                 // 闪避成功时不要把对手攻击力改成 1（AttackDamage==0 时 Math.Max 的副作用）。
+                HideBeilvInfo();
+                ViewModel.ShowMask.Value = true;
                 if (!session.LastAttackMissed)
                 {
                     _holdAttackDisplay = true;
@@ -886,12 +888,32 @@ namespace App.UI
                     _heldAttackValue = Math.Max(1, session.AttackDamage);
                     if (_heldAttackItem != null)
                     {
+                        // 无点数加算：果冻弹出攻击块后再冲锋。
+                        _heldAttackItem.SetAttackValue(_heldAttackValue);
+                        var pop = _heldAttackItem.PlayAttackStatPop();
+                        if (pop != null)
+                        {
+                            pop.OnComplete(() =>
+                            {
+                                if (ViewModel == null || ViewModel.Session != session)
+                                {
+                                    return;
+                                }
+
+                                if (_heldAttackItem != null)
+                                {
+                                    _heldAttackItem.SetAttack(_heldAttackValue);
+                                }
+
+                                PlayAttackCutscene(session, 1f);
+                            });
+                            return;
+                        }
+
                         _heldAttackItem.SetAttack(_heldAttackValue);
                     }
                 }
 
-                HideBeilvInfo();
-                ViewModel.ShowMask.Value = true;
                 PlayAttackCutscene(session, 1f);
                 return;
             }
@@ -1928,10 +1950,20 @@ namespace App.UI
 
         private void ClearAttackHold()
         {
+            if (_heldAttackItem != null)
+            {
+                _heldAttackItem.HideAttackStat();
+            }
+
             _holdAttackDisplay = false;
             _heldAttackItem = null;
             _heldAttackValue = 0;
             HideBeilvInfo();
+        }
+
+        private bool IsAttackStatHeld(PlayerItem item)
+        {
+            return _holdAttackDisplay && item != null && item == _heldAttackItem;
         }
 
         private void HideBeilvInfo()
@@ -2513,6 +2545,11 @@ namespace App.UI
                     PortraitLoader.Get(session.Player),
                     playerAttack);
                 ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
+                // 局内攻块默认隐藏；仅伤害结算中攻击方保持显示。
+                if (!IsAttackStatHeld(_playerItem))
+                {
+                    _playerItem.HideAttackStat();
+                }
             }
 
             var activeCount = 0;
@@ -2554,6 +2591,10 @@ namespace App.UI
                     PortraitLoader.Get(enemy),
                     enemyAttack);
                 ShakeOnPvpAttackChange(session, item, enemyAttack);
+                if (!IsAttackStatHeld(item))
+                {
+                    item.HideAttackStat();
+                }
             }
 
             SyncEnemyCompareStand(session);

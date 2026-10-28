@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3165257648252531233}
   - component: {fileID: 2799455013715065811}
   - component: {fileID: 8649427794403850970}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_zjm_xin_chuan01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4899,7 +4899,7 @@ GameObject:
   - component: {fileID: 4527184419852972238}
   - component: {fileID: 7236430805111665240}
   - component: {fileID: 4358721206186302486}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_zjm_xin_shuibo01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9816,7 +9816,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7175083917771375941}
   - component: {fileID: 6572060103277044815}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ani_zjm_xin_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9871,7 +9871,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7949786045898828861}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ZhuJieMianNew03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9905,7 +9905,7 @@ GameObject:
   - component: {fileID: 1671365205890685914}
   - component: {fileID: 950072257065285900}
   - component: {fileID: 4139867350779764372}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_zjm_xin_glow01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

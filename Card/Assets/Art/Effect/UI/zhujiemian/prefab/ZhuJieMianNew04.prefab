@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7261208536628779882}
   - component: {fileID: 4251210704985135462}
   - component: {fileID: 8937474130253896766}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_zjm_xin_wu01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4897,7 +4897,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5264327228551156441}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: eff_zjm_xin_04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4929,7 +4929,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7146806818796194650}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ZhuJieMianNew04
   m_TagString: Untagged
   m_Icon: {fileID: 0}

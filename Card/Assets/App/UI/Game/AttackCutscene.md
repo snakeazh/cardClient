@@ -161,7 +161,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 | 预制体 | 生成时 | 怎么压到人物下面 |
 |--------|--------|------------------|
-| 挂了 `EffectSortingInherit` | 挂到 HUD 下，**不**再 `ApplySorting(230)`，按「原值 + 父 Canvas + `OrderOffset`」 | `OrderOffset` 填负数（如 `-10`） |
+| 挂了 `EffectSortingInherit` | 挂到 HUD 下，**不**再 `ApplySorting(230)`，按「原值 + 最近的 Canvas + `OrderOffset`」 | `OrderOffset` 填负数（如 `-10`） |
 | 没挂 | `UiFx.ApplySorting(go, 230)`，一律压在卡面之上 | 改不了相对层级；要自己控就挂 Inherit |
 
 `SpawnSkillFx(prefab, pos, life)` 是「不强制层、倍率 1、无 Inherit 时排序 230」的简写；齐射走 `SpawnSkillFxAt(..., forceUiLayer: true, scaleMultiplier: tuning.VolleyFxScale, sortingOrder: HeroFxSortingOrder)`。Default 层的特效会被主相机画在 UI 后面，法阵那种贴在人物卡上的东西会直接看不见——所以齐射一律强制 UI 层。

@@ -337,7 +337,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 300
+  m_SortingOrder: 210
   m_TargetDisplay: 0
 --- !u!1 &661766401169020069
 GameObject:
@@ -897,7 +897,9 @@ GameObject:
   - component: {fileID: 6504273668558976673}
   - component: {fileID: 6262603957580535052}
   - component: {fileID: 3244372524885868927}
-  m_Layer: 0
+  - component: {fileID: 8471920365487210365}
+  - component: {fileID: 6152398471203987654}
+  m_Layer: 5
   m_Name: IllustrateBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1053,6 +1055,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   alphaThreshold: 0.5
   applyToChildren: 1
+--- !u!223 &8471920365487210365
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1838671751440841802}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 1
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 220
+  m_TargetDisplay: 0
 --- !u!1 &1890007118626811058
 GameObject:
   m_ObjectHideFlags: 0
@@ -1278,7 +1303,7 @@ GameObject:
   - component: {fileID: 7819907924240285498}
   - component: {fileID: 901868870665929512}
   - component: {fileID: 7342635713864685742}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Bg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1429,7 +1454,7 @@ GameObject:
   - component: {fileID: 4941784540836159747}
   - component: {fileID: 4964738231798459218}
   - component: {fileID: 8405666665049787557}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1506,7 +1531,7 @@ GameObject:
   - component: {fileID: 2829336064115750507}
   - component: {fileID: 3834796405203751619}
   - component: {fileID: 8100000000000000001}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: StaminaNum
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2290,7 +2315,9 @@ GameObject:
   - component: {fileID: 8464168840977136865}
   - component: {fileID: 1511804437596951104}
   - component: {fileID: 6481672088767914661}
-  m_Layer: 0
+  - component: {fileID: 4127385901628475361}
+  - component: {fileID: 3198564712039845612}
+  m_Layer: 5
   m_Name: startBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2433,6 +2460,29 @@ MonoBehaviour:
   duration: 0.08
   ease: 6
   clip: {fileID: 0}
+--- !u!223 &4127385901628475361
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400200084611667670}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 1
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 230
+  m_TargetDisplay: 0
 --- !u!1 &5407110789383303242
 GameObject:
   m_ObjectHideFlags: 0
@@ -2600,7 +2650,7 @@ GameObject:
   - component: {fileID: 680555275863076290}
   - component: {fileID: 6463812995033893089}
   - component: {fileID: 1184994238565414410}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: TextImg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2675,7 +2725,7 @@ GameObject:
   - component: {fileID: 1992893089070442961}
   - component: {fileID: 3314497161680826489}
   - component: {fileID: 5879987114436625315}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3267,7 +3317,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1456581645142806127}
   - component: {fileID: 9074013683419869585}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: StaminaArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3332,7 +3382,7 @@ GameObject:
   - component: {fileID: 336782896348017471}
   - component: {fileID: 8280260084739775927}
   - component: {fileID: 4754579940197053320}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: NameText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4325,7 +4375,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  orderOffset: 100
+  orderOffset: 1
 --- !u!4 &6675390361263178743 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5847983632168731445, guid: 91716640b5603cb4c935427556d73a2f, type: 3}
@@ -4532,7 +4582,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c3f5a8e2d94b641a0f8c25e1b9d47a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  orderOffset: 1
+  orderOffset: -7
 --- !u!1001 &9081903037508558946
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4632,3 +4682,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   orderOffset: 1
+--- !u!114 &6152398471203987654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1838671751440841802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &3198564712039845612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400200084611667670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295

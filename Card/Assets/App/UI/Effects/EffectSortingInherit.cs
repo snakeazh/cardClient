@@ -5,8 +5,8 @@ namespace App.UI
 {
     /// <summary>
     /// 挂到特效根节点的层级继承组件：粒子/拖尾等 Renderer 不吃父物体的层级，
-    /// 挂上后 sortingOrder 会在自身原值基础上叠加所有父物体的层级
-    /// （父链上的 Canvas 取其 sortingOrder，其余取其 Renderer.sortingOrder），
+    /// 挂上后 sortingOrder 会在自身原值基础上叠加父物体的层级
+    /// （父链上**最近的**根/Override Canvas 取其 sortingOrder，其下方的 Renderer 逐级累加），
     /// 子物体里勾了 Override Sorting 的 Canvas 同样平移；挪到别的父节点下会自动重算，不会重复叠加。
     /// </summary>
     [DisallowMultipleComponent]
@@ -103,8 +103,10 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 从直接父物体往上累计层级：父链上的 Canvas 只计根 Canvas 和勾了 Override Sorting 的
-        /// 嵌套 Canvas（未 override 的嵌套 Canvas 自身排序无效），其余物体取 Renderer 的 sortingOrder。
+        /// 从直接父物体往上累计层级：遇到第一个「根 Canvas 或勾了 Override Sorting 的嵌套 Canvas」就停，
+        /// 取它的 sortingOrder —— 嵌套 Canvas 是**就近覆盖**的排序组，祖先 Canvas 的 order 不会叠加
+        /// （之前是逐级相加，UI 层 200 + 中间 Canvas 300 会被算成 500，特效直接飞到弹窗/引导之上）。
+        /// 该 Canvas 下方的 Renderer 层级仍然逐级累加（特效挂 SpriteRenderer 等非 Canvas 父物体时用）。
         /// </summary>
         private static int GetInheritedOrder(Transform self)
         {
@@ -117,7 +119,7 @@ namespace App.UI
                 {
                     if (canvas.isRootCanvas || canvas.overrideSorting)
                     {
-                        order += canvas.sortingOrder;
+                        return order + canvas.sortingOrder;
                     }
                 }
                 else

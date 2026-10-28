@@ -101,6 +101,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.Configure<OceanEngineOptions>(configuration.GetSection("OceanEngine"));
         services.AddHttpClient(OceanEngineHttp.ClientName);
         services.AddSingleton<IAdConversionReporter, OceanEngineConversionReporter>();
+        services.AddSingleton<IAdWatchStats, RedisAdWatchStats>();
         return services;
     }
 

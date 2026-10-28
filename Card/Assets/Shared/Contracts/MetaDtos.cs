@@ -60,4 +60,11 @@ namespace CardShare.Contracts
     {
         public int Amount { get; set; }
     }
+
+    /// <summary>客户端看完一次广告后的场景上报：服务端按场景计数，并对有 clickid 归因的玩家回传巨量关键行为。</summary>
+    public sealed class AdWatchReportRequest
+    {
+        /// <summary>场景名：小写字母/数字/下划线，≤32 字符，如 revive / double_gold。</summary>
+        public string Scene { get; set; } = string.Empty;
+    }
 }

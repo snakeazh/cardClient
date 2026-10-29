@@ -340,6 +340,9 @@ namespace App.UI
 
         public void NotifyDealReady()
         {
+            // 首次进桌/重连的瞬时落牌可能在 Session.Changed 的 Refresh 之前同步完成。
+            // 先确认当前批次，避免下面或外层 Refresh 把已完成的发牌当成新发牌再隐藏开战。
+            _seenDealSerial = Session.DealSerial;
             ShowTableButtons.Value = true;
             ShowRoundInfo.Value = Session == null || !Session.IsPvp;
             GuideSignals.NotifyDealFinished(Session.DealSerial);

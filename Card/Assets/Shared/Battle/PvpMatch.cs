@@ -381,7 +381,7 @@ namespace CardShare.Battle
             duel.ForceForfeit(winSeat);
             if (!duel.VsMonster)
             {
-                ApplyDuelGold(duel, winSeat);
+                ApplyDuelGold(duel, winSeat, damage: 0);
             }
 
             BumpDuelResolved(duel, 0);
@@ -1031,7 +1031,7 @@ namespace CardShare.Battle
             }
 
             duel.MarkHpApplied(win, mainDamage, chaseDamage, holyBurnDamage);
-            ApplyDuelGold(duel, win);
+            ApplyDuelGold(duel, win, damage);
             ApplyMonsterWinHeal(duel, win);
             ApplyShowdownTrackers(duel, snap, win);
             RankDead(deathHp);
@@ -1244,11 +1244,11 @@ namespace CardShare.Battle
         }
 
         /// <summary>
-        /// 胜 = 本轮基础（英雄 GetGoldAfterLevel 只放大这一项）+ 未用技能×单价 + 连胜 + 利息。
+        /// 胜 = 本轮基础（英雄 GetGoldAfterLevel 只放大这一项）+ 未用技能×单价 + 连胜 + 利息 + 伤害换金。
         /// 负 =（本人基础 + 本人未用技能×单价）/ 2 + 连败 + 利息。平局不结算。
         /// 野怪轮照发基础/技能/利息，并改连胜连败次数，但不加连胜连败奖励。
         /// </summary>
-        private void ApplyDuelGold(PvpDuelTable duel, int win)
+        private void ApplyDuelGold(PvpDuelTable duel, int win, int damage)
         {
             var unit = PvpSettlementRules.SkillGoldUnit(_tables.GameConst);
             var countStreak = !duel.VsMonster;
@@ -1258,6 +1258,8 @@ namespace CardShare.Battle
             if (winner != null && winner.Alive)
             {
                 PayRoundGold(winner, unit, countStreak, won: true);
+                // 先算本轮利息，再追加伤害换金；野怪/镜像同样发给真实胜方。
+                winner.Gold += PvpSettlementRules.DamageGold(damage, _tables.GameConst);
             }
 
             var loser = win == 1 ? FighterAt(duel.LeftUserId) : mirror ? null : FighterAt(duel.RightUserId);

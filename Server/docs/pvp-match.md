@@ -40,10 +40,11 @@ fight（选牌，deadline = 2s 发牌演出缓冲 + OpenPhaseSeconds）
 
 ## 经济
 
-- 胜：`基础奖励 + 未用技能数 × EverySkillProvideGold + 连胜奖励 + 利息`（基础奖励 = 本轮 `GoldBase`，英雄 `GetGoldAfterLevel` 只放大这一项）
+- 胜：`基础奖励 + 未用技能数 × EverySkillProvideGold + 连胜奖励 + 利息 + 伤害换金`（基础奖励 = 本轮 `GoldBase`，英雄 `GetGoldAfterLevel` 只放大这一项）
 - 负：`(本人基础奖励 + 本人未用技能数 × EverySkillProvideGold) / 2 + 连败奖励 + 利息`；平局不结算
 - 连胜/连败：2/3/4/5/6+ 轮额外 +20/+40/+60/+80/+100。野怪轮同样改次数，这一轮不加这笔奖励
 - 利息：发奖前所持金币每 100 给 10，所持达到 500 后封顶（最多 +50）
+- 伤害换金：每桌结算时，仍存活的真实胜方获得 `floor(本桌结算伤害 × DamageTurnToGold[1] / DamageTurnToGold[0])` 局内金币，读取 `GameConst.DamageTurnToGold`（当前 `[12, 1]`）。使用减免/闪避后记录的结算伤害（含已计入结算的英雄追击和圣光燃烧，不按剩余 HP 截断）；0 伤害、平局不发放。野怪/镜像桌同样适用，不为野怪/镜像发币，不转换反击等未计入本桌胜方结算伤害的伤害。换金在本轮利息后追加，不参与半额、基础奖励倍率或本轮利息；配置缺失、不完整或任一比例值非正数时不发放。与圣物 `MechanismType.DamageTurnToGold` 是独立机制，本次不增加圣物效果支持。
 - 野怪轮玩家胜同样发基础/技能/利息，并**回复 10% 最大生命**（`max(1, floor(MaxHp×0.1))`，不超上限）
 - 淘汰：HP ≤ 0 立即写 `Alive=false`、名次，以及该名次的 `RewardGold` / `RewardScore`（终局再按同一规则补齐存活者）。同轮多人死亡按 `|淘汰后血量|` 升序（更接近 0 名次靠前）
 - 名次奖励：按 `RankReward`（1~4 名 200/120/60/30）填 `fighter.RewardGold`，按 `RankScore`（未配时 1~4 名 +50/+25/0/-40）填 `fighter.RewardScore`。`PvpRewardService` 一次性落库到局外钱包金币和 PVP 分数（分数下限 0；`TryMarkRewardsGranted` CAS 保证整局只发一次；单人失败记 Error 日志不阻塞他人）

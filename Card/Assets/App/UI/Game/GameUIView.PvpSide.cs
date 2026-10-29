@@ -439,7 +439,9 @@ namespace App.UI
                 }
 
                 var hold = _bondHolds[i];
-                var image = go.GetComponent<Image>();
+                // 新模板由底框包住 bondIcon；旧模板则直接使用根节点 Image。
+                var icon = FindDeep(go.transform, "bondIcon");
+                var image = icon != null ? icon.GetComponent<Image>() : go.GetComponent<Image>();
                 if (image == null)
                 {
                     continue;
@@ -449,6 +451,19 @@ namespace App.UI
                 image.sprite = sprite;
                 image.enabled = sprite != null;
                 image.color = tint;
+                var di = FindDeep(go.transform, "di");
+                var background = di != null ? di.GetComponent<Image>() : go.GetComponent<Image>();
+                if (background != null && background != image)
+                {
+                    var frame = SpriteOf(hold.Complete ? ResResourcePaths.BondFrame : ResResourcePaths.BondFrameLocked);
+                    if (frame != null)
+                    {
+                        background.sprite = frame;
+                    }
+
+                    // 底框使用独立的锁定贴图，不额外叠加图标的灰色 tint。
+                    background.color = Color.white;
+                }
             }
 
             RegisterBondsGuideTarget();
@@ -828,6 +843,16 @@ namespace App.UI
         {
             // PVP 侧栏头像在 pvphead 图集，启动已预载；这里只刷 UI 并补羁绊 Battle 图标。
             ApplyPvpRoles();
+            if (_bondHolds.Count > 0)
+            {
+                await LoadBattleSprite(ResResourcePaths.BondFrame);
+                await LoadBattleSprite(ResResourcePaths.BondFrameLocked);
+                if (!_pvpSideAlive || serial != _pvpSideSerial)
+                {
+                    return;
+                }
+            }
+
             for (var i = 0; i < _bondHolds.Count; i++)
             {
                 var stem = ResResourcePaths.BondArtName(_bondHolds[i].Binding != null ? _bondHolds[i].Binding.Type : 0);
@@ -1035,40 +1060,11 @@ namespace App.UI
             if (_streakText != null)
             {
                 _streakText.text = win > 0
-                    ? ChineseCount(win) + "连胜"
-                    : ChineseCount(lose) + "连败";
+                    ? "连胜x" + win
+                    : "连败x" + lose;
             }
 
             _streakTip.SetActive(true);
-        }
-
-        private static string ChineseCount(int value)
-        {
-            if (value <= 0)
-            {
-                return "零";
-            }
-
-            if (value >= 100)
-            {
-                return value.ToString();
-            }
-
-            var digits = new[] { "零", "一", "二", "三", "四", "五", "六", "七", "八", "九" };
-            if (value < 10)
-            {
-                return digits[value];
-            }
-
-            if (value == 10)
-            {
-                return "十";
-            }
-
-            var tens = value / 10;
-            var ones = value % 10;
-            var tenText = tens == 1 ? "十" : digits[tens] + "十";
-            return ones == 0 ? tenText : tenText + digits[ones];
         }
 
         private async Task ShowHasTip(int index)

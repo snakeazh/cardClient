@@ -497,6 +497,8 @@ namespace App.Game
             Run.Tilted = false;
             Run.RelicConfigIds.Clear();
             Run.RelicPowers.Clear();
+            // 广告解锁槽位仅本局有效，新局恢复基础槽位与天赋提供的容量。
+            Run.BoughtRelicSlots = 0;
             Run.ShopOfferIds.Clear();
             Run.ShopRefreshCount = 0;
             _serverRunId = null;

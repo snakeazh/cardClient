@@ -1443,7 +1443,7 @@ namespace App.UI
             {
                 ViewModel.ShowHpText.Value = false;
                 RestoreHpText();
-                ClearAttackHold();
+                ClearAttackHold(animated: true);
                 if (_lethalTauntThisAttack && session.LastAttackMissed)
                 {
                     _lethalTauntThisAttack = false;
@@ -2127,11 +2127,18 @@ namespace App.UI
             return _enemyItems[slot];
         }
 
-        private void ClearAttackHold()
+        private void ClearAttackHold(bool animated = false)
         {
             if (_heldAttackItem != null)
             {
-                _heldAttackItem.HideAttackStat();
+                if (animated)
+                {
+                    _heldAttackItem.PlayAttackStatHide();
+                }
+                else
+                {
+                    _heldAttackItem.HideAttackStat();
+                }
             }
 
             _holdAttackDisplay = false;
@@ -2727,13 +2734,9 @@ namespace App.UI
                 _playerItem.Bind(
                     session.Player,
                     PortraitLoader.Get(session.Player),
-                    playerAttack);
+                    playerAttack,
+                    showAttackStat: IsAttackStatHeld(_playerItem));
                 ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
-                // 局内攻块默认隐藏；仅伤害结算中攻击方保持显示。
-                if (!IsAttackStatHeld(_playerItem))
-                {
-                    _playerItem.HideAttackStat();
-                }
             }
 
             var activeCount = 0;
@@ -2773,12 +2776,9 @@ namespace App.UI
                 item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    enemyAttack);
+                    enemyAttack,
+                    showAttackStat: IsAttackStatHeld(item));
                 ShakeOnPvpAttackChange(session, item, enemyAttack);
-                if (!IsAttackStatHeld(item))
-                {
-                    item.HideAttackStat();
-                }
             }
 
             SyncEnemyCompareStand(session);

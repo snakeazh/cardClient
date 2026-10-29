@@ -62,6 +62,7 @@ namespace App.Game
         public const float DialogCharInterval = 0.08f / DialogSpeed;
         /// <summary>伤害结算时 attack / enemycardattack 果冻弹出时长。</summary>
         public const float AttackPopDuration = 0.4f;
+        public const float AttackHideDuration = 0.2f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 
@@ -75,6 +76,7 @@ namespace App.Game
         private bool _dialogRefsReady;
         private Tween _dialogTween;
         private Tween _attackPopTween;
+        private bool _attackStatHiding;
         private Vector3 _attackRestScale = Vector3.one * AttackStatLayoutScale;
         private Vector3 _enemyAttackRestScale = Vector3.one * AttackStatLayoutScale;
         private GameObject _activeDialog;
@@ -371,7 +373,7 @@ namespace App.Game
             dissolve?.ResetState();
         }
 
-        public void Bind(SeatState seat, Sprite portrait, int attack = 0)
+        public void Bind(SeatState seat, Sprite portrait, int attack = 0, bool showAttackStat = true)
         {
             EnsureRefs();
             // 怪物走 enemycard；PVP 玩家对手（DisplayAsHero）走人物 card，攻/血底用预制体 healthbar。
@@ -387,7 +389,15 @@ namespace App.Game
             }
 
             SetName(seat != null ? seat.Name : string.Empty);
-            SetAttack(attack);
+            if (showAttackStat)
+            {
+                SetAttack(attack);
+            }
+            else if (!_attackStatHiding)
+            {
+                SetAttackValue(attack);
+                HideAttackStat();
+            }
             SetHp(
                 seat != null ? seat.Hp : 0,
                 seat != null ? seat.MaxHp : 0,
@@ -585,6 +595,36 @@ namespace App.Game
             KillAttackPopTween();
             HideAttackRoot(attackRoot, _attackRestScale);
             HideAttackRoot(enemyAttackRoot, _enemyAttackRestScale);
+        }
+
+        /// <summary>攻击演出结束后平滑缩小，再隐藏并恢复布局缩放。</summary>
+        public void PlayAttackStatHide()
+        {
+            EnsureRefs();
+            if (_attackStatHiding)
+            {
+                return;
+            }
+
+            KillAttackPopTween();
+            var root = ActiveAttackRoot;
+            if (root == null || !root.activeInHierarchy)
+            {
+                HideAttackStat();
+                return;
+            }
+
+            var rest = _enemyVisual ? _enemyAttackRestScale : _attackRestScale;
+            _attackStatHiding = true;
+            _attackPopTween = root.transform.DOScale(Vector3.zero, AttackHideDuration)
+                .SetEase(Ease.InQuad)
+                .SetLink(root, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    _attackStatHiding = false;
+                    _attackPopTween = null;
+                    HideAttackRoot(root, rest);
+                });
         }
 
         /// <summary>
@@ -1160,6 +1200,7 @@ namespace App.Game
             }
 
             _attackPopTween = null;
+            _attackStatHiding = false;
         }
 
         private static void CaptureAttackRestScale(Transform node, ref Vector3 restScale)

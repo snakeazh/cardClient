@@ -23,11 +23,6 @@ namespace App.UI
         private GuideTargetRegistry _guideTargets;
         private readonly List<string> _guideTargetIds = new List<string>(1);
 
-        /// <summary>主页装饰特效根（云/水/鸟/船/雾/水晶光效，每根都挂了 EffectSortingInherit）。</summary>
-        private EffectSortingInherit[] _decorations;
-        private IUINavigator _navigator;
-        private bool _decorationsHidden;
-
         protected override void OnBind()
         {
             _playerItem = GetComponentInChildren<PlayerItem>(true);
@@ -42,53 +37,6 @@ namespace App.UI
             BindSettingBtn();
             Binding.BindCommand(UI.GetGameObject("pvpBtn").GetComponent<Button>(), ViewModel.PvpCommand);
             BindHero();
-            BindDecorations();
-        }
-
-        /// <summary>
-        /// 装饰特效只在纯主页显示。LevelUI、设置这类 Popup 不带全屏遮罩底板，主页仍然可见，
-        /// 光效会跟着露到弹窗上；被盖住时直接把特效根收起来。
-        /// </summary>
-        private void BindDecorations()
-        {
-            _decorations = GetComponentsInChildren<EffectSortingInherit>(true);
-            if (AppServices.IsReady)
-            {
-                _navigator = AppServices.Resolve<IUINavigator>();
-            }
-        }
-
-        private void Update()
-        {
-            if (_decorations == null || _decorations.Length == 0 || _navigator == null)
-            {
-                return;
-            }
-
-            var hide = IsCoveredByModal();
-            if (hide == _decorationsHidden)
-            {
-                return;
-            }
-
-            _decorationsHidden = hide;
-            for (var i = 0; i < _decorations.Length; i++)
-            {
-                var fx = _decorations[i];
-                if (fx != null)
-                {
-                    fx.gameObject.SetActive(!hide);
-                }
-            }
-        }
-
-        /// <summary>是否有弹窗/顶层界面压在主页上。Navigation / Resource / Toast 是常驻层，不算遮挡。</summary>
-        private bool IsCoveredByModal()
-        {
-            return _navigator.HasScreen(UILayer.Popup) ||
-                   _navigator.HasScreen(UILayer.TopMost) ||
-                   _navigator.HasScreen(UILayer.Guide) ||
-                   _navigator.HasScreen(UILayer.Loading);
         }
 
         /// <summary>抖音侧边栏奖励入口；微信小游戏无此能力，直接隐藏。</summary>

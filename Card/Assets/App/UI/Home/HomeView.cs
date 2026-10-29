@@ -30,7 +30,9 @@ namespace App.UI
             Binding.BindText(UI.GetGameObject("pvpValue").GetComponent<TMP_Text>(), ViewModel.PvpValueText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             BindTTRewardItem();
+            // 插图屋（IllustrateBtn）→ 图鉴怪物栏；圣物室（RealicItemBtn）→ 图鉴圣物栏
             Binding.BindCommand(UI.GetGameObject("IllustrateBtn").GetComponent<Button>(), ViewModel.OpenIllustrateCommand);
+            Binding.BindCommand(UI.GetGameObject("RealicItemBtn").GetComponent<Button>(), ViewModel.OpenRelicBookCommand);
             var talentBtn = UI.GetGameObject("TalentBtn");
             Binding.BindCommand(talentBtn.GetComponent<Button>(), ViewModel.OpenTalentCommand);
             RegisterGuideTalentBtn(talentBtn);

@@ -285,10 +285,27 @@ namespace App.UI.Popup
         {
             HideTip();
             BuildEntries();
-            ApplyTab(IllustratedBookTab.Relic, force: true);
+            // 主页两个入口分别进圣物栏 / 怪物栏；其它入口（底部导航等）不传参数，默认圣物页。
+            ApplyTab(ResolveOpenTab(args), force: true);
             // 整屏页签：打开期间藏顶部资源栏，关闭恢复（资源栏 VM 为 DI 单例，同实例）
             _mainResource?.HideBar();
             return Task.CompletedTask;
+        }
+
+        /// <summary>解析打开参数：<see cref="IllustratedBookTab"/> 或其 int 值，缺省圣物页。</summary>
+        private static IllustratedBookTab ResolveOpenTab(object args)
+        {
+            if (args is IllustratedBookTab tab)
+            {
+                return tab;
+            }
+
+            if (args is int value && Enum.IsDefined(typeof(IllustratedBookTab), value))
+            {
+                return (IllustratedBookTab)value;
+            }
+
+            return IllustratedBookTab.Relic;
         }
 
         protected override Task OnClose()

@@ -64,7 +64,8 @@ namespace App.UI
             PvpValueText = new ObservableProperty<string>();
             StartCommand = new RelayCommand(OpenLevelUI, () => !_openingLevel);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
-            OpenIllustrateCommand = new RelayCommand(OpenIllustrate);
+            OpenIllustrateCommand = new RelayCommand(OpenMonsterBook);
+            OpenRelicBookCommand = new RelayCommand(OpenRelicBook);
             OpenTalentCommand = new RelayCommand(OpenTalent);
             OpenSettingCommand = new RelayCommand(OpenSetting);
             PvpCommand = new RelayCommand(OpenPvpPage, () => !_openingPvp);
@@ -89,8 +90,11 @@ namespace App.UI
         /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
         public IRelayCommand OpenTTRewardCommand { get; }
 
-        /// <summary>打开图鉴弹窗（Home IllustrateBtn）。</summary>
+        /// <summary>打开图鉴弹窗的怪物栏（Home IllustrateBtn）。</summary>
         public IRelayCommand OpenIllustrateCommand { get; }
+
+        /// <summary>打开图鉴弹窗的圣物栏（Home RealicItemBtn）。</summary>
+        public IRelayCommand OpenRelicBookCommand { get; }
 
         /// <summary>打开天赋弹窗（Home TalentBtn）。</summary>
         public IRelayCommand OpenTalentCommand { get; }
@@ -268,13 +272,26 @@ namespace App.UI
             }
         }
 
-        private async void OpenIllustrate()
+        private void OpenMonsterBook()
+        {
+            OpenIllustratedBook(IllustratedBookTab.Monster);
+        }
+
+        private void OpenRelicBook()
+        {
+            OpenIllustratedBook(IllustratedBookTab.Relic);
+        }
+
+        /// <summary>打开图鉴并落到指定页签：Home 的插图屋（怪物栏）与圣物室（圣物栏）共用同一个弹窗。</summary>
+        private async void OpenIllustratedBook(IllustratedBookTab tab)
         {
             try
             {
                 var registration = _ui.Registry.GetByViewModelType(typeof(IllustratedBookPopViewModel));
                 var vm = (IllustratedBookPopViewModel)_ui.Registry.CreateViewModel(registration);
-                await _ui.Open(vm);
+                // 先落页签再打开：View.OnBind 只按当前页签建卡片，避免先建一遍圣物页再切走。
+                vm.SelectTab(tab);
+                await _ui.Open(vm, tab);
             }
             catch (Exception ex)
             {

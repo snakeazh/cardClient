@@ -11194,7 +11194,8 @@ namespace App.Game
             LastAttackMissed = missed;
             AttackDamage = scaled;
             TakenDamage = scaled;
-            DodgeCounterDamage = 0;
+            // PVP 闪避反击：我方闪避成功时按英雄 MissGetDamage 算演出数字（真实扣血仍以服务端快照为准）。
+            DodgeCounterDamage = incoming && missed ? ComputePvpDodgeCounterDamage(enemy) : 0;
             _pendingOpenerWins = !incoming;
             IncomingAttack = incoming;
             _pendingAttackTarget = incoming ? Player : enemy;
@@ -11278,6 +11279,31 @@ namespace App.Game
         {
             var enemy = Enemies[0];
             return Math.Max(1, ComputeAttackDamage(playerWon ? Player : enemy, winScore, playerWon ? enemy : Player));
+        }
+
+        /// <summary>
+        /// PVP 我方闪避成功时的反击伤害：英雄 <c>MissGetDamage</c>（武僧 = 攻击 × 200%），
+        /// 与服务端 <c>PvpHeroRuntime.DodgeCounterDamage</c> 同公式，并按挨打方剩余血截断。
+        /// 只用于演出伤害字；真实扣血以服务端快照为准。
+        /// </summary>
+        private int ComputePvpDodgeCounterDamage(SeatState attacker)
+        {
+            if (attacker == null || Player == null)
+            {
+                return 0;
+            }
+
+            var hero = HeroMechanics.Resolve(Run);
+            var total = 0;
+            HeroMechanics.ForEachEntry(hero, entry =>
+            {
+                if (entry.Type == MechanismType.MissGetDamage)
+                {
+                    total += HeroMechanics.AttackPowerDamage(entry, Math.Max(0, Player.Attack));
+                }
+            });
+
+            return Math.Min(Math.Max(0, attacker.Hp), total);
         }
 
         private void EndPvpCombat()

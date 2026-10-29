@@ -27,7 +27,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 | 情况 | 字段 | 方法 |
 |------|------|------|
 | 玩家赢，打当前怪 | `IncomingAttack == false` | `Play(visualSlot, level, …)` |
-| 玩家输，当前怪打人 | `IncomingAttack == true` | `PlayIncoming(visualSlot, level, …)` |
+| 玩家输，当前怪打人 | `IncomingAttack == true` | PVE 走 `PlayIncoming(visualSlot, level, …)`；PVP 先试 `TryPlayPvpIncomingHeroSkill`（对方英雄特效，见「PVP 敌方来袭」），解析不出才回退 `PlayIncoming` |
 | 怪打人且将死 | `IncomingAttackWouldKill` | 先 `OpeningCutscene.PlayLine` 敌人 BottomDialog「受死吧。」（逐字），收起后再 `PlayIncoming`。对白期间不开 mask。护身符/稻草/免疫不算将死；闪避在命中时才掷。MISS 后玩家 TopDialog 回「就这」，说完再进下一对 |
 
 点数飞入（`SettlePointCutscene`）结束后才进攻击。将死台词插在点数飞入之后、冲锋之前。
@@ -44,6 +44,14 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 - 特效和受击动画**至少有一个真的存在**才走这套；都缺就退回普通受击流程。受击动画在控制器里找不到时只跳过动画并打 Warning，不会让 Animator 报错。
 - 反击伤害本身仍由 `GameSession.ApplyDodgeCounter` 在命中时结算，这里只负责演出。
 - 反击伤害字走 `onDodgeCounterHit`：走反击演出时在「敌人到中心后挨打那一帧」出，没走演出（没配或资源缺失）时就在闪避这一帧出。数值读 `GameSession.DodgeCounterDamage`（`ApplyDodgeCounter` 里遗物 `武林秘籍` + 英雄 `MissGetDamage` 实际打出的伤害之和），用 `PlaceSplashHpAt` 贴在敌人卡当前位置（中心点）。
+- **PVP 同样演**：PVE 里 `GameUIView.PlayAttackCharge` 无条件 `BuildDodgeCounter(hero)`（`hero` 就是挨打方/闪避方英雄，闪避在命中时才掷）；PVP 只在 `session.LastAttackMissed` 时才建，没闪避就不传，免得多等一段反击时长。PVP 没有本地 `ApplyDodgeCounter`，`GameSession.BeginPvpAttack` 在「本刀闪避」时用 `ComputePvpDodgeCounterDamage` 按英雄 `MissGetDamage`（武僧 1 次 × 攻击 200%）+ 挨打方剩余血算出演出数字，公式与服务端 `PvpHeroRuntime.DodgeCounterDamage` 一致，**只用于出字**，真实扣血仍以服务端快照为准。对手带英雄特效的来袭走 `PlayHeroSkill` 时反击另走 `PlayPvpDodgeCounter`（见「PVP 敌方来袭」第 4 条）。
+- **对方闪避我方攻击**（PVP）：`BuildPvpFoeDodgeCounter` 用对方英雄的 `MissAttackEffect` 组出 `DodgeCounterFx`；近战 `Play` / `PlayHeroSkill` / 齐射 `PlayVolleySkill` 命中帧判定 `missed` 后**接管原攻击序列**，改走 `StartEnemyDodgeCounter`（对齐 PVE `StartDodgeCounter` 的「定住」演出）：
+  1. 把**被反击的我方卡**拉到屏幕中心（`AttackFlight` 补间到 `(0,0)`，近战则从冲撞位置过去）并定格，播 `back`；
+  2. 在**敌方卡**位置播对方反击特效（`_flipFxY = true`，**上下翻**）；
+  3. `hitTime` 后我方受击动画 + `-{反击伤害}`（`PlaceSplashHpAtPlayer`，贴在我方卡当前位置，不覆盖敌卡上的 MISS 字）；
+  4. 特效演完把卡退回自己的格子 → `onCollisionDone` → `onReturned` → 伤害字停留 → `onDone`。原序列在接管时 `Kill`，不会重复收尾。
+
+  反击伤害按对方英雄 `MissGetDamage` × 对方当前攻击算（读 `PvpFighterDto.Attack`，不能用被 `SetAttackCommand` 改写的敌卡攻击数字），按我方剩余血截断。PVP 的闪避结果开打前已知（`LastAttackMissed`），所以只在真闪避时才传 `dodgeCounter`，命中时不会白白多等一段反击时长。
 
 | 例子 | 配置 |
 |------|------|
@@ -51,7 +59,7 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 
 `visualSlot` 是敌人在桌面上的视觉槽 0/1/2。`level` 为 1 低 / 2 中 / 3 高，由牌型映射。
 
-玩家出刀若英雄配齐了攻击特效和命中特效，并且进桌时已经预载成功，走 `PlayHeroSkill`，不再冲刺。缺任一条、资源名为空、或预制体没进缓存，回退上面的 `Play`。每档 `HeroEffects*` 里必须 `Type = Attack` 和 `Type = Hit` **各一条**——只配多条 Attack（盗贼原本就是 110、111 两条 Attack）会解析失败、静默回退近战，进桌时的 `英雄特效未解析` 警告会点名。**例外：暗灵法师**（`HeroMechanics.ShadowMageHeroId`）在 `TryResolveEffects` 之前就被 `GameUIView.TryPlayHeroVolley` 截走，走「齐射」一节。**例外：圣骑士**（`PaladinHeroId`）`HeroEffects` 留空属正常：`SpecialEffect` 只给圣光燃烧；对子先圣光再通用近战。进桌预载只校验 SpecialEffect。敌人来袭始终走 `PlayIncoming`。配置从哪来见 [`HeroMechanics.md`](../../Game/HeroMechanics.md)。
+玩家出刀若英雄配齐了攻击特效和命中特效，并且进桌时已经预载成功，走 `PlayHeroSkill`，不再冲刺。缺任一条、资源名为空、或预制体没进缓存，回退上面的 `Play`。每档 `HeroEffects*` 里必须 `Type = Attack` 和 `Type = Hit` **各一条**——只配多条 Attack（盗贼原本就是 110、111 两条 Attack）会解析失败、静默回退近战，进桌时的 `英雄特效未解析` 警告会点名。**例外：暗灵法师**（`HeroMechanics.ShadowMageHeroId`）在 `TryResolveEffects` 之前就被 `GameUIView.TryPlayHeroVolley` 截走，走「齐射」一节。**例外：圣骑士**（`PaladinHeroId`）`HeroEffects` 留空属正常：`SpecialEffect` 只给圣光燃烧；对子先圣光再通用近战。进桌预载只校验 SpecialEffect。PVE 的敌人（怪）来袭始终走 `PlayIncoming`；PVP 对手是英雄，来袭改走对方英雄的特效，见下面「PVP 敌方来袭」。配置从哪来见 [`HeroMechanics.md`](../../Game/HeroMechanics.md)。
 
 ---
 
@@ -101,6 +109,19 @@ _attackFx.Bind(transform, _playerItem, _enemyItems);
 所以萨满普通怪是：0 秒出 116 → 0.3 秒命中、出 207 并结算扣血/受击/伤害字 → 1.2 秒时 207 演完 → 1.5 秒 116 演完、一起回池 → 再停 `HpTextHoldDuration` 进下一个对手。
 
 特效命中不播卡牌击退。溅射/群体目标：结算后凡 `LastAttackHitApplied && !Missed` 的槽都出受击特效（盗贼攻≥150 变群体、灰烬 AOE、多面手溅射等同理）；动画仍走 `ReactSlot`。命中行 `rolepoint=2` 在多人时改按各目标点出，避免全叠在屏幕中心。
+
+### PVP 敌方来袭（上下翻转）
+
+PVP 比牌里对手也是英雄。挨打时 `GameUIView.PlayAttackCharge` 先试 `TryPlayPvpIncomingHeroSkill`：
+
+1. 从 `ViewModel.PvpState` 取对手 `HeroId`（野怪轮 `IsMonsterRound` 直接跳过），按 `ResolveHeroFxLevel` 选档，`HeroMechanics.TryResolveEffects(foeHero, level, eliteTarget)` 解析对方英雄的 Attack + Hit；
+2. 解析不到成套特效 / 预制体没预载（平凡之人、圣骑士近战、武僧、旅者、以及野怪轮）→ 返回 false，仍走 `PlayIncoming` 敌人卡冲刺；
+3. 能播时调 `PlayHeroSkill(..., fromEnemy: true, mirrorY: true)`：释放点是对手卡、命中点是我方卡（`fromEnemy`），整段特效上下翻转（`mirrorY`），命中回调补一次震屏，伤害字出在我方卡上（`ShowAttackHpTexts` 的 `IncomingAttack` 分支）；
+4. 这一刀被闪避（MISS）且我方英雄配了 `MissAttackEffect` 时，`PlayPvpDodgeCounter` 在人物卡处补反击特效（**不**跟着来袭上下翻），过 `hitTime` 给攻击方卡播受击动画并出 `-{DodgeCounterDamage}` 反击伤害字；反击时长算进 `PlayHeroSkill` 的 `tail`，不会提前收场。反向（**对方闪避我方攻击**）走 `StartEnemyDodgeCounter` 的「定住」演出（我方卡拉到中心、敌卡播翻过的反击特效），见「闪避反击」一节第 8 条。
+
+翻转只作用于英雄特效实例：`SpawnSkillFxAt` 在算完 `ResolveFxScale` / `scaleMultiplier` 后把 `localScale.y` 取负（`_flipFxY`），所以尾焰、命中特效都朝下打；`SpawnSkillFxAt` 里的 `position` / `rotation` 不变。**投射物不翻**（`SpawnSkillFx(..., applyMirror: false)`）：它靠 `FaceToward` 按飞行方向绕 Z 转，再叠负缩放会和旋转打架、看起来像被拧反。`_flipFxY` 在 `PlayHeroSkill` 里按 `mirrorY` 设置、`Kill()` 里清零，不会串到下一段演出。
+
+PVP 圣光燃烧（`HolyLightCommand`）走的是另一条既有路径（`TryPlayHolyLight` → `PlayHeroSkill(fromEnemy: true)`），**不带** `mirrorY`，保持原样。对手是圣骑士但没配 `HeroEffects` 时普通攻击仍回退近战。
 
 ### 齐射（暗灵法师，代码特判）
 
@@ -281,6 +302,7 @@ if (_deathDissolves.ContainsKey(item))
 - 改致死溶解的时机时，`BindEnemyVisible` 那条数据驱动的溶解路径要一起看，它比延迟更早触发。
 - 粒子特效挂到 UI 下必须走 `UiFx.ApplySorting`，否则会被 UI 盖掉；同时**不要依赖预制体自带 Layer**——Default 层会被主相机画在 UI 后面（法阵就是这么"消失"的）。要么把预制体整棵改成 UI 层，要么像齐射那样用 `SpawnSkillFxAt(forceUiLayer: true)`。
 - 释放特效按自己的 `Time` 回池，命中特效按 `hitDelay + Time` 回池，两者互不打断；整段动作取较长的那个（`actionEnd`）再 `onReturned` → 伤害字停留 → `onDone`。别再改回「命中当帧掐断释放特效」或「把两条特效都绑到命中特效的显示时长上」。
+- PVP 对手来袭的上下翻转只由 `mirrorY: true` 打开（`_flipFxY`，`Kill()` 清零）；圣光燃烧等其它 `fromEnemy` 演出不带 mirror。别把 `scale.y` 取负写进 `SpawnSkillFxAt` 的默认路径，否则自己出刀和齐射都会反。
 - 命中延迟只认攻击行的 `hitTime`，且会被夹在 `[0, castTime]` 之间（投射物不读，直接按飞行时间命中）。想让命中晚于释放演完，得加大攻击行的 `Time`，不是加大 `hitTime`。
 - 齐射的时间、抛物线、缩放、生成高度都在 `AttackTuning.asset` 的「暗灵法师齐射」段；改完进 Play 即生效（编辑器下改完重进游戏）。
 - `HeroConfig` 每组特效 Id（默认档 / 普通 / 精英 / 弱 / 中 / 强）里 Attack / Hit 两种 `Type` 各要一条，缺一种就整组回退（目标类型 → 档位 → 默认档 → 近战）。同一组里多条 Attack 只有第一条生效。**暗灵法师例外**：走 `CastEffect` + `HeroEffects` + `SpecialEffect` 齐射（见「齐射」），缺 `Aoshufeidan01`（Id 102）会整段解析失败、静默回退近战。

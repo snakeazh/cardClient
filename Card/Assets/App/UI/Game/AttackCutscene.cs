@@ -64,6 +64,8 @@ namespace App.UI
         private bool _disposed;
         /// <summary>特效攻击受击：不播卡牌击退抖动（主目标与溅射）。</summary>
         private bool _skillHitNoKnockback;
+        /// <summary>本次演出的特效上下翻转（PVP 对手在上方朝下打我方，见 <see cref="PlayHeroSkill"/> 的 mirrorY）。</summary>
+        private bool _flipFxY;
         private readonly Dictionary<string, GameObject> _heroFxPrefabs = new Dictionary<string, GameObject>(4);
         private readonly List<string> _heroFxOwnedKeys = new List<string>(4);
         private readonly List<GameObject> _skillFxSpawned = new List<GameObject>(4);
@@ -479,7 +481,9 @@ namespace App.UI
             Action onCollisionDone,
             Action onReturned,
             Action onDone,
-            float timeScale = 1f)
+            float timeScale = 1f,
+            DodgeCounterFx dodgeCounter = null,
+            Action onDodgeCounterHit = null)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -529,7 +533,33 @@ namespace App.UI
                     return;
                 }
 
-                PlayImpact(_playerAnim, targetAnim, level, onHit, beat, _enemyCardRects[visualSlot], homePos, hitPos);
+                var missed = PlayImpact(_playerAnim, targetAnim, level, onHit, beat, _enemyCardRects[visualSlot], homePos, hitPos);
+                // PVP：对方（武僧）闪避我方近战 → 进入「定住」反击演出（我方卡已在 AttackFlight 上，拉到中心）。
+                if (missed && dodgeCounter != null && dodgeCounter.HasAny)
+                {
+                    var takeoverToken = token;
+                    DOVirtual.DelayedCall(0f, () =>
+                    {
+                        if (takeoverToken != _playToken)
+                        {
+                            return;
+                        }
+
+                        StartEnemyDodgeCounter(
+                            takeoverToken,
+                            visualSlot,
+                            level,
+                            dodgeCounter,
+                            onCollisionDone,
+                            onReturned,
+                            onDone,
+                            onDodgeCounterHit,
+                            alreadyOnFlight: true,
+                            returnAnchored: homeAnchored,
+                            homeParent: homeParent);
+                    }, false);
+                    return;
+                }
             });
             _seq.AppendInterval(beat.HitHoldDuration);
             _seq.AppendCallback(() =>
@@ -633,6 +663,10 @@ namespace App.UI
         /// <param name="hitAnimation">配置了 <c>HeroConfig.hitAnimation</c> 时，与释放特效同帧开播（替代命中瞬间的 ani_atk_lvXX_hit）。</param>
         /// <param name="hitAnimSlots">要一起播 hitAnimation 的视觉槽；空则只播主目标。圣骑士等群体表现传全部存活敌人。</param>
         /// <param name="shouldSpawnHitFx">结算后按槽位决定是否出受击特效；盗贼攻≥150 群体等会多人。空则只给主目标（且未闪避）出。</param>
+        /// <param name="fromEnemy">true = 敌方打我（释放点在敌方卡、命中点在自己卡）。PVP 圣光燃烧与对手普攻走这条。</param>
+        /// <param name="mirrorY">true = 整段特效上下翻转（<c>localScale.y</c> 取负）：PVP 对手在上方，朝下打我方。只影响特效实例，不影响卡牌和投射物位移。</param>
+        /// <param name="dodgeCounter">PVP 挨打闪避成功后的反击演出（<see cref="DodgeCounterFx"/>）：<c>fromEnemy</c> 时在人物处播，不跟来袭特效上下翻。</param>
+        /// <param name="onDodgeCounterHit">反击命中那一刻出反击伤害字（贴攻击方卡）。</param>
         public bool PlayHeroSkill(
             int visualSlot,
             int level,
@@ -647,7 +681,10 @@ namespace App.UI
             float timeScale = 1f,
             IList<int> hitAnimSlots = null,
             Func<int, bool> shouldSpawnHitFx = null,
-            bool fromEnemy = false)
+            bool fromEnemy = false,
+            bool mirrorY = false,
+            DodgeCounterFx dodgeCounter = null,
+            Action onDodgeCounterHit = null)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -665,6 +702,8 @@ namespace App.UI
             var token = ++_playToken;
             BeginPlay(timeScale);
             _skillHitNoKnockback = true;
+            // PVP 对手在上方、我方在下方：整段特效上下翻转，尾焰/弹道才会朝下打我方。
+            _flipFxY = mirrorY;
             var tuning = AttackTuningConfig.Instance;
             var beat = tuning.Level(level);
             var targetAnim = fromEnemy ? _playerAnim : _enemyAnims[visualSlot];
@@ -679,8 +718,24 @@ namespace App.UI
             var hitDelay = ResolveHitDelay(attackFx, castTime, projectile);
             // 命中特效显示时长：命中行 hitTime 优先，否则按命中行的 Time（207 = 1.2s）。
             var hitLife = ResolveHitLife(hitFx);
+            // PVP 闪避反击也要占时长：反击特效 Time（只有受击动画时按动画长度）。
+            var counterTime = 0f;
+            if (dodgeCounter != null)
+            {
+                counterTime = Mathf.Max(0f, dodgeCounter.Time);
+                if (dodgeCounter.Prefab == null && !string.IsNullOrEmpty(dodgeCounter.HitClip))
+                {
+                    counterTime = Mathf.Max(counterTime, ClipLength(targetAnim, dodgeCounter.HitClip));
+                }
+            }
+
             // 整段动作时长：释放特效演完、命中特效也播完，谁长算谁。116|207 正好都是 1.5s。
             var actionEnd = Mathf.Max(castTime, hitDelay + hitLife);
+            if (counterTime > 0f)
+            {
+                actionEnd = Mathf.Max(actionEnd, hitDelay + counterTime);
+            }
+
             var tail = Mathf.Max(0f, actionEnd - hitDelay);
             var t0 = Time.realtimeSinceStartup;
             float Elapsed() => Time.realtimeSinceStartup - t0;
@@ -713,7 +768,8 @@ namespace App.UI
             if (projectile)
             {
                 // 投射物飞到目标的那一刻就是命中，飞行时长即命中延迟。
-                var castGo = SpawnSkillFx(attackPrefab, homeUi, life: hitDelay);
+                // 投射物靠 FaceToward 按飞行方向转向，不能再叠 mirrorY（负缩放 + 旋转会让弹体看起来拧反）。
+                var castGo = SpawnSkillFx(attackPrefab, homeUi, life: hitDelay, applyMirror: false);
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroSkill][t={Elapsed():0.000}] 阶段1-释放(投射物) 生成={castGo != null} 飞行={Mathf.Max(0.01f, hitDelay):0.###}s");
@@ -764,6 +820,43 @@ namespace App.UI
 
                 AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2c-出伤害字");
                 onHitDamageText?.Invoke();
+
+                // PVP 闪避反击：我方闪避对手这一击 → 人物处补特效；对手闪避我方这一击 → 敌卡处补特效（上下翻）。
+                if (missed && dodgeCounter != null && dodgeCounter.HasAny)
+                {
+                    AppLog.Info(
+                        LogChannel.UI,
+                        $"[DodgeCounter][t={Elapsed():0.000}] PVP 反击 byEnemy={!fromEnemy} " +
+                        $"fx={(dodgeCounter.Prefab != null ? dodgeCounter.Prefab.name : "无")} " +
+                        $"time={dodgeCounter.Time:0.###} hitDelay={dodgeCounter.HitDelay:0.###} anim={dodgeCounter.HitClip ?? "无"}");
+
+                    if (!fromEnemy)
+                    {
+                        // 对方闪避后反击：转入「定住」演出（我方卡拉到屏幕中心），接管收尾。
+                        var takeoverToken = token;
+                        DOVirtual.DelayedCall(0f, () =>
+                        {
+                            if (takeoverToken != _playToken)
+                            {
+                                return;
+                            }
+
+                            StartEnemyDodgeCounter(
+                                takeoverToken,
+                                visualSlot,
+                                level,
+                                dodgeCounter,
+                                onCollisionDone,
+                                onReturned,
+                                onDone,
+                                onDodgeCounterHit);
+                        }, false);
+                        return;
+                    }
+
+                    PlayPvpDodgeCounter(token, visualSlot, dodgeCounter, onDodgeCounterHit);
+                }
+
                 AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2d-collisionDone");
                 onCollisionDone?.Invoke();
                 RestoreHitTarget();
@@ -799,6 +892,231 @@ namespace App.UI
         }
 
         /// <summary>
+        /// PVP 我方闪避对手来袭后的反击演出：<see cref="DodgeCounterFx.Prefab"/> 播在人物卡上（不翻），
+        /// 过 <see cref="DodgeCounterFx.HitDelay"/> 给攻击方卡播受击动画，同帧回调出反击伤害字。
+        /// 对方闪避我方攻击的反向演出走 <see cref="StartEnemyDodgeCounter"/>。
+        /// </summary>
+        private void PlayPvpDodgeCounter(int token, int enemySlot, DodgeCounterFx counter, Action onHit)
+        {
+            if (counter == null || !counter.HasAny)
+            {
+                return;
+            }
+
+            var victim = enemySlot >= 0 && enemySlot < _enemyAnims.Length ? _enemyAnims[enemySlot] : null;
+
+            // 我方反击是往上打，不跟着来袭特效上下翻。
+            var flip = _flipFxY;
+            _flipFxY = false;
+            var fxPos = _playerRoot != null ? _playerRoot.position : Vector3.zero;
+            if (counter.Prefab != null && fxPos != Vector3.zero)
+            {
+                SpawnSkillFxAt(
+                    counter.Prefab,
+                    fxPos,
+                    counter.Time,
+                    forceUiLayer: true,
+                    scaleMultiplier: 1f,
+                    sortingOrder: HeroFxSortingOrder);
+            }
+
+            _flipFxY = flip;
+
+            var hitClip = string.IsNullOrEmpty(counter.HitClip) || ClipLength(victim, counter.HitClip) <= 0f
+                ? null
+                : counter.HitClip;
+
+            void Hit()
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                if (victim != null && hitClip != null && !_missVictims.Contains(victim))
+                {
+                    PlayClip(victim, hitClip);
+                    HoldVictimClipUntilDone(victim, hitClip);
+                }
+
+                onHit?.Invoke();
+            }
+
+            if (counter.HitDelay <= 0f)
+            {
+                Hit();
+                return;
+            }
+
+            var delay = DOVirtual.DelayedCall(counter.HitDelay, Hit, false);
+            delay.timeScale = _playTimeScale;
+            if (_hud != null)
+            {
+                delay.SetLink(_hud.gameObject);
+            }
+        }
+
+        /// <summary>
+        /// PVP 对方闪避我方攻击后的「定住」反击演出（对齐 PVE <see cref="StartDodgeCounter"/>）：
+        /// 把被反击的一方（我方卡）拉到屏幕中心定住，对方英雄的 <see cref="DodgeCounterFx.Prefab"/> 贴在敌卡上、
+        /// 上下翻；<see cref="DodgeCounterFx.HitDelay"/> 后我方受击 + 出反击伤害字，演完退回自己的格子，
+        /// 再交回 onCollisionDone → onReturned → 伤害字停留 → onDone（接管被打断的原攻击序列）。
+        /// </summary>
+        /// <param name="alreadyOnFlight">true = 我方卡已在 AttackFlight 上（近战冲撞中），不再重新挂。</param>
+        /// <param name="returnAnchored">近战路径用：AttackFlight 回位用的 HUD 锚点。</param>
+        private void StartEnemyDodgeCounter(
+            int token,
+            int enemySlot,
+            int level,
+            DodgeCounterFx counter,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone,
+            Action onCounterHit,
+            bool alreadyOnFlight = false,
+            Vector2 returnAnchored = default,
+            Transform homeParent = null)
+        {
+            var root = _playerRoot;
+            if (root == null || counter == null || !counter.HasAny)
+            {
+                onCollisionDone?.Invoke();
+                onReturned?.Invoke();
+                onDone?.Invoke();
+                return;
+            }
+
+            _seq?.Kill();
+            var tuning = AttackTuningConfig.Instance;
+            var beat = tuning.Level(level);
+            var restoreParent = homeParent != null ? homeParent : _playerHome;
+            Vector2 flightHome;
+            if (alreadyOnFlight)
+            {
+                flightHome = returnAnchored;
+            }
+            else
+            {
+                AttachRootToFlight(root, root.position);
+                flightHome = _flight.anchoredPosition;
+            }
+
+            var victim = _playerAnim;
+            var hitClip = string.IsNullOrEmpty(counter.HitClip) || ClipLength(victim, counter.HitClip) <= 0f
+                ? null
+                : counter.HitClip;
+            var hold = Mathf.Max(0f, counter.Time);
+            var fxPos = enemySlot >= 0 && enemySlot < _enemyRoots.Length && _enemyRoots[enemySlot] != null
+                ? _enemyRoots[enemySlot].position
+                : Vector3.zero;
+
+            _seq = DOTween.Sequence();
+            _seq.timeScale = _playTimeScale;
+
+            // 1) 被反击的一方向屏幕中心「定住」。
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                PlayClip(victim, Clip(level, "back"));
+                if (root.parent == _flight)
+                {
+                    root.localPosition = Vector3.zero;
+                    root.localRotation = Quaternion.identity;
+                }
+            });
+            _seq.Append(_flight.DOAnchorPos(Vector2.zero, beat.BackDuration).SetEase(Ease.OutQuad));
+            _seq.Join(_flight.DOLocalRotate(Vector3.zero, beat.BackDuration).SetEase(Ease.OutCubic));
+
+            // 2) 定格期间把对方反击特效贴在敌卡上（上下翻）。
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                var flip = _flipFxY;
+                _flipFxY = true;
+                if (counter.Prefab != null && fxPos != Vector3.zero)
+                {
+                    SpawnSkillFxAt(
+                        counter.Prefab,
+                        fxPos,
+                        counter.Time,
+                        forceUiLayer: true,
+                        scaleMultiplier: 1f,
+                        sortingOrder: HeroFxSortingOrder);
+                }
+
+                _flipFxY = flip;
+            });
+
+            if (counter.HitDelay > 0f)
+            {
+                _seq.AppendInterval(counter.HitDelay);
+            }
+
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                onCounterHit?.Invoke();
+                if (hitClip != null)
+                {
+                    PlayClip(victim, hitClip);
+                    HoldVictimClipUntilDone(victim, hitClip);
+                }
+            });
+
+            if (hold > counter.HitDelay)
+            {
+                _seq.AppendInterval(hold - counter.HitDelay);
+            }
+
+            // 3) 演完退回自己的格子，交回后续回调。
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                onCollisionDone?.Invoke();
+            });
+            _seq.Append(_flight.DOAnchorPos(flightHome, beat.BackDuration).SetEase(Ease.OutQuad));
+            _seq.AppendCallback(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                RestoreRoot(restoreParent);
+                RestoreHitTarget();
+                PlayClip(victim, DefaultClip);
+                onReturned?.Invoke();
+            });
+            _seq.AppendInterval(tuning.HpTextHoldDuration);
+            _seq.OnComplete(() =>
+            {
+                if (token != _playToken)
+                {
+                    return;
+                }
+
+                SetAllAnimSpeed(1f);
+                onDone?.Invoke();
+            });
+        }
+
+        /// <summary>
         /// 暗灵法师的齐射出刀（特殊处理，别的英雄不走这里）：
         /// 01 持续 1.5s → 02 在人物处蓄力 1.0s → 主弹直线飞向主目标 0.3s，同时两侧每个敌人各飞一发 03（0.4s 抛物线）
         /// → 主弹 1.3s 落地统一结算（扣血/受击动画/伤害字）+ 04，溅射弹 1.4s 各自落地只补 04。
@@ -818,7 +1136,9 @@ namespace App.UI
             Action onCollisionDone,
             Action onReturned,
             Action onDone,
-            float timeScale = 1f)
+            float timeScale = 1f,
+            DodgeCounterFx dodgeCounter = null,
+            Action onDodgeCounterHit = null)
         {
             Kill();
             level = Mathf.Clamp(level, 1, 3);
@@ -864,6 +1184,13 @@ namespace App.UI
                 ? chargeTime + splashDelay + splashFlight + hitLife
                 : 0f;
             var actionEnd = Mathf.Max(channelTime, Mathf.Max(hitDelay + hitLife, splashEnd));
+            // PVP：对方闪避后的反击也要占时长。
+            var counterTime = dodgeCounter != null ? Mathf.Max(0f, dodgeCounter.Time) : 0f;
+            if (counterTime > 0f)
+            {
+                actionEnd = Mathf.Max(actionEnd, hitDelay + counterTime);
+            }
+
             var tail = Mathf.Max(0f, actionEnd - hitDelay);
             var t0 = Time.realtimeSinceStartup;
             float Elapsed() => Time.realtimeSinceStartup - t0;
@@ -1030,6 +1357,31 @@ namespace App.UI
                 }
 
                 onHitDamageText?.Invoke();
+
+                // PVP：对方（武僧）闪避我方齐射 → 转入「定住」反击演出（我方卡拉到屏幕中心），接管收尾。
+                if (missed && dodgeCounter != null && dodgeCounter.HasAny)
+                {
+                    var takeoverToken = token;
+                    DOVirtual.DelayedCall(0f, () =>
+                    {
+                        if (takeoverToken != _playToken)
+                        {
+                            return;
+                        }
+
+                        StartEnemyDodgeCounter(
+                            takeoverToken,
+                            visualSlot,
+                            level,
+                            dodgeCounter,
+                            onCollisionDone,
+                            onReturned,
+                            onDone,
+                            onDodgeCounterHit);
+                    }, false);
+                    return;
+                }
+
                 onCollisionDone?.Invoke();
                 RestoreHitTarget();
                 AppLog.Info(
@@ -1849,7 +2201,8 @@ namespace App.UI
 
             if (IsProjectile(hitFx))
             {
-                var go = SpawnSkillFx(prefab, attackerUi, life);
+                // 投射物靠 FaceToward 转向，不吃 mirrorY。
+                var go = SpawnSkillFx(prefab, attackerUi, life, applyMirror: false);
                 if (go == null)
                 {
                     return;
@@ -2118,9 +2471,10 @@ namespace App.UI
         }
 
         /// <param name="uiWorldPos">人物卡 RectTransform 世界坐标；内部按预制体 Layer 决定是否转到主相机平面。</param>
-        private GameObject SpawnSkillFx(GameObject prefab, Vector3 uiWorldPos, float life)
+        /// <param name="applyMirror">false = 这次生成不吃 PVP 来袭的上下翻转（投射物用：它靠 FaceToward 转向）。</param>
+        private GameObject SpawnSkillFx(GameObject prefab, Vector3 uiWorldPos, float life, bool applyMirror = true)
         {
-            return SpawnSkillFxAt(prefab, uiWorldPos, life, false, 1f, HeroFxSortingOrder);
+            return SpawnSkillFxAt(prefab, uiWorldPos, life, false, 1f, HeroFxSortingOrder, applyMirror);
         }
 
         /// <summary>
@@ -2134,7 +2488,8 @@ namespace App.UI
             float life,
             bool forceUiLayer,
             float scaleMultiplier,
-            int sortingOrder)
+            int sortingOrder,
+            bool applyMirror = true)
         {
             if (prefab == null)
             {
@@ -2165,6 +2520,13 @@ namespace App.UI
             if (!Mathf.Approximately(scaleMultiplier, 1f))
             {
                 scale *= Mathf.Max(0.01f, scaleMultiplier);
+            }
+
+            // 上打下：特效整体上下翻（scale.y = -1），保留左右关系。
+            // 投射物不翻（applyMirror=false）：它靠 FaceToward 按飞行方向转向，负缩放会和旋转叠成“拧反”。
+            if (_flipFxY && applyMirror)
+            {
+                scale.y = -Mathf.Abs(scale.y);
             }
 
             go.transform.localScale = scale;
@@ -2606,6 +2968,7 @@ namespace App.UI
             SetAllAnimSpeed(1f);
             _playTimeScale = 1f;
             _skillHitNoKnockback = false;
+            _flipFxY = false;
             _victimHitClip = null;
             _hitAnimAtCastSlots.Clear();
         }

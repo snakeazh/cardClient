@@ -1477,9 +1477,26 @@ namespace App.UI
             };
             if (session.IncomingAttack)
             {
-                // 闪避反击：HeroConfig.MissAttackEffect 配了特效就演一段（武僧），否则走原来的受击流程。
-                // PVP 的闪避与反击都在服务端算，不走这套演出。
-                var dodgeCounter = session.IsPvp ? null : _attackFx.BuildDodgeCounter(hero);
+                // 闪避反击：MissAttackEffect 配了特效就演一段（武僧）。PVE 在命中时才掷闪避，这里提前备好；
+                // PVP 的闪避结果开打前已知（AttackDamage==0），没闪避就不传，免得多等一段反击时长。
+                var dodgeCounter = session.IsPvp && !session.LastAttackMissed
+                    ? null
+                    : _attackFx.BuildDodgeCounter(hero);
+                // PVP 对手也是英雄：走对方英雄的攻击特效，整段特效上下翻转（对手在上方，朝下打我方）。
+                // 野怪轮、对手没配特效（平凡之人 / 圣骑士近战 / 武僧）或资源没预载时回退敌人卡冲刺。
+                if (TryPlayPvpIncomingHeroSkill(
+                        session,
+                        dodgeCounter,
+                        onDodgeCounterHit,
+                        onHeroSkillHit,
+                        onHeroSkillDamageText,
+                        onCollisionDone,
+                        onReturned,
+                        onDone))
+                {
+                    return;
+                }
+
                 _attackFx.PlayIncoming(
                     session.AttackVisualSlot,
                     session.AttackLevel,
@@ -1492,8 +1509,35 @@ namespace App.UI
             }
             else
             {
+                // PVP：对手（英雄）闪避我方这一击时会反击 —— 用对方的 MissAttackEffect 贴在敌卡、上下翻（见 AttackCutscene.PlayPvpDodgeCounter）。
+                var foeDodgeCounter = BuildPvpFoeDodgeCounter(out var foeCounterDamage);
+                Action onFoeDodgeCounterHit = foeDodgeCounter != null
+                    ? () =>
+                    {
+                        if (foeCounterDamage <= 0)
+                        {
+                            return;
+                        }
+
+                        AppLog.Info(
+                            LogChannel.UI,
+                            $"[DodgeCounter][GameUI] PVP 对方反击伤害字 -{foeCounterDamage}");
+                        PlaceSplashHpAtPlayer($"-{Math.Max(1, foeCounterDamage)}", true);
+                    }
+                    : null;
+
                 // 暗灵法师：齐射（01 持续 + 02 蓄力主弹 + 03 两侧抛物线弹 + 04 受击），档位对这套不生效。
-                if (TryPlayHeroVolley(session, hero, onHeroSkillHit, onHeroSkillDamageText, onCollisionDone, onReturned, onDone, timeScale))
+                if (TryPlayHeroVolley(
+                        session,
+                        hero,
+                        onHeroSkillHit,
+                        onHeroSkillDamageText,
+                        onCollisionDone,
+                        onReturned,
+                        onDone,
+                        timeScale,
+                        foeDodgeCounter,
+                        onFoeDodgeCounterHit))
                 {
                     return;
                 }
@@ -1524,7 +1568,9 @@ namespace App.UI
                         onDone,
                         timeScale,
                         hitAnimSlots,
-                        shouldSpawnHitFx))
+                        shouldSpawnHitFx,
+                        dodgeCounter: foeDodgeCounter,
+                        onDodgeCounterHit: onFoeDodgeCounterHit))
                 {
                     AppLog.Info(
                         LogChannel.UI,
@@ -1545,8 +1591,137 @@ namespace App.UI
                     onCollisionDone,
                     onReturned,
                     onDone,
-                    timeScale);
+                    timeScale,
+                    foeDodgeCounter,
+                    onFoeDodgeCounterHit);
             }
+        }
+
+        /// <summary>
+        /// PVP 挨打演出：对手是英雄 → 用对方英雄的攻击 / 命中特效朝下打我方（<c>mirrorY</c> 整段上下翻转），
+        /// 与出刀走同一套 <see cref="AttackCutscene.PlayHeroSkill"/>。野怪轮、对手没有成套特效
+        /// （平凡之人 / 圣骑士近战 / 武僧 / 旅者）或预制体没预载时返回 false，由调用方回退敌人卡冲刺。
+        /// </summary>
+        private bool TryPlayPvpIncomingHeroSkill(
+            GameSession session,
+            AttackCutscene.DodgeCounterFx dodgeCounter,
+            Action onDodgeCounterHit,
+            Func<bool> onHit,
+            Action onHitDamageText,
+            Action onCollisionDone,
+            Action onReturned,
+            Action onDone)
+        {
+            if (session == null || !session.IsPvp || ViewModel == null)
+            {
+                return false;
+            }
+
+            var state = ViewModel.PvpState;
+            if (state == null || IsMonsterRound(state))
+            {
+                return false;
+            }
+
+            var foe = CurrentFoeFighter(state, ViewModel.PvpUserId);
+            var hero = foe != null && foe.HeroId > 0 ? HeroConfig.Get(foe.HeroId) : null;
+            var slot = session.AttackVisualSlot;
+            if (hero == null || slot < 0 || slot >= _enemyItems.Length)
+            {
+                return false;
+            }
+
+            var level = AttackTuningConfig.Instance.ResolveHeroFxLevel(session.AttackLevel, session.AttackDamage);
+            // 对手打我方的目标是我方英雄（不是怪物），目标类型档按普通处理，凑不齐就落档位 / 默认档。
+            var target = session.Player;
+            var eliteTarget = target != null && target.MonsterType != MonsterType.Normal;
+            if (!HeroMechanics.TryResolveEffects(hero, level, eliteTarget, out var attackFx, out var hitFx) ||
+                !_attackFx.CanPlayHeroSkill(attackFx, hitFx))
+            {
+                AppLog.Info(
+                    LogChannel.UI,
+                    $"[HeroSkill][GameUI] PVP 来袭特效未就绪，回退近战 hero={hero.Name} fxLevel={level} " +
+                    $"attack={attackFx?.Effects} hit={hitFx?.Effects}");
+                return false;
+            }
+
+            // 命中要有震屏（与近战挨打一致）；结算/出字/收尾沿用特效出刀那套回调。
+            Func<bool> onImpact = () =>
+            {
+                _cameraShake?.PlayByLevel(Math.Max(1, session.AttackLevel));
+                return onHit != null && onHit();
+            };
+            if (!_attackFx.PlayHeroSkill(
+                    slot,
+                    Math.Max(1, session.AttackLevel),
+                    attackFx,
+                    hitFx,
+                    hero.hitAnimation,
+                    onImpact,
+                    onHitDamageText,
+                    onCollisionDone,
+                    onReturned,
+                    onDone,
+                    1f,
+                    null,
+                    null,
+                    fromEnemy: true,
+                    mirrorY: true,
+                    dodgeCounter: dodgeCounter,
+                    onDodgeCounterHit: onDodgeCounterHit))
+            {
+                return false;
+            }
+
+            AppLog.Info(
+                LogChannel.UI,
+                $"[HeroSkill][GameUI] PVP 来袭走对手英雄特效 hero={hero.Name} slot={slot} fxLevel={level} " +
+                $"attack={attackFx.Effects} hit={hitFx.Effects} mirrorY=1 hitAnim={hero.hitAnimation} " +
+                $"counter={(dodgeCounter != null && dodgeCounter.HasAny ? dodgeCounter.HitClip ?? "fx" : "无")}");
+            return true;
+        }
+
+        /// <summary>
+        /// PVP 对方（英雄）闪避我方攻击时的反击演出参数：用对方英雄的 <c>MissAttackEffect</c>
+        /// （<see cref="AttackCutscene.BuildDodgeCounter"/>），反击伤害按对方英雄 <c>MissGetDamage</c> × 对方当前攻击，
+        /// 与服务端 <c>PvpHeroRuntime.DodgeCounterDamage</c> 同公式，并按我方剩余血截断；只用于出字。
+        /// 野怪轮 / 对方没配反击特效时返回 null。
+        /// </summary>
+        private AttackCutscene.DodgeCounterFx BuildPvpFoeDodgeCounter(out int counterDamage)
+        {
+            counterDamage = 0;
+            var session = ViewModel != null ? ViewModel.Session : null;
+            var state = ViewModel != null ? ViewModel.PvpState : null;
+            if (session == null || !session.IsPvp || state == null || IsMonsterRound(state) ||
+                !session.LastAttackMissed)
+            {
+                return null;
+            }
+
+            var foe = CurrentFoeFighter(state, ViewModel.PvpUserId);
+            var hero = foe != null && foe.HeroId > 0 ? HeroConfig.Get(foe.HeroId) : null;
+            if (hero == null)
+            {
+                return null;
+            }
+
+            var counter = _attackFx.BuildDodgeCounter(hero);
+            if (counter == null || !counter.HasAny)
+            {
+                return null;
+            }
+
+            var raw = 0;
+            HeroMechanics.ForEachEntry(hero, entry =>
+            {
+                if (entry.Type == MechanismType.MissGetDamage)
+                {
+                    raw += HeroMechanics.AttackPowerDamage(entry, Math.Max(0, foe.Attack));
+                }
+            });
+            var player = session.Player;
+            counterDamage = player != null ? Math.Min(Math.Max(0, player.Hp), raw) : raw;
+            return counter;
         }
 
         /// <summary>
@@ -1600,7 +1775,9 @@ namespace App.UI
             Action onCollisionDone,
             Action onReturned,
             Action onDone,
-            float timeScale)
+            float timeScale,
+            AttackCutscene.DodgeCounterFx dodgeCounter = null,
+            Action onDodgeCounterHit = null)
         {
             if (!HeroMechanics.TryResolveVolleyEffects(hero, out var channel, out var main, out var splash, out var hit))
             {
@@ -1637,7 +1814,9 @@ namespace App.UI
                     onCollisionDone,
                     onReturned,
                     onDone,
-                    timeScale))
+                    timeScale,
+                    dodgeCounter,
+                    onDodgeCounterHit))
             {
                 return false;
             }
@@ -2055,13 +2234,18 @@ namespace App.UI
 
         private void PlaceSplashHpAt(int slot, string text, bool playAnim)
         {
-            if (_hpTextRt == null)
-            {
-                return;
-            }
+            PlaceSplashHpAtPos(_attackFx.HitPosition(slot), text, playAnim);
+        }
 
-            var hit = _attackFx.HitPosition(slot);
-            if (hit == Vector3.zero)
+        /// <summary>PVP 对方闪避反击：伤害字贴在人物卡上，不覆盖敌人卡上的 MISS 字。</summary>
+        private void PlaceSplashHpAtPlayer(string text, bool playAnim)
+        {
+            PlaceSplashHpAtPos(_attackFx.HitPositionPlayer(), text, playAnim);
+        }
+
+        private void PlaceSplashHpAtPos(Vector3 hit, string text, bool playAnim)
+        {
+            if (_hpTextRt == null || hit == Vector3.zero)
             {
                 return;
             }

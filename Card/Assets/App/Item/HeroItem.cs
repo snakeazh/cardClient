@@ -52,6 +52,8 @@ namespace App.Item
             }
 
             playerItem.SetUnlocked(unlocked && hero != null);
+            // 选角列表不显示攻击块，避免重绑或未解锁占位重新打开。
+            playerItem.HideAttackStat();
         }
 
         public void SetSelected(bool selected, bool force = false)

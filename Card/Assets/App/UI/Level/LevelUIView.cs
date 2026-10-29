@@ -724,6 +724,9 @@ namespace App.UI
                 _playerItem.SetPortrait(portrait, locked: true);
                 _playerItem.SetUnlocked(false);
             }
+
+            // 关卡人物预览不显示攻击块，解锁态刷新后统一隐藏。
+            _playerItem.HideAttackStat();
         }
     }
 }

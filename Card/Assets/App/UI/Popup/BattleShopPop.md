@@ -80,7 +80,7 @@ BattleShopPop
 
 | 节点 | 内容 |
 |------|------|
-| `Text (TMP)` | `透视(1/1)`：剩余+待生效购买 / 基数。用光 0/1，买一次 1/1，再买 2/1；真实次数下一轮开局并入 |
+| `Text (TMP)` | `(1/1)`：只显示剩余+待生效购买 / 基数（技能名由按钮图标表达）。用光 0/1，买一次 1/1，再买 2/1；真实次数下一轮开局并入 |
 | `PriceBar/Num` | `PvpShopSkillDto.Price`，买不起变红（`ThemeColors.ShopPriceUnaffordable`） |
 
 买不起不置灰：点了走 Toast「金币不足」，与买槽格一致。成功后 Toast 带当前剩余与可达上限。

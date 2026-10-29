@@ -257,7 +257,7 @@ namespace App.UI.Popup
             _pvpSkillButtons.Add(entry);
         }
 
-        /// <summary>技能按钮文案：「搓牌(3/3)」这种节点名是 Text (TMP)，改名时回落到直属子节点的第一个文本。</summary>
+        /// <summary>技能按钮文案：「(3/3)」这种节点名是 Text (TMP)，改名时回落到直属子节点的第一个文本。</summary>
         private static TMP_Text FindButtonLabel(Transform buttonRoot)
         {
             var named = FindDeep(buttonRoot, "Text (TMP)");

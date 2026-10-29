@@ -232,10 +232,11 @@ namespace App.UI
         public ObservableProperty<string> RaiseLabel { get; } = new ObservableProperty<string>("x2下注");
         public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
         public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
-        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("搓牌(3/3)");
+        // 技能按钮文案只保留次数（技能名由按钮图标表达）。
+        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("(3/3)");
         public ObservableProperty<bool> PeekGoodArmed { get; } = new ObservableProperty<bool>(false);
-        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("透视(1/1)");
-        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("替换(1/1)");
+        public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
+        public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
         public ObservableProperty<bool> ShowAllIn { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowFold { get; } = new ObservableProperty<bool>();
         public ObservableProperty<bool> ShowCompare { get; } = new ObservableProperty<bool>();
@@ -949,7 +950,7 @@ namespace App.UI
             {
                 _lastRubCur = Session.Run.PeekGoodCharges;
                 _lastRubMax = rubMax;
-                PeekGoodLabel.Value = FormatCharges("搓牌", _lastRubCur, _lastRubMax);
+                PeekGoodLabel.Value = FormatCharges(_lastRubCur, _lastRubMax);
             }
 
             PeekGoodArmed.Value = Session.SelectingRubTarget;
@@ -961,7 +962,7 @@ namespace App.UI
             {
                 _lastXrayCur = Session.Run.ChaKanGoodCharges;
                 _lastXrayMax = xrayMax;
-                ChaKanGoodLabel.Value = FormatCharges("透视", _lastXrayCur, _lastXrayMax);
+                ChaKanGoodLabel.Value = FormatCharges(_lastXrayCur, _lastXrayMax);
             }
 
             var replaceMax = GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges;
@@ -969,10 +970,9 @@ namespace App.UI
             {
                 _lastReplaceCur = Session.Run.TiHuanGoodCharges;
                 _lastReplaceMax = replaceMax;
-                TiHuanGoodLabel.Value = FormatCharges("替换", _lastReplaceCur, _lastReplaceMax);
+                TiHuanGoodLabel.Value = FormatCharges(_lastReplaceCur, _lastReplaceMax);
             }
             PeekGoodLabel.Value = FormatCharges(
-                "搓牌",
                 Session.Run.PeekGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
@@ -980,13 +980,11 @@ namespace App.UI
                     HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum)));
             PeekGoodArmed.Value = Session.SelectingRubTarget;
             ChaKanGoodLabel.Value = FormatCharges(
-                "透视",
                 Session.Run.ChaKanGoodCharges,
                 SkillChargeMax(
                     GameBalance.SkillXRayUses + Session.Run.BonusXRayCharges,
                     RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.PerspectiveNum)));
             TiHuanGoodLabel.Value = FormatCharges(
-                "替换",
                 Session.Run.TiHuanGoodCharges,
                 GameBalance.SkillReplaceUses + Session.Run.BonusReplaceCharges);
             ShowLook.Value = false;
@@ -1866,9 +1864,10 @@ namespace App.UI
             return $"+{rounded:0.##}";
         }
 
-        private static string FormatCharges(string name, int current, int max)
+        /// <summary>技能按钮只显示「(剩余/上限)」；技能名由按钮图标表达，不再写进文案。</summary>
+        private static string FormatCharges(int current, int max)
         {
-            return $"{name}({Math.Max(0, current)}/{Math.Max(0, max)})";
+            return $"({Math.Max(0, current)}/{Math.Max(0, max)})";
         }
 
         private static string FormatEntryNames(List<CardShare.Contracts.Config.BossEntryConfig> entries)

@@ -94,7 +94,7 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// PVP 技能按钮文案：名称 +（剩余+待生效购买）/ 基数。
+        /// PVP 技能按钮文案：只显示（剩余+待生效购买）/ 基数，技能名由按钮图标表达。
         /// 用光 0/1，买一次 1/1，再买 2/1；真实次数仍下一轮开局并入。
         /// </summary>
         public string FormatPvpSkillText(int skillId)
@@ -102,10 +102,10 @@ namespace App.UI.Popup
             var skill = Session.GetPvpShopSkill(skillId);
             if (skill == null)
             {
-                return PvpSkillName(skillId);
+                return string.Empty;
             }
 
-            return $"{PvpSkillName(skillId)}({skill.Left}/{skill.Max})";
+            return $"({skill.Left}/{skill.Max})";
         }
 
         /// <summary>下一次购买的金币价；非商店阶段为 0。</summary>

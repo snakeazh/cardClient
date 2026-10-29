@@ -30,6 +30,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DISSOLVETEX:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -82,14 +86,18 @@ Material:
     - _ColorClamp: 0
     - _CullMode: 0
     - _Cutoff: 0.5
+    - _DISSOLVE_u_speed: 0
+    - _DISSOLVE_v_speed: 0
     - _DetailNormalMapScale: 1
+    - _DissolveEdgeWidth: 0.08
+    - _DissolveProgress: 0
     - _Dst: 10
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _MASK2_u_speed: 0
-    - _MASK2_v_speed: -0.5
+    - _MASK2_v_speed: -0.3
     - _MASK_u_speed: 0
     - _MASK_v_speed: 0
     - _Main_u_speed: 0
@@ -103,6 +111,7 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _UseAlphaClip: 1
+    - _UseClipRect: 0
     - _UseMask: 1
     - _UseMask2: 1
     - _UseSoftParticle: 0
@@ -111,6 +120,7 @@ Material:
     - _soft: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DissolveEdgeColor: {r: 2, g: 0.63, b: 0.27, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Maincolor: {r: 2, g: 2, b: 2, a: 1}
   m_BuildTextureStacks: []

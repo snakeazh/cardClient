@@ -76,7 +76,7 @@ namespace App.Game
         /// <summary>白条比红条晚起跑这一小截，让"掉掉的那块"先整块露出来，再平滑消失。</summary>
         public const float HealthBarWhiteLead = 0.08f;
         /// <summary>白色残条从旧血量的宽度收到新血量的时长（快起慢收，别拖成第二条进度条）。</summary>
-        public const float HealthBarWhiteDuration = 0.5f;
+        public const float HealthBarWhiteDuration = 1.0f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 

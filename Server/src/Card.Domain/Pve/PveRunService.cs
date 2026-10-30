@@ -219,6 +219,27 @@ public sealed class PveRunService
         return await SettleUnlockedAsync(run, request, profile, cancellationToken);
     }
 
+    public async Task<PveRunResponse> UnlockRelicSlotAsync(Guid userId, string runIdText, int boughtRelicSlots, CancellationToken cancellationToken)
+    {
+        await using var gate = await _session.AcquireAsync(userId, cancellationToken);
+        var run = await RequireActiveRun(userId, runIdText, cancellationToken);
+        var slotCosts = _config.Tables.GameConst?.PVPRelicNumNeedGold;
+        var maxSlots = slotCosts != null && slotCosts.Length > 0 ? slotCosts.Length : 6;
+        if (boughtRelicSlots <= 0 || boughtRelicSlots > maxSlots || boughtRelicSlots > run.BoughtRelicSlots + 1)
+        {
+            throw DomainException.Invalid("Invalid relic slot unlock count.");
+        }
+
+        // 广告当前与客户端一样采用模拟发放；服务端记录本局槽数并约束解锁上限。
+        if (boughtRelicSlots > run.BoughtRelicSlots)
+        {
+            run.BoughtRelicSlots = boughtRelicSlots;
+            await _runs.SaveAsync(run, cancellationToken);
+        }
+
+        return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
+    }
+
     public async Task<PveRunResponse> BuyShopRelicAsync(Guid userId, string runIdText, int relicId, CancellationToken cancellationToken)
     {
         await using var gate = await _session.AcquireAsync(userId, cancellationToken);
@@ -238,7 +259,7 @@ public sealed class PveRunService
             throw DomainException.Invalid($"Unknown relic {relicId}.");
         }
 
-        if (run.RelicIds.Count >= _config.Balance.DefaultRelicNumMax)
+        if (run.RelicIds.Count >= _config.Balance.DefaultRelicNumMax + run.BoughtRelicSlots)
         {
             throw DomainException.Invalid("Relic bag is full.");
         }

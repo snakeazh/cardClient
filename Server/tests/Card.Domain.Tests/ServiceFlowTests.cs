@@ -203,6 +203,57 @@ public class PveFlowTests
     }
 
     [Fact]
+    public async Task AdUnlockedRelicSlotAllowsPurchaseAndPersistsAcrossSnapshots()
+    {
+        var config = TestConfig.Create();
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var runs = new MemoryPveRunRepository();
+        var userId = Guid.NewGuid();
+        await players.SaveAsync(CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow), CancellationToken.None);
+        var (pve, _) = TestApp.Create(players, runs, config, clock);
+        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+        var run = await runs.GetAsync(Guid.Parse(started.RunId), CancellationToken.None);
+        Assert.NotNull(run);
+        // Reproduce a full base bag with a distinct shop offer still available.
+        run.RelicIds = Enumerable.Repeat(-1, config.Balance.DefaultRelicNumMax).ToList();
+        run.Gold = 10000;
+        await runs.SaveAsync(run, CancellationToken.None);
+        var relicId = run.ShopOfferIds[0];
+        var full = await Assert.ThrowsAsync<DomainException>(() => pve.BuyShopRelicAsync(userId, started.RunId, relicId, CancellationToken.None));
+        Assert.Equal("Relic bag is full.", full.Message);
+
+        var unlocked = await pve.UnlockRelicSlotAsync(userId, started.RunId, 1, CancellationToken.None);
+        Assert.Equal(1, unlocked.Run.BoughtRelicSlots);
+        Assert.Equal(10000, unlocked.Run.Gold);
+        var retried = await pve.UnlockRelicSlotAsync(userId, started.RunId, 1, CancellationToken.None);
+        Assert.Equal(1, retried.Run.BoughtRelicSlots);
+
+        // Recreate the service to verify the capacity is stored on the run, not in memory on the client.
+        var (reconnected, _) = TestApp.Create(players, runs, config, clock);
+        var bought = await reconnected.BuyShopRelicAsync(userId, started.RunId, relicId, CancellationToken.None);
+        Assert.Equal(config.Balance.DefaultRelicNumMax + 1, bought.Run.RelicIds.Length);
+        Assert.Contains(relicId, bought.Run.RelicIds);
+        Assert.Equal(1, bought.Run.BoughtRelicSlots);
+        var active = await reconnected.GetActiveRunAsync(userId, CancellationToken.None);
+        Assert.Equal(1, active.Run.BoughtRelicSlots);
+        await Assert.ThrowsAsync<DomainException>(() => reconnected.UnlockRelicSlotAsync(userId, started.RunId, 3, CancellationToken.None));
+        run = await runs.GetAsync(Guid.Parse(started.RunId), CancellationToken.None);
+        Assert.NotNull(run);
+        run.RelicIds = Enumerable.Repeat(-1, config.Balance.DefaultRelicNumMax + 1).ToList();
+        run.ShopOfferIds = new List<int> { relicId };
+        await runs.SaveAsync(run, CancellationToken.None);
+        var stillFull = await Assert.ThrowsAsync<DomainException>(() => reconnected.BuyShopRelicAsync(userId, started.RunId, relicId, CancellationToken.None));
+        Assert.Equal("Relic bag is full.", stillFull.Message);
+        var limit = CardShare.Battle.PvpRelicBag.SlotGold(config.Tables.GameConst).Length;
+        for (var count = 2; count <= limit; count++)
+        {
+            await reconnected.UnlockRelicSlotAsync(userId, started.RunId, count, CancellationToken.None);
+        }
+        await Assert.ThrowsAsync<DomainException>(() => reconnected.UnlockRelicSlotAsync(userId, started.RunId, limit + 1, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ActiveRunBlocksSecondStartAndClearsAfterSettle()
     {
         var (pve, _, userId) = await CreateApp();

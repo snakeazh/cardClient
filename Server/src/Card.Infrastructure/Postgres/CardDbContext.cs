@@ -49,6 +49,8 @@ public sealed class PveRunRow
 
     public int FreeShopRefreshLeft { get; set; }
 
+    public int BoughtRelicSlots { get; set; }
+
     public int Status { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }
@@ -215,6 +217,7 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             row.ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds);
             row.ShopRefreshCount = run.ShopRefreshCount;
             row.FreeShopRefreshLeft = run.FreeShopRefreshLeft;
+            row.BoughtRelicSlots = run.BoughtRelicSlots;
             row.ScoreTotal = run.ScoreTotal;
             row.CurrentLevelId = run.CurrentLevelId;
             row.HighestClearedLevelId = run.HighestClearedLevelId;
@@ -238,6 +241,7 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             ShopOfferIdsJson = JsonSerializer.Serialize(run.ShopOfferIds),
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
+            BoughtRelicSlots = run.BoughtRelicSlots,
             Status = (int)run.Status,
             StartedAt = run.StartedAt,
             SettledAt = run.SettledAt,
@@ -264,6 +268,7 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             ShopOfferIds = JsonSerializer.Deserialize<List<int>>(row.ShopOfferIdsJson) ?? new List<int>(),
             ShopRefreshCount = row.ShopRefreshCount,
             FreeShopRefreshLeft = row.FreeShopRefreshLeft,
+            BoughtRelicSlots = row.BoughtRelicSlots,
             Status = (PveRunStatus)row.Status,
             StartedAt = row.StartedAt,
             SettledAt = row.SettledAt,

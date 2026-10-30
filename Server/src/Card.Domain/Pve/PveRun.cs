@@ -36,6 +36,8 @@ public sealed class PveRun
 
     public int FreeShopRefreshLeft { get; set; }
 
+    public int BoughtRelicSlots { get; set; }
+
     public PveRunStatus Status { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }

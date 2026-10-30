@@ -28,6 +28,7 @@
 | `attack` | 人物攻击力整块；值为 0 时隐藏。底图用预制体，代码不改 |
 | `heart` | 人物血量整块。底图用预制体。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 `0/上限` |
 | `heart/frame/healthbar` | 人物血量百分比条（`Image` Sliced，按 `hp/maxHp` 改 width；左 pivot） |
+| `heart/frame/healthbarWhite` | 人物掉血白条（同尺寸、同左 pivot，叠在 `healthbar` **下层**）；掉血后停留再缓动收拢，见下方「掉血白条」 |
 | `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap`（贴图在 `Altas/playitem`，如 `KhakiMonsterBaseFrame`） |
 | `enemycard_icon` | 敌人头像 |
 | `enemycard_Name` | 敌人名字 |
@@ -36,6 +37,7 @@
 | `enemycardattack` | 敌人攻击力整块；值为 0 时隐藏。底图按 `MonsterType`：普通 `HealthBarBigBaseFrameKhaki` / 精英 `…Purple` / Boss `…Red` |
 | `enemycardheart` | 敌人血量整块。底图同上。局内阵亡仍显示 `0/上限` |
 | `enemycardheart/frame/healthbar` | 敌人血量百分比条，口径同人物 |
+| `enemycardheart/frame/healthbarWhite` | 敌人掉血白条，口径同人物 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
 | `TopDialog` | 开场对白气泡（卡上方）；敌人开场用。默认隐藏。子节点 `DialogText` |
 | `BottomDialog` | 开场对白气泡（卡下方，预制体已翻转）；人物开场用。默认隐藏。子节点 `DialogText` |
@@ -70,6 +72,23 @@
 | 局内敌人 | `SeatState.Attack` ← `MonsterConfig.MonsterDamage` | `SeatState.Hp` |
 
 `SetAttack(0)` 会关掉当前可见的攻击整块。`SetHp(0)` 默认关掉血量整块（局外未解锁 / 空英雄用这个）。局内 `Bind` 走 `SetHp(hp, maxHp, hideWhenZero: false)`，文案 `当前/上限`，`healthbar` width = 满宽 × `hp/maxHp`；阵亡仍显示框和 `0/上限`。局外只传一个血量时按满血（`hp/hp`、条满）处理。
+
+### 掉血白条
+
+`healthbarWhite` 与 `healthbar` 同尺寸、同左 pivot，且在层级里排在 `healthbar` **前面**（下层）。所以掉血时：
+
+1. 彩色条 `healthbar` **立刻**收到新宽度（打击反馈要跟手）；
+2. 白条先停在旧血量，停 `PlayerItem.HealthBarWhiteDelay`（0.22s）后，用 `PlayerItem.HealthBarWhiteDuration`（0.5s，`Ease.OutQuad`）收到新宽度；
+3. 彩色条已收窄、白条还停在旧值，两截之间露出的白色 = 刚扣掉的血，随后被收掉。
+
+下面这些情况**直接对齐、不拖影**，避免看起来像掉血：
+
+- 补血（目标宽度 ≥ 白条当前宽度）；
+- 首次绑定、重新启用（`OnEnable` 会把 `_snapHealthBarWhite` 置位，卡槽复用不会拖出上一任的残影）；
+- 血量整块隐藏（`SetHp(0)` 之类）；
+- 人物 `card` / 敌人 `enemycard` 形态切换。
+
+同一次掉血会因 `RefreshPlayerItems → Bind → SetHp` 被反复刷新，白条只在目标宽度变化时才重启 tween，不会每帧重新等延迟。白条宽度只由 `SetHp` / `SetHpDisplay` 驱动，外部不要再改它的 `sizeDelta`。
 
 ---
 

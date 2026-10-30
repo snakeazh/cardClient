@@ -583,6 +583,7 @@ namespace App.Game
             Run.Gold = dto.Gold;
             Run.ShopRefreshCount = dto.ShopRefreshCount;
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
+            Run.BoughtRelicSlots = dto.BoughtRelicSlots;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
             Run.RelicPowers.Clear();
             ReplaceIdList(Run.ShopOfferIds, dto.ShopOfferIds);
@@ -3035,8 +3036,38 @@ namespace App.Game
         /// <summary>解锁下一圣物槽：PVP 花金币（服务端权威），PVE 看广告（本局）。</summary>
         public async Task<bool> TryUnlockRelicSlotAsync()
         {
-            return IsPvp ? await TryUnlockPvpRelicSlotAsync() : WatchAdUnlockRelicSlot();
+            if (IsPvp) return await TryUnlockPvpRelicSlotAsync();
+            if (!HasServerRun) return WatchAdUnlockRelicSlot();
+            if (Phase != GamePhase.Shop || PveRelicSlotUnlockLeft <= 0 || _pveRelicSlotUnlocking)
+            {
+                return false;
+            }
+
+            _pveRelicSlotUnlocking = true;
+            var targetSlots = Run.BoughtRelicSlots + 1;
+            try
+            {
+                var response = await GameApi.Client.UnlockPveRelicSlotAsync(_serverRunId, targetSlots);
+                // 此请求只同步槽位，避免完整快照覆盖还未同步的金币或本地广告奖励。
+                Run.BoughtRelicSlots = response.Run.BoughtRelicSlots;
+                Hint = $"已解锁第 {RelicCarryMax} 个圣物槽";
+                Log(Hint);
+                Notify();
+                return Run.BoughtRelicSlots >= targetSlots;
+            }
+            catch (GameApiException ex)
+            {
+                Hint = GameApi.Describe(ex);
+                Notify();
+                return false;
+            }
+            finally
+            {
+                _pveRelicSlotUnlocking = false;
+            }
         }
+
+        private bool _pveRelicSlotUnlocking;
 
         /// <summary>
         /// PVP 商店专属：花金币补充 1 次技能次数（下一轮生效，服务端权威）。
@@ -3064,13 +3095,14 @@ namespace App.Game
             }
 
             _pvpSkillBuying = true;
-            var maxBefore = skill.Max;
+            var leftBefore = skill.Left;
             try
             {
                 // 先挂等待再发命令，回包早于等待会漏掉这次快照（同其它商店操作）。
                 await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueBuySkill(skillId));
                 var after = GetPvpShopSkill(skillId);
-                if (after == null || after.Max <= maxBefore)
+                // 商店分子包含本次购买的待生效次数；分母只是技能基数，购买不会增加。
+                if (after == null || after.Left <= leftBefore)
                 {
                     // 快照没回来或服务端没受理：报一句，别刷「已补充」误导玩家。
                     Hint = "购买未完成，请稍后重试";

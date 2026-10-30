@@ -19,6 +19,8 @@ public static class PveEndpoints
             => Results.Json(await pve.EnterShopAsync(http.RequireUserId(), request.RunId, request.FreeShopRefreshLeft, ct)));
         v1.MapPost("/pve/shop/buy", async (HttpContext http, PveShopActionRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.BuyShopRelicAsync(http.RequireUserId(), request.RunId, request.RelicId, ct)));
+        v1.MapPost("/pve/shop/unlock-slot", async (HttpContext http, PveUnlockRelicSlotRequest request, PveRunService pve, CancellationToken ct)
+            => Results.Json(await pve.UnlockRelicSlotAsync(http.RequireUserId(), request.RunId, request.BoughtRelicSlots, ct)));
         v1.MapPost("/pve/shop/sell", async (HttpContext http, PveShopActionRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.SellShopRelicAsync(http.RequireUserId(), request.RunId, request.RelicId, ct)));
         v1.MapPost("/pve/shop/refresh", async (HttpContext http, PveShopActionRequest request, PveRunService pve, CancellationToken ct)

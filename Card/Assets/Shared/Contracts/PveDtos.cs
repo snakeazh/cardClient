@@ -44,6 +44,8 @@ namespace CardShare.Contracts
 
         public int FreeShopRefreshLeft { get; set; }
 
+        public int BoughtRelicSlots { get; set; }
+
         public string Status { get; set; } = "active";
     }
 
@@ -52,6 +54,14 @@ namespace CardShare.Contracts
         public string RunId { get; set; } = string.Empty;
 
         public int RelicId { get; set; }
+    }
+
+    public sealed class PveUnlockRelicSlotRequest
+    {
+        public string RunId { get; set; } = string.Empty;
+
+        /// <summary>解锁后的广告槽总数，用于重试幂等。</summary>
+        public int BoughtRelicSlots { get; set; }
     }
 
     public sealed class PveShopEnterRequest

@@ -19,6 +19,7 @@ public static class PveRunMapper
             ShopRelicIds = run.ShopRelicIds,
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
+            BoughtRelicSlots = run.BoughtRelicSlots,
             Status = run.Status == PveRunStatus.Settled ? "settled" : "active"
         };
     }

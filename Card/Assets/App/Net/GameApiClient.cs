@@ -305,6 +305,13 @@ namespace App.Net
         public Task<PveRunResponse> SellShopRelicAsync(string runId, int relicId)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/sell", new PveShopActionRequest { RunId = runId, RelicId = relicId });
 
+        public Task<PveRunResponse> UnlockPveRelicSlotAsync(string runId, int boughtRelicSlots)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/unlock-slot", new PveUnlockRelicSlotRequest
+            {
+                RunId = runId,
+                BoughtRelicSlots = boughtRelicSlots
+            });
+
         public Task<PveRunResponse> RefreshShopAsync(string runId)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/refresh", new PveShopActionRequest { RunId = runId });
 

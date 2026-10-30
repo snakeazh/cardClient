@@ -4263,6 +4263,7 @@ MonoBehaviour:
   visual: {fileID: 8907000000000000093}
   startPoint: {fileID: 8907000000000000012}
   moveFrames:
+  - {fileID: -1855060705, guid: 8c9e1bc16e75bca4b8b88867a0a8338f, type: 3}
   - {fileID: 1304584603, guid: 8c9e1bc16e75bca4b8b88867a0a8338f, type: 3}
   - {fileID: -1537843925, guid: 8c9e1bc16e75bca4b8b88867a0a8338f, type: 3}
   eatSheet: {fileID: 2800000, guid: 081a96a6c8e55084db4b98767ed35eab, type: 3}

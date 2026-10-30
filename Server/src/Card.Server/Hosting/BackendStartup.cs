@@ -119,6 +119,8 @@ public static class BackendStartup
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "HighestClearedLevelId" integer NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync(
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "ScoredLevelId" integer NOT NULL DEFAULT 0;""");
+            await db.Database.ExecuteSqlRawAsync(
+                """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "BoughtRelicSlots" integer NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS auth_tokens;""");
             log.LogInformation("Postgres ready, schema ensured.");
         }

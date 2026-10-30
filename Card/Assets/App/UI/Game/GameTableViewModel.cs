@@ -1181,8 +1181,12 @@ namespace App.UI
         {
             PlaybackSpeed.Value = speed;
             SpeedLabel.Value = FormatPlaybackSpeed(speed);
-            // 离桌会 Restore 成 1；再进同倍速时 Observable 可能不通知，这里直接落 timeScale。
-            Time.timeScale = speed;
+            // 构造时只加载倍速设置；此时仍在局外，不能修改全局时间速度。
+            // 离桌会 Restore 成 1；再进同倍速时 Observable 可能不通知，开桌后直接应用。
+            if (IsOpen)
+            {
+                Time.timeScale = speed;
+            }
         }
 
         private void PersistPlaybackSpeed(float speed)

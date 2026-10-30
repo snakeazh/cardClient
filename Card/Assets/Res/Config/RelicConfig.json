@@ -312,7 +312,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "垫脚石,使自己可以到达更高的地方",
     "Desc": "亮牌获胜后,有20%概率永久+1攻击力"
   },
   {
@@ -330,7 +330,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一种常见的拳套,戴上后微弱提高反击能力",
     "Desc": "每当你受到伤害时,反弹1%的伤害给对方"
   },
   {
@@ -348,7 +348,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "武器在该石头上摩擦,可变得更加锋利",
     "Desc": "使用后,本次比牌你造成的伤害+25%"
   },
   {
@@ -366,7 +366,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 1,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "常见的医疗用品,多用于突发性的心脏病",
     "Desc": "使用后,立即恢复20%血量"
   },
   {
@@ -386,7 +386,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一把锋利的匕首,非常适合用来暗杀",
     "Desc": "每输1次比牌,你造成的伤害+10%,至多叠加5层"
   },
   {
@@ -422,7 +422,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "使用狼牙制成的武器,锋利无比",
     "Desc": "暴击伤害+50%"
   },
   {
@@ -440,7 +440,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "官方出品的医护手册,请仔细翻阅",
     "Desc": "圣物提供的回复效果提高50%"
   },
   {
@@ -476,7 +476,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "失传已久的门派秘籍之一,据说里面的人喜欢用砂折磨自己",
     "Desc": "你造成的伤害+15点"
   },
   {
@@ -494,7 +494,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "破旧的棉袄,但依旧保暖",
     "Desc": "每次受到的伤害降低3点"
   },
   {
@@ -512,7 +512,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "存储零花钱的罐子,理财道具之一",
     "Desc": "金币不少于60时,你受到的伤害降低8%"
   },
   {
@@ -530,7 +530,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "破旧的怀表,但仍可正常使用",
     "Desc": "回合结束时,若你本回合未受到伤害,获得3金币"
   },
   {
@@ -550,7 +550,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "白银制作的项链,和方片牌有强烈共鸣",
     "Desc": "亮出的每张方片牌在结算时提供+1倍率"
   },
   {
@@ -570,7 +570,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "白银制作的手镯,和黑桃牌有强烈共鸣",
     "Desc": "亮出的每张黑桃牌在结算时提供+1倍率"
   },
   {
@@ -590,7 +590,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "白银制作的耳环,和红心牌有强烈共鸣",
     "Desc": "亮出的每张红心牌在结算时提供+1倍率"
   },
   {
@@ -610,7 +610,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "白银制作的戒指,和梅花牌有强烈共鸣",
     "Desc": "亮出的每张梅花牌在结算时提供+1倍率"
   },
   {
@@ -628,7 +628,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "钢铁制作的长剑,和对子有强烈共鸣",
     "Desc": "亮出的对子牌型在结算时提供+3倍率"
   },
   {
@@ -646,7 +646,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "钢铁制作的法杖,和顺子有强烈共鸣",
     "Desc": "亮出的顺子牌型在结算时提供+5倍率"
   },
   {
@@ -664,7 +664,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "钢铁制作的长弓,和同花有强烈共鸣",
     "Desc": "亮出的同花牌型在结算时提供+4倍率"
   },
   {
@@ -682,7 +682,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "钢铁制作的长毛,和同花顺有强烈共鸣",
     "Desc": "亮出的同花顺牌型在结算时提供+6倍率"
   },
   {
@@ -700,7 +700,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "钢铁制作的斧头,和炸弹有强烈共鸣",
     "Desc": "亮出的炸弹牌型在结算时提供+7倍率"
   },
   {
@@ -721,7 +721,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一个奇怪的精灵,仿佛可以治愈人类",
     "Desc": "获得60点生命上限,每回合结束后恢复2点血量"
   },
   {
@@ -739,7 +739,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "借钱专用的凭证",
     "Desc": "可以负债,最多-150金币"
   },
   {
@@ -759,7 +759,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "面向可怖的面具",
     "Desc": "亮出的每张人头牌在结算时提供+1倍率"
   },
   {
@@ -780,7 +780,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "沉甸甸的,据说由黄金制成",
     "Desc": "亮出的每张人头牌在结算时获得5金币"
   },
   {
@@ -798,7 +798,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一个只有黑白两种色彩的相机",
     "Desc": "结算时,未亮出的牌里每有1张黑桃或梅花,提供+2倍率"
   },
   {
@@ -816,7 +816,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "爱之神,及其和善",
     "Desc": "结算时,未亮出的牌里每有1张方片或红心,提供+2倍率"
   },
   {
@@ -834,7 +834,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一个理财计划,由本地资产大师撰写而成",
     "Desc": "每花费60金币,英雄永久+1攻击力"
   },
   {

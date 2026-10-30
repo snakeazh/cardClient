@@ -236,6 +236,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 276949014794408471}
+  - component: {fileID: 7942130865201743001}
   m_Layer: 0
   m_Name: otherNode
   m_TagString: Untagged
@@ -259,6 +260,22 @@ Transform:
   - {fileID: 5588917984523409223}
   m_Father: {fileID: 5304563194312124864}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7942130865201743001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3272894766308290625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b61e567f559365f43b26e369a9422896, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  designWidth: 1080
+  designHeight: 1920
+  originalScale: {x: 1.15, y: 1.15, z: 1.15}
+  originalScaleCaptured: 1
 --- !u!1 &3417952441549317238
 GameObject:
   m_ObjectHideFlags: 0
@@ -356,7 +373,7 @@ Transform:
   m_GameObject: {fileID: 3770609034367821778}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.07, z: 0}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -371,6 +388,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5619111832746924927}
+  - component: {fileID: 7942130865201743002}
   m_Layer: 0
   m_Name: mineNode
   m_TagString: Untagged
@@ -394,6 +412,22 @@ Transform:
   - {fileID: 1846212757381911231}
   m_Father: {fileID: 5304563194312124864}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7942130865201743002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4079268628312863537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b61e567f559365f43b26e369a9422896, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  designWidth: 1080
+  designHeight: 1920
+  originalScale: {x: 1.15, y: 1.15, z: 1.15}
+  originalScaleCaptured: 1
 --- !u!1 &5669064798429878608
 GameObject:
   m_ObjectHideFlags: 0

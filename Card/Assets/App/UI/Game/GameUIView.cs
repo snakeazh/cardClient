@@ -36,6 +36,8 @@ namespace App.UI
         private const float EnemySlideDuration = 0.3f;
         private const float HudFlyDuration = 0.4f;
         private const float HudFadeDuration = 0.25f;
+        /// <summary>伤害数字播完后再多等一小拍，血条（红条 + 白条）才开始动（别和飘字抢注意力）。</summary>
+        private const float HpTextBarGap = 0.06f;
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -115,6 +117,8 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
+        /// <summary>伤害数字动画时长（秒）；血条白条等它播完再收。</summary>
+        private float _hpTextAnimLength;
         private RectTransform _critHpRt;
         private Transform _critNumShow;
         private Animation _critHpAnim;
@@ -657,6 +661,7 @@ namespace App.UI
 
             var animRoot = hpRoot.Find("ani_hptextdi") ?? FindDeep(hpRoot, "ani_hptextdi") ?? hpRoot;
             _hpTextAnim = animRoot.GetComponent<Animation>();
+            _hpTextAnimLength = ClipLength(_hpTextAnim);
 
             var hpNum = ResolveSlot("hptext") ?? hpRoot;
             var hpText = hpNum.GetComponent<TMP_Text>() ?? hpNum.GetComponentInChildren<TMP_Text>(true);
@@ -1443,7 +1448,7 @@ namespace App.UI
             {
                 ViewModel.ShowHpText.Value = false;
                 RestoreHpText();
-                ClearAttackHold();
+                ClearAttackHold(animated: true);
                 if (_lethalTauntThisAttack && session.LastAttackMissed)
                 {
                     _lethalTauntThisAttack = false;
@@ -2127,11 +2132,18 @@ namespace App.UI
             return _enemyItems[slot];
         }
 
-        private void ClearAttackHold()
+        private void ClearAttackHold(bool animated = false)
         {
             if (_heldAttackItem != null)
             {
-                _heldAttackItem.HideAttackStat();
+                if (animated)
+                {
+                    _heldAttackItem.PlayAttackStatHide();
+                }
+                else
+                {
+                    _heldAttackItem.HideAttackStat();
+                }
             }
 
             _holdAttackDisplay = false;
@@ -2317,6 +2329,46 @@ namespace App.UI
             }
 
             StopHpTextAnim();
+        }
+
+        /// <summary>
+        /// 血条延迟：
+        /// <c>true</c>（当前）= 等伤害数字动画播完再掉，血条滞后飘字一拍；
+        /// <c>false</c> = 命中即掉（Dota 2 手感，只等 <see cref="HpTextBarGap"/>）。
+        /// </summary>
+        private const bool WaitHpTextBeforeBar = true;
+
+        /// <summary>血条开始动的延迟（秒），口径见 <see cref="WaitHpTextBeforeBar"/>。</summary>
+        private float HealthBarRevealDelay()
+        {
+            if (!WaitHpTextBeforeBar)
+            {
+                return HpTextBarGap;
+            }
+
+            return _hpTextAnimLength > 0f
+                ? _hpTextAnimLength + HpTextBarGap
+                : PlayerItem.HealthBarDelay;
+        }
+
+        /// <summary>Animation 上所有 clip 的最长时长（没挂 Animation 或没有 clip 返回 0）。</summary>
+        private static float ClipLength(Animation anim)
+        {
+            if (anim == null)
+            {
+                return 0f;
+            }
+
+            var length = anim.clip != null ? anim.clip.length : 0f;
+            foreach (AnimationState state in anim)
+            {
+                if (state != null && state.clip != null && state.length > length)
+                {
+                    length = state.length;
+                }
+            }
+
+            return length;
         }
 
         private void PlayHpTextAnim()
@@ -2712,6 +2764,8 @@ namespace App.UI
             }
 
             var session = ViewModel.Session;
+            // 血条（红条 + 白条）等伤害数字播完再动（延迟按 ani_hptextdi 的实际时长算）
+            var barDelay = HealthBarRevealDelay();
             if (_playerItem != null)
             {
                 if (session.Player != null && session.Player.Hp > 0)
@@ -2723,17 +2777,14 @@ namespace App.UI
                     }
                 }
 
+                _playerItem.SetHealthBarDelay(barDelay);
                 var playerAttack = AttackDisplay(_playerItem, session.Player.Attack);
                 _playerItem.Bind(
                     session.Player,
                     PortraitLoader.Get(session.Player),
-                    playerAttack);
+                    playerAttack,
+                    showAttackStat: IsAttackStatHeld(_playerItem));
                 ShakeOnPvpAttackChange(session, _playerItem, playerAttack);
-                // 局内攻块默认隐藏；仅伤害结算中攻击方保持显示。
-                if (!IsAttackStatHeld(_playerItem))
-                {
-                    _playerItem.HideAttackStat();
-                }
             }
 
             var activeCount = 0;
@@ -2769,16 +2820,14 @@ namespace App.UI
                     item.gameObject.SetActive(true);
                 }
 
+                item.SetHealthBarDelay(barDelay);
                 var enemyAttack = AttackDisplay(item, enemy.Attack);
                 item.Bind(
                     enemy,
                     PortraitLoader.Get(enemy),
-                    enemyAttack);
+                    enemyAttack,
+                    showAttackStat: IsAttackStatHeld(item));
                 ShakeOnPvpAttackChange(session, item, enemyAttack);
-                if (!IsAttackStatHeld(item))
-                {
-                    item.HideAttackStat();
-                }
             }
 
             SyncEnemyCompareStand(session);

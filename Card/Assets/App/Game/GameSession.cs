@@ -130,6 +130,8 @@ namespace App.Game
         private Task _runGoldSync = Task.CompletedTask;
         private Task _shopSync = Task.CompletedTask;
         private Task _progressSync = Task.CompletedTask;
+        /// <summary>消耗品使用后的服务端移除队列：刷新商店/买卖前先等它，免得旧快照把道具塞回背包。</summary>
+        private Task _consumableSync = Task.CompletedTask;
         private readonly PveSettleStats _runStats = new PveSettleStats();
 
         public GameSession() : this(new Random())
@@ -497,6 +499,8 @@ namespace App.Game
             Run.Tilted = false;
             Run.RelicConfigIds.Clear();
             Run.RelicPowers.Clear();
+            // 广告解锁槽位仅本局有效，新局恢复基础槽位与天赋提供的容量。
+            Run.BoughtRelicSlots = 0;
             Run.ShopOfferIds.Clear();
             Run.ShopRefreshCount = 0;
             _serverRunId = null;
@@ -504,6 +508,7 @@ namespace App.Game
             _runGoldSync = Task.CompletedTask;
             _shopSync = Task.CompletedTask;
             _progressSync = Task.CompletedTask;
+            _consumableSync = Task.CompletedTask;
             ResetSettleStats();
             Run.LoanTicket = false;
             Run.SplashThisRound = false;
@@ -592,9 +597,13 @@ namespace App.Game
 
         public Task FlushProgressAsync() => _progressSync ?? Task.CompletedTask;
 
+        /// <summary>等消耗品移除同步完成（刷新商店/买卖/结算前调用，避免旧快照复活用掉的道具）。</summary>
+        public Task WaitConsumableSyncAsync() => _consumableSync ?? Task.CompletedTask;
+
         public async Task FlushServerRunAsync()
         {
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             await WaitShopReadyAsync();
             await FlushProgressAsync();
         }
@@ -617,6 +626,7 @@ namespace App.Game
             }
 
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             var score = ScoreSvc();
             var amount = score != null ? score.Current.Stage : 0;
             try
@@ -3120,6 +3130,7 @@ namespace App.Game
             if (HasServerRun)
             {
                 await FlushRunGoldAsync();
+                await WaitConsumableSyncAsync();
                 try
                 {
                     var resp = await GameApi.Client.RefreshShopAsync(_serverRunId);
@@ -3308,6 +3319,7 @@ namespace App.Game
             }
 
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             try
             {
                 var ownedBefore = OwnsRelicConfig(relicId);
@@ -3366,6 +3378,7 @@ namespace App.Game
             }
 
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             try
             {
                 var resp = await GameApi.Client.BuyShopRelicAsync(_serverRunId, relicId);
@@ -3414,6 +3427,7 @@ namespace App.Game
             }
 
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             try
             {
                 var resp = await GameApi.Client.SellShopRelicAsync(_serverRunId, relicId);
@@ -3749,6 +3763,43 @@ namespace App.Game
             }
 
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
+            // 服务端不知道「用掉了」：不同步的话，下一次快照（刷新商店/进度）会用旧 RelicIds 把它塞回背包。
+            if (HasServerRun)
+            {
+                var previous = _consumableSync;
+                _consumableSync = ContinueConsumeRelicAsync(previous, relicId);
+            }
+        }
+
+        /// <summary>把「消耗品已用掉」串行发给服务端。失败只记日志：下一手进度上报仍会带正确列表。</summary>
+        private async Task ContinueConsumeRelicAsync(Task previous, int relicId)
+        {
+            try
+            {
+                await previous;
+            }
+            catch (Exception)
+            {
+                // 前一次失败不阻塞后一次。
+            }
+
+            if (!HasServerRun)
+            {
+                return;
+            }
+
+            try
+            {
+                await GameApi.Client.ConsumePveRelicAsync(_serverRunId, relicId);
+            }
+            catch (GameApiException ex)
+            {
+                AppLog.Warn(LogChannel.Net, $"[Pve] 消耗品同步失败 relic={relicId}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Net, $"[Pve] 消耗品同步异常 relic={relicId}: {ex.Message}");
+            }
         }
 
         private bool CanApplyConsumable(RelicConfig relic, out string failHint)
@@ -8425,6 +8476,7 @@ namespace App.Game
         private async Task SyncEnterShopAsync()
         {
             await FlushRunGoldAsync();
+            await WaitConsumableSyncAsync();
             try
             {
                 var resp = await GameApi.Client.EnterShopAsync(_serverRunId, Run.FreeShopRefreshLeft);

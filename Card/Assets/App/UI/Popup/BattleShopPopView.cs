@@ -257,7 +257,7 @@ namespace App.UI.Popup
             _pvpSkillButtons.Add(entry);
         }
 
-        /// <summary>技能按钮文案：「搓牌(3/3)」这种节点名是 Text (TMP)，改名时回落到直属子节点的第一个文本。</summary>
+        /// <summary>技能按钮文案：「(3/3)」这种节点名是 Text (TMP)，改名时回落到直属子节点的第一个文本。</summary>
         private static TMP_Text FindButtonLabel(Transform buttonRoot)
         {
             var named = FindDeep(buttonRoot, "Text (TMP)");
@@ -607,8 +607,8 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// MineHor 拼格：[聚合圣物格 …][空槽格 × (CarryMax − 已持份数)][买槽格 × 1（还有可解锁槽时）]。
-        /// 聚合段在前，飞入动画的索引语义（LastMineIndex / FindMineItem）不受后段影响。
+        /// MineHor 拼格：[圣物格 …][空槽格 × (CarryMax − 已持份数)][买槽格 × 1（还有可解锁槽时）]。
+        /// PVP 每件圣物独占一格；PVE 按 ID、等级聚合。圣物段在前，供飞入动画定位。
         /// </summary>
         private void RefreshMineItems()
         {
@@ -704,6 +704,7 @@ namespace App.UI.Popup
                 return;
             }
 
+            var mergeDuplicates = !ViewModel.Session.IsPvp;
             for (var i = 0; i < owned.Count; i++)
             {
                 var relicId = owned[i];
@@ -714,7 +715,7 @@ namespace App.UI.Popup
 
                 var level = ViewModel.Session.RelicLevelAt(i);
                 var slot = -1;
-                for (var n = 0; n < _mineRelicIds.Count; n++)
+                for (var n = 0; mergeDuplicates && n < _mineRelicIds.Count; n++)
                 {
                     if (_mineRelicIds[n] == relicId && _mineLevels[n] == level)
                     {
@@ -765,7 +766,7 @@ namespace App.UI.Popup
             }
 
             // 只记录待揭示格；滚动挪到 RefreshMineItems 末尾布局完成后做，
-            // 且不再滚底——槽位视图下买入落点在聚合段，滚底会把落点带出视口。
+            // 且不再滚底——槽位视图下买入落点在圣物段，滚底会把落点带出视口。
             _pendingMineGroup = cg;
         }
 

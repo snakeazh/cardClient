@@ -53,6 +53,7 @@ BattleShopPop
 
 - 货架 4 格：`Run.ShopOfferIds`，买入价 `Session.EffectiveBuyPrice`（PVP 读快照），点开 [`ShopDetail`](ShopDetail.md) 购买；买不起价格变红。
 - MineHor 拼格：`[按(圣物Id,等级)聚合的格子][空槽 × 剩余槽位][买槽 × 1]`；点已购格卖，点买槽解锁下一槽（PVP 花金币、PVE 看广告）。
+- PVE 广告解锁的槽位仅本局有效：同一局进入下一关时保留；结束后开启新局或失败后重新挑战时清零 `Run.BoughtRelicSlots`，恢复基础槽位与天赋提供的容量。
 - 购买成功由 `ShopDetail` 调 `HoldIncomingMine / GetIncomingMineRect / RevealIncomingMine` 播卡片飞入并揭示新格。
 
 ---
@@ -80,7 +81,7 @@ BattleShopPop
 
 | 节点 | 内容 |
 |------|------|
-| `Text (TMP)` | `透视(1/1)`：剩余+待生效购买 / 基数。用光 0/1，买一次 1/1，再买 2/1；真实次数下一轮开局并入 |
+| `Text (TMP)` | `(1/1)`：只显示剩余+待生效购买 / 基数（技能名由按钮图标表达）。用光 0/1，买一次 1/1，再买 2/1；真实次数下一轮开局并入 |
 | `PriceBar/Num` | `PvpShopSkillDto.Price`，买不起变红（`ThemeColors.ShopPriceUnaffordable`） |
 
 买不起不置灰：点了走 Toast「金币不足」，与买槽格一致。成功后 Toast 带当前剩余与可达上限。

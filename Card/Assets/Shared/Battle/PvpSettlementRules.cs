@@ -30,6 +30,18 @@ namespace CardShare.Battle
         public static int SkillGoldUnit(GameConst gameConst)
             => gameConst.EverySkillProvideGold > 0 ? gameConst.EverySkillProvideGold : 20;
 
+        /// <summary>本桌结算伤害按 GameConst.DamageTurnToGold [伤害, 金币] 换金，向下取整；无效配置不发放。</summary>
+        public static int DamageGold(int damage, GameConst gameConst)
+        {
+            var rate = gameConst?.DamageTurnToGold;
+            if (damage <= 0 || rate == null || rate.Length < 2 || rate[0] <= 0 || rate[1] <= 0)
+            {
+                return 0;
+            }
+
+            return (int)Math.Min(int.MaxValue, (long)damage * rate[1] / rate[0]);
+        }
+
         /// <summary>
         /// 单人本轮金币。胜者 = 基础 + 单价×未用技能 + 连胜奖励 + 利息；
         /// 败者 =（基础 + 单价×未用技能）/ 2 + 连败奖励 + 利息。

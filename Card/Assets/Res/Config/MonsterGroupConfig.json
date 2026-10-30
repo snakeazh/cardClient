@@ -16,7 +16,7 @@
   },
   {
     "Id": 10041,
-    "MonsterId": 1004,
+    "MonsterId": 9001,
     "MonsterLevel": 1
   },
   {
@@ -46,8 +46,8 @@
   },
   {
     "Id": 10071,
-    "MonsterId": 3001,
-    "MonsterLevel": 2
+    "MonsterId": 9002,
+    "MonsterLevel": 1
   },
   {
     "Id": 10072,
@@ -91,8 +91,8 @@
   },
   {
     "Id": 10101,
-    "MonsterId": 3001,
-    "MonsterLevel": 4
+    "MonsterId": 9003,
+    "MonsterLevel": 1
   },
   {
     "Id": 10102,

@@ -41,6 +41,8 @@ namespace App.Resources
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
         public const string BondsTip = "UI/Top/BondsTip";
+        public const string BondFrame = "Textures/GameUI/ItemBaseFrame1";
+        public const string BondFrameLocked = "Textures/GameUI/ItemBaseFrame1Lock";
         public const string HasTip = "UI/Top/HasTip";
         public const string WinTip = "UI/Top/WinTip";
         public const string GameHud = "Game/GameHud";

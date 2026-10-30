@@ -499,10 +499,15 @@ public class PvpMatchTests
         }
     }
 
-    [Fact]
-    public void WinnerEarnsGoldAndLoserGetsHalf()
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(12, 1)]
+    [InlineData(1, 2)]
+    public void WinnerEarnsGoldAndLoserGetsHalf(int damageUnit, int goldUnit)
     {
-        var match = Open(PvpTestTables.OnePvpRound());
+        var tables = PvpTestTables.OnePvpRound();
+        tables.GameConst.DamageTurnToGold = new[] { damageUnit, goldUnit };
+        var match = Open(tables);
         AdvanceToPvpFight(match);
         var a = match.Fighters[0];
         var duel = match.Duels.First(d => d.Involves(a.UserId));
@@ -525,11 +530,12 @@ public class PvpMatchTests
         // 第 2 轮是 PvP：基础 15 + 20×未用技能(5) + 连胜/连败奖（承接野怪轮次数）+ 利息。
         var core = 15 + 20 * (3 + 1 + 1);
         var aWon = snap.Winners[0] == (PvpBattleTable.SameUser(duel.LeftUserId, a.UserId) ? 0 : 1);
+        var damageGold = damageUnit > 0 ? duel.AppliedDamage * goldUnit / damageUnit : 0;
         if (aWon)
         {
             var winPay = core + PvpSettlementRules.StreakGold(winStreakA + 1);
             var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakB + 1);
-            Assert.Equal(goldA + winPay + PvpSettlementRules.InterestGold(goldA), a.Gold);
+            Assert.Equal(goldA + winPay + PvpSettlementRules.InterestGold(goldA) + damageGold, a.Gold);
             Assert.Equal(goldB + losePay + PvpSettlementRules.InterestGold(goldB), b.Gold);
             Assert.Equal(winStreakA + 1, a.WinStreak);
             Assert.Equal(0, a.LoseStreak);
@@ -540,7 +546,7 @@ public class PvpMatchTests
         {
             var winPay = core + PvpSettlementRules.StreakGold(winStreakB + 1);
             var losePay = core / 2 + PvpSettlementRules.StreakGold(loseStreakA + 1);
-            Assert.Equal(goldB + winPay + PvpSettlementRules.InterestGold(goldB), b.Gold);
+            Assert.Equal(goldB + winPay + PvpSettlementRules.InterestGold(goldB) + damageGold, b.Gold);
             Assert.Equal(goldA + losePay + PvpSettlementRules.InterestGold(goldA), a.Gold);
             Assert.Equal(winStreakB + 1, b.WinStreak);
             Assert.Equal(loseStreakA + 1, a.LoseStreak);
@@ -588,6 +594,58 @@ public class PvpMatchTests
             Assert.Equal(goldB + winBody + PvpSettlementRules.InterestGold(goldB), b.Gold);
             Assert.Equal(goldA + loseBody + PvpSettlementRules.InterestGold(goldA), a.Gold);
         }
+    }
+
+    [Fact]
+    public void MonsterRoundAwardsDamageGoldOnlyOnce()
+    {
+        var baselineTables = PvpTestTables.OneMonsterRound();
+        baselineTables.GameConst.DamageTurnToGold = new[] { 0, 0 };
+        var tables = PvpTestTables.OneMonsterRound();
+        tables.GameConst.DamageTurnToGold = new[] { 12, 1 };
+        var baseline = Open(baselineTables);
+        var match = Open(tables);
+        foreach (var fighter in baseline.Fighters)
+        {
+            baseline.Showdown(fighter.UserId);
+        }
+        foreach (var fighter in match.Fighters)
+        {
+            match.Showdown(fighter.UserId);
+        }
+
+        Assert.Contains(match.Duels, d => d.AppliedWinner == 0 && d.AppliedDamage >= 12);
+        for (var i = 0; i < match.Fighters.Count; i++)
+        {
+            var fighter = match.Fighters[i];
+            var duel = match.Duels.First(d => d.Involves(fighter.UserId));
+            var damageGold = duel.AppliedWinner == 0 && fighter.Alive ? duel.AppliedDamage / 12 : 0;
+            Assert.Equal(baseline.Fighters[i].Gold + damageGold, fighter.Gold);
+            var settledGold = fighter.Gold;
+            Assert.Throws<InvalidOperationException>(() => match.Showdown(fighter.UserId));
+            Assert.Equal(settledGold, fighter.Gold);
+        }
+    }
+
+    [Theory]
+    [InlineData(25, 12, 1, 2)]
+    [InlineData(11, 12, 1, 0)]
+    [InlineData(0, 12, 1, 0)]
+    [InlineData(-10, 12, 1, 0)]
+    [InlineData(25, 0, 1, 0)]
+    [InlineData(25, 12, -1, 0)]
+    [InlineData(int.MaxValue, 12, 1, 178956970)]
+    public void DamageGoldUsesConfiguredRate(int damage, int damageUnit, int goldUnit, int expected)
+    {
+        var config = new GameConst { DamageTurnToGold = new[] { damageUnit, goldUnit } };
+        Assert.Equal(expected, PvpSettlementRules.DamageGold(damage, config));
+    }
+
+    [Fact]
+    public void DamageGoldIgnoresMissingOrIncompleteConfiguration()
+    {
+        Assert.Equal(0, PvpSettlementRules.DamageGold(100, new GameConst()));
+        Assert.Equal(0, PvpSettlementRules.DamageGold(100, new GameConst { DamageTurnToGold = new[] { 12 } }));
     }
 
     [Fact]

@@ -147,7 +147,7 @@ PVP 选牌提示：对方已锁定而我未锁定显示 `otherinfoshow`（对方
 
 PVP 终局走 [`BattleResultPopup`](../Popup/BattleResultPopup.md) 的名次页，不走闯关成功/失败页。
 
-PVP 隐藏 `beisu`，对局倍速固定为 1。`winTip` / `winTipText` 显示自己的连胜或连败（`三连胜`、`两连败`）；两边都是 0 时隐藏。PVE 不显示这块。左侧 `PvpRoles` 的 `roleIcon`：`valueBox` / `valueNum` 显示该敌人剩余血量（存活绿色、阵亡灰色）；其他玩家头像点击后在右侧弹出 `HasTip`，标题为圣物列表，格子克隆对方当前持有的圣物。点圣物弹出 `ItemTip`（名称和描述，不能使用）；再点同一张圣物只关详情。再点同一头像或点空白关闭列表。野怪头像不弹。
+PVP 隐藏 `beisu`，对局倍速固定为 1。`winTip` / `winTipText` 显示自己的连胜或连败（`连胜x3`、`连败x2`）；两边都是 0 时隐藏。PVE 不显示这块。左侧 `PvpRoles` 的 `roleIcon`：`valueBox` / `valueNum` 显示该敌人剩余血量（存活绿色、阵亡灰色）；其他玩家头像点击后在右侧弹出 `HasTip`，标题为圣物列表，格子克隆对方当前持有的圣物。点圣物弹出 `ItemTip`（名称和描述，不能使用）；再点同一张圣物只关详情。再点同一头像或点空白关闭列表。野怪头像不弹。
 
 `roundbuffGrid`：关卡机制格子。`LevelEntryNum` 为 0 或未抽到时隐藏；每条 `BossEntryConfig` 克隆一个 `roundbuff`，点击出该条 `Name` / `Desc`。本关抽出机制时，开场对话/VS 和发牌都结束后会弹一次 `GamePopupInfo`，点空白关闭；同关内多轮不重复弹，重开或进下一关会再弹。BOSS 人物卡 tip 仍用拼接后的 `RoundBuffName` / `RoundBuffDesc`。
 

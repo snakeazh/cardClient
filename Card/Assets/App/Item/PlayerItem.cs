@@ -39,6 +39,7 @@ namespace App.Game
         [SerializeField] private Image attackBg;
         [SerializeField] private Image heartBg;
         [SerializeField] private Image healthBar;
+        [SerializeField] private Image healthBarWhite;
         [SerializeField] private TMP_Text enemyCardName;
         [SerializeField] private Image enemyCardIcon;
         [SerializeField] private Image enemyCardBg;
@@ -49,6 +50,7 @@ namespace App.Game
         [SerializeField] private Image enemyAttackBg;
         [SerializeField] private Image enemyHeartBg;
         [SerializeField] private Image enemyHealthBar;
+        [SerializeField] private Image enemyHealthBarWhite;
         [SerializeField] private RectTransform playerRoot;
         [SerializeField] private Animator playerAnimator;
         [SerializeField] private GameObject topDialog;
@@ -62,6 +64,18 @@ namespace App.Game
         public const float DialogCharInterval = 0.08f / DialogSpeed;
         /// <summary>伤害结算时 attack / enemycardattack 果冻弹出时长。</summary>
         public const float AttackPopDuration = 0.4f;
+        public const float AttackHideDuration = 0.2f;
+        /// <summary>
+        /// 红条 + 白条共用的兜底延迟（秒）：受击到血条开始动之间的等待。
+        /// Dota 2 手感是"命中即掉"，所以只有 0.06s；战斗界面的实际值见 <c>GameUIView.HealthBarRevealDelay</c>。
+        /// </summary>
+        public const float HealthBarDelay = 0.06f;
+        /// <summary>红色血条收到新血量的时长：Dota 2 里几乎瞬落，这里留一点点缓动免得像丢帧。</summary>
+        public const float HealthBarFillDuration = 0.12f;
+        /// <summary>白条比红条晚起跑这一小截，让掉血那块先整块露出来，再平滑消失。</summary>
+        public const float HealthBarWhiteLead = 0.1f;
+        /// <summary>白色残条从旧血量的宽度收到新血量的时长（Dota 2 观感：快起慢收，0.3~0.4s）。</summary>
+        public const float HealthBarWhiteDuration = 0.45f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 
@@ -75,8 +89,18 @@ namespace App.Game
         private bool _dialogRefsReady;
         private Tween _dialogTween;
         private Tween _attackPopTween;
+        private bool _attackStatHiding;
         private Vector3 _attackRestScale = Vector3.one * AttackStatLayoutScale;
         private Vector3 _enemyAttackRestScale = Vector3.one * AttackStatLayoutScale;
+        // 红条（healthbar）/ 白条（healthbarWhite）各一条 tween 与目标宽度；同一次掉血被反复刷新时不重启。
+        // 时序：受击 → 延迟（飘字播完）→ 红条 HealthBarFillDuration 收 → 白条 HealthBarWhiteDuration 追上。
+        private Tween _healthBarFillTween;
+        private float _healthBarFillTarget;
+        private Tween _healthBarWhiteTween;
+        private float _healthBarWhiteTarget;
+        private float _healthBarDelay = HealthBarDelay;
+        // 首次/重新启用/换形态/补血后第一次写血量直接对齐两条，避免拖出上一任的残影
+        private bool _snapHealthBars = true;
         private GameObject _activeDialog;
         // card / enemycard 节点引用：显隐切换按节点做，不依赖节点上是否挂 Image
         // （预制体 card 节点只有 RectTransform+CanvasRenderer，按 Image 查找会漏）
@@ -96,12 +120,19 @@ namespace App.Game
         private Image ActiveHealthBar => _enemyVisual ? enemyHealthBar : healthBar;
         private float ActiveHealthBarFullWidth =>
             _enemyVisual ? _enemyHealthBarFullWidth : _healthBarFullWidth;
+        // 敌人形态必须用 enemycardheart 下的白条；找不到时不要回落到人物 heart。
+        private Image ActiveHealthBarWhite => _enemyVisual ? enemyHealthBarWhite : healthBarWhite;
+        private float ActiveHealthBarWhiteFullWidth =>
+            _enemyVisual ? _enemyHealthBarWhiteFullWidth : _healthBarWhiteFullWidth;
         private TMP_Text ActiveHeart =>
             _enemyVisual && enemyCardAttackHeart != null ? enemyCardAttackHeart : cardAttackHeart;
 
         // healthbar 满宽（Sliced + 改 width）；EnsureRefs 时从预制体 sizeDelta.x 记下
         private float _healthBarFullWidth;
         private float _enemyHealthBarFullWidth;
+        // healthbarWhite 满宽：与彩色条同尺寸、同左 pivot，叠在彩色条下层
+        private float _healthBarWhiteFullWidth;
+        private float _enemyHealthBarWhiteFullWidth;
 
         public RectTransform CardIconRect
         {
@@ -371,7 +402,7 @@ namespace App.Game
             dissolve?.ResetState();
         }
 
-        public void Bind(SeatState seat, Sprite portrait, int attack = 0)
+        public void Bind(SeatState seat, Sprite portrait, int attack = 0, bool showAttackStat = true)
         {
             EnsureRefs();
             // 怪物走 enemycard；PVP 玩家对手（DisplayAsHero）走人物 card，攻/血底用预制体 healthbar。
@@ -387,7 +418,15 @@ namespace App.Game
             }
 
             SetName(seat != null ? seat.Name : string.Empty);
-            SetAttack(attack);
+            if (showAttackStat)
+            {
+                SetAttack(attack);
+            }
+            else if (!_attackStatHiding)
+            {
+                SetAttackValue(attack);
+                HideAttackStat();
+            }
             SetHp(
                 seat != null ? seat.Hp : 0,
                 seat != null ? seat.MaxHp : 0,
@@ -417,6 +456,14 @@ namespace App.Game
             if (enemy && _enemyCardRoot == null)
             {
                 enemy = false;
+            }
+
+            if (_visualReady && _enemyVisual != enemy)
+            {
+                // 两套卡面的血条各管各的宽度，换形态后第一次写血量直接对齐，别跨形态拖影
+                KillHealthBarFillTween();
+                KillHealthBarWhiteTween();
+                _snapHealthBars = true;
             }
 
             _enemyVisual = enemy;
@@ -585,6 +632,36 @@ namespace App.Game
             KillAttackPopTween();
             HideAttackRoot(attackRoot, _attackRestScale);
             HideAttackRoot(enemyAttackRoot, _enemyAttackRestScale);
+        }
+
+        /// <summary>攻击演出结束后平滑缩小，再隐藏并恢复布局缩放。</summary>
+        public void PlayAttackStatHide()
+        {
+            EnsureRefs();
+            if (_attackStatHiding)
+            {
+                return;
+            }
+
+            KillAttackPopTween();
+            var root = ActiveAttackRoot;
+            if (root == null || !root.activeInHierarchy)
+            {
+                HideAttackStat();
+                return;
+            }
+
+            var rest = _enemyVisual ? _enemyAttackRestScale : _attackRestScale;
+            _attackStatHiding = true;
+            _attackPopTween = root.transform.DOScale(Vector3.zero, AttackHideDuration)
+                .SetEase(Ease.InQuad)
+                .SetLink(root, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    _attackStatHiding = false;
+                    _attackPopTween = null;
+                    HideAttackRoot(root, rest);
+                });
         }
 
         /// <summary>
@@ -762,26 +839,15 @@ namespace App.Game
             }
 
             var bar = ActiveHealthBar;
-            if (bar != null)
+            if (_enemyVisual)
             {
-                // 满宽记在字段里；若曾被收成 0，禁止再用当前 sizeDelta（已是空条）当满宽。
-                if (_enemyVisual)
-                {
-                    EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
-                }
-                else
-                {
-                    EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
-                }
-
-                var full = ActiveHealthBarFullWidth;
-                var width = full * Mathf.Clamp01(fillRatio);
-                var size = bar.rectTransform.sizeDelta;
-                if (!Mathf.Approximately(size.x, width))
-                {
-                    size.x = width;
-                    bar.rectTransform.sizeDelta = size;
-                }
+                EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
+                EnsureHealthBarSliced(enemyHealthBarWhite, ref _enemyHealthBarWhiteFullWidth);
+            }
+            else
+            {
+                EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
+                EnsureHealthBarSliced(healthBarWhite, ref _healthBarWhiteFullWidth);
             }
 
             var bg = ActiveHeartBg;
@@ -795,6 +861,130 @@ namespace App.Game
             else if (label != null && label.gameObject.activeSelf != visible)
             {
                 label.gameObject.SetActive(visible);
+            }
+
+            // 首次绑定/重新启用/形态切换/补血/整块隐藏：两条直接对齐，不播动画
+            var snap = _snapHealthBars;
+            _snapHealthBars = false;
+            SetHealthBarFill(fillRatio, visible, snap);
+            SetHealthBarWhiteFill(fillRatio, visible, snap);
+        }
+
+        /// <summary>
+        /// 红色血条：受击后先等 <c>_healthBarDelay</c>（战斗界面 = 伤害数字播完，局外 = <see cref="HealthBarDelay"/>），
+        /// 再用 <see cref="HealthBarFillDuration"/> 短促收到新血量。白条几乎同时起跑（只滞后
+        /// <see cref="HealthBarWhiteLead"/>），见 <see cref="SetHealthBarWhiteFill"/>。
+        /// </summary>
+        private void SetHealthBarFill(float fillRatio, bool visible, bool snapRequested)
+        {
+            var bar = ActiveHealthBar;
+            var full = ActiveHealthBarFullWidth;
+            if (bar == null || full <= 0f)
+            {
+                return;
+            }
+
+            var target = full * Mathf.Clamp01(fillRatio);
+            var snap = snapRequested || !visible || target >= bar.rectTransform.sizeDelta.x - 0.01f;
+
+            // 同一次掉血的重复刷新（Bind 每次 RefreshPlayerItems 都会走 SetHp）：让已在跑的红条继续，
+            // 否则每刷一次都要重新等一次延迟，血条会一顿一顿地跳。
+            if (!snap &&
+                _healthBarFillTween != null &&
+                _healthBarFillTween.IsActive() &&
+                Mathf.Approximately(_healthBarFillTarget, target))
+            {
+                return;
+            }
+
+            KillHealthBarFillTween();
+            if (snap)
+            {
+                SetBarWidth(bar, target);
+                return;
+            }
+
+            _healthBarFillTarget = target;
+            _healthBarFillTween = DOTween.To(
+                    () => bar.rectTransform.sizeDelta.x,
+                    value => SetBarWidth(bar, value),
+                    target,
+                    HealthBarFillDuration)
+                .SetDelay(_healthBarDelay)
+                .SetEase(Ease.OutQuad)
+                .SetLink(bar.gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        /// <summary>
+        /// 白条 <c>healthbarWhite</c> 叠在红条<b>下层</b>且与它同宽。掉血时红条短促收到新血量，
+        /// 白条只滞后 <see cref="HealthBarWhiteLead"/> 就用 <see cref="HealthBarWhiteDuration"/> 追上去——
+        /// 两者重叠着动，露出的白色那块 = 刚扣掉的血，随后被平滑吃掉（Dota 2 的血条手感）。
+        /// 补血 / 首次绑定 / 卡槽复用 / 整块隐藏时直接对齐，不拖影。
+        /// </summary>
+        private void SetHealthBarWhiteFill(float fillRatio, bool visible, bool snapRequested)
+        {
+            var white = ActiveHealthBarWhite;
+            var full = ActiveHealthBarWhiteFullWidth;
+            if (white == null || full <= 0f)
+            {
+                return;
+            }
+
+            var target = full * Mathf.Clamp01(fillRatio);
+            var snap = snapRequested || !visible || target >= white.rectTransform.sizeDelta.x - 0.01f;
+            if (!snap &&
+                _healthBarWhiteTween != null &&
+                _healthBarWhiteTween.IsActive() &&
+                Mathf.Approximately(_healthBarWhiteTarget, target))
+            {
+                return;
+            }
+
+            KillHealthBarWhiteTween();
+            if (snap)
+            {
+                SetBarWidth(white, target);
+                return;
+            }
+
+            _healthBarWhiteTarget = target;
+            _healthBarWhiteTween = DOTween.To(
+                    () => white.rectTransform.sizeDelta.x,
+                    value => SetBarWidth(white, value),
+                    target,
+                    HealthBarWhiteDuration)
+                .SetDelay(_healthBarDelay + HealthBarWhiteLead)
+                .SetEase(Ease.OutSine)
+                .SetLink(white.gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        private static void SetBarWidth(Image bar, float width)
+        {
+            if (bar == null)
+            {
+                return;
+            }
+
+            var size = bar.rectTransform.sizeDelta;
+            if (Mathf.Approximately(size.x, width))
+            {
+                return;
+            }
+
+            size.x = width;
+            bar.rectTransform.sizeDelta = size;
+        }
+
+        /// <summary>
+        /// 设定受击到血条开始动的延迟（秒），&lt;= 0 忽略。
+        /// 战斗界面按伤害数字动画时长传入（飘字播完再动条），局外不调即用 <see cref="HealthBarDelay"/>。
+        /// 只影响之后新起的血条 tween，已经在跑的保持原延迟。
+        /// </summary>
+        public void SetHealthBarDelay(float seconds)
+        {
+            if (seconds > 0f)
+            {
+                _healthBarDelay = seconds;
             }
         }
 
@@ -812,9 +1002,17 @@ namespace App.Game
             EnsureRefs();
         }
 
+        private void OnEnable()
+        {
+            // 卡槽复用/整块开关后重进：第一次写血量直接对齐两条，别把上一任的血量当成刚扣的
+            _snapHealthBars = true;
+        }
+
         private void OnDestroy()
         {
             KillAttackPopTween();
+            KillHealthBarFillTween();
+            KillHealthBarWhiteTween();
             HideDialogImmediate();
         }
 
@@ -930,6 +1128,13 @@ namespace App.Game
 
             EnsureHealthBarSliced(healthBar, ref _healthBarFullWidth);
 
+            if (healthBarWhite == null)
+            {
+                healthBarWhite = FindImageUnder("heart", "healthbarWhite");
+            }
+
+            EnsureHealthBarSliced(healthBarWhite, ref _healthBarWhiteFullWidth);
+
             if (cardAttackHeart == null)
             {
                 cardAttackHeart = FindText("card_attackHeart");
@@ -1013,6 +1218,13 @@ namespace App.Game
             }
 
             EnsureHealthBarSliced(enemyHealthBar, ref _enemyHealthBarFullWidth);
+
+            if (enemyHealthBarWhite == null)
+            {
+                enemyHealthBarWhite = FindImageUnder("enemycardheart", "healthbarWhite");
+            }
+
+            EnsureHealthBarSliced(enemyHealthBarWhite, ref _enemyHealthBarWhiteFullWidth);
 
             if (enemyCardAttackHeart == null)
             {
@@ -1160,6 +1372,27 @@ namespace App.Game
             }
 
             _attackPopTween = null;
+            _attackStatHiding = false;
+        }
+
+        private void KillHealthBarFillTween()
+        {
+            if (_healthBarFillTween != null && _healthBarFillTween.IsActive())
+            {
+                _healthBarFillTween.Kill();
+            }
+
+            _healthBarFillTween = null;
+        }
+
+        private void KillHealthBarWhiteTween()
+        {
+            if (_healthBarWhiteTween != null && _healthBarWhiteTween.IsActive())
+            {
+                _healthBarWhiteTween.Kill();
+            }
+
+            _healthBarWhiteTween = null;
         }
 
         private static void CaptureAttackRestScale(Transform node, ref Vector3 restScale)

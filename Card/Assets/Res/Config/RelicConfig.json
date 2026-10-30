@@ -34,7 +34,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "青铜制作的项链,和方片牌有微弱共鸣",
     "Desc": "亮出的每张方片牌在结算时提供+1攻击力"
   },
   {
@@ -54,7 +54,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "青铜制作的手镯,和黑桃牌有微弱共鸣",
     "Desc": "亮出的每张黑桃牌在结算时提供+1攻击力"
   },
   {
@@ -74,7 +74,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "青铜制作的耳环,和红心牌有微弱共鸣",
     "Desc": "亮出的每张红心牌在结算时提供+1攻击力"
   },
   {
@@ -94,7 +94,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "青铜制作的戒指,和梅花牌有微弱共鸣",
     "Desc": "亮出的每张梅花牌在结算时提供+1攻击力"
   },
   {
@@ -114,7 +114,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的长剑,和对子有微弱共鸣",
     "Desc": "亮出的对子牌型在结算时提供+3攻击力"
   },
   {
@@ -134,7 +134,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的法杖,和顺子有微弱共鸣",
     "Desc": "亮出的顺子牌型在结算时提供+5攻击力"
   },
   {
@@ -154,7 +154,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的长弓,和同花有微弱共鸣",
     "Desc": "亮出的同花牌型在结算时提供+4攻击力"
   },
   {
@@ -174,7 +174,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的长毛,和同花顺有微弱共鸣",
     "Desc": "亮出的同花顺牌型在结算时提供+6攻击力"
   },
   {
@@ -194,7 +194,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的斧头,和炸弹有微弱共鸣",
     "Desc": "亮出的炸弹牌型在结算时提供+7攻击力"
   },
   {
@@ -214,7 +214,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "木头制作的盾牌,能够抵挡微弱伤害",
     "Desc": "每次受到的伤害降低5%"
   },
   {
@@ -234,7 +234,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一个皮质小钱包,会是一笔微弱财宝",
     "Desc": "每回合开始时,获得2金币"
   },
   {
@@ -254,7 +254,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "常见的医疗用品,缠在伤口处慢慢治愈",
     "Desc": "每回合开始时,恢复2点生命"
   },
   {
@@ -274,7 +274,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一种稀有草类植物,据说能给周遭环境带来好运",
     "Desc": "每回合结束后,有25%概率获得8金币"
   },
   {
@@ -294,7 +294,7 @@
     "PVPDoNotAppear": 0,
     "UnlockConditionId": 0,
     "UseType": 0,
-    "SpecialDesc": "玩家通用冒险证明",
+    "SpecialDesc": "一种常见的拳套,戴上后微弱提高战斗力",
     "Desc": "每回合结束后,提高1%暴击率,至多叠加20层"
   },
   {

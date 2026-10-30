@@ -28,6 +28,7 @@
 | `attack` | 人物攻击力整块；值为 0 时隐藏。底图用预制体，代码不改 |
 | `heart` | 人物血量整块。底图用预制体。局外 `SetHp(0)` 隐藏；局内 `Bind` 传 `hideWhenZero: false`，阵亡仍显示 `0/上限` |
 | `heart/frame/healthbar` | 人物血量百分比条（`Image` Sliced，按 `hp/maxHp` 改 width；左 pivot） |
+| `heart/frame/healthbarWhite` | 人物掉血白条（同尺寸、同左 pivot，叠在 `healthbar` **下层**）；掉血后停留再缓动收拢，见下方「掉血白条」 |
 | `enemycard` | 敌人卡面。`Bind` 敌人时显示，底图取 `MonsterConfig.BaseMap`（贴图在 `Altas/playitem`，如 `KhakiMonsterBaseFrame`） |
 | `enemycard_icon` | 敌人头像 |
 | `enemycard_Name` | 敌人名字 |
@@ -36,6 +37,7 @@
 | `enemycardattack` | 敌人攻击力整块；值为 0 时隐藏。底图按 `MonsterType`：普通 `HealthBarBigBaseFrameKhaki` / 精英 `…Purple` / Boss `…Red` |
 | `enemycardheart` | 敌人血量整块。底图同上。局内阵亡仍显示 `0/上限` |
 | `enemycardheart/frame/healthbar` | 敌人血量百分比条，口径同人物 |
+| `enemycardheart/frame/healthbarWhite` | 敌人掉血白条，口径同人物 |
 | `PlayerRoot` | 位移与攻击动画根节点（`RootRect` / `RootAnimator`） |
 | `TopDialog` | 开场对白气泡（卡上方）；敌人开场用。默认隐藏。子节点 `DialogText` |
 | `BottomDialog` | 开场对白气泡（卡下方，预制体已翻转）；人物开场用。默认隐藏。子节点 `DialogText` |
@@ -70,6 +72,29 @@
 | 局内敌人 | `SeatState.Attack` ← `MonsterConfig.MonsterDamage` | `SeatState.Hp` |
 
 `SetAttack(0)` 会关掉当前可见的攻击整块。`SetHp(0)` 默认关掉血量整块（局外未解锁 / 空英雄用这个）。局内 `Bind` 走 `SetHp(hp, maxHp, hideWhenZero: false)`，文案 `当前/上限`，`healthbar` width = 满宽 × `hp/maxHp`；阵亡仍显示框和 `0/上限`。局外只传一个血量时按满血（`hp/hp`、条满）处理。
+
+### 掉血动画（红条 + 白条）
+
+`healthbarWhite` 与 `healthbar` 同尺寸、同左 pivot，并且在层级里排在 `healthbar` **前面**（下层）。掉血时序：**等飘字播完再掉** + Dota 2 的收缩曲线，两条**重叠着动**（不是"红条停稳再收白条"）：
+
+1. **先等**：`GameUIView.HealthBarRevealDelay()` 返回 `ani_hptextdi` 的实际时长（约 1.33s）+ `HpTextBarGap`（0.06s），期间两条都不动、血条停在旧血量；局外没有飘字时用 `PlayerItem.HealthBarDelay`（0.06s）。
+2. **红条**：`PlayerItem.HealthBarFillDuration`（0.12s，`Ease.OutQuad`）几乎瞬落地收到新血量。
+3. **白条**：只滞后 `PlayerItem.HealthBarWhiteLead`（0.06s）就起跑，用 `PlayerItem.HealthBarWhiteDuration`（0.35s，`Ease.OutSine`）追平。红条已落定、白条还在往回缩，露出来的白色那块 = 刚扣掉的血，随后被吃掉。
+
+一次完整掉血 ≈ 飘字 1.33s + 0.06s + **0.47s**（红条 + 白条）。
+
+> 想让血条**命中即掉**（纯 Dota 2 反馈），把 `GameUIView.WaitHpTextBeforeBar` 改成 `false`，延迟就只剩 0.06s，其余不用动。
+
+下面这些情况**两条直接对齐、不播动画**，避免看起来像掉血：
+
+- 补血（目标宽度 ≥ 当前宽度）；
+- 首次绑定、重新启用（`OnEnable` 会把 `_snapHealthBars` 置位，卡槽复用不会拖出上一任的残影）；
+- 血量整块隐藏（`SetHp(0)` 之类）；
+- 人物 `card` / 敌人 `enemycard` 形态切换。
+
+同一次掉血会因 `RefreshPlayerItems → Bind → SetHp` 被反复刷新，两条只在目标宽度变化时才重启 tween，不会每帧重新等延迟。血条宽度只由 `SetHp` / `SetHpDisplay` 驱动，外部不要再改它们的 `sizeDelta`。
+
+连击时飘字会重播，血条的 1.39s 延迟也随之重置——表现上是**等最后一下飘字播完**才开始掉；已经开始收的白条如果又挨一下，会从当前宽度按新目标重开（不会跳回旧值，也不会等前一段收完）。
 
 ---
 

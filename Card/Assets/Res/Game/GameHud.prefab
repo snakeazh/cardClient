@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9187552875128132464}
   - component: {fileID: 3348192694715662938}
   - component: {fileID: 5129384756102847361}
+  - component: {fileID: 719384205615020002}
   m_Layer: 0
   m_Name: bg
   m_TagString: Untagged
@@ -99,6 +100,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _normalSprite: {fileID: 21300000, guid: 8d95ab81c02806e40a1c0433f8ba77b0, type: 3}
   _bossSprite: {fileID: 21300000, guid: 5f6362068bafb81438938ccf40bd3653, type: 3}
+--- !u!114 &719384205615020002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6048438612955264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6981ea9640c47fc8cbf570e3f190d52, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  effectPrefab: {fileID: 6674908024514905106, guid: 8b156ef7c6dc7fd47a91b3e4bc96e26f, type: 3}
+  maxIdleCount: 8
 --- !u!1 &902488780792751747
 GameObject:
   m_ObjectHideFlags: 0

@@ -65,10 +65,7 @@ namespace App.Bootstrap
 
         private async void Start()
         {
-            QualitySettings.vSyncCount = 0;
-            // 启动期先锁 60，防高刷屏在配置表加载前满负载空烧；
-            // 配置加载后 ApplyFrameRate 按平台放开（仅微信安卓保持 60）
-            Application.targetFrameRate = 60;
+            ApplyFrameRate();
             // 帧率 HUD 恢复（Debug/性能 菜单写存的开关；Development 构建真机常开，便于性能排查）
             if (PlayerPrefs.GetInt(App.UI.FpsHud.PrefKey, 0) != 0 || Debug.isDebugBuild)
             {
@@ -197,26 +194,13 @@ namespace App.Bootstrap
             await _services.Resolve<MainResourceViewModel>().EnsureShown();
         }
 
-        /// <summary>按平台应用目标帧率（须在配置表加载后调用）：
-        /// 微信小游戏（wx.getDeviceInfo().platform）安卓锁 60——WebGL 上非 15/30/60 的值会走
-        /// setTimeout 空转耗电，60 走 rAF 分片最稳，且需同步调 wx.setPreferredFramesPerSecond 生效；
-        /// 其余微信环境不限帧（iOS 由 rAF 平台级封顶 60，devtools 全速便于测试）；
-        /// 非微信（Editor/原生包）不限帧，跟随屏幕刷新率。</summary>
+        /// <summary>不主动锁 60 帧。WebGL/Editor 交给运行环境；原生安卓以屏幕刷新率为目标，
+        /// 避免移动端 targetFrameRate=-1 回落到平台默认帧率。</summary>
         private void ApplyFrameRate()
         {
             QualitySettings.vSyncCount = 0;
-#if UNITY_WEBGL && !UNITY_EDITOR
-            var device = WeChatWASM.WX.GetDeviceInfo();
-            var platform = device != null ? device.platform : null;
-            if (string.Equals(platform, "android", StringComparison.OrdinalIgnoreCase))
-            {
-                Application.targetFrameRate = 60;
-                WeChatWASM.WX.SetPreferredFramesPerSecond(60);
-            }
-            else
-            {
-                Application.targetFrameRate = -1;
-            }
+#if UNITY_ANDROID && !UNITY_EDITOR
+            Application.targetFrameRate = Mathf.Max(1, Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value));
 #else
             Application.targetFrameRate = -1;
 #endif

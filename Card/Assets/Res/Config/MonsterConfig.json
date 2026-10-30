@@ -34127,5 +34127,47 @@
     "BaseMap": "PurpleMonsterBaseFrame",
     "HealthBar": "PurpleMonsterBaseFrameBox",
     "MonsterEntry": []
+  },
+  {
+    "Id": 9001001,
+    "MonsterId": 9001,
+    "MonsterLevel": 1,
+    "MonsterHp": 1500,
+    "MonsterDamage": 110,
+    "Type": 1,
+    "Name": "荷官护卫",
+    "Desc": "赌场看场子的打手,赢他才有赏钱",
+    "Icon": "enemy4",
+    "BaseMap": "KhakiMonsterBaseFrame",
+    "HealthBar": "KhakiMonsterBaseFrameBox",
+    "MonsterEntry": []
+  },
+  {
+    "Id": 9002001,
+    "MonsterId": 9002,
+    "MonsterLevel": 1,
+    "MonsterHp": 3000,
+    "MonsterDamage": 190,
+    "Type": 3,
+    "Name": "荷官护卫·精英",
+    "Desc": "荷官的亲卫,出手又快又重",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": []
+  },
+  {
+    "Id": 9003001,
+    "MonsterId": 9003,
+    "MonsterLevel": 1,
+    "MonsterHp": 4500,
+    "MonsterDamage": 260,
+    "Type": 3,
+    "Name": "荷官护卫·首领",
+    "Desc": "赌场最深的底牌,砸场子前想清楚",
+    "Icon": "enemy5",
+    "BaseMap": "PurpleMonsterBaseFrame",
+    "HealthBar": "PurpleMonsterBaseFrameBox",
+    "MonsterEntry": []
   }
 ]

@@ -56,6 +56,8 @@ namespace App.UI
         private readonly OpeningCutscene _openingFx = new OpeningCutscene();
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private bool _openingPlaying;
+        private CanvasGroup _fightMask;
+        private bool _fightMaskConsumed;
         private int _openingForSerial = -1;
         private bool _waitHudForOpening;
         private Coroutine _hudOpeningUnlockCo;
@@ -175,6 +177,8 @@ namespace App.UI
         {
             BattleTrace.Log("GameUI.OnViewOpen begin");
             ViewModel?.ResetOpeningGate();
+            _fightMaskConsumed = false;
+            BindFightMask();
             // 不在此处 SetInBattleFit：选关还盖着时改 Camera 会把局外界面撑宽。等 OnPresented。
             PrepareHudEntrance();
             BattleTrace.Log($"GameUI.PrepareHudEntrance flies={_hudFlies.Count}");
@@ -322,6 +326,7 @@ namespace App.UI
 
         protected override Task OnViewClose()
         {
+            HideFightMask();
             SetInBattleFit(false);
             if (ViewModel != null)
             {
@@ -3171,12 +3176,14 @@ namespace App.UI
                 return;
             }
 
+            // 根节点用完全透明的 Image 接收点击，不显示额外色块。
             var image = target.GetComponent<Image>();
             if (image == null)
             {
                 image = target.AddComponent<Image>();
-                image.color = new Color(1f, 1f, 1f, 0.01f);
             }
+            image.color = Color.clear;
+            image.raycastTarget = true;
 
             var button = target.GetComponent<Button>();
             if (button == null)
@@ -3413,6 +3420,7 @@ namespace App.UI
             var hold = ViewModel.ShouldHoldDealVisual();
             if (!hold)
             {
+                HideFightMask();
                 BattleTrace.Log(
                     $"TryStartOpening skip hold=false deal={session?.DealSerial} " +
                     $"stageRound={session?.StageRoundIndex}");
@@ -3439,6 +3447,11 @@ namespace App.UI
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
+            if (!_fightMaskConsumed && !session.IsPvp && _fightMask != null)
+            {
+                _fightMask.alpha = 1f;
+                _fightMask.gameObject.SetActive(true);
+            }
             // 开场期间按技能会 Notify → RefreshPlayerItems。home 必须留着，否则会把已抬高的坐标再加一次偏移，对话跟着跳。
             var playerLayoutHome = _playerOpeningLayoutHome;
             _openingFx.Play(
@@ -3446,8 +3459,34 @@ namespace App.UI
                 _playerItem,
                 gameObject,
                 OnOpeningComplete,
-                playerLayoutHome);
+                playerLayoutHome,
+                !_fightMaskConsumed && !session.IsPvp ? _fightMask : null);
             ScheduleOpeningFallback(serial);
+        }
+
+        private void BindFightMask()
+        {
+            var node = ResolveSlot("fightMask");
+            _fightMask = node != null ? EnsureCanvasGroup(node.gameObject) : null;
+            if (_fightMask == null)
+            {
+                return;
+            }
+
+            var show = ViewModel != null && !ViewModel.Session.IsPvp && ViewModel.ShouldHoldDealVisual();
+            _fightMask.alpha = show ? 1f : 0f;
+            _fightMask.gameObject.SetActive(show);
+        }
+
+        private void HideFightMask()
+        {
+            if (_fightMask == null)
+            {
+                return;
+            }
+
+            _fightMask.alpha = 0f;
+            _fightMask.gameObject.SetActive(false);
         }
 
         private void ScheduleOpeningRetry()
@@ -3668,6 +3707,8 @@ namespace App.UI
 
         private void OnOpeningComplete()
         {
+            _fightMaskConsumed = true;
+            HideFightMask();
             BattleTrace.Log("OnOpeningComplete → CompleteOpening + SyncCards");
             StopOpeningRetry();
             StopOpeningFallback();

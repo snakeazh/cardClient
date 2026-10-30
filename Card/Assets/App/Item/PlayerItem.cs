@@ -66,12 +66,17 @@ namespace App.Game
         public const float AttackPopDuration = 0.4f;
         public const float AttackHideDuration = 0.2f;
         /// <summary>
-        /// 受击（命中瞬间扣血、<c>SetHp</c> 被调用的那一帧）后，白色残条先停在旧血量，
-        /// 等这么久再开始收。可调区间 0.2~0.5s，别超过 0.5s（会显得血条没反应）。
+        /// 红条 + 白条共用的兜底延迟（秒）：受击到血条开始动之间的等待。
+        /// 战斗界面会用伤害数字动画时长覆盖它（<see cref="SetHealthBarDelay"/>），让血条在飘字播完后再动；
+        /// 局外等没有飘字的场景用这个默认值。
         /// </summary>
-        public const float HealthBarWhiteDelay = 0.35f;
-        /// <summary>白色残条从旧血量的宽度收到新血量的时长（慢一点才看得清收缩过程）。</summary>
-        public const float HealthBarWhiteDuration = 0.8f;
+        public const float HealthBarDelay = 0.35f;
+        /// <summary>红色血条收到新血量的时长：短促但看得出过程（参考 LoL 的即时掉血）。</summary>
+        public const float HealthBarFillDuration = 0.15f;
+        /// <summary>白条比红条晚起跑这一小截，让"掉掉的那块"先整块露出来，再平滑消失。</summary>
+        public const float HealthBarWhiteLead = 0.08f;
+        /// <summary>白色残条从旧血量的宽度收到新血量的时长（快起慢收，别拖成第二条进度条）。</summary>
+        public const float HealthBarWhiteDuration = 0.5f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 
@@ -88,11 +93,15 @@ namespace App.Game
         private bool _attackStatHiding;
         private Vector3 _attackRestScale = Vector3.one * AttackStatLayoutScale;
         private Vector3 _enemyAttackRestScale = Vector3.one * AttackStatLayoutScale;
-        // 白条（healthbarWhite）的收拢 tween 与目标宽度；同一次掉血被反复刷新时不重启
+        // 红条（healthbar）/ 白条（healthbarWhite）各一条 tween 与目标宽度；同一次掉血被反复刷新时不重启。
+        // 时序：受击 → 延迟（飘字播完）→ 红条 HealthBarFillDuration 收 → 白条 HealthBarWhiteDuration 追上。
+        private Tween _healthBarFillTween;
+        private float _healthBarFillTarget;
         private Tween _healthBarWhiteTween;
         private float _healthBarWhiteTarget;
-        // 首次/重新启用后第一次写血量直接对齐白条，避免卡槽复用拖出上一任的残影
-        private bool _snapHealthBarWhite = true;
+        private float _healthBarDelay = HealthBarDelay;
+        // 首次/重新启用/换形态/补血后第一次写血量直接对齐两条，避免拖出上一任的残影
+        private bool _snapHealthBars = true;
         private GameObject _activeDialog;
         // card / enemycard 节点引用：显隐切换按节点做，不依赖节点上是否挂 Image
         // （预制体 card 节点只有 RectTransform+CanvasRenderer，按 Image 查找会漏）
@@ -452,9 +461,10 @@ namespace App.Game
 
             if (_visualReady && _enemyVisual != enemy)
             {
-                // 两套卡面的白条各管各的宽度，换形态后第一次写血量直接对齐，别跨形态拖影
+                // 两套卡面的血条各管各的宽度，换形态后第一次写血量直接对齐，别跨形态拖影
+                KillHealthBarFillTween();
                 KillHealthBarWhiteTween();
-                _snapHealthBarWhite = true;
+                _snapHealthBars = true;
             }
 
             _enemyVisual = enemy;
@@ -830,26 +840,15 @@ namespace App.Game
             }
 
             var bar = ActiveHealthBar;
-            if (bar != null)
+            if (_enemyVisual)
             {
-                // 满宽记在字段里；若曾被收成 0，禁止再用当前 sizeDelta（已是空条）当满宽。
-                if (_enemyVisual)
-                {
-                    EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
-                }
-                else
-                {
-                    EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
-                }
-
-                var full = ActiveHealthBarFullWidth;
-                var width = full * Mathf.Clamp01(fillRatio);
-                var size = bar.rectTransform.sizeDelta;
-                if (!Mathf.Approximately(size.x, width))
-                {
-                    size.x = width;
-                    bar.rectTransform.sizeDelta = size;
-                }
+                EnsureHealthBarSliced(bar, ref _enemyHealthBarFullWidth);
+                EnsureHealthBarSliced(enemyHealthBarWhite, ref _enemyHealthBarWhiteFullWidth);
+            }
+            else
+            {
+                EnsureHealthBarSliced(bar, ref _healthBarFullWidth);
+                EnsureHealthBarSliced(healthBarWhite, ref _healthBarWhiteFullWidth);
             }
 
             var bg = ActiveHeartBg;
@@ -865,38 +864,75 @@ namespace App.Game
                 label.gameObject.SetActive(visible);
             }
 
-            SetHealthBarWhiteFill(fillRatio, visible);
+            // 首次绑定/重新启用/形态切换/补血/整块隐藏：两条直接对齐，不播动画
+            var snap = _snapHealthBars;
+            _snapHealthBars = false;
+            SetHealthBarFill(fillRatio, visible, snap);
+            SetHealthBarWhiteFill(fillRatio, visible, snap);
         }
 
         /// <summary>
-        /// 白条 <c>healthbarWhite</c> 叠在彩色条<b>下层</b>且与它同宽：掉血时彩色条立刻收窄，
-        /// 白条先停在旧血量，<see cref="HealthBarWhiteDelay"/> 后再用 <see cref="HealthBarWhiteDuration"/>
-        /// 缓动收到新血量，露出来的那一截白就是刚扣掉的血。
-        /// 补血 / 首次绑定 / 卡槽复用 / 整块隐藏时直接对齐，不拖影。
+        /// 红色血条：受击后先等 <c>_healthBarDelay</c>（战斗界面 = 伤害数字播完，局外 = <see cref="HealthBarDelay"/>），
+        /// 再用 <see cref="HealthBarFillDuration"/> 短促收到新血量。白条几乎同时起跑（只滞后
+        /// <see cref="HealthBarWhiteLead"/>），见 <see cref="SetHealthBarWhiteFill"/>。
         /// </summary>
-        private void SetHealthBarWhiteFill(float fillRatio, bool visible)
+        private void SetHealthBarFill(float fillRatio, bool visible, bool snapRequested)
         {
-            var white = ActiveHealthBarWhite;
-            if (white == null)
+            var bar = ActiveHealthBar;
+            var full = ActiveHealthBarFullWidth;
+            if (bar == null || full <= 0f)
             {
-                _snapHealthBarWhite = false;
-                return;
-            }
-
-            var full = ActiveHealthBarWhiteFullWidth;
-            if (full <= 0f)
-            {
-                _snapHealthBarWhite = false;
                 return;
             }
 
             var target = full * Mathf.Clamp01(fillRatio);
-            var size = white.rectTransform.sizeDelta;
-            var snap = _snapHealthBarWhite || !visible || target >= size.x - 0.01f;
-            _snapHealthBarWhite = false;
+            var snap = snapRequested || !visible || target >= bar.rectTransform.sizeDelta.x - 0.01f;
 
-            // 同一次掉血的重复刷新（Bind 每次 RefreshPlayerItems 都会走 SetHp）：让已在跑的白条继续，
-            // 否则每刷一次都重新等一次延迟，白条会一顿一顿地拖。
+            // 同一次掉血的重复刷新（Bind 每次 RefreshPlayerItems 都会走 SetHp）：让已在跑的红条继续，
+            // 否则每刷一次都要重新等一次延迟，血条会一顿一顿地跳。
+            if (!snap &&
+                _healthBarFillTween != null &&
+                _healthBarFillTween.IsActive() &&
+                Mathf.Approximately(_healthBarFillTarget, target))
+            {
+                return;
+            }
+
+            KillHealthBarFillTween();
+            if (snap)
+            {
+                SetBarWidth(bar, target);
+                return;
+            }
+
+            _healthBarFillTarget = target;
+            _healthBarFillTween = DOTween.To(
+                    () => bar.rectTransform.sizeDelta.x,
+                    value => SetBarWidth(bar, value),
+                    target,
+                    HealthBarFillDuration)
+                .SetDelay(_healthBarDelay)
+                .SetEase(Ease.OutQuad)
+                .SetLink(bar.gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        /// <summary>
+        /// 白条 <c>healthbarWhite</c> 叠在红条<b>下层</b>且与它同宽。掉血时红条短促收到新血量，
+        /// 白条只滞后 <see cref="HealthBarWhiteLead"/> 就用 <see cref="HealthBarWhiteDuration"/> 追上去——
+        /// 两者重叠着动，露出的白色那块 = 刚扣掉的血，随后被平滑吃掉（LoL 的血条手感）。
+        /// 补血 / 首次绑定 / 卡槽复用 / 整块隐藏时直接对齐，不拖影。
+        /// </summary>
+        private void SetHealthBarWhiteFill(float fillRatio, bool visible, bool snapRequested)
+        {
+            var white = ActiveHealthBarWhite;
+            var full = ActiveHealthBarWhiteFullWidth;
+            if (white == null || full <= 0f)
+            {
+                return;
+            }
+
+            var target = full * Mathf.Clamp01(fillRatio);
+            var snap = snapRequested || !visible || target >= white.rectTransform.sizeDelta.x - 0.01f;
             if (!snap &&
                 _healthBarWhiteTween != null &&
                 _healthBarWhiteTween.IsActive() &&
@@ -908,34 +944,49 @@ namespace App.Game
             KillHealthBarWhiteTween();
             if (snap)
             {
-                if (!Mathf.Approximately(size.x, target))
-                {
-                    size.x = target;
-                    white.rectTransform.sizeDelta = size;
-                }
-
+                SetBarWidth(white, target);
                 return;
             }
 
             _healthBarWhiteTarget = target;
             _healthBarWhiteTween = DOTween.To(
                     () => white.rectTransform.sizeDelta.x,
-                    value =>
-                    {
-                        if (white == null)
-                        {
-                            return;
-                        }
-
-                        var current = white.rectTransform.sizeDelta;
-                        current.x = value;
-                        white.rectTransform.sizeDelta = current;
-                    },
+                    value => SetBarWidth(white, value),
                     target,
                     HealthBarWhiteDuration)
-                .SetDelay(HealthBarWhiteDelay)
+                .SetDelay(_healthBarDelay + HealthBarWhiteLead)
                 .SetEase(Ease.OutQuad)
                 .SetLink(white.gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        private static void SetBarWidth(Image bar, float width)
+        {
+            if (bar == null)
+            {
+                return;
+            }
+
+            var size = bar.rectTransform.sizeDelta;
+            if (Mathf.Approximately(size.x, width))
+            {
+                return;
+            }
+
+            size.x = width;
+            bar.rectTransform.sizeDelta = size;
+        }
+
+        /// <summary>
+        /// 设定受击到血条开始动的延迟（秒），&lt;= 0 忽略。
+        /// 战斗界面按伤害数字动画时长传入（飘字播完再动条），局外不调即用 <see cref="HealthBarDelay"/>。
+        /// 只影响之后新起的血条 tween，已经在跑的保持原延迟。
+        /// </summary>
+        public void SetHealthBarDelay(float seconds)
+        {
+            if (seconds > 0f)
+            {
+                _healthBarDelay = seconds;
+            }
         }
 
         private void SetCardMaskVisible(bool visible)
@@ -954,13 +1005,14 @@ namespace App.Game
 
         private void OnEnable()
         {
-            // 卡槽复用/整块开关后重进：第一次写血量直接对齐白条，别把上一任的血量当成刚扣的
-            _snapHealthBarWhite = true;
+            // 卡槽复用/整块开关后重进：第一次写血量直接对齐两条，别把上一任的血量当成刚扣的
+            _snapHealthBars = true;
         }
 
         private void OnDestroy()
         {
             KillAttackPopTween();
+            KillHealthBarFillTween();
             KillHealthBarWhiteTween();
             HideDialogImmediate();
         }
@@ -1322,6 +1374,16 @@ namespace App.Game
 
             _attackPopTween = null;
             _attackStatHiding = false;
+        }
+
+        private void KillHealthBarFillTween()
+        {
+            if (_healthBarFillTween != null && _healthBarFillTween.IsActive())
+            {
+                _healthBarFillTween.Kill();
+            }
+
+            _healthBarFillTween = null;
         }
 
         private void KillHealthBarWhiteTween()

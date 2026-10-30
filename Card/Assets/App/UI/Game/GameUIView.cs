@@ -36,6 +36,8 @@ namespace App.UI
         private const float EnemySlideDuration = 0.3f;
         private const float HudFlyDuration = 0.4f;
         private const float HudFadeDuration = 0.25f;
+        /// <summary>伤害数字播完后再多等一小拍，血条（红条 + 白条）才开始动（别和飘字抢注意力）。</summary>
+        private const float HpTextBarGap = 0.06f;
 
         private GameObject _gameHud;
         private GameBoardController _board;
@@ -115,6 +117,8 @@ namespace App.UI
         private RectTransform _hpTextRt;
         private Vector2 _hpTextHome;
         private Animation _hpTextAnim;
+        /// <summary>伤害数字动画时长（秒）；血条白条等它播完再收。</summary>
+        private float _hpTextAnimLength;
         private RectTransform _critHpRt;
         private Transform _critNumShow;
         private Animation _critHpAnim;
@@ -657,6 +661,7 @@ namespace App.UI
 
             var animRoot = hpRoot.Find("ani_hptextdi") ?? FindDeep(hpRoot, "ani_hptextdi") ?? hpRoot;
             _hpTextAnim = animRoot.GetComponent<Animation>();
+            _hpTextAnimLength = ClipLength(_hpTextAnim);
 
             var hpNum = ResolveSlot("hptext") ?? hpRoot;
             var hpText = hpNum.GetComponent<TMP_Text>() ?? hpNum.GetComponentInChildren<TMP_Text>(true);
@@ -2326,6 +2331,36 @@ namespace App.UI
             StopHpTextAnim();
         }
 
+        /// <summary>
+        /// 血条延迟：跟着伤害数字动画时长走（飘字播完血条才动），没挂动画时用 PlayerItem 的默认值。
+        /// </summary>
+        private float HealthBarRevealDelay()
+        {
+            return _hpTextAnimLength > 0f
+                ? _hpTextAnimLength + HpTextBarGap
+                : PlayerItem.HealthBarDelay;
+        }
+
+        /// <summary>Animation 上所有 clip 的最长时长（没挂 Animation 或没有 clip 返回 0）。</summary>
+        private static float ClipLength(Animation anim)
+        {
+            if (anim == null)
+            {
+                return 0f;
+            }
+
+            var length = anim.clip != null ? anim.clip.length : 0f;
+            foreach (AnimationState state in anim)
+            {
+                if (state != null && state.clip != null && state.length > length)
+                {
+                    length = state.length;
+                }
+            }
+
+            return length;
+        }
+
         private void PlayHpTextAnim()
         {
             if (_hpTextAnim == null)
@@ -2719,6 +2754,8 @@ namespace App.UI
             }
 
             var session = ViewModel.Session;
+            // 血条（红条 + 白条）等伤害数字播完再动（延迟按 ani_hptextdi 的实际时长算）
+            var barDelay = HealthBarRevealDelay();
             if (_playerItem != null)
             {
                 if (session.Player != null && session.Player.Hp > 0)
@@ -2730,6 +2767,7 @@ namespace App.UI
                     }
                 }
 
+                _playerItem.SetHealthBarDelay(barDelay);
                 var playerAttack = AttackDisplay(_playerItem, session.Player.Attack);
                 _playerItem.Bind(
                     session.Player,
@@ -2772,6 +2810,7 @@ namespace App.UI
                     item.gameObject.SetActive(true);
                 }
 
+                item.SetHealthBarDelay(barDelay);
                 var enemyAttack = AttackDisplay(item, enemy.Attack);
                 item.Bind(
                     enemy,

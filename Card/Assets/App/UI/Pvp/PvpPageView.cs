@@ -20,6 +20,8 @@ namespace App.UI
         private const float FlyDuration = 0.5f;
 
         private Sequence _intro;
+        private CanvasGroup _presentGroup;
+        private Tween _presentTween;
         private readonly Dictionary<string, Vector2> _homes = new Dictionary<string, Vector2>();
         private readonly Dictionary<string, Sprite> _avatars = new Dictionary<string, Sprite>();
         private readonly List<Texture> _avatarTextures = new List<Texture>();
@@ -32,6 +34,7 @@ namespace App.UI
             ViewModel.PlaySuccessIntro = PlaySuccessIntroAsync;
             ViewModel.SeatsChanged += RefreshSeats;
             CacheHomes();
+            InitializeDefaultAvatars();
 
             Binding.BindText(GetNode<TMP_Text>("gradeValueNum"), ViewModel.GradeValueText);
             Binding.BindText(GetNode<TMP_Text>("SearchTime"), ViewModel.SearchTimeText);
@@ -53,8 +56,48 @@ namespace App.UI
             Binding.BindCommand(GetNode<Button>("CancelPvpBtn"), ViewModel.DeclineCommand);
         }
 
+        public override void OnPresented()
+        {
+            ResetPresentFade();
+            if (_presentGroup == null)
+            {
+                _presentGroup = GetComponent<CanvasGroup>();
+                if (_presentGroup == null)
+                {
+                    _presentGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            // 与主页一致，在页面真正露出后整体淡入。
+            _presentGroup.alpha = 0f;
+            _presentGroup.interactable = false;
+            _presentTween = _presentGroup.DOFade(1f, 0.18f)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .OnComplete(() => _presentGroup.interactable = true)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        protected override Task OnViewHide()
+        {
+            ResetPresentFade();
+            return base.OnViewHide();
+        }
+
+        private void ResetPresentFade()
+        {
+            _presentTween?.Kill();
+            _presentTween = null;
+            if (_presentGroup != null)
+            {
+                _presentGroup.alpha = 1f;
+                _presentGroup.interactable = true;
+            }
+        }
+
         protected override Task OnViewClose()
         {
+            ResetPresentFade();
             if (ViewModel != null)
             {
                 ViewModel.PlaySuccessIntro = null;
@@ -164,6 +207,7 @@ namespace App.UI
 
             if (!revealed)
             {
+                _iconUrl.Remove(icon);
                 icon.enabled = false;
                 return;
             }
@@ -174,25 +218,49 @@ namespace App.UI
 
         private void LoadAvatar(Image icon, string url)
         {
-            if (string.IsNullOrEmpty(url))
+            if (!string.IsNullOrWhiteSpace(url) &&
+                _iconUrl.TryGetValue(icon, out var current) && current == url)
             {
-                icon.sprite = null;
+                icon.enabled = icon.sprite != null;
                 return;
             }
 
-            if (_iconUrl.TryGetValue(icon, out var current) && current == url && icon.sprite != null)
-            {
-                return;
-            }
-
+            // 无头像、下载中或下载失败时均保留怪物头像，避免空 Sprite 显示成白块。
+            icon.sprite = PortraitLoader.GetPvpHead(true, null);
+            icon.enabled = icon.sprite != null;
             _iconUrl[icon] = url;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return;
+            }
+
             if (_avatars.TryGetValue(url, out var cached))
             {
                 icon.sprite = cached;
+                icon.enabled = true;
                 return;
             }
 
             _ = LoadAvatarAsync(icon, url);
+        }
+
+        private void InitializeDefaultAvatars()
+        {
+            var nodes = GetComponentsInChildren<RectTransform>(true);
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].name != "roleIcon")
+                {
+                    continue;
+                }
+
+                var iconNode = FindChild(nodes[i], "icon");
+                var icon = iconNode != null ? iconNode.GetComponent<Image>() : null;
+                if (icon != null)
+                {
+                    LoadAvatar(icon, string.Empty);
+                }
+            }
         }
 
         private async Task LoadAvatarAsync(Image icon, string url)
@@ -230,6 +298,7 @@ namespace App.UI
                     _avatarTextures.Add(texture);
                     _avatars[url] = sprite;
                     icon.sprite = sprite;
+                    icon.enabled = true;
                 }
             }
             catch (System.Exception)

@@ -78,7 +78,7 @@
 `healthbarWhite` 与 `healthbar` 同尺寸、同左 pivot，且在层级里排在 `healthbar` **前面**（下层）。所以掉血时：
 
 1. 彩色条 `healthbar` **立刻**收到新宽度（打击反馈要跟手）；
-2. 白条先停在旧血量，停 `PlayerItem.HealthBarWhiteDelay`（0.22s）后，用 `PlayerItem.HealthBarWhiteDuration`（0.5s，`Ease.OutQuad`）收到新宽度；
+2. 白条先停在旧血量，**受击（命中瞬间扣血、`SetHp` 被调用的那一帧）后**等 `PlayerItem.HealthBarWhiteDelay`（0.35s，可调区间 0.2~0.5s）再开始，用 `PlayerItem.HealthBarWhiteDuration`（0.8s，`Ease.OutQuad`）收到新宽度；
 3. 彩色条已收窄、白条还停在旧值，两截之间露出的白色 = 刚扣掉的血，随后被收掉。
 
 下面这些情况**直接对齐、不拖影**，避免看起来像掉血：

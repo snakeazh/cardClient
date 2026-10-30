@@ -65,10 +65,13 @@ namespace App.Game
         /// <summary>伤害结算时 attack / enemycardattack 果冻弹出时长。</summary>
         public const float AttackPopDuration = 0.4f;
         public const float AttackHideDuration = 0.2f;
-        /// <summary>掉血后白色残条（healthbarWhite）先停在旧血量，等这么久再开始收。</summary>
-        public const float HealthBarWhiteDelay = 0.22f;
-        /// <summary>白色残条从旧血量的宽度收到新血量的时长。</summary>
-        public const float HealthBarWhiteDuration = 0.5f;
+        /// <summary>
+        /// 受击（命中瞬间扣血、<c>SetHp</c> 被调用的那一帧）后，白色残条先停在旧血量，
+        /// 等这么久再开始收。可调区间 0.2~0.5s，别超过 0.5s（会显得血条没反应）。
+        /// </summary>
+        public const float HealthBarWhiteDelay = 0.35f;
+        /// <summary>白色残条从旧血量的宽度收到新血量的时长（慢一点才看得清收缩过程）。</summary>
+        public const float HealthBarWhiteDuration = 0.8f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 

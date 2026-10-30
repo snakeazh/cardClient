@@ -67,16 +67,15 @@ namespace App.Game
         public const float AttackHideDuration = 0.2f;
         /// <summary>
         /// 红条 + 白条共用的兜底延迟（秒）：受击到血条开始动之间的等待。
-        /// 战斗界面会用伤害数字动画时长覆盖它（<see cref="SetHealthBarDelay"/>），让血条在飘字播完后再动；
-        /// 局外等没有飘字的场景用这个默认值。
+        /// Dota 2 手感是"命中即掉"，所以只有 0.06s；战斗界面的实际值见 <c>GameUIView.HealthBarRevealDelay</c>。
         /// </summary>
-        public const float HealthBarDelay = 0.35f;
-        /// <summary>红色血条收到新血量的时长：短促但看得出过程（参考 LoL 的即时掉血）。</summary>
-        public const float HealthBarFillDuration = 0.15f;
-        /// <summary>白条比红条晚起跑这一小截，让"掉掉的那块"先整块露出来，再平滑消失。</summary>
-        public const float HealthBarWhiteLead = 0.08f;
-        /// <summary>白色残条从旧血量的宽度收到新血量的时长（快起慢收，别拖成第二条进度条）。</summary>
-        public const float HealthBarWhiteDuration = 1.0f;
+        public const float HealthBarDelay = 0.06f;
+        /// <summary>红色血条收到新血量的时长：Dota 2 里几乎瞬落，这里留一点点缓动免得像丢帧。</summary>
+        public const float HealthBarFillDuration = 0.12f;
+        /// <summary>白条比红条晚起跑这一小截，让掉血那块先整块露出来，再平滑消失。</summary>
+        public const float HealthBarWhiteLead = 0.1f;
+        /// <summary>白色残条从旧血量的宽度收到新血量的时长（Dota 2 观感：快起慢收，0.3~0.4s）。</summary>
+        public const float HealthBarWhiteDuration = 0.45f;
         /// <summary>攻块布局默认缩放（与 PlayerItem 预制体 attack / enemycardattack 一致）。</summary>
         public const float AttackStatLayoutScale = 0.55f;
 
@@ -919,7 +918,7 @@ namespace App.Game
         /// <summary>
         /// 白条 <c>healthbarWhite</c> 叠在红条<b>下层</b>且与它同宽。掉血时红条短促收到新血量，
         /// 白条只滞后 <see cref="HealthBarWhiteLead"/> 就用 <see cref="HealthBarWhiteDuration"/> 追上去——
-        /// 两者重叠着动，露出的白色那块 = 刚扣掉的血，随后被平滑吃掉（LoL 的血条手感）。
+        /// 两者重叠着动，露出的白色那块 = 刚扣掉的血，随后被平滑吃掉（Dota 2 的血条手感）。
         /// 补血 / 首次绑定 / 卡槽复用 / 整块隐藏时直接对齐，不拖影。
         /// </summary>
         private void SetHealthBarWhiteFill(float fillRatio, bool visible, bool snapRequested)
@@ -955,7 +954,7 @@ namespace App.Game
                     target,
                     HealthBarWhiteDuration)
                 .SetDelay(_healthBarDelay + HealthBarWhiteLead)
-                .SetEase(Ease.OutQuad)
+                .SetEase(Ease.OutSine)
                 .SetLink(white.gameObject, LinkBehaviour.KillOnDestroy);
         }
 

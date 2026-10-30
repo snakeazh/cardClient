@@ -75,13 +75,15 @@
 
 ### 掉血动画（红条 + 白条）
 
-`healthbarWhite` 与 `healthbar` 同尺寸、同左 pivot，并且在层级里排在 `healthbar` **前面**（下层）。掉血时序（参考 LoL 的血条手感：掉血块先露面，再平滑消失，两条**重叠着动**，不是"红条停稳再收白条"）：
+`healthbarWhite` 与 `healthbar` 同尺寸、同左 pivot，并且在层级里排在 `healthbar` **前面**（下层）。掉血时序：**等飘字播完再掉** + Dota 2 的收缩曲线，两条**重叠着动**（不是"红条停稳再收白条"）：
 
-1. **先等**：受击后两条都**不动**，血条停在旧血量。局内由 `GameUIView` 按伤害数字动画 `ani_hptextdi` 的实际时长（约 1.33s）+ `HpTextBarGap`（0.06s）调 `SetHealthBarDelay`；局外没有飘字的场景用默认 `PlayerItem.HealthBarDelay`（0.35s）。
-2. **红条**：延迟到点后用 `PlayerItem.HealthBarFillDuration`（0.15s，`Ease.OutQuad`）短促收到新血量。
-3. **白条**：只滞后 `PlayerItem.HealthBarWhiteLead`（0.08s）就起跑，用 `PlayerItem.HealthBarWhiteDuration`（0.5s，`Ease.OutQuad`）追到同一宽度。红条先落定、白条还在往回缩，露出来的白色那块 = 刚扣掉的血，随后被吃掉。
+1. **先等**：`GameUIView.HealthBarRevealDelay()` 返回 `ani_hptextdi` 的实际时长（约 1.33s）+ `HpTextBarGap`（0.06s），期间两条都不动、血条停在旧血量；局外没有飘字时用 `PlayerItem.HealthBarDelay`（0.06s）。
+2. **红条**：`PlayerItem.HealthBarFillDuration`（0.12s，`Ease.OutQuad`）几乎瞬落地收到新血量。
+3. **白条**：只滞后 `PlayerItem.HealthBarWhiteLead`（0.06s）就起跑，用 `PlayerItem.HealthBarWhiteDuration`（0.35s，`Ease.OutSine`）追平。红条已落定、白条还在往回缩，露出来的白色那块 = 刚扣掉的血，随后被吃掉。
 
-两次动作是并行的：红条 0.15s 收完时白条才走了不到三成，所以掉血块几乎整块可见，接着快速收敛。一次完整掉血 ≈ 飘字 1.33s + 0.06s + 0.58s ≈ **2s**。
+一次完整掉血 ≈ 飘字 1.33s + 0.06s + **0.47s**（红条 + 白条）。
+
+> 想让血条**命中即掉**（纯 Dota 2 反馈），把 `GameUIView.WaitHpTextBeforeBar` 改成 `false`，延迟就只剩 0.06s，其余不用动。
 
 下面这些情况**两条直接对齐、不播动画**，避免看起来像掉血：
 
@@ -92,7 +94,7 @@
 
 同一次掉血会因 `RefreshPlayerItems → Bind → SetHp` 被反复刷新，两条只在目标宽度变化时才重启 tween，不会每帧重新等延迟。血条宽度只由 `SetHp` / `SetHpDisplay` 驱动，外部不要再改它们的 `sizeDelta`。
 
-连击时飘字会重播，血条的延迟也随之重置——表现上是**等最后一下飘字播完**才开始掉，和飘字节奏保持一致。想更接近 LoL 的"立刻反馈"，把 `GameUIView.HealthBarRevealDelay()` 里的飘字时长去掉、直接用 `HpTextBarGap` 即可。
+连击时飘字会重播，血条的 1.39s 延迟也随之重置——表现上是**等最后一下飘字播完**才开始掉；已经开始收的白条如果又挨一下，会从当前宽度按新目标重开（不会跳回旧值，也不会等前一段收完）。
 
 ---
 

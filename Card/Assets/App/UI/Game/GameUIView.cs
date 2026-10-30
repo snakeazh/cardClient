@@ -2332,10 +2332,20 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 血条延迟：跟着伤害数字动画时长走（飘字播完血条才动），没挂动画时用 PlayerItem 的默认值。
+        /// 血条延迟：
+        /// <c>true</c>（当前）= 等伤害数字动画播完再掉，血条滞后飘字一拍；
+        /// <c>false</c> = 命中即掉（Dota 2 手感，只等 <see cref="HpTextBarGap"/>）。
         /// </summary>
+        private const bool WaitHpTextBeforeBar = true;
+
+        /// <summary>血条开始动的延迟（秒），口径见 <see cref="WaitHpTextBeforeBar"/>。</summary>
         private float HealthBarRevealDelay()
         {
+            if (!WaitHpTextBeforeBar)
+            {
+                return HpTextBarGap;
+            }
+
             return _hpTextAnimLength > 0f
                 ? _hpTextAnimLength + HpTextBarGap
                 : PlayerItem.HealthBarDelay;

@@ -308,6 +308,10 @@ namespace App.Net
         public Task<PveRunResponse> RefreshShopAsync(string runId)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/shop/refresh", new PveShopActionRequest { RunId = runId });
 
+        /// <summary>PVE 消耗品已用掉：让服务端从局内 RelicIds 移除，避免下次快照把道具塞回背包。</summary>
+        public Task<PveRunResponse> ConsumePveRelicAsync(string runId, int relicId)
+            => SendAsync<PveRunResponse>("POST", "/v1/pve/run/consume-relic", new PveShopActionRequest { RunId = runId, RelicId = relicId });
+
         public Task<PveRunResponse> GrantRunGoldAsync(string runId, int amount, string reason)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/run/grant-gold", new PveRunGoldRequest
             {

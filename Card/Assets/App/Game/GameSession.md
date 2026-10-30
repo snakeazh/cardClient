@@ -99,6 +99,8 @@ StartNewRun / Continue
 - `EvaluateSeat` 在敌人未锁 3 张时会自己枚举不超过本关上限的最大牌型，透视文案仍准确。
 - 逻辑改完必须 `Notify()`（内部 `Changed`），否则牌桌和 HUD 不同步。
 - 商店商品是 `RelicConfig`；效果走 `RelicMechanics`，只读 `Run.RelicConfigIds`。见 [`RelicMechanics.md`](RelicMechanics.md)。
+- **消耗品用掉后要同步服务端**：服务端只认自己 `PveRun.RelicIds`，客户端 `ApplyConsumableUseCore` 本地移除后必须发 `POST /v1/pve/run/consume-relic`（`GameApiClient.ConsumePveRelicAsync`），否则下一次快照（刷新商店/进度）会用旧列表把用掉的道具又塞回背包、还能重复使用。同步走 `_consumableSync` 串行队列，刷新 / 买卖 / 进商店 / 进度上报前都 `await WaitConsumableSyncAsync()` 保序。PVP 消耗品经服务端 `battle(use)` 结算，不存在这个问题。
+- 商店池只排除**当前持有**的遗物（`CanAppearInShop` / 服务端 `PveShopRules.BuildPool`），所以消耗品用掉后可以再上架/再买；这是既有设计，不是「买了又出现」的 bug。
 - 天赋养成走 `ITalentService`；局内效果走 `TalentMechanics`（`Value × 等级`）。见 [`天赋模块使用文档.md`](../Talent/天赋模块使用文档.md)。
 - 打完该难度或阵亡走 [`BattleResultPopup.md`](../UI/Popup/BattleResultPopup.md)，不要在 HUD 上另做一套结算。
 - 牌堆抽牌走 `Deck.TryDraw`，空堆不会把桌上的牌再发出来。

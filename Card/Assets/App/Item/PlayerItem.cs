@@ -99,6 +99,10 @@ namespace App.Game
         private Tween _healthBarWhiteTween;
         private float _healthBarWhiteTarget;
         private float _healthBarDelay = HealthBarDelay;
+        // 血量数字滚动（card_attackHeart / enemycard_attackHeart）：_hpTextShown = 当前屏幕上的"当前血量"
+        private Tween _hpTextTween;
+        private int _hpTextShown = -1;
+        private int _hpTextTarget;
         // 首次/重新启用/换形态/补血后第一次写血量直接对齐两条，避免拖出上一任的残影
         private bool _snapHealthBars = true;
         private GameObject _activeDialog;
@@ -460,9 +464,10 @@ namespace App.Game
 
             if (_visualReady && _enemyVisual != enemy)
             {
-                // 两套卡面的血条各管各的宽度，换形态后第一次写血量直接对齐，别跨形态拖影
+                // 两套卡面的血条/文案各管各的宽度，换形态后第一次写血量直接对齐，别跨形态拖影
                 KillHealthBarFillTween();
                 KillHealthBarWhiteTween();
+                KillHpTextTween();
                 _snapHealthBars = true;
             }
 
@@ -748,7 +753,7 @@ namespace App.Game
             }
 
             var ratio = max > 0 ? Mathf.Clamp01((float)value / max) : 0f;
-            SetHpDisplay($"{value}/{max}", visible, ratio);
+            SetHpNumberDisplay(value, max, visible, ratio);
         }
 
         /// <summary>
@@ -826,18 +831,33 @@ namespace App.Game
             }
         }
 
+        /// <summary>
+        /// 血量整块，固定文案版本（"???"）：文案直接写、不滚动，下一次真实血量直接对齐。
+        /// </summary>
         private void SetHpDisplay(string text, bool visible, float fillRatio = 1f)
         {
-            var label = ActiveHeart;
-            if (label != null)
-            {
-                var value = text ?? string.Empty;
-                if (label.text != value)
-                {
-                    label.text = value;
-                }
-            }
+            var snap = _snapHealthBars;
+            _snapHealthBars = false;
+            KillHpTextTween();
+            _hpTextShown = -1;
+            SetHpLabelText(text);
+            SetHpBars(visible, fillRatio, snap);
+        }
 
+        /// <summary>
+        /// 血量整块，数值版本：文案 <c>当前/上限</c>，数字从当前显示值滚到新值，
+        /// 与红条同一延迟起步、跟着白条收完（见 <see cref="AnimateHpText"/>）。
+        /// </summary>
+        private void SetHpNumberDisplay(int cur, int max, bool visible, float fillRatio)
+        {
+            var snap = _snapHealthBars;
+            _snapHealthBars = false;
+            SetHpBars(visible, fillRatio, snap);
+            AnimateHpText(cur, max, snap || !visible);
+        }
+
+        private void SetHpBars(bool visible, float fillRatio, bool snap)
+        {
             var bar = ActiveHealthBar;
             if (_enemyVisual)
             {
@@ -858,16 +878,77 @@ namespace App.Game
                     bg.gameObject.SetActive(visible);
                 }
             }
-            else if (label != null && label.gameObject.activeSelf != visible)
+            else
             {
-                label.gameObject.SetActive(visible);
+                var label = ActiveHeart;
+                if (label != null && label.gameObject.activeSelf != visible)
+                {
+                    label.gameObject.SetActive(visible);
+                }
             }
 
-            // 首次绑定/重新启用/形态切换/补血/整块隐藏：两条直接对齐，不播动画
-            var snap = _snapHealthBars;
-            _snapHealthBars = false;
             SetHealthBarFill(fillRatio, visible, snap);
             SetHealthBarWhiteFill(fillRatio, visible, snap);
+        }
+
+        /// <summary>
+        /// 血量数字滚动：从当前显示值收到 <paramref name="cur"/>，延迟与红条一致（<c>_healthBarDelay</c>），
+        /// 时长 = 白条领先 + 白条时长，收尾正好和白条一起结束。
+        /// 补血 / 首次绑定 / 卡槽复用 / 换形态 / 整块隐藏时直接对齐，不滚动。
+        /// </summary>
+        private void AnimateHpText(int cur, int max, bool snap)
+        {
+            var label = ActiveHeart;
+            if (label == null)
+            {
+                return;
+            }
+
+            var target = Mathf.Max(0, cur);
+            var maxValue = Mathf.Max(target, max);
+            if (snap || _hpTextShown < 0 || target >= _hpTextShown)
+            {
+                KillHpTextTween();
+                _hpTextShown = target;
+                SetHpLabelText($"{target}/{maxValue}");
+                return;
+            }
+
+            // 同一次掉血被反复刷新（RefreshPlayerItems → Bind → SetHp）：已在滚的别再重开
+            if (_hpTextTween != null && _hpTextTween.IsActive() && _hpTextTarget == target)
+            {
+                return;
+            }
+
+            KillHpTextTween();
+            _hpTextTarget = target;
+            _hpTextTween = DOTween.To(
+                    () => _hpTextShown,
+                    value =>
+                    {
+                        _hpTextShown = Mathf.RoundToInt(value);
+                        SetHpLabelText($"{_hpTextShown}/{maxValue}");
+                    },
+                    target,
+                    HealthBarWhiteLead + HealthBarWhiteDuration)
+                .SetDelay(_healthBarDelay)
+                .SetEase(Ease.OutQuad)
+                .SetLink(label.gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        private void SetHpLabelText(string text)
+        {
+            var label = ActiveHeart;
+            if (label == null)
+            {
+                return;
+            }
+
+            var value = text ?? string.Empty;
+            if (label.text != value)
+            {
+                label.text = value;
+            }
         }
 
         /// <summary>
@@ -1013,6 +1094,7 @@ namespace App.Game
             KillAttackPopTween();
             KillHealthBarFillTween();
             KillHealthBarWhiteTween();
+            KillHpTextTween();
             HideDialogImmediate();
         }
 
@@ -1383,6 +1465,16 @@ namespace App.Game
             }
 
             _healthBarFillTween = null;
+        }
+
+        private void KillHpTextTween()
+        {
+            if (_hpTextTween != null && _hpTextTween.IsActive())
+            {
+                _hpTextTween.Kill();
+            }
+
+            _hpTextTween = null;
         }
 
         private void KillHealthBarWhiteTween()

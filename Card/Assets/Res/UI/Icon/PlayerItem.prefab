@@ -75,6 +75,7 @@ MonoBehaviour:
   attackBg: {fileID: 7173772964839206773}
   heartBg: {fileID: 5362218566158609058}
   healthBar: {fileID: 0}
+  healthBarWhite: {fileID: 0}
   enemyCardName: {fileID: 0}
   enemyCardIcon: {fileID: 0}
   enemyCardBg: {fileID: 0}
@@ -85,6 +86,7 @@ MonoBehaviour:
   enemyAttackBg: {fileID: 0}
   enemyHeartBg: {fileID: 0}
   enemyHealthBar: {fileID: 0}
+  enemyHealthBarWhite: {fileID: 0}
   playerRoot: {fileID: 0}
   playerAnimator: {fileID: 0}
   topDialog: {fileID: 0}
@@ -1963,7 +1965,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 304}
+  m_AnchoredPosition: {x: 0, y: 265}
   m_SizeDelta: {x: 522, y: 200.04001}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1655959065095008333
@@ -2367,7 +2369,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: -190, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -348}
+  m_AnchoredPosition: {x: 0, y: -309}
   m_SizeDelta: {x: 522, y: 255.32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1880131670979897987

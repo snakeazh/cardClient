@@ -23,6 +23,8 @@ public static class PveEndpoints
             => Results.Json(await pve.SellShopRelicAsync(http.RequireUserId(), request.RunId, request.RelicId, ct)));
         v1.MapPost("/pve/shop/refresh", async (HttpContext http, PveShopActionRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.RefreshShopAsync(http.RequireUserId(), request.RunId, ct)));
+        v1.MapPost("/pve/run/consume-relic", async (HttpContext http, PveShopActionRequest request, PveRunService pve, CancellationToken ct)
+            => Results.Json(await pve.ConsumeRelicAsync(http.RequireUserId(), request.RunId, request.RelicId, ct)));
         v1.MapPost("/pve/run/grant-gold", async (HttpContext http, PveRunGoldRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.GrantRunGoldAsync(http.RequireUserId(), request.RunId, request.Amount, ct)));
         v1.MapPost("/pve/run/spend", async (HttpContext http, PveRunSpendRequest request, PveRunService pve, CancellationToken ct)

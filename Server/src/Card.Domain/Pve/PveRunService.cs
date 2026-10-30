@@ -275,6 +275,22 @@ public sealed class PveRunService
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
     }
 
+    /// <summary>
+    /// PVE 消耗品使用后从局内遗物列表移除。客户端把「已消耗」同步过来，避免下一次快照（刷新商店/进度）
+    /// 用旧 RelicIds 把用掉的道具又塞回背包、还能重复使用。幂等：未拥有时直接返回当前局。
+    /// </summary>
+    public async Task<PveRunResponse> ConsumeRelicAsync(Guid userId, string runIdText, int relicId, CancellationToken cancellationToken)
+    {
+        await using var gate = await _session.AcquireAsync(userId, cancellationToken);
+        var run = await RequireActiveRun(userId, runIdText, cancellationToken);
+        if (relicId > 0 && run.RelicIds.Remove(relicId))
+        {
+            await _runs.SaveAsync(run, cancellationToken);
+        }
+
+        return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
+    }
+
     public async Task<PveRunResponse> EnterShopAsync(Guid userId, string runIdText, int freeShopRefreshLeft, CancellationToken cancellationToken)
     {
         await using var gate = await _session.AcquireAsync(userId, cancellationToken);

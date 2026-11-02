@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace App.Guide
 {
     /// <summary>
-    /// 引导层：代码生成蒙版挖孔；中间提示窗用预制体上的 ChatBaseFrame（宽 945、最小高 406）。
+    /// 引导层：代码生成蒙版挖孔；中间提示窗用预制体上的 ChatBaseFrame（宽度跟屏幕走、左右各留 70，最小高 406）。
     /// </summary>
     [AutoScreen(AppScreenIds.GuideOverlay, UILayer.Guide, ResResourcePaths.GuideOverlay)]
     public sealed class GuideOverlayView : ViewBase<GuideOverlayViewModel>
@@ -25,7 +25,10 @@ namespace App.Guide
         /// <summary>横排技能栏挖孔：水平多扩一点，盖住三按钮间距。</summary>
         private const float SkillBarHoleExpandX = 24f;
         private const float SkillBarHoleExpandY = 12f;
-        private const float ChatWidth = 945f;
+        /// <summary>对话框左右留白（每边）：宽度 = 根节点宽 - 2×留白，跟着屏幕走，不写死 945。</summary>
+        private const float ChatSideMargin = 70f;
+        /// <summary>兜底宽度：根节点还没布局出尺寸时按 1080 设计宽算（1080 - 2×70）。</summary>
+        private const float ChatFallbackWidth = 940f;
         private const float ChatMinHeight = 406f;
         /// <summary>提示框与挖孔边缘的间距。</summary>
         private const float ChatHoleGap = 24f;
@@ -185,6 +188,7 @@ namespace App.Guide
                 return;
             }
 
+            var width = ChatFrameWidth();
             var height = ChatMinHeight;
             if (_tipText != null)
             {
@@ -195,10 +199,10 @@ namespace App.Guide
 
             _chatFrame.anchorMin = _chatFrame.anchorMax = new Vector2(0.5f, 0.5f);
             _chatFrame.pivot = new Vector2(0.5f, 0.5f);
-            _chatFrame.sizeDelta = new Vector2(ChatWidth, height);
+            _chatFrame.sizeDelta = new Vector2(width, height);
 
             var r = _root.rect;
-            var halfW = ChatWidth * 0.5f;
+            var halfW = width * 0.5f;
             var halfH = height * 0.5f;
             const float edgePad = 16f;
             float x;
@@ -264,6 +268,15 @@ namespace App.Guide
 
             _chatFrame.anchoredPosition = new Vector2(x, y);
             _chatFrame.SetAsLastSibling();
+        }
+
+        /// <summary>对话框宽度：跟根节点（屏幕可用区）走，左右各留 <see cref="ChatSideMargin"/>。</summary>
+        private float ChatFrameWidth()
+        {
+            var screenWidth = _root != null ? _root.rect.width : 0f;
+            return screenWidth > 1f
+                ? Mathf.Max(0f, screenWidth - ChatSideMargin * 2f)
+                : ChatFallbackWidth;
         }
 
         private static bool IsShopGuideTarget(string targetId)
@@ -418,7 +431,7 @@ namespace App.Guide
                 }
             }
 
-            _chatFrame.sizeDelta = new Vector2(ChatWidth, ChatMinHeight);
+            _chatFrame.sizeDelta = new Vector2(ChatFrameWidth(), ChatMinHeight);
             _chatFrame.anchoredPosition = Vector2.zero;
             _chatFrame.gameObject.SetActive(false);
 

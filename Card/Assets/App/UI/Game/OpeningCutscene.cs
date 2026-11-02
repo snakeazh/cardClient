@@ -75,7 +75,8 @@ namespace App.UI
             PlayerItem player,
             GameObject link,
             Action onComplete,
-            Vector2? playerLayoutHome = null)
+            Vector2? playerLayoutHome = null,
+            CanvasGroup fightMask = null)
         {
             Kill();
             _player = player;
@@ -103,7 +104,7 @@ namespace App.UI
             }
 
             AppendVsExit(seq);
-            AppendPoseOut(seq);
+            AppendPoseOut(seq, fightMask);
 
             seq.OnComplete(() =>
             {
@@ -243,15 +244,21 @@ namespace App.UI
             return item != null ? item.transform as RectTransform : null;
         }
 
-        private void AppendPoseOut(Sequence seq)
+        private void AppendPoseOut(Sequence seq, CanvasGroup fightMask)
         {
-            if (_poseRects.Count == 0)
+            if (_poseRects.Count == 0 && fightMask == null)
             {
                 return;
             }
 
+            var poseOutAt = seq.Duration();
             seq.AppendCallback(ApplyPoseOut);
             seq.AppendInterval(PoseOutDuration);
+            if (fightMask != null)
+            {
+                // 与双方人物回位同一拍开始，抵达原位时遮罩完全消失。
+                seq.Insert(poseOutAt, fightMask.DOFade(0f, PoseOutDuration).SetEase(Ease.OutCubic));
+            }
         }
 
         private void ApplyPoseIn()

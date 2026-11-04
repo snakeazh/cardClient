@@ -476,6 +476,7 @@ namespace App.UI
             RefreshEquips();
             RefreshRoundBuffs();
             RefreshPvpSide();
+            RefreshWinTipIfOpen();
             ApplySkillLockVisual();
             TryStartOpening();
             TryPlayHolyLight();
@@ -1034,9 +1035,19 @@ namespace App.UI
                 relicPartsSum += _relicBonuses[i].MultiplierAdd;
             }
 
+            // 牌型永久加成算「牌型自身倍率」，面板平时就显示它（见 GameTableViewModel.RefreshCardInfo）。
+            // 结算演出也从同一个值起跳，否则开战瞬间数字会从「基础+永久」掉回「基础」再慢慢加。
+            // 天使（ProOfUpCardType）把这笔加成记在自己的词条里，再并进起点会翻倍，那种情况维持原样。
+            var run = session.Run;
+            var magSeed = 0f;
+            if (run != null && !RelicMechanics.HasMechanism(run, MechanismType.ProOfUpCardType))
+            {
+                magSeed = run.HandTypeMagBonus(score.Type);
+            }
+
             // SumMultiplierExtra 含卖掉后仍生效的永久倍率（牌型/练习卷/老牌等），装备列表收不到。
-            var orphanExtra = extra - relicPartsSum;
-            var mag = GameSession.HandTypeMagnification(score.Type);
+            var orphanExtra = extra - relicPartsSum - magSeed;
+            var mag = GameSession.HandTypeMagnification(score.Type) + magSeed;
             var attackValue = Math.Max(0, baseAttack);
             CollectCardBeats(session, score, flint, ref mag, ref attackValue);
 
@@ -4239,6 +4250,18 @@ namespace App.UI
             }
         }
 
+        /// <summary>
+        /// 规则表的倍率是「基础 + Run.HandTypeMagBonus」，消耗品提升牌型倍率后会变。
+        /// 规则表开着时随对局数据刷新，避免玩家看到使用前的旧值；没开就等下次 ShowWinTip 现填。
+        /// </summary>
+        private void RefreshWinTipIfOpen()
+        {
+            if (_shownWinTip && _winTip != null && _winTip.activeSelf)
+            {
+                FillWinTipRows();
+            }
+        }
+
         private void FillWinTipRows()
         {
             if (_winTip == null || _winTipTemplate == null || ViewModel == null)
@@ -4343,12 +4366,8 @@ namespace App.UI
                 anim.enabled = false;
             }
 
-            var mag = HandEvaluator.TypeMultiplier(type);
             var run = ViewModel.Session != null ? ViewModel.Session.Run : null;
-            if (run != null)
-            {
-                mag += run.HandTypeMagBonus(type);
-            }
+            var mag = HandTypeMagDelta.DisplayMagnification(run, type);
 
             CardTypeValueSprites.Prepare(num);
             CardTypeValueSprites.Apply(ViewModel.Atlas, num, GameTableViewModel.FormatMultiplier(mag));
@@ -5433,40 +5452,7 @@ namespace App.UI
 
         private static void ApplyCardInfoFx(GameObject root, int level)
         {
-            if (root == null)
-            {
-                return;
-            }
-
-            var flow = root.GetComponent<UiFlowLight>();
-            if (flow != null)
-            {
-                if (level > 3)
-                {
-                    flow.Play();
-                }
-                else
-                {
-                    flow.Stop();
-                }
-            }
-
-            SetChildActive(root.transform, "PokerHandStraightFlush01", level == 5);
-            SetChildActive(root.transform, "PokerHandBomb01", level == 6);
-        }
-
-        private static void SetChildActive(Transform root, string name, bool active)
-        {
-            var child = root.Find(name);
-            if (child == null)
-            {
-                child = FindDeep(root, name);
-            }
-
-            if (child != null)
-            {
-                child.gameObject.SetActive(active);
-            }
+            CardInfoFx.Apply(root, level);
         }
 
         private static TMP_Text FindUiText(Transform root, string name)

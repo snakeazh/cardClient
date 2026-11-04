@@ -61,15 +61,15 @@ GameUI
 
 | 节点 | 用途 |
 |------|------|
-| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType`。按 `HandScoreConfig.Level` 开特效：>3 启动 `UiFlowLight`；5 显示 `PokerHandStraightFlush01`；6 显示 `PokerHandBomb01`；其余不扫光、不播粒子 |
-| `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup` |
+| `cardinfoItem` | 玩家牌型图标，读 `Altas/CardType`。按 `HandScoreConfig.Level` 开特效：>3 启动 `UiFlowLight`；5 显示 `PokerHandStraightFlush01`；6 显示 `PokerHandBomb01`；其余不扫光、不播粒子。判定已抽到 [`CardInfoFx`](../Effects/CardInfoFx.cs)，商店的牌型倍率提升提示共用同一份 |
+| `cardtypeNum` | 玩家倍率数字，读 `Altas/cardTypeValue`。预制体自挂 `HorizontalLayoutGroup`。显示「牌型基础倍率 + 本局永久加成」（与 `ruleBtn` 规则表同口径），结算跳动播完才换成含圣物/天赋/燧石的实际倍率 |
 | `cardinfoEnemyItem` | 敌人牌型图标，同样读 `Altas/CardType`，特效规则与 `cardinfoItem` 相同 |
 | `cardinfoEnemyNum` | 敌人倍率数字，同样读 `Altas/cardTypeValue`。绑定优先 `cardinfoEnemyNum`，兼容 `cardtypeEnemyNum` |
 | `beilvInfo` | 结算逐步飘字。`beilvIcon` 显示圣物图标；攻击加成显示 `attackNum`「攻击+xx」；倍率加成在 `beilvNum` 用与 `cardtypeNum` 相同的图集（`×` + 数字）。整组上浮并播 `NumberShack`，加攻击与加倍率各播一次 |
 
 `horEquipBtns2` 里的 `yiwuBtn` 打开 [`RemainListPop`](../Popup/RemainListPopView.cs)：列出本局已持有遗物，空列表显示 `nohave`。点击弹窗内卡片弹出 `ItemTip`（`title` 为遗物名，`tipContext` 为描述），可消耗遗物可在 tip 上使用。HUD 上不再排 `equip1`～`equip3`。结算圣物加成由 `beilvInfo` 逐步飘字；没有槽位 Animator 时只改数字与飘字。
 
-`ruleBtn` 一直显示。点击在按钮左侧弹出 `WinTip`：按 `HandScoreConfig` 从高到低克隆一行牌型图标 + 倍率（`BasicMagnification`，再加本局 `HandTypeMagBonus`）。关闭逻辑与 `ItemTip` 相同：全屏透明 Catcher，点空白关闭；再点 `ruleBtn` 也关闭。
+`ruleBtn` 一直显示。点击在按钮左侧弹出 `WinTip`：按 `HandScoreConfig` 从高到低克隆一行牌型图标 + 倍率（`BasicMagnification`，再加本局 `HandTypeMagBonus`）。关闭逻辑与 `ItemTip` 相同：全屏透明 Catcher，点空白关闭；再点 `ruleBtn` 也关闭。倍率含消耗品带来的永久加成，商店用了「XX 心得」之后再点 `ruleBtn` 会看到提升后的值；开着时也随 `Session.Changed` 刷新。
 
 **不要再创建或绑定 `duelHint`。** 中间提示条已去掉。  
 **不要再创建或绑定 `arrow`。** 当前行动对象指示已去掉。

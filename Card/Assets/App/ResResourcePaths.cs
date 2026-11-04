@@ -67,6 +67,8 @@ namespace App.Resources
         public const string ShopItem = "UI/Icon/ShopItem";
         public const string Item = "UI/Icon/Item";
         public const string CoinItem = "UI/Icon/coinitem";
+        /// <summary>牌型图标 Assets/Res/UI/Icon/cardinfoItem.prefab（自带弹跳 Animator、扫光与牌型粒子）。</summary>
+        public const string CardInfoItem = "UI/Icon/cardinfoItem";
         /// <summary>旧主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
         public const string Bgm = "Audio/BGM/BGM";
         /// <summary>大厅 BGM Assets/Res/Audio/BGM/BGM_Lobby_Loop.wav。</summary>

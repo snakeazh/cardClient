@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using App.Atlas;
 using App.Bootstrap;
+using App.Game;
 using App.Guide;
 using App.Item;
 using App.Resources;
@@ -31,6 +34,10 @@ namespace App.UI.Popup
         private Button _sellBtn;
         private Button _useBtn;
         private GameObject _coinPrefab;
+        private GameObject _cardInfoPrefab;
+        /// <summary>使用消耗品前的牌型永久倍率快照，用于求差找「这次提升了哪几种牌型」。</summary>
+        private readonly float[] _magBefore = new float[HandTypeMagDelta.HandTypeCount];
+        private readonly List<HandTypeMagRaise> _magRaises = new List<HandTypeMagRaise>(HandTypeMagDelta.HandTypeCount);
         private Sequence _itemSeq;
         private CanvasGroup _overlayGroup;
         private int _playToken;
@@ -74,6 +81,7 @@ namespace App.UI.Popup
                 }
             }, emitCurrent: true));
             _ = EnsureCoinPrefab();
+            _ = EnsureCardInfoPrefab();
         }
 
         protected override Task OnViewClose()
@@ -261,6 +269,50 @@ namespace App.UI.Popup
             _coinPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CoinItem);
         }
 
+        /// <summary>牌型提升提示复用 cardinfoItem 预制体，进页就预载，避免点「使用」时还没加载好。</summary>
+        private async Task EnsureCardInfoPrefab()
+        {
+            if (_cardInfoPrefab != null || ViewModel?.Resources == null)
+            {
+                return;
+            }
+
+            if (ViewModel.Resources.TryGetCached<GameObject>(ResResourcePaths.CardInfoItem, out var cached) && cached != null)
+            {
+                _cardInfoPrefab = cached;
+                return;
+            }
+
+            _cardInfoPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.CardInfoItem);
+        }
+
+        /// <summary>使用消耗品前拍一次牌型永久倍率快照。</summary>
+        private void CaptureMagBefore()
+        {
+            HandTypeMagDelta.Capture(ViewModel?.Session?.Run, _magBefore);
+        }
+
+        /// <summary>
+        /// 对比快照，本次使用确实涨了牌型倍率才弹提示。
+        /// 参数全部在调用 <c>UseRelic</c> 之前取好：消耗品用掉后详情页会立刻关闭、<see cref="ViewBase{TVm}.ViewModel"/> 被置空，
+        /// 事后再读 ViewModel 就什么都拿不到了。
+        /// </summary>
+        private void PlayMagUpFxIfRaised(RectTransform parent, GameObject prefab, RunState run, IAtlasService atlas)
+        {
+            if (run == null || prefab == null || parent == null)
+            {
+                return;
+            }
+
+            HandTypeMagDelta.Diff(_magBefore, run, _magRaises);
+            if (_magRaises.Count == 0)
+            {
+                return;
+            }
+
+            HandTypeMagUpFx.Play(parent, prefab, run, _magRaises, atlas, Vector2.zero);
+        }
+
         private void OnBuyClicked()
         {
             BeginBuy(watchAd: false);
@@ -288,13 +340,20 @@ namespace App.UI.Popup
                 return;
             }
 
+            var parent = ResolveFxParent();
+            var prefab = _cardInfoPrefab;
+            var run = ViewModel.Session?.Run;
+            var atlas = ViewModel.Atlas;
+
             ViewModel.SetBusy(true);
+            CaptureMagBefore();
             if (!await ViewModel.TryBeginBuyAndUseAsync(watchAd))
             {
                 ViewModel.SetBusy(false);
                 return;
             }
 
+            PlayMagUpFxIfRaised(parent, prefab, run, atlas);
             _buyCompleted = true;
             ViewModel.CompleteBuy();
         }
@@ -306,7 +365,17 @@ namespace App.UI.Popup
                 return;
             }
 
+            // 详情页会在 UseRelic 后立刻关闭（ViewModel 被置空），父节点/预制体/图集都要先取好。
+            var parent = ResolveFxParent();
+            var prefab = _cardInfoPrefab;
+            var run = ViewModel.Session?.Run;
+            var atlas = ViewModel.Atlas;
+
+            CaptureMagBefore();
             ViewModel.TryUse();
+
+            // 使用失败（阶段不对、已不拥有等）时倍率没变，Diff 为空，不会误弹。
+            PlayMagUpFxIfRaised(parent, prefab, run, atlas);
         }
 
         private async void BeginBuy(bool watchAd)

@@ -1740,12 +1740,13 @@ namespace App.UI
             var showRankShift = IsHandSettling && _settledHandTypeRevealed;
             var score = Session.EvaluateSeat(Session.Player, showRankShift);
             ApplyCardType(score.Type, CardTypeIcon, CardTypeLabel, null);
-            // 开战到结算跳动播完之前只显示当前展示牌型的基础倍率；播完后才显示含圣物结算加成的实际倍率。
+            // 牌型面板显示的“当前倍率”＝牌型自身倍率（基础 + 本局永久加成），与规则表 WinTip 同口径；
+            // 结算跳动播完后才换成含圣物/天赋/燧石的实际倍率。
             var showSettledMag = IsHandSettling && _settledCardTypeMagRevealed;
             var magScore = showSettledMag ? Session.EvaluateSeat(Session.Player, true) : score;
             CardTypeNum.Value = showSettledMag
                 ? FormatMultiplier(Session.ResolveAttackMagnification(Session.Player, magScore))
-                : FormatMultiplier(GameSession.HandTypeMagnification(score.Type));
+                : FormatMultiplier(HandTypeMagDelta.DisplayMagnification(Session.Run, score.Type));
             ShowCardInfo.Value = true;
         }
 
@@ -1823,31 +1824,9 @@ namespace App.UI
             return sprite;
         }
 
-        private static string IconSpriteName(HandType type)
-        {
-            switch (type)
-            {
-                case HandType.Pair: return "PairIcon";
-                case HandType.Straight: return "StraightIcon";
-                case HandType.Flush: return "SameSuitIcon";
-                case HandType.StraightFlush: return "FlushIcon";
-                case HandType.ThreeOfAKind: return "LeopardIcon";
-                default: return "HighCardIcon";
-            }
-        }
+        private static string IconSpriteName(HandType type) => CardTypeSpriteNames.Icon(type);
 
-        private static string LabelSpriteName(HandType type)
-        {
-            switch (type)
-            {
-                case HandType.Pair: return "Pair";
-                case HandType.Straight: return "Straight";
-                case HandType.Flush: return "SameSuit";
-                case HandType.StraightFlush: return "Flush";
-                case HandType.ThreeOfAKind: return "Leopard";
-                default: return "HighCard";
-            }
-        }
+        private static string LabelSpriteName(HandType type) => CardTypeSpriteNames.Label(type);
 
         public static string FormatMultiplier(float value)
         {

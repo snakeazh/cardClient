@@ -74,3 +74,17 @@
 点 `useBtn`：对已购消耗品调用 `UseRelic`，成功后关掉详情。
 
 购买不加飞币。飞入见 [`ItemFlyFx.md`](../Effects/ItemFlyFx.md)。
+
+---
+
+## 牌型倍率提升提示
+
+消耗品里有一类会永久提升指定牌型的倍率（`RelicEntryConfig` 的 `HandTypeMagUp` / `RandomHandTypeMagUp`，
+如对子心得、同花心得、顺子心得、时光宝盒）。点 `useBtn` 或 `buyUseBtn` 使用后弹提示：
+
+1. 使用前后各拍一次 `Run.HandTypeMagForever` 快照，求差得到「哪几种牌型涨了多少」。
+2. 每种牌型克隆一张 `cardinfoItem`（图标 + 提升后的倍率，含基础倍率与永久加成）挂到 `UILayer.TopMost` 居中。
+3. 播预制体自带的弹跳、扫光、牌型粒子，停留后淡出。
+
+细节见 [`HandTypeMagUpFx.md`](../Effects/HandTypeMagUpFx.md)。规则表 `WinTip` 里的倍率同口径，
+开着时会随对局数据刷新。

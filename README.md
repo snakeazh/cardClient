@@ -10,6 +10,7 @@ Unity 卡牌客户端。
 | [`Card/Assets/App/Level/关卡模块使用文档.md`](Card/Assets/App/Level/关卡模块使用文档.md) | 关卡查询、通关进度 |
 | [`Card/Assets/App/Score/积分与血量模块使用文档.md`](Card/Assets/App/Score/积分与血量模块使用文档.md) | 章节积分、玩家血量、金币换算 |
 | [`Card/Assets/App/Talent/天赋模块使用文档.md`](Card/Assets/App/Talent/天赋模块使用文档.md) | 天赋查询、每获得 1 次升 1 级 |
+| [`Card/Assets/App/Share/分享奖励模块使用文档.md`](Card/Assets/App/Share/分享奖励模块使用文档.md) | 小游戏分享（微信/抖音）、分享成功判定、永久搓牌 +1 |
 | 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡**、**积分**、**天赋** |
 | [`Card/Assets/App/UI/Popup/BattleResultPopup.md`](Card/Assets/App/UI/Popup/BattleResultPopup.md) | 闯关结算：成功/失败、局外货币 |
 | 本文 | **AppServicesHost**、**存档**、**背包**、**图集**、**关卡**、**积分** |

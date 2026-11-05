@@ -161,6 +161,9 @@ namespace CardShare.Contracts.Config
         /// </summary>
         public int DefaultSkillShuffleNum;
 
+        /// <summary>PVP 基础搓牌次数。</summary>
+        public int PVPDefaultSkillShuffleNum;
+
         /// <summary>
         /// 每关默认换牌使用次数
         /// </summary>

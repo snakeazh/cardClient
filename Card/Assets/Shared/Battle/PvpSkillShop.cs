@@ -33,7 +33,7 @@ namespace CardShare.Battle
         /// <summary>同一技能本局每多买一次，价格递增的金币。</summary>
         public const int StepGold = 20;
 
-        /// <summary>搓牌基础次数（未配置 GameConst.DefaultSkillShuffleNum 时）。</summary>
+        /// <summary>PVP 搓牌基础次数（未配置 GameConst.PVPDefaultSkillShuffleNum 时）。</summary>
         public const int RubBaseCount = 3;
 
         /// <summary>替换基础次数（未配置 GameConst.DefaultSkillReplaceNum 时）。</summary>
@@ -306,7 +306,7 @@ namespace CardShare.Battle
             switch (skillId)
             {
                 case PvpSkillIds.Rub:
-                    var rub = gameConst != null ? gameConst.DefaultSkillShuffleNum : 0;
+                    var rub = gameConst != null ? gameConst.PVPDefaultSkillShuffleNum : 0;
                     return rub > 0 ? rub : RubBaseCount;
                 case PvpSkillIds.Replace:
                     var replace = gameConst != null ? gameConst.DefaultSkillReplaceNum : 0;

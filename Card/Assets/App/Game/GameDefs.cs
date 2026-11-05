@@ -108,7 +108,7 @@ namespace App.Game
         public static int SkillRubUses =>
             GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
                 ? GameConst.Instance.DefaultSkillShuffleNum
-                : 3;
+                : 2;
         /// <summary>每关透视技能基础次数，读 GameConst.DefaultSkillPerspectiveNum。</summary>
         public static int SkillXRayUses =>
             GameConst.IsLoaded && GameConst.Instance.DefaultSkillPerspectiveNum >= 0

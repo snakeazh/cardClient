@@ -233,7 +233,7 @@ namespace App.UI
         public ObservableProperty<string> RaiseHighLabel { get; } = new ObservableProperty<string>("x4下注");
         public ObservableProperty<string> AllInLabel { get; } = new ObservableProperty<string>("全部下注");
         // 技能按钮文案只保留次数（技能名由按钮图标表达）。
-        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("(3/3)");
+        public ObservableProperty<string> PeekGoodLabel { get; } = new ObservableProperty<string>("(2/2)");
         public ObservableProperty<bool> PeekGoodArmed { get; } = new ObservableProperty<bool>(false);
         public ObservableProperty<string> ChaKanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");
         public ObservableProperty<string> TiHuanGoodLabel { get; } = new ObservableProperty<string>("(1/1)");

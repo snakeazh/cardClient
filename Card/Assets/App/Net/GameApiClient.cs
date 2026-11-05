@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using App.Ad;
@@ -221,7 +222,10 @@ namespace App.Net
         {
             var url = GameApiSettings.BaseUrl.TrimEnd('/') + "/v1/player/avatar";
             var form = new WWWForm();
-            form.AddBinaryData("file", data, string.IsNullOrEmpty(fileName) ? "avatar.png" : fileName);
+            var uploadName = string.IsNullOrEmpty(fileName) ? "avatar.png" : fileName;
+            form.AddBinaryData("file", data, uploadName);
+            NetLog.HttpRequest("POST", url, $"multipart file={uploadName} size={data?.Length ?? 0}B");
+            var watch = Stopwatch.StartNew();
             using (var request = UnityWebRequest.Post(url, form))
             {
                 if (!string.IsNullOrEmpty(_accessToken))
@@ -236,8 +240,11 @@ namespace App.Net
                     await Task.Yield();
                 }
 
+                watch.Stop();
                 var text = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
                 var status = (int)request.responseCode;
+                NetLog.HttpResponse("POST", url, status, watch.ElapsedMilliseconds, text,
+                    request.result == UnityWebRequest.Result.Success ? null : request.error);
                 if (request.result != UnityWebRequest.Result.Success)
                 {
                     if (request.result == UnityWebRequest.Result.ConnectionError)
@@ -402,13 +409,18 @@ namespace App.Net
         private async Task<ApiResult<T>> SendOnceAsync<T>(string method, string path, object body, bool auth)
         {
             var url = GameApiSettings.BaseUrl.TrimEnd('/') + path;
+            // 非 GET 的 body 先序列化：发出去之前就能打印接口和入参，失败时也能对上号
+            var payload = body != null && !string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
+                ? JsonConvert.SerializeObject(body, JsonSettings)
+                : null;
+            NetLog.HttpRequest(method, url, payload);
+            var watch = Stopwatch.StartNew();
             using (var request = new UnityWebRequest(url, method))
             {
                 request.downloadHandler = new DownloadHandlerBuffer();
-                if (body != null && !string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+                if (payload != null)
                 {
-                    var json = JsonConvert.SerializeObject(body, JsonSettings);
-                    request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+                    request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                     request.SetRequestHeader("Content-Type", "application/json; charset=utf-8");
                 }
 
@@ -424,8 +436,11 @@ namespace App.Net
                     await Task.Yield();
                 }
 
+                watch.Stop();
                 var text = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
                 var status = (int)request.responseCode;
+                NetLog.HttpResponse(method, url, status, watch.ElapsedMilliseconds, text,
+                    request.result == UnityWebRequest.Result.Success ? null : request.error);
                 if (request.result != UnityWebRequest.Result.Success)
                 {
                     if (request.result == UnityWebRequest.Result.ConnectionError ||

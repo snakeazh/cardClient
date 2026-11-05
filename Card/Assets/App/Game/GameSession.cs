@@ -3124,6 +3124,42 @@ namespace App.Game
             }
         }
 
+        public static int PveSkillPrice(int skillId) => skillId switch
+        {
+            PvpSkillIds.Rub => CardShare.Battle.PvpSkillShop.RubBaseGold,
+            PvpSkillIds.Replace => CardShare.Battle.PvpSkillShop.ReplaceBaseGold,
+            PvpSkillIds.Peek => CardShare.Battle.PvpSkillShop.PeekBaseGold,
+            _ => 0
+        };
+
+        public bool TryBuyPveSkill(int skillId)
+        {
+            var price = PveSkillPrice(skillId);
+            if (IsPvp || Phase != GamePhase.Shop ||
+                price <= 0 || !RelicMechanics.CanAfford(Run, price))
+            {
+                return false;
+            }
+
+            SpendGold(price);
+            // 商店购买只补充本局剩余次数，不提高技能上限。
+            switch (skillId)
+            {
+                case PvpSkillIds.Rub:
+                    Run.PeekGoodCharges++;
+                    break;
+                case PvpSkillIds.Replace:
+                    Run.TiHuanGoodCharges++;
+                    break;
+                case PvpSkillIds.Peek:
+                    Run.ChaKanGoodCharges++;
+                    break;
+            }
+
+            Notify();
+            return true;
+        }
+
         public bool CanRefreshShop =>
             IsPvp
                 ? Phase == GamePhase.Shop &&
@@ -5084,6 +5120,7 @@ namespace App.Game
         /// <summary>开新关：玩家满血读英雄表，通关进下一关时继承残血。怪物血量读关卡配置。按 <c>LevelEntryNum</c> 随机机制。</summary>
         private void StartStage(bool inheritPlayerHp)
         {
+            var firstStageOfRun = !_stageStarted;
             Run.AdsLoanThisStage = 0;
             Run.AdsReviveThisStage = 0;
             Run.AdsExtraRubThisStage = 0;
@@ -5153,7 +5190,10 @@ namespace App.Game
                 }
             }
 
-            ResetSkillCharges();
+            if (firstStageOfRun)
+            {
+                ResetSkillCharges();
+            }
             StartRound();
         }
 
@@ -5182,7 +5222,7 @@ namespace App.Game
             return string.Join("、", names);
         }
 
-        /// <summary>重置本手状态并发牌，然后直接看牌进入开牌阶段。技能次数按关卡保留，不在这里重置。</summary>
+        /// <summary>重置本手状态并发牌，然后直接看牌进入开牌阶段。技能次数在整局内保留。</summary>
         private void StartRound()
         {
             CardsRevealed = false;

@@ -21,14 +21,13 @@ namespace App.UI.Popup
 {
     /// <summary>
     /// 通关商店弹窗。sellItem / mineItem 是隐藏模板，克隆到 sellHor 与 MineHor。
-    /// 预制体上有两套头部：PVEShop（标题/刷新/倒计时）与 PVPShop（另一套头部 + horBtns2 三个技能补充按钮），
-    /// 运行时按 <see cref="GameSession.IsPvp"/> 二选一激活，PVPShop 专属技能按钮只在 PVP 下绑定。
+    /// 两种模式共用 PVPShop 头部和 horBtns2 技能补充按钮。
     /// </summary>
     [AutoScreen(AppScreenIds.BattleShopPop, UILayer.Popup, ResResourcePaths.BattleShopPop)]
     public sealed class BattleShopPopView : ViewBase<BattleShopPopViewModel>
     {
         /// <summary>PVPShop/horBtns2 下的一个技能补充按钮。</summary>
-        private sealed class PvpSkillButton
+        private sealed class ShopSkillButton
         {
             public Button Button;
             public TMP_Text Label;
@@ -45,7 +44,7 @@ namespace App.UI.Popup
         private readonly List<int> _mineCounts = new List<int>();
         private readonly List<string> _guideTargetIds = new List<string>(4);
         private readonly List<RectTransform> _guideHoleRects = new List<RectTransform>(16);
-        private readonly List<PvpSkillButton> _pvpSkillButtons = new List<PvpSkillButton>(3);
+        private readonly List<ShopSkillButton> _skillButtons = new List<ShopSkillButton>(3);
         private GuideTargetRegistry _guideTargets;
         private GameObject _sellTemplate;
         private GameObject _mineTemplate;
@@ -121,7 +120,7 @@ namespace App.UI.Popup
             Binding.BindCommand(GetNode<Button>("NextStageBtn"), ViewModel.NextStageCommand);
             Binding.BindCommand(GetNode<Button>("ReturnToHomeBtn"), ViewModel.ReturnToHomeCommand);
             Binding.BindText(GetNode<TMP_Text>("MaxNum"), ViewModel.CarryNum);
-            BindPvpSkillButtons();
+            BindSkillButtons();
 
             EnsureSellItems();
             EnsureMineItems();
@@ -130,14 +129,14 @@ namespace App.UI.Popup
         }
 
         /// <summary>
-        /// 两套头部二选一：PVE 用 PVEShop，PVP 用 PVPShop（含技能补充按钮）。
+        /// PVE/PVP 共用 PVPShop，旧预制体可回落到 PVEShop。
         /// 老预制体只有单一 BG 时保持不动，回落到按名查找。
         /// </summary>
         private void ApplyShopVariant()
         {
             _pveShop = FindDeep(transform, "PVEShop");
             _pvpShop = FindDeep(transform, "PVPShop");
-            var usePvp = ViewModel != null && ViewModel.ShowPvpSkills && _pvpShop != null;
+            var usePvp = _pvpShop != null;
             if (_pveShop != null)
             {
                 _pveShop.gameObject.SetActive(!usePvp);
@@ -152,7 +151,7 @@ namespace App.UI.Popup
         /// <summary>当前模式实际显示的头部根节点。</summary>
         private Transform ActiveShopRoot()
         {
-            if (ViewModel != null && ViewModel.ShowPvpSkills && _pvpShop != null)
+            if (_pvpShop != null)
             {
                 return _pvpShop;
             }
@@ -197,31 +196,31 @@ namespace App.UI.Popup
             BindShopTime(FindHeader<TMP_Text>("timeText"));
         }
 
-        /// <summary>PVP 商店专属：horBtns2 三个按钮对应搓牌/替换/透视，点击花金币买 1 次（下一轮生效）。</summary>
-        private void BindPvpSkillButtons()
+        /// <summary>绑定搓牌、替换和透视的购买按钮。</summary>
+        private void BindSkillButtons()
         {
-            for (var i = 0; i < _pvpSkillButtons.Count; i++)
+            for (var i = 0; i < _skillButtons.Count; i++)
             {
-                var entry = _pvpSkillButtons[i];
+                var entry = _skillButtons[i];
                 if (entry.Button != null && entry.Handler != null)
                 {
                     entry.Button.onClick.RemoveListener(entry.Handler);
                 }
             }
 
-            _pvpSkillButtons.Clear();
-            if (_pvpShop == null || ViewModel == null || !ViewModel.ShowPvpSkills)
+            _skillButtons.Clear();
+            if (_pvpShop == null || ViewModel == null)
             {
                 return;
             }
 
             // 节点名沿用 GameUI 的技能按钮：PeekGood=搓牌、TiHuanGood=替换、ChaKanGood=透视。
-            AddPvpSkillButton("PeekGood", PvpSkillIds.Rub);
-            AddPvpSkillButton("TiHuanGood", PvpSkillIds.Replace);
-            AddPvpSkillButton("ChaKanGood", PvpSkillIds.Peek);
+            AddSkillButton("PeekGood", PvpSkillIds.Rub);
+            AddSkillButton("TiHuanGood", PvpSkillIds.Replace);
+            AddSkillButton("ChaKanGood", PvpSkillIds.Peek);
         }
 
-        private void AddPvpSkillButton(string nodeName, int skillId)
+        private void AddSkillButton(string nodeName, int skillId)
         {
             var root = FindDeep(_pvpShop, nodeName);
             if (root == null)
@@ -240,7 +239,7 @@ namespace App.UI.Popup
                 return;
             }
 
-            var entry = new PvpSkillButton
+            var entry = new ShopSkillButton
             {
                 Button = button,
                 Label = FindButtonLabel(root),
@@ -252,9 +251,9 @@ namespace App.UI.Popup
                 entry.PriceColor = entry.Price.color;
             }
 
-            entry.Handler = () => OnPvpSkillClicked(entry.SkillId);
+            entry.Handler = () => OnSkillClicked(entry.SkillId);
             button.onClick.AddListener(entry.Handler);
-            _pvpSkillButtons.Add(entry);
+            _skillButtons.Add(entry);
         }
 
         /// <summary>技能按钮文案：「(3/3)」这种节点名是 Text (TMP)，改名时回落到直属子节点的第一个文本。</summary>
@@ -285,27 +284,27 @@ namespace App.UI.Popup
             return num != null ? num.GetComponent<TMP_Text>() : null;
         }
 
-        private void OnPvpSkillClicked(int skillId)
+        private void OnSkillClicked(int skillId)
         {
-            ViewModel?.BuyPvpSkill(skillId);
+            ViewModel?.BuySkill(skillId);
         }
 
         /// <summary>每帧刷新入口都在 ShopRevision 上：价格/下一轮上限随快照变化。</summary>
-        private void RefreshPvpSkills()
+        private void RefreshSkills()
         {
-            for (var i = 0; i < _pvpSkillButtons.Count; i++)
+            for (var i = 0; i < _skillButtons.Count; i++)
             {
-                var entry = _pvpSkillButtons[i];
-                var price = ViewModel.PvpSkillPrice(entry.SkillId);
+                var entry = _skillButtons[i];
+                var price = ViewModel.SkillPrice(entry.SkillId);
                 if (entry.Label != null)
                 {
-                    entry.Label.text = ViewModel.FormatPvpSkillText(entry.SkillId);
+                    entry.Label.text = ViewModel.FormatSkillText(entry.SkillId);
                 }
 
                 if (entry.Price != null)
                 {
                     entry.Price.text = price > 0 ? price.ToString() : string.Empty;
-                    entry.Price.color = ViewModel.CanBuyPvpSkill(entry.SkillId)
+                    entry.Price.color = ViewModel.CanBuySkill(entry.SkillId)
                         ? entry.PriceColor
                         : ThemeColors.ShopPriceUnaffordable;
                 }
@@ -570,7 +569,7 @@ namespace App.UI.Popup
         {
             RefreshSellItems();
             RefreshMineItems();
-            RefreshPvpSkills();
+            RefreshSkills();
             // 货架布局后再登记，避免 sellHor 尚未撑开导致挖孔失败、引导像没生效。
             RegisterGuideTargets();
         }

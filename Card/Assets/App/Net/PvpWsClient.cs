@@ -40,6 +40,7 @@ namespace App.Net
             _cts = new CancellationTokenSource();
             _socket = new ClientWebSocket();
             _running = 1;
+            NetLog.WsEvent($"connecting {GameApiSettings.WebSocketUrl}");
             try
             {
                 await _socket.ConnectAsync(new Uri(GameApiSettings.WebSocketUrl), _cts.Token);
@@ -47,9 +48,11 @@ namespace App.Net
             catch (Exception ex)
             {
                 _running = 0;
+                NetLog.WsEvent($"connect failed {GameApiSettings.WebSocketUrl}: {ex.Message}");
                 throw new GameApiException("connection_error", "无法连接对战服: " + ex.Message, 0);
             }
 
+            NetLog.WsEvent($"connected {GameApiSettings.WebSocketUrl}");
             _ = ReceiveLoop(_cts.Token);
             await SendAsync(WsMessageTypes.Auth, new WsAuthPayload { AccessToken = accessToken ?? string.Empty });
         }
@@ -92,9 +95,10 @@ namespace App.Net
             _socket = null;
             if (socket != null)
             {
+                var wasOpen = socket.State == WebSocketState.Open;
                 try
                 {
-                    if (socket.State == WebSocketState.Open)
+                    if (wasOpen)
                     {
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                     }
@@ -104,6 +108,10 @@ namespace App.Net
                 }
 
                 socket.Dispose();
+                if (wasOpen)
+                {
+                    NetLog.WsEvent($"closed {GameApiSettings.WebSocketUrl}");
+                }
             }
 
             while (_inbox.TryDequeue(out _))
@@ -136,6 +144,7 @@ namespace App.Net
             var socket = _socket;
             if (socket == null || socket.State != WebSocketState.Open)
             {
+                NetLog.WsEvent($"send skipped (not connected): {type}");
                 throw new GameApiException("connection_error", "对战连接已断开", 0);
             }
 
@@ -146,9 +155,7 @@ namespace App.Net
                 Payload = payload
             };
             var json = JsonConvert.SerializeObject(envelope, Json);
-            AppLog.Debug(LogChannel.Net, "pvp ws → " + (type == WsMessageTypes.Auth
-                ? "{\"t\":\"auth\",\"seq\":" + envelope.Seq + ",\"payload\":{\"accessToken\":\"***\"}}"
-                : json));
+            NetLog.WsSend(type, json);
             var bytes = Encoding.UTF8.GetBytes(json);
             await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, _cts.Token);
         }
@@ -169,6 +176,8 @@ namespace App.Net
                         result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
+                            NetLog.WsEvent($"closed by server {GameApiSettings.WebSocketUrl}: "
+                                + $"{result.CloseStatus} {result.CloseStatusDescription}");
                             _inbox.Enqueue(Incoming.MakeClosed());
                             return;
                         }
@@ -178,8 +187,19 @@ namespace App.Net
                     while (!result.EndOfMessage);
 
                     var json = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
-                    AppLog.Debug(LogChannel.Net, "pvp ws ← " + json);
-                    var env = JsonConvert.DeserializeObject<WsWire>(json, Json);
+                    WsWire env;
+                    try
+                    {
+                        env = JsonConvert.DeserializeObject<WsWire>(json, Json);
+                    }
+                    catch (Exception)
+                    {
+                        // 脏包也要留下原文，再交给外层 catch 统一告警
+                        NetLog.WsReceive(null, json);
+                        throw;
+                    }
+
+                    NetLog.WsReceive(env != null ? env.T : null, json);
                     if (env == null || string.IsNullOrEmpty(env.T))
                     {
                         continue;

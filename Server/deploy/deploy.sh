@@ -14,19 +14,31 @@ dotnet publish "${REPO_ROOT}/Server/src/Card.Server" \
     -c Release -o "${PUBLISH_DIR}"
 
 echo "==> 上传应用（不覆盖线上 appsettings.Production.json）"
-rsync -az --delete \
-    --exclude 'appsettings.Production.json' \
-    --exclude 'appsettings.Development.json' \
-    "${PUBLISH_DIR}/" "${TARGET}:${APP_DIR}/app/"
+# 有 rsync 用 rsync（带 --delete）；Windows Git Bash 没有 rsync，退化为 tar 管道（不清理远端多余文件）
+sync_dir() {
+    local src="$1" dst="$2"
+    shift 2
+    if command -v rsync >/dev/null 2>&1; then
+        local ex=()
+        for p in "$@"; do ex+=(--exclude "$p"); done
+        rsync -az --delete "${ex[@]}" "$src" "${TARGET}:$dst"
+    else
+        local ex=()
+        for p in "$@"; do ex+=(--exclude="$p"); done
+        tar -cz -C "${src%/}" "${ex[@]}" . | ssh "${TARGET}" "mkdir -p '$dst' && tar -xz -C '$dst'"
+    fi
+}
+
+sync_dir "${PUBLISH_DIR}/" "${APP_DIR}/app/" \
+    'appsettings.Production.json' \
+    'appsettings.Development.json'
 
 echo "==> 上传配表"
-rsync -az --delete \
-    "${REPO_ROOT}/Card/Assets/Res/Config/" "${TARGET}:${APP_DIR}/Config/"
+sync_dir "${REPO_ROOT}/Card/Assets/Res/Config/" "${APP_DIR}/Config/"
 
 echo "==> 构建并上传 GM 后台静态页"
 npm --prefix "${REPO_ROOT}/Server/admin-web" run build
-rsync -az --delete \
-    "${REPO_ROOT}/Server/admin-web/dist/" "${TARGET}:${APP_DIR}/admin/"
+sync_dir "${REPO_ROOT}/Server/admin-web/dist/" "${APP_DIR}/admin/"
 
 echo "==> 重启服务"
 ssh "${TARGET}" "systemctl restart card-server && sleep 2 && systemctl --no-pager -l status card-server | head -15"

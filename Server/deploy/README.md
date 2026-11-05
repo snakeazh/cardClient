@@ -81,8 +81,8 @@ WebSocket 的 `Upgrade`/`Connection` 头和长 `proxy_read_timeout` 已在配置
 
 配置里另有两段 GM 后台相关（不需要可整段删）：
 
-- `location /admin/`：静态托管 `Server/admin-web` 的构建产物（`/opt/card-server/admin/`），浏览器访问 `https://域名/admin/` 打开后台。
-- `location /v1/admin/`：GM 接口反代，公网可达、靠管理密码保护。若只想允许固定 IP 访问，在此段内加 `allow <IP>; deny all;`。
+- `location /gm/`：静态托管 `Server/admin-web` 的构建产物（`/opt/card-server/admin/`），浏览器访问 `https://域名/gm/` 打开后台。
+- `location /v1/gm/`：GM 接口反代，公网可达、靠管理密码保护。若只想允许固定 IP 访问，在此段内加 `allow <IP>; deny all;`。
 
 微信/抖音后台把 `https://api.example.com` 配进 request 合法域名、`wss://api.example.com` 配进 socket 合法域名。
 

@@ -31,7 +31,7 @@ public sealed class AccessTokenMiddleware
         }
 
         // 后台 GM 端点不用玩家 Token，由 AdminEndpoints 自行校验 X-Admin-Token。
-        if (path.StartsWith("/v1/admin/", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/v1/gm/", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

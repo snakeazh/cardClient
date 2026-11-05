@@ -185,21 +185,21 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 | POST | `/guide/complete` | `{ groupId }` 幂等 |
 | POST | `/debug/grant-gold` | Development 调试发局外金 |
 
-### GM 后台 `/v1/admin`
+### GM 后台 `/v1/gm`
 
 与玩家 Token 完全分离：请求头 `X-Admin-Token` 与配置 `Admin:Token` 定长比较；`AccessTokenMiddleware` 豁免该前缀。仅当 `Admin:Token` 非空才挂载，生产不配即不存在。每条命令写 `admin_logs` 审计（含失败）。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/v1/admin/login` | `{ password }` 单密码登录：校验 `Admin:Token` 通过即返回 token，网页登录页用 |
-| POST | `/v1/admin/grant-gold` | `{ userId, amount }` 发局外金币 |
-| POST | `/v1/admin/grant-energy` | `{ userId, amount }` 发体力，允许超上限 |
-| POST | `/v1/admin/unlock-all-heroes` | `{ userId }` 解锁全部英雄 |
-| POST | `/v1/admin/unlock-all-talents` | `{ userId }` 全部天赋满级，不动 DrawCount |
-| POST | `/v1/admin/unlock-all-levels` | `{ userId }` 全部难度标记通关，连带解锁通关条件英雄 |
-| GET | `/v1/admin/players` | `?keyword=&take=` 昵称/UserId 片段搜索，空 = 最近活跃 |
-| GET | `/v1/admin/player` | `?userId=` 拉指定玩家主档 |
-| GET | `/v1/admin/logs` | `?take=` 最近操作记录 |
+| POST | `/v1/gm/login` | `{ password }` 单密码登录：校验 `Admin:Token` 通过即返回 token，网页登录页用 |
+| POST | `/v1/gm/grant-gold` | `{ userId, amount }` 发局外金币 |
+| POST | `/v1/gm/grant-energy` | `{ userId, amount }` 发体力，允许超上限 |
+| POST | `/v1/gm/unlock-all-heroes` | `{ userId }` 解锁全部英雄 |
+| POST | `/v1/gm/unlock-all-talents` | `{ userId }` 全部天赋满级，不动 DrawCount |
+| POST | `/v1/gm/unlock-all-levels` | `{ userId }` 全部难度标记通关，连带解锁通关条件英雄 |
+| GET | `/v1/gm/players` | `?keyword=&take=` 昵称/UserId 片段搜索，空 = 最近活跃 |
+| GET | `/v1/gm/player` | `?userId=` 拉指定玩家主档 |
+| GET | `/v1/gm/logs` | `?take=` 最近操作记录 |
 
 `userId` 接受任意 GUID 文本格式（含无横线的 N 格式）。操作网页在 `admin-web/`：`npm install && npm run dev`（Vite 代理到 5254），生产 `npm run build` 产物为纯静态文件，交给 Nginx 即可。
 

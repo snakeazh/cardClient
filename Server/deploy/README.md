@@ -59,7 +59,8 @@ vi /opt/card-server/app/appsettings.Production.json
   "WeChat": { "AppId": "你的AppId", "AppSecret": "你的AppSecret" },
   "Douyin": { "AppId": "", "AppSecret": "" },
   "Cos": { "SecretId": "", "SecretKey": "", "Region": "ap-shanghai", "Bucket": "card-avatar2-1328828696" },
-  "Game": { "ConfigPath": "/opt/card-server/Config" }
+  "Game": { "ConfigPath": "/opt/card-server/Config" },
+  "Admin": { "Token": "强随机管理密码32位以上" }
 }
 ```
 
@@ -68,6 +69,7 @@ vi /opt/card-server/app/appsettings.Production.json
 - `Urls` 锁回环地址，对外只经 Nginx。
 - `GuestAuth` 关闭、`Pvp:FillWithBots` 关闭（Development 的机器人补满只是本地调试用）。
 - `/debug/grant-gold` 等调试接口只在 Development 暴露，Production 自动不带。
+- **`Admin:Token` 是 GM 后台总闸**：不配则 `/v1/admin` 整组接口不存在，后台页面也登不进；它就是后台登录页的密码，只发给需要用后台的人。
 - `ConfigPath` 指向 `/opt/card-server/Config`（deploy.sh 会同步 `Card/Assets/Res/Config`）。
 
 ## 3. 配 Nginx + 证书（只做一次）
@@ -76,6 +78,11 @@ vi /opt/card-server/app/appsettings.Production.json
 2. `nginx -t && systemctl restart nginx`。
 
 WebSocket 的 `Upgrade`/`Connection` 头和长 `proxy_read_timeout` 已在配置里，不要删。
+
+配置里另有两段 GM 后台相关（不需要可整段删）：
+
+- `location /admin/`：静态托管 `Server/admin-web` 的构建产物（`/opt/card-server/admin/`），浏览器访问 `https://域名/admin/` 打开后台。
+- `location /v1/admin/`：GM 接口反代，公网可达、靠管理密码保护。若只想允许固定 IP 访问，在此段内加 `allow <IP>; deny all;`。
 
 微信/抖音后台把 `https://api.example.com` 配进 request 合法域名、`wss://api.example.com` 配进 socket 合法域名。
 
@@ -88,6 +95,7 @@ cd Server/deploy
 
 流程：`dotnet publish`（linux-x64，框架依赖）→ rsync 应用到 `/opt/card-server/app`
 （**不覆盖**线上 `appsettings.Production.json`）→ rsync 配表到 `/opt/card-server/Config`
+→ `npm run build` 构建 GM 后台并 rsync 到 `/opt/card-server/admin`
 → `systemctl restart card-server` → 调 `/v1/health` 探活。
 
 探活返回含 `persistence`/`postgres`/`redis` 即正常。

@@ -121,6 +121,41 @@ public sealed class PlayerMetaService
             return ProfileMapper.ToDto(profile);
         }, cancellationToken);
 
+    public Task<PlayerProfileDto> AdminGrantGoldAsync(Guid targetUserId, int amount, CancellationToken cancellationToken)
+        => _session.MutateAsync(targetUserId, profile =>
+        {
+            profile.GrantWalletGold(amount);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
+    public Task<PlayerProfileDto> AdminGrantEnergyAsync(Guid targetUserId, int amount, CancellationToken cancellationToken)
+        => _session.MutateAsync(targetUserId, profile =>
+        {
+            profile.GrantEnergy(amount);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
+    public Task<PlayerProfileDto> AdminUnlockAllHeroesAsync(Guid targetUserId, CancellationToken cancellationToken)
+        => _session.MutateAsync(targetUserId, profile =>
+        {
+            profile.UnlockAllHeroes(_config);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
+    public Task<PlayerProfileDto> AdminUnlockAllTalentsAsync(Guid targetUserId, CancellationToken cancellationToken)
+        => _session.MutateAsync(targetUserId, profile =>
+        {
+            profile.UnlockAllTalents(_config);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
+    public Task<PlayerProfileDto> AdminUnlockAllLevelsAsync(Guid targetUserId, CancellationToken cancellationToken)
+        => _session.MutateAsync(targetUserId, profile =>
+        {
+            profile.UnlockAllDifficulties(_config);
+            return ProfileMapper.ToDto(profile);
+        }, cancellationToken);
+
     public async Task<PlayerProfileDto> UploadAvatarAsync(Guid userId, byte[] data, CancellationToken cancellationToken)
     {
         var extension = DetectImageExtension(data);

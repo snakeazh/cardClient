@@ -222,6 +222,83 @@ public sealed class PlayerProfile
         Gold += amount;
     }
 
+    /// <summary>后台发放体力，允许超出上限（与广告商店购买一致）。</summary>
+    public void GrantEnergy(int amount)
+    {
+        if (amount <= 0)
+        {
+            throw DomainException.Invalid("amount must be positive.");
+        }
+
+        Energy.Current += amount;
+    }
+
+    /// <summary>后台解锁全部英雄。返回新写入的英雄数。</summary>
+    public int UnlockAllHeroes(IGameConfig config)
+    {
+        var added = 0;
+        foreach (var hero in config.Tables.Heroes)
+        {
+            if (Level.TryUnlockHero(hero.Id))
+            {
+                added++;
+            }
+        }
+
+        return added;
+    }
+
+    /// <summary>
+    /// 后台把全部天赋补到满级份数，只升不降。
+    /// 不动 DrawCount——它决定下次抽取价格，GM 送天赋不应推高价格。
+    /// </summary>
+    public int UnlockAllTalents(IGameConfig config)
+    {
+        var copies = config.Balance.CopiesPerLevel <= 0 ? 1 : config.Balance.CopiesPerLevel;
+        var changed = 0;
+        foreach (var talentId in config.Tables.TalentRows.Select(t => t.TalentId).Distinct())
+        {
+            var maxLevel = config.Tables.GetTalentMaxLevel(talentId);
+            if (maxLevel <= 0)
+            {
+                continue;
+            }
+
+            var entry = Talent.GetOrAdd(talentId);
+            var full = maxLevel * copies;
+            if (entry.Count < full)
+            {
+                entry.Count = full;
+                changed++;
+            }
+        }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// 后台解锁全部难度关卡：把每个难度的最高通关写成该难度最大关，
+    /// 关卡/下一难度/通关条件英雄全部由它推导；末尾 SyncUnlockedHeroes 连带解锁英雄。
+    /// </summary>
+    public int UnlockAllDifficulties(IGameConfig config)
+    {
+        var changed = 0;
+        foreach (var difficulty in config.Tables.Difficulties)
+        {
+            var max = config.Tables.GetMaxLevel(difficulty);
+            if (max <= 0 || Level.GetHighestCleared(difficulty) >= max)
+            {
+                continue;
+            }
+
+            Level.SetHighestCleared(difficulty, max);
+            changed++;
+        }
+
+        SyncUnlockedHeroes(config);
+        return changed;
+    }
+
     /// <summary>按名次加减 PVP 分数，结果不低于 0。返回变更后的分数。</summary>
     public int ApplyPvpScoreDelta(int delta)
     {

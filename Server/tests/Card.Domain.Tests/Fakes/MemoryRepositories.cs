@@ -24,6 +24,43 @@ public sealed class MemoryPlayerRepository : IPlayerRepository
         _store[profile.UserId] = ProfileJson.Serialize(profile);
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<PlayerSummary>> SearchAsync(string keyword, int take, CancellationToken cancellationToken)
+    {
+        take = take <= 0 ? 20 : Math.Min(take, 100);
+        var kw = (keyword ?? string.Empty).Trim();
+        var result = new List<PlayerSummary>();
+        foreach (var (userId, json) in _store)
+        {
+            var profile = ProfileJson.Deserialize(json);
+            if (profile == null)
+            {
+                continue;
+            }
+
+            if (kw.Length > 0
+                && !profile.NickName.Contains(kw, StringComparison.OrdinalIgnoreCase)
+                && !userId.ToString().Contains(kw, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            result.Add(new PlayerSummary
+            {
+                UserId = userId,
+                NickName = profile.NickName,
+                Gold = profile.Gold,
+                Energy = profile.Energy.Current,
+                PvpScore = profile.PvpScore
+            });
+            if (result.Count >= take)
+            {
+                break;
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<PlayerSummary>>(result);
+    }
 }
 
 public sealed class MemoryAuthBindingRepository : IAuthBindingRepository

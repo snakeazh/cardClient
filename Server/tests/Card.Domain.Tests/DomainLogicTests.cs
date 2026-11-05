@@ -179,3 +179,67 @@ public class HeroProgressTests
     }
 }
 
+
+public class AdminGrantTests
+{
+    [Fact]
+    public void GrantEnergyAllowsExceedingMax()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+
+        profile.GrantEnergy(10);
+
+        Assert.Equal(config.Balance.EnergyMax + 10, profile.Energy.Current);
+        Assert.Throws<DomainException>(() => profile.GrantEnergy(0));
+    }
+
+    [Fact]
+    public void UnlockAllHeroesIgnoresClearConditions()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+        // 新档只有默认英雄；2 号英雄要求通关难度 1。
+        Assert.False(profile.IsHeroUnlocked(2, config));
+
+        var added = profile.UnlockAllHeroes(config);
+
+        Assert.Equal(1, added);
+        Assert.True(profile.IsHeroUnlocked(2, config));
+        // 重复执行幂等。
+        Assert.Equal(0, profile.UnlockAllHeroes(config));
+    }
+
+    [Fact]
+    public void UnlockAllTalentsMaxesEveryTalentWithoutTouchingDrawCount()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+
+        var changed = profile.UnlockAllTalents(config);
+
+        Assert.Equal(2, changed);
+        Assert.Equal(10, profile.Talent.GetCount(101));
+        Assert.Equal(10, profile.Talent.GetCount(102));
+        // GM 送天赋不推高下次抽取价格。
+        Assert.Equal(0, profile.Talent.DrawCount);
+        // 只升不降，重复执行不再改档。
+        Assert.Equal(0, profile.UnlockAllTalents(config));
+    }
+
+    [Fact]
+    public void UnlockAllDifficultiesClearsLevelsAndChainsHeroUnlock()
+    {
+        var config = TestConfig.Create();
+        var profile = PlayerProfile.CreateNew(Guid.NewGuid(), config, DateTimeOffset.UtcNow);
+        Assert.False(profile.IsLevelUnlocked(1002, config));
+
+        var changed = profile.UnlockAllDifficulties(config);
+
+        Assert.Equal(1, changed);
+        Assert.True(profile.IsDifficultyCleared(1, config));
+        Assert.True(profile.IsLevelUnlocked(1002, config));
+        // 通关条件英雄由 SyncUnlockedHeroes 连带解锁。
+        Assert.True(profile.IsHeroUnlocked(2, config));
+    }
+}

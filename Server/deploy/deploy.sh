@@ -23,6 +23,11 @@ echo "==> 上传配表"
 rsync -az --delete \
     "${REPO_ROOT}/Card/Assets/Res/Config/" "${TARGET}:${APP_DIR}/Config/"
 
+echo "==> 构建并上传 GM 后台静态页"
+npm --prefix "${REPO_ROOT}/Server/admin-web" run build
+rsync -az --delete \
+    "${REPO_ROOT}/Server/admin-web/dist/" "${TARGET}:${APP_DIR}/admin/"
+
 echo "==> 重启服务"
 ssh "${TARGET}" "systemctl restart card-server && sleep 2 && systemctl --no-pager -l status card-server | head -15"
 

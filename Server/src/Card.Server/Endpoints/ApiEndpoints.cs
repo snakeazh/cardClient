@@ -13,5 +13,11 @@ public static class ApiEndpoints
         {
             v1.MapDebugApi();
         }
+
+        var adminToken = app.Configuration.GetValue<string>("Admin:Token");
+        if (!string.IsNullOrWhiteSpace(adminToken))
+        {
+            v1.MapAdminApi(adminToken, app.Logger);
+        }
     }
 }

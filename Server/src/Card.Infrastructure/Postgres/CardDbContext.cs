@@ -1,10 +1,28 @@
 using System.Text.Json;
 using CardShare.Domain;
+using CardShare.Domain.Admin;
 using CardShare.Domain.Players;
 using CardShare.Domain.Pve;
 using Microsoft.EntityFrameworkCore;
 
 namespace CardShare.Infrastructure.Postgres;
+
+public sealed class AdminLogRow
+{
+    public long Id { get; set; }
+
+    public DateTimeOffset CreatedAtUtc { get; set; }
+
+    public string Command { get; set; } = string.Empty;
+
+    public Guid TargetUserId { get; set; }
+
+    public string Detail { get; set; } = string.Empty;
+
+    public string RemoteIp { get; set; } = string.Empty;
+
+    public bool Succeeded { get; set; }
+}
 
 public sealed class PlayerRow
 {
@@ -83,6 +101,8 @@ public sealed class CardDbContext : DbContext
 
     public DbSet<PveRunRow> PveRuns => Set<PveRunRow>();
 
+    public DbSet<AdminLogRow> AdminLogs => Set<AdminLogRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PlayerRow>(e =>
@@ -104,6 +124,14 @@ public sealed class CardDbContext : DbContext
             e.HasKey(x => x.RunId);
             e.HasIndex(x => x.UserId);
             e.HasIndex(x => new { x.UserId, x.Status });
+        });
+
+        modelBuilder.Entity<AdminLogRow>(e =>
+        {
+            e.ToTable("admin_logs");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).UseIdentityByDefaultColumn();
+            e.HasIndex(x => x.CreatedAtUtc);
         });
     }
 }
@@ -140,6 +168,90 @@ public sealed class PostgresPlayerRepository : IPlayerRepository
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PlayerSummary>> SearchAsync(string keyword, int take, CancellationToken cancellationToken)
+    {
+        take = take <= 0 ? 20 : Math.Min(take, 100);
+        List<PlayerRow> rows;
+        var kw = (keyword ?? string.Empty).Trim();
+        if (kw.Length == 0)
+        {
+            rows = await _db.Players.AsNoTracking()
+                .OrderByDescending(p => p.UpdatedAt)
+                .Take(take)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            var like = "%" + kw + "%";
+            rows = await _db.Players.FromSqlInterpolated($"""
+                SELECT "UserId", "ProfileJson", "UpdatedAt" FROM players
+                WHERE ("ProfileJson" ->> 'NickName') ILIKE {like}
+                   OR "UserId"::text ILIKE {like}
+                ORDER BY "UpdatedAt" DESC
+                LIMIT {take}
+                """).AsNoTracking().ToListAsync(cancellationToken);
+        }
+
+        var result = new List<PlayerSummary>(rows.Count);
+        foreach (var row in rows)
+        {
+            var profile = JsonSerializer.Deserialize<PlayerProfile>(row.ProfileJson);
+            result.Add(new PlayerSummary
+            {
+                UserId = row.UserId,
+                NickName = profile?.NickName ?? string.Empty,
+                Gold = profile?.Gold ?? 0,
+                Energy = profile?.Energy.Current ?? 0,
+                PvpScore = profile?.PvpScore ?? 0,
+                UpdatedAt = row.UpdatedAt
+            });
+        }
+
+        return result;
+    }
+}
+
+public sealed class PostgresAdminLogRepository : IAdminLogRepository
+{
+    private readonly CardDbContext _db;
+
+    public PostgresAdminLogRepository(CardDbContext db) => _db = db;
+
+    public async Task AddAsync(AdminLogEntry entry, CancellationToken cancellationToken)
+    {
+        var row = new AdminLogRow
+        {
+            CreatedAtUtc = entry.CreatedAtUtc,
+            Command = entry.Command,
+            TargetUserId = entry.TargetUserId,
+            Detail = entry.Detail,
+            RemoteIp = entry.RemoteIp,
+            Succeeded = entry.Succeeded
+        };
+        _db.AdminLogs.Add(row);
+        await _db.SaveChangesAsync(cancellationToken);
+        entry.Id = row.Id;
+    }
+
+    public async Task<IReadOnlyList<AdminLogEntry>> ListAsync(int take, CancellationToken cancellationToken)
+    {
+        take = take <= 0 ? 50 : Math.Min(take, 200);
+        var rows = await _db.AdminLogs.AsNoTracking()
+            .OrderByDescending(l => l.CreatedAtUtc)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+        return rows.Select(row => new AdminLogEntry
+        {
+            Id = row.Id,
+            CreatedAtUtc = row.CreatedAtUtc,
+            Command = row.Command,
+            TargetUserId = row.TargetUserId,
+            Detail = row.Detail,
+            RemoteIp = row.RemoteIp,
+            Succeeded = row.Succeeded
+        }).ToList();
     }
 }
 

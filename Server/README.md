@@ -21,7 +21,7 @@
 
 Domain 用例按限界上下文拆：`AuthService`（换码/发 token）、`PlayerMetaService`（主档/天赋/体力/背包/引导）、`PveRunService`（开局/结算/商店/局内金）。登录后清未结算 run 走 `PveRunService.ResolveRunsOnLoginAsync`，Auth 只依赖这一个入口方法。
 
-组合根在 `Card.Server/Composition`：`AddCardInfrastructure` 只接线存适配器，`AddCardApplication` 注册用例服务。HTTP 按 `health` / `auth` / `player` / `pve` / `debug` 分文件映射，路径不变。
+组合根在 `Card.Server/Composition`：`AddCardInfrastructure` 只接线存适配器，`AddCardApplication` 注册用例服务。HTTP 按 `health` / `auth` / `player` / `pve` / `debug` / `admin` 分文件映射，路径不变。
 
 ## 编程规则
 
@@ -184,6 +184,24 @@ Game__ConfigPath=/path/to/Card/Assets/Res/Config
 | POST | `/bag/consume` | `{ itemId, amount }` |
 | POST | `/guide/complete` | `{ groupId }` 幂等 |
 | POST | `/debug/grant-gold` | Development 调试发局外金 |
+
+### GM 后台 `/v1/admin`
+
+与玩家 Token 完全分离：请求头 `X-Admin-Token` 与配置 `Admin:Token` 定长比较；`AccessTokenMiddleware` 豁免该前缀。仅当 `Admin:Token` 非空才挂载，生产不配即不存在。每条命令写 `admin_logs` 审计（含失败）。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/v1/admin/login` | `{ password }` 单密码登录：校验 `Admin:Token` 通过即返回 token，网页登录页用 |
+| POST | `/v1/admin/grant-gold` | `{ userId, amount }` 发局外金币 |
+| POST | `/v1/admin/grant-energy` | `{ userId, amount }` 发体力，允许超上限 |
+| POST | `/v1/admin/unlock-all-heroes` | `{ userId }` 解锁全部英雄 |
+| POST | `/v1/admin/unlock-all-talents` | `{ userId }` 全部天赋满级，不动 DrawCount |
+| POST | `/v1/admin/unlock-all-levels` | `{ userId }` 全部难度标记通关，连带解锁通关条件英雄 |
+| GET | `/v1/admin/players` | `?keyword=&take=` 昵称/UserId 片段搜索，空 = 最近活跃 |
+| GET | `/v1/admin/player` | `?userId=` 拉指定玩家主档 |
+| GET | `/v1/admin/logs` | `?take=` 最近操作记录 |
+
+`userId` 接受任意 GUID 文本格式（含无横线的 N 格式）。操作网页在 `admin-web/`：`npm install && npm run dev`（Vite 代理到 5254），生产 `npm run build` 产物为纯静态文件，交给 Nginx 即可。
 
 错误体：`{ "code", "message" }`。
 

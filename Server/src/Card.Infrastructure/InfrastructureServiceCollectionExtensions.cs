@@ -1,6 +1,7 @@
 using CardShare.Contracts;
 using CardShare.Domain;
 using CardShare.Domain.Ads;
+using CardShare.Domain.Admin;
 using CardShare.Domain.Config;
 using CardShare.Domain.Pvp;
 using CardShare.Infrastructure.Ads;
@@ -51,6 +52,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IPlayerRepository, PostgresPlayerRepository>();
         services.AddScoped<IAuthBindingRepository, PostgresAuthBindingRepository>();
         services.AddScoped<IPveRunRepository, PostgresPveRunRepository>();
+        services.AddScoped<IAdminLogRepository, PostgresAdminLogRepository>();
 
         var accessMinutes = configuration.GetValue("Auth:AccessTokenMinutes", 120);
         var accessTtl = TimeSpan.FromMinutes(accessMinutes);

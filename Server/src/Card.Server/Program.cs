@@ -15,6 +15,11 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 });
 
 var app = builder.Build();
+// 应用只监听回环、只经 Nginx，信任 X-Forwarded-For：审计日志记录真实来源 IP。
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+});
 app.UseWebSockets();
 app.UseMiddleware<DomainExceptionMiddleware>();
 app.UseMiddleware<AccessTokenMiddleware>();

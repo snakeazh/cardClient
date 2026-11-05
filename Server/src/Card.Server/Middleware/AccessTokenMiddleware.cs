@@ -30,6 +30,13 @@ public sealed class AccessTokenMiddleware
             return;
         }
 
+        // 后台 GM 端点不用玩家 Token，由 AdminEndpoints 自行校验 X-Admin-Token。
+        if (path.StartsWith("/v1/admin/", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         var header = context.Request.Headers.Authorization.ToString();
         if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {

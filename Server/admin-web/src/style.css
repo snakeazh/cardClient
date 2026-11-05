@@ -1,0 +1,387 @@
+:root {
+  --bg: #0e131a;
+  --bg-soft: #151b24;
+  --panel: #1a222e;
+  --border: #2b3646;
+  --text: #e8edf4;
+  --muted: #8b96a7;
+  --accent: #4f8cff;
+  --accent-hover: #6b9eff;
+  --danger: #f0564f;
+  --danger-hover: #f4706a;
+  --ok: #3fb96f;
+  --fail: #f0564f;
+  --radius: 10px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(180deg, #0e131a 0%, #121822 100%);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 0;
+  margin-bottom: 16px;
+  background: rgba(14, 19, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+h1::before {
+  content: "◆";
+  color: var(--accent);
+  margin-right: 8px;
+}
+
+h2 {
+  font-size: 15px;
+  margin: 0 0 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+h3 {
+  font-size: 13px;
+  margin: 20px 0 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.18);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #1d2733;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+button.danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+button.small {
+  padding: 3px 12px;
+  font-size: 12px;
+}
+
+.token-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.token-input {
+  width: 300px;
+}
+
+.message {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid;
+  animation: slide-in 0.2s ease;
+}
+
+.ok-msg {
+  background: rgba(63, 185, 111, 0.12);
+  border-color: rgba(63, 185, 111, 0.4);
+  color: var(--ok);
+}
+
+.err-msg {
+  background: rgba(240, 86, 79, 0.12);
+  border-color: rgba(240, 86, 79, 0.4);
+  color: var(--fail);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+
+.panel:last-child {
+  grid-column: 1 / -1;
+}
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-bar input {
+  flex: 1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(43, 54, 70, 0.5);
+}
+
+tbody tr {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+tbody tr:hover {
+  background: rgba(79, 140, 255, 0.06);
+}
+
+tr.active {
+  background: rgba(79, 140, 255, 0.14);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.nick {
+  font-weight: 600;
+}
+
+.uid {
+  font-family: Consolas, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.time {
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+  font-size: 14px;
+}
+
+.stats > div {
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+}
+
+.stats label {
+  display: inline-block;
+  width: 104px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ops {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.amount {
+  width: 110px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-ok {
+  background: rgba(63, 185, 111, 0.15);
+  color: var(--ok);
+}
+
+.badge-fail {
+  background: rgba(240, 86, 79, 0.15);
+  color: var(--fail);
+}
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 360px;
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.login-card h1 {
+  margin-bottom: 8px;
+}
+
+.login-card h1::before {
+  content: "";
+  margin: 0;
+}
+
+.login-tip {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.login-input {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 10px;
+}
+
+.login-card .message {
+  margin: 16px 0 0;
+  text-align: left;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

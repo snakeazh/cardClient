@@ -28,6 +28,7 @@ namespace App.UI
         public const string EnergyPopup = "App.EnergyPopup";
         public const string StaminaPurchasePop = "App.StaminaPurchasePop";
         public const string TTRewardPop = "App.TTRewardPop";
+        public const string ShareRewardPop = "App.ShareRewardPop";
         public const string SettingPop = "App.SettingPop";
         public const string LevelUI = "App.LevelUI";
         public const string PvpPage = "App.PvpPage";

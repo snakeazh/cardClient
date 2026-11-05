@@ -6,6 +6,7 @@ using CardShare.Contracts.Config;
 using App.Game;
 using App.Guide;
 using App.Net;
+using App.ShareReward;
 using App.Talent;
 using App.UI;
 using App.Wallet;
@@ -154,6 +155,25 @@ namespace App.Game.Editor
             }
 
             session.DebugSkipStage();
+        }
+
+        [MenuItem("Debug/外挂/重置分享奖励（可重新领取）", false, 18)]
+        public static void ResetShareReward()
+        {
+            if (!Application.isPlaying || !AppServices.IsReady)
+            {
+                Debug.LogWarning("[分享] 需在 Play 模式且 AppServices 就绪后使用");
+                return;
+            }
+
+            if (!(AppServices.Container.GetService(typeof(IShareRewardService)) is ShareRewardService service))
+            {
+                Debug.LogWarning("[分享] 未找到 ShareRewardService（检查启动装配）");
+                return;
+            }
+
+            service.DebugReset();
+            Debug.Log("[分享] 已重置分享奖励，首页 ShareRewardItem 重新显示，可再次走分享流程");
         }
 
         [MenuItem("Debug/引导/重置新手引导进度", false, 30)]

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Config;
+using App.ShareReward;
 using CardShare.Contracts.Config;
 
 namespace App.Game
@@ -104,11 +105,14 @@ namespace App.Game
         public const float StingyRescueRatio = 0.05f;
         public const float SplashRatio = 0.3f;
         public const int DailyDoubleGoldAds = 3;
-        /// <summary>每关搓牌技能基础次数，读 GameConst.DefaultSkillShuffleNum。</summary>
+        /// <summary>
+        /// 每关搓牌技能基础次数 = 配置值（GameConst.DefaultSkillShuffleNum）+ 账号永久加成（分享奖励）。
+        /// 次数重置与技能按钮上限共用这一口径，不要另行相加。
+        /// </summary>
         public static int SkillRubUses =>
-            GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
+            (GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
                 ? GameConst.Instance.DefaultSkillShuffleNum
-                : 3;
+                : 3) + ShareRewardBonus.RubUses;
         /// <summary>每关透视技能基础次数，读 GameConst.DefaultSkillPerspectiveNum。</summary>
         public static int SkillXRayUses =>
             GameConst.IsLoaded && GameConst.Instance.DefaultSkillPerspectiveNum >= 0

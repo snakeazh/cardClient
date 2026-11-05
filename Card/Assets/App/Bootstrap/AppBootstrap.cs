@@ -12,6 +12,8 @@ using App.Guide;
 using App.Level;
 using App.PvpScore;
 using App.Score;
+using App.Share;
+using App.ShareReward;
 using App.Talent;
 using App.TTReward;
 using App.Unlock;
@@ -153,6 +155,7 @@ namespace App.Bootstrap
             RegisterTalent(_services);
             RegisterAdShop(_services);
             RegisterTTReward(_services);
+            RegisterShare(_services);
             RegisterUnlock(_services);
             LogConfigSmoke();
 
@@ -319,6 +322,19 @@ namespace App.Bootstrap
             reward.Load();
             services.Register(reward);
             services.Register<ITTRewardService>(reward);
+        }
+
+        /// <summary>平台分享能力 + 分享奖励存档服务（分享成功后搓牌次数永久 +1）。</summary>
+        private static void RegisterShare(AppServicesHost services)
+        {
+            var share = ShareServiceFactory.Create();
+            services.Register(share);
+            services.Register<IShareService>(share);
+
+            var shareReward = new ShareRewardService(services.Resolve<ISaveService>());
+            shareReward.Load();
+            services.Register(shareReward);
+            services.Register<IShareRewardService>(shareReward);
         }
 
         private static void RegisterUnlock(AppServicesHost services)

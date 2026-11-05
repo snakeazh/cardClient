@@ -5075,7 +5075,7 @@ namespace App.Game
 
             AppLog.Info(
                 LogChannel.Game,
-                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {GameBalance.SkillRubUses} + 奖励 {Run.BonusRubCharges} " +
+                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {GameBalance.SkillRubUses}（含永久加成） + 奖励 {Run.BonusRubCharges} " +
                 $"+ 词条 {rubDelta}（圣物 {RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###} / " +
                 $"英雄 {HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###}） - 词缀 {rubBossDelta}；" +
                 $"透视 {Run.ChaKanGoodCharges}，替换 {Run.TiHuanGoodCharges}（hero={Run.HeroId}）");

@@ -10,6 +10,8 @@ using App.Level;
 using App.Net;
 using App.PvpScore;
 using App.Resources;
+using App.Share;
+using App.ShareReward;
 using App.Talent;
 using App.Unlock;
 using App.UI.Popup;
@@ -33,6 +35,8 @@ namespace App.UI
         private readonly GameTableViewModel _table;
         private readonly PvpMatchSession _pvp;
         private readonly IPvpScoreService _pvpScore;
+        private readonly IShareService _share;
+        private readonly IShareRewardService _shareReward;
         private bool _openingPvp;
         private bool _openingLevel;
         private bool _pvpResumeChecked;
@@ -48,7 +52,9 @@ namespace App.UI
             GameSession session,
             GameTableViewModel table,
             PvpMatchSession pvp,
-            IPvpScoreService pvpScore)
+            IPvpScoreService pvpScore,
+            IShareService share,
+            IShareRewardService shareReward)
         {
             _ui = ui;
             _talentBonus = talentBonus;
@@ -59,11 +65,15 @@ namespace App.UI
             _table = table;
             _pvp = pvp;
             _pvpScore = pvpScore ?? throw new ArgumentNullException(nameof(pvpScore));
+            _share = share;
+            _shareReward = shareReward ?? throw new ArgumentNullException(nameof(shareReward));
             Resources = resources;
             StaminaText = new ObservableProperty<string>();
             PvpValueText = new ObservableProperty<string>();
+            ShareRewardItemVisible = new ObservableProperty<bool>(ComputeShareRewardItemVisible());
             StartCommand = new RelayCommand(OpenLevelUI, () => !_openingLevel);
             OpenTTRewardCommand = new RelayCommand(OpenTTReward);
+            OpenShareRewardCommand = new RelayCommand(OpenShareReward);
             OpenIllustrateCommand = new RelayCommand(OpenMonsterBook);
             OpenRelicBookCommand = new RelayCommand(OpenRelicBook);
             OpenTalentCommand = new RelayCommand(OpenTalent);
@@ -90,6 +100,12 @@ namespace App.UI
         /// <summary>打开抖音侧边栏奖励弹窗（Home 左侧栏 TTRewardItem 按钮）。</summary>
         public IRelayCommand OpenTTRewardCommand { get; }
 
+        /// <summary>打开分享奖励弹窗（Home 左侧栏 ShareRewardItem 按钮）。</summary>
+        public IRelayCommand OpenShareRewardCommand { get; }
+
+        /// <summary>分享奖励入口是否显示：平台具备分享能力且尚未领取时显示，领取后自动隐藏。</summary>
+        public ObservableProperty<bool> ShareRewardItemVisible { get; }
+
         /// <summary>打开图鉴弹窗的怪物栏（Home IllustrateBtn）。</summary>
         public IRelayCommand OpenIllustrateCommand { get; }
 
@@ -107,6 +123,9 @@ namespace App.UI
         protected override async Task OnOpen(object args)
         {
             _pvpScore.Changed += OnPvpScoreChanged;
+            _shareReward.Changed -= OnShareRewardChanged;
+            _shareReward.Changed += OnShareRewardChanged;
+            RefreshShareRewardItem();
             await RefreshOnReturnAsync();
             // 重连探测不能放在 OnOpen：此时 Home 尚未入栈，若在这里 Open(GameTable)，
             // 随后 Home 入栈会盖住桌面，表现为「还显示着主页」。
@@ -125,12 +144,14 @@ namespace App.UI
         protected override Task OnClose()
         {
             _pvpScore.Changed -= OnPvpScoreChanged;
+            _shareReward.Changed -= OnShareRewardChanged;
             return Task.CompletedTask;
         }
 
         protected override void OnDispose()
         {
             _pvpScore.Changed -= OnPvpScoreChanged;
+            _shareReward.Changed -= OnShareRewardChanged;
         }
 
         /// <summary>
@@ -275,6 +296,43 @@ namespace App.UI
         private void OpenMonsterBook()
         {
             OpenIllustratedBook(IllustratedBookTab.Monster);
+        }
+
+        /// <summary>分享奖励入口：弹窗内拉平台分享面板，分享成功后由服务回写状态并自动隐藏入口。</summary>
+        private async void OpenShareReward()
+        {
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(ShareRewardPopViewModel));
+                var vm = (ShareRewardPopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                _toast?.ShowWarning("分享界面打开失败，请重试");
+            }
+        }
+
+        /// <summary>平台没有分享能力时不展示入口；已领取后永久隐藏。</summary>
+        private bool ComputeShareRewardItemVisible()
+        {
+            if (_shareReward == null || _shareReward.HasClaimed)
+            {
+                return false;
+            }
+
+            return _share == null || _share.IsAvailable;
+        }
+
+        private void RefreshShareRewardItem()
+        {
+            ShareRewardItemVisible.Value = ComputeShareRewardItemVisible();
+        }
+
+        private void OnShareRewardChanged()
+        {
+            RefreshShareRewardItem();
         }
 
         private void OpenRelicBook()

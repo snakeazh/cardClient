@@ -30,6 +30,7 @@ namespace App.UI
             Binding.BindText(UI.GetGameObject("pvpValue").GetComponent<TMP_Text>(), ViewModel.PvpValueText);
             Binding.BindCommand(UI.GetGameObject("startBtn").GetComponent<Button>(), ViewModel.StartCommand);
             BindTTRewardItem();
+            BindShareRewardItem();
             // 插图屋（IllustrateBtn）→ 图鉴怪物栏；圣物室（RealicItemBtn）→ 图鉴圣物栏
             Binding.BindCommand(UI.GetGameObject("IllustrateBtn").GetComponent<Button>(), ViewModel.OpenIllustrateCommand);
             Binding.BindCommand(UI.GetGameObject("RealicItemBtn").GetComponent<Button>(), ViewModel.OpenRelicBookCommand);
@@ -50,6 +51,26 @@ namespace App.UI
 #else
             Binding.BindCommand(item.GetComponent<Button>(), ViewModel.OpenTTRewardCommand);
 #endif
+        }
+
+        /// <summary>分享奖励入口：点击打开 ShareRewardPop；分享完成后服务置位，绑定自动隐藏入口。</summary>
+        private void BindShareRewardItem()
+        {
+            var item = UI.GetGameObject("ShareRewardItem");
+            if (item == null)
+            {
+                return;
+            }
+
+            var button = item.GetComponent<Button>();
+            if (button == null)
+            {
+                button = item.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+            }
+
+            Binding.BindCommand(button, ViewModel.OpenShareRewardCommand);
+            Binding.BindActive(item, ViewModel.ShareRewardItemVisible);
         }
 
         /// <summary>设置入口（SettingBtn）。</summary>

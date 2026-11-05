@@ -106,13 +106,26 @@ namespace App.Game
         public const float SplashRatio = 0.3f;
         public const int DailyDoubleGoldAds = 3;
         /// <summary>
-        /// 搓牌技能基础次数 = 配置值（GameConst.DefaultSkillShuffleNum）+ 账号永久加成（分享奖励）。
-        /// 整局首次开打时的次数初始化与技能按钮上限共用这一口径，不要另行相加。
+        /// PvE 搓牌技能基础次数 = 配置值（GameConst.DefaultSkillShuffleNum）+ 账号永久加成（分享奖励）。
+        /// **分享加成仅 PvE 生效**：PVP 次数由服务端快照下发，上限口径见 <see cref="PvpSkillRubUses"/>。
+        /// 整局首次开打时的次数初始化与 PvE 技能按钮上限共用这一口径，不要另行相加。
         /// </summary>
-        public static int SkillRubUses =>
-            (GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
+        public static int SkillRubUses => SkillRubBaseUses + ShareRewardBonus.RubUses;
+
+        /// <summary>PvE 搓牌基础次数，读 GameConst.DefaultSkillShuffleNum（不含分享永久加成）。</summary>
+        public static int SkillRubBaseUses =>
+            GameConst.IsLoaded && GameConst.Instance.DefaultSkillShuffleNum >= 0
                 ? GameConst.Instance.DefaultSkillShuffleNum
-                : 2) + ShareRewardBonus.RubUses;
+                : 2;
+
+        /// <summary>
+        /// PVP 搓牌基础次数，读 GameConst.PVPDefaultSkillShuffleNum（服务端 PvpMatch / PvpSkillShop 同口径）。
+        /// 不含分享永久加成——分享奖励只在 PvE 生效。
+        /// </summary>
+        public static int PvpSkillRubUses =>
+            GameConst.IsLoaded && GameConst.Instance.PVPDefaultSkillShuffleNum > 0
+                ? GameConst.Instance.PVPDefaultSkillShuffleNum
+                : CardShare.Battle.PvpSkillShop.RubBaseCount;
         /// <summary>每关透视技能基础次数，读 GameConst.DefaultSkillPerspectiveNum。</summary>
         public static int SkillXRayUses =>
             GameConst.IsLoaded && GameConst.Instance.DefaultSkillPerspectiveNum >= 0

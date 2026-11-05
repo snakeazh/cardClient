@@ -5101,9 +5101,11 @@ namespace App.Game
                 RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
                 HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum));
             var rubBossDelta = BossMechanics.RubChargeDelta(Run);
+            // 分享奖励的永久加成只在 PvE 生效；PVP 次数以服务端快照为准（见 ApplyPvpSkillCharges）。
+            var rubBase = IsPvp ? GameBalance.PvpSkillRubUses : GameBalance.SkillRubUses;
             Run.PeekGoodCharges = Math.Max(
                 0,
-                GameBalance.SkillRubUses + Run.BonusRubCharges + rubDelta - rubBossDelta);
+                rubBase + Run.BonusRubCharges + rubDelta - rubBossDelta);
             var xrayDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum));
             Run.ChaKanGoodCharges = GameBalance.SkillXRayUses + Run.BonusXRayCharges + xrayDelta;
             var replaceDelta = (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.ReplaceCardsNum));
@@ -5111,7 +5113,7 @@ namespace App.Game
 
             AppLog.Info(
                 LogChannel.Game,
-                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {GameBalance.SkillRubUses}（含永久加成） + 奖励 {Run.BonusRubCharges} " +
+                $"[SkillCharges] 搓牌 {Run.PeekGoodCharges} 次 = 基础 {rubBase}（{(IsPvp ? "PVP" : "PvE，含分享加成")}） + 奖励 {Run.BonusRubCharges} " +
                 $"+ 词条 {rubDelta}（圣物 {RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###} / " +
                 $"英雄 {HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum):0.###}） - 词缀 {rubBossDelta}；" +
                 $"透视 {Run.ChaKanGoodCharges}，替换 {Run.TiHuanGoodCharges}（hero={Run.HeroId}）");

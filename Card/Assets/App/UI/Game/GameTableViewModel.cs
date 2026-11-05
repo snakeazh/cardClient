@@ -945,8 +945,11 @@ namespace App.UI
             var canAct = !Session.Player.Folded && !Session.AiActing;
             var opening = Session.Phase == GamePhase.WaitingOpen && canAct;
             var rubbing = Session.Phase == GamePhase.WaitingRub && canAct;
+            // 搓牌上限口径分模式：PVP 走 PVPDefaultSkillShuffleNum（服务端快照，不含分享永久加成），
+            // PvE 走 GameBalance.SkillRubUses（配置 + 分享永久加成）。
+            var rubBase = Session.IsPvp ? GameBalance.PvpSkillRubUses : GameBalance.SkillRubUses;
             var rubMax = SkillChargeMax(
-                GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                rubBase + Session.Run.BonusRubCharges,
                 RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
                 HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum));
             if (Session.Run.PeekGoodCharges != _lastRubCur || rubMax != _lastRubMax)
@@ -978,7 +981,7 @@ namespace App.UI
             PeekGoodLabel.Value = FormatCharges(
                 Session.Run.PeekGoodCharges,
                 SkillChargeMax(
-                    GameBalance.SkillRubUses + Session.Run.BonusRubCharges,
+                    rubBase + Session.Run.BonusRubCharges,
                     RelicMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum) +
                     HeroMechanics.SumValue(Session.Run, CardShare.Contracts.Config.MechanismType.RubbingCardsNum)));
             PeekGoodArmed.Value = Session.SelectingRubTarget;

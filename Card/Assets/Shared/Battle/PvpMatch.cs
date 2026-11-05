@@ -2178,12 +2178,12 @@ namespace CardShare.Battle
 
         private void ApplyMirrorSkills(SeatSetup seat)
         {
-            var rub = _tables.GameConst.DefaultSkillShuffleNum;
+            var rub = _tables.GameConst.PVPDefaultSkillShuffleNum;
             var replace = _tables.GameConst.DefaultSkillReplaceNum;
             var peek = _tables.GameConst.DefaultSkillPerspectiveNum;
             if (rub <= 0)
             {
-                rub = 3;
+                rub = PvpSkillShop.RubBaseCount;
             }
 
             if (replace <= 0)

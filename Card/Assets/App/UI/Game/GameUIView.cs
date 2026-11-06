@@ -3458,10 +3458,11 @@ namespace App.UI
             _openingPlaying = true;
             _openingForSerial = serial;
             BindOpeningVs();
-            if (!_fightMaskConsumed && !session.IsPvp && _fightMask != null)
+            var fightMask = CanShowFightMask() ? _fightMask : null;
+            if (fightMask != null)
             {
-                _fightMask.alpha = 1f;
-                _fightMask.gameObject.SetActive(true);
+                fightMask.alpha = 1f;
+                fightMask.gameObject.SetActive(true);
             }
             // 开场期间按技能会 Notify → RefreshPlayerItems。home 必须留着，否则会把已抬高的坐标再加一次偏移，对话跟着跳。
             var playerLayoutHome = _playerOpeningLayoutHome;
@@ -3471,7 +3472,7 @@ namespace App.UI
                 gameObject,
                 OnOpeningComplete,
                 playerLayoutHome,
-                !_fightMaskConsumed && !session.IsPvp ? _fightMask : null);
+                fightMask);
             ScheduleOpeningFallback(serial);
         }
 
@@ -3484,9 +3485,15 @@ namespace App.UI
                 return;
             }
 
-            var show = ViewModel != null && !ViewModel.Session.IsPvp && ViewModel.ShouldHoldDealVisual();
+            var show = CanShowFightMask() && ViewModel.ShouldHoldDealVisual();
             _fightMask.alpha = show ? 1f : 0f;
             _fightMask.gameObject.SetActive(show);
+        }
+
+        private bool CanShowFightMask()
+        {
+            var session = ViewModel?.Session;
+            return !_fightMaskConsumed && session != null && !session.IsPvp && session.Run.Stage == 1;
         }
 
         private void HideFightMask()

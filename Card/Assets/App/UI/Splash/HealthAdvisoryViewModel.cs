@@ -7,7 +7,6 @@ using Framework.UI;
 using Framework.UI.Core;
 using Framework.UI.Dialog;
 using Framework.UI.View;
-using UnityEngine;
 
 namespace App.UI.Splash
 {
@@ -17,6 +16,8 @@ namespace App.UI.Splash
         private readonly IDialogService _dialogs;
         private readonly MainResourceViewModel _mainResource;
         private readonly LaunchInitialization _launchInit;
+        private readonly TaskCompletionSource<bool> _playRequested = new TaskCompletionSource<bool>();
+        private bool _playClicked;
         private bool _enteredHome;
 
         public HealthAdvisoryViewModel(
@@ -29,27 +30,16 @@ namespace App.UI.Splash
             _dialogs = dialogs;
             _mainResource = mainResource;
             _launchInit = launchInit;
-            Title = new ObservableProperty<string>(HealthAdvisoryText.Title);
-            Body = new ObservableProperty<string>(HealthAdvisoryText.Body);
-            Footer = new ObservableProperty<string>(HealthAdvisoryText.WeChatFooter);
+            PlayCommand = new RelayCommand(RequestPlay, () => !_playClicked);
         }
 
-        public ObservableProperty<string> Title { get; }
-
-        public ObservableProperty<string> Body { get; }
-
-        public ObservableProperty<string> Footer { get; }
+        public RelayCommand PlayCommand { get; }
 
         protected override Task OnOpen(object args)
         {
             _enteredHome = false;
 
-            Title.Value = HealthAdvisoryText.Title;
-            Body.Value = HealthAdvisoryText.Body;
-            Footer.Value = HealthAdvisoryText.WeChatFooter;
-
-            // OnOpen 在 UINavigator 入栈前 await 完毕；计时须延后到 Open 流程完成之后。
-            // WebGL/微信小游戏上 Task.Delay 依赖的计时器续跑不稳定，改用 realtime + Yield。
+            // 等待导航入栈后再执行后续流程。
             _ = RunFlowAsync();
             return Task.CompletedTask;
         }
@@ -59,12 +49,12 @@ namespace App.UI.Splash
             try
             {
                 await Task.Yield();
-                // 展示倒计时与重型初始化并发：两者都完成才进首页，初始化快则不等、慢则兜底。
-                var delay = DelayRealtimeAsync(HealthAdvisoryText.DisplayDurationMs);
+                // 初始化失败立即提示；提前点击时保留请求，初始化完成后进入首页。
                 var init = _launchInit != null && _launchInit.Completion != null
                     ? _launchInit.Completion
                     : Task.CompletedTask;
-                await Task.WhenAll(delay, init);
+                await init;
+                await _playRequested.Task;
                 await EnterHomeAsync();
             }
             catch (Exception ex)
@@ -105,18 +95,17 @@ namespace App.UI.Splash
             return ex ?? new InvalidOperationException("unknown launch failure");
         }
 
-        private static async Task DelayRealtimeAsync(int milliseconds)
+        private void RequestPlay()
         {
-            if (milliseconds <= 0)
-            {
-                return;
-            }
+            _playClicked = true;
+            PlayCommand.RaiseCanExecuteChanged();
+            _playRequested.TrySetResult(true);
+        }
 
-            var end = Time.realtimeSinceStartup + milliseconds / 1000f;
-            while (Time.realtimeSinceStartup < end)
-            {
-                await Task.Yield();
-            }
+        protected override Task OnClose()
+        {
+            _playRequested.TrySetResult(false);
+            return Task.CompletedTask;
         }
 
         private async Task EnterHomeAsync()

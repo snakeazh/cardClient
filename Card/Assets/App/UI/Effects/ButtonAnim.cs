@@ -39,6 +39,10 @@ namespace App.UI
         private Ease ease = Ease.OutQuad;
 
         [SerializeField]
+        [Tooltip("点下时播放音效")]
+        private bool playSound = true;
+
+        [SerializeField]
         [Tooltip("点下时播放；留空则播通用 ui_click_03")]
         private AudioClip clip;
 
@@ -62,7 +66,10 @@ namespace App.UI
 
             _pressed = true;
             PlayPress(true);
-            PlayClip();
+            if (playSound)
+            {
+                PlayClip();
+            }
         }
 
         public void OnPointerUp(PointerEventData eventData)

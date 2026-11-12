@@ -3136,7 +3136,8 @@ namespace App.UI
                 if (session.Player != null)
                 {
                     var shown = session.EvaluateSeat(session.Player, ViewModel.SettledHandTypeRevealed);
-                    ApplyCardInfoFx(_playerCardInfo, shown.Level);
+                    var revealed = settling && (session.Player.ShowCards || session.CardsRevealed);
+                    ApplyCardInfoFx(_playerCardInfo, revealed ? shown.Level : 0);
                 }
             }
 
@@ -3153,7 +3154,9 @@ namespace App.UI
             var displayed = session.DisplayedEnemy;
             if (displayed != null && displayed.Alive)
             {
-                ApplyEnemyCardInfo(session.EvaluateSeat(displayed, ViewModel.SettledHandTypeRevealed));
+                ApplyEnemyCardInfo(
+                    session.EvaluateSeat(displayed, ViewModel.SettledHandTypeRevealed),
+                    displayed.ShowCards || session.CardsRevealed);
             }
             else if (_enemyCardInfo != null)
             {
@@ -3161,7 +3164,7 @@ namespace App.UI
             }
         }
 
-        private void ApplyEnemyCardInfo(HandScore score)
+        private void ApplyEnemyCardInfo(HandScore score, bool revealed)
         {
             if (_enemyCardInfo == null)
             {
@@ -3170,7 +3173,7 @@ namespace App.UI
 
             _enemyCardInfo.SetActive(true);
             var shownType = score.CompareType;
-            ApplyCardInfoFx(_enemyCardInfo, score.CompareLevel);
+            ApplyCardInfoFx(_enemyCardInfo, revealed ? score.CompareLevel : 0);
             if (_enemyCardTypeIcon != null)
             {
                 _enemyCardTypeIcon.sprite = ViewModel.GetCardTypeIcon(shownType);

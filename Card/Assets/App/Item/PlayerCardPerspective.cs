@@ -15,17 +15,39 @@ namespace App.Game
 
         public void Initialize(RectTransform frame)
         {
+            UnsubscribeText();
             _frame = frame;
             _text = graphic as TMP_Text;
-            if (_text != null)
+            if (_text != null && isActiveAndEnabled)
                 _text.OnPreRenderText += ProjectText;
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (_text != null)
+            {
+                _text.OnPreRenderText -= ProjectText;
+                _text.OnPreRenderText += ProjectText;
+            }
+        }
+
+        protected override void OnDisable()
+        {
+            UnsubscribeText();
+            base.OnDisable();
         }
 
         protected override void OnDestroy()
         {
+            UnsubscribeText();
+            base.OnDestroy();
+        }
+
+        private void UnsubscribeText()
+        {
             if (_text != null)
                 _text.OnPreRenderText -= ProjectText;
-            base.OnDestroy();
         }
 
         public void SetProjection(float inverseDepth, float heightScale)

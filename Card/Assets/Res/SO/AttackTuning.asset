@@ -18,6 +18,7 @@ MonoBehaviour:
     HitHoldDuration: 0.1
     BackDuration: 0.3
     RetreatDistance: 100
+    AttackerRecoilDistance: 300
     HitKnockbackDistance: 40
     HitKnockbackDuration: 0.12
     HitRecoverDuration: 0.22
@@ -27,6 +28,7 @@ MonoBehaviour:
     HitHoldDuration: 0.25
     BackDuration: 0.45
     RetreatDistance: 350
+    AttackerRecoilDistance: 300
     HitKnockbackDistance: 100
     HitKnockbackDuration: 0.12
     HitRecoverDuration: 0.3
@@ -36,6 +38,7 @@ MonoBehaviour:
     HitHoldDuration: 0.4
     BackDuration: 0.6
     RetreatDistance: 550
+    AttackerRecoilDistance: 400
     HitKnockbackDistance: 220
     HitKnockbackDuration: 0.2
     HitRecoverDuration: 0.5

@@ -19,6 +19,7 @@ namespace App.UI
     /// </summary>
     public sealed class AttackCutscene
     {
+        private const float MeleeRecoilDuration = 0.2f;
         private const string DefaultClip = "ani_default";
         private const string MissClip = "ani_atk_lv03_miss";
         private const int DeathFxSortingOrder = 240;
@@ -40,6 +41,9 @@ namespace App.UI
         private readonly Animator[] _enemyAnims = new Animator[3];
         private RectTransform _flight;
         private Sequence _seq;
+        private Sequence _attackerRecoil;
+        private RectTransform _attackerRecoilRect;
+        private Vector2 _attackerRecoilHome;
         private int _playToken;
         private RectTransform _incomingRoot;
         private Transform _incomingHome;
@@ -214,7 +218,7 @@ namespace App.UI
 
             AttachRootToFlight(_incomingRoot, homePos);
             var homeAnchored = _flight.anchoredPosition;
-            var hitAnchored = WorldToHudAnchored(hitPos);
+            var hitAnchored = MeleeContactPoint(homeAnchored, hitPos, _enemyCardRects[visualSlot], _playerCardRect);
 
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
@@ -273,7 +277,7 @@ namespace App.UI
                     }
 
                     PlayIncomingAftermath(
-                        token, enemyAnim, beat, tuning, homeAnchored, onCollisionDone, onReturned, onDone);
+                        token, enemyAnim, beat, tuning, homeAnchored, missed, onCollisionDone, onReturned, onDone);
                 }, false);
             });
         }
@@ -285,6 +289,7 @@ namespace App.UI
             AttackTuningConfig.LevelTuning beat,
             AttackTuningConfig tuning,
             Vector2 homeAnchored,
+            bool missed,
             Action onCollisionDone,
             Action onReturned,
             Action onDone)
@@ -292,7 +297,10 @@ namespace App.UI
             _seq?.Kill();
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
-            _seq.AppendInterval(beat.HitHoldDuration);
+            if (missed)
+                _seq.AppendInterval(beat.HitHoldDuration);
+            else
+                AppendMeleeRecoil(_flight.anchoredPosition, homeAnchored, beat, () => true);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -518,7 +526,7 @@ namespace App.UI
 
             AttachRootToFlight(_playerRoot, homePos);
             var homeAnchored = _flight.anchoredPosition;
-            var hitAnchored = WorldToHudAnchored(hitPos);
+            var hitAnchored = MeleeContactPoint(homeAnchored, hitPos, _playerCardRect, _enemyCardRects[visualSlot]);
 
             _seq = DOTween.Sequence();
             _seq.timeScale = _playTimeScale;
@@ -532,6 +540,7 @@ namespace App.UI
 
                 PlayClip(_playerAnim, Clip(level, "move"));
             });
+            var landed = false;
             _seq.Append(_flight.DOAnchorPos(hitAnchored, beat.MoveDuration).SetEase(Ease.InQuad));
             _seq.AppendCallback(() =>
             {
@@ -541,6 +550,7 @@ namespace App.UI
                 }
 
                 var missed = PlayImpact(_playerAnim, targetAnim, level, onHit, beat, _enemyCardRects[visualSlot], homePos, hitPos);
+                landed = !missed;
                 // PVP：对方（武僧）闪避我方近战 → 进入「定住」反击演出（我方卡已在 AttackFlight 上，拉到中心）。
                 if (missed && dodgeCounter != null && dodgeCounter.HasAny)
                 {
@@ -568,7 +578,7 @@ namespace App.UI
                     return;
                 }
             });
-            _seq.AppendInterval(beat.HitHoldDuration);
+            AppendMeleeRecoil(hitAnchored, homeAnchored, beat, () => landed);
             _seq.AppendCallback(() =>
             {
                 if (token != _playToken)
@@ -815,6 +825,8 @@ namespace App.UI
                 AppLog.Info(LogChannel.UI, $"[HeroSkill][t={Elapsed():0.000}] 阶段2-命中开始");
                 var missed = PlayHeroSkillImpact(
                     targetAnim, level, hitAnimation, onHit, beat, homeUi, hitAnimAtCast);
+                if (!missed)
+                    PlayAttackerRecoil(fromEnemy ? _enemyCardRects[visualSlot] : _playerCardRect, beat, homeUi, hitUi);
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroSkill][t={Elapsed():0.000}] 阶段2a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : (_victimHitClip ?? Clip(level, "hit")))}）");
@@ -1355,6 +1367,8 @@ namespace App.UI
                 AppLog.Info(LogChannel.UI, $"[HeroVolley][t={Elapsed():0.000}] 阶段3-主弹命中");
                 var missed = PlayHeroSkillImpact(
                     targetAnim, level, hitAnimation, onHit, beat, homeUi, hitAnimAtCast);
+                if (!missed)
+                    PlayAttackerRecoil(_playerCardRect, beat, homeUi, hitUi);
                 AppLog.Info(
                     LogChannel.UI,
                     $"[HeroVolley][t={Elapsed():0.000}] 阶段3a-结算完成 missed={missed}（受击动画={(missed ? "MISS" : (_victimHitClip ?? Clip(level, "hit")))}）");
@@ -2986,6 +3000,7 @@ namespace App.UI
             _playToken++;
             _seq?.Kill();
             _seq = null;
+            RestoreAttackerRecoil();
             ClearMissHold(restoreIdle: true);
             RestoreRoot(_playerHome);
             RestoreIncoming();
@@ -3057,10 +3072,61 @@ namespace App.UI
             _seq.Join(_flight.DOLocalRotate(aim, beat.StartDuration).SetEase(Ease.InOutQuad));
         }
 
+        private void AppendMeleeRecoil(Vector2 contact, Vector2 home,
+            AttackTuningConfig.LevelTuning beat, Func<bool> landed)
+        {
+            var distance = Mathf.Max(0f, beat.AttackerRecoilDistance);
+            var end = Vector2.MoveTowards(contact, home, distance);
+            _seq.Append(DOVirtual.Float(0f, 1f, MeleeRecoilDuration, progress =>
+            {
+                if (landed())
+                    _flight.anchoredPosition = Vector2.LerpUnclamped(contact, end, progress);
+            }).SetEase(Ease.OutQuad));
+            if (beat.HitHoldDuration > MeleeRecoilDuration)
+                _seq.AppendInterval(beat.HitHoldDuration - MeleeRecoilDuration);
+        }
+
         private void AppendReturnHome(Vector2 homeAnchored, float backDur)
         {
             _seq.Append(_flight.DOAnchorPos(homeAnchored, backDur).SetEase(Ease.OutQuad));
             _seq.Join(_flight.DOLocalRotate(Vector3.zero, backDur).SetEase(Ease.OutCubic));
+        }
+
+        private void PlayAttackerRecoil(
+            RectTransform attacker, AttackTuningConfig.LevelTuning beat, Vector3 attackerPos, Vector3 targetPos)
+        {
+            if (attacker == null || beat == null || beat.HitHoldDuration <= 0f)
+                return;
+
+            RestoreAttackerRecoil();
+            var direction = KnockbackDir(attacker, targetPos - attackerPos);
+            if (direction.sqrMagnitude < 0.0001f)
+                return;
+
+            _attackerRecoilRect = attacker;
+            _attackerRecoilHome = attacker.anchoredPosition;
+            var distance = beat.HitKnockbackDistance * 0.5f;
+            var duration = Mathf.Min(beat.HitHoldDuration * 0.8f, 0.2f);
+            var retreat = RetreatPoint(_attackerRecoilHome, direction, distance);
+            _attackerRecoil = DOTween.Sequence()
+                .Append(attacker.DOAnchorPos(retreat, duration * 0.4f).SetEase(Ease.OutQuad))
+                .Append(attacker.DOAnchorPos(_attackerRecoilHome, duration * 0.6f).SetEase(Ease.OutQuad))
+                .SetLink(attacker.gameObject)
+                .OnComplete(() =>
+                {
+                    _attackerRecoil = null;
+                    _attackerRecoilRect = null;
+                });
+            _attackerRecoil.timeScale = _playTimeScale;
+        }
+
+        private void RestoreAttackerRecoil()
+        {
+            _attackerRecoil?.Kill();
+            _attackerRecoil = null;
+            if (_attackerRecoilRect != null)
+                _attackerRecoilRect.anchoredPosition = _attackerRecoilHome;
+            _attackerRecoilRect = null;
         }
 
         /// <summary>
@@ -3136,6 +3202,33 @@ namespace App.UI
             var screen = RectTransformUtility.WorldToScreenPoint(cam, world);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out var local);
             return local;
+        }
+
+        private float CardHalfHeightInHud(RectTransform card)
+        {
+            if (card == null)
+                return 0f;
+
+            var halfHeight = card.TransformVector(Vector3.up * (card.rect.height * 0.5f));
+            return Vector2.Distance(WorldToHudAnchored(card.position + halfHeight), WorldToHudAnchored(card.position));
+        }
+
+        private Vector2 MeleeContactPoint(Vector2 home, Vector3 targetCenter, RectTransform attacker, RectTransform target)
+        {
+            var center = WorldToHudAnchored(targetCenter);
+            var direction = (center - home).normalized;
+            var targetRadius = 0f;
+            if (target != null)
+            {
+                var origin = WorldToHudAnchored(target.position);
+                var right = target.TransformVector(Vector3.right * (target.rect.width * 0.5f));
+                var up = target.TransformVector(Vector3.up * (target.rect.height * 0.5f));
+                targetRadius = Mathf.Abs(Vector2.Dot(WorldToHudAnchored(target.position + right) - origin, direction))
+                    + Mathf.Abs(Vector2.Dot(WorldToHudAnchored(target.position + up) - origin, direction));
+            }
+
+            var contactOffset = (CardHalfHeightInHud(attacker) + targetRadius) * 0.25f;
+            return Vector2.MoveTowards(center, home, contactOffset);
         }
 
         private static float AimAngleZ(Vector2 dir)

@@ -574,8 +574,8 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                var rank = (int)card.Rank;
-                if (!fighter.LuckyEnhancedRanks.Contains(rank))
+                var rank = card.ResourceId;
+                if (!fighter.LuckyEnhancedCards.Contains(rank))
                 {
                     candidates.Add(rank);
                 }
@@ -584,7 +584,7 @@ namespace CardShare.Battle
             for (var n = 0; n < enhance && candidates.Count > 0; n++)
             {
                 var pick = rng.Next(candidates.Count);
-                fighter.LuckyEnhancedRanks.Add(candidates[pick]);
+                fighter.LuckyEnhancedCards.Add(candidates[pick]);
                 candidates.RemoveAt(pick);
             }
         }

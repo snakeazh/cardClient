@@ -74,6 +74,25 @@ public class PvpRelicBindingsTests
     }
 
     [Fact]
+    public void LuckyNumber_OnlyMatchesEnhancedSuitAndRank()
+    {
+        var tables = Tables(
+            relics: new[] { Bond(1, 104) },
+            bindings: new[]
+            {
+                new BindingConfig { Id = 104, Type = BindingType.LuckyNumber, Value = new[] { 1f, 1f } }
+            });
+        var enhanced = new[] { new Card(Suit.Heart, Rank.Five).ResourceId };
+
+        Assert.True(PvpRelicBindings.TryLuckyForceWin(tables, new[] { 1 }, enhanced,
+            new[] { new Card(Suit.Heart, Rank.Five) }, new Random(1)));
+        Assert.False(PvpRelicBindings.TryLuckyForceWin(tables, new[] { 1 }, enhanced,
+            new[] { new Card(Suit.Spade, Rank.Five) }, new Random(1)));
+        Assert.False(PvpRelicBindings.TryLuckyForceWin(tables, new[] { 1 }, enhanced,
+            new[] { new Card(Suit.Heart, Rank.Six) }, new Random(1)));
+    }
+
+    [Fact]
     public void Leiting_OnlyOnCrit_UsesAttackNotDamage()
     {
         var tables = Tables(

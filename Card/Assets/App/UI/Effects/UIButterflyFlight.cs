@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace App.UI.Effects
 {
-    /// <summary>首页蝴蝶在指定矩形范围内随机飞行并循环播放翅膀帧。</summary>
+    /// <summary>首页蝴蝶沿巡逻点循环飞行并循环播放翅膀帧。</summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(RectTransform), typeof(Image))]
     public sealed class UIButterflyFlight : MonoBehaviour
@@ -16,16 +16,23 @@ namespace App.UI.Effects
 
         [SerializeField] private ColorVariant[] colorVariants;
         [SerializeField, Min(1f)] private float framesPerSecond = 10f;
-        [Tooltip("相对父节点中心的飞行范围；蝴蝶中心始终保持在此范围内。")]
-        [SerializeField] private Rect flightArea = new Rect(-300f, -50f, 600f, 450f);
+        [Tooltip("首尾相连的巡逻点，坐标相对蝴蝶的锚点，可在 Scene 中拖动。")]
+        [SerializeField] private Vector2[] patrolPoints;
+        [InspectorName("巡逻点停留时间（秒）")]
+        [Tooltip("到达巡逻点后，在 X（最短）和 Y（最长）之间随机停留；两者设为相同值可固定时间。")]
+        [SerializeField] private Vector2 pauseSeconds = new Vector2(0.4f, 1.2f);
+        [SerializeField, Min(0f)] private float flutterAmplitude = 8f;
+        [SerializeField, Min(0f)] private float flutterFrequency = 2.2f;
         [SerializeField, Min(1f)] private float flightSpeed = 120f;
 
         private RectTransform _rect;
         private Image _image;
         private Sprite[] _frames;
-        private Vector2 _start;
-        private Vector2 _control;
-        private Vector2 _target;
+        private int _fromIndex;
+        private int _toIndex;
+        private int _direction;
+        private float _pauseRemaining;
+        private float _flutterPhase;
         private float _duration;
         private float _elapsed;
         private float _frameTime;
@@ -43,11 +50,15 @@ namespace App.UI.Effects
                 ? colorVariants[Random.Range(0, colorVariants.Length)]?.frames
                 : null;
             if (_frames != null && _frames.Length > 0) _image.sprite = _frames[0];
-            _rect.anchoredPosition = RandomPoint();
-            _frameTime = 0f;
-            _target = _rect.anchoredPosition;
-            _control = _target;
-            ChooseDestination();
+            _frameTime = Random.value / Mathf.Max(1f, framesPerSecond);
+            _flutterPhase = Random.Range(0f, Mathf.PI * 2f);
+            if ((patrolPoints?.Length ?? 0) == 0) return;
+
+            _fromIndex = Random.Range(0, (patrolPoints?.Length ?? 0));
+            _rect.anchoredPosition = patrolPoints[_fromIndex];
+            _direction = Random.value < 0.5f ? -1 : 1;
+            _pauseRemaining = Random.Range(0f, Mathf.Max(0f, pauseSeconds.y));
+            if ((patrolPoints?.Length ?? 0) > 1) ChooseDestination();
         }
 
         private void Update()
@@ -59,49 +70,46 @@ namespace App.UI.Effects
                 _image.sprite = _frames[Mathf.FloorToInt(_frameTime * Mathf.Max(1f, framesPerSecond)) % _frames.Length];
             }
 
+            if ((patrolPoints?.Length ?? 0) < 2) return;
+            if (_pauseRemaining > 0f)
+            {
+                _pauseRemaining -= delta;
+                _rect.anchoredPosition = patrolPoints[_fromIndex];
+                return;
+            }
+
             _elapsed += delta;
             var t = Mathf.Clamp01(_elapsed / _duration);
-            var a = Vector2.Lerp(_start, _control, t);
-            var b = Vector2.Lerp(_control, _target, t);
-            _rect.anchoredPosition = Vector2.Lerp(a, b, t);
-            if (t >= 1f) ChooseDestination();
+            var smooth = t * t * (3f - 2f * t);
+            var from = patrolPoints[_fromIndex];
+            var to = patrolPoints[_toIndex];
+            var flutter = Mathf.Sin(_flutterPhase + _elapsed * flutterFrequency * Mathf.PI * 2f)
+                * flutterAmplitude * Mathf.Sin(Mathf.PI * t);
+            _rect.anchoredPosition = Vector2.Lerp(from, to, smooth) + Vector2.up * flutter;
+            if (t < 1f) return;
+
+            _fromIndex = _toIndex;
+            _rect.anchoredPosition = to;
+            _pauseRemaining = Random.Range(Mathf.Max(0f, pauseSeconds.x),
+                Mathf.Max(pauseSeconds.x, pauseSeconds.y));
+            ChooseDestination();
         }
 
         private void ChooseDestination()
         {
-            // 沿上一段曲线的切线继续飞行，避免到达目标点时突然折返。
-            var direction = (_target - _control).normalized;
-            _start = _rect.anchoredPosition;
-            _target = RandomPoint();
-            if (direction.sqrMagnitude < 0.0001f)
-                direction = (_target - _start).normalized;
-
-            var handleLength = Vector2.Distance(_start, _target) * 0.4f;
-            if (direction.x > 0f) handleLength = Mathf.Min(handleLength, (flightArea.xMax - _start.x) / direction.x);
-            if (direction.x < 0f) handleLength = Mathf.Min(handleLength, (flightArea.xMin - _start.x) / direction.x);
-            if (direction.y > 0f) handleLength = Mathf.Min(handleLength, (flightArea.yMax - _start.y) / direction.y);
-            if (direction.y < 0f) handleLength = Mathf.Min(handleLength, (flightArea.yMin - _start.y) / direction.y);
-            _control = _start + direction * Mathf.Max(0f, handleLength);
-            var distance = Vector2.Distance(_start, _control) + Vector2.Distance(_control, _target);
+            _toIndex = (_fromIndex + _direction + patrolPoints.Length) % patrolPoints.Length;
+            var distance = Vector2.Distance(patrolPoints[_fromIndex], patrolPoints[_toIndex]);
             _duration = Mathf.Max(0.25f, distance / Mathf.Max(1f, flightSpeed));
             _elapsed = 0f;
-        }
-
-        private Vector2 RandomPoint()
-        {
-            // 目标点留在边界内侧，为转弯留出空间。
-            var margin = flightArea.size * 0.15f;
-            return new Vector2(Random.Range(flightArea.xMin + margin.x, flightArea.xMax - margin.x),
-                Random.Range(flightArea.yMin + margin.y, flightArea.yMax - margin.y));
+            _flutterPhase = Random.Range(0f, Mathf.PI * 2f);
         }
 
         private void OnDrawGizmos()
         {
             var rect = transform as RectTransform;
             var parent = transform.parent as RectTransform;
-            if (rect == null || parent == null) return;
+            if (patrolPoints == null || rect == null || parent == null) return;
 
-            // anchoredPosition 相对于锚点参考位置，而不是蝴蝶当前的位置。
             var anchor = new Vector2(
                 Mathf.Lerp(rect.anchorMin.x, rect.anchorMax.x, rect.pivot.x),
                 Mathf.Lerp(rect.anchorMin.y, rect.anchorMax.y, rect.pivot.y));
@@ -110,7 +118,13 @@ namespace App.UI.Effects
             var previousMatrix = Gizmos.matrix;
             Gizmos.color = Color.yellow;
             Gizmos.matrix = parent.localToWorldMatrix;
-            Gizmos.DrawWireCube(origin + flightArea.center, flightArea.size);
+            for (var i = 0; i < patrolPoints.Length; i++)
+            {
+                Gizmos.DrawWireSphere(origin + patrolPoints[i], 10f);
+                if (i > 0) Gizmos.DrawLine(origin + patrolPoints[i - 1], origin + patrolPoints[i]);
+            }
+            if (patrolPoints.Length > 2)
+                Gizmos.DrawLine(origin + patrolPoints[patrolPoints.Length - 1], origin + patrolPoints[0]);
             Gizmos.matrix = previousMatrix;
             Gizmos.color = previousColor;
         }

@@ -60,7 +60,14 @@ namespace App.UI
         private readonly HashSet<int> _hitAnimAtCastSlots = new HashSet<int>();
         private AttackTuningConfig.LevelTuning _impactBeat;
         private Vector3 _impactAttackerPos;
-        private AudioClip _impactSfx;
+        private static readonly string[] ImpactSfxKeys =
+        {
+            ResResourcePaths.SfxHitLight,
+            ResResourcePaths.SfxHitMedium,
+            ResResourcePaths.SfxHitHeavy
+        };
+        private readonly AudioClip[] _impactSfx = new AudioClip[3];
+        private bool _impactSfxLoading;
         private bool _disposed;
         /// <summary>特效攻击受击：不播卡牌击退抖动（主目标与溅射）。</summary>
         private bool _skillHitNoKnockback;
@@ -1641,48 +1648,68 @@ namespace App.UI
             DestroyFlight();
             ReleaseHeroFxPrefabs();
             _disposed = true;
-            if (_impactSfx != null && AppServices.IsReady)
+            if (AppServices.IsReady)
             {
-                AppServices.Resolve<IResourceService>().Release(ResResourcePaths.SfxHurtBig02);
+                var resources = AppServices.Resolve<IResourceService>();
+                for (var i = 0; i < _impactSfx.Length; i++)
+                {
+                    if (_impactSfx[i] != null)
+                    {
+                        resources.Release(ImpactSfxKeys[i]);
+                        _impactSfx[i] = null;
+                    }
+                }
             }
-
-            _impactSfx = null;
         }
 
         private async Task PreloadImpactSfxAsync()
         {
-            if (_impactSfx != null || !AppServices.IsReady)
+            if (_impactSfxLoading || !AppServices.IsReady)
             {
                 return;
             }
 
+            _impactSfxLoading = true;
             try
             {
                 var resources = AppServices.Resolve<IResourceService>();
-                var clip = await resources.LoadAsync<AudioClip>(ResResourcePaths.SfxHurtBig02);
-                if (_disposed)
+                for (var i = 0; i < _impactSfx.Length; i++)
                 {
-                    // await 期间已退局：立即释放，避免计数泄漏
-                    resources.Release(ResResourcePaths.SfxHurtBig02);
-                    return;
-                }
+                    if (_impactSfx[i] != null)
+                    {
+                        continue;
+                    }
 
-                _impactSfx = clip;
+                    try
+                    {
+                        var clip = await resources.LoadAsync<AudioClip>(ImpactSfxKeys[i]);
+                        if (_disposed)
+                        {
+                            resources.Release(ImpactSfxKeys[i]);
+                            return;
+                        }
+
+                        _impactSfx[i] = clip;
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLog.Warn(LogChannel.Assets, "Impact SFX load failed: " + ImpactSfxKeys[i] + " " + ex.Message);
+                    }
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                AppLog.Warn(LogChannel.Assets, "Impact SFX load failed: " + ex.Message);
+                _impactSfxLoading = false;
             }
         }
 
-        private void PlayImpactSfx()
+        private void PlayImpactSfx(int level)
         {
-            if (_impactSfx == null || !AppServices.IsReady)
+            var clip = _impactSfx[Mathf.Clamp(level, 1, 3) - 1];
+            if (clip != null && AppServices.IsReady)
             {
-                return;
+                AppServices.Resolve<IAudioService>().PlaySfx(clip);
             }
-
-            AppServices.Resolve<IAudioService>().PlaySfx(_impactSfx);
         }
 
         private void BindPlayer(PlayerItem player)
@@ -1825,7 +1852,7 @@ namespace App.UI
             _impactBeat = beat;
             _impactAttackerPos = attackerWorldPos;
             _victimHitClip = null;
-            PlayImpactSfx();
+            PlayImpactSfx(level);
             var missed = onHit != null && onHit();
             PlayClip(attacker, Clip(level, "end"));
             if (missed)
@@ -1945,7 +1972,7 @@ namespace App.UI
                 _victimHitClip = null;
             }
 
-            PlayImpactSfx();
+            PlayImpactSfx(level);
             var missed = onHit != null && onHit();
             if (missed)
             {

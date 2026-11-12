@@ -36,6 +36,7 @@ namespace App.UI
         private GameResourceViewModel _gameResource;
         private bool _shopPopupOpen;
         private bool _resultPopupOpen;
+        public Func<Task> WaitForPlayerDeathPresentation { get; set; }
         private bool _infoPopupOpen;
         private bool _remainListOpen;
         private bool _settleShownThisShop;
@@ -1271,7 +1272,23 @@ namespace App.UI
             SetShowBackBtn(false);
             try
             {
+                if (!Session.IsPvp && Session.Phase == GamePhase.StageFail &&
+                    Session.Player != null && Session.Player.Hp <= 0 &&
+                    WaitForPlayerDeathPresentation != null)
+                {
+                    await WaitForPlayerDeathPresentation();
+                    if (!IsOpen || Session.Phase != GamePhase.StageFail ||
+                        Session.Player == null || Session.Player.Hp > 0)
+                    {
+                        return;
+                    }
+                }
+
                 await PresentResultThenLeaveOrRetry();
+            }
+            catch (OperationCanceledException)
+            {
+                // 界面关闭或玩家复活时取消等待。
             }
             catch (Exception ex)
             {

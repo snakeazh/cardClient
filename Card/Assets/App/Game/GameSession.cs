@@ -1873,7 +1873,7 @@ namespace App.Game
 
             var dealt = 0;
             var aoe = HeroMechanics.SumValue(Run, MechanismType.AoeDamage);
-            if (aoe <= 0f && HeroMechanics.AttackBecomesFullAoe(ResolveHero(), Player != null ? Player.Attack : 0))
+            if (aoe <= 0f && HeroMechanics.AttackBecomesFullAoe(ResolveHero(), damage))
             {
                 aoe = 1f;
             }

@@ -2,7 +2,7 @@ using App.Resources;
 using App.UI;
 using Framework.UI.Navigation;
 using Framework.UI.View;
-using TMPro;
+using UnityEngine.UI;
 
 namespace App.UI.Splash
 {
@@ -14,14 +14,7 @@ namespace App.UI.Splash
     {
         protected override void OnBind()
         {
-            Binding.BindText(GetNode<TMP_Text>("Title"), ViewModel.Title);
-            Binding.BindText(GetNode<TMP_Text>("Body"), ViewModel.Body);
-            Binding.BindText(GetNode<TMP_Text>("Footer"), ViewModel.Footer);
-        }
-
-        private T GetNode<T>(string key) where T : UnityEngine.Component
-        {
-            return UI.GetGameObject(key).GetComponent<T>();
+            Binding.BindCommand(UI.GetGameObject("PlayBtn").GetComponent<Button>(), ViewModel.PlayCommand);
         }
     }
 }

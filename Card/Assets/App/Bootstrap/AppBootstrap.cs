@@ -106,7 +106,7 @@ namespace App.Bootstrap
             {
                 AppLog.Info(LogChannel.UI, "[Boot] show health advisory"); // 临时排查黑屏，定位后删除
                 // 先开忠告页（独占资源加载），再并发跑重型初始化；
-                // 忠告页倒计时与初始化两者都完成后由忠告页自行进首页。
+                // 点击开始且初始化完成后由忠告页进入首页。
                 await _ui.UI.Open(_services.Resolve<HealthAdvisoryViewModel>());
                 _ = RunHeavyInitAsync(launchInit);
             }

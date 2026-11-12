@@ -39,6 +39,11 @@ MonoBehaviour:
     HitKnockbackDistance: 220
     HitKnockbackDuration: 0.2
     HitRecoverDuration: 0.5
+  bloodCeremonyFlightDuration: 0.6
+  bloodCeremonyArcRatio: 0.8
+  thunderStartDelay: 0.2
+  thunderHitDelay: 0.15
+  thunderDamageHoldDuration: 0.8
   hpTextHoldDuration: 0.85
   clampCastTimeToClip: 1
   heroFxMidDamage: 0

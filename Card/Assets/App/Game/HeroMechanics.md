@@ -37,7 +37,7 @@ PVP 不走这套多目标结算。暗灵法师的攻击特效是齐射（多段�
 | 狂战士 | BloodSucking | 造成伤害后 | 与圣物吸血比例相加，按实际伤害回血。不受「无法圣物回血」影响 |
 | 狂战士 | UnableReplyHp | 圣物治疗 | 圣物治疗为 0。天赋回血和英雄吸血仍生效 |
 | 盗贼 | KillingGetAttack | 击杀 | `PermanentAttackBonus` 和当前攻击 +Value，本局保留 |
-| 盗贼 | AoeDamageWhenAttack | 出手 | 当前攻击 `>= Value[0]` 时，本次伤害 100% 打所有存活敌人，跳过单体和分裂 |
+| 盗贼 | AoeDamageWhenAttack | 出手 | 当次攻击伤害 `>= Value[0]` 时，本次伤害 100% 打所有存活敌人，跳过单体和分裂 |
 | 盗贼 | AttackBossDamage | 出手 | 目标为精英或领主时并入伤害百分比。天赋同 Type 仍只吃领主 |
 | 灰烬术士 | AoeDamage | 出手 | 对所有存活敌人各打 `round(原伤害 × Value)`，主目标不再吃 100% |
 | 灰烬术士 | （面板） | 暴击 | `Critical` 15%，`CriticalDamage` 1.5 |

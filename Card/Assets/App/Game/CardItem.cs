@@ -29,6 +29,32 @@ namespace App.Game
             }
         }
 
+        private GameObject _luckyBindingFx;
+
+        public void SetLuckyBindingFx(GameObject prefab, bool enhanced)
+        {
+            if (!enhanced || prefab == null)
+            {
+                if (_luckyBindingFx != null)
+                {
+                    Destroy(_luckyBindingFx);
+                    _luckyBindingFx = null;
+                }
+                return;
+            }
+
+            if (_luckyBindingFx == null)
+            {
+                _luckyBindingFx = Instantiate(prefab, FxAnchor, false);
+                _luckyBindingFx.transform.localPosition = Vector3.zero;
+                App.UI.UiFx.ApplySorting(_luckyBindingFx,
+                    CurrentRenderer != null ? CurrentRenderer.sortingOrder + 1 : PrefabCardSorting + 1);
+                App.UI.UiFx.RestartParticles(_luckyBindingFx);
+            }
+
+            _luckyBindingFx.SetActive(FaceState == CardFaceState.Front);
+        }
+
         private Tween _moveTween;
         private Tween _rotateTween;
         private Tween _flipTween;
@@ -109,6 +135,7 @@ namespace App.Game
         /// <param name="scale">本地缩放。</param>
         public void Initialize(Card card, CardFaceState faceState, Vector3 worldPosition, Quaternion worldRotation, Vector3 scale)
         {
+            SetLuckyBindingFx(null, false);
             Card = card;
 
             var t = transform;
@@ -628,6 +655,7 @@ namespace App.Game
         /// 显示状态（牌面/朝向/透明度）由下次租用的 Initialize 全量重置。</summary>
         public void ResetForPool()
         {
+            SetLuckyBindingFx(null, false);
             _moveTween?.Kill();
             _moveTween = null;
             _rotateTween?.Kill();
@@ -768,6 +796,11 @@ namespace App.Game
 
         private void ApplySprite()
         {
+            if (_luckyBindingFx != null)
+            {
+                _luckyBindingFx.SetActive(FaceState == CardFaceState.Front);
+            }
+
             var face = CardSpriteLibrary.GetFace(Card);
             var front = ResolveRenderer();
             if (front != null)

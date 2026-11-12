@@ -1238,11 +1238,8 @@ namespace App.Game
             }
 
             SelectingRubTarget = false;
-            SelectingXRayTarget = !SelectingXRayTarget;
-            Hint = SelectingXRayTarget
-                ? $"透视（剩余 {Run.ChaKanGoodCharges}）。点选一名敌人透视其手牌"
-                : "已取消透视";
-            Notify();
+            SelectingXRayTarget = false;
+            TryXRaySeat(DisplayedEnemy);
         }
 
         public void TryXRayPlayer()

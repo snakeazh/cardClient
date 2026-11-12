@@ -2359,7 +2359,8 @@ namespace App.UI
                 return CardFaceState.Back;
             }
 
-            if (player && seat.Looked)
+            if ((player && seat.Looked) ||
+                (!player && session.IsSpyRevealed(seat.Id, cardIndex)))
             {
                 return CardFaceState.Front;
             }

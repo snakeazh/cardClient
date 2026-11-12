@@ -129,6 +129,7 @@ namespace App.UI
         private readonly Dictionary<PlayerItem, Tween> _deathDissolves = new Dictionary<PlayerItem, Tween>(4);
         private readonly HashSet<PlayerItem> _lethalSettleItems = new HashSet<PlayerItem>();
         private bool _attackCutsceneDone;
+        private TaskCompletionSource<bool> _playerDeathCompletion;
         private PlayerItem _waitLethalItem;
         private readonly bool[] _pendingEnemyDeathFx = new bool[3];
         private readonly List<string> _guideTargetIds = new List<string>(4);
@@ -176,6 +177,7 @@ namespace App.UI
         protected override async Task OnViewOpen()
         {
             BattleTrace.Log("GameUI.OnViewOpen begin");
+            ViewModel.WaitForPlayerDeathPresentation = WaitForPlayerDeathPresentation;
             ViewModel?.ResetOpeningGate();
             _fightMaskConsumed = false;
             BindFightMask();
@@ -332,6 +334,12 @@ namespace App.UI
         protected override Task OnViewClose()
         {
             HideFightMask();
+            _playerDeathCompletion?.TrySetCanceled();
+            _playerDeathCompletion = null;
+            if (ViewModel != null)
+            {
+                ViewModel.WaitForPlayerDeathPresentation = null;
+            }
             ClearBindingFx();
             SetInBattleFit(false);
             if (ViewModel != null)
@@ -1885,7 +1893,7 @@ namespace App.UI
             if (session.Player != null && session.Player.Hp <= 0)
             {
                 _attackFx.PlayDeathEffect(_attackFx.HitPositionPlayer());
-                ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
+                StartPlayerDeathPresentation();
             }
 
             var mainSlot = session.AttackVisualSlot;
@@ -1996,6 +2004,23 @@ namespace App.UI
             _deathDissolves[item] = delayTween;
         }
 
+        private Task WaitForPlayerDeathPresentation()
+        {
+            StartPlayerDeathPresentation();
+            return _playerDeathCompletion?.Task ?? Task.CompletedTask;
+        }
+
+        private void StartPlayerDeathPresentation()
+        {
+            if (_playerDeathCompletion != null || _playerItem == null)
+            {
+                return;
+            }
+
+            _playerDeathCompletion = new TaskCompletionSource<bool>();
+            ScheduleDeathDissolve(_playerItem, hideWhenDone: false);
+        }
+
         private void PlayDeathDissolve(PlayerItem item, bool hideWhenDone)
         {
             if (item == null)
@@ -2007,7 +2032,7 @@ namespace App.UI
             _deathDissolves.Remove(item);
             if (!hideWhenDone)
             {
-                item.PlayDissolve();
+                item.PlayDissolve(-1f, () => _playerDeathCompletion?.TrySetResult(true));
                 return;
             }
 
@@ -2806,6 +2831,14 @@ namespace App.UI
             {
                 if (session.Player != null && session.Player.Hp > 0)
                 {
+                    if (_playerDeathCompletion != null)
+                    {
+                        _playerDeathCompletion.TrySetCanceled();
+                        _playerDeathCompletion = null;
+                        CancelDeathDissolve(_playerItem);
+                        _playerItem.ResetDissolve();
+                    }
+
                     var dissolve = _playerItem.GetComponent<UiDissolve>();
                     if (dissolve == null || !dissolve.IsPlaying)
                     {

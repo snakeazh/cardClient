@@ -34,7 +34,7 @@ namespace App.UI
                 {
                     item.SetLuckyBindingFx(_luckyBindingPrefab,
                         session != null && !session.IsPvp &&
-                        session.Run.LuckyEnhancedRanks.Contains((int)item.Card.Rank));
+                        session.Run.LuckyEnhancedCards.Contains(item.Card.ResourceId));
                 }
             }
         }

@@ -24,7 +24,6 @@ namespace App.Game
 
         private static readonly Color UnlockedPortraitColor = Color.white;
         private static readonly Color LockedPortraitColor = new Color(0f, 0f, 0f, 1f);
-
         [SerializeField] private TMP_Text cardName;
         [SerializeField] private Image cardIcon;
         [SerializeField] private Image cardBg;

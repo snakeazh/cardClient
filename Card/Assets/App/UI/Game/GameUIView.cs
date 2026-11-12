@@ -1756,9 +1756,9 @@ namespace App.UI
                 return null;
             }
 
-            var attack = Math.Max(0, session.Player.Attack);
+            var damage = Math.Max(0, session.PendingAttackDamage);
             var isAoe = HeroMechanics.SumValue(hero, MechanismType.AoeDamage) > 0f
-                        || HeroMechanics.AttackBecomesFullAoe(hero, attack);
+                        || HeroMechanics.AttackBecomesFullAoe(hero, damage);
             if (!isAoe)
             {
                 return null;

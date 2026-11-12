@@ -144,13 +144,13 @@ namespace App.Game
             return gain;
         }
 
-        /// <summary>攻击力达到词条阈值时，本次出手改为 100% 群体伤害。</summary>
-        public static bool AttackBecomesFullAoe(HeroConfig hero, int attack)
+        /// <summary>当次攻击伤害达到词条阈值时，本次出手改为 100% 群体伤害。</summary>
+        public static bool AttackBecomesFullAoe(HeroConfig hero, int damage)
         {
             var becomes = false;
             ForEachEntry(hero, entry =>
             {
-                if (entry.Type == MechanismType.AoeDamageWhenAttack && attack >= ValueAt(entry))
+                if (entry.Type == MechanismType.AoeDamageWhenAttack && damage >= ValueAt(entry))
                 {
                     becomes = true;
                 }

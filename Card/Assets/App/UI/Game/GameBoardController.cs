@@ -17,6 +17,28 @@ namespace App.UI
     /// </summary>
     public sealed class GameBoardController : MonoBehaviour
     {
+        private GameObject _luckyBindingPrefab;
+
+        public void SetLuckyBindingPrefab(GameObject prefab)
+        {
+            _luckyBindingPrefab = prefab;
+            RefreshLuckyBindingFx();
+        }
+
+        private void RefreshLuckyBindingFx()
+        {
+            var session = _vm?.Session;
+            for (var i = 0; i < GameBalance.MaxCardsPerSeat; i++)
+            {
+                if (_cards.TryGetPlayerCard(i, out var item) && item != null)
+                {
+                    item.SetLuckyBindingFx(_luckyBindingPrefab,
+                        session != null && !session.IsPvp &&
+                        session.Run.LuckyEnhancedRanks.Contains((int)item.Card.Rank));
+                }
+            }
+        }
+
         private GameTableViewModel _vm;
         private readonly CardTableAnimator _cards = new CardTableAnimator();
         private Camera _camera;
@@ -179,6 +201,7 @@ namespace App.UI
                     if (_vm != null)
                     {
                         _cards.Sync(_vm.Session);
+                        RefreshLuckyBindingFx();
                     }
                 });
         }
@@ -221,6 +244,7 @@ namespace App.UI
 
             BattleTrace.Log("Board.OnSessionChanged Sync cards");
             _cards.Sync(_vm.Session);
+            RefreshLuckyBindingFx();
             RefreshGuideTargets();
         }
 
@@ -233,11 +257,13 @@ namespace App.UI
 
             BattleTrace.Log("Board.SyncCards");
             _cards.Sync(_vm.Session);
+            RefreshLuckyBindingFx();
             RefreshGuideTargets();
         }
 
         private void OnDealFinished()
         {
+            RefreshLuckyBindingFx();
             if (_vm != null)
             {
                 _vm.NotifyDealReady();

@@ -42,6 +42,38 @@ public class PvpRelicBindingsTests
     }
 
     [Fact]
+    public void BindingMembers_UseTheCurrentModeRelicTable()
+    {
+        var fallback = GameTables.Fallback();
+        var tables = new GameTables(
+            fallback.GameConst, fallback.HandScores, fallback.Levels, fallback.Heroes,
+            new[] { Bond(235, 104) },
+            fallback.UnlockConditions, fallback.TalentRows, fallback.Monsters, fallback.Items,
+            "binding-mode-test", fallback.HeroEntries, fallback.TalentEntries, fallback.RelicEntries,
+            bindings: new[]
+            {
+                new BindingConfig { Id = 104, Type = BindingType.LuckyNumber, Value = new[] { 1f, 0.1f } }
+            },
+            pvpRelics: new[]
+            {
+                new PvpRelicConfig { Id = 232, BindingID = new[] { 104 } }
+            });
+
+        var pvpTables = PvpGameTables.Wrap(tables);
+        var held = new List<PvpRelicBindings.BindingHold>();
+        PvpRelicBindings.CollectHeld(tables, new[] { 235 }, held);
+        Assert.True(Assert.Single(held).Complete);
+        Assert.True(PvpRelicBindings.IsComplete(tables, new[] { 235 }, 104));
+        Assert.False(PvpRelicBindings.IsComplete(tables, new[] { 232 }, 104));
+        Assert.Equal(1, PvpRelicBindings.LuckyNumberEnhanceCount(tables, new[] { 235 }));
+
+        PvpRelicBindings.CollectHeld(pvpTables, new[] { 232 }, held);
+        Assert.True(Assert.Single(held).Complete);
+        Assert.True(PvpRelicBindings.IsComplete(pvpTables, new[] { 232 }, 104));
+        Assert.False(PvpRelicBindings.IsComplete(pvpTables, new[] { 235 }, 104));
+    }
+
+    [Fact]
     public void Leiting_OnlyOnCrit_UsesAttackNotDamage()
     {
         var tables = Tables(

@@ -24,7 +24,7 @@ namespace CardShare.Battle
             }
 
             var required = 0;
-            var relics = tables.PvpRelics;
+            var relics = tables.Relics;
             for (var i = 0; i < relics.Count; i++)
             {
                 var relic = relics[i];
@@ -81,7 +81,7 @@ namespace CardShare.Battle
             }
 
             var bindings = tables.Bindings;
-            var relics = tables.PvpRelics;
+            var relics = tables.Relics;
             for (var i = 0; i < bindings.Count; i++)
             {
                 var binding = bindings[i];

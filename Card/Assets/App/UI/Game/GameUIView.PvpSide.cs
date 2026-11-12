@@ -348,7 +348,10 @@ namespace App.UI
             var owned = ViewModel.Session != null && ViewModel.Session.Run != null
                 ? ViewModel.Session.Run.RelicConfigIds
                 : null;
-            PvpRelicBindings.CollectHeld(tables, owned, _bondHolds);
+            var bindingTables = ViewModel.Session != null && ViewModel.Session.IsPvp
+                ? CardShare.Contracts.PvpGameTables.Wrap(tables)
+                : tables;
+            PvpRelicBindings.CollectHeld(bindingTables, owned, _bondHolds);
         }
 
         private void ApplyPvpRoles()
@@ -765,7 +768,7 @@ namespace App.UI
                 return;
             }
 
-            var members = GameSession.CollectBindingMemberRelicIds(hold.Binding.Id, pvp: true);
+            var members = GameSession.CollectBindingMemberRelicIds(hold.Binding.Id, pvp: ViewModel.Session != null && ViewModel.Session.IsPvp);
             var owned = ViewModel.Session != null && ViewModel.Session.Run != null
                 ? ViewModel.Session.Run.RelicConfigIds
                 : null;
@@ -798,7 +801,9 @@ namespace App.UI
                     continue;
                 }
 
-                var relic = LookupPvpRelic(members[i]);
+                var relic = ViewModel.Session != null && ViewModel.Session.IsPvp
+                    ? LookupPvpRelic(members[i])
+                    : RelicConfig.Get(members[i]);
                 Sprite sprite = null;
                 if (relic != null && atlas != null && !string.IsNullOrWhiteSpace(relic.Icon))
                 {

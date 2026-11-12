@@ -122,6 +122,24 @@ namespace App.UI
             HitRecoverDuration = 0.34f
         };
 
+        [Header("血之仪式飞弹")]
+        [Tooltip("反伤飞弹沿弧线飞至目标的时长（秒）。")]
+        [SerializeField, Min(0.01f)] private float bloodCeremonyFlightDuration = 0.6f;
+        [Tooltip("曲线控制点相对直线路径的偏移，与起终点距离的比例。越大弧线越弯。")]
+        [SerializeField, Min(0f)] private float bloodCeremonyArcRatio = 0.8f;
+
+        public float BloodCeremonyFlightDuration => Mathf.Max(0.01f, bloodCeremonyFlightDuration);
+        public float BloodCeremonyArcRatio => Mathf.Max(0f, bloodCeremonyArcRatio);
+
+        [Header("雷霆斩击")]
+        [SerializeField, Min(0f)] private float thunderStartDelay = 0.2f;
+        [SerializeField, Min(0f)] private float thunderHitDelay = 0.15f;
+        [SerializeField, Min(0f)] private float thunderDamageHoldDuration = 0.8f;
+
+        public float ThunderStartDelay => Mathf.Max(0f, thunderStartDelay);
+        public float ThunderHitDelay => Mathf.Max(0f, thunderHitDelay);
+        public float ThunderDamageHoldDuration => Mathf.Max(0f, thunderDamageHoldDuration);
+
         [Header("通用")]
         [Tooltip("退回原位后伤害数字继续停留的时长（秒），过完才结算扣血并进入下一个对手。")]
         [SerializeField]

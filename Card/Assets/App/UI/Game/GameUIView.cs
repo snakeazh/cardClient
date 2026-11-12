@@ -205,6 +205,7 @@ namespace App.UI
                 }
 
                 _board.Attach(ViewModel);
+                _board.SetLuckyBindingPrefab(_bindingFxPrefabs[0]);
                 BattleTrace.Log("GameUI GameHud instantiated + board.Attach done");
             }
             catch (Exception ex)
@@ -249,6 +250,9 @@ namespace App.UI
             {
                 ViewModel.Session.Changed += OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted += OnRelicGoldGranted;
+                ViewModel.Session.ThunderBindingTriggered += OnThunderBindingTriggered;
+                ViewModel.Session.BloodCeremonyHealing += OnBloodCeremonyHealing;
+                ViewModel.Session.BloodCeremonyHit += OnBloodCeremonyHit;
             }
 
             BattleTrace.Log("GameUI.OnViewOpen end");
@@ -273,6 +277,7 @@ namespace App.UI
 
             // 本局英雄：进桌预载释放/命中特效；PVP 随机英雄可能晚于进桌，见 EnsureHeroFxPreloaded。
             await EnsureHeroFxPreloaded();
+            await PreloadBindingFxAsync();
 
             var run = ViewModel.Session?.Run;
             if (run != null && run.HasBoss)
@@ -327,11 +332,15 @@ namespace App.UI
         protected override Task OnViewClose()
         {
             HideFightMask();
+            ClearBindingFx();
             SetInBattleFit(false);
             if (ViewModel != null)
             {
                 ViewModel.Session.Changed -= OnSessionChanged;
                 ViewModel.Session.RelicGoldGranted -= OnRelicGoldGranted;
+                ViewModel.Session.ThunderBindingTriggered -= OnThunderBindingTriggered;
+                ViewModel.Session.BloodCeremonyHealing -= OnBloodCeremonyHealing;
+                ViewModel.Session.BloodCeremonyHit -= OnBloodCeremonyHit;
             }
 
             if (_coinPrefabOwned)
@@ -1450,7 +1459,13 @@ namespace App.UI
                     }
                 }
             };
-            Action onCollisionDone = PlayPendingEnemyDeathEffects;
+            Action onCollisionDone = () =>
+            {
+                if (!Array.Exists(_pendingThunderDamage, damage => damage > 0))
+                {
+                    PlayPendingEnemyDeathEffects();
+                }
+            };
             Action onReturned = () =>
             {
                 if (session.ExtraAttackPending)
@@ -1876,7 +1891,7 @@ namespace App.UI
             var mainSlot = session.AttackVisualSlot;
             for (var slot = 0; slot < _enemyItems.Length; slot++)
             {
-                if (!session.LastAttackHitKilled(slot))
+                if (!session.LastAttackHitKilled(slot) || HasPendingThunder(slot))
                 {
                     continue;
                 }
@@ -2061,6 +2076,11 @@ namespace App.UI
                 return;
             }
 
+            if (TryPlayThunderBinding())
+            {
+                return;
+            }
+
             if (ViewModel != null && ViewModel.Session.TryBeginExtraAttack())
             {
                 _attackCutsceneDone = false;
@@ -2200,7 +2220,7 @@ namespace App.UI
             if (critMain)
             {
                 ViewModel.ShowHpText.Value = false;
-                ShowCritHp(mainSlot, session.TakenDamage);
+                ShowCritHp(mainSlot, Math.Max(1, session.TakenDamage - (HasPendingThunder(mainSlot) ? _pendingThunderDamage[mainSlot] : 0)));
             }
             else
             {
@@ -2224,7 +2244,7 @@ namespace App.UI
                 }
 
                 var missed = session.LastAttackHitMissed(slot);
-                var dealt = session.LastAttackHitDealt(slot);
+                var dealt = session.LastAttackHitDealt(slot) - _pendingThunderDamage[slot];
                 if (!missed && dealt <= 0)
                 {
                     continue;
@@ -2244,7 +2264,7 @@ namespace App.UI
 
             if (session.TakenDamage > 0)
             {
-                ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage)}";
+                ViewModel.HpText.Value = $"-{Math.Max(1, session.TakenDamage - (HasPendingThunder(session.AttackVisualSlot) ? _pendingThunderDamage[session.AttackVisualSlot] : 0))}";
                 return true;
             }
 
@@ -2753,7 +2773,7 @@ namespace App.UI
                     return;
                 }
 
-                if (HasPendingDeathDissolve(item))
+                if (HasPendingThunder(slot) || HasPendingDeathDissolve(item))
                 {
                     return;
                 }

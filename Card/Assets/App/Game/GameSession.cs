@@ -129,6 +129,8 @@ namespace App.Game
         private int _serverLevelId;
         private Task _runGoldSync = Task.CompletedTask;
         private Task _shopSync = Task.CompletedTask;
+        // PVE 调试赠送没有服务端购买记录，快照刷新时合并保留到本局结束。
+        private readonly HashSet<int> _debugGrantedRelicIds = new HashSet<int>();
         private Task _progressSync = Task.CompletedTask;
         /// <summary>消耗品使用后的服务端移除队列：刷新商店/买卖前先等它，免得旧快照把道具塞回背包。</summary>
         private Task _consumableSync = Task.CompletedTask;
@@ -153,6 +155,9 @@ namespace App.Game
         }
 
         public event Action Changed;
+        public event Action<int, int> ThunderBindingTriggered;
+        public event Action BloodCeremonyHealing;
+        public event Action<int> BloodCeremonyHit;
 
         /// <summary>圣物效果加了金币。参数是来源圣物 Id（消耗后已不在栏上则为 0）和数量。UI 用来从圣物列表飞币。</summary>
         public event Action<int, int> RelicGoldGranted;
@@ -498,6 +503,7 @@ namespace App.Game
             Run.ConsecutiveLosses = 0;
             Run.Tilted = false;
             Run.RelicConfigIds.Clear();
+            _debugGrantedRelicIds.Clear();
             Run.RelicPowers.Clear();
             // 广告解锁槽位仅本局有效，新局恢复基础槽位与天赋提供的容量。
             Run.BoughtRelicSlots = 0;
@@ -585,6 +591,12 @@ namespace App.Game
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
             Run.BoughtRelicSlots = dto.BoughtRelicSlots;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
+            // 服务端已持有的圣物转回正常管理，其余调试赠送继续留在本地。
+            _debugGrantedRelicIds.RemoveWhere(id => Run.RelicConfigIds.Contains(id));
+            foreach (var relicId in _debugGrantedRelicIds)
+            {
+                Run.RelicConfigIds.Add(relicId);
+            }
             Run.RelicPowers.Clear();
             ReplaceIdList(Run.ShopOfferIds, dto.ShopOfferIds);
             SyncRemovedRelicTrackers();
@@ -1616,6 +1628,7 @@ namespace App.Game
                 }
             }
 
+            AttackDamage = pending;
             TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             Hint = $"追击 {target.Name}！";
             Notify();
@@ -1659,8 +1672,8 @@ namespace App.Game
             _pendingDamageSource = Player;
             AttackVisualSlot = FindVisualSlot(target);
             var pending = Math.Max(0, PendingAttackDamage);
-            AttackDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
-            TakenDamage = AttackDamage;
+            AttackDamage = pending;
+            TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             LastAttackMissed = false;
             ResetAttackWaves();
             if (!IsPvp && ShouldRollExtraAttack())
@@ -3480,7 +3493,7 @@ namespace App.Game
                 return await TryPvpSellShopRelicAsync(relicId);
             }
 
-            if (!HasServerRun)
+            if (!HasServerRun || _debugGrantedRelicIds.Contains(relicId))
             {
                 var owned = OwnsRelicConfig(relicId);
                 SellShopRelic(relicId);
@@ -3713,6 +3726,7 @@ namespace App.Game
             var sellingSelf = RelicMechanics.SumValueForRelic(relicId, MechanismType.SellGetAttack) != 0f;
             var soldFlat = RelicMechanics.SumValueForRelic(relicId, MechanismType.FlatAttack) != 0f;
             Run.RelicConfigIds.Remove(relicId);
+            _debugGrantedRelicIds.Remove(relicId);
             SyncRemovedRelicTrackers();
             var sell = RelicMechanics.SellPrice(Run, relicId);
             AddGold(sell);
@@ -3831,8 +3845,9 @@ namespace App.Game
             }
 
             Run.RelicConfigIds.RemoveAll(id => id == relicId);
+            var debugGranted = _debugGrantedRelicIds.Remove(relicId);
             // 服务端不知道「用掉了」：不同步的话，下一次快照（刷新商店/进度）会用旧 RelicIds 把它塞回背包。
-            if (HasServerRun)
+            if (HasServerRun && !debugGranted)
             {
                 var previous = _consumableSync;
                 _consumableSync = ContinueConsumeRelicAsync(previous, relicId);
@@ -4297,7 +4312,7 @@ namespace App.Game
                 return;
             }
 
-            var members = CollectBindingMemberRelicIds(bindingId);
+            var members = CollectBindingMemberRelicIds(bindingId, pvp: IsPvp);
             if (members.Count == 0)
             {
                 Hint = $"[编辑器] 羁绊 {binding.Name}（{bindingId}）没有挂圣物";
@@ -4338,6 +4353,7 @@ namespace App.Game
                 else
                 {
                     Run.RelicConfigIds.Add(relicId);
+                    _debugGrantedRelicIds.Add(relicId);
                     Run.ShopOfferIds.Remove(relicId);
                     ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
                     Log($"[编辑器] 获得圣物 {name}（{relicId}）");
@@ -4387,6 +4403,7 @@ namespace App.Game
             }
 
             Run.RelicConfigIds.Add(relicId);
+            _debugGrantedRelicIds.Add(relicId);
             Run.ShopOfferIds.Remove(relicId);
             ApplyRelicMaxHpDelta((int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
             Log($"[编辑器] 获得圣物 {relic.Name}（{relicId}）");
@@ -7199,7 +7216,13 @@ namespace App.Game
                         continue;
                     }
 
+                    if (!any)
+                    {
+                        BloodCeremonyHealing?.Invoke();
+                    }
+
                     any = true;
+                    BloodCeremonyHit?.Invoke(FindVisualSlot(enemy));
                     ApplyDamage(enemy, healed, false, Player);
                 }
             }
@@ -7602,7 +7625,12 @@ namespace App.Game
 
             if (attacker != null && attacker.IsPlayer && !IsPvp && damage > 0 && target != null && !target.IsPlayer)
             {
-                damage += BindingBonus(damage);
+                var bonus = BindingBonus(damage);
+                damage += bonus;
+                if (bonus > 0)
+                {
+                    ThunderBindingTriggered?.Invoke(FindVisualSlot(target), bonus);
+                }
             }
 
             if (damage <= 0)
@@ -8373,6 +8401,7 @@ namespace App.Game
                 var relicId = destroyed[i];
                 var relic = LookupRelic(relicId);
                 Run.RelicConfigIds.Remove(relicId);
+                _debugGrantedRelicIds.Remove(relicId);
                 ApplyRelicMaxHpDelta(-(int)Math.Round(RelicMechanics.SumValueForRelic(relicId, MechanismType.HeroHpMax)));
                 Log($"{(relic != null ? relic.Name : relicId.ToString())} 被摧毁");
             }

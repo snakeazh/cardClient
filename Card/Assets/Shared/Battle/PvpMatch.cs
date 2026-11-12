@@ -1088,7 +1088,7 @@ namespace CardShare.Battle
                 if (PvpRelicBindings.TryLuckyForceWin(
                         _tables,
                         fighter.OwnedRelicIds,
-                        fighter.LuckyEnhancedRanks,
+                        fighter.LuckyEnhancedCards,
                         shown,
                         _shopRandom))
                 {

@@ -360,11 +360,11 @@ namespace CardShare.Battle
         public static bool TryLuckyForceWin(
             IGameTables tables,
             IReadOnlyList<int>? ownedRelicIds,
-            IReadOnlyCollection<int> enhancedRanks,
+            IReadOnlyCollection<int> enhancedCards,
             IReadOnlyList<Card>? shownCards,
             Random rng)
         {
-            if (enhancedRanks == null || enhancedRanks.Count == 0 || shownCards == null || rng == null)
+            if (enhancedCards == null || enhancedCards.Count == 0 || shownCards == null || rng == null)
             {
                 return false;
             }
@@ -384,9 +384,9 @@ namespace CardShare.Battle
                     continue;
                 }
 
-                var rank = (int)card.Rank;
+                var rank = card.ResourceId;
                 var found = false;
-                foreach (var enhanced in enhancedRanks)
+                foreach (var enhanced in enhancedCards)
                 {
                     if (enhanced == rank)
                     {

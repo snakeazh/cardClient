@@ -144,7 +144,7 @@ namespace CardShare.Battle
         public float BindingCritBonus { get; set; }
 
         /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
-        public HashSet<int> LuckyEnhancedRanks { get; } = new HashSet<int>();
+        public HashSet<int> LuckyEnhancedCards { get; } = new HashSet<int>();
 
         /// <summary>断舍离 / 牌型图鉴等永久攻击。</summary>
         public int PermanentAttackBonus { get; set; }

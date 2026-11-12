@@ -7256,8 +7256,8 @@ namespace App.Game
                     continue;
                 }
 
-                var rank = (int)card.Rank;
-                if (!Run.LuckyEnhancedRanks.Contains(rank))
+                var rank = card.ResourceId;
+                if (!Run.LuckyEnhancedCards.Contains(rank))
                 {
                     numbers.Add(rank);
                 }
@@ -7268,8 +7268,8 @@ namespace App.Game
                 var pick = _rng.Next(numbers.Count);
                 var rank = numbers[pick];
                 numbers.RemoveAt(pick);
-                Run.LuckyEnhancedRanks.Add(rank);
-                Log($"幸运点数：永久强化点数 {rank}");
+                Run.LuckyEnhancedCards.Add(rank);
+                Log($"幸运点数：永久强化牌 {rank}");
             }
         }
 
@@ -7482,7 +7482,7 @@ namespace App.Game
             return CardShare.Battle.PvpRelicBindings.TryLuckyForceWin(
                 tables,
                 BindingOwnedRelics(),
-                Run.LuckyEnhancedRanks,
+                Run.LuckyEnhancedCards,
                 shown,
                 _rng);
         }

@@ -501,8 +501,8 @@ namespace App.Game
         public bool BindingReviveArmed;
         /// <summary>属性强化羁绊：永久暴击率加成。</summary>
         public float BindingCritBonus;
-        /// <summary>幸运点数：已永久强化的数字牌点数（Rank 整型）。</summary>
-        public readonly HashSet<int> LuckyEnhancedRanks = new HashSet<int>();
+        /// <summary>幸运点数：已永久强化的数字牌（花色和点数组成的 ResourceId）。</summary>
+        public readonly HashSet<int> LuckyEnhancedCards = new HashSet<int>();
         /// <summary>高档甜品：遗物 Id → 剩余自衰减攻击。卖掉移除，重买重置为配置值。</summary>
         public readonly Dictionary<int, int> SelfDecayAttackLeft = new Dictionary<int, int>();
         /// <summary>高档饮品：遗物 Id → 剩余自衰减倍率。卖掉移除，重买重置为配置值。</summary>
@@ -548,7 +548,7 @@ namespace App.Game
             BindingReviveLeft = 0;
             BindingReviveArmed = false;
             BindingCritBonus = 0f;
-            LuckyEnhancedRanks.Clear();
+            LuckyEnhancedCards.Clear();
             UseDamageMulAdd = 0f;
             UseDamageFixed = 0;
             UseNullifyIncoming = false;

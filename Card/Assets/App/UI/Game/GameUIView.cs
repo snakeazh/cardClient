@@ -275,7 +275,9 @@ namespace App.UI
             await PreloadAudioAsync(resources, ResResourcePaths.SfxDeal5Cards);
             await PreloadAudioAsync(resources, ResResourcePaths.SfxRevealCards3);
             await PreloadAudioAsync(resources, ResResourcePaths.SfxRubCards02);
-            await PreloadAudioAsync(resources, ResResourcePaths.SfxHurtBig02);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxHitLight);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxHitMedium);
+            await PreloadAudioAsync(resources, ResResourcePaths.SfxHitHeavy);
 
             // 本局英雄：进桌预载释放/命中特效；PVP 随机英雄可能晚于进桌，见 EnsureHeroFxPreloaded。
             await EnsureHeroFxPreloaded();
@@ -465,7 +467,9 @@ namespace App.UI
                 resources.Release(ResResourcePaths.SfxDeal5Cards);
                 resources.Release(ResResourcePaths.SfxRevealCards3);
                 resources.Release(ResResourcePaths.SfxRubCards02);
-                resources.Release(ResResourcePaths.SfxHurtBig02);
+                resources.Release(ResResourcePaths.SfxHitLight);
+                resources.Release(ResResourcePaths.SfxHitMedium);
+                resources.Release(ResResourcePaths.SfxHitHeavy);
                 resources.Release(ResResourcePaths.GameHudBossBg);
             }
 

@@ -72,9 +72,9 @@ namespace App.Resources
         public const string CardInfoItem = "UI/Icon/cardinfoItem";
         /// <summary>旧主界面 BGM Assets/Res/Audio/BGM/BGM.mp3。</summary>
         public const string Bgm = "Audio/BGM/BGM";
-        /// <summary>大厅 BGM Assets/Res/Audio/BGM/BGM_Lobby_Loop.wav。</summary>
+        /// <summary>大厅 BGM Assets/Res/Audio/BGM/BGM_Lobby_Loop.mp3。</summary>
         public const string BgmLobby = "Audio/BGM/BGM_Lobby_Loop";
-        /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.wav。</summary>
+        /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.mp3。</summary>
         public const string BgmBattle = "Audio/BGM/BGM_Battle_Loop";
         /// <summary>回合发牌音效 Assets/Res/Audio/Effect/deal_5cards_01.wav。</summary>
         public const string SfxDeal5Cards = "Audio/Effect/deal_5cards_01";
@@ -82,6 +82,9 @@ namespace App.Resources
         public const string SfxRevealCards3 = "Audio/Effect/reveal_cards_3";
         /// <summary>攻击/受击卡牌碰撞音效 Assets/Res/Audio/Effect/hurt_big_02.wav。</summary>
         public const string SfxHurtBig02 = "Audio/Effect/hurt_big_02";
+        public const string SfxHitLight = "Audio/Effect/hit_light";
+        public const string SfxHitMedium = "Audio/Effect/hit_medium";
+        public const string SfxHitHeavy = "Audio/Effect/hit_heavy";
         /// <summary>搓牌技能音效 Assets/Res/Audio/Effect/rub_cards_02.wav。</summary>
         public const string SfxRubCards02 = "Audio/Effect/rub_cards_02";
         /// <summary>通用按钮点击音效 Assets/Res/Audio/Effect/ui_click_03.wav。</summary>

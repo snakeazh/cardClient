@@ -230,25 +230,10 @@ namespace App.UI
 
         public int HeroFxStrongDamage => Mathf.Max(0, heroFxStrongDamage);
 
-        /// <summary>
-        /// 选英雄特效档位：配了强档伤害阈值就按这一刀的伤害分（1 弱 / 2 中 / 3 强），
-        /// 否则直接用牌型档位（AttackLevel 1/2/3）——它跟卡牌动作、震屏用的是同一套档。
-        /// </summary>
+        /// <summary>英雄特效与本次攻击伤害对应的动作档位保持一致。</summary>
         public int ResolveHeroFxLevel(int attackLevel, int damage)
         {
-            var strong = HeroFxStrongDamage;
-            if (strong <= 0)
-            {
-                return Mathf.Clamp(attackLevel, 1, 3);
-            }
-
-            if (damage >= strong)
-            {
-                return 3;
-            }
-
-            var mid = HeroFxMidDamage;
-            return mid > 0 && damage >= mid ? 2 : 1;
+            return Mathf.Clamp(attackLevel, 1, 3);
         }
 
         public float DeathDissolveDelay => Mathf.Max(0f, deathDissolveDelay);

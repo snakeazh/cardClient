@@ -1626,6 +1626,7 @@ namespace App.Game
             }
 
             AttackDamage = pending;
+            AttackLevel = MapAttackLevel(pending);
             TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             Hint = $"追击 {target.Name}！";
             Notify();
@@ -1670,6 +1671,7 @@ namespace App.Game
             AttackVisualSlot = FindVisualSlot(target);
             var pending = Math.Max(0, PendingAttackDamage);
             AttackDamage = pending;
+            AttackLevel = MapAttackLevel(pending);
             TakenDamage = pending + (!IsPvp ? BindingBonus(pending) : 0);
             LastAttackMissed = false;
             ResetAttackWaves();
@@ -1958,6 +1960,7 @@ namespace App.Game
             TakenDamage = IsPvp
                 ? AttackDamage
                 : IncomingDamageAfterMitigation(PendingAttackDamage, attacker);
+            AttackLevel = MapAttackLevel(TakenDamage);
             DodgeCounterDamage = 0;
             LastAttackMissed = false;
             ResetAttackWaves();
@@ -2131,7 +2134,6 @@ namespace App.Game
                 }
 
                 PendingAttackDamage = damage;
-                AttackLevel = MapAttackLevel(openScore.Type);
                 var shown = damage;
                 if (opener != null && opener.IsPlayer)
                 {
@@ -2156,7 +2158,6 @@ namespace App.Game
             var loss = ComputeAttackDamage(target, targetScore, opener);
             TryApplyPermanentCardBonuses(openScore);
             PendingAttackDamage = loss;
-            AttackLevel = MapAttackLevel(targetScore.Type);
             var taken = IncomingDamageAfterMitigation(loss, target);
             LastResult = $"{target?.Name} 的{targetScore.Label}压过你的{openScore.Label}，受到 {taken} 伤害";
             Log(LastResult);
@@ -6636,7 +6637,7 @@ namespace App.Game
                 Run.Tilted = false;
                 var relicMult = RelicMultiplier(best);
                 PendingAttackDamage = HandEvaluator.ComputeDamage(best, ShowdownStake(), relicMult);
-                AttackLevel = MapAttackLevel(best.Type);
+                AttackLevel = MapAttackLevel(PendingAttackDamage);
                 ApplyBankruptcy(true, winner);
                 Pot = 0;
                 _pairWinHolyLightArmed = best.Type == HandType.Pair;
@@ -7017,20 +7018,15 @@ namespace App.Game
             }
         }
 
-        /// <summary>散牌/对子为低，顺子/金花为中，顺金/豹子为高。</summary>
-        private static int MapAttackLevel(HandType type)
+        /// <summary>按本次伤害分档：低于 100 为轻击，100 至 499 为中击，500 起为重击。</summary>
+        private static int MapAttackLevel(int damage)
         {
-            switch (type)
+            if (damage >= 500)
             {
-                case HandType.StraightFlush:
-                case HandType.ThreeOfAKind:
-                    return 3;
-                case HandType.Straight:
-                case HandType.Flush:
-                    return 2;
-                default:
-                    return 1;
+                return 3;
             }
+
+            return damage >= 100 ? 2 : 1;
         }
 
         public void Continue()
@@ -11236,7 +11232,7 @@ namespace App.Game
             AttackDamage = damage;
             TakenDamage = damage;
             PendingAttackDamage = damage;
-            AttackLevel = 1;
+            AttackLevel = MapAttackLevel(damage);
             AttackVisualSlot = Math.Max(0, FindVisualSlot(enemy));
             _pendingAttackTarget = incoming ? Player : enemy;
             _pendingDamageSource = incoming ? enemy : Player;
@@ -11267,7 +11263,7 @@ namespace App.Game
             AttackDamage = damage;
             TakenDamage = damage;
             PendingAttackDamage = damage;
-            AttackLevel = 1;
+            AttackLevel = MapAttackLevel(damage);
             AttackVisualSlot = -1;
             _pendingAttackTarget = Player;
             Phase = GamePhase.WaitingAttack;
@@ -11336,7 +11332,7 @@ namespace App.Game
             // 撞击演出仍要有档位；MISS 时 Pending 用 1 只为播动画，TakenDamage / AttackDamage 保持 0。
             var scaled = missed ? 0 : Math.Max(1, damage);
             PendingAttackDamage = Math.Max(1, scaled);
-            AttackLevel = MapAttackLevel(winType);
+            AttackLevel = MapAttackLevel(scaled);
             if (AttackLevel < 1 || AttackLevel > 3)
             {
                 AttackLevel = 1;

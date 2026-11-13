@@ -132,6 +132,7 @@ namespace App.Game
         // PVE 调试赠送没有服务端购买记录，快照刷新时合并保留到本局结束。
         private readonly HashSet<int> _debugGrantedRelicIds = new HashSet<int>();
         private Task _progressSync = Task.CompletedTask;
+        private Task _encounterSync = Task.CompletedTask;
         /// <summary>消耗品使用后的服务端移除队列：刷新商店/买卖前先等它，免得旧快照把道具塞回背包。</summary>
         private Task _consumableSync = Task.CompletedTask;
         private readonly PveSettleStats _runStats = new PveSettleStats();
@@ -476,13 +477,32 @@ namespace App.Game
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
+        public int PlayerOpenCardLimit
+        {
+            get
+            {
+                var tables = UnityGameConfigLoader.Current;
+                if (tables == null || Run == null)
+                    return GameBalance.OpenHandSize;
+                if (IsPvp)
+                    tables = CardShare.Contracts.PvpGameTables.Wrap(tables);
+                if (CardShare.Battle.PvpRelicBindings.IsTypeComplete(tables, BindingOwnedRelics(), BindingType.CardEcho))
+                    return Math.Min(PlayerDealCount, 5);
+                return GameBalance.OpenHandSize;
+            }
+        }
+
+        public bool PlayerHasValidSelection =>
+            Player.CountSelectedCards() >= GameBalance.OpenHandSize &&
+            Player.CountSelectedCards() <= PlayerOpenCardLimit;
+
         public bool PlayerMayCompare =>
             !AiActing &&
             !HandReplacePlaying &&
             Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
             AnyEnemyAlive() &&
-            Player.CountSelectedCards() == GameBalance.OpenHandSize &&
+            PlayerHasValidSelection &&
             _revealKind == RevealKind.None &&
             !AttackPlaying &&
             !(IsPvp && _pvpHandLocked);
@@ -514,6 +534,7 @@ namespace App.Game
             _runGoldSync = Task.CompletedTask;
             _shopSync = Task.CompletedTask;
             _progressSync = Task.CompletedTask;
+            _encounterSync = Task.CompletedTask;
             _consumableSync = Task.CompletedTask;
             ResetSettleStats();
             Run.LoanTicket = false;
@@ -544,6 +565,7 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginChapter();
             }
 
+            RestoreRecordedRelicUnlocks();
             UnlockSvc()?.BeginRun();
             StartStage(inheritPlayerHp: false);
         }
@@ -590,6 +612,8 @@ namespace App.Game
             Run.ShopRefreshCount = dto.ShopRefreshCount;
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
             Run.BoughtRelicSlots = dto.BoughtRelicSlots;
+            Run.GoldTurnToDamageBonus = Math.Max(Run.GoldTurnToDamageBonus, dto.GoldTurnToDamageBonus);
+            Run.UsedSkillThisRun |= dto.UsedSkillThisRun;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
             // 服务端已持有的圣物转回正常管理，其余调试赠送继续留在本地。
             _debugGrantedRelicIds.RemoveWhere(id => Run.RelicConfigIds.Contains(id));
@@ -619,6 +643,7 @@ namespace App.Game
             await WaitConsumableSyncAsync();
             await WaitShopReadyAsync();
             await FlushProgressAsync();
+            await _encounterSync;
         }
 
         public PveSettleRequest BuildSettleRequest(bool cleared, bool forfeit = false)
@@ -638,18 +663,39 @@ namespace App.Game
                 return;
             }
 
+            await _encounterSync;
             await FlushRunGoldAsync();
             await WaitConsumableSyncAsync();
             var score = ScoreSvc();
             var amount = score != null ? score.Current.Stage : 0;
             try
             {
-                await GameApi.Client.ReportPveProgressAsync(_serverRunId, clearedStage, amount);
+                await GameApi.Client.ReportPveProgressAsync(_serverRunId, clearedStage, amount, Run.UsedSkillThisRun);
             }
             catch (GameApiException ex)
             {
                 Toast.Error(GameApi.Describe(ex));
             }
+        }
+
+        private async Task ReportSkillUseAsync(Task previous, string runId)
+        {
+            await previous;
+            try
+            {
+                await GameApi.Client.ReportPveProgressAsync(runId, false, 0, true, true);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        private void RecordSkillUse()
+        {
+            if (!Run.UsedSkillThisRun && HasServerRun)
+                _progressSync = ReportSkillUseAsync(_progressSync, _serverRunId);
+            Run.UsedSkillThisRun = true;
         }
 
         /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
@@ -887,7 +933,42 @@ namespace App.Game
             }
 
             var old = Player.Hand[index];
-            var next = DrawRubCard(old);
+            Card next;
+            var tables = UnityGameConfigLoader.Current;
+            var chosen = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            var matching = new List<int>(3);
+            if (chosen)
+                for (var i = 0; i < Player.Hand.Length; i++)
+                    if (Player.Hand[i].IsValid && Player.Hand[i].Rank == old.Rank)
+                        matching.Add(i);
+
+            if (matching.Count == 3)
+            {
+                SyncDeckWithTable();
+                foreach (var slot in matching)
+                    _deck.Return(Player.Hand[slot]);
+                if (!_deck.TryDrawTriplet(out var bomb, old.Rank))
+                {
+                    SyncDeckWithTable();
+                    Hint = "牌堆中没有其他三张同点数的牌";
+                    Notify();
+                    return false;
+                }
+
+                next = default;
+                for (var i = 0; i < matching.Count; i++)
+                {
+                    if (matching[i] == index)
+                        next = bomb[i];
+                    else
+                        Player.Hand[matching[i]] = bomb[i];
+                }
+            }
+            else
+            {
+                next = DrawRubCard(old);
+            }
             if (!next.IsValid || next.Equals(old))
             {
                 Hint = "没有可换的新牌";
@@ -920,7 +1001,7 @@ namespace App.Game
 
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.ShuffleCard);
@@ -1017,9 +1098,9 @@ namespace App.Game
             }
             else
             {
-                if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+                if (Player.CountSelectedCards() >= PlayerOpenCardLimit)
                 {
-                    Hint = "已经选了 3 张，再点已选中的牌可取消";
+                    Hint = $"已经选了 {PlayerOpenCardLimit} 张，再点已选中的牌可取消";
                     Notify();
                     return;
                 }
@@ -1029,7 +1110,7 @@ namespace App.Game
 
             var picked = Player.CountSelectedCards();
             Hint = picked >= GameBalance.OpenHandSize
-                ? "已选 3 张，可开牌"
+                ? $"已选 {picked} 张，可开牌（最多 {PlayerOpenCardLimit} 张）"
                 : $"已选 {picked}/{GameBalance.OpenHandSize} 张，点选卡牌上移表示开牌用牌";
             Notify();
         }
@@ -1268,8 +1349,30 @@ namespace App.Game
             _pendingRubIndex = -1;
             SyncDeckWithTable();
             var nextCards = new Card[PlayerDealCount];
+            var tables = UnityGameConfigLoader.Current;
+            var chosen = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            Card[] bomb = Array.Empty<Card>();
+            if (chosen)
+            {
+                foreach (var card in Player.Hand)
+                    _deck.Return(card);
+                if (!_deck.TryDrawTriplet(out bomb))
+                {
+                    SyncDeckWithTable();
+                    Hint = "牌堆不足，无法替换";
+                    Notify();
+                    return;
+                }
+            }
+
             for (var i = 0; i < nextCards.Length; i++)
             {
+                if (i < bomb.Length)
+                {
+                    nextCards[i] = bomb[i];
+                    continue;
+                }
                 if (!_deck.TryDraw(out nextCards[i]) || !nextCards[i].IsValid)
                 {
                     SyncDeckWithTable();
@@ -1286,7 +1389,7 @@ namespace App.Game
 
             Player.PeekedType = string.Empty;
             Run.TiHuanGoodCharges--;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             if (Player.Looked)
@@ -1373,7 +1476,7 @@ namespace App.Game
             var score = EvaluateSeat(seat);
             seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.Perspective);
@@ -2215,6 +2318,13 @@ namespace App.Game
                 talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
                 relicExtra = RelicMechanics.SumMultiplierExtra(Run, score, ctx);
                 relicAttack = (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx));
+                if (PlayerOpenCardLimit > GameBalance.OpenHandSize)
+                {
+                    GetScoreBan(attacker, out var ban1, out var ban2, out var banFaces, out var ban3);
+                    relicAttack += HandEvaluator.EchoExtraAttack(
+                        CollectEvalCards(attacker, ban1, banFaces, GetHandEvalRules(attacker), ban2, ban3),
+                        score, ban1, banFaces, ban2, ban3);
+                }
                 var hero = ResolveHero();
                 dmgPercent = TalentMechanics.SumDamagePercent(
                     talent,
@@ -2235,7 +2345,9 @@ namespace App.Game
                 dmgPercent += RelicOutgoingDamagePercent(defender);
                 dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
                 dmgPercent += Run.MagicCoinDamageBonus;
-                critRate = ResolveLivePlayerPanel().CritRate;
+                dmgPercent += Run.GoldTurnToDamageBonus;
+                critRate = RelicMechanics.SumValue(Run, MechanismType.SharpBlade) > 0f
+                    ? 1f : ResolveLivePlayerPanel().CritRate;
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero)
                     + RelicMechanics.SumValue(Run, MechanismType.CritDamageUp);
                 extraAttackChance = TalentMechanics.SumValue(talent, MechanismType.ProOfExtraAttack);
@@ -2856,7 +2968,8 @@ namespace App.Game
             ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : CardShare.Battle.PvpRelicBag.InitialSlots(GameConst.IsLoaded ? GameConst.Instance : null))
             : GameBalance.MaxRelics
               + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax))
-              + Run.BoughtRelicSlots;
+              + Run.BoughtRelicSlots
+              + (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TreasureChest));
 
         /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>
         public int PvpNextRelicSlotCost => IsPvp ? _pvpNextSlotCost : 0;
@@ -4630,8 +4743,14 @@ namespace App.Game
         {
             GetScoreBan(seat, out var banned, out var banned2, out var banFaces, out var banned3);
             var rules = GetHandEvalRules(seat);
-            var score = HandEvaluator.Evaluate(
-                CollectEvalCards(seat, banned, banFaces, rules, banned2, banned3),
+            var cards = CollectEvalCards(seat, banned, banFaces, rules, banned2, banned3);
+            var useExtended = seat != null &&
+                ((seat.IsPlayer && PlayerOpenCardLimit > GameBalance.OpenHandSize) ||
+                 (IsPvp && !seat.IsPlayer && cards.Length > GameBalance.OpenHandSize));
+            var score = useExtended
+                ? HandEvaluator.EvaluateEcho(cards, banned, banFaces, rules, banned2, banned3)
+                : HandEvaluator.Evaluate(
+                cards,
                 banned,
                 banFaces,
                 rules,
@@ -4978,6 +5097,7 @@ namespace App.Game
             Run.GoldSpentThisRun += amount;
             EnqueueRunGold(grant: false, amount);
             ApplyMagicCoinOnSpend();
+            Run.GoldTurnToDamageBonus += RelicMechanics.SumValue(Run, MechanismType.GoldTurnToDamage, 1);
         }
 
         private void AddGold(int amount)
@@ -5188,6 +5308,11 @@ namespace App.Game
             ApplyHeroToPlayer(inheritPlayerHp);
             ApplyHealMissingHpOnStageStart();
             var enemyCount = ApplyLevelEnemies();
+            if (HasServerRun && LevelSvc()?.Current != null)
+            {
+                _encounterSync = SyncStageEncounterAsync(_serverRunId, LevelSvc().Current.Id,
+                    _encounterSync, _shopSync, _progressSync);
+            }
 
             var entries = BossMechanics.ResolveAll(Run);
             var title = Run.HasBoss
@@ -5212,6 +5337,22 @@ namespace App.Game
                 ResetSkillCharges();
             }
             StartRound();
+        }
+
+        private async Task SyncStageEncounterAsync(string runId, int levelId, Task previous, Task shop, Task progress)
+        {
+            await previous;
+            await shop;
+            await progress;
+            try
+            {
+                var profile = await GameApi.Client.EnterPveStageAsync(runId, levelId);
+                GameApi.MergeEncounteredMonsters(profile);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
         }
 
         private void PickLevelEntries()
@@ -5374,14 +5515,17 @@ namespace App.Game
                 ClearSeatHand(seat);
             }
 
-            if (SharedBattleBridge.TryDeal(_pveLocal, AllSeats(), CardsDealtFor))
+            var tables = UnityGameConfigLoader.Current;
+            var guaranteedBomb = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            if (!guaranteedBomb && SharedBattleBridge.TryDeal(_pveLocal, AllSeats(), CardsDealtFor))
             {
                 SyncDeckWithTable();
                 return;
             }
 
             SyncDeckWithTable();
-            var forceGuideHand = ShouldApplyFirstBattleDeal();
+            var forceGuideHand = !guaranteedBomb && ShouldApplyFirstBattleDeal();
             var skillGuideDeal = forceGuideHand && IsFirstSkillGuideDeal();
             foreach (var seat in AllSeats())
             {
@@ -5408,11 +5552,20 @@ namespace App.Game
                 }
 
                 var count = CardsDealtFor(seat);
+                Card[] triplet = Array.Empty<Card>();
+                if (seat.IsPlayer && guaranteedBomb && count >= 3)
+                    _deck.TryDrawTriplet(out triplet);
                 for (var i = 0; i < seat.Hand.Length; i++)
                 {
                     if (i >= count)
                     {
                         seat.Hand[i] = default;
+                        continue;
+                    }
+
+                    if (i < triplet.Length)
+                    {
+                        seat.Hand[i] = triplet[i];
                         continue;
                     }
 
@@ -6811,7 +6964,9 @@ namespace App.Game
                 return Array.Empty<Card>();
             }
 
-            if (seat.CountSelectedCards() == GameBalance.OpenHandSize)
+            if (seat.IsPlayer ? PlayerHasValidSelection :
+                IsPvp ? seat.CountSelectedCards() >= GameBalance.OpenHandSize :
+                seat.CountSelectedCards() == GameBalance.OpenHandSize)
             {
                 if (seat.IsPlayer && Run.HandBrandIndex >= 0)
                 {
@@ -7009,6 +7164,9 @@ namespace App.Game
         {
             switch (type)
             {
+                case HandType.FourOfAKind: return "四炸弹";
+                case HandType.FiveStraight: return "五顺子";
+                case HandType.FiveFlush: return "五同花";
                 case HandType.ThreeOfAKind: return "豹子炸场";
                 case HandType.StraightFlush: return "顺金通杀";
                 case HandType.Flush: return "金花亮出";
@@ -7105,6 +7263,21 @@ namespace App.Game
 
         private IReadOnlyList<int> BindingOwnedRelics()
             => Run != null ? Run.RelicConfigIds : null;
+
+        public int EchoAttackForCard(Card card, HandScore score)
+        {
+            if (PlayerOpenCardLimit <= GameBalance.OpenHandSize || !card.IsValid)
+                return 0;
+
+            GetScoreBan(Player, out var ban1, out var ban2, out var banFaces, out var ban3);
+            var cards = CollectEvalCards(Player, ban1, banFaces, GetHandEvalRules(Player), ban2, ban3);
+            for (var i = 0; i < cards.Length; i++)
+            {
+                if (cards[i].Equals(card))
+                    return HandEvaluator.EchoExtraAttack(new[] { card }, score, ban1, banFaces, ban2, ban3);
+            }
+            return 0;
+        }
 
         private void ArmBindingReviveIfNeeded()
         {
@@ -8565,8 +8738,15 @@ namespace App.Game
 
         private async Task SyncStageThenShopAsync()
         {
+            await FlushProgressAsync();
             await ReportRunProgressAsync(true);
             await SyncEnterShopAsync();
+        }
+
+        private async Task ReportStageAfterAsync(Task previous)
+        {
+            await previous;
+            await ReportRunProgressAsync(true);
         }
 
         private async Task SyncEnterShopAsync()
@@ -8592,7 +8772,7 @@ namespace App.Game
             GrantStageGold();
             if (HasServerRun)
             {
-                _progressSync = ReportRunProgressAsync(true);
+                _progressSync = ReportStageAfterAsync(_progressSync);
             }
 
             if (!TryAdvanceLevel())
@@ -9625,6 +9805,7 @@ namespace App.Game
             _runStats.NumberOfCoinsOwned = 0;
             _runStats.CriticalNum = 0;
             _runStats.ThreeCardAttack = 0;
+            _runStats.NoSkillLevelTen = 0;
         }
 
         private void AccumulateSettleStat(ContidionType type, int amount)
@@ -9702,6 +9883,9 @@ namespace App.Game
                 case ContidionType.ThreeCardAttack:
                     _runStats.ThreeCardAttack += amount;
                     break;
+                case ContidionType.NoSkillLevelTen:
+                    _runStats.NoSkillLevelTen += amount;
+                    break;
             }
         }
 
@@ -9749,10 +9933,15 @@ namespace App.Game
                     ReportUnlock(ContidionType.Angel);
                 }
 
-                if (difficulty >= 10 && !Run.UsedSkillThisRun)
+                if (difficulty >= 10)
                 {
                     ReportUnlock(ContidionType.LuxuryGoods);
                 }
+            }
+
+            if (difficulty >= 10 && !Run.UsedSkillThisRun)
+            {
+                ReportUnlock(ContidionType.NoSkillLevelTen);
             }
 
             if (OwnsRelicConfig(RelicIdFirstSlot) &&
@@ -9761,6 +9950,23 @@ namespace App.Game
             {
                 ReportUnlock(ContidionType.ThreeCardAttack);
             }
+        }
+
+        private void RestoreRecordedRelicUnlocks()
+        {
+            var unlock = UnlockSvc();
+            var progress = ProgressSvc();
+            var levels = LevelSvc();
+            if (unlock == null || progress == null || levels == null) return;
+
+            if (progress.IsCleared(10) && unlock.GetProgress(10503) < 10)
+                unlock.Report(ContidionType.ClearDifficulty, 10);
+
+            var heroId = GameConst.IsLoaded ? GameConst.Instance.DefaultHeroId : 1;
+            var maxLevel = levels.GetMaxLevel(10);
+            if (maxLevel > 0 && progress.GetHeroHighestCleared(heroId, 10) >= maxLevel &&
+                unlock.GetProgress(11003) < 1)
+                unlock.Report(ContidionType.LuxuryGoods);
         }
 
         private void ApplyHeroKillRewards(SeatState enemy)
@@ -11702,7 +11908,10 @@ namespace App.Game
             var handBefore = _pendingPvpReplacePlay && Player.Hand != null
                 ? (Card[])Player.Hand.Clone()
                 : null;
-            CopyPvpHand(Player, mine, true);
+            // 扩展选牌在开牌时统一提交，等待期间保留本地正在调整的选择。
+            var syncSelected = PlayerOpenCardLimit <= GameBalance.OpenHandSize ||
+                               showdown || (mine != null && mine.Locked);
+            CopyPvpHand(Player, mine, syncSelected);
             if (_pendingPvpReplacePlay && mine != null && mine.Cards != null && mine.Cards.Count > 0)
             {
                 // 无关快照不会改手牌：只在己方 5 张真的变了时才播回收/发牌，避免别的玩家动作误触发。
@@ -11831,16 +12040,16 @@ namespace App.Game
             }
             else if (foeLocked)
             {
-                Hint = "对方已锁定，请选 3 张开牌";
+                Hint = $"对方已锁定，请选择 3 至 {PlayerOpenCardLimit} 张开牌";
             }
-            else if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+            else if (PlayerHasValidSelection)
             {
-                Hint = "已选 3 张，可开牌";
+                Hint = $"已选 {Player.CountSelectedCards()} 张，可开牌";
             }
             else
             {
                 var picked = Player.CountSelectedCards();
-                Hint = $"第{match.Round}轮 已选 {picked}/{GameBalance.OpenHandSize} 张";
+                Hint = $"第{match.Round}轮 已选 {picked}/{PlayerOpenCardLimit} 张";
             }
         }
 

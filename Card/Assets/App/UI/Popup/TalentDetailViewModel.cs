@@ -29,7 +29,7 @@ namespace App.UI.Popup
             /// <summary>获得方式文案（遗物页=UnlockConditionConfig.Desc）；空表示该条目不显示。</summary>
             public string AcquireMethod;
 
-            /// <summary>特殊描述文案（图鉴遗物页=RelicConfig.SpecialDesc）；空表示该条目不显示。</summary>
+            /// <summary>附加描述（遗物特殊描述或怪物机制）；空表示该条目不显示。</summary>
             public string SpecialDesc;
 
             /// <summary>怪物页条目的 MonsterId（&gt;0 表示用 PlayerItem 敌人形态卡显示底图），其余为 0。</summary>
@@ -109,7 +109,7 @@ namespace App.UI.Popup
         /// <summary>获得方式文案。</summary>
         public ObservableProperty<string> AcquireMethodText { get; }
 
-        /// <summary>是否显示特殊描述文本（图鉴遗物页开，文案=RelicConfig.SpecialDesc）。</summary>
+        /// <summary>是否显示附加描述文本（遗物特殊描述或怪物机制）。</summary>
         public ObservableProperty<bool> ShowSpecialDesc { get; }
 
         /// <summary>特殊描述文案。</summary>

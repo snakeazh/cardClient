@@ -39,7 +39,10 @@ namespace App.Game
         Straight = 2,
         Flush = 3,
         StraightFlush = 4,
-        ThreeOfAKind = 5
+        ThreeOfAKind = 5,
+        FiveFlush = 6,
+        FiveStraight = 7,
+        FourOfAKind = 8
     }
 
     public readonly struct Card : IEquatable<Card>
@@ -223,6 +226,49 @@ namespace App.Game
             Shuffle();
         }
 
+        /// <summary>从未发出的牌中随机取出三张同点数牌。</summary>
+        public bool TryDrawTriplet(out Card[] triplet, Rank? excludedRank = null)
+        {
+            var ranks = new List<Rank>();
+            foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+            {
+                if (rank == excludedRank)
+                    continue;
+
+                var available = 0;
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+                    if (Contains(new Card(suit, rank)))
+                        available++;
+                if (available >= 3)
+                    ranks.Add(rank);
+            }
+
+            if (ranks.Count == 0)
+            {
+                triplet = Array.Empty<Card>();
+                return false;
+            }
+
+            var chosen = ranks[_rng.Next(ranks.Count)];
+            var availableCards = new List<Card>(4);
+            foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+            {
+                var card = new Card(suit, chosen);
+                if (Contains(card))
+                    availableCards.Add(card);
+            }
+
+            triplet = new Card[3];
+            for (var i = 0; i < triplet.Length; i++)
+            {
+                var index = _rng.Next(availableCards.Count);
+                triplet[i] = availableCards[index];
+                Remove(triplet[i]);
+                availableCards.RemoveAt(index);
+            }
+            return true;
+        }
+
         public Card Draw()
         {
             return TryDraw(out var card) ? card : default;
@@ -316,7 +362,8 @@ namespace App.Game
         /// <summary>比牌顺位修正（降低）。不改 <see cref="Type"/> / <see cref="Level"/> / 倍率。</summary>
         public int CompareLevelBonus { get; }
         /// <summary>比牌用的 Level，含顺位修正，夹到配置最小/最大。</summary>
-        public int CompareLevel => HandEvaluator.ClampLevel(Level + CompareLevelBonus);
+        public int CompareLevel => HandEvaluator.ClampLevel(
+            Type <= HandType.ThreeOfAKind ? Math.Min(Level + CompareLevelBonus, 6) : Level + CompareLevelBonus);
         /// <summary>比牌顺位对应的牌型。降低后展示用这个，伤害仍看 <see cref="Type"/>。</summary>
         public HandType CompareType => HandEvaluator.TypeByLevel(CompareLevel);
 
@@ -404,6 +451,9 @@ namespace App.Game
         {
             switch (type)
             {
+                case HandType.FiveFlush: return "五同花";
+                case HandType.FiveStraight: return "五顺子";
+                case HandType.FourOfAKind: return "四炸弹";
                 case HandType.ThreeOfAKind: return "豹子";
                 case HandType.StraightFlush: return "顺金";
                 case HandType.Flush: return "金花";
@@ -415,6 +465,10 @@ namespace App.Game
 
         public static float TypeMultiplier(HandType type)
         {
+            if (type == HandType.FiveFlush) return 12f;
+            if (type == HandType.FiveStraight) return 16f;
+            if (type == HandType.FourOfAKind) return 20f;
+
             if (TryGetConfig(type, out var row) && row.BasicMagnification > 0f)
             {
                 return row.BasicMagnification;
@@ -426,6 +480,10 @@ namespace App.Game
         /// <summary>配置 <see cref="HandScoreConfig.Level"/>，缺表时回退到与 JSON 一致的硬编码。</summary>
         public static int TypeLevel(HandType type)
         {
+            if (type == HandType.FiveFlush) return 7;
+            if (type == HandType.FiveStraight) return 8;
+            if (type == HandType.FourOfAKind) return 9;
+
             if (TryGetConfig(type, out var row) && row.Level > 0)
             {
                 return row.Level;
@@ -438,7 +496,7 @@ namespace App.Game
         public static int ClampLevel(int level)
         {
             var min = MinLevel();
-            var max = MaxLevel();
+            var max = Math.Max(9, MaxLevel());
             if (level < min)
             {
                 return min;
@@ -456,6 +514,10 @@ namespace App.Game
         public static HandType TypeByLevel(int level)
         {
             level = ClampLevel(level);
+
+            if (level == 7) return HandType.FiveFlush;
+            if (level == 8) return HandType.FiveStraight;
+            if (level == 9) return HandType.FourOfAKind;
 
             if (TryGetTypeByLevel(level, out var type))
             {
@@ -620,6 +682,156 @@ namespace App.Game
                 case 6: return HandType.ThreeOfAKind;
                 default: return HandType.HighCard;
             }
+        }
+
+        /// <summary>卡牌回响的四张炸弹、五张顺子与五张同花判定。</summary>
+        public static bool TryEvaluateExtended(IReadOnlyList<Card> cards, out HandScore score)
+        {
+            score = default;
+            if (cards == null || cards.Count < 4 || cards.Count > 5)
+                return false;
+
+            var ordered = new List<Card>(cards.Count);
+            var chips = 0;
+            for (var i = 0; i < cards.Count; i++)
+            {
+                if (!cards[i].IsValid)
+                    return false;
+                ordered.Add(cards[i]);
+                chips += cards[i].ChipValue;
+            }
+
+            ordered.Sort(RankComparison);
+            for (var i = 0; i <= ordered.Count - 4; i++)
+            {
+                if (ordered[i].Rank == ordered[i + 3].Rank)
+                {
+                    var rank = ordered[i].Rank;
+                    var bomb = ordered.GetRange(i, 4).ToArray();
+                    score = new HandScore(HandType.FourOfAKind, chips, 20f,
+                        new[] { RankKey(rank) }, bomb, $"四炸弹 {Card.RankName(rank)}");
+                    return true;
+                }
+            }
+
+            if (ordered.Count != 5)
+                return false;
+
+            var keys = new int[5];
+            var flush = true;
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                keys[i] = RankKey(ordered[i].Rank);
+                flush &= ordered[i].Suit == ordered[0].Suit;
+            }
+
+            var straight = true;
+            for (var i = 1; i < keys.Length; i++)
+                straight &= keys[i - 1] - keys[i] == 1;
+            // A-2-3-4-5 也是五张顺子。
+            var wheel = keys[0] == 14 && keys[1] == 5 && keys[2] == 4 && keys[3] == 3 && keys[4] == 2;
+            if (straight || wheel)
+            {
+                var high = wheel ? 5 : keys[0];
+                score = new HandScore(HandType.FiveStraight, chips, 16f,
+                    new[] { high }, ordered.ToArray(), $"五顺子 {high}");
+                return true;
+            }
+
+            if (flush)
+            {
+                score = new HandScore(HandType.FiveFlush, chips, 12f,
+                    keys, ordered.ToArray(), "五同花");
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>先评估扩展牌型，否则从已亮的牌中取最强三张。</summary>
+        public static HandScore EvaluateEcho(IReadOnlyList<Card> cards, Suit? bannedSuit = null,
+            bool banFaces = false, HandEvalRules rules = default, Suit? bannedSuit2 = null, Suit? bannedSuit3 = null)
+        {
+            var filtered = Filter(cards, bannedSuit, banFaces, bannedSuit2, bannedSuit3).ToArray();
+            var hasExtended = TryEvaluateExtended(filtered, out var extended);
+            if (rules.WildAce && filtered.Length >= 4)
+                extended = ImproveExtendedWithWildAce(filtered, extended, ref hasExtended);
+            if (hasExtended)
+                return extended;
+            if (filtered.Length <= 3)
+                return Evaluate(filtered, rules: rules);
+            return SelectBestOpen(filtered, new bool[filtered.Length], filtered.Length, rules: rules);
+        }
+
+        private static HandScore ImproveExtendedWithWildAce(Card[] cards, HandScore best, ref bool hasBest)
+        {
+            var wildIndexes = new List<int>(4);
+            var suit = default(Suit);
+            var chips = 0;
+            for (var i = 0; i < cards.Length; i++)
+            {
+                chips += cards[i].ChipValue;
+                if (cards[i].Rank == Rank.Ace)
+                    wildIndexes.Add(i);
+                else if (suit == default(Suit))
+                    suit = cards[i].Suit;
+            }
+
+            if (wildIndexes.Count == 0 || suit == default(Suit))
+                return best;
+
+            var substituted = (Card[])cards.Clone();
+            var combinations = 1;
+            for (var i = 0; i < wildIndexes.Count; i++)
+                combinations *= 13;
+
+            for (var combination = 0; combination < combinations; combination++)
+            {
+                var value = combination;
+                foreach (var index in wildIndexes)
+                {
+                    substituted[index] = new Card(suit, (Rank)(value % 13 + 1));
+                    value /= 13;
+                }
+
+                if (!TryEvaluateExtended(substituted, out var candidate) ||
+                    (hasBest && candidate.CompareTo(best) <= 0))
+                    continue;
+
+                // 替代后的牌可能重复，逐张对应回真实牌，确保额外攻击和花色词条读取真实牌面。
+                var consumed = new bool[cards.Length];
+                var used = new Card[candidate.UsedCards.Length];
+                for (var i = 0; i < used.Length; i++)
+                {
+                    for (var j = 0; j < substituted.Length; j++)
+                    {
+                        if (!consumed[j] && substituted[j].Equals(candidate.UsedCards[i]))
+                        {
+                            consumed[j] = true;
+                            used[i] = cards[j];
+                            break;
+                        }
+                    }
+                }
+
+                best = new HandScore(candidate.Type, chips, candidate.Multiplier,
+                    candidate.Keys, used, candidate.Label);
+                hasBest = true;
+            }
+            return best;
+        }
+
+        /// <summary>亮出但未组成牌型的牌，其筹码计入攻击力。</summary>
+        public static int EchoExtraAttack(IReadOnlyList<Card> shown, HandScore score,
+            Suit? bannedSuit = null, bool banFaces = false, Suit? bannedSuit2 = null, Suit? bannedSuit3 = null)
+        {
+            var used = new HashSet<Card>(score.UsedCards ?? Array.Empty<Card>());
+            var valid = Filter(shown, bannedSuit, banFaces, bannedSuit2, bannedSuit3);
+            var total = 0;
+            for (var i = 0; i < valid.Count; i++)
+                if (!used.Contains(valid[i]))
+                    total += valid[i].ChipValue;
+            return total;
         }
 
         public static HandScore Evaluate(

@@ -58,7 +58,7 @@ namespace CardShare.Battle
                     LoseStreak = f.LoseStreak,
                     RelicIds = f.Alive || f.DeathRelicIds == null ? f.OwnedRelicIds.ToArray() : f.DeathRelicIds,
                     RelicPower = f.OwnedRelicPower.ToArray(),
-                    RelicSlots = f.RelicSlots,
+                    RelicSlots = PvpRelicRuntime.EffectiveRelicSlots(tables, f),
                     NullifyDamage = f.NullifyDamageNextHit
                 };
             }
@@ -173,7 +173,7 @@ namespace CardShare.Battle
                 OwnedRelicIds = fighter.OwnedRelicIds.ToArray(),
                 OwnedRelicPower = ownedPower,
                 OwnedSellPrices = ownedSellPrices,
-                RelicSlots = fighter.RelicSlots,
+                RelicSlots = PvpRelicRuntime.EffectiveRelicSlots(tables, fighter),
                 NextSlotCost = PvpRelicBag.NextSlotCost(tables.GameConst, fighter.RelicSlots),
                 Skills = ProjectSkills(tables, fighter),
                 Done = fighter.ShopDone

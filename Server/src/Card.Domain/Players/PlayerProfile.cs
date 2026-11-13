@@ -31,6 +31,20 @@ public sealed class PlayerProfile
 
     public BagState Bag { get; set; } = new BagState();
 
+    public int[] EncounteredMonsterIds { get; set; } = Array.Empty<int>();
+
+    public bool RememberMonsters(IEnumerable<int> ids)
+    {
+        var known = new HashSet<int>(EncounteredMonsterIds ?? Array.Empty<int>());
+        var changed = false;
+        foreach (var id in ids)
+        {
+            if (id > 0 && known.Add(id)) changed = true;
+        }
+        if (changed) EncounteredMonsterIds = known.OrderBy(id => id).ToArray();
+        return changed;
+    }
+
     public int[] GuideCompletedGroupIds { get; set; } = Array.Empty<int>();
 
     /// <summary>巨量广告点击归因（转化回传用），登录时按最新启动参数覆盖。</summary>
@@ -373,6 +387,32 @@ public sealed class PlayerProfile
     {
         var max = config.Tables.GetMaxLevel(difficulty);
         return max > 0 && Level.GetHighestCleared(difficulty) >= max;
+    }
+
+    /// <summary>根据已有的通关记录回填新增圣物的可验证解锁条件。</summary>
+    public bool SyncNewRelicUnlocks(IGameConfig config)
+    {
+        var changed = false;
+        foreach (var condition in config.Tables.UnlockConditions)
+        {
+            if (condition.Id == 10503 && condition.Value > 0 &&
+                IsDifficultyCleared(condition.Value, config) && Unlock.GetAmount(condition.Id) < condition.Value)
+            {
+                Unlock.SetAmount(condition.Id, condition.Value);
+                changed = true;
+            }
+            else if (condition.Id == 11003 && condition.Value > 0 && Unlock.GetAmount(condition.Id) < condition.Value)
+            {
+                var max = config.Tables.GetMaxLevel(10);
+                var heroId = config.Tables.GameConst.DefaultHeroId;
+                if (heroId > 0 && max > 0 && Level.GetHeroHighestCleared(heroId, 10) >= max)
+                {
+                    Unlock.SetAmount(condition.Id, condition.Value);
+                    changed = true;
+                }
+            }
+        }
+        return changed;
     }
 
     public bool IsLevelUnlocked(int levelId, IGameConfig config)

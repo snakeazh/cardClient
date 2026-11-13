@@ -13,7 +13,7 @@ namespace CardShare.Battle
         /// <summary>货架上买得起的最高价圣物 Id；同价取 Id 较小者。没有则 null。</summary>
         public static int? PickHighestAffordable(PvpFighter fighter, IGameTables tables)
         {
-            if (fighter == null || tables == null || fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            if (fighter == null || tables == null || fighter.OwnedRelicIds.Count >= PvpRelicRuntime.EffectiveRelicSlots(tables, fighter))
             {
                 return null;
             }
@@ -53,7 +53,7 @@ namespace CardShare.Battle
                 return false;
             }
 
-            if (fighter.OwnedRelicIds.Count < fighter.RelicSlots)
+            if (fighter.OwnedRelicIds.Count < PvpRelicRuntime.EffectiveRelicSlots(tables, fighter))
             {
                 return false;
             }

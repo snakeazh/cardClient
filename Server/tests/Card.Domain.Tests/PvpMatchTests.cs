@@ -835,6 +835,38 @@ public class PvpMatchTests
     }
 
     [Fact]
+    public void NewRelics_WorkTogetherThroughPvpShopActions()
+    {
+        var directory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../../Card/Assets/Res/Config"));
+        var tables = (GameTables)new CardShare.Infrastructure.Config.FileGameConfigLoader(directory).Load();
+        var match = Open(tables, shopPool: new[] { 438, 439, 440 }, hp: 100000);
+        EnterShopPhase(match);
+        var fighter = match.Fighters[0];
+        fighter.Gold = 5000;
+        fighter.OwnedRelicIds.Clear();
+        fighter.OwnedRelicPower.Clear();
+        fighter.RelicSlots = 4;
+        foreach (var id in new[] { 101, 102, 103 })
+        {
+            fighter.OwnedRelicIds.Add(id);
+            fighter.OwnedRelicPower.Add(1);
+        }
+        fighter.ShopOfferIds.Clear();
+        fighter.ShopOfferIds.AddRange(new[] { 438, 440, 439 });
+
+        match.Act(fighter.UserId, "buy", 438, Array.Empty<int>());
+        Assert.Equal(6, match.ViewFor(fighter.UserId).Shop!.RelicSlots);
+        match.Act(fighter.UserId, "buy", 440, Array.Empty<int>());
+        Assert.Equal(0f, fighter.MagicCoinDamageBonus);
+        match.Act(fighter.UserId, "buy", 439, Array.Empty<int>());
+        Assert.Equal(0.05f, fighter.MagicCoinDamageBonus, 4);
+        Assert.Equal(6, fighter.OwnedRelicIds.Count);
+        match.Act(fighter.UserId, "sell", 438, Array.Empty<int>());
+        Assert.Equal(4, match.ViewFor(fighter.UserId).Shop!.RelicSlots);
+        Assert.Equal(0.05f, fighter.MagicCoinDamageBonus, 4);
+    }
+
+    [Fact]
     public void CopiesStaySeparateSlots()
     {
         var fighter = new PvpFighter();

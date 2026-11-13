@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using App.Bootstrap;
 using CardShare.Contracts;
 using Framework.Log;
@@ -8,6 +9,16 @@ namespace App.Net
     public static class GameApi
     {
         public static GameApiClient Client { get; private set; }
+
+        private static readonly HashSet<int> EncounteredMonsters = new HashSet<int>();
+
+        public static bool HasEncounteredMonster(int id) => EncounteredMonsters.Contains(id);
+
+        public static void MergeEncounteredMonsters(PlayerProfileDto profile)
+        {
+            if (profile?.EncounteredMonsterIds == null) return;
+            foreach (var id in profile.EncounteredMonsterIds) EncounteredMonsters.Add(id);
+        }
 
         public static bool IsReady => Client != null && Client.HasSession;
 
@@ -23,6 +34,11 @@ namespace App.Net
 
         public static void ApplyProfile(PlayerProfileDto profile)
         {
+            EncounteredMonsters.Clear();
+            if (profile?.EncounteredMonsterIds != null)
+            {
+                foreach (var id in profile.EncounteredMonsterIds) EncounteredMonsters.Add(id);
+            }
             NickName = profile != null ? profile.NickName ?? string.Empty : string.Empty;
             AvatarUrl = profile != null ? profile.AvatarUrl ?? string.Empty : string.Empty;
             ServerProfileApplier.Apply(profile);

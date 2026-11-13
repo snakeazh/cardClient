@@ -1,8 +1,10 @@
 using System.Text.Json;
 using CardShare.Battle;
 using CardShare.Contracts;
+using CardShare.Contracts.Config;
 using CardShare.Domain;
 using CardShare.Domain.Pvp;
+using CardShare.Domain.Players;
 using CardShare.Infrastructure;
 
 namespace CardShare.Server.Pvp;
@@ -110,6 +112,16 @@ public sealed class PvpCommandDispatcher
     /// </summary>
     public async Task BroadcastMatchAsync(PvpMatch match, long seq, CancellationToken cancellationToken)
     {
+        try
+        {
+            await RecordMonsterEncountersAsync(match, cancellationToken);
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            using var scope = _scopes.CreateScope();
+            scope.ServiceProvider.GetRequiredService<ILogger<PvpCommandDispatcher>>()
+                .LogError(ex, "记录 PvP 怪物遇见失败，房间 {RoomId}", match.RoomId);
+        }
         var events = match.DrainEvents();
         foreach (var fighter in match.Fighters)
         {
@@ -160,6 +172,28 @@ public sealed class PvpCommandDispatcher
         }
 
         _matches.UnbindEliminated(match);
+    }
+
+    private async Task RecordMonsterEncountersAsync(PvpMatch match, CancellationToken cancellationToken)
+    {
+        if (match.FightKind != PvpFightKind.Monster) return;
+        using var scope = _scopes.CreateScope();
+        var tables = scope.ServiceProvider.GetRequiredService<IGameTables>();
+        var groupId = PvpSchedule.MonsterGroup(tables, match.Round);
+        if (!tables.TryGetMonsterGroup(groupId, out var group) ||
+            !tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster)) return;
+        var humanIds = match.Fighters.Where(f => !f.IsBot).Select(f => f.UserId).ToHashSet();
+        var users = match.Duels.Where(d => d.VsMonster && humanIds.Contains(d.LeftUserId))
+            .Select(d => Guid.TryParse(d.LeftUserId, out var id) ? id : Guid.Empty)
+            .Where(id => id != Guid.Empty).Distinct().ToArray();
+        var session = scope.ServiceProvider.GetRequiredService<PlayerSession>();
+        foreach (var user in users)
+        {
+            await using var gate = await session.AcquireAsync(user, cancellationToken);
+            var profile = await session.LoadAsync(user, cancellationToken);
+            if (profile.RememberMonsters(new[] { monster.MonsterId }))
+                await session.SaveAsync(profile, cancellationToken);
+        }
     }
 
     /// <summary>接受没凑齐：通知房间里的真人，再把要留下的人插回队列前面。</summary>

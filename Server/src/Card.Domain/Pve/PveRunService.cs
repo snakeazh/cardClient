@@ -44,6 +44,12 @@ public sealed class PveRunService
 
         await using var gate = await _session.AcquireAsync(userId, cancellationToken);
         var run = await RequireActiveRun(userId, request.RunId, cancellationToken);
+        run.UsedSkillThisRun |= request.UsedSkillThisRun;
+        if (request.SkillOnly)
+        {
+            await _runs.SaveAsync(run, cancellationToken);
+            return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
+        }
         if (run.CurrentLevelId <= 0)
         {
             run.CurrentLevelId = run.LevelId;
@@ -146,6 +152,7 @@ public sealed class PveRunService
             throw new DomainException(ErrorCodes.HeroLocked, "Hero is locked.");
         }
 
+        RememberLevelMonsters(profile, level);
         profile.SpendEnergyForRun(_config);
         profile.Level.LastHeroId = heroId;
         profile.Level.LastLevelId = request.LevelId;
@@ -182,6 +189,33 @@ public sealed class PveRunService
             Run = PveRunMapper.ToDto(run),
             Profile = ProfileMapper.ToDto(profile)
         };
+    }
+
+    private void RememberLevelMonsters(PlayerProfile profile, LevelConfig level)
+    {
+        if (level.MonsterGroup == null) return;
+        var ids = new List<int>();
+        for (var i = 0; i < Math.Min(3, level.MonsterGroup.Length); i++)
+        {
+            if (_config.Tables.TryGetMonsterGroup(level.MonsterGroup[i], out var group) &&
+                _config.Tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster))
+                ids.Add(monster.MonsterId);
+        }
+        profile.RememberMonsters(ids);
+    }
+
+    public async Task<PlayerProfileDto> EnterStageAsync(Guid userId, PveStageEnterRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.RunId))
+            throw DomainException.Invalid("runId is required.");
+        await using var gate = await _session.AcquireAsync(userId, cancellationToken);
+        var run = await RequireActiveRun(userId, request.RunId, cancellationToken);
+        if (request.LevelId != run.CurrentLevelId || !_config.Tables.TryGetLevel(request.LevelId, out var level))
+            throw DomainException.Invalid("Level does not match current run.");
+        var profile = await _session.LoadAsync(userId, cancellationToken);
+        RememberLevelMonsters(profile, level);
+        await _session.SaveAsync(profile, cancellationToken);
+        return ProfileMapper.ToDto(profile);
     }
 
     public async Task<PveSettleResponse> SettlePveAsync(Guid userId, PveSettleRequest request, CancellationToken cancellationToken)
@@ -259,7 +293,17 @@ public sealed class PveRunService
             throw DomainException.Invalid($"Unknown relic {relicId}.");
         }
 
-        if (run.RelicIds.Count >= _config.Balance.DefaultRelicNumMax + run.BoughtRelicSlots)
+        var extraSlots = 0;
+        foreach (var ownedId in run.RelicIds)
+        {
+            if (!_config.Tables.TryGetRelic(ownedId, out var owned) || owned.MechanismId == null)
+                continue;
+            foreach (var entryId in owned.MechanismId)
+                if (_config.Tables.TryGetRelicEntry(entryId, out var entry) &&
+                    entry.Type == MechanismType.TreasureChest && entry.Value != null && entry.Value.Length > 0)
+                    extraSlots += Math.Max(0, (int)Math.Round(entry.Value[0]));
+        }
+        if (run.RelicIds.Count >= _config.Balance.DefaultRelicNumMax + run.BoughtRelicSlots + extraSlots)
         {
             throw DomainException.Invalid("Relic bag is full.");
         }
@@ -271,6 +315,7 @@ public sealed class PveRunService
         }
 
         run.Gold -= price;
+        RecordGoldSpend(run, price);
         run.RelicIds.Add(relicId);
         run.ShopOfferIds.Remove(relicId);
         await _runs.SaveAsync(run, cancellationToken);
@@ -344,6 +389,7 @@ public sealed class PveRunService
             }
 
             run.Gold -= cost;
+            RecordGoldSpend(run, cost);
             run.ShopRefreshCount++;
         }
 
@@ -385,8 +431,22 @@ public sealed class PveRunService
         }
 
         run.Gold -= amount;
+        RecordGoldSpend(run, amount);
         await _runs.SaveAsync(run, cancellationToken);
         return new PveRunResponse { Run = PveRunMapper.ToDto(run) };
+    }
+
+    private void RecordGoldSpend(PveRun run, int amount)
+    {
+        if (amount <= 0) return;
+        foreach (var ownedId in run.RelicIds)
+        {
+            if (!_config.Tables.TryGetRelic(ownedId, out var relic) || relic.MechanismId == null) continue;
+            foreach (var entryId in relic.MechanismId)
+                if (_config.Tables.TryGetRelicEntry(entryId, out var entry) &&
+                    entry.Type == MechanismType.GoldTurnToDamage && entry.Value != null && entry.Value.Length > 1)
+                    run.GoldTurnToDamageBonus += entry.Value[1];
+        }
     }
 
     private async Task<PveSettleResponse> SettleUnlockedAsync(
@@ -425,6 +485,11 @@ public sealed class PveRunService
         if (request.Cleared && clearedLevel != null)
         {
             stats.ClearDifficulty = clearedLevel.Difficulty;
+            if (clearedLevel.Difficulty >= 10)
+            {
+                if (!run.UsedSkillThisRun) stats.NoSkillLevelTen = 1;
+                if (run.HeroId == _config.Tables.GameConst.DefaultHeroId) stats.LuxuryGoods = 1;
+            }
         }
 
         profile.ApplyUnlockStats(stats, _config);

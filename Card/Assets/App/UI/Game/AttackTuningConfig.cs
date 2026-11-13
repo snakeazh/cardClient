@@ -70,6 +70,9 @@ namespace App.UI
             [Tooltip("后撤蓄力的距离，朝目标反方向拉开多少 UI 像素。")]
             public float RetreatDistance = 160f;
 
+            [Tooltip("近战命中后攻击方的回弹距离（UI 单位）。")]
+            public float AttackerRecoilDistance = 300f;
+
             [Tooltip("受击方被击退的距离，朝攻击方的反方向弹开多少 UI 像素。")]
             public float HitKnockbackDistance = 40f;
 
@@ -117,6 +120,7 @@ namespace App.UI
             HitHoldDuration = 0.33f,
             BackDuration = 0.55f,
             RetreatDistance = 288f,
+            AttackerRecoilDistance = 400f,
             HitKnockbackDistance = 96f,
             HitKnockbackDuration = 0.16f,
             HitRecoverDuration = 0.34f

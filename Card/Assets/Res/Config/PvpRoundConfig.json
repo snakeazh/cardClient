@@ -36,7 +36,7 @@
     "ModeId": 1,
     "Round": 5,
     "FightKind": 1,
-    "MonsterGroup": 10041,
+    "MonsterGroup": 99041,
     "GoldBase": 30
   },
   {
@@ -68,7 +68,7 @@
     "ModeId": 1,
     "Round": 9,
     "FightKind": 1,
-    "MonsterGroup": 10071,
+    "MonsterGroup": 99071,
     "GoldBase": 40
   },
   {
@@ -100,7 +100,7 @@
     "ModeId": 1,
     "Round": 13,
     "FightKind": 1,
-    "MonsterGroup": 10101,
+    "MonsterGroup": 99101,
     "GoldBase": 50
   }
 ]

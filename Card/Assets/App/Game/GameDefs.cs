@@ -430,13 +430,13 @@ namespace App.Game
         /// <summary>训练：点数 → 永久额外攻击。下标为 <see cref="Rank"/>，卖掉不清。</summary>
         public readonly int[] RankAttackForever = new int[14];
         /// <summary>天使 / 消耗品：牌型永久额外倍率。下标为 <see cref="HandType"/>（0–5），长度 7 避免豹子越界。</summary>
-        public readonly float[] HandTypeMagForever = new float[7];
+        public readonly float[] HandTypeMagForever = new float[9];
         /// <summary>老搓家累计倍率。卖掉不清。</summary>
         public float RubRelicMagForever;
         /// <summary>工资卡：遗物 Id → 售价加成。卖掉后再买仍用。</summary>
         public readonly Dictionary<int, int> RelicSellBonus = new Dictionary<int, int>();
         /// <summary>老千：各牌型本局亮出次数。下标为 <see cref="HandType"/>。</summary>
-        public readonly int[] HandTypeShowCounts = new int[7];
+        public readonly int[] HandTypeShowCounts = new int[9];
         /// <summary>消耗品：本次比牌造成伤害提高（加在百分比上，0.5 = +50%）。</summary>
         public float UseDamageMulAdd;
         /// <summary>消耗品：本次比牌造成的固定伤害。0 表示没有。</summary>
@@ -493,6 +493,8 @@ namespace App.Game
         public float BindingMagForever;
         /// <summary>注魔硬币：每次消费叠加的永久伤害加成（加在百分比上）。</summary>
         public float MagicCoinDamageBonus;
+        /// <summary>重金手通过消费获得的永久伤害加成。</summary>
+        public float GoldTurnToDamageBonus;
         /// <summary>权力羁绊层数。</summary>
         public int NobilityStacks;
         /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
@@ -544,6 +546,7 @@ namespace App.Game
             PracticeMagForever = 0f;
             BindingMagForever = 0f;
             MagicCoinDamageBonus = 0f;
+            GoldTurnToDamageBonus = 0f;
             NobilityStacks = 0;
             BindingReviveLeft = 0;
             BindingReviveArmed = false;

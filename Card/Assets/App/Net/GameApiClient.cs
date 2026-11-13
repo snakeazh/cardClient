@@ -266,12 +266,17 @@ namespace App.Net
         public Task<PveSettleResponse> SettlePveAsync(PveSettleRequest request)
             => SendAsync<PveSettleResponse>("POST", "/v1/pve/settle", request);
 
-        public Task<PveRunResponse> ReportPveProgressAsync(string runId, bool clearedStage, int score)
+        public Task<PlayerProfileDto> EnterPveStageAsync(string runId, int levelId)
+            => SendAsync<PlayerProfileDto>("POST", "/v1/pve/run/enter-stage", new PveStageEnterRequest { RunId = runId, LevelId = levelId });
+
+        public Task<PveRunResponse> ReportPveProgressAsync(string runId, bool clearedStage, int score, bool usedSkillThisRun, bool skillOnly = false)
             => SendAsync<PveRunResponse>("POST", "/v1/pve/run/progress", new PveProgressRequest
             {
                 RunId = runId ?? string.Empty,
                 ClearedStage = clearedStage,
-                Score = score
+                Score = score,
+                UsedSkillThisRun = usedSkillThisRun,
+                SkillOnly = skillOnly
             });
 
         public Task<TalentDrawResponse> DrawTalentAsync()

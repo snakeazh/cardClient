@@ -31,6 +31,20 @@ public sealed class PlayerProfile
 
     public BagState Bag { get; set; } = new BagState();
 
+    public int[] EncounteredMonsterIds { get; set; } = Array.Empty<int>();
+
+    public bool RememberMonsters(IEnumerable<int> ids)
+    {
+        var known = new HashSet<int>(EncounteredMonsterIds ?? Array.Empty<int>());
+        var changed = false;
+        foreach (var id in ids)
+        {
+            if (id > 0 && known.Add(id)) changed = true;
+        }
+        if (changed) EncounteredMonsterIds = known.OrderBy(id => id).ToArray();
+        return changed;
+    }
+
     public int[] GuideCompletedGroupIds { get; set; } = Array.Empty<int>();
 
     /// <summary>巨量广告点击归因（转化回传用），登录时按最新启动参数覆盖。</summary>

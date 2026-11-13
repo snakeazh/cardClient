@@ -152,6 +152,7 @@ public sealed class PveRunService
             throw new DomainException(ErrorCodes.HeroLocked, "Hero is locked.");
         }
 
+        RememberLevelMonsters(profile, level);
         profile.SpendEnergyForRun(_config);
         profile.Level.LastHeroId = heroId;
         profile.Level.LastLevelId = request.LevelId;
@@ -188,6 +189,33 @@ public sealed class PveRunService
             Run = PveRunMapper.ToDto(run),
             Profile = ProfileMapper.ToDto(profile)
         };
+    }
+
+    private void RememberLevelMonsters(PlayerProfile profile, LevelConfig level)
+    {
+        if (level.MonsterGroup == null) return;
+        var ids = new List<int>();
+        for (var i = 0; i < Math.Min(3, level.MonsterGroup.Length); i++)
+        {
+            if (_config.Tables.TryGetMonsterGroup(level.MonsterGroup[i], out var group) &&
+                _config.Tables.TryGetMonster(group.MonsterId, group.MonsterLevel, out var monster))
+                ids.Add(monster.MonsterId);
+        }
+        profile.RememberMonsters(ids);
+    }
+
+    public async Task<PlayerProfileDto> EnterStageAsync(Guid userId, PveStageEnterRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.RunId))
+            throw DomainException.Invalid("runId is required.");
+        await using var gate = await _session.AcquireAsync(userId, cancellationToken);
+        var run = await RequireActiveRun(userId, request.RunId, cancellationToken);
+        if (request.LevelId != run.CurrentLevelId || !_config.Tables.TryGetLevel(request.LevelId, out var level))
+            throw DomainException.Invalid("Level does not match current run.");
+        var profile = await _session.LoadAsync(userId, cancellationToken);
+        RememberLevelMonsters(profile, level);
+        await _session.SaveAsync(profile, cancellationToken);
+        return ProfileMapper.ToDto(profile);
     }
 
     public async Task<PveSettleResponse> SettlePveAsync(Guid userId, PveSettleRequest request, CancellationToken cancellationToken)

@@ -27,6 +27,8 @@ namespace CardShare.Contracts
 
         public UnlockDto Unlock { get; set; } = new UnlockDto();
 
+        public int[] EncounteredMonsterIds { get; set; } = System.Array.Empty<int>();
+
         public int[] GuideCompletedGroupIds { get; set; } = System.Array.Empty<int>();
 
         public BagEntryDto[] Bag { get; set; } = System.Array.Empty<BagEntryDto>();

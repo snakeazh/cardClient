@@ -98,6 +98,12 @@ namespace CardShare.Contracts
         public PveRunDto Run { get; set; } = new PveRunDto();
     }
 
+    public sealed class PveStageEnterRequest
+    {
+        public string RunId { get; set; } = string.Empty;
+        public int LevelId { get; set; }
+    }
+
     public sealed class PveProgressRequest
     {
         public string RunId { get; set; } = string.Empty;

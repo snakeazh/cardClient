@@ -5,6 +5,7 @@ using App.Atlas;
 using App.Config;
 using CardShare.Contracts.Config;
 using App.Level;
+using App.Net;
 using App.Unlock;
 using Framework.Assets;
 using Framework.Log;
@@ -185,7 +186,7 @@ namespace App.UI.Popup
         /// </summary>
         public async void OpenDetail(IllustratedBookEntry entry, Func<IllustratedBookEntry, Sprite> iconResolver)
         {
-            if (entry == null)
+            if (entry == null || (entry.Tab == IllustratedBookTab.Monster && !entry.Unlocked))
             {
                 return;
             }
@@ -198,11 +199,15 @@ namespace App.UI.Popup
                 for (var i = 0; i < siblings.Count; i++)
                 {
                     var sibling = siblings[i];
+                    if (sibling.Tab == IllustratedBookTab.Monster && !sibling.Unlocked)
+                    {
+                        continue;
+                    }
                     // 按 Id 值匹配定位（siblings 已是同页列表）：RefreshEntries 每次打开
                     // 重建列表实例，View 点击回调持有的可能是旧实例，引用比较会失配导致 index 恒 0
                     if (sibling.Id == entry.Id)
                     {
-                        index = i;
+                        index = displays.Count;
                     }
 
                     // 遗物显示特殊描述，怪物显示其配置的专属机制。
@@ -447,7 +452,7 @@ namespace App.UI.Popup
                     Desc = row.Desc ?? string.Empty,
                     MonsterMechanics = FormatMonsterMechanics(row.MonsterEntry),
                     Icon = row.Icon,
-                    Unlocked = true,
+                    Unlocked = GameApi.HasEncounteredMonster(row.MonsterId),
                     MonsterType = row.Type,
                     Attack = row.MonsterDamage,
                     Hp = row.MonsterHp

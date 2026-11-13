@@ -148,6 +148,8 @@ namespace App.UI.Popup
                 }
                 else if (slot is PlayerItem playerItem)
                 {
+                    var mask = FindDeep(playerItem.transform, "IllustratedBookMonsterMask");
+                    if (mask != null) mask.gameObject.SetActive(false);
                     UiCardPool.ReleasePlayerItem(playerItem);
                 }
             }
@@ -441,17 +443,26 @@ namespace App.UI.Popup
         }
 
         /// <summary>怪物槽数据绑定（行复用时反复调用）：敌人形态底图（enemycard 走
-        /// MonsterConfig.BaseMap/HealthBar）、名字/头像（未解锁 ？？？+剪影口径），
+        /// MonsterConfig.BaseMap/HealthBar）、名字/头像和未遇见遮罩，
         /// 敌人攻/血块不显示（CreateMonsterSlot 已隐藏节点，这里不能再调 SetAttack/SetHp
         /// ——那会在数值 >0 时把节点重新点亮），刷新选中态。</summary>
         private void BindMonsterSlot(Component slot, IllustratedBookEntry entry)
         {
             var card = (PlayerItem)slot;
             card.ApplyEnemyTheme(entry.Id);
-            card.SetName(entry.Unlocked ? entry.Name : "？？？");
-            card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
+            card.SetName(entry.Unlocked ? entry.Name : "???");
+            card.SetPortrait(GetIcon(entry));
+            SetMonsterLockedMask(card, !entry.Unlocked);
             _entries[card] = entry;
             card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);
+        }
+
+        private static void SetMonsterLockedMask(PlayerItem card, bool visible)
+        {
+            var root = FindDeep(card.transform, "enemycard");
+            if (root == null) return;
+            var mask = root.Find("IllustratedBookMonsterMask");
+            if (mask != null) mask.gameObject.SetActive(visible);
         }
 
         /// <summary>隐藏敌人形态攻/血块容器（enemycardattack/enemycardheart，位于 enemycard 下，
@@ -529,7 +540,7 @@ namespace App.UI.Popup
 
         private void OnMonsterClicked(PlayerItem card)
         {
-            if (_entries.TryGetValue(card, out var entry))
+            if (_entries.TryGetValue(card, out var entry) && entry.Unlocked)
             {
                 ViewModel.OpenDetail(entry, GetIcon);
             }

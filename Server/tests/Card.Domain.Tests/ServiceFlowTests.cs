@@ -10,6 +10,69 @@ namespace CardShare.Domain.Tests;
 public class PveFlowTests
 {
     [Fact]
+    public async Task EncounterRecordsAreDeduplicatedAndSurviveProfileReload()
+    {
+        var config = TestConfig.Create();
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var userId = Guid.NewGuid();
+        var profile = CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow);
+        profile.EncounteredMonsterIds = null!; // 兼容旧档中的空字段
+        Assert.True(profile.RememberMonsters(new[] { 7, 3, 7, 0, -1 }));
+        Assert.False(profile.RememberMonsters(new[] { 3, 7 }));
+        await players.SaveAsync(profile, CancellationToken.None);
+        var (_, meta) = TestApp.Create(players, config: config, clock: clock);
+        var dto = await meta.GetProfileAsync(userId, CancellationToken.None);
+        Assert.Equal(new[] { 3, 7 }, dto.EncounteredMonsterIds);
+    }
+
+    [Fact]
+    public async Task EncounterIsRecordedOnlyWhenStageIsEntered()
+    {
+        var f = CardShare.Contracts.GameTables.Fallback();
+        var levels = new[] {
+            new CardShare.Contracts.Config.LevelConfig { Id = 1001, Difficulty = 1, Level = 1, MonsterGroup = new[] { 11 } },
+            new CardShare.Contracts.Config.LevelConfig { Id = 1002, Difficulty = 1, Level = 2, MonsterGroup = new[] { 12 } }
+        };
+        var monsters = new[] {
+            new CardShare.Contracts.Config.MonsterConfig { Id = 1, MonsterId = 101, MonsterLevel = 1 },
+            new CardShare.Contracts.Config.MonsterConfig { Id = 2, MonsterId = 102, MonsterLevel = 1 }
+        };
+        var groups = new[] {
+            new CardShare.Contracts.Config.MonsterGroupConfig { Id = 11, MonsterId = 101, MonsterLevel = 1 },
+            new CardShare.Contracts.Config.MonsterGroupConfig { Id = 12, MonsterId = 102, MonsterLevel = 1 }
+        };
+        var tables = new CardShare.Contracts.GameTables(f.GameConst, f.HandScores, levels, f.Heroes, f.Relics,
+            f.UnlockConditions, f.TalentRows, monsters, f.Items, "encounter", f.HeroEntries, f.TalentEntries, f.RelicEntries, groups);
+        var config = new CardShare.Infrastructure.Config.SharedGameConfig(tables, TimeZoneInfo.Utc);
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var userId = Guid.NewGuid();
+        await players.SaveAsync(CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow), CancellationToken.None);
+        var (pve, meta) = TestApp.Create(players, config: config, clock: clock);
+        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+        Assert.Equal(new[] { 101 }, started.Profile.EncounteredMonsterIds);
+        await pve.ReportProgressAsync(userId, new PveProgressRequest { RunId = started.RunId, ClearedStage = true }, CancellationToken.None);
+        Assert.Equal(new[] { 101 }, (await meta.GetProfileAsync(userId, CancellationToken.None)).EncounteredMonsterIds);
+        var entered = await pve.EnterStageAsync(userId, new PveStageEnterRequest { RunId = started.RunId, LevelId = 1002 }, CancellationToken.None);
+        Assert.Equal(new[] { 101, 102 }, entered.EncounteredMonsterIds);
+    }
+
+    [Fact]
+    public async Task EnterStageRejectsLevelOutsideActiveRun()
+    {
+        var config = TestConfig.Create();
+        var clock = new TestClock();
+        var players = new MemoryPlayerRepository();
+        var userId = Guid.NewGuid();
+        await players.SaveAsync(CardShare.Domain.Players.PlayerProfile.CreateNew(userId, config, clock.UtcNow), CancellationToken.None);
+        var (pve, _) = TestApp.Create(players, config: config, clock: clock);
+        var started = await pve.StartPveAsync(userId, new PveStartRequest { LevelId = 1001, HeroId = 1 }, CancellationToken.None);
+        await Assert.ThrowsAsync<DomainException>(() => pve.EnterStageAsync(userId,
+            new PveStageEnterRequest { RunId = started.RunId, LevelId = 1002 }, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task StartSpendsEnergyAndSettleIsIdempotent()
     {
         var config = TestConfig.Create();

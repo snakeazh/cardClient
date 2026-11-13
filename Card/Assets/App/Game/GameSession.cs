@@ -132,6 +132,7 @@ namespace App.Game
         // PVE 调试赠送没有服务端购买记录，快照刷新时合并保留到本局结束。
         private readonly HashSet<int> _debugGrantedRelicIds = new HashSet<int>();
         private Task _progressSync = Task.CompletedTask;
+        private Task _encounterSync = Task.CompletedTask;
         /// <summary>消耗品使用后的服务端移除队列：刷新商店/买卖前先等它，免得旧快照把道具塞回背包。</summary>
         private Task _consumableSync = Task.CompletedTask;
         private readonly PveSettleStats _runStats = new PveSettleStats();
@@ -514,6 +515,7 @@ namespace App.Game
             _runGoldSync = Task.CompletedTask;
             _shopSync = Task.CompletedTask;
             _progressSync = Task.CompletedTask;
+            _encounterSync = Task.CompletedTask;
             _consumableSync = Task.CompletedTask;
             ResetSettleStats();
             Run.LoanTicket = false;
@@ -619,6 +621,7 @@ namespace App.Game
             await WaitConsumableSyncAsync();
             await WaitShopReadyAsync();
             await FlushProgressAsync();
+            await _encounterSync;
         }
 
         public PveSettleRequest BuildSettleRequest(bool cleared, bool forfeit = false)
@@ -638,6 +641,7 @@ namespace App.Game
                 return;
             }
 
+            await _encounterSync;
             await FlushRunGoldAsync();
             await WaitConsumableSyncAsync();
             var score = ScoreSvc();
@@ -5188,6 +5192,11 @@ namespace App.Game
             ApplyHeroToPlayer(inheritPlayerHp);
             ApplyHealMissingHpOnStageStart();
             var enemyCount = ApplyLevelEnemies();
+            if (HasServerRun && LevelSvc()?.Current != null)
+            {
+                _encounterSync = SyncStageEncounterAsync(_serverRunId, LevelSvc().Current.Id,
+                    _encounterSync, _shopSync, _progressSync);
+            }
 
             var entries = BossMechanics.ResolveAll(Run);
             var title = Run.HasBoss
@@ -5212,6 +5221,22 @@ namespace App.Game
                 ResetSkillCharges();
             }
             StartRound();
+        }
+
+        private async Task SyncStageEncounterAsync(string runId, int levelId, Task previous, Task shop, Task progress)
+        {
+            await previous;
+            await shop;
+            await progress;
+            try
+            {
+                var profile = await GameApi.Client.EnterPveStageAsync(runId, levelId);
+                GameApi.MergeEncounteredMonsters(profile);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
         }
 
         private void PickLevelEntries()

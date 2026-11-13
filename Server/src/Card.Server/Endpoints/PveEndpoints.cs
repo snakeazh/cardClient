@@ -13,6 +13,8 @@ public static class PveEndpoints
             => Results.Json(await pve.GetActiveRunAsync(http.RequireUserId(), ct)));
         v1.MapPost("/pve/settle", async (HttpContext http, PveSettleRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.SettlePveAsync(http.RequireUserId(), request, ct)));
+        v1.MapPost("/pve/run/enter-stage", async (HttpContext http, PveStageEnterRequest request, PveRunService pve, CancellationToken ct)
+            => Results.Json(await pve.EnterStageAsync(http.RequireUserId(), request, ct)));
         v1.MapPost("/pve/run/progress", async (HttpContext http, PveProgressRequest request, PveRunService pve, CancellationToken ct)
             => Results.Json(await pve.ReportProgressAsync(http.RequireUserId(), request, ct)));
         v1.MapPost("/pve/shop/enter", async (HttpContext http, PveShopEnterRequest request, PveRunService pve, CancellationToken ct)

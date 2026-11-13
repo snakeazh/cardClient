@@ -60,6 +60,7 @@ public static class ProfileMapper
                     .Select(e => new UnlockProgressDto { ConditionId = e.ConditionId, Amount = e.Amount })
                     .ToArray()
             },
+            EncounteredMonsterIds = profile.EncounteredMonsterIds ?? Array.Empty<int>(),
             GuideCompletedGroupIds = profile.GuideCompletedGroupIds,
             Bag = profile.Bag.Entries
                 .Where(e => e.Count > 0)

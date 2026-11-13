@@ -379,7 +379,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enableServerConnection: 1
-  serverEndpoint: 2
+  serverEndpoint: 0
   customServerHost: 192.168.1.109
   customServerPort: 5254
 --- !u!1660057539 &9223372036854775807

@@ -54,6 +54,8 @@ namespace App.UI
         private Transform _enemyCardTypeNum;
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly OpeningCutscene _openingFx = new OpeningCutscene();
+        [SerializeField] private GameObject _chosenBondEffectPrefab;
+        private GameObject _chosenBondEffect;
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private bool _openingPlaying;
         private CanvasGroup _fightMask;

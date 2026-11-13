@@ -3663,6 +3663,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _ui: {fileID: 0}
   _popupAnim: {fileID: 0}
+  _chosenBondEffectPrefab: {fileID: 2265204174828759273, guid: 493740ea76ed65b449da52307ea10bdc, type: 3}
 --- !u!1 &3925476755481002164
 GameObject:
   m_ObjectHideFlags: 0

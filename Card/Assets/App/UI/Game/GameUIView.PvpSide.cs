@@ -126,6 +126,7 @@ namespace App.UI
 
             RebuildPvpRoles();
             RebuildBonds();
+            RefreshChosenBondEffect();
             ApplyStreakTip();
             var sig = PvpSideSignature();
             if (sig == _pvpSideSig)
@@ -352,6 +353,36 @@ namespace App.UI
                 ? CardShare.Contracts.PvpGameTables.Wrap(tables)
                 : tables;
             PvpRelicBindings.CollectHeld(bindingTables, owned, _bondHolds);
+        }
+
+        private void RefreshChosenBondEffect()
+        {
+            var complete = false;
+            for (var i = 0; i < _bondHolds.Count; i++)
+            {
+                var hold = _bondHolds[i];
+                if (hold.Binding != null && hold.Binding.Type == BindingType.TheChosenOne && hold.Complete)
+                {
+                    complete = true;
+                    break;
+                }
+            }
+
+            if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null)
+            {
+                _chosenBondEffect = Instantiate(_chosenBondEffectPrefab, transform, false);
+                _chosenBondEffect.transform.localScale = Vector3.one * 130f;
+                foreach (var node in _chosenBondEffect.GetComponentsInChildren<Transform>(true))
+                {
+                    node.gameObject.layer = gameObject.layer;
+                }
+                _chosenBondEffect.AddComponent<EffectSortingInherit>();
+            }
+
+            if (_chosenBondEffect != null && _chosenBondEffect.activeSelf != complete)
+            {
+                _chosenBondEffect.SetActive(complete);
+            }
         }
 
         private void ApplyPvpRoles()

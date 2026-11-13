@@ -1417,7 +1417,7 @@ namespace CardShare.Battle
             var guard = PvpShopRules.OfferCount + PvpRelicBag.MaxSlotsFor(_tables.GameConst) + 4;
             for (var n = 0; n < guard; n++)
             {
-                if (fighter.OwnedRelicIds.Count < fighter.RelicSlots)
+                if (fighter.OwnedRelicIds.Count < PvpRelicRuntime.EffectiveRelicSlots(_tables, fighter))
                 {
                     var relicId = PvpBotShop.PickHighestAffordable(fighter, _tables);
                     if (relicId == null)
@@ -1593,7 +1593,7 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Relic is not on sale.");
             }
 
-            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            if (fighter.OwnedRelicIds.Count >= PvpRelicRuntime.EffectiveRelicSlots(_tables, fighter))
             {
                 throw new InvalidOperationException("Relic bag is full.");
             }
@@ -1605,7 +1605,7 @@ namespace CardShare.Battle
             }
 
             fighter.Gold -= price;
-            PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+            if (price > 0) PvpRelicRuntime.OnGoldSpent(_tables, fighter);
             fighter.ShopOfferIds.Remove(relicId);
             PvpRelicBag.Add(fighter, relicId);
             // 血量上限类（小精灵/奢华沙发）：购买即上限+X 且当前血同步+X。
@@ -1652,7 +1652,7 @@ namespace CardShare.Battle
                 }
 
                 fighter.Gold -= cost;
-                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+                if (cost > 0) PvpRelicRuntime.OnGoldSpent(_tables, fighter);
                 fighter.ShopRefreshCount++;
             }
 

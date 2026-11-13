@@ -159,5 +159,19 @@
     "StackedValue": 1,
     "Value": 1000,
     "Desc": "拥有1000金币后解锁"
+  },
+  {
+    "Id": 10503,
+    "Type": 9,
+    "StackedValue": 1,
+    "Value": 10,
+    "Desc": "首次通关难度10解锁"
+  },
+  {
+    "Id": 11006,
+    "Type": 23,
+    "StackedValue": 1,
+    "Value": 1,
+    "Desc": "不使用任何技能通过难度10"
   }
 ]

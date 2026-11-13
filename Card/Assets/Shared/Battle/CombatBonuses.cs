@@ -230,7 +230,8 @@ namespace CardShare.Battle
                         : 0f)
                     + seat.MagicCoinDamageBonus
                     + SumRelicOutgoingPercent(tables, relicIds, situation, score, attack),
-                CritRate = panel.CritRate + seat.BindingCritBonus,
+                CritRate = SumRelicEntry(tables, relicIds, MechanismType.SharpBlade) > 0f
+                    ? 1f : panel.CritRate + seat.BindingCritBonus,
                 CritMultiplier = panel.CritMultiplier
                     + SumRelicEntry(tables, relicIds, MechanismType.CritDamageUp),
                 FlatDamageAdd = (int)Math.Round(SumRelicEntry(tables, relicIds, MechanismType.FlatDamage)),
@@ -546,7 +547,7 @@ namespace CardShare.Battle
             return sum;
         }
 
-        private static float SumRelicEntry(IGameTables tables, IReadOnlyList<int> relicIds, MechanismType type)
+        public static float SumRelicEntry(IGameTables tables, IReadOnlyList<int> relicIds, MechanismType type, int valueIndex = 0)
         {
             var sum = 0f;
             for (var i = 0; i < relicIds.Count; i++)
@@ -561,9 +562,9 @@ namespace CardShare.Battle
                     if (tables.TryGetRelicEntry(relic.MechanismId[j], out var entry)
                         && entry.Type == type
                         && entry.Value != null
-                        && entry.Value.Length > 0)
+                        && valueIndex >= 0 && entry.Value.Length > valueIndex)
                     {
-                        sum += entry.Value[0];
+                        sum += entry.Value[valueIndex];
                     }
                 }
             }

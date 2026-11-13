@@ -497,6 +497,8 @@ namespace CardShare.Contracts.Config
         /// </summary>
         ThreeCardAttack = 22,
 
+        NoSkillLevelTen = 23,
+
     }
 
     /// <summary>
@@ -1676,6 +1678,10 @@ namespace CardShare.Contracts.Config
         /// 自身伤害提高且承伤提高(参数:增伤|增承伤)
         /// </summary>
         AllInDamage = 215,
+
+        TreasureChest = 216,
+        SharpBlade = 217,
+        GoldTurnToDamage = 218,
 
         MaxHp = 1111,
 

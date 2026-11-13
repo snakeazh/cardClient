@@ -2524,5 +2524,53 @@
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "你造成的伤害+25%,受到的伤害+15%"
+  },
+  {
+    "Id": 438,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "百宝箱",
+    "Icon": "",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40046
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "拥有后圣物栏+2"
+  },
+  {
+    "Id": 439,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "利刃",
+    "Icon": "",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40047
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "造成的伤害必定暴击"
+  },
+  {
+    "Id": 440,
+    "Type": 4,
+    "RefreshProbability": 0.1,
+    "Name": "重金手",
+    "Icon": "",
+    "Price": 450,
+    "SellingPrice": 225,
+    "MechanismId": [
+      40048
+    ],
+    "BindingID": [],
+    "UseType": 0,
+    "SpecialDesc": "玩家通用冒险证明",
+    "Desc": "每进行一次金币消费就会使自身造成的伤害提高5%"
   }
 ]

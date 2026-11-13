@@ -563,6 +563,7 @@ namespace App.Game
                 AppServices.Resolve<IScoreService>().BeginChapter();
             }
 
+            RestoreRecordedRelicUnlocks();
             UnlockSvc()?.BeginRun();
             StartStage(inheritPlayerHp: false);
         }
@@ -609,6 +610,8 @@ namespace App.Game
             Run.ShopRefreshCount = dto.ShopRefreshCount;
             Run.FreeShopRefreshLeft = dto.FreeShopRefreshLeft;
             Run.BoughtRelicSlots = dto.BoughtRelicSlots;
+            Run.GoldTurnToDamageBonus = Math.Max(Run.GoldTurnToDamageBonus, dto.GoldTurnToDamageBonus);
+            Run.UsedSkillThisRun |= dto.UsedSkillThisRun;
             ReplaceIdList(Run.RelicConfigIds, dto.RelicIds);
             // 服务端已持有的圣物转回正常管理，其余调试赠送继续留在本地。
             _debugGrantedRelicIds.RemoveWhere(id => Run.RelicConfigIds.Contains(id));
@@ -663,12 +666,32 @@ namespace App.Game
             var amount = score != null ? score.Current.Stage : 0;
             try
             {
-                await GameApi.Client.ReportPveProgressAsync(_serverRunId, clearedStage, amount);
+                await GameApi.Client.ReportPveProgressAsync(_serverRunId, clearedStage, amount, Run.UsedSkillThisRun);
             }
             catch (GameApiException ex)
             {
                 Toast.Error(GameApi.Describe(ex));
             }
+        }
+
+        private async Task ReportSkillUseAsync(Task previous, string runId)
+        {
+            await previous;
+            try
+            {
+                await GameApi.Client.ReportPveProgressAsync(runId, false, 0, true, true);
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+        }
+
+        private void RecordSkillUse()
+        {
+            if (!Run.UsedSkillThisRun && HasServerRun)
+                _progressSync = ReportSkillUseAsync(_progressSync, _serverRunId);
+            Run.UsedSkillThisRun = true;
         }
 
         /// <summary>失败后再战：回到当前难度第 1 关并开新章节。</summary>
@@ -974,7 +997,7 @@ namespace App.Game
 
             _rubsUsedThisHand++;
             _rubbedThisHand = true;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.ShuffleCard);
@@ -1362,7 +1385,7 @@ namespace App.Game
 
             Player.PeekedType = string.Empty;
             Run.TiHuanGoodCharges--;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             if (Player.Looked)
@@ -1449,7 +1472,7 @@ namespace App.Game
             var score = EvaluateSeat(seat);
             seat.PeekedType = score.Label;
             Run.ChaKanGoodCharges--;
-            Run.UsedSkillThisRun = true;
+            RecordSkillUse();
             _usedSkillThisRound = true;
             ApplyRandomAttributeBinding();
             ReportUnlock(ContidionType.Perspective);
@@ -2318,7 +2341,9 @@ namespace App.Game
                 dmgPercent += RelicOutgoingDamagePercent(defender);
                 dmgPercent += BossMechanics.PlayerOutgoingDamagePercent(Run, score.Type);
                 dmgPercent += Run.MagicCoinDamageBonus;
-                critRate = ResolveLivePlayerPanel().CritRate;
+                dmgPercent += Run.GoldTurnToDamageBonus;
+                critRate = RelicMechanics.SumValue(Run, MechanismType.SharpBlade) > 0f
+                    ? 1f : ResolveLivePlayerPanel().CritRate;
                 critMul = TalentMechanics.CriticalDamageMultiplier(hero)
                     + RelicMechanics.SumValue(Run, MechanismType.CritDamageUp);
                 extraAttackChance = TalentMechanics.SumValue(talent, MechanismType.ProOfExtraAttack);
@@ -2939,7 +2964,8 @@ namespace App.Game
             ? (_pvpRelicSlots > 0 ? _pvpRelicSlots : CardShare.Battle.PvpRelicBag.InitialSlots(GameConst.IsLoaded ? GameConst.Instance : null))
             : GameBalance.MaxRelics
               + (int)Math.Round(TalentMechanics.SumValue(TalentSvc(), MechanismType.RelicNumMax))
-              + Run.BoughtRelicSlots;
+              + Run.BoughtRelicSlots
+              + (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.TreasureChest));
 
         /// <summary>PVP 再解锁一个圣物槽要花的金币。已满或非商店为 0。</summary>
         public int PvpNextRelicSlotCost => IsPvp ? _pvpNextSlotCost : 0;
@@ -5067,6 +5093,7 @@ namespace App.Game
             Run.GoldSpentThisRun += amount;
             EnqueueRunGold(grant: false, amount);
             ApplyMagicCoinOnSpend();
+            Run.GoldTurnToDamageBonus += RelicMechanics.SumValue(Run, MechanismType.GoldTurnToDamage, 1);
         }
 
         private void AddGold(int amount)
@@ -8686,8 +8713,15 @@ namespace App.Game
 
         private async Task SyncStageThenShopAsync()
         {
+            await FlushProgressAsync();
             await ReportRunProgressAsync(true);
             await SyncEnterShopAsync();
+        }
+
+        private async Task ReportStageAfterAsync(Task previous)
+        {
+            await previous;
+            await ReportRunProgressAsync(true);
         }
 
         private async Task SyncEnterShopAsync()
@@ -8713,7 +8747,7 @@ namespace App.Game
             GrantStageGold();
             if (HasServerRun)
             {
-                _progressSync = ReportRunProgressAsync(true);
+                _progressSync = ReportStageAfterAsync(_progressSync);
             }
 
             if (!TryAdvanceLevel())
@@ -9746,6 +9780,7 @@ namespace App.Game
             _runStats.NumberOfCoinsOwned = 0;
             _runStats.CriticalNum = 0;
             _runStats.ThreeCardAttack = 0;
+            _runStats.NoSkillLevelTen = 0;
         }
 
         private void AccumulateSettleStat(ContidionType type, int amount)
@@ -9823,6 +9858,9 @@ namespace App.Game
                 case ContidionType.ThreeCardAttack:
                     _runStats.ThreeCardAttack += amount;
                     break;
+                case ContidionType.NoSkillLevelTen:
+                    _runStats.NoSkillLevelTen += amount;
+                    break;
             }
         }
 
@@ -9870,10 +9908,15 @@ namespace App.Game
                     ReportUnlock(ContidionType.Angel);
                 }
 
-                if (difficulty >= 10 && !Run.UsedSkillThisRun)
+                if (difficulty >= 10)
                 {
                     ReportUnlock(ContidionType.LuxuryGoods);
                 }
+            }
+
+            if (difficulty >= 10 && !Run.UsedSkillThisRun)
+            {
+                ReportUnlock(ContidionType.NoSkillLevelTen);
             }
 
             if (OwnsRelicConfig(RelicIdFirstSlot) &&
@@ -9882,6 +9925,23 @@ namespace App.Game
             {
                 ReportUnlock(ContidionType.ThreeCardAttack);
             }
+        }
+
+        private void RestoreRecordedRelicUnlocks()
+        {
+            var unlock = UnlockSvc();
+            var progress = ProgressSvc();
+            var levels = LevelSvc();
+            if (unlock == null || progress == null || levels == null) return;
+
+            if (progress.IsCleared(10) && unlock.GetProgress(10503) < 10)
+                unlock.Report(ContidionType.ClearDifficulty, 10);
+
+            var heroId = GameConst.IsLoaded ? GameConst.Instance.DefaultHeroId : 1;
+            var maxLevel = levels.GetMaxLevel(10);
+            if (maxLevel > 0 && progress.GetHeroHighestCleared(heroId, 10) >= maxLevel &&
+                unlock.GetProgress(11003) < 1)
+                unlock.Report(ContidionType.LuxuryGoods);
         }
 
         private void ApplyHeroKillRewards(SeatState enemy)

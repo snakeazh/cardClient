@@ -121,6 +121,10 @@ public static class BackendStartup
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "ScoredLevelId" integer NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync(
                 """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "BoughtRelicSlots" integer NOT NULL DEFAULT 0;""");
+            await db.Database.ExecuteSqlRawAsync(
+                """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "UsedSkillThisRun" boolean NOT NULL DEFAULT false;""");
+            await db.Database.ExecuteSqlRawAsync(
+                """ALTER TABLE pve_runs ADD COLUMN IF NOT EXISTS "GoldTurnToDamageBonus" real NOT NULL DEFAULT 0;""");
             await db.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS auth_tokens;""");
             // admin_logs 后加，老库 EnsureCreated 不会补建，显式 CREATE IF NOT EXISTS。
             await db.Database.ExecuteSqlRawAsync(

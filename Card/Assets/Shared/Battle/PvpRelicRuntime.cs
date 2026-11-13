@@ -258,7 +258,7 @@ namespace CardShare.Battle
             setup.MagicCoinDamageBonus = fighter.MagicCoinDamageBonus;
             setup.BindingCritBonus = fighter.BindingCritBonus;
             setup.Gold = fighter.Gold;
-            setup.EmptyRelicSlots = Math.Max(0, fighter.RelicSlots - fighter.OwnedRelicIds.Count);
+            setup.EmptyRelicSlots = Math.Max(0, EffectiveRelicSlots(tables, fighter) - fighter.OwnedRelicIds.Count);
             setup.UsedSkillThisRound = fighter.UsedSkillThisRound;
             setup.RoundCompareCount = fighter.RoundCompareCount;
             setup.TypeDowngradeSteps = fighter.RoundTypeDowngrade;
@@ -475,10 +475,17 @@ namespace CardShare.Battle
         public static void OnGoldSpent(IGameTables tables, PvpFighter fighter)
         {
             var add = PvpRelicBindings.MagicCoinSpendBonus(tables, fighter.OwnedRelicIds);
+            add += CombatBonuses.SumRelicEntry(tables, fighter.OwnedRelicIds, MechanismType.GoldTurnToDamage, 1);
             if (add != 0f)
             {
                 fighter.MagicCoinDamageBonus += add;
             }
+        }
+
+        public static int EffectiveRelicSlots(IGameTables tables, PvpFighter fighter)
+        {
+            return fighter.RelicSlots + Math.Max(0, (int)Math.Round(
+                CombatBonuses.SumRelicEntry(tables, fighter.OwnedRelicIds, MechanismType.TreasureChest)));
         }
 
         public static void OnSkillUsed(IGameTables tables, PvpFighter fighter, Random rng)
@@ -823,6 +830,9 @@ namespace CardShare.Battle
             MechanismType.SameTypeDamageUp,
             MechanismType.HealMissingHp,
             MechanismType.AllInDamage,
+            MechanismType.TreasureChest,
+            MechanismType.SharpBlade,
+            MechanismType.GoldTurnToDamage,
             MechanismType.AttackBossDamage,
             MechanismType.HeroTakeDamage,
             MechanismType.HeroTakeDamagePer,
@@ -958,7 +968,7 @@ namespace CardShare.Battle
         /// <summary>KillDropConsumable（藏宝图）：攻击敌人后概率掉落随机消耗品。</summary>
         public static void TryAttackDropConsumable(IGameTables tables, PvpFighter fighter, Random rng)
         {
-            if (tables == null || fighter == null || rng == null || fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            if (tables == null || fighter == null || rng == null || fighter.OwnedRelicIds.Count >= EffectiveRelicSlots(tables, fighter))
             {
                 return;
             }
@@ -975,7 +985,7 @@ namespace CardShare.Battle
                     return;
                 }
 
-                if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+                if (fighter.OwnedRelicIds.Count >= EffectiveRelicSlots(tables, fighter))
                 {
                     return;
                 }
@@ -1160,7 +1170,7 @@ namespace CardShare.Battle
                 return;
             }
 
-            if (fighter.OwnedRelicIds.Count >= fighter.RelicSlots)
+            if (fighter.OwnedRelicIds.Count >= EffectiveRelicSlots(tables, fighter))
             {
                 return;
             }

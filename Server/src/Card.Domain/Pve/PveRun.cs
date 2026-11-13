@@ -38,6 +38,10 @@ public sealed class PveRun
 
     public int BoughtRelicSlots { get; set; }
 
+    public float GoldTurnToDamageBonus { get; set; }
+
+    public bool UsedSkillThisRun { get; set; }
+
     public PveRunStatus Status { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }

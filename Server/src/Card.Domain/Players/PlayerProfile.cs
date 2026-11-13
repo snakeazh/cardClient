@@ -375,6 +375,32 @@ public sealed class PlayerProfile
         return max > 0 && Level.GetHighestCleared(difficulty) >= max;
     }
 
+    /// <summary>根据已有的通关记录回填新增圣物的可验证解锁条件。</summary>
+    public bool SyncNewRelicUnlocks(IGameConfig config)
+    {
+        var changed = false;
+        foreach (var condition in config.Tables.UnlockConditions)
+        {
+            if (condition.Id == 10503 && condition.Value > 0 &&
+                IsDifficultyCleared(condition.Value, config) && Unlock.GetAmount(condition.Id) < condition.Value)
+            {
+                Unlock.SetAmount(condition.Id, condition.Value);
+                changed = true;
+            }
+            else if (condition.Id == 11003 && condition.Value > 0 && Unlock.GetAmount(condition.Id) < condition.Value)
+            {
+                var max = config.Tables.GetMaxLevel(10);
+                var heroId = config.Tables.GameConst.DefaultHeroId;
+                if (heroId > 0 && max > 0 && Level.GetHeroHighestCleared(heroId, 10) >= max)
+                {
+                    Unlock.SetAmount(condition.Id, condition.Value);
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
     public bool IsLevelUnlocked(int levelId, IGameConfig config)
     {
         if (!config.Tables.TryGetLevel(levelId, out var snapshot))

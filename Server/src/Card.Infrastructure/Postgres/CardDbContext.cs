@@ -69,6 +69,10 @@ public sealed class PveRunRow
 
     public int BoughtRelicSlots { get; set; }
 
+    public float GoldTurnToDamageBonus { get; set; }
+
+    public bool UsedSkillThisRun { get; set; }
+
     public int Status { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }
@@ -330,6 +334,8 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             row.ShopRefreshCount = run.ShopRefreshCount;
             row.FreeShopRefreshLeft = run.FreeShopRefreshLeft;
             row.BoughtRelicSlots = run.BoughtRelicSlots;
+            row.GoldTurnToDamageBonus = run.GoldTurnToDamageBonus;
+            row.UsedSkillThisRun = run.UsedSkillThisRun;
             row.ScoreTotal = run.ScoreTotal;
             row.CurrentLevelId = run.CurrentLevelId;
             row.HighestClearedLevelId = run.HighestClearedLevelId;
@@ -354,6 +360,8 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
             BoughtRelicSlots = run.BoughtRelicSlots,
+            GoldTurnToDamageBonus = run.GoldTurnToDamageBonus,
+            UsedSkillThisRun = run.UsedSkillThisRun,
             Status = (int)run.Status,
             StartedAt = run.StartedAt,
             SettledAt = run.SettledAt,
@@ -381,6 +389,8 @@ public sealed class PostgresPveRunRepository : IPveRunRepository
             ShopRefreshCount = row.ShopRefreshCount,
             FreeShopRefreshLeft = row.FreeShopRefreshLeft,
             BoughtRelicSlots = row.BoughtRelicSlots,
+            GoldTurnToDamageBonus = row.GoldTurnToDamageBonus,
+            UsedSkillThisRun = row.UsedSkillThisRun,
             Status = (PveRunStatus)row.Status,
             StartedAt = row.StartedAt,
             SettledAt = row.SettledAt,

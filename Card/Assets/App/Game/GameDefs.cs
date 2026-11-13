@@ -493,6 +493,8 @@ namespace App.Game
         public float BindingMagForever;
         /// <summary>注魔硬币：每次消费叠加的永久伤害加成（加在百分比上）。</summary>
         public float MagicCoinDamageBonus;
+        /// <summary>重金手通过消费获得的永久伤害加成。</summary>
+        public float GoldTurnToDamageBonus;
         /// <summary>权力羁绊层数。</summary>
         public int NobilityStacks;
         /// <summary>沉默诅咒：羁绊复活剩余次数。</summary>
@@ -544,6 +546,7 @@ namespace App.Game
             PracticeMagForever = 0f;
             BindingMagForever = 0f;
             MagicCoinDamageBonus = 0f;
+            GoldTurnToDamageBonus = 0f;
             NobilityStacks = 0;
             BindingReviveLeft = 0;
             BindingReviveArmed = false;

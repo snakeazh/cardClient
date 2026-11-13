@@ -104,7 +104,10 @@ namespace App.UI
                 {
                     if (Session.IsPvp)
                     {
-                        SendPvp(_pvp.Invoker.EnqueueShowdown());
+                        if (Session.PlayerOpenCardLimit > GameBalance.OpenHandSize)
+                            SendExtendedPvpShowdown();
+                        else
+                            SendPvp(_pvp.Invoker.EnqueueShowdown());
                         return;
                     }
 
@@ -363,12 +366,13 @@ namespace App.UI
         public void ToggleOpenCard(int index)
         {
             Session.TogglePlayerCard(index);
-            if (!Session.IsPvp || Session.PvpHandLocked || _pvp == null || Session.Player.CountSelectedCards() != GameBalance.OpenHandSize)
+            if (!Session.IsPvp || Session.PvpHandLocked || _pvp == null ||
+                Session.PlayerOpenCardLimit > GameBalance.OpenHandSize || !Session.PlayerHasValidSelection)
             {
                 return;
             }
 
-            var pick = new int[GameBalance.OpenHandSize];
+            var pick = new int[Session.Player.CountSelectedCards()];
             var n = 0;
             for (var i = 0; i < Session.Player.CardSelected.Length && n < pick.Length; i++)
             {
@@ -379,6 +383,34 @@ namespace App.UI
             }
 
             SendPvp(_pvp.Invoker.EnqueuePick(pick));
+        }
+
+        private bool _extendedShowdownPending;
+
+        private async void SendExtendedPvpShowdown()
+        {
+            if (_extendedShowdownPending || _pvp == null || !Session.PlayerHasValidSelection)
+                return;
+
+            var selected = new List<int>(Session.Player.CountSelectedCards());
+            for (var i = 0; i < Session.Player.CardSelected.Length; i++)
+                if (Session.Player.CardSelected[i])
+                    selected.Add(i);
+
+            _extendedShowdownPending = true;
+            try
+            {
+                await _pvp.Invoker.EnqueuePick(selected.ToArray());
+                await _pvp.Invoker.EnqueueShowdown();
+            }
+            catch (GameApiException ex)
+            {
+                Toast.Error(GameApi.Describe(ex));
+            }
+            finally
+            {
+                _extendedShowdownPending = false;
+            }
         }
 
         public bool TryRubPlayerCard(int index)
@@ -1799,7 +1831,7 @@ namespace App.UI
             }
 
             return !session.Player.Folded &&
-                   session.Player.CountSelectedCards() == GameBalance.OpenHandSize;
+                   session.PlayerHasValidSelection;
         }
 
         public void ApplyCardType(

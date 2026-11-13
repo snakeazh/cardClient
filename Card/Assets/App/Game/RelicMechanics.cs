@@ -523,7 +523,10 @@ namespace App.Game
 
         public static HandType ShiftType(HandType type, int delta)
         {
-            return HandEvaluator.TypeByLevel(HandEvaluator.TypeLevel(type) + delta);
+            var level = HandEvaluator.TypeLevel(type) + delta;
+            if (type <= HandType.ThreeOfAKind)
+                level = Math.Min(6, level);
+            return HandEvaluator.TypeByLevel(level);
         }
 
         public static HandScore ApplyPlayerTypeRewrite(RunState run, HandScore score)

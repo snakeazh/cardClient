@@ -220,7 +220,7 @@ namespace CardShare.Battle
                 var foeIndices = new List<int>();
                 for (var i = 0; i < theirs.Count; i++)
                 {
-                    if (theirs[i].IsValid)
+                    if (theirs[i].IsValid && Engine.CanSwapCard(foe, theirs, i))
                     {
                         foeIndices.Add(i);
                     }
@@ -235,7 +235,7 @@ namespace CardShare.Battle
                 var myIndex = -1;
                 for (var i = 0; i < mine.Count; i++)
                 {
-                    if (!mine[i].IsValid)
+                    if (!mine[i].IsValid || !Engine.CanSwapCard(viewerSeat, mine, i))
                     {
                         continue;
                     }
@@ -368,7 +368,7 @@ namespace CardShare.Battle
                 }
 
                 var indexes = Engine.BestPick(seat);
-                if (indexes == null || indexes.Length != BattleLimits.OpenHandSize)
+                if (indexes == null || indexes.Length < BattleLimits.OpenHandSize)
                 {
                     continue;
                 }

@@ -476,13 +476,32 @@ namespace App.Game
         /// <summary>搓牌点选中的手牌下标；未选为 -1。</summary>
         public int PendingRubIndex => _pendingRubIndex;
         public bool PlayerCanOpen => Phase == GamePhase.WaitingOpen && !Player.Folded && AnyEnemyAlive();
+        public int PlayerOpenCardLimit
+        {
+            get
+            {
+                var tables = UnityGameConfigLoader.Current;
+                if (tables == null || Run == null)
+                    return GameBalance.OpenHandSize;
+                if (IsPvp)
+                    tables = CardShare.Contracts.PvpGameTables.Wrap(tables);
+                if (CardShare.Battle.PvpRelicBindings.IsTypeComplete(tables, BindingOwnedRelics(), BindingType.CardEcho))
+                    return Math.Min(PlayerDealCount, 5);
+                return GameBalance.OpenHandSize;
+            }
+        }
+
+        public bool PlayerHasValidSelection =>
+            Player.CountSelectedCards() >= GameBalance.OpenHandSize &&
+            Player.CountSelectedCards() <= PlayerOpenCardLimit;
+
         public bool PlayerMayCompare =>
             !AiActing &&
             !HandReplacePlaying &&
             Phase == GamePhase.WaitingOpen &&
             !Player.Folded &&
             AnyEnemyAlive() &&
-            Player.CountSelectedCards() == GameBalance.OpenHandSize &&
+            PlayerHasValidSelection &&
             _revealKind == RevealKind.None &&
             !AttackPlaying &&
             !(IsPvp && _pvpHandLocked);
@@ -887,7 +906,42 @@ namespace App.Game
             }
 
             var old = Player.Hand[index];
-            var next = DrawRubCard(old);
+            Card next;
+            var tables = UnityGameConfigLoader.Current;
+            var chosen = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            var matching = new List<int>(3);
+            if (chosen)
+                for (var i = 0; i < Player.Hand.Length; i++)
+                    if (Player.Hand[i].IsValid && Player.Hand[i].Rank == old.Rank)
+                        matching.Add(i);
+
+            if (matching.Count == 3)
+            {
+                SyncDeckWithTable();
+                foreach (var slot in matching)
+                    _deck.Return(Player.Hand[slot]);
+                if (!_deck.TryDrawTriplet(out var bomb, old.Rank))
+                {
+                    SyncDeckWithTable();
+                    Hint = "牌堆中没有其他三张同点数的牌";
+                    Notify();
+                    return false;
+                }
+
+                next = default;
+                for (var i = 0; i < matching.Count; i++)
+                {
+                    if (matching[i] == index)
+                        next = bomb[i];
+                    else
+                        Player.Hand[matching[i]] = bomb[i];
+                }
+            }
+            else
+            {
+                next = DrawRubCard(old);
+            }
             if (!next.IsValid || next.Equals(old))
             {
                 Hint = "没有可换的新牌";
@@ -1017,9 +1071,9 @@ namespace App.Game
             }
             else
             {
-                if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+                if (Player.CountSelectedCards() >= PlayerOpenCardLimit)
                 {
-                    Hint = "已经选了 3 张，再点已选中的牌可取消";
+                    Hint = $"已经选了 {PlayerOpenCardLimit} 张，再点已选中的牌可取消";
                     Notify();
                     return;
                 }
@@ -1029,7 +1083,7 @@ namespace App.Game
 
             var picked = Player.CountSelectedCards();
             Hint = picked >= GameBalance.OpenHandSize
-                ? "已选 3 张，可开牌"
+                ? $"已选 {picked} 张，可开牌（最多 {PlayerOpenCardLimit} 张）"
                 : $"已选 {picked}/{GameBalance.OpenHandSize} 张，点选卡牌上移表示开牌用牌";
             Notify();
         }
@@ -1268,8 +1322,30 @@ namespace App.Game
             _pendingRubIndex = -1;
             SyncDeckWithTable();
             var nextCards = new Card[PlayerDealCount];
+            var tables = UnityGameConfigLoader.Current;
+            var chosen = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            Card[] bomb = Array.Empty<Card>();
+            if (chosen)
+            {
+                foreach (var card in Player.Hand)
+                    _deck.Return(card);
+                if (!_deck.TryDrawTriplet(out bomb))
+                {
+                    SyncDeckWithTable();
+                    Hint = "牌堆不足，无法替换";
+                    Notify();
+                    return;
+                }
+            }
+
             for (var i = 0; i < nextCards.Length; i++)
             {
+                if (i < bomb.Length)
+                {
+                    nextCards[i] = bomb[i];
+                    continue;
+                }
                 if (!_deck.TryDraw(out nextCards[i]) || !nextCards[i].IsValid)
                 {
                     SyncDeckWithTable();
@@ -2215,6 +2291,13 @@ namespace App.Game
                 talentAttack = (int)Math.Round(TalentMechanics.SumAttackExtra(talent, score, ctx));
                 relicExtra = RelicMechanics.SumMultiplierExtra(Run, score, ctx);
                 relicAttack = (int)Math.Round(RelicMechanics.SumAttackExtra(Run, score, ctx));
+                if (PlayerOpenCardLimit > GameBalance.OpenHandSize)
+                {
+                    GetScoreBan(attacker, out var ban1, out var ban2, out var banFaces, out var ban3);
+                    relicAttack += HandEvaluator.EchoExtraAttack(
+                        CollectEvalCards(attacker, ban1, banFaces, GetHandEvalRules(attacker), ban2, ban3),
+                        score, ban1, banFaces, ban2, ban3);
+                }
                 var hero = ResolveHero();
                 dmgPercent = TalentMechanics.SumDamagePercent(
                     talent,
@@ -4630,8 +4713,14 @@ namespace App.Game
         {
             GetScoreBan(seat, out var banned, out var banned2, out var banFaces, out var banned3);
             var rules = GetHandEvalRules(seat);
-            var score = HandEvaluator.Evaluate(
-                CollectEvalCards(seat, banned, banFaces, rules, banned2, banned3),
+            var cards = CollectEvalCards(seat, banned, banFaces, rules, banned2, banned3);
+            var useExtended = seat != null &&
+                ((seat.IsPlayer && PlayerOpenCardLimit > GameBalance.OpenHandSize) ||
+                 (IsPvp && !seat.IsPlayer && cards.Length > GameBalance.OpenHandSize));
+            var score = useExtended
+                ? HandEvaluator.EvaluateEcho(cards, banned, banFaces, rules, banned2, banned3)
+                : HandEvaluator.Evaluate(
+                cards,
                 banned,
                 banFaces,
                 rules,
@@ -5374,14 +5463,17 @@ namespace App.Game
                 ClearSeatHand(seat);
             }
 
-            if (SharedBattleBridge.TryDeal(_pveLocal, AllSeats(), CardsDealtFor))
+            var tables = UnityGameConfigLoader.Current;
+            var guaranteedBomb = tables != null && CardShare.Battle.PvpRelicBindings.IsTypeComplete(
+                tables, BindingOwnedRelics(), BindingType.TheChosenOne);
+            if (!guaranteedBomb && SharedBattleBridge.TryDeal(_pveLocal, AllSeats(), CardsDealtFor))
             {
                 SyncDeckWithTable();
                 return;
             }
 
             SyncDeckWithTable();
-            var forceGuideHand = ShouldApplyFirstBattleDeal();
+            var forceGuideHand = !guaranteedBomb && ShouldApplyFirstBattleDeal();
             var skillGuideDeal = forceGuideHand && IsFirstSkillGuideDeal();
             foreach (var seat in AllSeats())
             {
@@ -5408,11 +5500,20 @@ namespace App.Game
                 }
 
                 var count = CardsDealtFor(seat);
+                Card[] triplet = Array.Empty<Card>();
+                if (seat.IsPlayer && guaranteedBomb && count >= 3)
+                    _deck.TryDrawTriplet(out triplet);
                 for (var i = 0; i < seat.Hand.Length; i++)
                 {
                     if (i >= count)
                     {
                         seat.Hand[i] = default;
+                        continue;
+                    }
+
+                    if (i < triplet.Length)
+                    {
+                        seat.Hand[i] = triplet[i];
                         continue;
                     }
 
@@ -6811,7 +6912,9 @@ namespace App.Game
                 return Array.Empty<Card>();
             }
 
-            if (seat.CountSelectedCards() == GameBalance.OpenHandSize)
+            if (seat.IsPlayer ? PlayerHasValidSelection :
+                IsPvp ? seat.CountSelectedCards() >= GameBalance.OpenHandSize :
+                seat.CountSelectedCards() == GameBalance.OpenHandSize)
             {
                 if (seat.IsPlayer && Run.HandBrandIndex >= 0)
                 {
@@ -7009,6 +7112,9 @@ namespace App.Game
         {
             switch (type)
             {
+                case HandType.FourOfAKind: return "四炸弹";
+                case HandType.FiveStraight: return "五顺子";
+                case HandType.FiveFlush: return "五同花";
                 case HandType.ThreeOfAKind: return "豹子炸场";
                 case HandType.StraightFlush: return "顺金通杀";
                 case HandType.Flush: return "金花亮出";
@@ -7105,6 +7211,21 @@ namespace App.Game
 
         private IReadOnlyList<int> BindingOwnedRelics()
             => Run != null ? Run.RelicConfigIds : null;
+
+        public int EchoAttackForCard(Card card, HandScore score)
+        {
+            if (PlayerOpenCardLimit <= GameBalance.OpenHandSize || !card.IsValid)
+                return 0;
+
+            GetScoreBan(Player, out var ban1, out var ban2, out var banFaces, out var ban3);
+            var cards = CollectEvalCards(Player, ban1, banFaces, GetHandEvalRules(Player), ban2, ban3);
+            for (var i = 0; i < cards.Length; i++)
+            {
+                if (cards[i].Equals(card))
+                    return HandEvaluator.EchoExtraAttack(new[] { card }, score, ban1, banFaces, ban2, ban3);
+            }
+            return 0;
+        }
 
         private void ArmBindingReviveIfNeeded()
         {
@@ -11702,7 +11823,10 @@ namespace App.Game
             var handBefore = _pendingPvpReplacePlay && Player.Hand != null
                 ? (Card[])Player.Hand.Clone()
                 : null;
-            CopyPvpHand(Player, mine, true);
+            // 扩展选牌在开牌时统一提交，等待期间保留本地正在调整的选择。
+            var syncSelected = PlayerOpenCardLimit <= GameBalance.OpenHandSize ||
+                               showdown || (mine != null && mine.Locked);
+            CopyPvpHand(Player, mine, syncSelected);
             if (_pendingPvpReplacePlay && mine != null && mine.Cards != null && mine.Cards.Count > 0)
             {
                 // 无关快照不会改手牌：只在己方 5 张真的变了时才播回收/发牌，避免别的玩家动作误触发。
@@ -11831,16 +11955,16 @@ namespace App.Game
             }
             else if (foeLocked)
             {
-                Hint = "对方已锁定，请选 3 张开牌";
+                Hint = $"对方已锁定，请选择 3 至 {PlayerOpenCardLimit} 张开牌";
             }
-            else if (Player.CountSelectedCards() >= GameBalance.OpenHandSize)
+            else if (PlayerHasValidSelection)
             {
-                Hint = "已选 3 张，可开牌";
+                Hint = $"已选 {Player.CountSelectedCards()} 张，可开牌";
             }
             else
             {
                 var picked = Player.CountSelectedCards();
-                Hint = $"第{match.Round}轮 已选 {picked}/{GameBalance.OpenHandSize} 张";
+                Hint = $"第{match.Round}轮 已选 {picked}/{PlayerOpenCardLimit} 张";
             }
         }
 

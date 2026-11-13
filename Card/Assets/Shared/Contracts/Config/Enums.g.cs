@@ -497,6 +497,9 @@ namespace CardShare.Contracts.Config
         /// </summary>
         ThreeCardAttack = 22,
 
+        /// <summary>
+        /// 不使用任何技能通过难度10
+        /// </summary>
         NoSkillLevelTen = 23,
 
     }
@@ -1679,8 +1682,19 @@ namespace CardShare.Contracts.Config
         /// </summary>
         AllInDamage = 215,
 
+        /// <summary>
+        /// 拥有后圣物栏+2
+        /// </summary>
         TreasureChest = 216,
+
+        /// <summary>
+        /// 造成的伤害100%会暴击
+        /// </summary>
         SharpBlade = 217,
+
+        /// <summary>
+        /// 每进行一次金币消费就会使自身造成的伤害提高5%
+        /// </summary>
         GoldTurnToDamage = 218,
 
         MaxHp = 1111,

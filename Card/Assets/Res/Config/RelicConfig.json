@@ -3253,7 +3253,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "百宝箱",
-    "Icon": "",
+    "Icon": "TreasureChest",
     "Price": 450,
     "SellingPrice": 225,
     "MechanismId": [
@@ -3271,7 +3271,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "利刃",
-    "Icon": "",
+    "Icon": "SharpBlade",
     "Price": 450,
     "SellingPrice": 225,
     "MechanismId": [
@@ -3289,7 +3289,7 @@
     "Type": 4,
     "RefreshProbability": 0.1,
     "Name": "重金手",
-    "Icon": "",
+    "Icon": "HeavyGoldHand",
     "Price": 450,
     "SellingPrice": 225,
     "MechanismId": [

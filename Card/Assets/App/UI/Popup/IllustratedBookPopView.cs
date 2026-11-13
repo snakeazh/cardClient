@@ -443,7 +443,7 @@ namespace App.UI.Popup
         }
 
         /// <summary>怪物槽数据绑定（行复用时反复调用）：敌人形态底图（enemycard 走
-        /// MonsterConfig.BaseMap/HealthBar）、名字/头像和未遇见遮罩，
+        /// MonsterConfig.BaseMap/HealthBar）、名字/头像和未遇见遮罩；未解锁头像显示为黑色剪影，
         /// 敌人攻/血块不显示（CreateMonsterSlot 已隐藏节点，这里不能再调 SetAttack/SetHp
         /// ——那会在数值 >0 时把节点重新点亮），刷新选中态。</summary>
         private void BindMonsterSlot(Component slot, IllustratedBookEntry entry)
@@ -451,7 +451,7 @@ namespace App.UI.Popup
             var card = (PlayerItem)slot;
             card.ApplyEnemyTheme(entry.Id);
             card.SetName(entry.Unlocked ? entry.Name : "???");
-            card.SetPortrait(GetIcon(entry));
+            card.SetPortrait(GetIcon(entry), locked: !entry.Unlocked);
             SetMonsterLockedMask(card, !entry.Unlocked);
             _entries[card] = entry;
             card.SetSelectLift(ViewModel.IsSelected(entry), HeroItem.SelectAnim, HeroItem.DefaultAnim);

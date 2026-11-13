@@ -46,6 +46,10 @@ namespace CardShare.Contracts
 
         public int BoughtRelicSlots { get; set; }
 
+        public float GoldTurnToDamageBonus { get; set; }
+
+        public bool UsedSkillThisRun { get; set; }
+
         public string Status { get; set; } = "active";
     }
 
@@ -107,6 +111,10 @@ namespace CardShare.Contracts
         public bool ClearedStage { get; set; }
 
         public int Score { get; set; }
+
+        public bool UsedSkillThisRun { get; set; }
+
+        public bool SkillOnly { get; set; }
     }
 
     public sealed class PveSettleRequest
@@ -174,6 +182,8 @@ namespace CardShare.Contracts
         public int CriticalNum { get; set; }
 
         public int ThreeCardAttack { get; set; }
+
+        public int NoSkillLevelTen { get; set; }
     }
 
     public sealed class PveSettleResponse

@@ -136,6 +136,8 @@ public sealed class MemoryPveRunRepository : IPveRunRepository
             ShopRefreshCount = run.ShopRefreshCount,
             FreeShopRefreshLeft = run.FreeShopRefreshLeft,
             BoughtRelicSlots = run.BoughtRelicSlots,
+            GoldTurnToDamageBonus = run.GoldTurnToDamageBonus,
+            UsedSkillThisRun = run.UsedSkillThisRun,
             Status = run.Status,
             StartedAt = run.StartedAt,
             SettledAt = run.SettledAt,

@@ -68,6 +68,7 @@ public static class UnlockRules
             ConditionTypes.NumberOfCoinsOwned => stats.NumberOfCoinsOwned,
             ConditionTypes.CriticalNum => stats.CriticalNum,
             ConditionTypes.ThreeCardAttack => stats.ThreeCardAttack,
+            ConditionTypes.NoSkillLevelTen => stats.NoSkillLevelTen,
             _ => 0
         };
     }

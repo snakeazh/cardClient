@@ -34,6 +34,7 @@ public sealed class PlayerSession
 
         profile.ApplyDailyReset(_config, _clock.UtcNow);
         profile.SyncUnlockedHeroes(_config);
+        profile.SyncNewRelicUnlocks(_config);
         return profile;
     }
 
@@ -52,6 +53,7 @@ public sealed class PlayerSession
 
         var dirty = profile.ApplyDailyReset(_config, _clock.UtcNow);
         dirty |= profile.SyncUnlockedHeroes(_config);
+        dirty |= profile.SyncNewRelicUnlocks(_config);
         var result = project(profile);
         if (dirty)
         {

@@ -68,6 +68,16 @@ namespace CardShare.Contracts.Config
         /// </summary>
         Capital = 12,
 
+        /// <summary>
+        /// 现在亮牌时可以出5张牌,未凑成牌型的两张牌可以提供其对应的攻击力加成,且在亮出5同花、5顺子、4炸弹牌型时会有特殊加成
+        /// </summary>
+        CardEcho = 13,
+
+        /// <summary>
+        /// 每次拿牌后必定为炸弹牌型
+        /// </summary>
+        TheChosenOne = 14,
+
     }
 
     /// <summary>
@@ -486,6 +496,11 @@ namespace CardShare.Contracts.Config
         /// 三花聚顶
         /// </summary>
         ThreeCardAttack = 22,
+
+        /// <summary>
+        /// 不使用任何技能通过难度10
+        /// </summary>
+        NoSkillLevelTen = 23,
 
     }
 
@@ -1666,6 +1681,21 @@ namespace CardShare.Contracts.Config
         /// 自身伤害提高且承伤提高(参数:增伤|增承伤)
         /// </summary>
         AllInDamage = 215,
+
+        /// <summary>
+        /// 拥有后圣物栏+2
+        /// </summary>
+        TreasureChest = 216,
+
+        /// <summary>
+        /// 造成的伤害100%会暴击
+        /// </summary>
+        SharpBlade = 217,
+
+        /// <summary>
+        /// 每进行一次金币消费就会使自身造成的伤害提高5%
+        /// </summary>
+        GoldTurnToDamage = 218,
 
         MaxHp = 1111,
 

@@ -27,6 +27,7 @@ namespace CardShare.Contracts
         public const int NumberOfCoinsOwned = 20;
         public const int CriticalNum = 21;
         public const int ThreeCardAttack = 22;
+        public const int NoSkillLevelTen = 23;
 
         public static bool UsesMax(int type)
         {

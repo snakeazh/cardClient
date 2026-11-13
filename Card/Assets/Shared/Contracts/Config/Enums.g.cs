@@ -68,6 +68,16 @@ namespace CardShare.Contracts.Config
         /// </summary>
         Capital = 12,
 
+        /// <summary>
+        /// 现在亮牌时可以出5张牌,未凑成牌型的两张牌可以提供其对应的攻击力加成,且在亮出5同花、5顺子、4炸弹牌型时会有特殊加成
+        /// </summary>
+        CardEcho = 13,
+
+        /// <summary>
+        /// 每次拿牌后必定为炸弹牌型
+        /// </summary>
+        TheChosenOne = 14,
+
     }
 
     /// <summary>

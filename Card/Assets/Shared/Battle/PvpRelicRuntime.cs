@@ -13,7 +13,7 @@ namespace CardShare.Battle
     /// </summary>
     public static class PvpRelicRuntime
     {
-        public const int HandTypeCountSlots = 6;
+        public const int HandTypeCountSlots = 9;
 
         public static int SelfDecayAttackTotal(IGameTables tables, PvpFighter fighter)
         {

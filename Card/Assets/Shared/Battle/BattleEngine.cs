@@ -146,6 +146,15 @@ namespace CardShare.Battle
             _picked = EmptyPicked();
             _pickedExplicit = new bool[BattleLimits.RoomSeats];
             var hands = new Card[BattleLimits.RoomSeats][];
+            var triplets = new Card[BattleLimits.RoomSeats][];
+            if (size >= 3)
+            {
+                for (var i = 0; i < BattleLimits.RoomSeats; i++)
+                    if (IsSeatActive(i) && PvpRelicBindings.IsTypeComplete(
+                        _tables, _seats[i].RelicIds, BindingType.TheChosenOne) &&
+                        _deck.TryDrawTriplet(out var triplet))
+                        triplets[i] = triplet;
+            }
             for (var i = 0; i < BattleLimits.RoomSeats; i++)
             {
                 var active = IsSeatActive(i);
@@ -154,7 +163,8 @@ namespace CardShare.Battle
                 {
                     for (var c = 0; c < hand.Length; c++)
                     {
-                        hand[c] = _deck.Draw();
+                        hand[c] = triplets[i] != null && c < triplets[i].Length
+                            ? triplets[i][c] : _deck.Draw();
                     }
                 }
 
@@ -169,9 +179,9 @@ namespace CardShare.Battle
         {
             RequireDealt(seatId);
             var hand = _snapshot.Hands[seatId];
-            if (indexes == null || indexes.Length != BattleLimits.OpenHandSize)
+            if (indexes == null || indexes.Length < BattleLimits.OpenHandSize || indexes.Length > MaxOpenCards(seatId))
             {
-                throw new InvalidOperationException("Pick needs 3 indexes.");
+                throw new InvalidOperationException("Invalid number of selected cards.");
             }
 
             var seen = new bool[hand.Count];
@@ -201,13 +211,33 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Invalid rub index.");
             }
 
-            var next = _deck!.Draw();
-            if (!next.IsValid)
+            var chosen = PvpRelicBindings.IsTypeComplete(_tables, _seats[seatId].RelicIds, BindingType.TheChosenOne);
+            var rank = hand[index].Rank;
+            if (chosen && hand.Count(card => card.IsValid && card.Rank == rank) == 3)
             {
-                throw new InvalidOperationException("Deck empty.");
+                var originalTriplet = hand.Where(card => card.IsValid && card.Rank == rank).ToArray();
+                foreach (var card in originalTriplet)
+                    _deck!.Return(card);
+                if (!_deck!.TryDrawTriplet(out var replacement, rank))
+                {
+                    foreach (var card in originalTriplet)
+                        _deck.Remove(card);
+                    throw new InvalidOperationException("No alternative triplet available.");
+                }
+
+                var n = 0;
+                for (var i = 0; i < hand.Length; i++)
+                    if (hand[i].IsValid && hand[i].Rank == rank)
+                        hand[i] = replacement[n++];
+            }
+            else
+            {
+                var next = _deck!.Draw();
+                if (!next.IsValid)
+                    throw new InvalidOperationException("Deck empty.");
+                hand[index] = next;
             }
 
-            hand[index] = next;
             _rubbed[seatId] = true;
             _rubsUsed[seatId]++;
             if (!_seats[seatId].IsHuman)
@@ -224,9 +254,17 @@ namespace CardShare.Battle
             var hands = CloneHands();
             var size = Math.Max(hands[seatId].Length, BattleLimits.MaxCardsPerSeat);
             var hand = new Card[size];
+            Card[] triplet = Array.Empty<Card>();
+            if (PvpRelicBindings.IsTypeComplete(_tables, _seats[seatId].RelicIds, BindingType.TheChosenOne))
+            {
+                foreach (var card in hands[seatId])
+                    _deck!.Return(card);
+                if (!_deck!.TryDrawTriplet(out triplet))
+                    throw new InvalidOperationException("No triplet remains in the deck.");
+            }
             for (var c = 0; c < hand.Length; c++)
             {
-                var next = _deck!.Draw();
+                var next = c < triplet.Length ? triplet[c] : _deck!.Draw();
                 if (!next.IsValid)
                 {
                     throw new InvalidOperationException("Deck empty.");
@@ -255,10 +293,21 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Invalid swap index.");
             }
 
+            if (!CanSwapCard(seatA, handA, indexA) || !CanSwapCard(seatB, handB, indexB))
+                throw new InvalidOperationException("Cannot break the guaranteed triplet.");
+
             var tmp = handA[indexA];
             handA[indexA] = handB[indexB];
             handB[indexB] = tmp;
             PublishDealt(hands, "peek_steal");
+        }
+
+        public bool CanSwapCard(int seat, IReadOnlyList<Card> hand, int index)
+        {
+            if (!PvpRelicBindings.IsTypeComplete(_tables, _seats[seat].RelicIds, BindingType.TheChosenOne))
+                return true;
+            var rank = hand[index].Rank;
+            return hand.Count(card => card.IsValid && card.Rank == rank) != 3;
         }
 
         private void ScoreHands()
@@ -276,7 +325,9 @@ namespace CardShare.Battle
                 }
 
                 var rules = SeatHandRules(i);
-                scores[i] = HandEvaluator.Evaluate(open, rules: rules);
+                scores[i] = MaxOpenCards(i) > BattleLimits.OpenHandSize
+                    ? HandEvaluator.EvaluateEcho(open, rules: rules)
+                    : HandEvaluator.Evaluate(open, rules: rules);
                 var down = _seats[i].TypeDowngradeSteps;
                 if (down > 0)
                 {
@@ -378,6 +429,9 @@ namespace CardShare.Battle
                     };
                 }
 
+                if (seat.HeroId > 0 && MaxOpenCards(i) > BattleLimits.OpenHandSize)
+                    input.Attack += HandEvaluator.EchoExtraAttack(open, scores[i]);
+
                 var resolved = CombatDamage.Resolve(input, rng);
                 damages[i] = resolved.Damage;
                 crits[i] = resolved.Crit;
@@ -427,6 +481,8 @@ namespace CardShare.Battle
                     cards[i] = hand[i];
                 }
 
+                if (MaxOpenCards(seatId) > BattleLimits.OpenHandSize && cards.Length >= MaxOpenCards(seatId))
+                    return Enumerable.Range(0, MaxOpenCards(seatId)).ToArray();
                 return PickBest(cards, MonsterHandLevelCap(seatId));
             }
             finally
@@ -442,7 +498,19 @@ namespace CardShare.Battle
                 return PickBest(hand, MonsterHandLevelCap(seat));
             }
 
+            if (MaxOpenCards(seat) > BattleLimits.OpenHandSize && hand.Length >= MaxOpenCards(seat))
+                return Enumerable.Range(0, MaxOpenCards(seat)).ToArray();
             return DefaultPick(hand.Length);
+        }
+
+        private int MaxOpenCards(int seat)
+        {
+            if (seat < 0 || seat >= _seats.Count)
+                return BattleLimits.OpenHandSize;
+            var relics = _seats[seat].RelicIds;
+            if (PvpRelicBindings.IsTypeComplete(_tables, relics, BindingType.CardEcho))
+                return BattleLimits.MaxCardsPerSeat;
+            return BattleLimits.OpenHandSize;
         }
 
         private void PublishDealt(IReadOnlyList<Card>[] hands, string message)
@@ -546,7 +614,7 @@ namespace CardShare.Battle
                 return first;
             }
 
-            var open = new Card[BattleLimits.OpenHandSize];
+            var open = new Card[pick.Length];
             for (var n = 0; n < open.Length; n++)
             {
                 var index = pick[n];

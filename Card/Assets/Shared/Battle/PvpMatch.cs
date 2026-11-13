@@ -454,8 +454,6 @@ namespace CardShare.Battle
                                     throw new InvalidOperationException("Not enough gold.");
                                 }
 
-                                fighter.Gold -= rubPay;
-                                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
                             }
                             else if (fighter.RubLeft <= 0)
                             {
@@ -463,6 +461,11 @@ namespace CardShare.Battle
                             }
 
                             duel.Rub(seat, index);
+                            if (rubPay > 0)
+                            {
+                                fighter.Gold -= rubPay;
+                                PvpRelicRuntime.OnGoldSpent(_tables, fighter);
+                            }
                             if (rubPay <= 0)
                             {
                                 fighter.RubLeft--;
@@ -1567,6 +1570,12 @@ namespace CardShare.Battle
             }
 
             PvpRelicBag.Add(fighter, relicId);
+            var duel = FindDuel(fighter.UserId);
+            if (duel != null && !duel.Resolved)
+            {
+                var setup = duel.Engine.MutableSeat(duel.ViewerSeat(fighter.UserId));
+                setup.RelicIds = CombatBonuses.CloneRelicIds(fighter.OwnedRelicIds);
+            }
             // 血量上限类与购买同口径（编辑器测试能直接看到血条变化）。
             PvpRelicRuntime.ApplyAcquireStats(_tables, fighter, relicId);
             // 技能次数类词条：立刻补进当前剩余次数，方便当手测试。

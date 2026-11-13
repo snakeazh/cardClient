@@ -1015,7 +1015,8 @@
       20033
     ],
     "BindingID": [
-      104
+      104,
+      113
     ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1033,7 +1034,8 @@
       20034
     ],
     "BindingID": [
-      104
+      104,
+      113
     ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1051,7 +1053,8 @@
       20035
     ],
     "BindingID": [
-      104
+      104,
+      113
     ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1312,7 +1315,8 @@
       30002
     ],
     "BindingID": [
-      104
+      104,
+      113
     ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
@@ -1989,7 +1993,9 @@
     "MechanismId": [
       40007
     ],
-    "BindingID": [],
+    "BindingID": [
+      114
+    ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "在结算时,每剩余1个未使用的搓牌次数,就提供+2倍率"
@@ -2073,7 +2079,9 @@
       40012,
       400121
     ],
-    "BindingID": [],
+    "BindingID": [
+      114
+    ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "失去2次搓牌机会,但结算时提供+15倍率"
@@ -2089,7 +2097,9 @@
     "MechanismId": [
       40013
     ],
-    "BindingID": [],
+    "BindingID": [
+      114
+    ],
     "UseType": 0,
     "SpecialDesc": "玩家通用冒险证明",
     "Desc": "每使用1次搓牌,该圣物永久提供+0.1倍率"

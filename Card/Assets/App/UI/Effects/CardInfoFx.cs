@@ -44,7 +44,7 @@ namespace App.UI
             }
 
             SetChildActive(root.transform, StraightFlushNode, level == StraightFlushLevel);
-            SetChildActive(root.transform, BombNode, level == BombLevel);
+            SetChildActive(root.transform, BombNode, level == BombLevel || level == 9);
         }
 
         /// <summary>按名字开/关子节点（先直接子节点，找不到再全树找）。</summary>

@@ -121,7 +121,7 @@
   {
     "Id": 112,
     "Name": "资本注入",
-    "Icon": "",
+    "Icon": "CapitalInjection",
     "Type": 12,
     "Value": [
       5,

@@ -17,6 +17,11 @@ namespace CardShare.Contracts.Config
         public string Name;
 
         /// <summary>
+        /// 图标
+        /// </summary>
+        public string Icon;
+
+        /// <summary>
         /// 机制
         /// </summary>
         public BindingType Type;

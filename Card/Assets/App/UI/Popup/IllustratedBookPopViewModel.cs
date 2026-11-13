@@ -28,6 +28,8 @@ namespace App.UI.Popup
         public int Id;
         public string Name;
         public string Desc;
+        /// <summary>怪物专属机制的名称和描述。</summary>
+        public string MonsterMechanics;
         public string Icon;
         public bool Unlocked;
         public string UnlockTip;
@@ -203,7 +205,7 @@ namespace App.UI.Popup
                         index = i;
                     }
 
-                    // 遗物页特殊描述（RelicConfig.SpecialDesc，同 Desc 口径未解锁也显示），其余页不显示
+                    // 遗物显示特殊描述，怪物显示其配置的专属机制。
                     var relicRow = sibling.Tab == IllustratedBookTab.Relic ? RelicConfig.Get(sibling.Id) : null;
                     displays.Add(new TalentDetailViewModel.DisplayEntry
                     {
@@ -213,7 +215,7 @@ namespace App.UI.Popup
                             : (string.IsNullOrEmpty(sibling.UnlockTip) ? "尚未解锁" : sibling.UnlockTip),
                         Icon = iconResolver != null ? iconResolver(sibling) : null,
                         AcquireMethod = ResolveAcquireMethod(sibling),
-                        SpecialDesc = relicRow != null ? relicRow.SpecialDesc : null,
+                        SpecialDesc = relicRow != null ? relicRow.SpecialDesc : sibling.MonsterMechanics,
                         MonsterId = sibling.Tab == IllustratedBookTab.Monster ? sibling.Id : 0,
                         Quality = sibling.Quality
                     });
@@ -443,6 +445,7 @@ namespace App.UI.Popup
                     Id = row.MonsterId,
                     Name = string.IsNullOrWhiteSpace(row.Name) ? fallbackName : row.Name,
                     Desc = row.Desc ?? string.Empty,
+                    MonsterMechanics = FormatMonsterMechanics(row.MonsterEntry),
                     Icon = row.Icon,
                     Unlocked = true,
                     MonsterType = row.Type,
@@ -452,6 +455,41 @@ namespace App.UI.Popup
             }
 
             _monsters.Sort((a, b) => a.Id.CompareTo(b.Id));
+        }
+
+        private static string FormatMonsterMechanics(int[] entryIds)
+        {
+            if (entryIds == null || entryIds.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var descriptions = new List<string>(entryIds.Length);
+            foreach (var id in entryIds)
+            {
+                var entry = BossEntryConfig.Get(id);
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                var name = entry.Name ?? string.Empty;
+                var desc = entry.Desc ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(desc))
+                {
+                    descriptions.Add(name + "：" + desc);
+                }
+                else if (!string.IsNullOrWhiteSpace(name))
+                {
+                    descriptions.Add(name);
+                }
+                else if (!string.IsNullOrWhiteSpace(desc))
+                {
+                    descriptions.Add(desc);
+                }
+            }
+
+            return string.Join("\n", descriptions);
         }
 
         private bool IsCollectUnlocked(int unlockCondition)

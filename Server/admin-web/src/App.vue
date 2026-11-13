@@ -111,7 +111,7 @@ onMounted(() => {
   <div class="page">
     <div v-if="!loggedIn" class="login-wrap">
       <div class="panel login-card">
-        <h1>冒险卡 · GM 后台</h1>
+        <h1>天选勇士后台</h1>
         <p class="login-tip">请输入管理员密码</p>
         <input
           v-model="loginPassword"
@@ -127,7 +127,7 @@ onMounted(() => {
 
     <template v-else>
       <header>
-        <h1>冒险卡 · GM 后台</h1>
+        <h1>天选勇士后台</h1>
         <div class="token-bar">
           <button @click="refreshAll" :disabled="busy">刷新</button>
           <button class="danger" @click="logout">退出登录</button>

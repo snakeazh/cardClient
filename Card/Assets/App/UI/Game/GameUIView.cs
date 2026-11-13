@@ -3150,7 +3150,6 @@ namespace App.UI
                 {
                     var shown = session.EvaluateSeat(session.Player, ViewModel.SettledHandTypeRevealed);
                     var revealed = settling && (session.Player.ShowCards || session.CardsRevealed);
-                    ApplyExtendedHandLabel(_playerCardInfo.transform, shown.Type);
                     ApplyCardInfoFx(_playerCardInfo, revealed ? shown.Level : 0);
                 }
             }
@@ -3187,7 +3186,6 @@ namespace App.UI
 
             _enemyCardInfo.SetActive(true);
             var shownType = score.CompareType;
-            ApplyExtendedHandLabel(_enemyCardInfo.transform, shownType);
             ApplyCardInfoFx(_enemyCardInfo, revealed ? score.CompareLevel : 0);
             if (_enemyCardTypeIcon != null)
             {
@@ -3202,44 +3200,6 @@ namespace App.UI
                     ViewModel.Atlas,
                     _enemyCardTypeNum,
                     GameTableViewModel.FormatHandMultiplier(shownType));
-            }
-        }
-
-        private void ApplyExtendedHandLabel(Transform root, HandType type)
-        {
-            if (root == null)
-                return;
-
-            var extended = type == HandType.FiveFlush || type == HandType.FiveStraight ||
-                           type == HandType.FourOfAKind;
-            var labelNode = root.Find("ExtendedHandName");
-            if (labelNode == null && extended)
-            {
-                var labelObject = new GameObject("ExtendedHandName", typeof(RectTransform), typeof(TextMeshProUGUI));
-                labelNode = labelObject.transform;
-                labelNode.SetParent(root, false);
-                var rect = (RectTransform)labelNode;
-                rect.anchorMin = new Vector2(0f, 0f);
-                rect.anchorMax = new Vector2(0.68f, 1f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-                var label = labelObject.GetComponent<TextMeshProUGUI>();
-                var existing = GetComponentInChildren<TMP_Text>(true);
-                if (existing != null && existing.font != null)
-                    label.font = existing.font;
-                label.alignment = TextAlignmentOptions.Center;
-                label.enableAutoSizing = true;
-                label.fontSizeMin = 12;
-                label.fontSizeMax = 48;
-                label.color = Color.white;
-                label.raycastTarget = false;
-            }
-
-            if (labelNode != null)
-            {
-                labelNode.gameObject.SetActive(extended);
-                if (extended)
-                    labelNode.GetComponent<TMP_Text>().text = HandEvaluator.TypeName(type);
             }
         }
 
@@ -4390,15 +4350,9 @@ namespace App.UI
             }
 
             var types = CollectWinTipHandTypes();
-            if (ViewModel.Session != null && ViewModel.Session.PlayerOpenCardLimit > GameBalance.OpenHandSize)
-            {
-                if (ViewModel.Session.PlayerOpenCardLimit >= 5)
-                {
-                    types.Insert(0, HandType.FiveFlush);
-                    types.Insert(0, HandType.FiveStraight);
-                }
-                types.Insert(0, HandType.FourOfAKind);
-            }
+            if (!types.Contains(HandType.FiveFlush)) types.Insert(0, HandType.FiveFlush);
+            if (!types.Contains(HandType.FiveStraight)) types.Insert(0, HandType.FiveStraight);
+            if (!types.Contains(HandType.FourOfAKind)) types.Insert(0, HandType.FourOfAKind);
             while (_winTipRows.Count < types.Count)
             {
                 var clone = Instantiate(_winTipTemplate.gameObject, _winTip.transform, false);
@@ -4475,7 +4429,6 @@ namespace App.UI
                 return;
             }
 
-            ApplyExtendedHandLabel(row, type);
             var icon = row.GetComponent<Image>();
             if (icon != null)
             {

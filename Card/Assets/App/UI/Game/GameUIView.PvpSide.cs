@@ -860,7 +860,7 @@ namespace App.UI
 
             for (var i = 0; i < _bondHolds.Count; i++)
             {
-                var stem = ResResourcePaths.BondArtName(_bondHolds[i].Binding != null ? _bondHolds[i].Binding.Type : 0);
+                var stem = _bondHolds[i].Binding?.Icon?.Trim();
                 if (string.IsNullOrEmpty(stem))
                 {
                     continue;
@@ -943,7 +943,7 @@ namespace App.UI
         private Sprite BondSprite(PvpRelicBindings.BindingHold hold, out Color tint)
         {
             tint = Color.white;
-            var stem = ResResourcePaths.BondArtName(hold.Binding != null ? hold.Binding.Type : 0);
+            var stem = hold.Binding?.Icon?.Trim();
             if (string.IsNullOrEmpty(stem))
             {
                 return null;

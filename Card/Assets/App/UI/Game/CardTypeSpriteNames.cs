@@ -16,9 +16,9 @@ namespace App.UI
         {
             switch (type)
             {
-                case HandType.FiveFlush:
-                case HandType.FiveStraight:
-                case HandType.FourOfAKind: return null;
+                case HandType.FiveFlush: return "SuperFlushIcon";
+                case HandType.FiveStraight: return "SuperStraightIcon";
+                case HandType.FourOfAKind: return "SuperBombIcon";
                 case HandType.Pair: return "PairIcon";
                 case HandType.Straight: return "StraightIcon";
                 case HandType.Flush: return "SameSuitIcon";
@@ -33,9 +33,9 @@ namespace App.UI
         {
             switch (type)
             {
-                case HandType.FiveFlush:
-                case HandType.FiveStraight:
-                case HandType.FourOfAKind: return null;
+                case HandType.FiveFlush: return "SuperFlush";
+                case HandType.FiveStraight: return "SuperStraight";
+                case HandType.FourOfAKind: return "SuperBomb";
                 case HandType.Pair: return "Pair";
                 case HandType.Straight: return "Straight";
                 case HandType.Flush: return "SameSuit";

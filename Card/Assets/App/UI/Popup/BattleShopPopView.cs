@@ -34,6 +34,8 @@ namespace App.UI.Popup
             public TMP_Text Price;
             public int SkillId;
             public Color PriceColor;
+            public GameObject PriceBar;
+            public CanvasGroup Group;
             public UnityEngine.Events.UnityAction Handler;
         }
 
@@ -244,6 +246,8 @@ namespace App.UI.Popup
                 Button = button,
                 Label = FindButtonLabel(root),
                 Price = FindButtonPrice(root),
+                PriceBar = FindDeep(root, "PriceBar")?.gameObject,
+                Group = root.GetComponent<CanvasGroup>() ?? root.gameObject.AddComponent<CanvasGroup>(),
                 SkillId = skillId
             };
             if (entry.Price != null)
@@ -296,6 +300,9 @@ namespace App.UI.Popup
             {
                 var entry = _skillButtons[i];
                 var price = ViewModel.SkillPrice(entry.SkillId);
+                var full = ViewModel.IsSkillFull(entry.SkillId);
+                if (entry.PriceBar != null) entry.PriceBar.SetActive(price > 0);
+                if (entry.Group != null) entry.Group.alpha = price > 0 && !full ? 1f : 0.45f;
                 if (entry.Label != null)
                 {
                     entry.Label.text = ViewModel.FormatSkillText(entry.SkillId);
@@ -312,7 +319,7 @@ namespace App.UI.Popup
                 if (entry.Button != null)
                 {
                     // 买不起也保持可点：点了走 Toast「金币不足」，与买槽格一致（不置灰）。
-                    entry.Button.interactable = price > 0;
+                    entry.Button.interactable = price > 0 && !full;
                 }
             }
         }

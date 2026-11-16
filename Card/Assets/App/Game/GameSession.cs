@@ -516,8 +516,19 @@ namespace App.Game
             }
         }
 
+        private readonly bool[] _pveSkillAdUsed = new bool[PvpSkillIds.Count];
+        private readonly bool[] _pveSkillShopBought = new bool[PvpSkillIds.Count];
+
+        public bool IsPveSkillShopBought(int skillId) =>
+            skillId >= 0 && skillId < _pveSkillShopBought.Length && _pveSkillShopBought[skillId];
+
+        public bool CanWatchPveSkillAd(int skillId) =>
+            !IsPvp && skillId >= 0 && skillId < _pveSkillAdUsed.Length && !_pveSkillAdUsed[skillId];
+
         public void StartNewRun()
         {
+            Array.Clear(_pveSkillAdUsed, 0, _pveSkillAdUsed.Length);
+            Array.Clear(_pveSkillShopBought, 0, _pveSkillShopBought.Length);
             Run.Gold = 0;
             Run.Stage = 1;
             Run.ConsecutiveLosses = 0;
@@ -3219,14 +3230,13 @@ namespace App.Game
             }
 
             _pvpSkillBuying = true;
-            var leftBefore = skill.Left;
             try
             {
                 // 先挂等待再发命令，回包早于等待会漏掉这次快照（同其它商店操作）。
                 await pvp.BattleAndWaitAsync(() => pvp.Invoker.EnqueueBuySkill(skillId));
                 var after = GetPvpShopSkill(skillId);
-                // 商店分子包含本次购买的待生效次数；分母只是技能基数，购买不会增加。
-                if (after == null || after.Left <= leftBefore)
+                // 购买后服务端将价格置零，即使原本次数已满也能确认购买成功。
+                if (after == null || after.Price > 0)
                 {
                     // 快照没回来或服务端没受理：报一句，别刷「已补充」误导玩家。
                     Hint = "购买未完成，请稍后重试";
@@ -3256,29 +3266,72 @@ namespace App.Game
             _ => 0
         };
 
+        public bool GrantPveSkillAd(int skillId)
+        {
+            if (!CanWatchPveSkillAd(skillId) || Phase == GamePhase.StageFail || Phase == GamePhase.RunComplete) return false;
+            if (!RefillPveSkill(skillId)) return false;
+            _pveSkillAdUsed[skillId] = true;
+            Notify();
+            return true;
+        }
+
+        public bool IsPveSkillFull(int skillId)
+        {
+            var max = skillId switch
+            {
+                PvpSkillIds.Rub => Math.Max(0, GameBalance.SkillRubUses + Run.BonusRubCharges + (int)Math.Round(
+                    RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) + HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum))),
+                PvpSkillIds.Replace => Math.Max(0, GameBalance.SkillReplaceUses + Run.BonusReplaceCharges),
+                PvpSkillIds.Peek => Math.Max(0, GameBalance.SkillXRayUses + Run.BonusXRayCharges +
+                    (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum))),
+                _ => 0
+            };
+            var current = skillId switch
+            {
+                PvpSkillIds.Rub => Run.PeekGoodCharges,
+                PvpSkillIds.Replace => Run.TiHuanGoodCharges,
+                PvpSkillIds.Peek => Run.ChaKanGoodCharges,
+                _ => 0
+            };
+            return current >= max;
+        }
+
+        private bool RefillPveSkill(int skillId)
+        {
+            switch (skillId)
+            {
+                case PvpSkillIds.Rub:
+                    Run.PeekGoodCharges = Math.Max(Run.PeekGoodCharges, Math.Max(0,
+                        GameBalance.SkillRubUses + Run.BonusRubCharges + (int)Math.Round(
+                            RelicMechanics.SumValue(Run, MechanismType.RubbingCardsNum) +
+                            HeroMechanics.SumValue(Run, MechanismType.RubbingCardsNum))));
+                    break;
+                case PvpSkillIds.Replace:
+                    Run.TiHuanGoodCharges = Math.Max(Run.TiHuanGoodCharges,
+                        Math.Max(0, GameBalance.SkillReplaceUses + Run.BonusReplaceCharges));
+                    break;
+                case PvpSkillIds.Peek:
+                    Run.ChaKanGoodCharges = Math.Max(Run.ChaKanGoodCharges, Math.Max(0,
+                        GameBalance.SkillXRayUses + Run.BonusXRayCharges +
+                        (int)Math.Round(RelicMechanics.SumValue(Run, MechanismType.PerspectiveNum))));
+                    break;
+                default: return false;
+            }
+            return true;
+        }
+
         public bool TryBuyPveSkill(int skillId)
         {
             var price = PveSkillPrice(skillId);
-            if (IsPvp || Phase != GamePhase.Shop ||
+            if (IsPvp || Phase != GamePhase.Shop || IsPveSkillShopBought(skillId) || IsPveSkillFull(skillId) ||
                 price <= 0 || !RelicMechanics.CanAfford(Run, price))
             {
                 return false;
             }
 
             SpendGold(price);
-            // 商店购买只补充本局剩余次数，不提高技能上限。
-            switch (skillId)
-            {
-                case PvpSkillIds.Rub:
-                    Run.PeekGoodCharges++;
-                    break;
-                case PvpSkillIds.Replace:
-                    Run.TiHuanGoodCharges++;
-                    break;
-                case PvpSkillIds.Peek:
-                    Run.ChaKanGoodCharges++;
-                    break;
-            }
+            RefillPveSkill(skillId);
+            _pveSkillShopBought[skillId] = true;
 
             Notify();
             return true;

@@ -38,6 +38,7 @@ namespace App.Resources
         public const string TTRewardPop = "UI/Popup/TTRewardPop";
         public const string ShareRewardPop = "UI/Popup/ShareRewardPop";
         public const string SettingPop = "UI/Popup/SettingPop";
+        public const string GameSharePop = "UI/Popup/GameSharePop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";

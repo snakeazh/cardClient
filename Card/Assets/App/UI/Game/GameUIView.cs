@@ -5014,9 +5014,23 @@ namespace App.UI
             var session = ViewModel?.Session;
             var locked = session != null && session.PlayerSkillsLocked;
             var replaceLocked = locked || (session?.Run != null && BossMechanics.SwapLocked(session.Run));
-            ApplySkillButtonLock("PeekGood", locked);
-            ApplySkillButtonLock("ChaKanGood", locked);
-            ApplySkillButtonLock("TiHuanGood", replaceLocked);
+            var rubAd = session != null && session.Run.PeekGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Rub);
+            var peekAd = session != null && session.Run.ChaKanGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Peek);
+            var replaceAd = session != null && session.Run.TiHuanGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Replace);
+            ApplySkillButtonLock("PeekGood", locked && !rubAd);
+            ApplySkillButtonLock("ChaKanGood", locked && !peekAd);
+            ApplySkillButtonLock("TiHuanGood", replaceLocked && !replaceAd);
+            RefreshSkillAdd("PeekGood", rubAd);
+            RefreshSkillAdd("ChaKanGood", peekAd);
+            RefreshSkillAdd("TiHuanGood", replaceAd);
+        }
+
+        private void RefreshSkillAdd(string name, bool show)
+        {
+            var button = FindBtn(name);
+            if (button == null) return;
+            var indicator = FindDeep(button.transform, "add") ?? FindDeep(button.transform, "video");
+            if (indicator != null) indicator.gameObject.SetActive(show);
         }
 
         private void ApplySkillButtonLock(string name, bool locked)

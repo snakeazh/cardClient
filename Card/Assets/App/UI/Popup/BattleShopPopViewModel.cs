@@ -94,48 +94,14 @@ namespace App.UI.Popup
         /// PVP 技能按钮文案：只显示（剩余+待生效购买）/ 基数，技能名由按钮图标表达。
         /// 用光 0/1，买一次 1/1，再买 2/1；真实次数仍下一轮开局并入。
         /// </summary>
-        public string FormatSkillText(int skillId)
-        {
-            if (!Session.IsPvp)
-            {
-                var count = skillId switch
-                {
-                    PvpSkillIds.Rub => Session.Run.PeekGoodCharges,
-                    PvpSkillIds.Replace => Session.Run.TiHuanGoodCharges,
-                    PvpSkillIds.Peek => Session.Run.ChaKanGoodCharges,
-                    _ => 0
-                };
-                var run = Session.Run;
-                var max = skillId switch
-                {
-                    PvpSkillIds.Rub => GameBalance.SkillRubUses + run.BonusRubCharges
-                        + (int)Math.Round(RelicMechanics.SumValue(run, MechanismType.RubbingCardsNum)
-                            + HeroMechanics.SumValue(run, MechanismType.RubbingCardsNum))
-                        - BossMechanics.RubChargeDelta(run),
-                    PvpSkillIds.Replace => GameBalance.SkillReplaceUses + run.BonusReplaceCharges
-                        + (int)Math.Round(RelicMechanics.SumValue(run, MechanismType.ReplaceCardsNum)),
-                    PvpSkillIds.Peek => GameBalance.SkillXRayUses + run.BonusXRayCharges
-                        + (int)Math.Round(RelicMechanics.SumValue(run, MechanismType.PerspectiveNum)),
-                    _ => 0
-                };
-                return $"({count}/{Math.Max(0, max)})";
-            }
-
-            var skill = Session.GetPvpShopSkill(skillId);
-            if (skill == null)
-            {
-                return string.Empty;
-            }
-
-            return $"({skill.Left}/{skill.Max})";
-        }
+        public string FormatSkillText(int skillId) => "补充次数";
 
         /// <summary>下一次购买的金币价；非商店阶段为 0。</summary>
         public int SkillPrice(int skillId)
         {
             if (!Session.IsPvp)
             {
-                return GameSession.PveSkillPrice(skillId);
+                return Session.IsPveSkillShopBought(skillId) ? 0 : GameSession.PveSkillPrice(skillId);
             }
 
             var skill = Session.GetPvpShopSkill(skillId);
@@ -145,6 +111,13 @@ namespace App.UI.Popup
         public bool CanBuySkill(int skillId) => Session.IsPvp
             ? Session.CanBuyPvpSkill(skillId)
             : Session.Phase == GamePhase.Shop && RelicMechanics.CanAfford(Session.Run, SkillPrice(skillId));
+
+        public bool IsSkillFull(int skillId)
+        {
+            if (!Session.IsPvp) return Session.IsPveSkillFull(skillId);
+            var skill = Session.GetPvpShopSkill(skillId);
+            return skill != null && skill.Left >= skill.Max;
+        }
 
         /// <summary>PVP 商店剩余秒数，与局内 timeValue 同一倒计时。</summary>
         public GameTableViewModel Table => _ui.FindOpen<GameTableViewModel>();
@@ -328,7 +301,7 @@ namespace App.UI.Popup
                 var name = PvpSkillName(skillId);
                 if (!Session.IsPvp)
                 {
-                    Toast.Show(Session.TryBuyPveSkill(skillId) ? $"{name}次数 +1" : "无法购买，或金币不足");
+                    Toast.Show(Session.TryBuyPveSkill(skillId) ? $"{name}次数已补满" : "无法购买，或金币不足");
                     return;
                 }
 
@@ -345,7 +318,7 @@ namespace App.UI.Popup
                 var skill = Session.GetPvpShopSkill(skillId);
                 Toast.Show(skill != null
                     ? $"已购{name}（{skill.Left}/{skill.Max}，下轮生效）"
-                    : $"{name}次数 +1");
+                    : $"{name}次数已补满");
             }
             catch (Exception ex)
             {

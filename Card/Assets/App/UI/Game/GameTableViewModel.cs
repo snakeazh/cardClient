@@ -38,6 +38,7 @@ namespace App.UI
         private bool _resultPopupOpen;
         public Func<Task> WaitForPlayerDeathPresentation { get; set; }
         private bool _infoPopupOpen;
+        private bool _skillAdPopupOpening;
         private bool _remainListOpen;
         private bool _settleShownThisShop;
         /// <summary>商店里确认返回主页：置位后 PVE 商店 while 循环不再重开弹窗。</summary>
@@ -118,6 +119,11 @@ namespace App.UI
             PeekGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.PeekGoodCharges <= 0 && !Session.SelectingRubTarget)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Rub);
+                        return;
+                    }
                     if (!Session.SelectingRubTarget &&
                         Session.PlayerMayPressPeekGood &&
                         !BossMechanics.CanAffordRub(Session.Run))
@@ -128,10 +134,16 @@ namespace App.UI
 
                     Session.UsePeekGood();
                 },
-                () => Session.PlayerMayTogglePeekGood);
+                () => !Session.IsPvp && Session.Run.PeekGoodCharges <= 0 && !Session.SelectingRubTarget
+                    ? Session.CanWatchPveSkillAd(PvpSkillIds.Rub) : Session.PlayerMayTogglePeekGood);
             ChaKanGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.ChaKanGoodCharges <= 0)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Peek);
+                        return;
+                    }
                     if (Session.IsPvp)
                     {
                         SendPvpSkill(() => _pvp.Invoker.EnqueuePeek());
@@ -140,13 +152,18 @@ namespace App.UI
 
                     Session.UseChaKanGood();
                 },
-                () => Session.IsPvp ? Session.PlayerMayUseChaKanGood : Session.PlayerMayUseChaKanGood);
+                () => Session.PlayerMayUseChaKanGood || (Session.Run.ChaKanGoodCharges <= 0 && Session.CanWatchPveSkillAd(PvpSkillIds.Peek)));
             XRayPlayerCommand = new RelayCommand(
                 () => Session.TryXRayPlayer(),
                 () => Session.SelectingXRayTarget && Session.PlayerMayUseChaKanGood);
             TiHuanGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.TiHuanGoodCharges <= 0)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Replace);
+                        return;
+                    }
                     if (!Session.PlayerMayUseTiHuanGood)
                     {
                         return;
@@ -162,7 +179,7 @@ namespace App.UI
 
                     Session.UseTiHuanGood();
                 },
-                () => Session.PlayerMayUseTiHuanGood);
+                () => Session.PlayerMayUseTiHuanGood || (Session.Run.TiHuanGoodCharges <= 0 && Session.CanWatchPveSkillAd(PvpSkillIds.Replace)));
             RubCommand = new RelayCommand(() => Session.TryRubSelected(), () => Session.Phase == GamePhase.WaitingRub);
             SkipRubCommand = new RelayCommand(() => Session.CancelLookOrRub(), () => Session.PlayerMayCancelLookOrRub);
             MinusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(-GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
@@ -1190,6 +1207,28 @@ namespace App.UI
         {
             Resources?.Release(ResResourcePaths.BgmBattle);
             PortraitLoader.ReleaseBattleStates();
+        }
+
+        private async void OpenSkillAdPopup(int skillId)
+        {
+            if (!Session.CanWatchPveSkillAd(skillId) || _skillAdPopupOpening || _ui == null) return;
+            _skillAdPopupOpening = true;
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(GameSharePopViewModel));
+                var popup = (GameSharePopViewModel)_ui.Registry.CreateViewModel(registration);
+                popup.Setup(skillId);
+                await _ui.Open(popup);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                Toast.Show("打开界面失败，请稍后重试");
+            }
+            finally
+            {
+                _skillAdPopupOpening = false;
+            }
         }
 
         private void TogglePlaybackSpeed()

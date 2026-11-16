@@ -70,29 +70,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function login(password: string): Promise<{ token: string }> {
-  return request("/v1/admin/login", { method: "POST", body: JSON.stringify({ password }) });
+  return request("/v1/gm/login", { method: "POST", body: JSON.stringify({ password }) });
 }
 
 export function searchPlayers(keyword: string): Promise<PlayerSummary[]> {
-  return request(`/v1/admin/players?keyword=${encodeURIComponent(keyword)}&take=20`);
+  return request(`/v1/gm/players?keyword=${encodeURIComponent(keyword)}&take=20`);
 }
 
 export function getPlayer(userId: string): Promise<PlayerProfile> {
-  return request(`/v1/admin/player?userId=${encodeURIComponent(userId)}`);
+  return request(`/v1/gm/player?userId=${encodeURIComponent(userId)}`);
 }
 
 export function listLogs(): Promise<AdminLogEntry[]> {
-  return request("/v1/admin/logs?take=50");
+  return request("/v1/gm/logs?take=50");
 }
 
 export function grantGold(userId: string, amount: number): Promise<PlayerProfile> {
-  return request("/v1/admin/grant-gold", { method: "POST", body: JSON.stringify({ userId, amount }) });
+  return request("/v1/gm/grant-gold", { method: "POST", body: JSON.stringify({ userId, amount }) });
 }
 
 export function grantEnergy(userId: string, amount: number): Promise<PlayerProfile> {
-  return request("/v1/admin/grant-energy", { method: "POST", body: JSON.stringify({ userId, amount }) });
+  return request("/v1/gm/grant-energy", { method: "POST", body: JSON.stringify({ userId, amount }) });
 }
 
 export function unlockAll(userId: string, what: "heroes" | "talents" | "levels"): Promise<PlayerProfile> {
-  return request(`/v1/admin/unlock-all-${what}`, { method: "POST", body: JSON.stringify({ userId }) });
+  return request(`/v1/gm/unlock-all-${what}`, { method: "POST", body: JSON.stringify({ userId }) });
 }

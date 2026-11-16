@@ -423,7 +423,7 @@ public static class PvpWebSocketHost
         {
             T = WsMessageTypes.Error,
             Seq = seq,
-            Payload = new ApiError { Code = code, Message = message }
+            Payload = new ApiError { Code = code, Message = PlayerErrorMessages.Translate(code, message) }
         }, cancellationToken);
     }
 }

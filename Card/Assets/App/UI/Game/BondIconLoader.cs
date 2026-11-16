@@ -42,7 +42,7 @@ namespace App.UI
                     continue;
                 }
 
-                var stem = ResResourcePaths.BondArtName(binding.Type);
+                var stem = binding.Icon?.Trim();
                 if (string.IsNullOrEmpty(stem) || !seen.Add(stem))
                 {
                     continue;

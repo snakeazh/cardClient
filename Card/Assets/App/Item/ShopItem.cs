@@ -336,7 +336,7 @@ namespace App.Game
                     continue;
                 }
 
-                var stem = ResResourcePaths.BondArtName(binding.Type);
+                var stem = binding.Icon?.Trim();
                 if (string.IsNullOrEmpty(stem))
                 {
                     continue;
@@ -384,7 +384,7 @@ namespace App.Game
                     continue;
                 }
 
-                await BondIconLoader.EnsureAsync(ResResourcePaths.BondArtName(binding.Type));
+                await BondIconLoader.EnsureAsync(binding.Icon?.Trim());
                 if (serial != _bondSerial)
                 {
                     return;

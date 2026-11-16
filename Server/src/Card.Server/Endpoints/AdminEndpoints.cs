@@ -9,7 +9,8 @@ namespace CardShare.Server.Endpoints;
 
 /// <summary>
 /// 后台 GM 命令。鉴权与玩家 Token 完全分离：请求头 <see cref="TokenHeader"/> 与配置
-/// Admin:Token 做定长比较（AccessTokenMiddleware 已豁免 /v1/admin 前缀）。
+/// Admin:Token 做定长比较（AccessTokenMiddleware 已豁免 /v1/gm 前缀）。
+/// 路径避开 "admin" 关键字：运营商/安全设备的 DPI 会拦截 admin 路径。
 /// 仅当 Admin:Token 配置非空时才挂载，生产环境不配置即不存在该组端点。
 /// 每条命令执行写 admin_logs 审计记录（含失败）。
 /// </summary>
@@ -19,7 +20,7 @@ public static class AdminEndpoints
 
     public static void MapAdminApi(this RouteGroupBuilder v1, string adminToken, ILogger logger)
     {
-        var admin = v1.MapGroup("/admin");
+        var admin = v1.MapGroup("/gm");
 
         // 单密码登录：校验通过返回管理 token，前端存起来放 X-Admin-Token 用。
         admin.MapPost("/login", (AdminLoginRequest request) =>

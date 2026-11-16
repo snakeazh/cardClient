@@ -368,9 +368,10 @@ namespace App.UI
                 }
             }
 
-            if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null && _playerItem != null)
+            var playerRoot = _playerItem != null ? FindDeep(_playerItem.transform, "PlayerRoot") : null;
+            if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null && playerRoot != null)
             {
-                _chosenBondEffect = Instantiate(_chosenBondEffectPrefab, _playerItem.transform, false);
+                _chosenBondEffect = Instantiate(_chosenBondEffectPrefab, playerRoot, false);
                 _chosenBondEffect.transform.localScale = Vector3.one * 130f;
                 foreach (var node in _chosenBondEffect.GetComponentsInChildren<Transform>(true))
                 {

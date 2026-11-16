@@ -368,20 +368,37 @@ namespace App.UI
                 }
             }
 
-            if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null)
+            if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null && _playerItem != null)
             {
-                _chosenBondEffect = Instantiate(_chosenBondEffectPrefab, transform, false);
+                _chosenBondEffect = Instantiate(_chosenBondEffectPrefab, _playerItem.transform, false);
                 _chosenBondEffect.transform.localScale = Vector3.one * 130f;
                 foreach (var node in _chosenBondEffect.GetComponentsInChildren<Transform>(true))
                 {
                     node.gameObject.layer = gameObject.layer;
                 }
+
                 _chosenBondEffect.AddComponent<EffectSortingInherit>();
+            }
+
+            if (complete && _chosenBondGlow == null && _chosenBondGlowPrefab != null)
+            {
+                _chosenBondGlow = Instantiate(_chosenBondGlowPrefab, transform, false);
+                _chosenBondGlow.transform.localScale = Vector3.one * 130f;
+                foreach (var node in _chosenBondGlow.GetComponentsInChildren<Transform>(true))
+                {
+                    node.gameObject.layer = gameObject.layer;
+                }
+                _chosenBondGlow.AddComponent<EffectSortingInherit>();
             }
 
             if (_chosenBondEffect != null && _chosenBondEffect.activeSelf != complete)
             {
                 _chosenBondEffect.SetActive(complete);
+            }
+
+            if (_chosenBondGlow != null && _chosenBondGlow.activeSelf != complete)
+            {
+                _chosenBondGlow.SetActive(complete);
             }
         }
 

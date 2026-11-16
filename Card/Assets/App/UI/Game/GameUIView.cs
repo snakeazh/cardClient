@@ -55,7 +55,9 @@ namespace App.UI
         private readonly AttackCutscene _attackFx = new AttackCutscene();
         private readonly OpeningCutscene _openingFx = new OpeningCutscene();
         [SerializeField] private GameObject _chosenBondEffectPrefab;
+        [SerializeField] private GameObject _chosenBondGlowPrefab;
         private GameObject _chosenBondEffect;
+        private GameObject _chosenBondGlow;
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
         private bool _openingPlaying;
         private CanvasGroup _fightMask;

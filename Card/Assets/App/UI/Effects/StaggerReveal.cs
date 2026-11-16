@@ -41,6 +41,8 @@ namespace App.UI.Effects
                     continue;
                 }
 
+                // 重播前先完成上一次缩放，避免把动画中间值当作静止尺寸。
+                rt.DOKill(complete: true);
                 var rest = rt.localScale;
                 var group = rt.GetComponent<CanvasGroup>();
                 if (group == null)
@@ -49,7 +51,6 @@ namespace App.UI.Effects
                 }
 
                 var delay = delayBase + Mathf.Min(i, StaggerCap) * Stagger;
-                rt.DOKill();
                 group.DOKill();
                 group.alpha = 0f;
                 rt.localScale = rest * 0.85f;

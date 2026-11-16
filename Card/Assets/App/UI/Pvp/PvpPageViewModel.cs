@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using App.Game;
 using App.Net;
 using App.PvpScore;
+using App.UI.Popup;
 using CardShare.Contracts;
 using Framework.Log;
 using Framework.UI;
@@ -33,6 +34,7 @@ namespace App.UI
         private bool _entered;
         private bool _entering;
         private bool _starting;
+        private bool _openingRules;
         private bool _localAccepted;
         private bool _introStarted;
         private readonly HashSet<string> _acceptedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -65,6 +67,7 @@ namespace App.UI
             ShowSearch = new ObservableProperty<bool>(true);
             ShowSearchSuccess = new ObservableProperty<bool>(false);
 
+            RuleCommand = new RelayCommand(OpenRules);
             BackCommand = new RelayCommand(Back, () => !_introStarted);
             StartCommand = new RelayCommand(StartMatch, () => _phase == PvpPagePhase.Idle && !_entering && !_starting);
             CancelCommand = new RelayCommand(CancelMatch, () => _phase == PvpPagePhase.Searching);
@@ -103,6 +106,8 @@ namespace App.UI
         /// <summary>由 View 注入：全员接受后四个头像往外飞。返回 false 表示被打断。</summary>
         public Func<Task<bool>> PlaySuccessIntro { get; set; }
 
+        public IRelayCommand RuleCommand { get; }
+
         public IRelayCommand BackCommand { get; }
 
         public IRelayCommand StartCommand { get; }
@@ -134,6 +139,12 @@ namespace App.UI
             _pvp.AcceptFailed -= OnAcceptFailed;
             _pvp.RoomReady -= OnRoomReady;
             _generation++;
+            var rules = _ui.FindOpen<PvpRulePopViewModel>();
+            if (rules != null)
+            {
+                await _ui.Close(rules);
+            }
+
             if (!_entered && !_introStarted && _phase != PvpPagePhase.Idle)
             {
                 _phase = PvpPagePhase.Idle;
@@ -167,6 +178,34 @@ namespace App.UI
         private void RefreshGrade()
         {
             GradeValueText.Value = _pvpScore.Score.ToString();
+        }
+
+        private async void OpenRules()
+        {
+            if (_openingRules || _ui.FindOpen<PvpRulePopViewModel>() != null)
+            {
+                return;
+            }
+
+            _openingRules = true;
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(PvpRulePopViewModel));
+                var vm = (PvpRulePopViewModel)_ui.Registry.CreateViewModel(registration);
+                await _ui.Open(vm);
+                if (!IsOpen && _ui.FindOpen<PvpRulePopViewModel>() == vm)
+                {
+                    await _ui.Close(vm);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+            }
+            finally
+            {
+                _openingRules = false;
+            }
         }
 
         private async void Back()

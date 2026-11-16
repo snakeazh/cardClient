@@ -191,6 +191,7 @@ namespace App.Item
 
             if (icon == null)
             {
+                cardIcon.sprite = null;
                 cardIcon.enabled = false;
                 return;
             }

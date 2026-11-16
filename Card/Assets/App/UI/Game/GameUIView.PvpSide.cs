@@ -368,6 +368,7 @@ namespace App.UI
                 }
             }
 
+            ViewModel.SetChosenBattleBgm(complete);
             var playerRoot = _playerItem != null ? FindDeep(_playerItem.transform, "PlayerRoot") : null;
             if (complete && _chosenBondEffect == null && _chosenBondEffectPrefab != null && playerRoot != null)
             {

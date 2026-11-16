@@ -126,135 +126,14 @@
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      20011
-    ],
-    "GetGold": 70,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 2002,
-    "Difficulty": 2,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      20021
-    ],
-    "GetGold": 95,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 2003,
-    "Difficulty": 2,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      20031
-    ],
-    "GetGold": 120,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 2004,
-    "Difficulty": 2,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      20041,
-      20042
-    ],
-    "GetGold": 140,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 2005,
-    "Difficulty": 2,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      20051,
-      20052
-    ],
-    "GetGold": 165,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 2006,
-    "Difficulty": 2,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      20061,
-      20062
-    ],
-    "GetGold": 190,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 2007,
-    "Difficulty": 2,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      20071,
-      20072,
-      20073
-    ],
-    "GetGold": 210,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 2008,
-    "Difficulty": 2,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      20081,
-      20082,
-      20083
-    ],
-    "GetGold": 235,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 2009,
-    "Difficulty": 2,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      20091,
-      20092,
-      20093
-    ],
-    "GetGold": 260,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 2010,
-    "Difficulty": 2,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      20101,
-      20102,
-      20103
-    ],
-    "GetGold": 285,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 3001,
-    "Difficulty": 3,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
       30011
     ],
     "GetGold": 80,
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
-    "Id": 3002,
-    "Difficulty": 3,
+    "Id": 2002,
+    "Difficulty": 2,
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
@@ -264,8 +143,8 @@
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
-    "Id": 3003,
-    "Difficulty": 3,
+    "Id": 2003,
+    "Difficulty": 2,
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
@@ -275,8 +154,8 @@
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
-    "Id": 3004,
-    "Difficulty": 3,
+    "Id": 2004,
+    "Difficulty": 2,
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -287,8 +166,8 @@
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
-    "Id": 3005,
-    "Difficulty": 3,
+    "Id": 2005,
+    "Difficulty": 2,
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -299,8 +178,8 @@
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
-    "Id": 3006,
-    "Difficulty": 3,
+    "Id": 2006,
+    "Difficulty": 2,
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -311,8 +190,8 @@
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
-    "Id": 3007,
-    "Difficulty": 3,
+    "Id": 2007,
+    "Difficulty": 2,
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -324,8 +203,8 @@
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
-    "Id": 3008,
-    "Difficulty": 3,
+    "Id": 2008,
+    "Difficulty": 2,
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -337,8 +216,8 @@
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
-    "Id": 3009,
-    "Difficulty": 3,
+    "Id": 2009,
+    "Difficulty": 2,
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -350,8 +229,8 @@
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
-    "Id": 3010,
-    "Difficulty": 3,
+    "Id": 2010,
+    "Difficulty": 2,
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
@@ -363,129 +242,8 @@
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
-    "Id": 4001,
-    "Difficulty": 4,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      40011
-    ],
-    "GetGold": 90,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 4002,
-    "Difficulty": 4,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      40021
-    ],
-    "GetGold": 125,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 4003,
-    "Difficulty": 4,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      40031
-    ],
-    "GetGold": 155,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 4004,
-    "Difficulty": 4,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      40041,
-      40042
-    ],
-    "GetGold": 185,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 4005,
-    "Difficulty": 4,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      40051,
-      40052
-    ],
-    "GetGold": 215,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 4006,
-    "Difficulty": 4,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      40061,
-      40062
-    ],
-    "GetGold": 245,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 4007,
-    "Difficulty": 4,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      40071,
-      40072,
-      40073
-    ],
-    "GetGold": 275,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 4008,
-    "Difficulty": 4,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      40081,
-      40082,
-      40083
-    ],
-    "GetGold": 310,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 4009,
-    "Difficulty": 4,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      40091,
-      40092,
-      40093
-    ],
-    "GetGold": 340,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 4010,
-    "Difficulty": 4,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      40101,
-      40102,
-      40103
-    ],
-    "GetGold": 370,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 5001,
-    "Difficulty": 5,
+    "Id": 3001,
+    "Difficulty": 3,
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
@@ -495,8 +253,8 @@
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
-    "Id": 5002,
-    "Difficulty": 5,
+    "Id": 3002,
+    "Difficulty": 3,
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
@@ -506,8 +264,8 @@
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
-    "Id": 5003,
-    "Difficulty": 5,
+    "Id": 3003,
+    "Difficulty": 3,
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
@@ -517,8 +275,8 @@
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
-    "Id": 5004,
-    "Difficulty": 5,
+    "Id": 3004,
+    "Difficulty": 3,
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -529,8 +287,8 @@
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
-    "Id": 5005,
-    "Difficulty": 5,
+    "Id": 3005,
+    "Difficulty": 3,
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -541,8 +299,8 @@
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
-    "Id": 5006,
-    "Difficulty": 5,
+    "Id": 3006,
+    "Difficulty": 3,
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
@@ -553,8 +311,8 @@
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
-    "Id": 5007,
-    "Difficulty": 5,
+    "Id": 3007,
+    "Difficulty": 3,
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -566,8 +324,8 @@
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
-    "Id": 5008,
-    "Difficulty": 5,
+    "Id": 3008,
+    "Difficulty": 3,
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -579,8 +337,8 @@
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
-    "Id": 5009,
-    "Difficulty": 5,
+    "Id": 3009,
+    "Difficulty": 3,
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
@@ -592,8 +350,8 @@
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
-    "Id": 5010,
-    "Difficulty": 5,
+    "Id": 3010,
+    "Difficulty": 3,
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
@@ -605,14 +363,256 @@
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
+    "Id": 4001,
+    "Difficulty": 4,
+    "Level": 1,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      70011
+    ],
+    "GetGold": 120,
+    "MonsterCardHandScoreLevelLimit": 2
+  },
+  {
+    "Id": 4002,
+    "Difficulty": 4,
+    "Level": 2,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      70021
+    ],
+    "GetGold": 155,
+    "MonsterCardHandScoreLevelLimit": 2
+  },
+  {
+    "Id": 4003,
+    "Difficulty": 4,
+    "Level": 3,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      70031
+    ],
+    "GetGold": 200,
+    "MonsterCardHandScoreLevelLimit": 3
+  },
+  {
+    "Id": 4004,
+    "Difficulty": 4,
+    "Level": 4,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      70041,
+      70042
+    ],
+    "GetGold": 240,
+    "MonsterCardHandScoreLevelLimit": 3
+  },
+  {
+    "Id": 4005,
+    "Difficulty": 4,
+    "Level": 5,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      70051,
+      70052
+    ],
+    "GetGold": 275,
+    "MonsterCardHandScoreLevelLimit": 4
+  },
+  {
+    "Id": 4006,
+    "Difficulty": 4,
+    "Level": 6,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      70061,
+      70062
+    ],
+    "GetGold": 320,
+    "MonsterCardHandScoreLevelLimit": 4
+  },
+  {
+    "Id": 4007,
+    "Difficulty": 4,
+    "Level": 7,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      70071,
+      70072,
+      70073
+    ],
+    "GetGold": 355,
+    "MonsterCardHandScoreLevelLimit": 5
+  },
+  {
+    "Id": 4008,
+    "Difficulty": 4,
+    "Level": 8,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      70081,
+      70082,
+      70083
+    ],
+    "GetGold": 395,
+    "MonsterCardHandScoreLevelLimit": 5
+  },
+  {
+    "Id": 4009,
+    "Difficulty": 4,
+    "Level": 9,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      70091,
+      70092,
+      70093
+    ],
+    "GetGold": 435,
+    "MonsterCardHandScoreLevelLimit": 6
+  },
+  {
+    "Id": 4010,
+    "Difficulty": 4,
+    "Level": 10,
+    "LevelEntryNum": 3,
+    "MonsterGroup": [
+      70101,
+      70102,
+      70103
+    ],
+    "GetGold": 475,
+    "MonsterCardHandScoreLevelLimit": 6
+  },
+  {
+    "Id": 5001,
+    "Difficulty": 5,
+    "Level": 1,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      90011
+    ],
+    "GetGold": 130,
+    "MonsterCardHandScoreLevelLimit": 2
+  },
+  {
+    "Id": 5002,
+    "Difficulty": 5,
+    "Level": 2,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      90021
+    ],
+    "GetGold": 175,
+    "MonsterCardHandScoreLevelLimit": 2
+  },
+  {
+    "Id": 5003,
+    "Difficulty": 5,
+    "Level": 3,
+    "LevelEntryNum": 0,
+    "MonsterGroup": [
+      90031
+    ],
+    "GetGold": 220,
+    "MonsterCardHandScoreLevelLimit": 3
+  },
+  {
+    "Id": 5004,
+    "Difficulty": 5,
+    "Level": 4,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      90041,
+      90042
+    ],
+    "GetGold": 265,
+    "MonsterCardHandScoreLevelLimit": 3
+  },
+  {
+    "Id": 5005,
+    "Difficulty": 5,
+    "Level": 5,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      90051,
+      90052
+    ],
+    "GetGold": 305,
+    "MonsterCardHandScoreLevelLimit": 4
+  },
+  {
+    "Id": 5006,
+    "Difficulty": 5,
+    "Level": 6,
+    "LevelEntryNum": 1,
+    "MonsterGroup": [
+      90061,
+      90062
+    ],
+    "GetGold": 350,
+    "MonsterCardHandScoreLevelLimit": 4
+  },
+  {
+    "Id": 5007,
+    "Difficulty": 5,
+    "Level": 7,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      90071,
+      90072,
+      90073
+    ],
+    "GetGold": 395,
+    "MonsterCardHandScoreLevelLimit": 5
+  },
+  {
+    "Id": 5008,
+    "Difficulty": 5,
+    "Level": 8,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      90081,
+      90082,
+      90083
+    ],
+    "GetGold": 440,
+    "MonsterCardHandScoreLevelLimit": 5
+  },
+  {
+    "Id": 5009,
+    "Difficulty": 5,
+    "Level": 9,
+    "LevelEntryNum": 2,
+    "MonsterGroup": [
+      90091,
+      90092,
+      90093
+    ],
+    "GetGold": 480,
+    "MonsterCardHandScoreLevelLimit": 6
+  },
+  {
+    "Id": 5010,
+    "Difficulty": 5,
+    "Level": 10,
+    "LevelEntryNum": 3,
+    "MonsterGroup": [
+      90101,
+      90102,
+      90103
+    ],
+    "GetGold": 525,
+    "MonsterCardHandScoreLevelLimit": 6
+  },
+  {
     "Id": 6001,
     "Difficulty": 6,
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      60011
+      110011
     ],
-    "GetGold": 115,
+    "GetGold": 145,
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
@@ -621,9 +621,9 @@
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      60021
+      110021
     ],
-    "GetGold": 150,
+    "GetGold": 190,
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
@@ -632,9 +632,9 @@
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      60031
+      110031
     ],
-    "GetGold": 190,
+    "GetGold": 240,
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
@@ -643,10 +643,10 @@
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      60041,
-      60042
+      110041,
+      110042
     ],
-    "GetGold": 230,
+    "GetGold": 285,
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
@@ -655,10 +655,10 @@
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      60051,
-      60052
+      110051,
+      110052
     ],
-    "GetGold": 265,
+    "GetGold": 330,
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
@@ -667,10 +667,10 @@
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      60061,
-      60062
+      110061,
+      110062
     ],
-    "GetGold": 305,
+    "GetGold": 380,
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
@@ -679,11 +679,11 @@
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      60071,
-      60072,
-      60073
+      110071,
+      110072,
+      110073
     ],
-    "GetGold": 340,
+    "GetGold": 430,
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
@@ -692,11 +692,11 @@
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      60081,
-      60082,
-      60083
+      110081,
+      110082,
+      110083
     ],
-    "GetGold": 380,
+    "GetGold": 475,
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
@@ -705,11 +705,11 @@
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      60091,
-      60092,
-      60093
+      110091,
+      110092,
+      110093
     ],
-    "GetGold": 420,
+    "GetGold": 525,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -718,11 +718,11 @@
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
-      60101,
-      60102,
-      60103
+      110101,
+      110102,
+      110103
     ],
-    "GetGold": 455,
+    "GetGold": 570,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -731,9 +731,9 @@
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      70011
+      140011
     ],
-    "GetGold": 125,
+    "GetGold": 160,
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
@@ -742,9 +742,9 @@
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      70021
+      140021
     ],
-    "GetGold": 165,
+    "GetGold": 210,
     "MonsterCardHandScoreLevelLimit": 2
   },
   {
@@ -753,9 +753,9 @@
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      70031
+      140031
     ],
-    "GetGold": 210,
+    "GetGold": 270,
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
@@ -764,10 +764,10 @@
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      70041,
-      70042
+      140041,
+      140042
     ],
-    "GetGold": 250,
+    "GetGold": 320,
     "MonsterCardHandScoreLevelLimit": 3
   },
   {
@@ -776,10 +776,10 @@
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      70051,
-      70052
+      140051,
+      140052
     ],
-    "GetGold": 290,
+    "GetGold": 375,
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
@@ -788,10 +788,10 @@
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      70061,
-      70062
+      140061,
+      140062
     ],
-    "GetGold": 335,
+    "GetGold": 430,
     "MonsterCardHandScoreLevelLimit": 4
   },
   {
@@ -800,11 +800,11 @@
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      70071,
-      70072,
-      70073
+      140071,
+      140072,
+      140073
     ],
-    "GetGold": 375,
+    "GetGold": 480,
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
@@ -813,11 +813,11 @@
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      70081,
-      70082,
-      70083
+      140081,
+      140082,
+      140083
     ],
-    "GetGold": 415,
+    "GetGold": 535,
     "MonsterCardHandScoreLevelLimit": 5
   },
   {
@@ -826,11 +826,11 @@
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      70091,
-      70092,
-      70093
+      140091,
+      140092,
+      140093
     ],
-    "GetGold": 460,
+    "GetGold": 590,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -839,11 +839,11 @@
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
-      70101,
-      70102,
-      70103
+      140101,
+      140102,
+      140103
     ],
-    "GetGold": 500,
+    "GetGold": 640,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -852,10 +852,10 @@
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      80011
+      170011
     ],
-    "GetGold": 135,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 175,
+    "MonsterCardHandScoreLevelLimit": 3
   },
   {
     "Id": 8002,
@@ -863,10 +863,10 @@
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      80021
+      170021
     ],
-    "GetGold": 180,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 230,
+    "MonsterCardHandScoreLevelLimit": 3
   },
   {
     "Id": 8003,
@@ -874,10 +874,10 @@
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      80031
+      170031
     ],
-    "GetGold": 225,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 290,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 8004,
@@ -885,11 +885,11 @@
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      80041,
-      80042
+      170041,
+      170042
     ],
-    "GetGold": 270,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 350,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 8005,
@@ -897,11 +897,11 @@
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      80051,
-      80052
+      170051,
+      170052
     ],
-    "GetGold": 315,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 410,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 8006,
@@ -909,11 +909,11 @@
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      80061,
-      80062
+      170061,
+      170062
     ],
-    "GetGold": 360,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 465,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 8007,
@@ -921,12 +921,12 @@
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      80071,
-      80072,
-      80073
+      170071,
+      170072,
+      170073
     ],
-    "GetGold": 405,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 525,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 8008,
@@ -934,12 +934,12 @@
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      80081,
-      80082,
-      80083
+      170081,
+      170082,
+      170083
     ],
-    "GetGold": 450,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 580,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 8009,
@@ -947,11 +947,11 @@
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      80091,
-      80092,
-      80093
+      170091,
+      170092,
+      170093
     ],
-    "GetGold": 495,
+    "GetGold": 640,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -960,11 +960,11 @@
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
-      80101,
-      80102,
-      80103
+      170101,
+      170102,
+      170103
     ],
-    "GetGold": 540,
+    "GetGold": 700,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -973,10 +973,10 @@
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      90011
+      220011
     ],
-    "GetGold": 145,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 200,
+    "MonsterCardHandScoreLevelLimit": 3
   },
   {
     "Id": 9002,
@@ -984,10 +984,10 @@
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      90021
+      220021
     ],
-    "GetGold": 195,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 265,
+    "MonsterCardHandScoreLevelLimit": 3
   },
   {
     "Id": 9003,
@@ -995,10 +995,10 @@
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      90031
+      220031
     ],
-    "GetGold": 245,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 335,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 9004,
@@ -1006,11 +1006,11 @@
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      90041,
-      90042
+      220041,
+      220042
     ],
-    "GetGold": 295,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 400,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 9005,
@@ -1018,11 +1018,11 @@
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      90051,
-      90052
+      220051,
+      220052
     ],
-    "GetGold": 340,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 470,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 9006,
@@ -1030,11 +1030,11 @@
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      90061,
-      90062
+      220061,
+      220062
     ],
-    "GetGold": 390,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 535,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 9007,
@@ -1042,12 +1042,12 @@
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      90071,
-      90072,
-      90073
+      220071,
+      220072,
+      220073
     ],
-    "GetGold": 440,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 600,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 9008,
@@ -1055,12 +1055,12 @@
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      90081,
-      90082,
-      90083
+      220081,
+      220082,
+      220083
     ],
-    "GetGold": 490,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 670,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 9009,
@@ -1068,11 +1068,11 @@
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      90091,
-      90092,
-      90093
+      220091,
+      220092,
+      220093
     ],
-    "GetGold": 535,
+    "GetGold": 735,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -1081,11 +1081,11 @@
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
-      90101,
-      90102,
-      90103
+      220101,
+      220102,
+      220103
     ],
-    "GetGold": 585,
+    "GetGold": 800,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -1094,10 +1094,10 @@
     "Level": 1,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      100011
+      300011
     ],
-    "GetGold": 155,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 205,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 10002,
@@ -1105,10 +1105,10 @@
     "Level": 2,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      100021
+      300021
     ],
-    "GetGold": 210,
-    "MonsterCardHandScoreLevelLimit": 2
+    "GetGold": 275,
+    "MonsterCardHandScoreLevelLimit": 4
   },
   {
     "Id": 10003,
@@ -1116,10 +1116,10 @@
     "Level": 3,
     "LevelEntryNum": 0,
     "MonsterGroup": [
-      100031
+      300031
     ],
-    "GetGold": 260,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 340,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 10004,
@@ -1127,11 +1127,11 @@
     "Level": 4,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      100041,
-      100042
+      300041,
+      300042
     ],
-    "GetGold": 315,
-    "MonsterCardHandScoreLevelLimit": 3
+    "GetGold": 410,
+    "MonsterCardHandScoreLevelLimit": 5
   },
   {
     "Id": 10005,
@@ -1139,11 +1139,11 @@
     "Level": 5,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      100051,
-      100052
+      300051,
+      300052
     ],
-    "GetGold": 365,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 480,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 10006,
@@ -1151,11 +1151,11 @@
     "Level": 6,
     "LevelEntryNum": 1,
     "MonsterGroup": [
-      100061,
-      100062
+      300061,
+      300062
     ],
-    "GetGold": 420,
-    "MonsterCardHandScoreLevelLimit": 4
+    "GetGold": 545,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 10007,
@@ -1163,12 +1163,12 @@
     "Level": 7,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      100071,
-      100072,
-      100073
+      300071,
+      300072,
+      300073
     ],
-    "GetGold": 470,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 615,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 10008,
@@ -1176,12 +1176,12 @@
     "Level": 8,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      100081,
-      100082,
-      100083
+      300081,
+      300082,
+      300083
     ],
-    "GetGold": 525,
-    "MonsterCardHandScoreLevelLimit": 5
+    "GetGold": 685,
+    "MonsterCardHandScoreLevelLimit": 6
   },
   {
     "Id": 10009,
@@ -1189,11 +1189,11 @@
     "Level": 9,
     "LevelEntryNum": 2,
     "MonsterGroup": [
-      100091,
-      100092,
-      100093
+      300091,
+      300092,
+      300093
     ],
-    "GetGold": 575,
+    "GetGold": 755,
     "MonsterCardHandScoreLevelLimit": 6
   },
   {
@@ -1202,2431 +1202,11 @@
     "Level": 10,
     "LevelEntryNum": 3,
     "MonsterGroup": [
-      100101,
-      100102,
-      100103
-    ],
-    "GetGold": 630,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 11001,
-    "Difficulty": 11,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      110011
-    ],
-    "GetGold": 170,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 11002,
-    "Difficulty": 11,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      110021
-    ],
-    "GetGold": 225,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 11003,
-    "Difficulty": 11,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      110031
-    ],
-    "GetGold": 280,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 11004,
-    "Difficulty": 11,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      110041,
-      110042
-    ],
-    "GetGold": 335,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 11005,
-    "Difficulty": 11,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      110051,
-      110052
-    ],
-    "GetGold": 390,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 11006,
-    "Difficulty": 11,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      110061,
-      110062
-    ],
-    "GetGold": 450,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 11007,
-    "Difficulty": 11,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      110071,
-      110072,
-      110073
-    ],
-    "GetGold": 505,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 11008,
-    "Difficulty": 11,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      110081,
-      110082,
-      110083
-    ],
-    "GetGold": 560,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 11009,
-    "Difficulty": 11,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      110091,
-      110092,
-      110093
-    ],
-    "GetGold": 615,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 11010,
-    "Difficulty": 11,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      110101,
-      110102,
-      110103
-    ],
-    "GetGold": 670,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 12001,
-    "Difficulty": 12,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      120011
-    ],
-    "GetGold": 180,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 12002,
-    "Difficulty": 12,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      120021
-    ],
-    "GetGold": 240,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 12003,
-    "Difficulty": 12,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      120031
-    ],
-    "GetGold": 300,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 12004,
-    "Difficulty": 12,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      120041,
-      120042
-    ],
-    "GetGold": 360,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 12005,
-    "Difficulty": 12,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      120051,
-      120052
-    ],
-    "GetGold": 415,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 12006,
-    "Difficulty": 12,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      120061,
-      120062
-    ],
-    "GetGold": 475,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 12007,
-    "Difficulty": 12,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      120071,
-      120072,
-      120073
-    ],
-    "GetGold": 535,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 12008,
-    "Difficulty": 12,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      120081,
-      120082,
-      120083
-    ],
-    "GetGold": 595,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 12009,
-    "Difficulty": 12,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      120091,
-      120092,
-      120093
-    ],
-    "GetGold": 655,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 12010,
-    "Difficulty": 12,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      120101,
-      120102,
-      120103
-    ],
-    "GetGold": 715,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 13001,
-    "Difficulty": 13,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      130011
-    ],
-    "GetGold": 190,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 13002,
-    "Difficulty": 13,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      130021
-    ],
-    "GetGold": 255,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 13003,
-    "Difficulty": 13,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      130031
-    ],
-    "GetGold": 315,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 13004,
-    "Difficulty": 13,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      130041,
-      130042
-    ],
-    "GetGold": 380,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 13005,
-    "Difficulty": 13,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      130051,
-      130052
-    ],
-    "GetGold": 440,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 13006,
-    "Difficulty": 13,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      130061,
-      130062
-    ],
-    "GetGold": 505,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 13007,
-    "Difficulty": 13,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      130071,
-      130072,
-      130073
-    ],
-    "GetGold": 570,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 13008,
-    "Difficulty": 13,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      130081,
-      130082,
-      130083
-    ],
-    "GetGold": 630,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 13009,
-    "Difficulty": 13,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      130091,
-      130092,
-      130093
-    ],
-    "GetGold": 695,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 13010,
-    "Difficulty": 13,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      130101,
-      130102,
-      130103
-    ],
-    "GetGold": 760,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 14001,
-    "Difficulty": 14,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      140011
-    ],
-    "GetGold": 200,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 14002,
-    "Difficulty": 14,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      140021
-    ],
-    "GetGold": 265,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 14003,
-    "Difficulty": 14,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      140031
-    ],
-    "GetGold": 335,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 14004,
-    "Difficulty": 14,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      140041,
-      140042
-    ],
-    "GetGold": 400,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 14005,
-    "Difficulty": 14,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      140051,
-      140052
-    ],
-    "GetGold": 470,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 14006,
-    "Difficulty": 14,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      140061,
-      140062
-    ],
-    "GetGold": 535,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 14007,
-    "Difficulty": 14,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      140071,
-      140072,
-      140073
-    ],
-    "GetGold": 600,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 14008,
-    "Difficulty": 14,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      140081,
-      140082,
-      140083
-    ],
-    "GetGold": 670,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 14009,
-    "Difficulty": 14,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      140091,
-      140092,
-      140093
-    ],
-    "GetGold": 735,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 14010,
-    "Difficulty": 14,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      140101,
-      140102,
-      140103
-    ],
-    "GetGold": 800,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 15001,
-    "Difficulty": 15,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      150011
-    ],
-    "GetGold": 210,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 15002,
-    "Difficulty": 15,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      150021
-    ],
-    "GetGold": 280,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 15003,
-    "Difficulty": 15,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      150031
-    ],
-    "GetGold": 350,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 15004,
-    "Difficulty": 15,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      150041,
-      150042
-    ],
-    "GetGold": 420,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 15005,
-    "Difficulty": 15,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      150051,
-      150052
-    ],
-    "GetGold": 495,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 15006,
-    "Difficulty": 15,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      150061,
-      150062
-    ],
-    "GetGold": 565,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 15007,
-    "Difficulty": 15,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      150071,
-      150072,
-      150073
-    ],
-    "GetGold": 635,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 15008,
-    "Difficulty": 15,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      150081,
-      150082,
-      150083
-    ],
-    "GetGold": 705,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 15009,
-    "Difficulty": 15,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      150091,
-      150092,
-      150093
-    ],
-    "GetGold": 775,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 15010,
-    "Difficulty": 15,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      150101,
-      150102,
-      150103
-    ],
-    "GetGold": 845,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 16001,
-    "Difficulty": 16,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      160011
-    ],
-    "GetGold": 220,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 16002,
-    "Difficulty": 16,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      160021
-    ],
-    "GetGold": 295,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 16003,
-    "Difficulty": 16,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      160031
-    ],
-    "GetGold": 370,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 16004,
-    "Difficulty": 16,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      160041,
-      160042
-    ],
-    "GetGold": 445,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 16005,
-    "Difficulty": 16,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      160051,
-      160052
-    ],
-    "GetGold": 520,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 16006,
-    "Difficulty": 16,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      160061,
-      160062
-    ],
-    "GetGold": 590,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 16007,
-    "Difficulty": 16,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      160071,
-      160072,
-      160073
-    ],
-    "GetGold": 665,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 16008,
-    "Difficulty": 16,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      160081,
-      160082,
-      160083
-    ],
-    "GetGold": 740,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 16009,
-    "Difficulty": 16,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      160091,
-      160092,
-      160093
-    ],
-    "GetGold": 815,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 16010,
-    "Difficulty": 16,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      160101,
-      160102,
-      160103
-    ],
-    "GetGold": 890,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 17001,
-    "Difficulty": 17,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      170011
-    ],
-    "GetGold": 235,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 17002,
-    "Difficulty": 17,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      170021
-    ],
-    "GetGold": 310,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 17003,
-    "Difficulty": 17,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      170031
-    ],
-    "GetGold": 390,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 17004,
-    "Difficulty": 17,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      170041,
-      170042
-    ],
-    "GetGold": 465,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 17005,
-    "Difficulty": 17,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      170051,
-      170052
-    ],
-    "GetGold": 545,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 17006,
-    "Difficulty": 17,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      170061,
-      170062
-    ],
-    "GetGold": 620,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 17007,
-    "Difficulty": 17,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      170071,
-      170072,
-      170073
-    ],
-    "GetGold": 700,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 17008,
-    "Difficulty": 17,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      170081,
-      170082,
-      170083
-    ],
-    "GetGold": 775,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 17009,
-    "Difficulty": 17,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      170091,
-      170092,
-      170093
-    ],
-    "GetGold": 855,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 17010,
-    "Difficulty": 17,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      170101,
-      170102,
-      170103
-    ],
-    "GetGold": 930,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 18001,
-    "Difficulty": 18,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      180011
-    ],
-    "GetGold": 245,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 18002,
-    "Difficulty": 18,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      180021
-    ],
-    "GetGold": 325,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 18003,
-    "Difficulty": 18,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      180031
-    ],
-    "GetGold": 405,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 18004,
-    "Difficulty": 18,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      180041,
-      180042
-    ],
-    "GetGold": 485,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 18005,
-    "Difficulty": 18,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      180051,
-      180052
-    ],
-    "GetGold": 570,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 18006,
-    "Difficulty": 18,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      180061,
-      180062
-    ],
-    "GetGold": 650,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 18007,
-    "Difficulty": 18,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      180071,
-      180072,
-      180073
-    ],
-    "GetGold": 730,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 18008,
-    "Difficulty": 18,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      180081,
-      180082,
-      180083
-    ],
-    "GetGold": 810,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 18009,
-    "Difficulty": 18,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      180091,
-      180092,
-      180093
-    ],
-    "GetGold": 895,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 18010,
-    "Difficulty": 18,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      180101,
-      180102,
-      180103
-    ],
-    "GetGold": 975,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 19001,
-    "Difficulty": 19,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      190011
-    ],
-    "GetGold": 255,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 19002,
-    "Difficulty": 19,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      190021
-    ],
-    "GetGold": 340,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 19003,
-    "Difficulty": 19,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      190031
-    ],
-    "GetGold": 425,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 19004,
-    "Difficulty": 19,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      190041,
-      190042
-    ],
-    "GetGold": 510,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 19005,
-    "Difficulty": 19,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      190051,
-      190052
-    ],
-    "GetGold": 595,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 19006,
-    "Difficulty": 19,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      190061,
-      190062
-    ],
-    "GetGold": 680,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 19007,
-    "Difficulty": 19,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      190071,
-      190072,
-      190073
-    ],
-    "GetGold": 765,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 19008,
-    "Difficulty": 19,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      190081,
-      190082,
-      190083
-    ],
-    "GetGold": 850,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 19009,
-    "Difficulty": 19,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      190091,
-      190092,
-      190093
-    ],
-    "GetGold": 935,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 19010,
-    "Difficulty": 19,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      190101,
-      190102,
-      190103
-    ],
-    "GetGold": 1020,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 20001,
-    "Difficulty": 20,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      200011
-    ],
-    "GetGold": 265,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 20002,
-    "Difficulty": 20,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      200021
-    ],
-    "GetGold": 355,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 20003,
-    "Difficulty": 20,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      200031
-    ],
-    "GetGold": 440,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 20004,
-    "Difficulty": 20,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      200041,
-      200042
-    ],
-    "GetGold": 530,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 20005,
-    "Difficulty": 20,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      200051,
-      200052
-    ],
-    "GetGold": 620,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 20006,
-    "Difficulty": 20,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      200061,
-      200062
-    ],
-    "GetGold": 705,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 20007,
-    "Difficulty": 20,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      200071,
-      200072,
-      200073
-    ],
-    "GetGold": 795,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 20008,
-    "Difficulty": 20,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      200081,
-      200082,
-      200083
-    ],
-    "GetGold": 885,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 20009,
-    "Difficulty": 20,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      200091,
-      200092,
-      200093
-    ],
-    "GetGold": 970,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 20010,
-    "Difficulty": 20,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      200101,
-      200102,
-      200103
-    ],
-    "GetGold": 1060,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 21001,
-    "Difficulty": 21,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      210011
-    ],
-    "GetGold": 275,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 21002,
-    "Difficulty": 21,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      210021
-    ],
-    "GetGold": 370,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 21003,
-    "Difficulty": 21,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      210031
-    ],
-    "GetGold": 460,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 21004,
-    "Difficulty": 21,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      210041,
-      210042
-    ],
-    "GetGold": 550,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 21005,
-    "Difficulty": 21,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      210051,
-      210052
-    ],
-    "GetGold": 645,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 21006,
-    "Difficulty": 21,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      210061,
-      210062
-    ],
-    "GetGold": 735,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 21007,
-    "Difficulty": 21,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      210071,
-      210072,
-      210073
-    ],
-    "GetGold": 830,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 21008,
-    "Difficulty": 21,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      210081,
-      210082,
-      210083
-    ],
-    "GetGold": 920,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 21009,
-    "Difficulty": 21,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      210091,
-      210092,
-      210093
-    ],
-    "GetGold": 1010,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 21010,
-    "Difficulty": 21,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      210101,
-      210102,
-      210103
-    ],
-    "GetGold": 1105,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 22001,
-    "Difficulty": 22,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      220011
-    ],
-    "GetGold": 285,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 22002,
-    "Difficulty": 22,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      220021
-    ],
-    "GetGold": 380,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 22003,
-    "Difficulty": 22,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      220031
-    ],
-    "GetGold": 480,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 22004,
-    "Difficulty": 22,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      220041,
-      220042
-    ],
-    "GetGold": 575,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 22005,
-    "Difficulty": 22,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      220051,
-      220052
-    ],
-    "GetGold": 670,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 22006,
-    "Difficulty": 22,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      220061,
-      220062
-    ],
-    "GetGold": 765,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 22007,
-    "Difficulty": 22,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      220071,
-      220072,
-      220073
-    ],
-    "GetGold": 860,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 22008,
-    "Difficulty": 22,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      220081,
-      220082,
-      220083
-    ],
-    "GetGold": 955,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 22009,
-    "Difficulty": 22,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      220091,
-      220092,
-      220093
-    ],
-    "GetGold": 1050,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 22010,
-    "Difficulty": 22,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      220101,
-      220102,
-      220103
-    ],
-    "GetGold": 1145,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 23001,
-    "Difficulty": 23,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      230011
-    ],
-    "GetGold": 300,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 23002,
-    "Difficulty": 23,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      230021
-    ],
-    "GetGold": 395,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 23003,
-    "Difficulty": 23,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      230031
-    ],
-    "GetGold": 495,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 23004,
-    "Difficulty": 23,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      230041,
-      230042
-    ],
-    "GetGold": 595,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 23005,
-    "Difficulty": 23,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      230051,
-      230052
-    ],
-    "GetGold": 695,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 23006,
-    "Difficulty": 23,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      230061,
-      230062
-    ],
-    "GetGold": 795,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 23007,
-    "Difficulty": 23,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      230071,
-      230072,
-      230073
-    ],
-    "GetGold": 895,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 23008,
-    "Difficulty": 23,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      230081,
-      230082,
-      230083
-    ],
-    "GetGold": 990,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 23009,
-    "Difficulty": 23,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      230091,
-      230092,
-      230093
-    ],
-    "GetGold": 1090,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 23010,
-    "Difficulty": 23,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      230101,
-      230102,
-      230103
-    ],
-    "GetGold": 1190,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 24001,
-    "Difficulty": 24,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      240011
-    ],
-    "GetGold": 310,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 24002,
-    "Difficulty": 24,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      240021
-    ],
-    "GetGold": 410,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 24003,
-    "Difficulty": 24,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      240031
-    ],
-    "GetGold": 515,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 24004,
-    "Difficulty": 24,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      240041,
-      240042
-    ],
-    "GetGold": 615,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 24005,
-    "Difficulty": 24,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      240051,
-      240052
-    ],
-    "GetGold": 720,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 24006,
-    "Difficulty": 24,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      240061,
-      240062
-    ],
-    "GetGold": 820,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 24007,
-    "Difficulty": 24,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      240071,
-      240072,
-      240073
-    ],
-    "GetGold": 925,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 24008,
-    "Difficulty": 24,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      240081,
-      240082,
-      240083
-    ],
-    "GetGold": 1030,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 24009,
-    "Difficulty": 24,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      240091,
-      240092,
-      240093
-    ],
-    "GetGold": 1130,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 24010,
-    "Difficulty": 24,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      240101,
-      240102,
-      240103
-    ],
-    "GetGold": 1235,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 25001,
-    "Difficulty": 25,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      250011
-    ],
-    "GetGold": 320,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 25002,
-    "Difficulty": 25,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      250021
-    ],
-    "GetGold": 425,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 25003,
-    "Difficulty": 25,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      250031
-    ],
-    "GetGold": 530,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 25004,
-    "Difficulty": 25,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      250041,
-      250042
-    ],
-    "GetGold": 640,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 25005,
-    "Difficulty": 25,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      250051,
-      250052
-    ],
-    "GetGold": 745,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 25006,
-    "Difficulty": 25,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      250061,
-      250062
-    ],
-    "GetGold": 850,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 25007,
-    "Difficulty": 25,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      250071,
-      250072,
-      250073
-    ],
-    "GetGold": 960,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 25008,
-    "Difficulty": 25,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      250081,
-      250082,
-      250083
-    ],
-    "GetGold": 1065,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 25009,
-    "Difficulty": 25,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      250091,
-      250092,
-      250093
-    ],
-    "GetGold": 1170,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 25010,
-    "Difficulty": 25,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      250101,
-      250102,
-      250103
-    ],
-    "GetGold": 1275,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 26001,
-    "Difficulty": 26,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      260011
-    ],
-    "GetGold": 330,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 26002,
-    "Difficulty": 26,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      260021
-    ],
-    "GetGold": 440,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 26003,
-    "Difficulty": 26,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      260031
-    ],
-    "GetGold": 550,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 26004,
-    "Difficulty": 26,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      260041,
-      260042
-    ],
-    "GetGold": 660,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 26005,
-    "Difficulty": 26,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      260051,
-      260052
-    ],
-    "GetGold": 770,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 26006,
-    "Difficulty": 26,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      260061,
-      260062
-    ],
-    "GetGold": 880,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 26007,
-    "Difficulty": 26,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      260071,
-      260072,
-      260073
-    ],
-    "GetGold": 990,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 26008,
-    "Difficulty": 26,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      260081,
-      260082,
-      260083
-    ],
-    "GetGold": 1100,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 26009,
-    "Difficulty": 26,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      260091,
-      260092,
-      260093
-    ],
-    "GetGold": 1210,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 26010,
-    "Difficulty": 26,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      260101,
-      260102,
-      260103
-    ],
-    "GetGold": 1320,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 27001,
-    "Difficulty": 27,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      270011
-    ],
-    "GetGold": 340,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 27002,
-    "Difficulty": 27,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      270021
-    ],
-    "GetGold": 455,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 27003,
-    "Difficulty": 27,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      270031
-    ],
-    "GetGold": 570,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 27004,
-    "Difficulty": 27,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      270041,
-      270042
-    ],
-    "GetGold": 680,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 27005,
-    "Difficulty": 27,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      270051,
-      270052
-    ],
-    "GetGold": 795,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 27006,
-    "Difficulty": 27,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      270061,
-      270062
-    ],
-    "GetGold": 910,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 27007,
-    "Difficulty": 27,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      270071,
-      270072,
-      270073
-    ],
-    "GetGold": 1020,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 27008,
-    "Difficulty": 27,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      270081,
-      270082,
-      270083
-    ],
-    "GetGold": 1135,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 27009,
-    "Difficulty": 27,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      270091,
-      270092,
-      270093
-    ],
-    "GetGold": 1250,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 27010,
-    "Difficulty": 27,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      270101,
-      270102,
-      270103
-    ],
-    "GetGold": 1365,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 28001,
-    "Difficulty": 28,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      280011
-    ],
-    "GetGold": 350,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 28002,
-    "Difficulty": 28,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      280021
-    ],
-    "GetGold": 470,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 28003,
-    "Difficulty": 28,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      280031
-    ],
-    "GetGold": 585,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 28004,
-    "Difficulty": 28,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      280041,
-      280042
-    ],
-    "GetGold": 705,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 28005,
-    "Difficulty": 28,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      280051,
-      280052
-    ],
-    "GetGold": 820,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 28006,
-    "Difficulty": 28,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      280061,
-      280062
-    ],
-    "GetGold": 940,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 28007,
-    "Difficulty": 28,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      280071,
-      280072,
-      280073
-    ],
-    "GetGold": 1055,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 28008,
-    "Difficulty": 28,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      280081,
-      280082,
-      280083
-    ],
-    "GetGold": 1170,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 28009,
-    "Difficulty": 28,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      280091,
-      280092,
-      280093
-    ],
-    "GetGold": 1290,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 28010,
-    "Difficulty": 28,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      280101,
-      280102,
-      280103
-    ],
-    "GetGold": 1405,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 29001,
-    "Difficulty": 29,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      290011
-    ],
-    "GetGold": 360,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 29002,
-    "Difficulty": 29,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      290021
-    ],
-    "GetGold": 485,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 29003,
-    "Difficulty": 29,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      290031
-    ],
-    "GetGold": 605,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 29004,
-    "Difficulty": 29,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      290041,
-      290042
-    ],
-    "GetGold": 725,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 29005,
-    "Difficulty": 29,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      290051,
-      290052
-    ],
-    "GetGold": 845,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 29006,
-    "Difficulty": 29,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      290061,
-      290062
-    ],
-    "GetGold": 965,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 29007,
-    "Difficulty": 29,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      290071,
-      290072,
-      290073
-    ],
-    "GetGold": 1085,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 29008,
-    "Difficulty": 29,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      290081,
-      290082,
-      290083
-    ],
-    "GetGold": 1210,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 29009,
-    "Difficulty": 29,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      290091,
-      290092,
-      290093
-    ],
-    "GetGold": 1330,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 29010,
-    "Difficulty": 29,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
-      290101,
-      290102,
-      290103
-    ],
-    "GetGold": 1450,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 30001,
-    "Difficulty": 30,
-    "Level": 1,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      300011
-    ],
-    "GetGold": 375,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 30002,
-    "Difficulty": 30,
-    "Level": 2,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      300021
-    ],
-    "GetGold": 500,
-    "MonsterCardHandScoreLevelLimit": 2
-  },
-  {
-    "Id": 30003,
-    "Difficulty": 30,
-    "Level": 3,
-    "LevelEntryNum": 0,
-    "MonsterGroup": [
-      300031
-    ],
-    "GetGold": 620,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 30004,
-    "Difficulty": 30,
-    "Level": 4,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      300041,
-      300042
-    ],
-    "GetGold": 745,
-    "MonsterCardHandScoreLevelLimit": 3
-  },
-  {
-    "Id": 30005,
-    "Difficulty": 30,
-    "Level": 5,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      300051,
-      300052
-    ],
-    "GetGold": 870,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 30006,
-    "Difficulty": 30,
-    "Level": 6,
-    "LevelEntryNum": 1,
-    "MonsterGroup": [
-      300061,
-      300062
-    ],
-    "GetGold": 995,
-    "MonsterCardHandScoreLevelLimit": 4
-  },
-  {
-    "Id": 30007,
-    "Difficulty": 30,
-    "Level": 7,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      300071,
-      300072,
-      300073
-    ],
-    "GetGold": 1120,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 30008,
-    "Difficulty": 30,
-    "Level": 8,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      300081,
-      300082,
-      300083
-    ],
-    "GetGold": 1245,
-    "MonsterCardHandScoreLevelLimit": 5
-  },
-  {
-    "Id": 30009,
-    "Difficulty": 30,
-    "Level": 9,
-    "LevelEntryNum": 2,
-    "MonsterGroup": [
-      300091,
-      300092,
-      300093
-    ],
-    "GetGold": 1370,
-    "MonsterCardHandScoreLevelLimit": 6
-  },
-  {
-    "Id": 30010,
-    "Difficulty": 30,
-    "Level": 10,
-    "LevelEntryNum": 3,
-    "MonsterGroup": [
       300101,
       300102,
       300103
     ],
-    "GetGold": 1495,
+    "GetGold": 820,
     "MonsterCardHandScoreLevelLimit": 6
   }
 ]

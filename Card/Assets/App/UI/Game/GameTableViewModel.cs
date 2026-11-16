@@ -30,6 +30,10 @@ namespace App.UI
         private readonly IGuideService _guide;
         private readonly ISaveService _save;
         private readonly IAudioService _audio;
+        private AudioClip _battleBgm;
+        private AudioClip _chosenBgm;
+        private bool _chosenBgmActive;
+        private int _battleBgmGeneration;
         private readonly PvpMatchSession _pvp;
         private readonly BattleDirector _pvpDirector;
         private readonly PvpBattleDriver _pvpDriver;
@@ -38,6 +42,7 @@ namespace App.UI
         private bool _resultPopupOpen;
         public Func<Task> WaitForPlayerDeathPresentation { get; set; }
         private bool _infoPopupOpen;
+        private bool _skillAdPopupOpening;
         private bool _remainListOpen;
         private bool _settleShownThisShop;
         /// <summary>商店里确认返回主页：置位后 PVE 商店 while 循环不再重开弹窗。</summary>
@@ -118,6 +123,11 @@ namespace App.UI
             PeekGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.PeekGoodCharges <= 0 && !Session.SelectingRubTarget)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Rub);
+                        return;
+                    }
                     if (!Session.SelectingRubTarget &&
                         Session.PlayerMayPressPeekGood &&
                         !BossMechanics.CanAffordRub(Session.Run))
@@ -128,10 +138,16 @@ namespace App.UI
 
                     Session.UsePeekGood();
                 },
-                () => Session.PlayerMayTogglePeekGood);
+                () => !Session.IsPvp && Session.Run.PeekGoodCharges <= 0 && !Session.SelectingRubTarget
+                    ? Session.CanWatchPveSkillAd(PvpSkillIds.Rub) : Session.PlayerMayTogglePeekGood);
             ChaKanGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.ChaKanGoodCharges <= 0)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Peek);
+                        return;
+                    }
                     if (Session.IsPvp)
                     {
                         SendPvpSkill(() => _pvp.Invoker.EnqueuePeek());
@@ -140,13 +156,18 @@ namespace App.UI
 
                     Session.UseChaKanGood();
                 },
-                () => Session.IsPvp ? Session.PlayerMayUseChaKanGood : Session.PlayerMayUseChaKanGood);
+                () => Session.PlayerMayUseChaKanGood || (Session.Run.ChaKanGoodCharges <= 0 && Session.CanWatchPveSkillAd(PvpSkillIds.Peek)));
             XRayPlayerCommand = new RelayCommand(
                 () => Session.TryXRayPlayer(),
                 () => Session.SelectingXRayTarget && Session.PlayerMayUseChaKanGood);
             TiHuanGoodCommand = new RelayCommand(
                 () =>
                 {
+                    if (!Session.IsPvp && Session.Run.TiHuanGoodCharges <= 0)
+                    {
+                        OpenSkillAdPopup(PvpSkillIds.Replace);
+                        return;
+                    }
                     if (!Session.PlayerMayUseTiHuanGood)
                     {
                         return;
@@ -162,7 +183,7 @@ namespace App.UI
 
                     Session.UseTiHuanGood();
                 },
-                () => Session.PlayerMayUseTiHuanGood);
+                () => Session.PlayerMayUseTiHuanGood || (Session.Run.TiHuanGoodCharges <= 0 && Session.CanWatchPveSkillAd(PvpSkillIds.Replace)));
             RubCommand = new RelayCommand(() => Session.TryRubSelected(), () => Session.Phase == GamePhase.WaitingRub);
             SkipRubCommand = new RelayCommand(() => Session.CancelLookOrRub(), () => Session.PlayerMayCancelLookOrRub);
             MinusBetCommand = new RelayCommand(() => Session.AdjustBetUnits(-GameBalance.MinBet), () => Session.Phase == GamePhase.Betting);
@@ -1156,15 +1177,51 @@ namespace App.UI
                 return;
             }
 
+            var generation = ++_battleBgmGeneration;
             try
             {
                 var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmBattle);
-                _audio.PlayBgm(clip);
+                if (generation != _battleBgmGeneration || !IsOpen)
+                {
+                    Resources.Release(ResResourcePaths.BgmBattle);
+                    return;
+                }
+                _battleBgm = clip;
+                ApplyBattleBgm();
             }
             catch (Exception ex)
             {
                 AppLog.Warn(LogChannel.Assets, "Battle BGM load failed: " + ex.Message);
             }
+
+            try
+            {
+                var clip = await Resources.LoadAsync<AudioClip>(ResResourcePaths.BgmChosen);
+                if (generation != _battleBgmGeneration || !IsOpen)
+                {
+                    Resources.Release(ResResourcePaths.BgmChosen);
+                    return;
+                }
+                _chosenBgm = clip;
+                ApplyBattleBgm();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn(LogChannel.Assets, "Chosen BGM load failed: " + ex.Message);
+            }
+        }
+
+        public void SetChosenBattleBgm(bool active)
+        {
+            if (_chosenBgmActive == active) return;
+            _chosenBgmActive = active;
+            if (IsOpen) ApplyBattleBgm();
+        }
+
+        private void ApplyBattleBgm()
+        {
+            var clip = _chosenBgmActive && _chosenBgm != null ? _chosenBgm : _battleBgm;
+            if (clip != null) _audio?.PlayBgm(clip);
         }
 
         protected override async Task OnClose()
@@ -1188,8 +1245,35 @@ namespace App.UI
         /// <summary>退局卸载：战斗 BGM 与 _damage/_dead 立绘（与加载点一一对应；未进缓存时 Release 为空操作，重复调用安全）。</summary>
         private void ReleaseBattleResources()
         {
-            Resources?.Release(ResResourcePaths.BgmBattle);
+            _battleBgmGeneration++;
+            _chosenBgmActive = false;
+            if (_battleBgm != null) Resources?.Release(ResResourcePaths.BgmBattle);
+            if (_chosenBgm != null) Resources?.Release(ResResourcePaths.BgmChosen);
+            _battleBgm = null;
+            _chosenBgm = null;
             PortraitLoader.ReleaseBattleStates();
+        }
+
+        private async void OpenSkillAdPopup(int skillId)
+        {
+            if (!Session.CanWatchPveSkillAd(skillId) || _skillAdPopupOpening || _ui == null) return;
+            _skillAdPopupOpening = true;
+            try
+            {
+                var registration = _ui.Registry.GetByViewModelType(typeof(GameSharePopViewModel));
+                var popup = (GameSharePopViewModel)_ui.Registry.CreateViewModel(registration);
+                popup.Setup(skillId);
+                await _ui.Open(popup);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(LogChannel.UI, ex);
+                Toast.Show("打开界面失败，请稍后重试");
+            }
+            finally
+            {
+                _skillAdPopupOpening = false;
+            }
         }
 
         private void TogglePlaybackSpeed()

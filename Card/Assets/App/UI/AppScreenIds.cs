@@ -12,6 +12,7 @@ namespace App.UI
         public const string HealthAdvisory = "App.HealthAdvisory";
         public const string ConfirmDialog = "App.ConfirmDialog";
         public const string GameUI = "App.GameUI";
+        public const string GameSharePop = "App.GameSharePop";
         public const string BattleFailPopup = "App.BattleFailPopup";
         public const string BattleResultPopup = "App.BattleResultPopup";
         public const string BattleShopPop = "App.BattleShopPop";

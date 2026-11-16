@@ -25,6 +25,7 @@ public static class PlayerErrorMessages
             "Skills disabled by binding." => "技能受到羁绊限制，暂时无法使用",
             "Shop is closed." => "商店已关闭",
             "Skill is not for sale." => "该技能暂不可购买",
+            "Skill charges are full." => "技能次数已满",
             "Unknown skill." => "技能不存在",
             "Unknown relic." => "圣物不存在",
             "Unknown battle action." or "Unknown shop action." => "操作无效",

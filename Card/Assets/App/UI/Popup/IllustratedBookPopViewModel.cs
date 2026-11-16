@@ -86,7 +86,6 @@ namespace App.UI.Popup
             TipTitle = new ObservableProperty<string>();
             TipText = new ObservableProperty<string>();
             CloseCommand = new RelayCommand(ClosePop);
-            BuildEntries();
             // 收藏页签已从界面移除，默认展示遗物页
             ApplyTab(IllustratedBookTab.Relic, force: true);
         }
@@ -291,7 +290,7 @@ namespace App.UI.Popup
         protected override Task OnOpen(object args)
         {
             HideTip();
-            BuildEntries();
+            // 条目已在 View.OnViewOpen 中刷新，供 OnBind 首次构建使用。
             // 主页两个入口分别进圣物栏 / 怪物栏；其它入口（底部导航等）不传参数，默认圣物页。
             ApplyTab(ResolveOpenTab(args), force: true);
             // 整屏页签：打开期间藏顶部资源栏，关闭恢复（资源栏 VM 为 DI 单例，同实例）

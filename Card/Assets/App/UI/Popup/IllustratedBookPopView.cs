@@ -11,6 +11,7 @@ using App.UI.List;
 using Framework.UI.Binding;
 using Framework.UI.Navigation;
 using Framework.Log;
+using Framework.Assets;
 using Framework.UI.View;
 using TMPro;
 using UnityEngine;
@@ -48,6 +49,10 @@ namespace App.UI.Popup
         private readonly Dictionary<Component, IllustratedBookEntry> _entries =
             new Dictionary<Component, IllustratedBookEntry>();
         private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
+        // 每次成功加载各持有一份引用，关闭时逐一释放。
+        private readonly List<string> _loadedResourceKeys = new List<string>();
+        private IResourceService _resources;
+        private bool _closed;
         private readonly Vector3[] _corners = new Vector3[4];
         // 已构建（或构建中）的页签：打开只建当前页，其余页首次切换时再建
         private readonly HashSet<IllustratedBookTab> _builtTabs = new HashSet<IllustratedBookTab>();
@@ -72,6 +77,8 @@ namespace App.UI.Popup
 
         protected override async Task OnViewOpen()
         {
+            _closed = false;
+            _resources = ViewModel.Resources;
             ViewModel.RefreshEntries();
             // 重开时数据可能已变：页签标记全部重置（SetSections 重建数据，行池与横幅克隆重绑）
             _builtTabs.Clear();
@@ -121,6 +128,7 @@ namespace App.UI.Popup
 
         protected override Task OnViewClose()
         {
+            _closed = true;
             _pendingStagger = null;
             if (_tipCatcher != null)
             {
@@ -134,6 +142,15 @@ namespace App.UI.Popup
 
             // 视图销毁前把卡槽脱离 Content 回收进池，下次打开直接复用，不再整批 Instantiate
             ReleaseOwnedSlots();
+            _icons.Clear();
+            for (var i = 0; i < _loadedResourceKeys.Count; i++)
+            {
+                _resources.Release(_loadedResourceKeys[i]);
+            }
+
+            _loadedResourceKeys.Clear();
+            _itemPrefab = null;
+            _monsterPrefab = null;
             return Task.CompletedTask;
         }
 
@@ -144,6 +161,8 @@ namespace App.UI.Popup
                 var slot = _ownedSlots[i];
                 if (slot is ItemCard itemCard)
                 {
+                    // 池对象会继续存活，不能保留本页加载的图标引用。
+                    itemCard.SetIcon(null);
                     UiCardPool.ReleaseItemCard(itemCard);
                 }
                 else if (slot is PlayerItem playerItem)
@@ -591,7 +610,7 @@ namespace App.UI.Popup
 
             try
             {
-                _itemPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.Item);
+                _itemPrefab = await LoadOwnedAsync<GameObject>(ResResourcePaths.Item);
             }
             catch (Exception)
             {
@@ -607,7 +626,7 @@ namespace App.UI.Popup
 
             try
             {
-                _monsterPrefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.PlayerItem);
+                _monsterPrefab = await LoadOwnedAsync<GameObject>(ResResourcePaths.PlayerItem);
             }
             catch (Exception)
             {
@@ -631,18 +650,23 @@ namespace App.UI.Popup
                 {
                     case IllustratedBookTab.Collect:
                         await EnsureItemPrefab();
+                        if (_closed) return;
                         await LoadEntryIcons(ViewModel.CollectEntries);
+                        if (_closed) return;
                         BuildCollectPage();
                         PlayStaggerEntrance(_collectRecycler);
                         break;
                     case IllustratedBookTab.Monster:
                         await EnsureMonsterPrefab();
+                        if (_closed) return;
                         BuildMonsterPage();
                         PlayStaggerEntrance(_monsterRecycler);
                         break;
                     default:
                         await EnsureItemPrefab();
+                        if (_closed) return;
                         await LoadEntryIcons(ViewModel.RelicEntries);
+                        if (_closed) return;
                         BuildRelicPage();
                         PlayStaggerEntrance(_relicRecycler);
                         break;
@@ -689,7 +713,7 @@ namespace App.UI.Popup
 
         private async Task LoadEntryIcons(IReadOnlyList<IllustratedBookEntry> entries)
         {
-            for (var i = 0; i < entries.Count; i++)
+            for (var i = 0; i < entries.Count && !_closed; i++)
             {
                 if (entries[i].Tab == IllustratedBookTab.Monster)
                 {
@@ -768,12 +792,37 @@ namespace App.UI.Popup
 
             try
             {
-                return await ViewModel.Resources.LoadAsync<Sprite>(key);
+                return await LoadOwnedAsync<Sprite>(key);
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        /// <summary>只释放本视图取得的引用；关闭后才完成的加载立即归还。</summary>
+        private async Task<T> LoadOwnedAsync<T>(string key) where T : UnityEngine.Object
+        {
+            var resources = _resources;
+            if (_closed || resources == null)
+            {
+                return null;
+            }
+
+            var asset = await resources.LoadAsync<T>(key);
+            if (asset == null)
+            {
+                return null;
+            }
+
+            if (_closed)
+            {
+                resources.Release(key);
+                return null;
+            }
+
+            _loadedResourceKeys.Add(key);
+            return asset;
         }
 
         private static string ResourceIconPath(IllustratedBookEntry entry)
@@ -825,8 +874,8 @@ namespace App.UI.Popup
 
             try
             {
-                var prefab = await ViewModel.Resources.LoadAsync<GameObject>(ResResourcePaths.ItemTip);
-                if (prefab == null)
+                var prefab = await LoadOwnedAsync<GameObject>(ResResourcePaths.ItemTip);
+                if (_closed || prefab == null)
                 {
                     return;
                 }

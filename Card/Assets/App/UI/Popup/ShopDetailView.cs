@@ -18,8 +18,8 @@ namespace App.UI.Popup
     /// <summary>
     /// 商店商品详情。注册在 TopMost 层：叠加在 Popup 层的商店之上。
     /// Item 卡显示遗物名与图标，Detail 显示描述；购买或出售二选一。
-    /// buyvideoClick 看广告购买；消耗品货架另显示 buyUseBtn（金币购买并立刻使用，不播飞入），
-    /// buyusevideoClick 看广告购买并立刻使用；已购栏另显示 useBtn。
+    /// buyVideoBtn 看广告购买；消耗品货架另显示 buyUseBtn（金币购买并立刻使用，不播飞入），
+    /// buyUseVideoBtn 看广告购买并立刻使用；已购栏另显示 useBtn。
     /// 金币不足时 BuyNum 变红；失败弹 Toast，不改底部 Tip。点 Mask 关闭。
     /// 购买成功后商品卡飞入 BattleShopPop 的 MineHor；出售时金币从 SellBtn 飞入 GameResourceBar，页面立刻关闭，数字等飞币到位再涨。
     /// </summary>
@@ -186,7 +186,7 @@ namespace App.UI.Popup
 
         private void BindVideoBuyButton()
         {
-            var go = UI.GetGameObject("buyvideoClick");
+            var go = UI.GetGameObject("buyVideoBtn");
             Binding.BindActive(go, ViewModel.ShowVideoBuy);
             _videoBuyBtn = go.GetComponent<Button>();
             if (_videoBuyBtn != null)
@@ -206,11 +206,15 @@ namespace App.UI.Popup
                 _buyUseBtn.onClick.AddListener(OnBuyUseClicked);
                 Binding.BindInteractable(_buyUseBtn, ViewModel.ButtonsEnabled);
             }
+
+            var priceText = UI.GetGameObject("BuyUseNum").GetComponent<TMP_Text>();
+            Binding.BindText(priceText, ViewModel.PriceText);
+            BindBuyPriceColor(priceText);
         }
 
         private void BindBuyUseVideoButton()
         {
-            var go = UI.GetGameObject("buyusevideoClick");
+            var go = UI.GetGameObject("buyUseVideoBtn");
             Binding.BindActive(go, ViewModel.ShowBuyUseVideo);
             _buyUseVideoBtn = go.GetComponent<Button>();
             if (_buyUseVideoBtn != null)

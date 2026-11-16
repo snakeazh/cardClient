@@ -78,6 +78,7 @@ namespace App.Resources
         public const string BgmLobby = "Audio/BGM/BGM_Lobby_Loop";
         /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.mp3。</summary>
         public const string BgmBattle = "Audio/BGM/BGM_Battle_Loop";
+        public const string BgmChosen = "Audio/BGM/tianxuan";
         /// <summary>回合发牌音效 Assets/Res/Audio/Effect/deal_5cards_01.wav。</summary>
         public const string SfxDeal5Cards = "Audio/Effect/deal_5cards_01";
         /// <summary>比牌亮牌放大音效 Assets/Res/Audio/Effect/reveal_cards_3.wav。</summary>

@@ -17,19 +17,22 @@ public sealed class PvpCommandDispatcher
     private readonly PvpRewardService _rewards;
     private readonly IPvpMatchmaker _matchmaker;
     private readonly IServiceScopeFactory _scopes;
+    private readonly IHostEnvironment _env;
 
     public PvpCommandDispatcher(
         PvpMatchHost matches,
         PvpMessageRouter router,
         PvpRewardService rewards,
         IPvpMatchmaker matchmaker,
-        IServiceScopeFactory scopes)
+        IServiceScopeFactory scopes,
+        IHostEnvironment env)
     {
         _matches = matches;
         _router = router;
         _rewards = rewards;
         _matchmaker = matchmaker;
         _scopes = scopes;
+        _env = env;
     }
 
     /// <summary>房主侧 battle 处理：Act、发奖、广播。房主未命中（房间已回收）静默丢，客户端靠 sync 超时判死。</summary>
@@ -42,6 +45,14 @@ public sealed class PvpCommandDispatcher
 
         var cmd = ReadBattle(incoming.Payload);
         if (string.IsNullOrEmpty(cmd.Action))
+        {
+            await SendErrorTo(userId, incoming.Seq, ErrorCodes.InvalidRequest, "Unknown battle action.", cancellationToken);
+            return;
+        }
+
+        // debug_grant 是编辑器/冒烟测试口子，仅 Development 环境开放
+        if (!_env.IsDevelopment()
+            && string.Equals(cmd.Action, PvpActions.DebugGrant, StringComparison.OrdinalIgnoreCase))
         {
             await SendErrorTo(userId, incoming.Seq, ErrorCodes.InvalidRequest, "Unknown battle action.", cancellationToken);
             return;

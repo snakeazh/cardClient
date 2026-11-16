@@ -46,7 +46,7 @@ public sealed class DomainExceptionMiddleware
             await context.Response.WriteAsync(JsonSerializer.Serialize(new ApiError
             {
                 Code = ex.Code,
-                Message = ex.Message
+                Message = PlayerErrorMessages.Translate(ex.Code, ex.Message)
             }, _json));
         }
     }

@@ -3673,6 +3673,9 @@ MonoBehaviour:
   _popupAnim: {fileID: 0}
   _chosenBondEffectPrefab: {fileID: 2265204174828759273, guid: 9a1df20cc67e4c61ae004da05992a07d, type: 3}
   _chosenBondGlowPrefab: {fileID: 2265204174828759273, guid: 9eeaed9a5c7240128bd6c39a30e0c32b, type: 3}
+  _monsterDeathYellowPrefab: {fileID: 5028566112138694896, guid: b6ba4bd525ee4c9b98f97efeef68c400, type: 3}
+  _monsterDeathPurplePrefab: {fileID: 2095974062422223013, guid: 983a1265eb4e4a56bf9dc8f921f367fc, type: 3}
+  _monsterDeathRedPrefab: {fileID: 5515385684408412910, guid: b7608baa4dbb4b9e96d2b7ce7afc98e3, type: 3}
 --- !u!1 &3925476755481002164
 GameObject:
   m_ObjectHideFlags: 0

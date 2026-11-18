@@ -1102,6 +1102,12 @@ public class PvpMatchTests
         var fighter = match.Fighters[0];
         EnterShopPhase(match);
 
+        fighter.RubLeft = PvpSkillShop.Max(tables, fighter, PvpSkillIds.Rub);
+        var fullGold = fighter.Gold;
+        Assert.Throws<InvalidOperationException>(() => match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Rub, Array.Empty<int>()));
+        Assert.Equal(fullGold, fighter.Gold);
+        Assert.Equal(0, fighter.BoughtRub);
+        fighter.RubLeft = 0;
         var gold = fighter.Gold;
         var leftBefore = fighter.RubLeft;
         var price = PvpSkillShop.Price(fighter, PvpSkillIds.Rub);
@@ -1111,15 +1117,17 @@ public class PvpMatchTests
         Assert.Equal(gold - price, fighter.Gold);
         // 商店里不动手上剩余，只记下一轮待生效次数。
         Assert.Equal(leftBefore, fighter.RubLeft);
-        Assert.Equal(1, fighter.PendingRub);
+        var refill = PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub);
+        Assert.Equal(refill, fighter.PendingRub);
 
         var shop = match.ViewFor(fighter.UserId).Shop!;
         var rub = shop.Skills.Single(s => s.Id == PvpSkillIds.Rub);
         // 展示分子含 pending：0/1 买一次 → 1/1；分母始终是基数。
-        Assert.Equal(leftBefore + 1, rub.Left);
+        Assert.Equal(refill, rub.Left);
         Assert.Equal(PvpSkillShop.Base(tables, fighter, PvpSkillIds.Rub), rub.Max);
         // 第二口涨价。
-        Assert.Equal(price + PvpSkillShop.StepGold, rub.Price);
+        Assert.Equal(0, rub.Price);
+        Assert.Throws<InvalidOperationException>(() => match.Act(fighter.UserId, "buy_skill", PvpSkillIds.Rub, Array.Empty<int>()));
 
         // 金币不足 / 技能 Id 非法都由服务端拒绝。
         fighter.Gold = 0;
@@ -1129,7 +1137,7 @@ public class PvpMatchTests
             () => match.Act(fighter.UserId, "buy_skill", 99, Array.Empty<int>()));
 
         // 下一轮只把购买并入剩余，不回满。
-        var expectedRub = leftBefore + 1;
+        var expectedRub = refill;
         foreach (var f in match.Fighters)
         {
             if (!f.ShopDone)

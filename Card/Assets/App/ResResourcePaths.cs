@@ -16,6 +16,7 @@ namespace App.Resources
         public const string HealthAdvisory = "UI/HealthAdvisory";
         public const string LevelUI = "UI/LevelUI";
         public const string PvpPage = "UI/PVPPage";
+        public const string PvpRulePop = "UI/Popup/PVPRulePop";
         /// <summary>选关难度卡预制体 Assets/Res/UI/Icon/IevelItem.prefab（文件名首字母是大写 I）。</summary>
         public const string LevelItem = "UI/Icon/IevelItem";
         public const string ConfirmDialog = "UI/ConfirmDialog";
@@ -38,6 +39,7 @@ namespace App.Resources
         public const string TTRewardPop = "UI/Popup/TTRewardPop";
         public const string ShareRewardPop = "UI/Popup/ShareRewardPop";
         public const string SettingPop = "UI/Popup/SettingPop";
+        public const string GameSharePop = "UI/Popup/GameSharePop";
         public const string ToastPanel = "UI/Popup/ToastPanel";
         public const string GuideOverlay = "UI/Guide/GuideOverlay";
         public const string ItemTip = "UI/Top/ItemTip";
@@ -76,6 +78,7 @@ namespace App.Resources
         public const string BgmLobby = "Audio/BGM/BGM_Lobby_Loop";
         /// <summary>局内战斗 BGM Assets/Res/Audio/BGM/BGM_Battle_Loop.mp3。</summary>
         public const string BgmBattle = "Audio/BGM/BGM_Battle_Loop";
+        public const string BgmChosen = "Audio/BGM/tianxuan";
         /// <summary>回合发牌音效 Assets/Res/Audio/Effect/deal_5cards_01.wav。</summary>
         public const string SfxDeal5Cards = "Audio/Effect/deal_5cards_01";
         /// <summary>比牌亮牌放大音效 Assets/Res/Audio/Effect/reveal_cards_3.wav。</summary>

@@ -56,6 +56,12 @@ namespace App.UI
         private readonly OpeningCutscene _openingFx = new OpeningCutscene();
         [SerializeField] private GameObject _chosenBondEffectPrefab;
         [SerializeField] private GameObject _chosenBondGlowPrefab;
+        [SerializeField] private GameObject _monsterDeathYellowPrefab;
+        [SerializeField] private GameObject _monsterDeathPurplePrefab;
+        [SerializeField] private GameObject _monsterDeathRedPrefab;
+        private readonly Dictionary<GameObject, Stack<GameObject>> _monsterDeathPool = new Dictionary<GameObject, Stack<GameObject>>();
+        private readonly List<GameObject> _monsterDeathInstances = new List<GameObject>();
+        private readonly List<Tween> _monsterDeathReturns = new List<Tween>();
         private GameObject _chosenBondEffect;
         private GameObject _chosenBondGlow;
         private readonly SettlePointCutscene _settleFx = new SettlePointCutscene();
@@ -347,6 +353,7 @@ namespace App.UI
                 ViewModel.WaitForPlayerDeathPresentation = null;
             }
             ClearBindingFx();
+            ClearMonsterDeathEffects();
             SetInBattleFit(false);
             if (ViewModel != null)
             {
@@ -1966,7 +1973,11 @@ namespace App.UI
                 }
 
                 _pendingEnemyDeathFx[slot] = false;
-                _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+                var seat = ViewModel?.Session?.EnemyAtVisualSlot(slot);
+                if (seat == null || seat.DisplayAsHero || FindMonster(seat.MonsterId) == null)
+                {
+                    _attackFx.PlayDeathEffect(_attackFx.HitPosition(slot));
+                }
             }
         }
 
@@ -2058,7 +2069,118 @@ namespace App.UI
             }
 
             RegisterLethalSettle(item);
-            item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
+            PlayEnemyDeathPresentation(item);
+        }
+
+        private void PlayEnemyDeathPresentation(PlayerItem item)
+        {
+            var slot = Array.IndexOf(_enemyItems, item);
+            var seat = slot >= 0 ? ViewModel?.Session?.EnemyAtVisualSlot(slot) : null;
+            var monster = seat != null && !seat.DisplayAsHero ? FindMonster(seat.MonsterId) : null;
+            if (monster == null)
+            {
+                item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
+                return;
+            }
+
+            var prefab = monster.Type == MonsterType.Boss ? _monsterDeathRedPrefab :
+                monster.Type == MonsterType.Elite ? _monsterDeathPurplePrefab : _monsterDeathYellowPrefab;
+            // 不受卡牌 pivot 或怪物品质影响，统一以卡牌矩形中心为特效位置。
+            var cardRect = item.transform as RectTransform;
+            var effectPosition = cardRect != null
+                ? cardRect.TransformPoint(cardRect.rect.center)
+                : item.transform.position;
+            SpawnMonsterDeathEffect(prefab, effectPosition, item);
+        }
+
+        private void SpawnMonsterDeathEffect(GameObject prefab, Vector3 position, PlayerItem item)
+        {
+            if (prefab == null)
+            {
+                OnEnemyDeathDissolveDone(item);
+                return;
+            }
+            if (!_monsterDeathPool.TryGetValue(prefab, out var pool))
+            {
+                pool = new Stack<GameObject>();
+                _monsterDeathPool.Add(prefab, pool);
+            }
+
+            GameObject instance = null;
+            while (pool.Count > 0 && instance == null) instance = pool.Pop();
+            if (instance == null)
+            {
+                instance = Instantiate(prefab, transform, false);
+                _monsterDeathInstances.Add(instance);
+            }
+            instance.transform.position = position;
+            instance.transform.rotation = Quaternion.identity;
+            var canvas = GetComponentInParent<Canvas>();
+            var uiCamera = canvas != null ? canvas.rootCanvas.worldCamera : null;
+            var worldCamera = Camera.main;
+            var scale = uiCamera != null && worldCamera != null && uiCamera.orthographic &&
+                        worldCamera.orthographic && worldCamera.orthographicSize > 0f
+                ? uiCamera.orthographicSize / worldCamera.orthographicSize : 1f;
+            var parentScale = transform.lossyScale;
+            instance.transform.localScale = new Vector3(
+                scale / Mathf.Max(0.0001f, Mathf.Abs(parentScale.x)),
+                scale / Mathf.Max(0.0001f, Mathf.Abs(parentScale.y)),
+                scale / Mathf.Max(0.0001f, Mathf.Abs(parentScale.z)));
+            UiFx.ApplyUiLayer(instance);
+            UiFx.ApplySorting(instance, 240);
+            instance.SetActive(true);
+            UiFx.ClearTrails(instance);
+            UiFx.RestartParticles(instance);
+            _monsterDeathReturns.RemoveAll(tween => tween == null || !tween.IsActive());
+            // 同一时间轴驱动卡牌隐藏和特效回收，避免两个计时器不同步。
+            // 粒子使用游戏时间，时间轴也必须跟随 Time.timeScale，才能在倍速下对齐爆炸帧。
+            var returnSequence = DOTween.Sequence().SetUpdate(false).SetLink(gameObject);
+            returnSequence.AppendInterval(0.8f);
+            returnSequence.AppendCallback(() =>
+            {
+                if (_deathDissolves.TryGetValue(item, out var tracked) && tracked == returnSequence)
+                {
+                    _deathDissolves.Remove(item);
+                    OnEnemyDeathDissolveDone(item);
+                }
+            });
+            returnSequence.AppendInterval(0.9f);
+            returnSequence.AppendCallback(() =>
+            {
+                if (instance == null) return;
+                instance.SetActive(false);
+                pool.Push(instance);
+            });
+            returnSequence.OnKill(() =>
+            {
+                if (_deathDissolves.TryGetValue(item, out var tracked) && tracked == returnSequence)
+                {
+                    _deathDissolves.Remove(item);
+                    if (UnregisterLethalSettle(item)) FinishAttackIfReady();
+                }
+                if (instance != null && instance.activeSelf)
+                {
+                    instance.SetActive(false);
+                    pool.Push(instance);
+                }
+            });
+            _deathDissolves[item] = returnSequence;
+            _monsterDeathReturns.Add(returnSequence);
+        }
+
+        private void ClearMonsterDeathEffects()
+        {
+            foreach (var tween in _monsterDeathReturns)
+            {
+                if (tween != null && tween.IsActive()) tween.Kill();
+            }
+            _monsterDeathReturns.Clear();
+            foreach (var instance in _monsterDeathInstances)
+            {
+                if (instance != null) Destroy(instance);
+            }
+            _monsterDeathInstances.Clear();
+            _monsterDeathPool.Clear();
         }
 
         private void EnsureEnemyDeathDissolveCallback(PlayerItem item)
@@ -2824,9 +2946,9 @@ namespace App.UI
                     return;
                 }
 
-                // 溅射/大嗓门旁路致死：登记后再溶，溶完减计数并叫醒结算。
+                // 溅射等旁路致死也走同一套死亡表现和结算回调。
                 RegisterLethalSettle(item);
-                item.PlayDissolve(-1f, () => OnEnemyDeathDissolveDone(item));
+                PlayEnemyDeathPresentation(item);
             }));
         }
 
@@ -5014,9 +5136,23 @@ namespace App.UI
             var session = ViewModel?.Session;
             var locked = session != null && session.PlayerSkillsLocked;
             var replaceLocked = locked || (session?.Run != null && BossMechanics.SwapLocked(session.Run));
-            ApplySkillButtonLock("PeekGood", locked);
-            ApplySkillButtonLock("ChaKanGood", locked);
-            ApplySkillButtonLock("TiHuanGood", replaceLocked);
+            var rubAd = session != null && session.Run.PeekGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Rub);
+            var peekAd = session != null && session.Run.ChaKanGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Peek);
+            var replaceAd = session != null && session.Run.TiHuanGoodCharges <= 0 && session.CanWatchPveSkillAd(CardShare.Contracts.PvpSkillIds.Replace);
+            ApplySkillButtonLock("PeekGood", locked && !rubAd);
+            ApplySkillButtonLock("ChaKanGood", locked && !peekAd);
+            ApplySkillButtonLock("TiHuanGood", replaceLocked && !replaceAd);
+            RefreshSkillAdd("PeekGood", rubAd);
+            RefreshSkillAdd("ChaKanGood", peekAd);
+            RefreshSkillAdd("TiHuanGood", replaceAd);
+        }
+
+        private void RefreshSkillAdd(string name, bool show)
+        {
+            var button = FindBtn(name);
+            if (button == null) return;
+            var indicator = FindDeep(button.transform, "add") ?? FindDeep(button.transform, "video");
+            if (indicator != null) indicator.gameObject.SetActive(show);
         }
 
         private void ApplySkillButtonLock(string name, bool locked)

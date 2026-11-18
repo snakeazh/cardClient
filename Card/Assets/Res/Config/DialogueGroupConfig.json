@@ -13,152 +13,320 @@
   },
   {
     "Id": 3,
-    "MonsterId": 1001,
-    "PlayerTalk": "赢我?先扛住这一巴掌!",
-    "MonsterTalk": "软归软,黏住你就赢了!"
+    "MonsterId": 1002,
+    "PlayerTalk": "试试就试试,放马过来!",
+    "MonsterTalk": "学了大佬几手,来试试!"
   },
   {
     "Id": 4,
-    "MonsterId": 1001,
-    "PlayerTalk": "那我发财就指望你了。",
-    "MonsterTalk": "我要把你粘成金币模样!"
+    "MonsterId": 1002,
+    "PlayerTalk": "气场再足,不如实力硬。",
+    "MonsterTalk": "这一手镇场,叫气场!"
   },
   {
     "Id": 5,
-    "MonsterId": 1002,
-    "PlayerTalk": "试试就试试,亮牌!",
-    "MonsterTalk": "学了发哥几手,来试试!"
+    "MonsterId": 1003,
+    "PlayerTalk": "口气不小,对局上见!",
+    "MonsterTalk": "个头小,正好压你一头!"
   },
   {
     "Id": 6,
-    "MonsterId": 1002,
-    "PlayerTalk": "看片归看片,打牌归打牌!",
-    "MonsterTalk": "港片看多了,牌技自然有!"
+    "MonsterId": 1003,
+    "PlayerTalk": "行,先让你呱两声。",
+    "MonsterTalk": "你就看我怎么赢吧,呱呱！"
   },
   {
     "Id": 7,
-    "MonsterId": 1002,
-    "PlayerTalk": "气场再足,不如牌好。",
-    "MonsterTalk": "压牌这一手,叫气场!"
+    "MonsterId": 1004,
+    "PlayerTalk": "你这叫又菜又爱玩,哈哈!",
+    "MonsterTalk": "花丛哪有这个好玩!"
   },
   {
     "Id": 8,
-    "MonsterId": 1002,
-    "PlayerTalk": "正合我意,赌神驾到!",
-    "MonsterTalk": "比比谁的底牌更硬!"
-  },
-  {
-    "Id": 9,
-    "MonsterId": 1003,
-    "PlayerTalk": "翻盘也得问过我的牌!",
-    "MonsterTalk": "总被忽视,今天我翻盘!"
-  },
-  {
-    "Id": 10,
-    "MonsterId": 1003,
-    "PlayerTalk": "那今天让你输个明白。",
-    "MonsterTalk": "翻身仗,我可没输过!"
-  },
-  {
-    "Id": 11,
-    "MonsterId": 1003,
-    "PlayerTalk": "口气不小,牌桌上见!",
-    "MonsterTalk": "瘪牌正好压你一头!"
-  },
-  {
-    "Id": 12,
-    "MonsterId": 1003,
-    "PlayerTalk": "行,先让你叫两声。",
-    "MonsterTalk": "上桌才轮到我呱呱叫!"
-  },
-  {
-    "Id": 13,
-    "MonsterId": 1004,
-    "PlayerTalk": "手抖也比你动听。",
-    "MonsterTalk": "嗡嗡嗡,吵到你手抖!"
-  },
-  {
-    "Id": 14,
-    "MonsterId": 1004,
-    "PlayerTalk": "先把你自个儿烦哭吧。",
-    "MonsterTalk": "烦也能把你烦输!"
-  },
-  {
-    "Id": 15,
-    "MonsterId": 1004,
-    "PlayerTalk": "好玩也留不住你赢牌。",
-    "MonsterTalk": "花丛哪有牌桌好玩!"
-  },
-  {
-    "Id": 16,
     "MonsterId": 1004,
     "PlayerTalk": "先赢我一局再开嗓。",
     "MonsterTalk": "我还能唱着歌赢你!"
   },
   {
-    "Id": 17,
-    "MonsterId": 1005,
-    "PlayerTalk": "稳不稳,亮牌才知道。",
-    "MonsterTalk": "慢工出细活,这把稳赢!"
-  },
-  {
-    "Id": 18,
-    "MonsterId": 1005,
-    "PlayerTalk": "来吧,让我看看你多壮。",
-    "MonsterTalk": "先扛过我这一把再说!"
-  },
-  {
-    "Id": 19,
-    "MonsterId": 1005,
-    "PlayerTalk": "拳头再硬,硬不过好牌。",
+    "Id": 9,
+    "MonsterId": 1006,
+    "PlayerTalk": "拳头再硬,可惜你老空有什么用。",
     "MonsterTalk": "路没有,拳头有一把!"
   },
   {
-    "Id": 20,
-    "MonsterId": 1005,
-    "PlayerTalk": "嘴上赢了,牌还没出呢。",
-    "MonsterTalk": "慢是慢,赢你足够了!"
+    "Id": 10,
+    "MonsterId": 1006,
+    "PlayerTalk": "建议你自己先换条裤子。",
+    "MonsterTalk": "空归空,吓也给你吓尿了!"
   },
   {
-    "Id": 21,
+    "Id": 11,
     "MonsterId": 3001,
-    "PlayerTalk": "好惹不好惹,亮牌见!",
+    "PlayerTalk": "好惹不好惹,打过才知道!",
     "MonsterTalk": "进化体,可不是好惹的!"
   },
   {
-    "Id": 22,
+    "Id": 12,
     "MonsterId": 3001,
     "PlayerTalk": "见识过了,不过如此。",
-    "MonsterTalk": "这把让你见识进化!"
+    "MonsterTalk": "这局让你见识进化!"
   },
   {
-    "Id": 23,
+    "Id": 13,
     "MonsterId": 3001,
-    "PlayerTalk": "先问问我的牌答不答应。",
+    "PlayerTalk": "先问问我的伞盖答不答应。",
     "MonsterTalk": "我来替兄弟讨回场子!"
   },
   {
-    "Id": 24,
+    "Id": 14,
     "MonsterId": 2001,
     "PlayerTalk": "赢的会是我,看好了。",
     "MonsterTalk": "瞪大眼睛,看谁输谁赢!"
   },
   {
-    "Id": 25,
+    "Id": 15,
     "MonsterId": 2001,
     "PlayerTalk": "那今天就轮到猎物翻身。",
     "MonsterTalk": "首领面前,你才是猎物!"
   },
   {
-    "Id": 26,
+    "Id": 16,
     "MonsterId": 2001,
-    "PlayerTalk": "看穿了,你也赢不走。",
-    "MonsterTalk": "这一眼,就看穿你底牌!"
+    "PlayerTalk": "看穿了,你也赢不了。",
+    "MonsterTalk": "这一眼,就看穿你全部招数!"
   },
   {
-    "Id": 27,
+    "Id": 17,
     "MonsterId": 2001,
     "PlayerTalk": "掂量完了,你该退位了。",
     "MonsterTalk": "大话之前,先掂量掂量!"
+  },
+  {
+    "Id": 18,
+    "MonsterId": 1007,
+    "PlayerTalk": "箭快,有我出手快吗?",
+    "MonsterTalk": "站住,先尝尝我的快箭!"
+  },
+  {
+    "Id": 19,
+    "MonsterId": 1007,
+    "PlayerTalk": "先照照你那眼神吧!",
+    "MonsterTalk": "这一箭,专射赢家的脸!"
+  },
+  {
+    "Id": 20,
+    "MonsterId": 1008,
+    "PlayerTalk": "不打你,赢你就够了!",
+    "MonsterTalk": "皮糙肉厚,你拿什么打?"
+  },
+  {
+    "Id": 21,
+    "MonsterId": 1008,
+    "PlayerTalk": "块头大,本事小。",
+    "MonsterTalk": "腱子肉,不是摆着看的!"
+  },
+  {
+    "Id": 22,
+    "MonsterId": 1009,
+    "PlayerTalk": "缠得住人,缠不住我!",
+    "MonsterTalk": "别乱动,我的丝有毒!"
+  },
+  {
+    "Id": 23,
+    "MonsterId": 1009,
+    "PlayerTalk": "你先尝尝输的滋味!",
+    "MonsterTalk": "中毒的滋味,想尝尝吗?"
+  },
+  {
+    "Id": 24,
+    "MonsterId": 1010,
+    "PlayerTalk": "你哥来了也得输!",
+    "MonsterTalk": "我哥是狼哥,我怕谁!"
+  },
+  {
+    "Id": 25,
+    "MonsterId": 1010,
+    "PlayerTalk": "记住了,你是输的那个。",
+    "MonsterTalk": "今天就让你们记住我!"
+  },
+  {
+    "Id": 26,
+    "MonsterId": 1011,
+    "PlayerTalk": "叫得再响,也没人理你。",
+    "MonsterTalk": "半夜听见我叫了吗?"
+  },
+  {
+    "Id": 27,
+    "MonsterId": 1011,
+    "PlayerTalk": "吓不吓人不知道,挺吵。",
+    "MonsterTalk": "我的叫声,能吓破胆!"
+  },
+  {
+    "Id": 28,
+    "MonsterId": 2002,
+    "PlayerTalk": "灭不灭,输完再算!",
+    "MonsterTalk": "我的怒火,地狱都浇不灭!"
+  },
+  {
+    "Id": 29,
+    "MonsterId": 2002,
+    "PlayerTalk": "我的家伙,你也收不走!",
+    "MonsterTalk": "你的仇恨,我来收割!"
+  },
+  {
+    "Id": 30,
+    "MonsterId": 2003,
+    "PlayerTalk": "冻住正好,省得你跑!",
+    "MonsterTalk": "站我这儿,血都冻住!"
+  },
+  {
+    "Id": 31,
+    "MonsterId": 2003,
+    "PlayerTalk": "那你退后点,别挡着道!",
+    "MonsterTalk": "一步之内,寸草不生!"
+  },
+  {
+    "Id": 32,
+    "MonsterId": 2004,
+    "PlayerTalk": "先把你的名字划掉!",
+    "MonsterTalk": "生死簿上,今天添你一笔!"
+  },
+  {
+    "Id": 33,
+    "MonsterId": 2004,
+    "PlayerTalk": "先踏过我这关!",
+    "MonsterTalk": "我的铁骑,踏平一切!"
+  },
+  {
+    "Id": 34,
+    "MonsterId": 2005,
+    "PlayerTalk": "等这么久,就等来输?",
+    "MonsterTalk": "千年没动,就等你来!"
+  },
+  {
+    "Id": 35,
+    "MonsterId": 2005,
+    "PlayerTalk": "那你接着蹲着吧!",
+    "MonsterTalk": "我一动,你就要命!"
+  },
+  {
+    "Id": 36,
+    "MonsterId": 2006,
+    "PlayerTalk": "点来点去,还是这群菌子!",
+    "MonsterTalk": "菌林统帅,沙场点兵!"
+  },
+  {
+    "Id": 37,
+    "MonsterId": 2006,
+    "PlayerTalk": "那就更得输了,长记性!",
+    "MonsterTalk": "蘑菇人的骄傲,不容输!"
+  },
+  {
+    "Id": 38,
+    "MonsterId": 2007,
+    "PlayerTalk": "那你永远看不见我赢!",
+    "MonsterTalk": "我这只眼,只看得见赢!"
+  },
+  {
+    "Id": 39,
+    "MonsterId": 2007,
+    "PlayerTalk": "挡你的不是人,是实力!",
+    "MonsterTalk": "让开!别挡我的胜利!"
+  },
+  {
+    "Id": 40,
+    "MonsterId": 2008,
+    "PlayerTalk": "你的终局,在我这。",
+    "MonsterTalk": "我一来,一切就终局!"
+  },
+  {
+    "Id": 41,
+    "MonsterId": 2008,
+    "PlayerTalk": "一无所获,说的就是你!",
+    "MonsterTalk": "交出一切,饶你不死!"
+  },
+  {
+    "Id": 42,
+    "MonsterId": 3002,
+    "PlayerTalk": "再狠,也上不了台面!",
+    "MonsterTalk": "角落里长出来的,别小看!"
+  },
+  {
+    "Id": 43,
+    "MonsterId": 3002,
+    "PlayerTalk": "那你回角落蹲着去!",
+    "MonsterTalk": "潮的地方,最养狠角色!"
+  },
+  {
+    "Id": 44,
+    "MonsterId": 3003,
+    "PlayerTalk": "荣耀归你,金币归我!",
+    "MonsterTalk": "这是哥布林的荣耀之战!"
+  },
+  {
+    "Id": 45,
+    "MonsterId": 3003,
+    "PlayerTalk": "今天它学会什么叫输!",
+    "MonsterTalk": "我的猪,从来不知道退!"
+  },
+  {
+    "Id": 46,
+    "MonsterId": 3004,
+    "PlayerTalk": "点吧,正好给你降温!",
+    "MonsterTalk": "站远点,会把你点着!"
+  },
+  {
+    "Id": 47,
+    "MonsterId": 3004,
+    "PlayerTalk": "烧吧,烧完你就没脾气了!",
+    "MonsterTalk": "我烧起来,森林都得着火!"
+  },
+  {
+    "Id": 48,
+    "MonsterId": 3005,
+    "PlayerTalk": "撞吧,这里讲实力!",
+    "MonsterTalk": "讲道理?我只会冲撞!"
+  },
+  {
+    "Id": 49,
+    "MonsterId": 3005,
+    "PlayerTalk": "先问问我的拳头答不答应!",
+    "MonsterTalk": "挡我的,一起撞飞!"
+  },
+  {
+    "Id": 50,
+    "MonsterId": 3006,
+    "PlayerTalk": "再艳,也是朵要谢的花!",
+    "MonsterTalk": "花越艳,牙越狠!"
+  },
+  {
+    "Id": 51,
+    "MonsterId": 3006,
+    "PlayerTalk": "牙口好,身手差!",
+    "MonsterTalk": "别看花,看我的牙!"
+  },
+  {
+    "Id": 52,
+    "MonsterId": 3007,
+    "PlayerTalk": "顶吧,顶不动我半步!",
+    "MonsterTalk": "牛脾气上来,顶你没商量!"
+  },
+  {
+    "Id": 53,
+    "MonsterId": 3007,
+    "PlayerTalk": "想说了算,先问过我!",
+    "MonsterTalk": "让开!这里我说了算!"
+  },
+  {
+    "Id": 54,
+    "MonsterId": 3008,
+    "PlayerTalk": "翘吧,翘得高摔得响!",
+    "MonsterTalk": "尾巴一翘,你就没好事!"
+  },
+  {
+    "Id": 55,
+    "MonsterId": 3008,
+    "PlayerTalk": "备这么齐,还是得输!",
+    "MonsterTalk": "心眼和毒针,都给你备好!"
   }
 ]

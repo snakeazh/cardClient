@@ -1695,6 +1695,11 @@ namespace CardShare.Battle
                 throw new InvalidOperationException("Skill is not for sale.");
             }
 
+            if (PvpSkillShop.ShopLeft(fighter, skillId) >= PvpSkillShop.Max(_tables, fighter, skillId))
+            {
+                throw new InvalidOperationException("Skill charges are full.");
+            }
+
             if (fighter.Gold < cost)
             {
                 throw new InvalidOperationException("Not enough gold.");
@@ -1702,7 +1707,7 @@ namespace CardShare.Battle
 
             fighter.Gold -= cost;
             PvpRelicRuntime.OnGoldSpent(_tables, fighter);
-            PvpSkillShop.AddPending(fighter, skillId);
+            PvpSkillShop.AddPending(_tables, fighter, skillId);
         }
 
         private void ReleaseRelics(PvpFighter fighter)

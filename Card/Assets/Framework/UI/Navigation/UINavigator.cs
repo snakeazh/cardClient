@@ -235,48 +235,90 @@ namespace Framework.UI.Navigation
             GameObject keepCoverOnTop = null)
         {
             var prefab = registration.Prefab;
-            if (prefab == null)
+            var loaded = false;
+            GameObject go = null;
+            IView view = null;
+            try
             {
-                prefab = await _resources.LoadAsync<GameObject>(registration.AssetKey);
+                if (prefab == null)
+                {
+                    prefab = await _resources.LoadAsync<GameObject>(registration.AssetKey);
+                    loaded = true;
+                    if (keepCoverOnTop != null)
+                    {
+                        keepCoverOnTop.transform.SetAsLastSibling();
+                    }
+                }
+
+                var parent = _root.GetLayer(registration.Layer);
+                go = UnityEngine.Object.Instantiate(prefab, parent, false);
+                go.name = prefab.name;
+                go.SetActive(true);
+                // 新页一出来就可能盖住旧页；加载期间始终把遮罩页按在最上。
                 if (keepCoverOnTop != null)
                 {
                     keepCoverOnTop.transform.SetAsLastSibling();
                 }
-            }
 
-            var parent = _root.GetLayer(registration.Layer);
-            var go = UnityEngine.Object.Instantiate(prefab, parent, false);
-            go.name = prefab.name;
-            go.SetActive(true);
-            // 新页一出来就可能盖住旧页；加载期间始终把遮罩页按在最上。
-            if (keepCoverOnTop != null)
-            {
-                keepCoverOnTop.transform.SetAsLastSibling();
-            }
-            
-            var view = go.GetComponent<IView>();
-            if (view == null)
-            {
-                UnityEngine.Object.Destroy(go);
-                throw new InvalidOperationException(
-                    $"Prefab for screen '{registration.Id}' must have a component implementing IView.");
-            }
+                view = go.GetComponent<IView>();
+                if (view == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Prefab for screen '{registration.Id}' must have a component implementing IView.");
+                }
 
-            await view.Open(viewModel, args);
-            if (keepCoverOnTop != null)
-            {
-                keepCoverOnTop.transform.SetAsLastSibling();
-            }
+                await view.Open(viewModel, args);
+                if (keepCoverOnTop != null)
+                {
+                    keepCoverOnTop.transform.SetAsLastSibling();
+                }
 
-            return new ScreenInstance(registration, view, viewModel);
+                return new ScreenInstance(registration, view, viewModel);
+            }
+            catch
+            {
+                try
+                {
+                    if (view != null)
+                    {
+                        await view.Close();
+                    }
+                }
+                finally
+                {
+                    if (go != null)
+                    {
+                        UnityEngine.Object.Destroy(go);
+                    }
+
+                    if (loaded)
+                    {
+                        _resources.Release(registration.AssetKey);
+                    }
+                }
+
+                throw;
+            }
         }
 
-        private static async Task DestroyInstance(ScreenInstance instance)
+        private async Task DestroyInstance(ScreenInstance instance)
         {
-            await instance.View.Close();
-            if (instance.View.gameObject != null)
+            try
             {
-                UnityEngine.Object.Destroy(instance.View.gameObject);
+                await instance.View.Close();
+            }
+            finally
+            {
+                if (instance.View.gameObject != null)
+                {
+                    UnityEngine.Object.Destroy(instance.View.gameObject);
+                }
+
+                // 直接注册的预制体不属于资源服务，不应减少其引用计数。
+                if (instance.Registration.Prefab == null)
+                {
+                    _resources.Release(instance.Registration.AssetKey);
+                }
             }
         }
 

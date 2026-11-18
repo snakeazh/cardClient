@@ -95,6 +95,8 @@ namespace CardShare.Battle
                 return 0;
             }
 
+            if (Bought(fighter, skillId) > 0) return 0;
+
             var first = FirstGold(skillId);
             var step = StepGold * Math.Max(0, Bought(fighter, skillId));
             return Math.Max(0, first + step);
@@ -213,8 +215,8 @@ namespace CardShare.Battle
             ClearPending(fighter);
         }
 
-        /// <summary>购买计数 +1（价格递增）与待生效次数 +1。扣金/校验在 PvpMatch 里做。</summary>
-        public static void AddPending(PvpFighter fighter, int skillId)
+        /// <summary>记录本局购买，并在下一轮将技能次数补至当前上限。</summary>
+        public static void AddPending(IGameTables tables, PvpFighter fighter, int skillId)
         {
             if (fighter == null || !IsValid(skillId))
             {
@@ -224,15 +226,15 @@ namespace CardShare.Battle
             switch (skillId)
             {
                 case PvpSkillIds.Rub:
-                    fighter.PendingRub++;
+                    fighter.PendingRub = Math.Max(0, Max(tables, fighter, skillId) - Left(fighter, skillId));
                     fighter.BoughtRub++;
                     break;
                 case PvpSkillIds.Replace:
-                    fighter.PendingReplace++;
+                    fighter.PendingReplace = Math.Max(0, Max(tables, fighter, skillId) - Left(fighter, skillId));
                     fighter.BoughtReplace++;
                     break;
                 case PvpSkillIds.Peek:
-                    fighter.PendingPeek++;
+                    fighter.PendingPeek = Math.Max(0, Max(tables, fighter, skillId) - Left(fighter, skillId));
                     fighter.BoughtPeek++;
                     break;
             }

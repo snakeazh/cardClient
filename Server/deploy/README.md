@@ -69,7 +69,7 @@ vi /opt/card-server/app/appsettings.Production.json
 - `Urls` 锁回环地址，对外只经 Nginx。
 - `GuestAuth` 关闭、`Pvp:FillWithBots` 关闭（Development 的机器人补满只是本地调试用）。
 - `/debug/grant-gold` 等调试接口只在 Development 暴露，Production 自动不带。
-- **`Admin:Token` 是 GM 后台总闸**：不配则 `/v1/admin` 整组接口不存在，后台页面也登不进；它就是后台登录页的密码，只发给需要用后台的人。
+- **`Admin:Token` 是 GM 后台总闸**：不配则 `/v1/gm` 整组接口不存在，后台页面也登不进；它就是后台登录页的密码，只发给需要用后台的人。
 - `ConfigPath` 指向 `/opt/card-server/Config`（deploy.sh 会同步 `Card/Assets/Res/Config`）。
 
 ## 3. 配 Nginx + 证书（只做一次）
@@ -79,26 +79,53 @@ vi /opt/card-server/app/appsettings.Production.json
 
 WebSocket 的 `Upgrade`/`Connection` 头和长 `proxy_read_timeout` 已在配置里，不要删。
 
-配置里另有两段 GM 后台相关（不需要可整段删）：
+配置里另有 GM 后台与备案过渡期相关的段落（不需要可整段删）：
 
 - `location /gm/`：静态托管 `Server/admin-web` 的构建产物（`/opt/card-server/admin/`），浏览器访问 `https://域名/gm/` 打开后台。
 - `location /v1/gm/`：GM 接口反代，公网可达、靠管理密码保护。若只想允许固定 IP 访问，在此段内加 `allow <IP>; deny all;`。
+- 80 端口的 `default_server`（`server_name _`）是**备案过渡期的 IP 直连站点**：域名未备案接入时腾讯云会拦截域名流量，这期间客户端和 GM 后台都走 `http://<ECS_IP>`（客户端 `GameApiSettings.DefaultBaseUrl` 即此地址）。**域名备案恢复后删除该站点**，全量切回 HTTPS。注意路径刻意用 `/gm/` 而非 `/admin/`（避开安全设备对 admin 关键字的拦截）。
 
 微信/抖音后台把 `https://api.example.com` 配进 request 合法域名、`wss://api.example.com` 配进 socket 合法域名。
 
 ## 4. 日常发布（本地执行）
+
+前置：本机 SSH 免密（把本机公钥写入服务器 `/root/.ssh/authorized_keys` 一次即可）。
 
 ```bash
 cd Server/deploy
 ./deploy.sh root@<ECS_IP>
 ```
 
-流程：`dotnet publish`（linux-x64，框架依赖）→ rsync 应用到 `/opt/card-server/app`
-（**不覆盖**线上 `appsettings.Production.json`）→ rsync 配表到 `/opt/card-server/Config`
-→ `npm run build` 构建 GM 后台并 rsync 到 `/opt/card-server/admin`
+流程：`dotnet publish`（linux-x64，框架依赖）→ 上传应用到 `/opt/card-server/app`
+（**不覆盖**线上 `appsettings.Production.json`）→ 上传配表到 `/opt/card-server/Config`
+→ `npm run build` 构建 GM 后台并上传到 `/opt/card-server/admin`
 → `systemctl restart card-server` → 调 `/v1/health` 探活。
 
-探活返回含 `persistence`/`postgres`/`redis` 即正常。
+上传优先用 rsync（带 `--delete`）；Windows Git Bash 没有 rsync 时自动退化为 tar 管道
+（不清理远端多余文件，功能等价）。
+
+**发布后验证清单**（脚本末尾的探活有启动竞态，偶发误报失败，等 3~5 秒手动复查即可）：
+
+```bash
+ssh root@<ECS_IP> "
+  curl -s http://127.0.0.1:5254/v1/health; echo                        # 含 postgres/redis 即正常
+  curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+    http://127.0.0.1:5254/v1/gm/login -H 'Content-Type: application/json' \
+    -d '{\"password\":\"<Admin:Token>\"}'                              # 200 = GM 接口正常
+  curl -s -o /dev/null -w '%{http_code}\n' http://<ECS_IP>/v1/health   # 200 = IP 直连链路正常
+  curl -s -o /dev/null -w '%{http_code}\n' http://<ECS_IP>/gm/         # 200 = 后台静态页正常
+"
+```
+
+**访问入口**：
+
+- 域名已备案：`https://域名/gm/`（GM 后台）、`https://域名`（游戏）
+- 备案过渡期：`http://<ECS_IP>/gm/`（GM 后台）、`http://<ECS_IP>`（游戏，HTTP 明文仅过渡用）
+
+**域名是否还被备案拦截的自查**：`curl -i http://域名/`，返回 302 跳
+`dnspod.qcloud.com/static/webblock.html` 即仍被拦截；返回 301 跳 `https://域名`
+则已恢复，可删掉 80 端口的 IP 直连站点并切换客户端 `GameApiSettings.DefaultBaseUrl`
+为 `https://域名`。
 
 ## 5. 运维速查
 

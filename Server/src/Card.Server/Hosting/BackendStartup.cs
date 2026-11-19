@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using CardShare.Infrastructure;
 using CardShare.Infrastructure.Postgres;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -66,8 +66,8 @@ public static class BackendStartup
         var fillBots = config.GetValue("Pvp:FillWithBots", false);
         log.LogInformation(
             "Server starting. postgres={Postgres} redis={Redis} guest={Guest} fillBots={FillBots}",
-            Redact(postgresCs),
-            Redact(redisCs),
+            Secrets.Redact(postgresCs),
+            Secrets.Redact(redisCs),
             guest,
             fillBots);
 
@@ -78,7 +78,7 @@ public static class BackendStartup
     private static async Task EnsurePostgresAsync(WebApplication app, string? connectionString)
     {
         var log = app.Logger;
-        var target = Redact(connectionString);
+        var target = Secrets.Redact(connectionString);
         log.LogInformation("Connecting Postgres {Target} ...", target);
         var sw = Stopwatch.StartNew();
         try
@@ -159,7 +159,7 @@ public static class BackendStartup
     private static async Task EnsureRedisAsync(WebApplication app, string? connectionString)
     {
         var log = app.Logger;
-        var target = Redact(connectionString);
+        var target = Secrets.Redact(connectionString);
         log.LogInformation("Connecting Redis {Target} ...", target);
         var sw = Stopwatch.StartNew();
         try
@@ -195,19 +195,5 @@ public static class BackendStartup
                 "Redis is configured but not reachable. Check ConnectionStrings:Redis and that Redis is running.",
                 ex);
         }
-    }
-
-    private static string Redact(string? connectionString)
-    {
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            return "(empty)";
-        }
-
-        return Regex.Replace(
-            connectionString,
-            "(Password|Pwd)=([^;]*)",
-            "$1=***",
-            RegexOptions.IgnoreCase);
     }
 }

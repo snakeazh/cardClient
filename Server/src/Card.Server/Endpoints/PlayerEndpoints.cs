@@ -1,5 +1,6 @@
 using CardShare.Contracts;
 using CardShare.Domain;
+using CardShare.Domain.Pvp;
 using CardShare.Domain.Services;
 
 namespace CardShare.Server.Endpoints;
@@ -10,6 +11,9 @@ public static class PlayerEndpoints
     {
         v1.MapGet("/player/profile", async (HttpContext http, PlayerMetaService meta, CancellationToken ct)
             => Results.Json(await meta.GetProfileAsync(http.RequireUserId(), ct)));
+        v1.MapGet("/pvp/leaderboard", async (HttpContext http, IPvpLeaderboardRepository leaderboard, CancellationToken ct)
+            => Results.Json(await leaderboard.GetAsync(http.RequireUserId(), ct)
+                ?? throw DomainException.Unauthorized("Player profile not found.")));
         v1.MapPost("/player/avatar", async (HttpContext http, PlayerMetaService meta, CancellationToken ct) =>
         {
             if (!http.Request.HasFormContentType)

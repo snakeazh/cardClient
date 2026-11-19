@@ -34,6 +34,8 @@ namespace App.UI
         public const string LevelUI = "App.LevelUI";
         public const string PvpPage = "App.PvpPage";
         public const string PvpRulePop = "App.PvpRulePop";
+        public const string PlayerRankPop = "App.PlayerRankPop";
+        public const string RankShowPop = "App.RankShowPop";
         public const string ToastPanel = "App.ToastPanel";
         public const string GuideOverlay = "App.GuideOverlay";
     }

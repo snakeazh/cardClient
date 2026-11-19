@@ -50,6 +50,7 @@ namespace App.UI
             Binding.BindActive(GetNode<Button>("CancelPvpBtn").gameObject, ViewModel.ShowCancelPvp);
 
             Binding.BindCommand(GetNode<Button>("RuleBtn"), ViewModel.RuleCommand);
+            Binding.BindCommand(UI.Get<Button>("RankListBtn"), ViewModel.RankListCommand);
             Binding.BindCommand(GetNode<Button>("backBtn"), ViewModel.BackCommand);
             Binding.BindCommand(GetNode<Button>("StartBtn"), ViewModel.StartCommand);
             Binding.BindCommand(GetNode<Button>("CancelBtn"), ViewModel.CancelCommand);

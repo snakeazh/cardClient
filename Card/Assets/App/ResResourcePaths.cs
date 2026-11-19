@@ -17,6 +17,8 @@ namespace App.Resources
         public const string LevelUI = "UI/LevelUI";
         public const string PvpPage = "UI/PVPPage";
         public const string PvpRulePop = "UI/Popup/PVPRulePop";
+        public const string PlayerRankPop = "UI/Popup/PlayerRankPop";
+        public const string RankShowPop = "UI/Popup/RankShowPop";
         /// <summary>选关难度卡预制体 Assets/Res/UI/Icon/IevelItem.prefab（文件名首字母是大写 I）。</summary>
         public const string LevelItem = "UI/Icon/IevelItem";
         public const string ConfirmDialog = "UI/ConfirmDialog";

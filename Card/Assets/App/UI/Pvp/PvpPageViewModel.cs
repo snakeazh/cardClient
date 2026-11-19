@@ -34,7 +34,7 @@ namespace App.UI
         private bool _entered;
         private bool _entering;
         private bool _starting;
-        private bool _openingRules;
+        private bool _openingPopup;
         private bool _localAccepted;
         private bool _introStarted;
         private readonly HashSet<string> _acceptedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -67,7 +67,8 @@ namespace App.UI
             ShowSearch = new ObservableProperty<bool>(true);
             ShowSearchSuccess = new ObservableProperty<bool>(false);
 
-            RuleCommand = new RelayCommand(OpenRules);
+            RuleCommand = new RelayCommand(OpenPopup<PvpRulePopViewModel>);
+            RankListCommand = new RelayCommand(OpenPopup<PlayerRankPopViewModel>);
             BackCommand = new RelayCommand(Back, () => !_introStarted);
             StartCommand = new RelayCommand(StartMatch, () => _phase == PvpPagePhase.Idle && !_entering && !_starting);
             CancelCommand = new RelayCommand(CancelMatch, () => _phase == PvpPagePhase.Searching);
@@ -108,6 +109,8 @@ namespace App.UI
 
         public IRelayCommand RuleCommand { get; }
 
+        public IRelayCommand RankListCommand { get; }
+
         public IRelayCommand BackCommand { get; }
 
         public IRelayCommand StartCommand { get; }
@@ -139,6 +142,12 @@ namespace App.UI
             _pvp.AcceptFailed -= OnAcceptFailed;
             _pvp.RoomReady -= OnRoomReady;
             _generation++;
+            var rank = _ui.FindOpen<PlayerRankPopViewModel>();
+            if (rank != null)
+            {
+                await _ui.Close(rank);
+            }
+
             var rules = _ui.FindOpen<PvpRulePopViewModel>();
             if (rules != null)
             {
@@ -180,20 +189,20 @@ namespace App.UI
             GradeValueText.Value = _pvpScore.Score.ToString();
         }
 
-        private async void OpenRules()
+        private async void OpenPopup<T>() where T : ViewModelBase
         {
-            if (_openingRules || _ui.FindOpen<PvpRulePopViewModel>() != null)
+            if (_openingPopup || !IsOpen || _ui.FindOpen<T>() != null)
             {
                 return;
             }
 
-            _openingRules = true;
+            _openingPopup = true;
             try
             {
-                var registration = _ui.Registry.GetByViewModelType(typeof(PvpRulePopViewModel));
-                var vm = (PvpRulePopViewModel)_ui.Registry.CreateViewModel(registration);
+                var registration = _ui.Registry.GetByViewModelType(typeof(T));
+                var vm = _ui.Registry.CreateViewModel(registration);
                 await _ui.Open(vm);
-                if (!IsOpen && _ui.FindOpen<PvpRulePopViewModel>() == vm)
+                if (!IsOpen && _ui.FindOpen<T>() == vm)
                 {
                     await _ui.Close(vm);
                 }
@@ -204,7 +213,7 @@ namespace App.UI
             }
             finally
             {
-                _openingRules = false;
+                _openingPopup = false;
             }
         }
 

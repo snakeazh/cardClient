@@ -217,6 +217,9 @@ namespace App.Net
         public Task<PlayerProfileDto> GetProfileAsync()
             => SendAsync<PlayerProfileDto>("GET", "/v1/player/profile", null);
 
+        public Task<PvpLeaderboardResponse> GetPvpLeaderboardAsync()
+            => SendAsync<PvpLeaderboardResponse>("GET", "/v1/pvp/leaderboard", null);
+
         /// <summary>multipart 上传头像图片，返回更新后的主档。</summary>
         public async Task<PlayerProfileDto> UploadAvatarAsync(byte[] data, string fileName)
         {

@@ -99,6 +99,7 @@ public static class BackendStartup
 
             log.LogInformation("Postgres connected in {ElapsedMs}ms. target={Target}", sw.ElapsedMilliseconds, target);
             await db.Database.EnsureCreatedAsync();
+            await db.Database.ExecuteSqlRawAsync(PostgresPvpLeaderboardRepository.EnsureIndexSql);
             // SaveVersion 已废弃（实体不再映射）：老库的 players 列保留，补默认值兼容不带该列的 INSERT。
             // 新库 EnsureCreated 建的 players 没有该列，存在时才补默认值。
             await db.Database.ExecuteSqlRawAsync(

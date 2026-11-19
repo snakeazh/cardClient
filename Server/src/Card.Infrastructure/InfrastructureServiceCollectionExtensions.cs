@@ -50,6 +50,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddDbContext<CardDbContext>(o => o.UseNpgsql(postgresCs));
         services.AddScoped<IPlayerRepository, PostgresPlayerRepository>();
+        services.AddScoped<IPvpLeaderboardRepository, PostgresPvpLeaderboardRepository>();
         services.AddScoped<IAuthBindingRepository, PostgresAuthBindingRepository>();
         services.AddScoped<IPveRunRepository, PostgresPveRunRepository>();
         services.AddScoped<IAdminLogRepository, PostgresAdminLogRepository>();

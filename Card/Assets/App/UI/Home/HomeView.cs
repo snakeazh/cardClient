@@ -22,6 +22,24 @@ namespace App.UI
         private PlayerItem _playerItem;
         private GuideTargetRegistry _guideTargets;
         private readonly List<string> _guideTargetIds = new List<string>(1);
+        private UIRoot _uiRoot;
+
+        private void OnEnable()
+        {
+            _uiRoot = GetComponentInParent<UIRoot>();
+            if (_uiRoot != null)
+            {
+                _uiRoot.SetWidthFitView(this, true);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_uiRoot != null)
+            {
+                _uiRoot.SetWidthFitView(this, false);
+            }
+        }
 
         protected override void OnBind()
         {

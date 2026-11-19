@@ -45,9 +45,8 @@ namespace App.UI
         private Coroutine _scrollLevelRoutine;
         private LevelUITransition _transition;
         private Button _lastBtn;
-        private float _inputUnblockAt;
         private float _closeAt;
-        private bool _entrancePlayed;
+        private bool _presented;
         private bool _closing;
         private int _lastAnimatedHeroId;
         private int _lastAnimatedLevelId;
@@ -96,7 +95,6 @@ namespace App.UI
             var roleInfo = GetNode<TMP_Text>("skillName").transform.parent as RectTransform;
             var useHeroBtn = GetNode<Button>("useHeroBtn").transform as RectTransform;
             var unlockHeroBtn = GetNode<Button>("unlockHeroBtn").transform as RectTransform;
-            var startGameBtn = GetNode<Button>("StartGameBtn").transform as RectTransform;
 
             _transition = new LevelUITransition(new LevelUITransitionTargets
             {
@@ -108,10 +106,10 @@ namespace App.UI
                 StageNum = stageNum,
                 HeroPanel = UI.GetGameObject("heroSelect").transform as RectTransform,
                 LevelPanel = UI.GetGameObject("levelSelect").transform as RectTransform,
-                LastBtn = GetNode<Button>("LastBtn").transform as RectTransform,
+                LastBtn = _lastBtn.transform as RectTransform,
+                StartGameBtn = GetNode<Button>("StartGameBtn").transform as RectTransform,
                 UseHeroBtn = useHeroBtn,
                 UnlockHeroBtn = unlockHeroBtn,
-                StartGameBtn = startGameBtn,
                 HeroItems = CollectRects(_heroItems),
                 LevelItems = CollectRects(_levelItems)
             });
@@ -119,6 +117,9 @@ namespace App.UI
                 ViewModel.ShowHeroSelect.Value,
                 ViewModel.ShowStageInfo.Value,
                 ViewModel.ShowLevelSelect.Value);
+
+            // 阶段切换前先收尾入场，避免入场和新阶段的过渡同时写同一组节点。
+            Binding.Add(ViewModel.Phase.Subscribe(_ => _transition.CompleteEntrance(), emitCurrent: false));
 
             // 面板显隐订阅必须排在下面的 RefreshHeroItems / RefreshLevelItems 订阅之前：
             // 先激活面板，SetSelected 才会走抬卡动画，而不是 inactive 时的吸附分支。
@@ -129,7 +130,7 @@ namespace App.UI
                     _suppressSelectionUntil = Time.unscaledTime + 0.25f;
                 }
 
-                _transition.SetHeroPanel(show, _entrancePlayed);
+                _transition.SetHeroPanel(show, _presented);
             }, emitCurrent: false));
             Binding.Add(ViewModel.ShowStageInfo.Subscribe(show =>
             {
@@ -138,7 +139,7 @@ namespace App.UI
                     _suppressSelectionUntil = Time.unscaledTime + 0.35f;
                 }
 
-                _transition.SetStageInfo(show, _entrancePlayed);
+                _transition.SetStageInfo(show, _presented);
             }, emitCurrent: false));
             Binding.Add(ViewModel.ShowLevelSelect.Subscribe(show =>
             {
@@ -147,7 +148,7 @@ namespace App.UI
                     _suppressSelectionUntil = Time.unscaledTime + 0.35f;
                 }
 
-                _transition.SetLevelPanel(show, _entrancePlayed);
+                _transition.SetLevelPanel(show, _presented);
             }, emitCurrent: false));
 
             Binding.Add(ViewModel.ShowHeroSelect.Subscribe(show =>
@@ -166,37 +167,37 @@ namespace App.UI
                 }
             }, emitCurrent: false));
 
-            // 按钮显隐仍由 BindActive 控制，这里只补一个淡入，避免同位按钮硬切。
+            // 选角按钮显隐由 BindActive 控制，这里补一个淡入，避免同位按钮硬切。
             Binding.Add(ViewModel.ShowUseHeroBtn.Subscribe(show =>
             {
-                if (show && _entrancePlayed)
+                if (show && _presented)
                 {
                     _transition.PlayButtonIn(useHeroBtn);
                 }
             }, emitCurrent: false));
             Binding.Add(ViewModel.ShowUnlockHeroBtn.Subscribe(show =>
             {
-                if (show && _entrancePlayed)
+                if (show && _presented)
                 {
                     _transition.PlayButtonIn(unlockHeroBtn);
                 }
             }, emitCurrent: false));
             Binding.Add(ViewModel.ShowStartGameBtn.Subscribe(show =>
-            {
-                if (show && _entrancePlayed)
-                {
-                    _transition.PlayButtonIn(startGameBtn);
-                }
-            }, emitCurrent: false));
+                _transition.SetStartGameButtonEntrance(show && _presented), emitCurrent: false));
 
             Binding.Add(ViewModel.SelectedHeroId.Subscribe(_ =>
             {
-                RefreshHeroItems();
-                RefreshPreview();
                 var heroId = ViewModel.SelectedHeroId.Value;
                 var changed = heroId != _lastAnimatedHeroId;
                 _lastAnimatedHeroId = heroId;
-                if (changed && _entrancePlayed && Time.unscaledTime >= _suppressSelectionUntil)
+                if (changed && _presented)
+                {
+                    _transition.CompleteEntrance();
+                }
+
+                RefreshHeroItems();
+                RefreshPreview();
+                if (changed && _presented && Time.unscaledTime >= _suppressSelectionUntil)
                 {
                     _transition.PlayHeroChanged();
                 }
@@ -222,7 +223,6 @@ namespace App.UI
 
         protected override Task OnViewClose()
         {
-            _inputUnblockAt = 0f;
             _closeAt = 0f;
             _closing = false;
             if (_lastBtn != null)
@@ -233,7 +233,7 @@ namespace App.UI
 
             _transition?.Kill();
             _transition = null;
-            _entrancePlayed = false;
+            _presented = false;
 
             // 视图实例随界面关闭销毁，列表项回收进池供下次打开复用。
             for (var i = 0; i < _heroItems.Count; i++)
@@ -254,7 +254,7 @@ namespace App.UI
         }
 
         /// <summary>
-        /// 上一页遮罩撤掉、本页真正露出后播入场；入场期间先挡住输入，播完再放开。
+        /// 上一页遮罩撤掉、本页真正露出后播入场。
         /// </summary>
         public override void OnPresented()
         {
@@ -266,18 +266,15 @@ namespace App.UI
 
             _closing = false;
             _closeAt = 0f;
-            _entrancePlayed = false;
             _lastAnimatedHeroId = ViewModel.SelectedHeroId.Value;
             _lastAnimatedLevelId = ViewModel.SelectedLevelId.Value;
             _lastAnimatedDifficulty = ViewModel.SelectedDifficulty.Value;
             _transition.PlayEntrance(ViewModel.Phase.Value == LevelUiPhase.Stage);
-            _inputUnblockAt = Time.unscaledTime + _transition.EntranceDuration;
+            _presented = true;
         }
 
         /// <summary>
-        /// 入场计时用 LateUpdate 兜底：即使页面在入场途中被临时隐藏，
-        /// 重新激活后也会在第一帧把输入放开，不会永久锁住界面。
-        /// 退场同理：到点再执行真正的关闭命令，不依赖 Tween 的 OnComplete。
+        /// 退场到点再执行关闭命令，不依赖 Tween 的 OnComplete。
         /// </summary>
         private void LateUpdate()
         {
@@ -290,17 +287,7 @@ namespace App.UI
                     vm.LastBtnCommand.Execute();
                 }
 
-                return;
             }
-
-            if (_inputUnblockAt <= 0f || Time.unscaledTime < _inputUnblockAt)
-            {
-                return;
-            }
-
-            _inputUnblockAt = 0f;
-            _entrancePlayed = true;
-            _transition?.SetInputBlocked(false);
         }
 
         /// <summary>
@@ -327,7 +314,6 @@ namespace App.UI
             }
 
             _closing = true;
-            _inputUnblockAt = 0f;
             _transition.PlayExit();
             _closeAt = Time.unscaledTime + _transition.ExitDuration + 0.05f;
         }
@@ -339,7 +325,7 @@ namespace App.UI
             var changed = levelId != _lastAnimatedLevelId || difficulty != _lastAnimatedDifficulty;
             _lastAnimatedLevelId = levelId;
             _lastAnimatedDifficulty = difficulty;
-            if (!changed || !_entrancePlayed || Time.unscaledTime < _suppressSelectionUntil)
+            if (!changed || !_presented || Time.unscaledTime < _suppressSelectionUntil)
             {
                 return;
             }

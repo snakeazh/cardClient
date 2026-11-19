@@ -19,9 +19,9 @@ namespace App.UI
         public RectTransform HeroPanel;
         public RectTransform LevelPanel;
         public RectTransform LastBtn;
+        public RectTransform StartGameBtn;
         public RectTransform UseHeroBtn;
         public RectTransform UnlockHeroBtn;
-        public RectTransform StartGameBtn;
         public List<RectTransform> HeroItems = new List<RectTransform>();
         public List<RectTransform> LevelItems = new List<RectTransform>();
     }
@@ -65,6 +65,7 @@ namespace App.UI
         private Sequence _heroPanelSeq;
         private Sequence _levelPanelSeq;
         private Sequence _stageInfoSeq;
+        private Sequence _startGameButtonSeq;
         private Sequence _heroChangedSeq;
         private CanvasGroup _rootGroup;
         private CanvasGroup _bodyGroup;
@@ -74,6 +75,12 @@ namespace App.UI
 
         private Vector3 _horRestScale = Vector3.one;
         private Vector2 _horRestPos;
+        private RectTransform _lastButtonEntrance;
+        private RectTransform _useHeroButtonEntrance;
+        private RectTransform _startGameButtonEntrance;
+        private (Vector2 Position, Vector3 Scale) _lastButtonRest;
+        private (Vector2 Position, Vector3 Scale) _useHeroButtonRest;
+        private (Vector2 Position, Vector3 Scale) _startGameButtonRest;
         private Vector3 _cardRestScale = Vector3.one;
         private Vector2 _roleRestPos;
         private Vector2 _stageRestPos;
@@ -87,17 +94,17 @@ namespace App.UI
             _t = targets;
         }
 
-        /// <summary>入场总时长（含卡片逐张发出的最后一张）。</summary>
-        public float EntranceDuration => 0.65f;
-
         /// <summary>退场总时长；LevelUIView 在这个时长后再执行真正的关闭。</summary>
         public float ExitDuration => 0.22f;
 
         /// <summary>缓存静止姿态、建遮罩/内容容器与 CanvasGroup、按当前阶段摆好初始显隐。</summary>
         public void Prepare(bool showHero, bool showStage, bool showLevel)
         {
-            CacheRest();
             EnsurePopupShell();
+            _lastButtonEntrance = CreateButtonEntranceContainer(_t.LastBtn);
+            _useHeroButtonEntrance = CreateButtonEntranceContainer(_t.UseHeroBtn);
+            _startGameButtonEntrance = CreateButtonEntranceContainer(_t.StartGameBtn);
+            CacheRest();
             EnsureGroups();
 
             _rootGroup = Group(_t.Root);
@@ -174,18 +181,6 @@ namespace App.UI
                 _bodyGroup.alpha = 0f;
             }
 
-            if (_t.Hor != null)
-            {
-                var group = Group(_t.Hor);
-                if (group != null)
-                {
-                    group.alpha = 0f;
-                }
-
-                _t.Hor.anchoredPosition = _horRestPos + new Vector2(0f, -50f);
-                _t.Hor.localScale = _horRestScale * 0.97f;
-            }
-
             if (_t.HeroCard != null)
             {
                 _t.HeroCard.localScale = _cardRestScale * 0.88f;
@@ -206,13 +201,8 @@ namespace App.UI
                 }
             }
 
-            var lastGroup = Group(_t.LastBtn);
-            if (lastGroup != null)
-            {
-                lastGroup.alpha = 0f;
-            }
-
-            RectTransform primary;
+            var showUseHeroButton = _t.UseHeroBtn != null && _t.UseHeroBtn.gameObject.activeSelf;
+            CanvasGroup unlockHeroButtonGroup = null;
             if (stagePhase)
             {
                 SetPanelImmediate(_t.HeroPanel, _heroPanelRestPos, false);
@@ -220,9 +210,6 @@ namespace App.UI
                 PrepareStageInfoStart();
                 SetPanelImmediate(_t.LevelPanel, _levelPanelRestPos, true);
                 PrepareLevelCardsStart();
-                primary = _t.StartGameBtn != null && _t.StartGameBtn.gameObject.activeSelf
-                    ? _t.StartGameBtn
-                    : null;
             }
             else
             {
@@ -230,15 +217,10 @@ namespace App.UI
                 SetPanelImmediate(_t.LevelPanel, _levelPanelRestPos, false);
                 SetPanelImmediate(_t.HeroPanel, _heroPanelRestPos, true);
                 PrepareHeroPanelStart();
-                primary = ActiveButton(_t.UseHeroBtn, _t.UnlockHeroBtn);
-            }
-
-            if (primary != null)
-            {
-                var primaryGroup = Group(primary);
-                if (primaryGroup != null)
+                if (!showUseHeroButton && _t.UnlockHeroBtn != null && _t.UnlockHeroBtn.gameObject.activeSelf)
                 {
-                    primaryGroup.alpha = 0f;
+                    unlockHeroButtonGroup = Group(_t.UnlockHeroBtn);
+                    unlockHeroButtonGroup.alpha = 0f;
                 }
             }
 
@@ -249,7 +231,6 @@ namespace App.UI
             }
 
             _entranceSeq = seq;
-            SetInputBlocked(true);
 
             // 弹窗壳先动：Home 上盖一层暗幕，内容整体从略小一档弹出并淡入。
             if (_mask != null)
@@ -267,17 +248,8 @@ namespace App.UI
                 seq.Insert(0f, _bodyGroup.DOFade(1f, BodyFadeIn));
             }
 
-            if (_t.Hor != null)
-            {
-                var group = Group(_t.Hor);
-                if (group != null)
-                {
-                    seq.Join(group.DOFade(1f, 0.30f));
-                }
-
-                seq.Join(_t.Hor.DOAnchorPos(_horRestPos, 0.34f).SetEase(Ease.OutCubic));
-                seq.Join(_t.Hor.DOScale(_horRestScale, 0.34f).SetEase(Ease.OutCubic));
-            }
+            AppendSlideIn(seq, _t.Hor, (_horRestPos, _horRestScale));
+            AppendSlideIn(seq, _lastButtonEntrance, _lastButtonRest);
 
             if (_t.HeroCard != null)
             {
@@ -289,28 +261,34 @@ namespace App.UI
                 seq.Insert(0.10f, _t.RoleInfo.DOAnchorPos(_roleRestPos, 0.30f).SetEase(Ease.OutCubic));
             }
 
-            if (lastGroup != null)
-            {
-                seq.Insert(0.22f, lastGroup.DOFade(1f, 0.20f));
-            }
-
             if (stagePhase)
             {
+                if (_t.StartGameBtn != null && _t.StartGameBtn.gameObject.activeSelf)
+                {
+                    AppendSlideIn(seq, _startGameButtonEntrance, _startGameButtonRest);
+                }
+
                 AppendStageIn(seq, 0f);
             }
             else
             {
                 AppendHeroPanelIn(seq, 0.16f);
-            }
-
-            if (primary != null)
-            {
-                var primaryGroup = Group(primary);
-                if (primaryGroup != null)
+                if (showUseHeroButton)
                 {
-                    seq.Insert(stagePhase ? 0.10f : 0.26f, primaryGroup.DOFade(1f, 0.20f));
+                    AppendSlideIn(seq, _useHeroButtonEntrance, _useHeroButtonRest);
+                }
+
+                if (unlockHeroButtonGroup != null)
+                {
+                    seq.Insert(0.26f, unlockHeroButtonGroup.DOFade(1f, 0.20f));
                 }
             }
+        }
+
+        public void CompleteEntrance()
+        {
+            _entranceSeq?.Complete();
+            _entranceSeq = null;
         }
 
         /// <summary>
@@ -322,7 +300,10 @@ namespace App.UI
         public void PlayExit()
         {
             KillSequences();
-            SetInputBlocked(true);
+            if (_rootGroup != null)
+            {
+                _rootGroup.interactable = false;
+            }
 
             var seq = NewSequence(_t.Root);
             if (seq == null)
@@ -716,7 +697,21 @@ namespace App.UI
             });
         }
 
-        /// <summary>按钮淡入。只改 alpha，不动 scale/position，避免 ButtonAnim 缓存到动画中间态。</summary>
+        public void SetStartGameButtonEntrance(bool play)
+        {
+            KillSeq(ref _startGameButtonSeq);
+            var button = _t.StartGameBtn;
+            if (!play || button == null || !button.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            var seq = NewSequence(button);
+            _startGameButtonSeq = seq;
+            AppendSlideIn(seq, _startGameButtonEntrance, _startGameButtonRest);
+        }
+
+        /// <summary>选角按钮只淡入，避免 ButtonAnim 缓存到动画中间态。</summary>
         public void PlayButtonIn(RectTransform button)
         {
             if (button == null || !button.gameObject.activeInHierarchy)
@@ -833,29 +828,27 @@ namespace App.UI
             ResetItems(_t.LevelItems);
         }
 
-        /// <summary>
-        /// 入场/退场期间挡住输入，避免动画中途点按钮/选卡。
-        /// 用 CanvasGroup.interactable 而不是 blocksRaycasts：LevelUI 现在浮在 Home 上方，
-        /// 若关掉射线接收，点击会穿透到下面的 Home 按钮上；所以整块界面始终接收射线
-        /// （全屏暗幕兜底），只是动画期间暂时不可交互。
-        /// </summary>
-        public void SetInputBlocked(bool blocked)
-        {
-            if (_rootGroup == null)
-            {
-                return;
-            }
-
-            _rootGroup.blocksRaycasts = true;
-            _rootGroup.interactable = !blocked;
-        }
-
         private void CacheRest()
         {
             if (_t.Hor != null)
             {
                 _horRestScale = _t.Hor.localScale;
                 _horRestPos = _t.Hor.anchoredPosition;
+            }
+
+            if (_lastButtonEntrance != null)
+            {
+                _lastButtonRest = (_lastButtonEntrance.anchoredPosition, _lastButtonEntrance.localScale);
+            }
+
+            if (_useHeroButtonEntrance != null)
+            {
+                _useHeroButtonRest = (_useHeroButtonEntrance.anchoredPosition, _useHeroButtonEntrance.localScale);
+            }
+
+            if (_startGameButtonEntrance != null)
+            {
+                _startGameButtonRest = (_startGameButtonEntrance.anchoredPosition, _startGameButtonEntrance.localScale);
             }
 
             if (_t.HeroCard != null)
@@ -973,6 +966,32 @@ namespace App.UI
             _mask.rectTransform.SetAsFirstSibling();
         }
 
+        private static RectTransform CreateButtonEntranceContainer(RectTransform button)
+        {
+            if (button == null)
+            {
+                return null;
+            }
+
+            // 父节点负责入场位移和缩放，按钮自身的局部姿态留给 ButtonAnim 点按反馈。
+            var container = (RectTransform)new GameObject(button.name + "_Entrance", typeof(RectTransform)).transform;
+            container.gameObject.layer = button.gameObject.layer;
+            container.SetParent(button.parent, false);
+            container.SetSiblingIndex(button.GetSiblingIndex());
+            container.anchorMin = button.anchorMin;
+            container.anchorMax = button.anchorMax;
+            container.pivot = button.pivot;
+            container.sizeDelta = button.sizeDelta;
+            container.anchoredPosition3D = button.anchoredPosition3D;
+
+            button.SetParent(container, false);
+            button.anchorMin = Vector2.zero;
+            button.anchorMax = Vector2.one;
+            button.sizeDelta = Vector2.zero;
+            button.anchoredPosition3D = Vector3.zero;
+            return container;
+        }
+
         private static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
@@ -1007,10 +1026,8 @@ namespace App.UI
             Group(_t.StageInfo);
             Group(_t.HeroPanel);
             Group(_t.LevelPanel);
-            Group(_t.LastBtn);
             Group(_t.UseHeroBtn);
             Group(_t.UnlockHeroBtn);
-            Group(_t.StartGameBtn);
 
             for (var i = 0; i < _t.HeroItems.Count; i++)
             {
@@ -1138,6 +1155,23 @@ namespace App.UI
 
             info.anchoredPosition = _stageRestPos + new Vector2(0f, -12f);
             info.localScale = _stageRestScale * 0.92f;
+        }
+
+        private void AppendSlideIn(Sequence seq, RectTransform target, (Vector2 Position, Vector3 Scale) rest)
+        {
+            if (target == null || !target.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            var group = Group(target);
+            group.alpha = 0f;
+            target.anchoredPosition = rest.Position + new Vector2(0f, -50f);
+            target.localScale = rest.Scale * 0.97f;
+
+            seq.Insert(0f, group.DOFade(1f, 0.30f));
+            seq.Insert(0f, target.DOAnchorPos(rest.Position, 0.34f).SetEase(Ease.OutCubic));
+            seq.Insert(0f, target.DOScale(rest.Scale, 0.34f).SetEase(Ease.OutCubic));
         }
 
         private void AppendHeroPanelIn(Sequence seq, float at)
@@ -1330,6 +1364,7 @@ namespace App.UI
             KillSeq(ref _heroPanelSeq);
             KillSeq(ref _levelPanelSeq);
             KillSeq(ref _stageInfoSeq);
+            KillSeq(ref _startGameButtonSeq);
             KillSeq(ref _heroChangedSeq);
 
             foreach (var pair in _groups)
@@ -1354,19 +1389,5 @@ namespace App.UI
             }
         }
 
-        private static RectTransform ActiveButton(RectTransform first, RectTransform second)
-        {
-            if (first != null && first.gameObject.activeSelf)
-            {
-                return first;
-            }
-
-            if (second != null && second.gameObject.activeSelf)
-            {
-                return second;
-            }
-
-            return null;
-        }
     }
 }

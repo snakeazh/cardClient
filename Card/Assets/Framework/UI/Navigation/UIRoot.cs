@@ -28,11 +28,28 @@ namespace Framework.UI.Navigation
         private int _lastWidth;
         private int _lastHeight;
         private bool _inBattleFit;
+        private MonoBehaviour _widthFitView;
 
         public Canvas RootCanvas { get; private set; }
 
-        /// <summary>局内按高度适配；局外按宽度适配（宽屏仍锁高度加黑边）。</summary>
         public bool InBattleFit => _inBattleFit;
+
+        public bool ShouldFitHeight(bool widerThanDesign)
+        {
+            return _inBattleFit || (widerThanDesign && _widthFitView == null);
+        }
+
+        /// <summary>页面显示期间可要求宽屏也按宽度适配。</summary>
+        public void SetWidthFitView(MonoBehaviour view, bool visible)
+        {
+            if (!visible && _widthFitView != view)
+            {
+                return;
+            }
+
+            _widthFitView = visible ? view : null;
+            ApplyWidescreenFit(true);
+        }
 
         public void SetInBattleFit(bool inBattle)
         {
@@ -111,8 +128,7 @@ namespace Framework.UI.Navigation
 #endif
 
         /// <summary>
-        /// 1080×1920（9:16）。局外按宽度适配；局内按高度适配。
-        /// 宽于 9:16 时始终锁高度，左右黑边遮挡。
+        /// 1080×1920（9:16）。按高度适配时，超出设计宽度的部分用黑边遮挡。
         /// </summary>
         private void ApplyWidescreenFit(bool force)
         {
@@ -150,14 +166,15 @@ namespace Framework.UI.Navigation
 
             float designAspect = designWidth / designHeight;
             float currentAspect = (float)width / height;
-            bool useHeightFit = _inBattleFit || currentAspect > designAspect;
+            bool widerThanDesign = currentAspect > designAspect;
+            bool useHeightFit = ShouldFitHeight(widerThanDesign);
             if (_scaler != null)
             {
                 _scaler.matchWidthOrHeight = useHeightFit ? 1f : 0f;
             }
 
             float barWidth = 0f;
-            if (currentAspect > designAspect)
+            if (useHeightFit && widerThanDesign)
             {
                 barWidth = (designHeight * currentAspect - designWidth) * 0.5f;
             }

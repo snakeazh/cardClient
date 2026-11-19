@@ -6,7 +6,7 @@ namespace App.Game
     /// <summary>
     /// 正交相机按 9:16（1080×1920）适配。
     /// 局外按宽度适配（高屏扩大可视高度）；局内锁定设计高度，过宽由 <see cref="TallScreenFitScale"/> 缩小。
-    /// 宽于 9:16 时始终锁高度，左右由 UIRoot 黑边遮挡。
+    /// 宽于 9:16 时跟随 UIRoot 的页面适配规则。
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(Camera))]
@@ -20,7 +20,7 @@ namespace App.Game
         private UIRoot _uiRoot;
         private int _lastWidth;
         private int _lastHeight;
-        private bool _lastInBattle;
+        private bool _lastHeightFit;
 
         private void OnEnable()
         {
@@ -30,8 +30,9 @@ namespace App.Game
 
         private void LateUpdate()
         {
-            bool inBattle = IsInBattleFit();
-            if (Screen.width != _lastWidth || Screen.height != _lastHeight || inBattle != _lastInBattle)
+            int width = Screen.width;
+            int height = Screen.height;
+            if (width != _lastWidth || height != _lastHeight || ShouldFitHeight(width, height) != _lastHeightFit)
             {
                 Apply();
             }
@@ -68,10 +69,8 @@ namespace App.Game
 
             float designAspect = designWidth / designHeight;
             float currentAspect = (float)width / height;
-            bool inBattle = IsInBattleFit();
-            _lastInBattle = inBattle;
-
-            bool useHeightFit = inBattle || currentAspect > designAspect;
+            bool useHeightFit = ShouldFitHeight(width, height);
+            _lastHeightFit = useHeightFit;
             float targetSize = useHeightFit
                 ? designOrthographicSize
                 : designOrthographicSize * (designAspect / currentAspect);
@@ -86,14 +85,15 @@ namespace App.Game
             _camera.orthographicSize = targetSize;
         }
 
-        private bool IsInBattleFit()
+        private bool ShouldFitHeight(int width, int height)
         {
             if (_uiRoot == null)
             {
                 _uiRoot = FindObjectOfType<UIRoot>();
             }
 
-            return _uiRoot != null && _uiRoot.InBattleFit;
+            bool widerThanDesign = (float)width / height > designWidth / designHeight;
+            return _uiRoot != null ? _uiRoot.ShouldFitHeight(widerThanDesign) : widerThanDesign;
         }
     }
 }

@@ -71,7 +71,7 @@ public static class InfrastructureServiceCollectionExtensions
             options.AbortOnConnectFail = true;
             options.ConnectTimeout = 5000;
             options.ConnectRetry = 2;
-            log.LogInformation("Redis multiplexer connecting {Target} ...", redisCs);
+            log.LogInformation("Redis multiplexer connecting {Target} ...", Secrets.Redact(redisCs));
             try
             {
                 var mux = ConnectionMultiplexer.Connect(options);
@@ -83,7 +83,7 @@ public static class InfrastructureServiceCollectionExtensions
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Redis multiplexer connect failed. target={Target}", redisCs);
+                log.LogError(ex, "Redis multiplexer connect failed. target={Target}", Secrets.Redact(redisCs));
                 throw;
             }
         });

@@ -12,7 +12,7 @@ namespace App.UI.Popup
     {
         protected override void OnBind()
         {
-            Binding.BindCommand(UI.Get<Button>("CloseBtn"), ViewModel.CloseCommand);
+            Binding.BindCommand(UI.Get<Button>("Mask"), ViewModel.CloseCommand);
             Binding.BindCommand(UI.Get<Button>("ClaimBtn"), ViewModel.ClaimCommand);
             Binding.BindText(UI.Get<TMP_Text>("ClaimLabel"), ViewModel.ClaimLabel);
 
